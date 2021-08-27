@@ -330,7 +330,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
     /**
      * Create an array aggregation, equivalent to {@link Table#by(String...)}.
-     * 
+     *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
@@ -630,7 +630,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      *
      * @return a new ComboAggregateFactory that will produce null values for the given columns.
      */
-    public ComboAggregateFactory withNulls(Map<String, Class> nullColumns) {
+    public ComboAggregateFactory withNulls(Map<String, Class<?>> nullColumns) {
         final List<ComboBy> newAggregations = new ArrayList<>(underlyingAggregations.size() + 1);
         newAggregations.add(new NullComboBy(nullColumns));
         newAggregations.addAll(underlyingAggregations);
@@ -793,10 +793,10 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     static public class NullComboBy implements ComboBy {
-        private final Map<String, Class> resultColumns;
+        private final Map<String, Class<?>> resultColumns;
         private final NullAggregationStateFactoryImpl underlyingStateFactory;
 
-        NullComboBy(Map<String, Class> resultColumns) {
+        NullComboBy(Map<String, Class<?>> resultColumns) {
             this.resultColumns = resultColumns;
             this.underlyingStateFactory = new NullAggregationStateFactoryImpl();
         }
@@ -1043,6 +1043,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                     } else {
                         final MatchPair[] comboMatchPairs = ((ComboByImpl) comboBy).matchPairs;
                         if (isSortedFirstOrLastBy) {
+                            // noinspection ConstantConditions
                             final SortedFirstOrLastByFactoryImpl sortedFirstOrLastByFactory =
                                     (SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory;
                             final boolean isSortedFirstBy = sortedFirstOrLastByFactory.isSortedFirst();
@@ -1094,30 +1095,24 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                         final boolean isFloatingPoint = table.hasColumns(nanName);
 
                                         // record non null count
-                                        // noinspection unchecked
                                         inputColumns.add(table.getColumnSource(nonNullName));
                                         inputNames.add(new String[] {nonNullName});
 
                                         // record running sum
-                                        // noinspection unchecked
                                         inputColumns.add(table.getColumnSource(runningSumName));
                                         inputNames.add(new String[] {runningSumName});
 
                                         if (isStdVar) {
-                                            // noinspection unchecked
                                             inputColumns.add(table.getColumnSource(runningSum2Name));
                                             inputNames.add(new String[] {runningSum2Name});
                                         }
 
                                         if (isFloatingPoint) {
                                             // record nans, positive and negative infinities
-                                            // noinspection unchecked
                                             inputColumns.add(table.getColumnSource(nanName));
                                             inputNames.add(new String[] {nanName});
-                                            // noinspection unchecked
                                             inputColumns.add(table.getColumnSource(picName));
                                             inputNames.add(new String[] {picName});
-                                            // noinspection unchecked
                                             inputColumns.add(table.getColumnSource(nicName));
                                             inputNames.add(new String[] {nicName});
                                         }
@@ -1257,26 +1252,29 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                     } else if (isCountDistinct || isDistinct || isAggUnique) {
                                         final String ssmColName =
                                                 mp.left() + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final ObjectArraySource<SegmentedSortedMultiSet> ssmSource =
-                                                (ObjectArraySource<SegmentedSortedMultiSet>) table
-                                                        .getColumnSource(ssmColName);
+                                        final ColumnSource<SegmentedSortedMultiSet<?>> ssmSource =
+                                                table.getColumnSource(ssmColName);
                                         final ColumnSource<?> lastLevelResult = table.getColumnSource(mp.left());
                                         final boolean countNulls;
                                         final IterativeChunkedAggregationOperator op;
                                         if (isDistinct) {
+                                            // noinspection ConstantConditions
                                             countNulls =
                                                     ((DistinctStateFactory) inputAggregationStateFactory).countNulls();
                                             op = IterativeOperatorStateFactory.getDistinctChunked(
                                                     lastLevelResult.getComponentType(), mp.left(), countNulls, true,
                                                     true);
                                         } else if (isCountDistinct) {
+                                            // noinspection ConstantConditions
                                             countNulls = ((CountDistinctStateFactory) inputAggregationStateFactory)
                                                     .countNulls();
                                             op = IterativeOperatorStateFactory.getCountDistinctChunked(
                                                     ssmSource.getComponentType(), mp.left(), countNulls, true, true);
                                         } else {
+                                            // noinspection ConstantConditions
                                             countNulls =
                                                     ((UniqueStateFactory) inputAggregationStateFactory).countNulls();
+                                            // noinspection ConstantConditions
                                             op = IterativeOperatorStateFactory.getUniqueChunked(
                                                     lastLevelResult.getType(), mp.left(), countNulls, true,
                                                     ((UniqueStateFactory) inputAggregationStateFactory).getNoKeyValue(),
@@ -1293,9 +1291,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                     }
                                 }
 
-                                final ColumnSource columnSource = table.getColumnSource(mp.right());
+                                final ColumnSource<?> columnSource = table.getColumnSource(mp.right());
                                 final Class<?> type = columnSource.getType();
-                                final ColumnSource inputSource = columnSource.getType() == DBDateTime.class
+                                final ColumnSource<?> inputSource = columnSource.getType() == DBDateTime.class
                                         ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
                                         : columnSource;
 
@@ -1338,7 +1336,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                 }
 
                                 if (hasSource) {
-                                    // noinspection unchecked
                                     inputColumns.add(inputSource);
                                 } else {
                                     inputColumns.add(null);

@@ -22,7 +22,7 @@ public class CompletionLookups {
     private static final WeakHashMap<ScriptSession, CompletionLookups> lookups = new WeakHashMap<>();
 
     private final Lazy<QueryLibrary> ql;
-    private final Lazy<Collection<Class>> statics;
+    private final Lazy<Collection<Class<?>>> statics;
     private final Map<String, TableDefinition> referencedTables;
 
     public CompletionLookups() {
@@ -42,7 +42,7 @@ public class CompletionLookups {
         return lookups.computeIfAbsent(session, s -> new CompletionLookups());
     }
 
-    public Collection<Class> getStatics() {
+    public Collection<Class<?>> getStatics() {
         return statics.get();
     }
 

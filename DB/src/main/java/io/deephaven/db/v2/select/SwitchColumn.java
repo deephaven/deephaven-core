@@ -47,7 +47,7 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         if (realColumn == null) {
             if (columnsOfInterest.get(expression) != null) {
                 realColumn = new SourceColumn(expression, columnName);
@@ -59,7 +59,7 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap) {
+    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         if (realColumn == null) {
             if (columnDefinitionMap.get(expression) != null) {
                 realColumn = new SourceColumn(expression, columnName);
@@ -76,7 +76,7 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
-    public Class getReturnedType() {
+    public Class<?> getReturnedType() {
         return realColumn.getReturnedType();
     }
 
@@ -92,13 +92,13 @@ public class SwitchColumn implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getDataView() {
+    public ColumnSource<?> getDataView() {
         return realColumn.getDataView();
     }
 
     @NotNull
     @Override
-    public ColumnSource getLazyView() {
+    public ColumnSource<?> getLazyView() {
         return realColumn.getLazyView();
     }
 
@@ -113,7 +113,7 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
-    public WritableSource newDestInstance(long size) {
+    public WritableSource<?> newDestInstance(long size) {
         return realColumn.newDestInstance(size);
     }
 

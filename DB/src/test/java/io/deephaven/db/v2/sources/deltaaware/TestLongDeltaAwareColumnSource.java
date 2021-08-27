@@ -176,7 +176,7 @@ public class TestLongDeltaAwareColumnSource {
 
         // Current...
         try (ChunkSource.GetContext context = dacs.makeGetContext(chunkSize)) {
-            LongChunk<Values> chunk;
+            LongChunk<? extends Values> chunk;
 
             chunk = dacs.getChunk(context, index0).asLongChunk();
             checkChunk(chunk, expectedCurrent, index0);
@@ -190,7 +190,7 @@ public class TestLongDeltaAwareColumnSource {
         }
     }
 
-    private static void checkChunk(LongChunk<Values> values, Map<Long, Long> expected, Index keys) {
+    private static void checkChunk(LongChunk<? extends Values> values, Map<Long, Long> expected, Index keys) {
         int sliceOffset = 0;
         for (final Index.Iterator it = keys.iterator(); it.hasNext(); ) {
             final long key = it.nextLong();

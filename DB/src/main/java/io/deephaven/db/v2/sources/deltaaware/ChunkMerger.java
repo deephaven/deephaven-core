@@ -8,7 +8,8 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 
 class ChunkMerger<ATTR extends Attributes.Any> {
     // Copy the data back into the positions where it needs to go.
-    static <ATTR extends Attributes.Any> void merge(Chunk<ATTR> bChunk, Chunk<ATTR> dChunk, OrderedKeys bKeys,
+    static <ATTR extends Attributes.Any> void merge(Chunk<? extends ATTR> bChunk, Chunk<? extends ATTR> dChunk,
+            OrderedKeys bKeys,
             OrderedKeys dKeys, WritableChunk<? super ATTR> dest) {
         final ChunkMerger<ATTR> bMerger = new ChunkMerger<>(bChunk, bKeys);
         final ChunkMerger<ATTR> dMerger = new ChunkMerger<>(dChunk, dKeys);
@@ -26,12 +27,12 @@ class ChunkMerger<ATTR extends Attributes.Any> {
         dest.setSize(destOffset);
     }
 
-    private final Chunk<ATTR> src;
+    private final Chunk<? extends ATTR> src;
     private final LongChunk<Attributes.OrderedKeyRanges> keyRanges;
     private int keyOffset;
     private int dataOffset;
 
-    private ChunkMerger(Chunk<ATTR> src, OrderedKeys keys) {
+    private ChunkMerger(Chunk<? extends ATTR> src, OrderedKeys keys) {
         this.src = src;
         keyRanges = keys.asKeyRangesChunk();
         keyOffset = 0;
@@ -41,7 +42,7 @@ class ChunkMerger<ATTR extends Attributes.Any> {
     /**
      * @return New destOffset. If the new offset is the same as the input parameter, then I did no work.
      */
-    private int copyIfYouCan(WritableChunk<? super ATTR> dest, int destOffset, ChunkMerger other) {
+    private int copyIfYouCan(WritableChunk<? super ATTR> dest, int destOffset, ChunkMerger<ATTR> other) {
         int contiguousSize = 0;
 
         final long otherFirst =

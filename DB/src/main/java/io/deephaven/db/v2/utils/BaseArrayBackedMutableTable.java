@@ -39,7 +39,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     long nextRow = 0;
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
 
-    public BaseArrayBackedMutableTable(Index index, Map<String, ? extends ColumnSource> nameToColumnSource,
+    public BaseArrayBackedMutableTable(Index index, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
             Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
         super(index, nameToColumnSource, processPendingUpdater);
         this.enumValues = enumValues;
@@ -272,23 +272,25 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
             }
 
-            final List<ColumnDefinition> columnDefinitions = getTableDefinition().getColumnList();
-            final Map<String, ArrayBackedColumnSource> sources = buildSourcesMap(valueArray.length, columnDefinitions);
+            final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumnList();
+            final Map<String, ArrayBackedColumnSource<Object>> sources =
+                    buildSourcesMap(valueArray.length, columnDefinitions);
             final String[] kabmtColumns =
                     getTableDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            final ArrayBackedColumnSource[] sourcesByPosition =
+            // noinspection unchecked
+            final ArrayBackedColumnSource<Object>[] sourcesByPosition =
                     Arrays.stream(kabmtColumns).map(sources::get).toArray(ArrayBackedColumnSource[]::new);
 
             final Set<String> missingColumns = new HashSet<>(getTableDefinition().getColumnNames());
 
-            for (final Map.Entry<String, ? extends ColumnSource> entry : defaultValues.getColumnSourceMap()
+            for (final Map.Entry<String, ? extends ColumnSource<?>> entry : defaultValues.getColumnSourceMap()
                     .entrySet()) {
                 final String colName = entry.getKey();
                 if (!sources.containsKey(colName)) {
                     continue;
                 }
-                final ColumnSource cs = Require.neqNull(entry.getValue(), "defaultValue column source: " + colName);
-                final ArrayBackedColumnSource dest =
+                final ColumnSource<?> cs = Require.neqNull(entry.getValue(), "defaultValue column source: " + colName);
+                final ArrayBackedColumnSource<Object> dest =
                         Require.neqNull(sources.get(colName), "destination column source: " + colName);
 
                 final Index defaultValuesIndex = defaultValues.getIndex();
@@ -320,13 +322,13 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         @Override
         public void addRows(Map<String, Object>[] valueArray, boolean allowEdits, InputTableStatusListener listener) {
-            final List<ColumnDefinition> columnDefinitions = getTableDefinition().getColumnList();
-            final Map<String, ArrayBackedColumnSource> sources = buildSourcesMap(valueArray.length, columnDefinitions);
+            final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumnList();
+            final Map<String, ArrayBackedColumnSource<Object>> sources =
+                    buildSourcesMap(valueArray.length, columnDefinitions);
 
             for (int rowNumber = 0; rowNumber < valueArray.length; rowNumber++) {
                 final Map<String, Object> values = valueArray[rowNumber];
-                for (final ColumnDefinition columnDefinition : columnDefinitions) {
-                    // noinspection unchecked
+                for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
                     sources.get(columnDefinition.getName()).set(rowNumber, values.get(columnDefinition.getName()));
                 }
 
@@ -339,12 +341,14 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @NotNull
-        private Map<String, ArrayBackedColumnSource> buildSourcesMap(int capacity,
-                List<ColumnDefinition> columnDefinitions) {
-            final Map<String, ArrayBackedColumnSource> sources = new LinkedHashMap<>();
-            for (final ColumnDefinition columnDefinition : columnDefinitions) {
-                final ArrayBackedColumnSource memoryColumnSource =
-                        ArrayBackedColumnSource.getMemoryColumnSource(capacity, columnDefinition.getDataType());
+        private Map<String, ArrayBackedColumnSource<Object>> buildSourcesMap(int capacity,
+                List<ColumnDefinition<?>> columnDefinitions) {
+            final Map<String, ArrayBackedColumnSource<Object>> sources = new LinkedHashMap<>();
+            for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+                ArrayBackedColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
+                        capacity, columnDefinition.getDataType());
+                // noinspection unchecked
+                final ArrayBackedColumnSource<Object> memoryColumnSource = (ArrayBackedColumnSource<Object>) cs;
                 memoryColumnSource.ensureCapacity(capacity);
                 sources.put(columnDefinition.getName(), memoryColumnSource);
             }

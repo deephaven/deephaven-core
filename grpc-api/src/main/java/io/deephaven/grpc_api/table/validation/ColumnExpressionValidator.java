@@ -107,18 +107,16 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         Collections.reverse(analyzers);
         assert (analyzers.size() == clonedColumns.length + 1);
 
-        // noinspection rawtypes
-        final Map<String, ColumnDefinition> availableColumns = new LinkedHashMap<>();
+        final Map<String, ColumnDefinition<?>> availableColumns = new LinkedHashMap<>();
         for (int ii = 0; ii < clonedColumns.length; ++ii) {
             analyzers.get(ii).updateColumnDefinitionsFromTopLayer(availableColumns);
             validateSelectColumnHelper(clonedColumns[ii], originalExpressions[ii], availableColumns, table);
         }
     }
 
-    @SuppressWarnings("rawtypes")
     private static void validateSelectColumnHelper(SelectColumn selectColumn,
             final String originalExpression,
-            final Map<String, ColumnDefinition> availableColumns,
+            final Map<String, ColumnDefinition<?>> availableColumns,
             final Table table) {
         while (selectColumn instanceof SwitchColumn) {
             selectColumn = ((SwitchColumn) selectColumn).getRealColumn();

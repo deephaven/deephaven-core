@@ -16,10 +16,10 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
     private final TableDefinition definition;
 
     public AbstractGeneratedTable(@NotNull String name, long nRows, long rngSeed,
-            @NotNull List<ColumnGenerator> generators) {
+            @NotNull List<ColumnGenerator<?>> generators) {
         super(name, rngSeed, generators);
         this.nRows = nRows;
-        List<ColumnDefinition> definitions = getGeneratorMap()
+        List<ColumnDefinition<?>> definitions = getGeneratorMap()
                 .values()
                 .stream()
                 .map(ColumnGenerator::getDefinition)

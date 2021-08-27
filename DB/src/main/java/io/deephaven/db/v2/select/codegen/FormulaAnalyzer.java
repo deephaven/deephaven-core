@@ -22,8 +22,8 @@ public class FormulaAnalyzer {
     private static final Logger log = LoggerFactory.getLogger(FormulaAnalyzer.class);
 
     public static Result analyze(final String rawFormulaString,
-            final Map<String, ColumnDefinition> columnDefinitionMap,
-            Map<String, Class> otherVariables) {
+            final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            Map<String, Class<?>> otherVariables) {
         try {
             return analyzeHelper(rawFormulaString, columnDefinitionMap, otherVariables);
         } catch (Exception e) {
@@ -32,11 +32,11 @@ public class FormulaAnalyzer {
     }
 
     private static Result analyzeHelper(final String rawFormulaString,
-            final Map<String, ColumnDefinition> columnDefinitionMap,
-            Map<String, Class> otherVariables) throws Exception {
-        final Map<String, Param> possibleParams = new HashMap<>();
+            final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            Map<String, Class<?>> otherVariables) throws Exception {
+        final Map<String, Param<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = QueryScope.getScope();
-        for (Param param : queryScope.getParams(queryScope.getParamNames())) {
+        for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
 
@@ -64,7 +64,7 @@ public class FormulaAnalyzer {
                 userParams.add(variable);
             }
         }
-        Class returnedType = result.getType();
+        Class<?> returnedType = result.getType();
         if (returnedType == boolean.class) {
             returnedType = Boolean.class;
         }
@@ -77,19 +77,19 @@ public class FormulaAnalyzer {
                 rawFormulaString, cookedFormulaString, timeInstanceVariables);
     }
 
-    public static DBLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition> availableColumns,
+    public static DBLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
             DBTimeUtils.Result timeConversionResult,
-            Map<String, Class> otherVariables) throws Exception {
-        final Map<String, Class> possibleVariables = new HashMap<>();
+            Map<String, Class<?>> otherVariables) throws Exception {
+        final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);
         possibleVariables.put("k", long.class);
 
-        final Map<String, Class[]> possibleVariableParameterizedTypes = new HashMap<>();
+        final Map<String, Class<?>[]> possibleVariableParameterizedTypes = new HashMap<>();
 
-        for (ColumnDefinition columnDefinition : availableColumns.values()) {
+        for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
             final String columnSuffix = DhFormulaColumn.COLUMN_SUFFIX;
-            final Class dbArrayType = DhFormulaColumn.getDbArrayType(columnDefinition.getDataType());
+            final Class<?> dbArrayType = DhFormulaColumn.getDbArrayType(columnDefinition.getDataType());
 
             possibleVariables.put(columnDefinition.getName() + columnSuffix, dbArrayType);
 
@@ -100,13 +100,13 @@ public class FormulaAnalyzer {
         }
 
         final QueryScope queryScope = QueryScope.getScope();
-        for (Param param : queryScope.getParams(queryScope.getParamNames())) {
+        for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleVariables.put(param.getName(), param.getDeclaredType());
         }
 
-        for (ColumnDefinition columnDefinition : availableColumns.values()) {
+        for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
             possibleVariables.put(columnDefinition.getName(), columnDefinition.getDataType());
-            final Class compType = columnDefinition.getComponentType();
+            final Class<?> compType = columnDefinition.getComponentType();
             if (compType != null && !compType.isPrimitive()) {
                 possibleVariableParameterizedTypes.put(columnDefinition.getName(), new Class[] {compType});
             }
@@ -122,7 +122,7 @@ public class FormulaAnalyzer {
             possibleVariables.putAll(otherVariables);
         }
 
-        final Set<Class> classImports = new HashSet<>(QueryLibrary.getClassImports());
+        final Set<Class<?>> classImports = new HashSet<>(QueryLibrary.getClassImports());
         classImports.add(Index.class);
         classImports.add(WritableSource.class);
         return new DBLanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
@@ -136,7 +136,7 @@ public class FormulaAnalyzer {
         public final String cookedFormulaString;
         public final String timeInstanceVariables;
 
-        public Result(Class returnedType, String[] usedColumns, String[] usedArrays, String[] usedParams,
+        public Result(Class<?> returnedType, String[] usedColumns, String[] usedArrays, String[] usedParams,
                 String rawFormulaString, String cookedFormulaString, String timeInstanceVariables) {
             this.sourceDescriptor = new FormulaSourceDescriptor(returnedType, usedColumns, usedArrays, usedParams);
             this.rawFormulaString = rawFormulaString;

@@ -179,7 +179,7 @@ public class DBTimeUtils {
 
     /**
      * Returns milliseconds since Epoch for a {@link DBDateTime} value.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which the milliseconds offset should be returned.
      * @return A long value of milliseconds since Epoch, or a {@link QueryConstants#NULL_LONG} value if the
      *         {@link DBDateTime} is null.
@@ -194,7 +194,7 @@ public class DBTimeUtils {
 
     /**
      * Returns nanoseconds since Epoch for a {@link DBDateTime} value.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which the nanoseconds offset should be returned.
      * @return A long value of nanoseconds since Epoch, or a NULL_LONG value if the {@link DBDateTime} is null.
      */
@@ -215,7 +215,7 @@ public class DBTimeUtils {
 
     /**
      * Evaluates whether one {@link DBDateTime} value is earlier than a second {@link DBDateTime} value.
-     * 
+     *
      * @param d1 The first {@link DBDateTime} value to compare.
      * @param d2 The second {@link DBDateTime} value to compare.
      * @return Boolean true if d1 is earlier than d2, false if either value is null, or if d2 is equal to or earlier
@@ -231,7 +231,7 @@ public class DBTimeUtils {
 
     /**
      * Evaluates whether one {@link DBDateTime} value is later than a second {@link DBDateTime} value.
-     * 
+     *
      * @param d1 The first {@link DBDateTime} value to compare.
      * @param d2 The second {@link DBDateTime} value to compare.
      * @return Boolean true if d1 is later than d2, false if either value is null, or if d2 is equal to or later than
@@ -367,7 +367,7 @@ public class DBTimeUtils {
 
     /**
      * Returns the difference in nanoseconds between two {@link DBDateTime} values.
-     * 
+     *
      * @param d1 The first {@link DBDateTime}.
      * @param d2 The second {@link DBDateTime}.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; the long nanoseconds from Epoch value of the
@@ -387,7 +387,7 @@ public class DBTimeUtils {
 
     /**
      * Returns a double value of the number of 365 day units difference between two {@link DBDateTime} values.
-     * 
+     *
      * @param start The first {@link DBDateTime}.
      * @param end The second {@link DBDateTime}.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; a double value of the number of 365 day periods
@@ -411,7 +411,7 @@ public class DBTimeUtils {
 
     /**
      * Returns a double value of the number of days difference between two {@link DBDateTime} values.
-     * 
+     *
      * @param start The first {@link DBDateTime}.
      * @param end The second {@link DBDateTime}.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; a double value of the number of days obtained
@@ -436,7 +436,7 @@ public class DBTimeUtils {
 
     /**
      * Returns a {@link DBDateTime} for the requested {@link DBDateTime} at midnight in the specified time zone.
-     * 
+     *
      * @param dateTime {@link DBDateTime} for which the new value at midnight should be calculated.
      * @param timeZone {@link DBTimeZone} for which the new value at midnight should be calculated.
      * @return A null {@link DBDateTime} if either input is null, otherwise a {@link DBDateTime} representing midnight
@@ -454,7 +454,7 @@ public class DBTimeUtils {
     /**
      * Returns a {@link DBDateTime} representing midnight in New York time zone on the date specified by the a number of
      * milliseconds from Epoch.
-     * 
+     *
      * @param millis A long value of the number of milliseconds from Epoch for which the {@link DBDateTime} is to be
      *        calculated.
      * @return A {@link DBDateTime} rounded down to midnight in the New York time zone for the specified number of
@@ -468,7 +468,7 @@ public class DBTimeUtils {
     /**
      * Returns a {@link DBDateTime} representing midnight in a selected time zone on the date specified by the a number
      * of milliseconds from Epoch.
-     * 
+     *
      * @param millis A long value of the number of milliseconds from Epoch for which the {@link DBDateTime} is to be
      *        calculated.
      * @param timeZone {@link DBTimeZone} for which the new value at midnight should be calculated.
@@ -590,7 +590,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of the day of the month for a {@link DBDateTime} and specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the day of the month.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the day of the
@@ -607,7 +607,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of the day of the month for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the day of the month.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the month
      *         represented by the {@link DBDateTime} when interpreted in the New York time zone.
@@ -619,7 +619,7 @@ public class DBTimeUtils {
     /**
      * Returns an int value of the day of the week for a {@link DBDateTime} in the specified time zone, with 1 being
      * Monday and 7 being Sunday.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the day of the week.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the day of the week
@@ -636,7 +636,7 @@ public class DBTimeUtils {
     /**
      * Returns an int value of the day of the week for a {@link DBDateTime} in the New York time zone, with 1 being
      * Monday and 7 being Sunday.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the day of the week.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the week
      *         represented by the {@link DBDateTime} when interpreted in the New York time zone.
@@ -647,7 +647,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of the day of the year (Julian date) for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the day of the year.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the day of the year
@@ -663,7 +663,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of the day of the year (Julian date) for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the day of the year.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the year
      *         represented by the {@link DBDateTime} when interpreted in the New York time zone.
@@ -675,7 +675,7 @@ public class DBTimeUtils {
     /**
      * Returns an int value of the hour of the day for a {@link DBDateTime} in the specified time zone. The hour is on a
      * 24 hour clock (0 - 23).
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the hour of the day.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the hour of the day
@@ -693,7 +693,7 @@ public class DBTimeUtils {
     /**
      * Returns an int value of the hour of the day for a {@link DBDateTime} in the New York time zone. The hour is on a
      * 24 hour clock (0 - 23).
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the hour of the day.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the hour of the day
      *         represented by the {@link DBDateTime} when interpreted in the New York time zone.
@@ -704,7 +704,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of milliseconds since midnight for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the milliseconds since midnight.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of milliseconds since
@@ -722,7 +722,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of milliseconds since midnight for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the milliseconds since midnight.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of milliseconds since
      *         midnight for the date/time represented by the {@link DBDateTime} when interpreted in the New York time
@@ -735,7 +735,7 @@ public class DBTimeUtils {
     /**
      * Returns an int value of milliseconds since the top of the second for a {@link DBDateTime} in the specified time
      * zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the milliseconds.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of milliseconds since
@@ -754,7 +754,7 @@ public class DBTimeUtils {
     /**
      * Returns an int value of milliseconds since the top of the second for a {@link DBDateTime} in the New York time
      * zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the milliseconds.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of milliseconds since the
      *         top of the second for the date/time represented by the {@link DBDateTime} when interpreted in the New
@@ -766,7 +766,7 @@ public class DBTimeUtils {
 
     /**
      * Returns a long value of nanoseconds since midnight for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the nanoseconds since midnight.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_LONG} if either input is null, otherwise, a long value of nanoseconds since
@@ -784,7 +784,7 @@ public class DBTimeUtils {
 
     /**
      * Returns a long value of nanoseconds since midnight for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the nanoseconds since midnight.
      * @return A {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a long value of nanoseconds since
      *         midnight for the date/time represented by the {@link DBDateTime} when interpreted in the New York time
@@ -797,7 +797,7 @@ public class DBTimeUtils {
     /**
      * Returns a long value of nanoseconds since the top of the second for a {@link DBDateTime} in the specified time
      * zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the nanoseconds.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_LONG} if either input is null, otherwise, a long value of nanoseconds since
@@ -816,7 +816,7 @@ public class DBTimeUtils {
     /**
      * Returns a long value of nanoseconds since the top of the second for a {@link DBDateTime} in the New York time
      * zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the nanoseconds.
      * @return A {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a long value of nanoseconds since the
      *         top of the second for the date/time represented by the {@link DBDateTime} when interpreted in the New
@@ -830,7 +830,7 @@ public class DBTimeUtils {
      * Returns the number of microseconds that have elapsed since the start of the millisecond represented by the
      * provided {@code dateTime} in the specified time zone. Nanoseconds are rounded, not dropped --
      * '20:41:39.123456700' has 457 micros, not 456.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the microseconds.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of microseconds since
@@ -850,7 +850,7 @@ public class DBTimeUtils {
      * Returns the number of microseconds that have elapsed since the start of the millisecond represented by the
      * provided {@code dateTime} in the New York time zone. Nanoseconds are rounded, not dropped -- '20:41:39.123456700'
      * has 457 micros, not 456.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the microseconds.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of microseconds since the
      *         top of the millisecond for the date/time represented by the {@link DBDateTime} when interpreted in the
@@ -863,7 +863,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of minutes since midnight for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the minutes.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of minutes since
@@ -881,7 +881,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of minutes since midnight for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the milliseconds since midnight.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of minutes since midnight
      *         for the date/time represented by the {@link DBDateTime} when interpreted in the New York time zone.
@@ -892,7 +892,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of minutes since the top of the hour for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the minutes.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of minutes since the
@@ -910,7 +910,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of minutes since the top of the hour for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the minutes.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of minutes since the top
      *         of the hour for the date/time represented by the {@link DBDateTime} when interpreted in the New York time
@@ -922,7 +922,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value for the month of a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the month.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the month for the
@@ -940,7 +940,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value for the month of a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the month.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the month for the
      *         date/time represented by the {@link DBDateTime} when interpreted in the New York time zone.
@@ -951,7 +951,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of seconds since midnight for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the seconds.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of seconds since
@@ -969,7 +969,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of seconds since midnight for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the seconds.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of seconds since
      *         midnight for the date/time represented by the {@link DBDateTime} when interpreted in the New York time
@@ -981,7 +981,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of seconds since the top of the minute for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the seconds.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of seconds since the
@@ -999,7 +999,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of seconds since the top of the minute for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the seconds.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of seconds since the top
      *         of the minute for the date/time represented by the {@link DBDateTime} when interpreted in the New York
@@ -1011,7 +1011,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of the year for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the year.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the year for the
@@ -1027,7 +1027,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of the year for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the year.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the year for the
      *         date/time represented by the {@link DBDateTime} when interpreted in the New York time zone.
@@ -1039,7 +1039,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of the two-digit year for a {@link DBDateTime} in the specified time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the year.
      * @param timeZone The {@link DBTimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the two-digit year
@@ -1056,7 +1056,7 @@ public class DBTimeUtils {
 
     /**
      * Returns an int value of the two-digit year for a {@link DBDateTime} in the New York time zone.
-     * 
+     *
      * @param dateTime The {@link DBDateTime} for which to find the year.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the two-digit year
      *         for the date/time represented by the {@link DBDateTime} when interpreted in the New York time zone.
@@ -1110,7 +1110,7 @@ public class DBTimeUtils {
 
     /**
      * Converts microseconds to nanoseconds.
-     * 
+     *
      * @param micros The long value of microseconds to convert.
      * @return A {@link QueryConstants#NULL_LONG} if the input is null. Throws a {@link DBDateTimeOverflowException} if
      *         the resultant value would exceed the range that can be stored in a long. Otherwise, returns a long
@@ -1128,7 +1128,7 @@ public class DBTimeUtils {
 
     /**
      * Converts nanoseconds to microseconds.
-     * 
+     *
      * @param nanos The long value of nanoseconds to convert.
      * @return A {@link QueryConstants#NULL_LONG} if the input is null. Otherwise, returns a long containing the
      *         equivalent number of microseconds for the input in nanoseconds.
@@ -1143,7 +1143,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a value of microseconds from Epoch in the UTC time zone to a {@link DBDateTime}.
-     * 
+     *
      * @param micros The long microseconds value to convert.
      * @return {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a {@link DBDateTime} representation of
      *         the input.
@@ -1154,7 +1154,7 @@ public class DBTimeUtils {
 
     /**
      * Converts milliseconds to nanoseconds.
-     * 
+     *
      * @param millis The long milliseconds value to convert.
      * @return {@link QueryConstants#NULL_LONG} if the input is equal to {@link QueryConstants#NULL_LONG}. Throws
      *         {@link DBDateTimeOverflowException} if the input is too large for conversion. Otherwise returns a long of
@@ -1177,7 +1177,7 @@ public class DBTimeUtils {
 
     /**
      * Converts seconds to nanoseconds.
-     * 
+     *
      * @param seconds The long value of seconds to convert.
      * @return A {@link QueryConstants#NULL_LONG} if the input is null. Throws a {@link DBDateTimeOverflowException} if
      *         the resultant value would exceed the range that can be stored in a long. Otherwise, returns a long
@@ -1196,7 +1196,7 @@ public class DBTimeUtils {
 
     /**
      * Converts nanoseconds to milliseconds.
-     * 
+     *
      * @param nanos The long value of nanoseconds to convert.
      * @return A {@link QueryConstants#NULL_LONG} if the input is null. Otherwise, returns a long containing the
      *         equivalent number of milliseconds for the input in nanoseconds.
@@ -1211,7 +1211,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a value of milliseconds from Epoch in the UTC time zone to a {@link DBDateTime}.
-     * 
+     *
      * @param millis The long milliseconds value to convert.
      * @return {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a {@link DBDateTime} representation of
      *         the input.
@@ -1222,7 +1222,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a value of seconds from Epoch in the UTC time zone to a {@link DBDateTime}.
-     * 
+     *
      * @param seconds The long seconds value to convert.
      * @return {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a {@link DBDateTime} representation of
      *         the input.
@@ -1234,7 +1234,7 @@ public class DBTimeUtils {
     /**
      * Provides the current date/time, or, if a custom {@link #timeProvider} has been configured, provides the current
      * time according to the custom provider.
-     * 
+     *
      * @return A {@link DBDateTime} of the current date and time from the system or from the configured alternate time
      *         provider.
      */
@@ -1254,7 +1254,7 @@ public class DBTimeUtils {
     /**
      * Provides a String representing the current date in the New York time zone or, if a custom
      * {@link #currentDateNyOverride} has been set, the date provided by that override.
-     * 
+     *
      * @return A String in yyyy-MM-dd format.
      */
     public static String currentDateNy() {
@@ -1298,7 +1298,7 @@ public class DBTimeUtils {
     /**
      * Provides a String representing the previous business date in the New York time zone using the NYSE calendar, or,
      * if a custom {@link #lastBusinessDayNyOverride} has been set, the date provided by that override.
-     * 
+     *
      * @return A String in yyyy-MM-dd format.
      */
     public static String lastBusinessDateNy() {
@@ -1308,7 +1308,7 @@ public class DBTimeUtils {
     /**
      * Provides a String representing the previous business date in the New York time zone using the NYSE calendar, or,
      * if a custom {@link #lastBusinessDayNyOverride} has been set, the date provided by that override.
-     * 
+     *
      * @param currentTimeMillis The current date/time in milliseconds from Epoch to be used when determining the
      *        previous business date. Typically this is System.currentTimeMillis() and is passed in by calling the
      *        niladic variant of this method.
@@ -1333,7 +1333,7 @@ public class DBTimeUtils {
     /**
      * Returns the number of milliseconds from Epoch for midnight at the beginning of the next day in the New York time
      * zone relative to the date represented by a passed milliseconds from Epoch date/time.
-     * 
+     *
      * @param currentTimeMillis A long value of milliseconds from Epoch which is the date/time from which the next New
      *        York time zone midnight value should be calculated.
      * @return A long of milliseconds from Epoch for midnight at the beginning of the next day in the New York time
@@ -1407,7 +1407,7 @@ public class DBTimeUtils {
 
     /**
      * Returns a String of the current date in the specified {@link DBTimeZone}.
-     * 
+     *
      * @param timeZone The {@link DBTimeZone} to reference when evaluating the current date for "now".
      * @return A String in format yyyy-MM-dd.
      */
@@ -1417,7 +1417,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a value of nanoseconds from Epoch to a {@link DBDateTime}.
-     * 
+     *
      * @param nanos The long nanoseconds since Epoch value to convert.
      * @return A DBDateTime for {@code nanos}, or {@code null} if {@code nanos} is equal to
      *         {@link QueryConstants#NULL_LONG NULL_LONG}.
@@ -1432,7 +1432,7 @@ public class DBTimeUtils {
      * {@link TimeConstants#MICROTIME_THRESHOLD} divided by 1000 for milliseconds, as-is for microseconds, and
      * multiplied by 1000 for nanoseconds. The value is tested to see if its ABS exceeds the threshold. E.g. a value
      * whose ABS is greater than 1000 * {@link TimeConstants#MICROTIME_THRESHOLD} will be treated as nanoseconds.
-     * 
+     *
      * @param epoch The long Epoch offset value to convert.
      * @return null, if the input is equal to {@link QueryConstants#NULL_LONG}, otherwise a {@link DBDateTime} based on
      *         the inferred conversion.
@@ -1461,7 +1461,7 @@ public class DBTimeUtils {
     /**
      * Returns a {@link DBDateTime} value based on a starting value and a {@link DBPeriod} to add to it, but with a cap
      * max value which is returned in case the starting value plus period exceeds the cap.
-     * 
+     *
      * @param original The starting {@link DBDateTime} value.
      * @param period The {@link DBPeriod} to add to dateTime.
      * @param cap A {@link DBDateTime} value to use as the maximum return value.
@@ -1595,7 +1595,7 @@ public class DBTimeUtils {
     // TODO: This should probably be handled in DBLanguageParser.accept(CharLiteralExpr, StringBuilder).
     public static Result convertExpression(String formula) throws Exception { // TODO: Why throw Exception?
         final StringBuilder instanceVariablesString = new StringBuilder();
-        final HashMap<String, Class> newVariables = new HashMap<>();
+        final HashMap<String, Class<?>> newVariables = new HashMap<>();
 
         final StringBuffer convertedFormula = new StringBuffer();
 
@@ -1674,7 +1674,7 @@ public class DBTimeUtils {
      * Period Strings in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g. T1M for one
      * minute
      * </p>
-     * 
+     *
      * @param formula The String to be evaluated and converted. Optionally, but preferred, enclosed in straight single
      *        ticks.
      * @return A long value representing an Epoch offset in nanoseconds for a time or date/time, or a duration in
@@ -1750,7 +1750,7 @@ public class DBTimeUtils {
      * Converts a String time to nanoseconds from Epoch. The format for the String is:
      * <p>
      * hh:mm:ss[.nnnnnnnnn].
-     * 
+     *
      * @param s The String to be evaluated and converted.
      * @return A long value representing an Epoch offset in nanoseconds. Throws {@link RuntimeException} if the String
      *         cannot be parsed.
@@ -1767,7 +1767,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a String into a {@link DBPeriod} object.
-     * 
+     *
      * @param s The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
      *        T1M for one minute.
      * @throws RuntimeException if the String cannot be parsed, otherwise a {@link DBPeriod} object.
@@ -1807,7 +1807,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a {@link LocalTime}.
-     * 
+     *
      * @param s The String to convert.
      * @return null if the String cannot be parsed, otherwise a {@link LocalTime}.
      */
@@ -2049,7 +2049,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a long nanoseconds offset from Epoch.
-     * 
+     *
      * @param s The String to convert.
      * @return {@link QueryConstants#NULL_LONG} if the String cannot be parsed, otherwise long nanoseconds offset from
      *         Epoch.
@@ -2104,7 +2104,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a String into a {@link DBPeriod} object.
-     * 
+     *
      * @param s The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
      *        T1M for one minute.
      * @return null if the String cannot be parsed, otherwise a {@link DBPeriod} object.
@@ -2151,7 +2151,7 @@ public class DBTimeUtils {
 
     /**
      * Converts a {@link ZonedDateTime} to a {@link DBDateTime}.
-     * 
+     *
      * @param zonedDateTime The a {@link ZonedDateTime} to convert.
      * @throws DBDateTimeOverflowException if the input is out of the range for a {@link DBDateTime}, otherwise, a
      *         {@link DBDateTime} version of the input.
@@ -2170,7 +2170,7 @@ public class DBTimeUtils {
 
     /**
      * Returns a {@link ChronoField} indicating the level of precision in a String time value.
-     * 
+     *
      * @param timeDef The time String to evaluate.
      * @return null if the time String cannot be parsed, otherwise a {@link ChronoField} for the finest units in the
      *         String (e.g. "10:00:00" would yield SecondOfMinute).
@@ -2198,9 +2198,9 @@ public class DBTimeUtils {
     public static class Result {
         private final String convertedFormula;
         private final String instanceVariablesString;
-        private final HashMap<String, Class> newVariables;
+        private final HashMap<String, Class<?>> newVariables;
 
-        public Result(String convertedFormula, String instanceVariablesString, HashMap<String, Class> newVariables) {
+        public Result(String convertedFormula, String instanceVariablesString, HashMap<String, Class<?>> newVariables) {
             this.convertedFormula = convertedFormula;
             this.instanceVariablesString = instanceVariablesString;
             this.newVariables = newVariables;
@@ -2214,7 +2214,7 @@ public class DBTimeUtils {
             return instanceVariablesString;
         }
 
-        public HashMap<String, Class> getNewVariables() {
+        public HashMap<String, Class<?>> getNewVariables() {
             return newVariables;
         }
     }

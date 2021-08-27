@@ -122,7 +122,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public void copy(ColumnSource<Boolean> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Boolean> sourceColumn, long sourceKey, long destKey) {
         set(destKey,sourceColumn.get(sourceKey));
     }
 
@@ -188,7 +188,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         indices.forAllLongs((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
-                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
             }
             dest.set(ctx.offset++, BooleanUtils.byteAsBoolean(ctx.currentBlock[(int) (v & INDEX_MASK)]));
@@ -214,7 +214,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         indices.forAllLongs((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
-                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
                 ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                 ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];
@@ -279,7 +279,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk chunk, long position) {
+    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
         // we can not support this operation, because the backing array is a byte and not the type of the column
         throw new UnsupportedOperationException();
     }
@@ -484,6 +484,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
 
         @Override
         protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+            //noinspection unchecked
             return (ColumnSource<ALTERNATE_DATA_TYPE>) BooleanArraySource.this;
         }
 
@@ -497,7 +498,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             indices.forAllLongs((final long v) -> {
                 if (v >= ctx.capForCurrentBlock) {
                     ctx.currentBlockNo = getBlockNo(v);
-                    ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                    ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                     ctx.currentBlock = blocks[ctx.currentBlockNo];
                 }
                 dest.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
@@ -522,7 +523,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             indices.forAllLongs((final long v) -> {
                 if (v >= ctx.capForCurrentBlock) {
                     ctx.currentBlockNo = getBlockNo(v);
-                    ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                    ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                     ctx.currentBlock = blocks[ctx.currentBlockNo];
                     ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                     ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];
@@ -603,7 +604,8 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             BooleanArraySource.this.set(key, value);
         }
 
-        public void copy(ColumnSource<Byte> sourceColumn, long sourceKey, long destKey) {
+        @Override
+        public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
             BooleanArraySource.this.set(destKey, sourceColumn.getByte(sourceKey));
         }
 

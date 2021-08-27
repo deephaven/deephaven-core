@@ -40,7 +40,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @NotNull
     private final BiFunction<Long, S, D> function;
     @NotNull
-    private final Class componentType;
+    private final Class<?> componentType;
 
     private ColumnSource<S> sourceColumnSource;
 
@@ -56,7 +56,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class componentType,
+            @NotNull Class<?> componentType,
             @NotNull Function<S, D> function) {
         this(sourceName, sourceDataType, destName, destDataType, componentType, (l, v) -> function.apply(v));
     }
@@ -73,7 +73,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class componentType,
+            @NotNull Class<?> componentType,
             @NotNull BiFunction<Long, S, D> function) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
@@ -95,9 +95,9 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         // noinspection unchecked
-        final ColumnSource<S> localSourceColumnSource = columnsOfInterest.get(sourceName);
+        final ColumnSource<S> localSourceColumnSource = (ColumnSource<S>) columnsOfInterest.get(sourceName);
         if (localSourceColumnSource == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
         }
@@ -112,9 +112,9 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap) {
+    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         // noinspection unchecked
-        final ColumnDefinition<S> sourceColumnDefinition = columnDefinitionMap.get(sourceName);
+        final ColumnDefinition<S> sourceColumnDefinition = (ColumnDefinition<S>) columnDefinitionMap.get(sourceName);
         if (sourceColumnDefinition == null) {
             throw new NoSuchColumnException(columnDefinitionMap.keySet(), sourceName);
         }
@@ -127,7 +127,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public Class getReturnedType() {
+    public Class<?> getReturnedType() {
         return destDataType;
     }
 
@@ -143,7 +143,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getDataView() {
+    public ColumnSource<D> getDataView() {
         return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
             @Override
             public Object getPrev(long key) {
@@ -194,7 +194,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getLazyView() {
+    public ColumnSource<?> getLazyView() {
         // TODO: memoize
         return getDataView();
     }
@@ -210,7 +210,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public WritableSource newDestInstance(long size) {
+    public WritableSource<?> newDestInstance(long size) {
         throw new UnsupportedOperationException();
     }
 

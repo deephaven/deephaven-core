@@ -194,8 +194,8 @@ public class DeferredViewTable extends RedefinableTable {
             }
         }
 
-        return new PreAndPostFilters(preViewFilters.toArray(new SelectFilter[preViewFilters.size()]),
-                postViewFilters.toArray(new SelectFilter[postViewFilters.size()]));
+        return new PreAndPostFilters(preViewFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
+                postViewFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
     @Override
@@ -244,7 +244,7 @@ public class DeferredViewTable extends RedefinableTable {
 
     @Override
     protected Table redefine(TableDefinition newDefinition) {
-        ColumnDefinition[] cDefs = newDefinition.getColumns();
+        ColumnDefinition<?>[] cDefs = newDefinition.getColumns();
         SelectColumn[] newView = new SelectColumn[cDefs.length];
         for (int cdi = 0; cdi < cDefs.length; ++cdi) {
             newView[cdi] = new SourceColumn(cDefs[cdi].getName());
@@ -278,22 +278,16 @@ public class DeferredViewTable extends RedefinableTable {
         /**
          * Returns the table in a form that the user can run queries on it. This may be as simple as returning a
          * reference, but for amorphous tables, this means we need to do the work to instantiate it.
-         * 
-         * @return
          */
         public abstract Table get();
 
         /**
-         * Get the definition, without instantiating it.
-         * 
-         * @return The definition of the table we are referring to
+         * @return the definition, without instantiating the table.
          */
         public abstract TableDefinition getDefinition();
 
         /**
-         * What size should the uninitialized table return.
-         * 
-         * @return
+         * @return the size the uninitialized table should return.
          */
         public abstract long getSize();
 
@@ -312,7 +306,7 @@ public class DeferredViewTable extends RedefinableTable {
          * Get the table in a form that the user can run queries on it. All of the filters that can be run efficiently
          * should be run before instantiating the full table should be run. Other filters are returned in the
          * remainingFilters field.
-         * 
+         *
          * @param selectFilters filters to maybe apply before returning the table
          * @return the instantiated table and a set of filters that were not applied.
          */
@@ -323,7 +317,7 @@ public class DeferredViewTable extends RedefinableTable {
         /**
          * If possible to execute a selectDistinct without instantiating the full table, then do so. Otherwise return
          * null.
-         * 
+         *
          * @param columns the columns to selectDistinct
          * @return null if the operation can not be performed on an uninstantiated table, otherwise a new table with the
          *         distinct values from strColumns.

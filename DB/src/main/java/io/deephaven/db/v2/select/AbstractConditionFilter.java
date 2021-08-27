@@ -30,7 +30,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
     @NotNull
     protected final String formula;
     List<String> usedColumns;
-    protected Param[] params;
+    protected Param<?>[] params;
     List<String> usedColumnArrays;
     protected boolean initialized = false;
     boolean usesI;
@@ -66,31 +66,30 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
         return usedColumnArrays;
     }
 
-    @SuppressWarnings("StringConcatenationInLoop")
     @Override
     public synchronized void init(TableDefinition tableDefinition) {
         if (initialized) {
             return;
         }
 
-        final Map<String, Class> possibleVariables = new HashMap<>();
+        final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);
         possibleVariables.put("k", long.class);
 
-        final Map<String, Class[]> possibleVariableParameterizedTypes = new HashMap<>();
+        final Map<String, Class<?>[]> possibleVariableParameterizedTypes = new HashMap<>();
 
         try {
-            final Map<String, Param> possibleParams = new HashMap<>();
+            final Map<String, Param<?>> possibleParams = new HashMap<>();
             final QueryScope queryScope = QueryScope.getScope();
-            for (Param param : queryScope.getParams(queryScope.getParamNames())) {
+            for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
                 possibleParams.put(param.getName(), param);
                 possibleVariables.put(param.getName(), param.getDeclaredType());
             }
 
-            Class compType;
-            for (ColumnDefinition column : tableDefinition.getColumns()) {
-                final Class dbArrayType = DhFormulaColumn.getDbArrayType(column.getDataType());
+            Class<?> compType;
+            for (ColumnDefinition<?> column : tableDefinition.getColumns()) {
+                final Class<?> dbArrayType = DhFormulaColumn.getDbArrayType(column.getDataType());
                 final String columnName = innerToOuterNames.getOrDefault(column.getName(), column.getName());
 
                 possibleVariables.put(columnName, column.getDataType());
@@ -123,7 +122,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             usedColumns = new ArrayList<>();
             usedColumnArrays = new ArrayList<>();
 
-            final List<Param> paramsList = new ArrayList<>();
+            final List<Param<?>> paramsList = new ArrayList<>();
             for (String variable : result.getVariablesUsed()) {
                 final String columnToFind = outerToInnerNames.getOrDefault(variable, variable);
                 final String arrayColumnToFind;
@@ -151,7 +150,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             params = paramsList.toArray(Param.ZERO_LENGTH_PARAM_ARRAY);
 
             // check if this is a filter that uses a numba vectorized function
-            Optional<Param> paramOptional =
+            Optional<Param<?>> paramOptional =
                     Arrays.stream(params).filter(p -> p.getValue() instanceof NumbaCallableWrapper).findFirst();
             if (paramOptional.isPresent()) {
                 /*
@@ -176,7 +175,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
                 return;
             }
 
-            final Class resultType = result.getType();
+            final Class<?> resultType = result.getType();
             checkReturnType(result, resultType);
 
             generateFilterCode(tableDefinition, timeConversionResult, result);
@@ -186,7 +185,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
         }
     }
 
-    private void checkReturnType(DBLanguageParser.Result result, Class resultType) {
+    private void checkReturnType(DBLanguageParser.Result result, Class<?> resultType) {
         if (!Boolean.class.equals(resultType) && !boolean.class.equals(resultType)) {
             throw new RuntimeException("Invalid condition filter expression type: boolean required.\n" +
                     "Formula              : " + truncateLongFormula(formula) + '\n' +
@@ -221,7 +220,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
      * can handle packing and unpacking arrays required/returned by the vectorized function, essentially bypassing the
      * regular code generation process which isn't able to support such use cases without needing some major rework.
      *
-     * @param filter
+     * @param filter the filter to set
      */
     protected abstract void setFilter(Filter filter);
 
@@ -250,7 +249,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
                 Table table,
                 boolean usePrev,
                 String formula,
-                Param... params);
+                Param<?>... params);
     }
 
     static String truncateLongFormula(String formula) {

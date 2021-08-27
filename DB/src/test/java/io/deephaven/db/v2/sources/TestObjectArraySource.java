@@ -26,8 +26,8 @@ import static io.deephaven.db.v2.sources.ArrayGenerator.indexDataGenerator;
 import static junit.framework.TestCase.*;
 
 public class TestObjectArraySource {
-    private ObjectArraySource forArray(Object[] values) {
-        final ObjectArraySource source = new ObjectArraySource<>(String.class);
+    private ObjectArraySource<Object> forArray(Object[] values) {
+        final ObjectArraySource<Object> source = new ObjectArraySource<>(Object.class);
         source.ensureCapacity(values.length);
         for (int i = 0; i < values.length; i++) {
             source.set(i, values[i]);
@@ -36,7 +36,7 @@ public class TestObjectArraySource {
         return source;
     }
 
-    private void updateFromArray(ObjectArraySource dest, Object[] values) {
+    private void updateFromArray(ObjectArraySource<Object> dest, Object[] values) {
         dest.ensureCapacity(values.length);
         for (int i = 0; i < values.length; i++) {
             dest.set(i, values[i]);
@@ -55,7 +55,7 @@ public class TestObjectArraySource {
     }
 
     private void testGetChunkGeneric(Object[] values, Object[] newValues, int chunkSize, Index index) {
-        final ObjectArraySource source;
+        final ObjectArraySource<Object> source;
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try {
             source = forArray(values);
@@ -73,7 +73,7 @@ public class TestObjectArraySource {
         }
     }
 
-    private void validateValues(int chunkSize, Object[] values, Index index, ObjectArraySource source) {
+    private void validateValues(int chunkSize, Object[] values, Index index, ObjectArraySource<Object> source) {
         final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
         final Index.Iterator it = index.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
@@ -81,7 +81,7 @@ public class TestObjectArraySource {
         while (it.hasNext()) {
             assertTrue(okIterator.hasMore());
             final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
-            final ObjectChunk chunk = source.getChunk(context, okChunk).asObjectChunk();
+            final ObjectChunk<Object, Values> chunk = source.getChunk(context, okChunk).asObjectChunk();
             assertTrue(chunk.size() <= chunkSize);
             if (okIterator.hasMore()) {
                 assertEquals(chunkSize, chunk.size());
@@ -107,7 +107,7 @@ public class TestObjectArraySource {
     }
 
 
-    private void validatePrevValues(int chunkSize, Object[] values, Index index, ObjectArraySource source) {
+    private void validatePrevValues(int chunkSize, Object[] values, Index index, ObjectArraySource<Object> source) {
         final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
         final Index.Iterator it = index.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
@@ -115,7 +115,7 @@ public class TestObjectArraySource {
         while (it.hasNext()) {
             assertTrue(okIterator.hasMore());
             final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
-            final ObjectChunk chunk = source.getPrevChunk(context, okChunk).asObjectChunk();
+            final ObjectChunk<Object, ? extends Values> chunk = source.getPrevChunk(context, okChunk).asObjectChunk();
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
                 final long idx = it.nextLong();
@@ -157,14 +157,14 @@ public class TestObjectArraySource {
 
     // region lazy
     private void testGetChunkGenericLazy(Object[] values, int chunkSize, Index index) {
-        final ObjectArraySource sourceOrigin = forArray(values);
+        final ObjectArraySource<?> sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
         final Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
         final Index fullRange = sequentialBuilder.getIndex();
-        final Map<String, ObjectArraySource> oneAndOnly = new HashMap<>();
+        final Map<String, ObjectArraySource<?>> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource<?> source = formulaColumn.getDataView();
@@ -175,7 +175,7 @@ public class TestObjectArraySource {
         while (it.hasNext()) {
             assertTrue(okIterator.hasMore());
             final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
-            final ObjectChunk chunk = source.getChunk(context, okChunk).asObjectChunk();
+            final ObjectChunk<Object, ? extends Values> chunk = source.getChunk(context, okChunk).asObjectChunk();
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
                 assertEquals(chunk.get(i), source.get(it.nextLong()));
@@ -259,7 +259,7 @@ public class TestObjectArraySource {
     }
 
     private void testFillChunkGeneric(Object[] values, Object[] newValues, int chunkSize, Index index) {
-        final ObjectArraySource source;
+        final ObjectArraySource<Object> source;
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try {
             source = forArray(values);
@@ -277,7 +277,7 @@ public class TestObjectArraySource {
         }
     }
 
-    private void validateValuesWithFill(int chunkSize, Object[] values, Index index, ObjectArraySource source) {
+    private void validateValuesWithFill(int chunkSize, Object[] values, Index index, ObjectArraySource<Object> source) {
         final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
@@ -298,7 +298,7 @@ public class TestObjectArraySource {
         assertEquals(pos, index.size());
     }
 
-    private void validatePrevValuesWithFill(int chunkSize, Object[] values, Index index, ObjectArraySource source) {
+    private void validatePrevValuesWithFill(int chunkSize, Object[] values, Index index, ObjectArraySource<Object> source) {
         final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
@@ -369,17 +369,17 @@ public class TestObjectArraySource {
 
     // region lazygeneric
     private void testFillChunkLazyGeneric(Object[] values, int chunkSize, Index index) {
-        final ObjectArraySource sourceOrigin = forArray(values);
+        final ObjectArraySource<Object> sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
         final Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
         final Index fullRange = sequentialBuilder.getIndex();
-        final Map<String, ObjectArraySource> oneAndOnly = new HashMap<>();
+        final Map<String, ObjectArraySource<Object>> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
-        final ColumnSource source = formulaColumn.getDataView();
+        final ColumnSource<?> source = formulaColumn.getDataView();
         final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
@@ -484,7 +484,7 @@ public class TestObjectArraySource {
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final ObjectArraySource source = new ObjectArraySource<>(String.class);
+        final ObjectArraySource<Object> source = new ObjectArraySource<>(Object.class);
         source.ensureCapacity(arraySize);
 
         final Object[] data = ArrayGenerator.randomObjects(rng, arraySize);
@@ -498,7 +498,7 @@ public class TestObjectArraySource {
             try (Index destKeys = Index.FACTORY.getIndexByRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
-                        Chunk chunk = source.getChunk(srcContext, srcKeys);
+                        Chunk<Values> chunk = source.getChunk(srcContext, srcKeys);
                         if (chunk.isAlias(peekedBlock)) {
                             // If the ArraySource gives out aliases of its blocks, then it should throw when we try to
                             // fill from that aliased chunk
@@ -520,7 +520,7 @@ public class TestObjectArraySource {
     // triggers it.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final ObjectArraySource src = new ObjectArraySource<>(String.class);
+        final ObjectArraySource<Object> src = new ObjectArraySource<>(Object.class);
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try (final Index keys = Index.FACTORY.getEmptyIndex();
@@ -534,7 +534,7 @@ public class TestObjectArraySource {
 
     @Test
     public void testFillUnorderedWithNulls() {
-        final ObjectArraySource source = new ObjectArraySource<>(String.class);
+        final ObjectArraySource<Object> source = new ObjectArraySource<>(Object.class);
 
         final Random rng = new Random(438269476);
         final int arraySize = 100;
@@ -552,11 +552,12 @@ public class TestObjectArraySource {
              final WritableObjectChunk<?, Values> dest = WritableObjectChunk.makeWritableChunk(keys.length);
              final ResettableLongChunk<KeyIndices> rlc = ResettableLongChunk.makeResettableChunk()) {
             rlc.resetFromTypedArray(keys, 0, keys.length);
+            //noinspection unchecked
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());
             for (int ii = 0; ii < keys.length; ++ii) {
                 if (keys[ii] == Index.NULL_KEY) {
-                    assertEquals(null, dest.get(ii));
+                    assertNull(dest.get(ii));
                 } else {
                     checkFromValues(data[(int)keys[ii]], dest.get(ii));
                 }

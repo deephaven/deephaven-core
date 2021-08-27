@@ -155,8 +155,8 @@ public class TestParquetTools {
         StringSet[] objects = (StringSet[]) test.getColumn("enumSet").get(0, 10);
         StringSet[] objects1 = (StringSet[]) test2.getColumn("enumSet").get(0, 10);
         for (int i = 0; i < objects1.length; i++) {
-            assertEquals(new HashSet(Arrays.asList(objects[i].values())),
-                    new HashSet(Arrays.asList(objects1[i].values())));
+            assertEquals(new HashSet<>(Arrays.asList(objects[i].values())),
+                    new HashSet<>(Arrays.asList(objects1[i].values())));
         }
         test2.close();
 
@@ -326,7 +326,7 @@ public class TestParquetTools {
         ParquetTools.writeTable(table1, new File(testRootFile,
                 "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
 
-        final List<ColumnDefinition> allColumns = new ArrayList<>();
+        final List<ColumnDefinition<?>> allColumns = new ArrayList<>();
         allColumns.add(
                 ColumnDefinition.fromGenericType("Date", String.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         allColumns.add(

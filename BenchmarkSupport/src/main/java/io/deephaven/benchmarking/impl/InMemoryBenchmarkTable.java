@@ -19,14 +19,14 @@ public class InMemoryBenchmarkTable extends AbstractGeneratedTable {
     /**
      * Create a {@link BenchmarkTable} that produces in memory only tables based on the inputset of
      * {@link ColumnGenerator}s
-     * 
+     *
      * @param name The name of the table (to be used in tagging DbInternal data)
      * @param nRows The number of rows to generate
      * @param seed The RNG seed to use.
      * @param columnGenerators The set of {@link ColumnGenerator}s used to create the internal {@link TableDefinition}
      *        and data.
      */
-    InMemoryBenchmarkTable(String name, long nRows, long seed, List<ColumnGenerator> columnGenerators) {
+    InMemoryBenchmarkTable(String name, long nRows, long seed, List<ColumnGenerator<?>> columnGenerators) {
         super(name, nRows, seed, columnGenerators);
 
         reset();

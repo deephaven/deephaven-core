@@ -66,7 +66,7 @@ public class WindowCheck {
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, Table table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
-        final Map<String, ColumnSource> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
+        final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
         if (timeProvider == null) {
@@ -283,7 +283,7 @@ public class WindowCheck {
 
         /**
          * If the value of the timestamp is within the window, insert it into the queue and map.
-         * 
+         *
          * @param index the index inserted into the table
          */
         private void addIndex(long index) {
@@ -400,8 +400,7 @@ public class WindowCheck {
             super(Boolean.class);
             this.windowNanos = windowNanos;
 
-            // noinspection unchecked
-            this.timeStampSource = table.getColumnSource(timestampColumn);
+            this.timeStampSource = table.getColumnSource(timestampColumn, DBDateTime.class);
             if (!DBDateTime.class.isAssignableFrom(timeStampSource.getType())) {
                 throw new IllegalArgumentException(timestampColumn + " is not of type DBDateTime!");
             }

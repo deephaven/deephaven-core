@@ -11,6 +11,7 @@ import io.deephaven.api.agg.Array;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.lang.DBLanguageParser;
 import io.deephaven.db.tables.remote.*;
 import io.deephaven.db.tables.select.*;
@@ -216,7 +217,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     /**
      * Get a set of all the attributes that have values for this table.
-     * 
+     *
      * @return a set of names
      */
     @AsyncMethod
@@ -259,7 +260,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     /**
      * Explicitly ensure that any work needed to make a table indexable, iterable, or queryable has been done, and
      * return the coalesced child table if appropriate.
-     * 
+     *
      * @return This table, or a fully-coalesced child
      */
     default Table coalesce() {
@@ -288,10 +289,19 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     // Column Sources - for fetching data by index key
     // -----------------------------------------------------------------------------------------------------------------
 
-    ColumnSource getColumnSource(String sourceName);
+    /**
+     * Retrieves a {@code ColumnSource}. It is conveniently casted to @{code ColumnSource<T>} using the type that caller
+     * expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class} object
+     * to verify that the data type is a subclass of the expected class.
+     *
+     * @param sourceName The name of the column.
+     * @param <T> The target type, as a type parameter. Inferred from context.
+     * @return The column source for {@code sourceName}, parameterized by {@code T}.
+     */
+    <T> ColumnSource<T> getColumnSource(String sourceName);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} is to to the target class {@code clazz}.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} it to the target class {@code clazz}.
      *
      * @param sourceName The name of the column.
      * @param clazz The target type.
@@ -305,9 +315,9 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return rawColumnSource.cast(clazz);
     }
 
-    Map<String, ? extends ColumnSource> getColumnSourceMap();
+    Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
-    Collection<? extends ColumnSource> getColumnSources();
+    Collection<? extends ColumnSource<?>> getColumnSources();
 
     // -----------------------------------------------------------------------------------------------------------------
     // Data Columns - for fetching data by position
@@ -329,7 +339,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @SuppressWarnings("unchecked")
     default <TYPE> Iterator<TYPE> columnIterator(@NotNull final String columnName) {
-        final Class<TYPE> type = getDefinition().getColumn(columnName).getDataType();
+        final Class<TYPE> type = (Class<TYPE>) getDefinition().getColumn(columnName).getDataType();
         if (type == byte.class || type == Byte.class) {
             return (Iterator<TYPE>) byteColumnIterator(columnName);
         }
@@ -688,7 +698,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @AsyncMethod
     default Table dropColumns(Collection<String> columnNames) {
-        return dropColumns(columnNames.toArray(new String[columnNames.size()]));
+        return dropColumns(columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     Table renameColumns(MatchPair... pairs);
@@ -836,18 +846,17 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * NOTE: This is a really just an updateView(), and behaves accordingly for column ordering and (re)placement. This
      * doesn't work on data that has been brought fully into memory (e.g. via select()). Use a view instead.
      *
-     * @param dateTimeColumnName
-     * @param nanosColumnName
+     * @param dateTimeColumnName name of date time column
+     * @param nanosColumnName name of nanos column
      * @return The new table, constructed as explained above.
      */
     @AsyncMethod
     default Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-        // noinspection unchecked
-        return updateView(new ReinterpretedColumn(dateTimeColumnName, DBDateTime.class, nanosColumnName, long.class));
+        return updateView(new ReinterpretedColumn<>(dateTimeColumnName, DBDateTime.class, nanosColumnName, long.class));
     }
 
     /**
-     * @param columnName
+     * @param columnName name of column to convert from DBDateTime to nanos
      * @return The result of dateTimeColumnAsNanos(columnName, columnName).
      */
     @AsyncMethod
@@ -940,7 +949,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      *         table is added. The new columns (those corresponding to the input table) contain an aggregation of all
      *         values from the left side that match the join criteria.
      */
-    Table leftJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
+    Table leftJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     default Table leftJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
@@ -972,7 +981,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return leftJoin(rightTable, Collections.emptyList());
     }
 
-    Table exactJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
+    Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     @Override
     default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
@@ -1121,7 +1130,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    Table raj(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule);
+    Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule);
 
 
     /**
@@ -1140,7 +1149,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table raj(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd) {
+    default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return raj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.GREATER_THAN_EQUAL);
     }
 
@@ -1213,7 +1222,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return raj(rightTable, StringUtils.splitToCollection(columnsToMatch));
     }
 
-    Table naturalJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
+    Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     @Override
     default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
@@ -1548,7 +1557,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table headBy(long nRows, String... groupByColumns);
 
     default Table headBy(long nRows, Collection<String> groupByColumns) {
-        return headBy(nRows, groupByColumns.stream().toArray(String[]::new));
+        return headBy(nRows, groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     default Table tailBy(long nRows, SelectColumn... groupByColumns) {
@@ -1558,7 +1567,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table tailBy(long nRows, String... groupByColumns);
 
     default Table tailBy(long nRows, Collection<String> groupByColumns) {
-        return tailBy(nRows, groupByColumns.stream().toArray(String[]::new));
+        return tailBy(nRows, groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     /**

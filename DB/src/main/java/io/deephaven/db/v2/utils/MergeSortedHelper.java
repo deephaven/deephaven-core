@@ -36,7 +36,6 @@ public class MergeSortedHelper {
 
         TableCursor(Table table, String keyColumn, int tableIndex) {
             this.tableIndex = tableIndex;
-            // noinspection unchecked
             keyColumnSource = table.getColumnSource(keyColumn);
             iterator = table.getIndex().iterator();
             advance();
@@ -87,7 +86,7 @@ public class MergeSortedHelper {
     public static Table mergeSortedHelper(String keyColumn, Collection<Table> tables) {
         PriorityQueue<TableCursor> priorityQueue = new PriorityQueue<>();
 
-        LinkedHashMap<String, SortedMergeColumnSource> columnSources = new LinkedHashMap<>();
+        LinkedHashMap<String, SortedMergeColumnSource<?>> columnSources = new LinkedHashMap<>();
         TIntArrayList tableList = new TIntArrayList();
         TLongArrayList indexList = new TLongArrayList();
 
@@ -101,10 +100,9 @@ public class MergeSortedHelper {
             }
 
             if (tableIndex == 0) {
-                for (Map.Entry<String, ? extends ColumnSource> entry : table.getColumnSourceMap().entrySet()) {
-                    // noinspection unchecked
+                for (Map.Entry<String, ? extends ColumnSource<?>> entry : table.getColumnSourceMap().entrySet()) {
                     columnSources.put(entry.getKey(),
-                            new SortedMergeColumnSource(tableList, indexList, entry.getValue()));
+                            new SortedMergeColumnSource<>(tableList, indexList, entry.getValue()));
                 }
             } else {
                 if (!table.getColumnSourceMap().keySet().equals(columnSources.keySet())) {
@@ -112,9 +110,9 @@ public class MergeSortedHelper {
                             "Incompatible column sources: " + Arrays.toString(columnSources.keySet().toArray())
                                     + " and " + Arrays.toString(table.getColumnSourceMap().keySet().toArray()));
                 }
-                for (Map.Entry<String, ? extends ColumnSource> entry : table.getColumnSourceMap().entrySet()) {
-                    // noinspection unchecked
-                    columnSources.get(entry.getKey()).addSource(entry.getValue());
+                for (Map.Entry<String, ? extends ColumnSource<?>> entry : table.getColumnSourceMap().entrySet()) {
+                    // noinspection unchecked,rawtypes
+                    columnSources.get(entry.getKey()).addSource((ColumnSource) entry.getValue());
                 }
             }
 
@@ -141,9 +139,9 @@ public class MergeSortedHelper {
     }
 
     static public class SortedMergeColumnSource<T> extends AbstractColumnSource<T> {
-        private TIntArrayList tableIndex;
-        private TLongArrayList columnIndex;
-        private ArrayList<ColumnSource<T>> innerSources;
+        private final TIntArrayList tableIndex;
+        private final TLongArrayList columnIndex;
+        private final ArrayList<ColumnSource<T>> innerSources;
 
         @Override
         public Class<?> getComponentType() {

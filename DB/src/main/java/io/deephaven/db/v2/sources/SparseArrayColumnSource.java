@@ -72,11 +72,10 @@ import java.util.Collection;
 public abstract class SparseArrayColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
         implements FillUnordered, WritableSource<T> {
-    public static final SparseArrayColumnSource[] ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY =
+    public static final SparseArrayColumnSource<?>[] ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY =
             new SparseArrayColumnSource[0];
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
-    static final int INITIAL_NUMBER_OF_BLOCKS = 4;
 
     // Usage:
     //
@@ -147,7 +146,7 @@ public abstract class SparseArrayColumnSource<T>
      */
     boolean immutable = false;
 
-    SparseArrayColumnSource(Class<T> type, Class componentType) {
+    SparseArrayColumnSource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
     }
 
@@ -157,7 +156,7 @@ public abstract class SparseArrayColumnSource<T>
 
     // This is customized in two different classes: In BooleanSparseArraySource it is special-cased by the
     // Replicator. In DateTimeSparseArraySource (a non-replicated class), the humans have overridden it manually.
-    WritableSource reinterpretForSerialization() {
+    WritableSource<?> reinterpretForSerialization() {
         return this;
     }
 
@@ -306,7 +305,7 @@ public abstract class SparseArrayColumnSource<T>
         return getSparseMemoryColumnSource(0, type, null);
     }
 
-    public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(Class<T> type, Class componentType) {
+    public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(Class<T> type, Class<?> componentType) {
         return getSparseMemoryColumnSource(0, type, componentType);
     }
 
@@ -314,27 +313,28 @@ public abstract class SparseArrayColumnSource<T>
         return getSparseMemoryColumnSource(size, type, null);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(long size, Class<T> type,
-            @Nullable Class componentType) {
-        final SparseArrayColumnSource result;
+            @Nullable Class<?> componentType) {
+        final SparseArrayColumnSource<T> result;
         if (type == byte.class || type == Byte.class) {
-            result = new ByteSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new ByteSparseArraySource();
         } else if (type == char.class || type == Character.class) {
-            result = new CharacterSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new CharacterSparseArraySource();
         } else if (type == double.class || type == Double.class) {
-            result = new DoubleSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new DoubleSparseArraySource();
         } else if (type == float.class || type == Float.class) {
-            result = new FloatSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new FloatSparseArraySource();
         } else if (type == int.class || type == Integer.class) {
-            result = new IntegerSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new IntegerSparseArraySource();
         } else if (type == long.class || type == Long.class) {
-            result = new LongSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new LongSparseArraySource();
         } else if (type == short.class || type == Short.class) {
-            result = new ShortSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new ShortSparseArraySource();
         } else if (type == boolean.class || type == Boolean.class) {
-            result = new BooleanSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new BooleanSparseArraySource();
         } else if (type == DBDateTime.class) {
-            result = new DateTimeSparseArraySource();
+            result = (SparseArrayColumnSource<T>) new DateTimeSparseArraySource();
         } else {
             if (componentType != null) {
                 result = new ObjectSparseArraySource<>(type, componentType);
@@ -345,11 +345,10 @@ public abstract class SparseArrayColumnSource<T>
         if (size != 0) {
             result.ensureCapacity(size);
         }
-        // noinspection unchecked
         return result;
     }
 
-    public static ColumnSource getSparseMemoryColumnSource(Object dataArray) {
+    public static ColumnSource<?> getSparseMemoryColumnSource(Object dataArray) {
         if (dataArray instanceof boolean[]) {
             return getSparseMemoryColumnSource(ArrayUtils.getBoxedArray((boolean[]) dataArray), Boolean.class);
         } else if (dataArray instanceof byte[]) {

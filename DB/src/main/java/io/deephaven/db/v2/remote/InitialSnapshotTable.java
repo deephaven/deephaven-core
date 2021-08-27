@@ -22,17 +22,17 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class InitialSnapshotTable extends QueryTable {
-    protected final Setter[] setters;
+    protected final Setter<?>[] setters;
     protected int capacity;
     protected Index freeset = Index.FACTORY.getEmptyIndex();
     protected final Index populatedRows;
     protected final Index[] populatedCells;
-    protected WritableSource[] writableSources;
+    protected WritableSource<?>[] writableSources;
     protected RedirectionIndex redirectionIndex;
 
     private final BitSet subscribedColumns;
 
-    protected InitialSnapshotTable(Map<String, ? extends ColumnSource> result, WritableSource[] writableSources,
+    protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources,
             RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
         super(Index.FACTORY.getEmptyIndex(), result);
         this.subscribedColumns = subscribedColumns;
@@ -55,7 +55,8 @@ public class InitialSnapshotTable extends QueryTable {
         return subscribedColumns == null || subscribedColumns.get(column);
     }
 
-    protected Setter getSetter(final WritableSource source) {
+    @SuppressWarnings("rawtypes")
+    protected Setter<?> getSetter(final WritableSource source) {
         if (source.getType() == byte.class) {
             return (Setter<byte[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
         } else if (source.getType() == char.class) {
@@ -113,8 +114,8 @@ public class InitialSnapshotTable extends QueryTable {
                 final long destIndex = destIt.nextLong();
                 for (int ii = 0; ii < setters.length; ii++) {
                     if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
-                        // noinspection unchecked
-                        setters[ii].set(snapshot.dataColumns[ii], arrayIndex, destIndex);
+                        // noinspection unchecked,rawtypes
+                        ((Setter) setters[ii]).set(snapshot.dataColumns[ii], arrayIndex, destIndex);
                     }
                 }
                 final long prevIndex = redirectionIndex.put(addedKey, destIndex);
@@ -153,8 +154,8 @@ public class InitialSnapshotTable extends QueryTable {
             needsResizing = true;
         }
         if (needsResizing) {
-            for (ColumnSource source : getColumnSources()) {
-                ((WritableSource) source).ensureCapacity(capacity);
+            for (ColumnSource<?> source : getColumnSources()) {
+                ((WritableSource<?>) source).ensureCapacity(capacity);
             }
         }
         Index result = freeset.subindexByPos(0, (int) size);
@@ -184,14 +185,13 @@ public class InitialSnapshotTable extends QueryTable {
 
     public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition, InitialSnapshot snapshot,
             BitSet subscribedColumns) {
-        final ColumnDefinition[] columns = definition.getColumns();
-        WritableSource writableSources[] = new WritableSource[columns.length];
+        final ColumnDefinition<?>[] columns = definition.getColumns();
+        WritableSource<?>[] writableSources = new WritableSource[columns.length];
         RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
-        LinkedHashMap<String, ColumnSource> finalColumns = new LinkedHashMap<>();
+        LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
         for (int i = 0; i < columns.length; i++) {
             writableSources[i] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[i].getDataType(),
                     columns[i].getComponentType());
-            // noinspection unchecked
             finalColumns.put(columns[i].getName(),
                     new RedirectedColumnSource<>(redirectionIndex, writableSources[i], 0));
         }

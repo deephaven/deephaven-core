@@ -83,9 +83,9 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final Index index = sb.getIndex();
 
         final int size = index.intSize();
-        final long[] data = (long[])new long[size];
+        final long[] data = new long[size];
         // noinspection unchecked
-        final ColumnSource<T> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<T> reinterpreted = (ColumnSource<T>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableLongChunk<Values> destChunk = ResettableWritableLongChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -103,7 +103,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final long[] data = (long[])in.readObject();
         final LongChunk<Values> srcChunk = LongChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Long> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Long> reinterpreted = (WritableSource<Long>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -187,6 +187,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     // endregion primitive get
 
     // region allocateNullFilledBlock
+    @SuppressWarnings("SameParameterValue")
     final long [] allocateNullFilledBlock(int size) {
         final long [] newBlock = new long[size];
         Arrays.fill(newBlock, NULL_LONG);

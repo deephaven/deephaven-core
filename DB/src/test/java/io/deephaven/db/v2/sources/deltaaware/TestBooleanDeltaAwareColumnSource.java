@@ -180,7 +180,7 @@ public class TestBooleanDeltaAwareColumnSource {
 
         // Current...
         try (ChunkSource.GetContext context = dacs.makeGetContext(chunkSize)) {
-            ObjectChunk<Boolean, Values> chunk;
+            ObjectChunk<Boolean, ? extends Values> chunk;
 
             chunk = dacs.getChunk(context, index0).asObjectChunk();
             checkChunk(chunk, expectedCurrent, index0);
@@ -194,7 +194,7 @@ public class TestBooleanDeltaAwareColumnSource {
         }
     }
 
-    private static void checkChunk(ObjectChunk<Boolean, Values> values, Map<Long, Byte> expected, Index keys) {
+    private static void checkChunk(ObjectChunk<Boolean, ? extends Values> values, Map<Long, Byte> expected, Index keys) {
         int sliceOffset = 0;
         for (final Index.Iterator it = keys.iterator(); it.hasNext(); ) {
             final long key = it.nextLong();

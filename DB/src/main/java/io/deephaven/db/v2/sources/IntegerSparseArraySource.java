@@ -84,9 +84,9 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
         final Index index = sb.getIndex();
 
         final int size = index.intSize();
-        final int[] data = (int[])new int[size];
+        final int[] data = new int[size];
         // noinspection unchecked
-        final ColumnSource<Integer> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<Integer> reinterpreted = (ColumnSource<Integer>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableIntChunk<Values> destChunk = ResettableWritableIntChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -104,7 +104,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
         final int[] data = (int[])in.readObject();
         final IntChunk<Values> srcChunk = IntChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Integer> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Integer> reinterpreted = (WritableSource<Integer>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -169,7 +169,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region copy method
     @Override
-    public void copy(ColumnSource<Integer> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Integer> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getInt(sourceKey));
     }
     // endregion copy method

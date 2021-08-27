@@ -53,6 +53,7 @@ import java.util.Objects;
  * Column definition for all Deephaven columns.
  */
 public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendable, Copyable<ColumnDefinition<TYPE>> {
+    public static final ColumnDefinition<?>[] ZERO_LENGTH_COLUMN_DEFINITION_ARRAY = new ColumnDefinition[0];
 
     private static final long serialVersionUID = 3656456077670712362L;
 
@@ -120,7 +121,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         return adapter.out();
     }
 
-    public static <T extends DbArrayBase> ColumnDefinition<T> ofDbArray(@NotNull final String name,
+    public static <T extends DbArrayBase<?>> ColumnDefinition<T> ofDbArray(@NotNull final String name,
             @NotNull final Class<T> dbArrayType) {
         ColumnDefinition<T> columnDefinition = new ColumnDefinition<>(name, dbArrayType);
         columnDefinition.setComponentType(baseComponentTypeForDbArray(dbArrayType));
@@ -145,7 +146,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
      * Base component type class for each {@link DbArrayBase} type. Note that {@link DbBooleanArray} is deprecated,
      * superseded by {@link DbArray}.
      */
-    private static Class<?> baseComponentTypeForDbArray(@NotNull final Class<? extends DbArrayBase> dbArrayType) {
+    private static Class<?> baseComponentTypeForDbArray(@NotNull final Class<? extends DbArrayBase<?>> dbArrayType) {
         if (DbBooleanArray.class.isAssignableFrom(dbArrayType)) {
             return Boolean.class;
         }
@@ -193,7 +194,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             return;
         }
         // noinspection unchecked
-        final Class<?> baseComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
+        final Class<?> baseComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase<?>>) dataType);
         if (!baseComponentType.isAssignableFrom(componentType)) {
             throw new IllegalArgumentException(
                     "Invalid component type " + componentType + " for DbArray data type " + dataType);
@@ -215,7 +216,8 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         }
         if (DbArrayBase.class.isAssignableFrom(dataType)) {
             // noinspection unchecked
-            final Class<?> dbArrayComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
+            final Class<?> dbArrayComponentType =
+                    baseComponentTypeForDbArray((Class<? extends DbArrayBase<?>>) dataType);
             if (inputComponentType == null) {
                 /*
                  * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning
@@ -348,7 +350,8 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
 
                 @Override
                 public void visit(DbGenericArrayType<?, ?> dbGenericArrayType) {
-                    ColumnDefinition<DbArray> cd = new ColumnDefinition<>(name, DbArray.class);
+                    // noinspection unchecked,rawtypes
+                    ColumnDefinition<DbArray<?>> cd = new ColumnDefinition(name, DbArray.class);
                     cd.setComponentType(dbGenericArrayType.componentType().clazz());
                     out = cd;
                 }
@@ -374,14 +377,14 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         setColumnType(columnType);
     }
 
-    private ColumnDefinition(ColumnDefinition source) {
+    private ColumnDefinition(ColumnDefinition<TYPE> source) {
         copyValues(source);
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
-    public ColumnDefinition clone() {
-        return new ColumnDefinition(this);
+    public ColumnDefinition<?> clone() {
+        return new ColumnDefinition<>(this);
     }
 
     public ColumnDefinition<TYPE> withPartitioning() {
@@ -403,9 +406,9 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     public <Other> ColumnDefinition<Other> withDataType(Class<Other> dataType) {
-        final ColumnDefinition clone = safeClone();
-        clone.setDataType(dataType);
         // noinspection unchecked
+        final ColumnDefinition<Other> clone = (ColumnDefinition<Other>) safeClone();
+        clone.setDataType(dataType);
         return clone;
     }
 
@@ -429,7 +432,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
      * @param other - The ColumnDefinition to compare to.
      * @return True if the ColumnDefinition defines a column whose data is compatible with this ColumnDefinition.
      */
-    public boolean isCompatible(ColumnDefinition other) {
+    public boolean isCompatible(ColumnDefinition<?> other) {
         return this.name.equals(other.name)
                 && this.dataType.equals(other.dataType)
                 && this.componentType == other.componentType;
@@ -458,7 +461,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
      * @param rhs what to call the other definition
      * @param prefix begin each difference with this string
      */
-    public void describeDifferences(@NotNull List<String> differences, @NotNull final ColumnDefinition other,
+    public void describeDifferences(@NotNull List<String> differences, @NotNull final ColumnDefinition<?> other,
             @NotNull final String lhs, @NotNull final String rhs, @NotNull final String prefix) {
         if (!name.equals(other.name)) {
             differences.add(prefix + lhs + " name '" + name + "' does not match " + rhs + " name '" + other.name + "'");
@@ -482,15 +485,15 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         if (!(other instanceof ColumnDefinition)) {
             return false;
         }
-        final ColumnDefinition otherCD = (ColumnDefinition) other;
+        final ColumnDefinition<?> otherCD = (ColumnDefinition<?>) other;
         return name.equals(otherCD.name)
                 && dataType.equals(otherCD.dataType)
                 && Objects.equals(componentType, otherCD.componentType)
                 && columnType == otherCD.columnType;
     }
 
-    public ColumnDefinition rename(String newName) {
-        final ColumnDefinition renamed = clone();
+    public ColumnDefinition<?> rename(String newName) {
+        final ColumnDefinition<?> renamed = clone();
         renamed.setName(newName);
         return renamed;
     }
@@ -505,23 +508,23 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.name = name;
     }
 
-    private Class dataType;
+    private Class<? super TYPE> dataType;
 
-    public Class getDataType() {
+    public Class<? super TYPE> getDataType() {
         return dataType;
     }
 
-    void setDataType(Class dataType) {
+    void setDataType(Class<? super TYPE> dataType) {
         this.dataType = dataType;
     }
 
-    private Class componentType;
+    private Class<?> componentType;
 
-    public Class getComponentType() {
+    public Class<?> getComponentType() {
         return componentType;
     }
 
-    void setComponentType(Class componentType) {
+    void setComponentType(Class<?> componentType) {
         this.componentType = componentType;
     }
 
@@ -536,7 +539,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     @Override
-    public void copyValues(ColumnDefinition x) {
+    public void copyValues(ColumnDefinition<TYPE> x) {
         name = x.name;
         dataType = x.dataType;
         componentType = x.componentType;
@@ -574,14 +577,15 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     @Override
     public ColumnDefinition<TYPE> safeClone() {
         // noinspection unchecked
-        return clone();
+        return (ColumnDefinition<TYPE>) clone();
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         name = in.readUTF();
         name = "\0".equals(name) ? null : name;
-        dataType = (Class) in.readObject();
-        componentType = (Class) in.readObject();
+        // noinspection unchecked
+        dataType = (Class<TYPE>) in.readObject();
+        componentType = (Class<?>) in.readObject();
         columnType = in.readInt();
     }
 

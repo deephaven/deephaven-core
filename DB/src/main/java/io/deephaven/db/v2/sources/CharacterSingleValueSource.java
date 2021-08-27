@@ -80,7 +80,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     }
 
     @Override
-    public final void copy(ColumnSource<Character> sourceColumn, long sourceKey, long destKey) {
+    public final void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
         set(sourceColumn.get(sourceKey));
     }
 
@@ -90,7 +90,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final CharChunk chunk = src.asCharChunk();
+        final CharChunk<? extends Attributes.Values> chunk = src.asCharChunk();
         set(chunk.get(0));
     }
 
@@ -100,7 +100,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final CharChunk chunk = src.asCharChunk();
+        final CharChunk<? extends Attributes.Values> chunk = src.asCharChunk();
         set(chunk.get(0));
     }
 }

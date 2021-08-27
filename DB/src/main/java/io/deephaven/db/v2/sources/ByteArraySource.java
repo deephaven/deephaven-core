@@ -131,7 +131,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    public void copy(ColumnSource<Byte> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getByte(sourceKey));
     }
 
@@ -232,12 +232,12 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk chunk, long position) {
+    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
         Assert.eqNull(prevInUse, "prevInUse");
         final int blockNo = getBlockNo(position);
         final byte [] backingArray = blocks[blockNo];
         chunk.asResettableWritableByteChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
-        return blockNo << LOG_BLOCK_SIZE;
+        return ((long)blockNo) << LOG_BLOCK_SIZE;
     }
 
     @Override
@@ -251,7 +251,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
         indices.forAllLongs((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
-                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
             }
             dest.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
@@ -277,7 +277,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
         indices.forAllLongs((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
-                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
                 ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                 ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];

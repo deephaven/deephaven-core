@@ -43,13 +43,13 @@ public class StreamTableTools {
 
             ConstructSnapshot.callDataSnapshotFunction("streamToAppendOnlyTable", swapListener.makeSnapshotControl(),
                     (boolean usePrev, long beforeClockValue) -> {
-                        final Map<String, ArrayBackedColumnSource> columns = new LinkedHashMap<>();
-                        final Map<String, ? extends ColumnSource> columnSourceMap = streamTable.getColumnSourceMap();
+                        final Map<String, ArrayBackedColumnSource<?>> columns = new LinkedHashMap<>();
+                        final Map<String, ? extends ColumnSource<?>> columnSourceMap = streamTable.getColumnSourceMap();
                         final int columnCount = columnSourceMap.size();
-                        final ColumnSource[] sourceColumns = new ColumnSource[columnCount];
-                        final WritableSource[] destColumns = new WritableSource[columnCount];
+                        final ColumnSource<?>[] sourceColumns = new ColumnSource[columnCount];
+                        final WritableSource<?>[] destColumns = new WritableSource[columnCount];
                         int colIdx = 0;
-                        for (Map.Entry<String, ? extends ColumnSource> nameColumnSourceEntry : columnSourceMap
+                        for (Map.Entry<String, ? extends ColumnSource<?>> nameColumnSourceEntry : columnSourceMap
                                 .entrySet()) {
                             final ColumnSource<?> existingColumn = nameColumnSourceEntry.getValue();
                             final ArrayBackedColumnSource<?> newColumn = ArrayBackedColumnSource.getMemoryColumnSource(
@@ -61,7 +61,7 @@ public class StreamTableTools {
                             // for the destination sources, we know they are array backed sources that will actually
                             // store primitives and we can fill efficiently
                             destColumns[colIdx++] =
-                                    (WritableSource) ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
+                                    (WritableSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
                         }
 
 

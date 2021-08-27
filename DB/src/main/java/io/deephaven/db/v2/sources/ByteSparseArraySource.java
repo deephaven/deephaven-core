@@ -86,7 +86,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
         final int size = index.intSize();
         final byte[] data = (byte[])new byte[size];
         // noinspection unchecked
-        final ColumnSource<Byte> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<Byte> reinterpreted = (ColumnSource<Byte>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableByteChunk<Values> destChunk = ResettableWritableByteChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -104,7 +104,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
         final byte[] data = (byte[])in.readObject();
         final ByteChunk<Values> srcChunk = ByteChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Byte> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Byte> reinterpreted = (WritableSource<Byte>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -169,7 +169,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     // region copy method
     @Override
-    public void copy(ColumnSource<Byte> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getByte(sourceKey));
     }
     // endregion copy method

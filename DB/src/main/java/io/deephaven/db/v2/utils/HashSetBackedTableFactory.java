@@ -39,7 +39,7 @@ public class HashSetBackedTableFactory {
     private final Function.Nullary<HashSet<SmartKey>> setGenerator;
     private final int refreshIntervalMs;
     private long nextRefresh;
-    private final Map<String, ColumnSource> columns;
+    private final Map<String, ColumnSource<?>> columns;
     private final TObjectLongMap<SmartKey> valueToIndexMap = new TObjectLongHashMap<>();
     private final TLongObjectMap<SmartKey> indexToValueMap = new TLongObjectHashMap<>();
 
@@ -145,7 +145,7 @@ public class HashSetBackedTableFactory {
     }
 
     private class HashSetBackedTable extends QueryTable implements LiveTable {
-        HashSetBackedTable(Index index, Map<String, ColumnSource> columns) {
+        HashSetBackedTable(Index index, Map<String, ColumnSource<?>> columns) {
             super(index, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);

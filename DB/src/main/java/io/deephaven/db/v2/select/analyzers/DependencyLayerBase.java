@@ -16,12 +16,13 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     final String name;
     final SelectColumn selectColumn;
     final boolean selectColumnHoldsDbArray;
-    final ColumnSource columnSource;
+    final ColumnSource<?> columnSource;
     // probably don't need this any more
     private final String[] dependencies;
     final ModifiedColumnSet myModifiedColumnSet;
 
-    DependencyLayerBase(SelectAndViewAnalyzer inner, String name, SelectColumn selectColumn, ColumnSource columnSource,
+    DependencyLayerBase(SelectAndViewAnalyzer inner, String name, SelectColumn selectColumn,
+            ColumnSource<?> columnSource,
             String[] dependencies, ModifiedColumnSet mcsBuilder) {
         this.inner = inner;
         this.name = name;
@@ -36,9 +37,8 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
 
 
     @Override
-    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition> columnDefinitions) {
-        // noinspection unchecked
-        final ColumnDefinition cd =
+    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions) {
+        final ColumnDefinition<?> cd =
                 ColumnDefinition.fromGenericType(name, columnSource.getType(), columnSource.getComponentType());
         columnDefinitions.put(name, cd);
     }

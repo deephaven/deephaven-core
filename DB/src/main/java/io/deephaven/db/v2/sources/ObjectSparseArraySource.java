@@ -41,12 +41,16 @@ import static io.deephaven.db.v2.sources.sparse.SparseConstants.*;
  */
 public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> implements MutableColumnSourceGetDefaults.ForObject<T> {
     // region recyclers
+    @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null)); // we'll hold onto previous values, fix that
+    @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler2 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new Object[BLOCK2_SIZE][], null);
+    @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler1 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new ObjectOneOrN.Block2[BLOCK1_SIZE], null);
+    @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler0 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new ObjectOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
@@ -56,7 +60,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
      * the ArraySource does not want (or does not yet want) to track previous values. Deserialized ArraySources never
      * track previous values.
      */
-    protected transient UpdateCommitter<ObjectSparseArraySource> prevFlusher = null;
+    protected transient UpdateCommitter<ObjectSparseArraySource<?>> prevFlusher = null;
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
@@ -78,7 +82,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         isArrayType = DbArrayBase.class.isAssignableFrom(type);
     }
 
-    ObjectSparseArraySource(Class<T> type, Class componentType) {
+    ObjectSparseArraySource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
         blocks = new ObjectOneOrN.Block0<>();
         isArrayType = DbArrayBase.class.isAssignableFrom(type);
@@ -92,9 +96,10 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final Index index = sb.getIndex();
 
         final int size = index.intSize();
+        //noinspection unchecked
         final T [] data = (T [])new Object[size];
         // noinspection unchecked
-        final ColumnSource<T> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<T> reinterpreted = (ColumnSource<T>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableObjectChunk<T, Values> destChunk = ResettableWritableObjectChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -109,10 +114,11 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         blocks = new ObjectOneOrN.Block0<T>();
 
         final Index index = (Index)in.readObject();
+        //noinspection unchecked
         final T [] data = (T [])in.readObject();
         final ObjectChunk<T, Values> srcChunk = ObjectChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Object> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Object> reinterpreted = (WritableSource<Object>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -163,11 +169,12 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region copy method
     @Override
-    public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
         final T value = sourceColumn.get(sourceKey);
 
         if (isArrayType && value instanceof DbArrayBase) {
-            final DbArrayBase dbArray = (DbArrayBase) value;
+            final DbArrayBase<?> dbArray = (DbArrayBase<?>) value;
+            //noinspection unchecked
             set(destKey, (T) dbArray.getDirect());
         } else {
             set(destKey, value);
@@ -207,6 +214,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     // endregion primitive get
 
     // region allocateNullFilledBlock
+    @SuppressWarnings("SameParameterValue")
     final T[] allocateNullFilledBlock(int size){
         //noinspection unchecked
         return (T[]) new Object[size];

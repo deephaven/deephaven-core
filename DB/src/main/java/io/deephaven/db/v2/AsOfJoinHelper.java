@@ -74,7 +74,7 @@ public class AsOfJoinHelper {
 
         final ColumnSource<?> leftStampSource =
                 ReinterpretUtilities.maybeConvertToPrimitive(leftTable.getColumnSource(stampPair.left()));
-        final ColumnSource originalRightStampSource = rightTable.getColumnSource(stampPair.right());
+        final ColumnSource<?> originalRightStampSource = rightTable.getColumnSource(stampPair.right());
         final ColumnSource<?> rightStampSource = ReinterpretUtilities.maybeConvertToPrimitive(originalRightStampSource);
 
         if (leftStampSource.getType() != rightStampSource.getType()) {
@@ -163,7 +163,7 @@ public class AsOfJoinHelper {
         final int leftGroupingSize;
         if (leftGrouping != null) {
             final MutableInt groupSize = new MutableInt();
-            // noinspection unchecked
+            // noinspection unchecked,rawtypes
             leftGroupedSources = AbstractColumnSource.groupingToFlatSources((ColumnSource) leftSources[0], leftGrouping,
                     leftTable.getIndex(), groupSize);
             leftGroupingSize = groupSize.intValue();
@@ -176,7 +176,7 @@ public class AsOfJoinHelper {
         final int rightGroupingSize;
         if (rightGrouping != null) {
             final MutableInt groupSize = new MutableInt();
-            // noinspection unchecked
+            // noinspection unchecked,rawtypes
             rightGroupedSources = AbstractColumnSource.groupingToFlatSources((ColumnSource) rightSources[0],
                     rightGrouping, rightTable.getIndex(), groupSize);
             rightGroupingSize = groupSize.intValue();
@@ -423,6 +423,7 @@ public class AsOfJoinHelper {
             keyChunk.resetFromTypedArray(keyIndices, 0, rightSize);
             valuesChunk.resetFromArray(rightStampArray, 0, rightSize);
 
+            // noinspection unchecked
             stampContext.getAndCompactStamps(rightIndex, keyChunk, valuesChunk);
 
             if (keyChunk.size() < rightSize) {
@@ -443,6 +444,7 @@ public class AsOfJoinHelper {
             valuesChunk.resetFromArray(arrayValuesCache.getValues(slot), 0, rightStampKeys.length);
         }
 
+        // noinspection unchecked
         stampContext.processEntry(leftIndex, valuesChunk, keyChunk, redirectionIndex);
     }
 
@@ -474,10 +476,13 @@ public class AsOfJoinHelper {
             keyChunk.resetFromTypedArray(keyIndices, 0, leftSize);
             valuesChunk.resetFromArray(leftStampArray, 0, leftSize);
 
+            // noinspection unchecked
             leftIndex.fillKeyIndicesChunk(keyChunk);
 
+            // noinspection unchecked
             leftStampSource.fillChunk(fillContext.ensureCapacity(leftSize), valuesChunk, leftIndex);
 
+            // noinspection unchecked
             sortContext.ensureCapacity(leftSize).sort(keyChunk, valuesChunk);
 
             arrayValuesCache.setKeysAndValues(slot, keyIndices, leftStampArray);
@@ -582,6 +587,7 @@ public class AsOfJoinHelper {
                 final WritableLongChunk<KeyIndices> rightKeysForLeftChunk =
                         rightKeysForLeft.ensureCapacity(leftIndex.intSize());
 
+                // noinspection unchecked
                 chunkSsaStamp.processEntry(leftValuesChunk, leftKeyChunk, rightSsa, rightKeysForLeftChunk,
                         disallowExactMatch);
 
@@ -676,6 +682,7 @@ public class AsOfJoinHelper {
 
                         rightSsa.removeAndGetPrior(rightValues.get(), rightKeyIndices.get(), priorRedirections.get());
 
+                        // noinspection unchecked
                         chunkSsaStamp.processRemovals(leftValuesChunk, leftKeyChunk, rightValues.get(),
                                 rightKeyIndices.get(), priorRedirections.get(), redirectionIndex, modifiedBuilder,
                                 disallowExactMatch);
@@ -732,12 +739,14 @@ public class AsOfJoinHelper {
                                                     rightValues.get());
 
                                             if (sit.polarityReversed()) {
+                                                // noinspection unchecked
                                                 chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
                                                         rightValues.get(), rightKeyIndices.get(), sit.shiftDelta(),
                                                         redirectionIndex, disallowExactMatch);
                                                 rightSsa.applyShiftReverse(rightValues.get(), rightKeyIndices.get(),
                                                         sit.shiftDelta());
                                             } else {
+                                                // noinspection unchecked
                                                 chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
                                                         rightValues.get(), rightKeyIndices.get(), sit.shiftDelta(),
                                                         redirectionIndex, disallowExactMatch);
@@ -817,6 +826,7 @@ public class AsOfJoinHelper {
                         getCachedLeftStampsAndKeys(asOfJoinStateManager, null, leftStampSource, leftStampFillContext,
                                 sortContext, leftKeyChunk, leftValuesChunk, leftValuesCache, slot);
 
+                        // noinspection unchecked
                         chunkSsaStamp.processInsertion(leftValuesChunk, leftKeyChunk, rightStampChunk.get(),
                                 insertedIndices.get(), nextRightValue.get(), redirectionIndex, modifiedBuilder,
                                 endsWithLastValue, disallowExactMatch);
@@ -846,6 +856,7 @@ public class AsOfJoinHelper {
                                         leftStampFillContext, sortContext, leftKeyChunk, leftValuesChunk,
                                         leftValuesCache, slot);
 
+                                // noinspection unchecked
                                 chunkSsaStamp.findModified(0, leftValuesChunk, leftKeyChunk, redirectionIndex,
                                         rightValues.get(), rightKeyIndices.get(), modifiedBuilder, disallowExactMatch);
                             }
@@ -1228,7 +1239,7 @@ public class AsOfJoinHelper {
                                 final int chunks = (restampAdditions.intSize() + control.rightChunkSize() - 1)
                                         / control.rightChunkSize();
                                 for (int ii = 0; ii < chunks; ++ii) {
-                                    final int startChunk = chunks - ii - 1;
+                                    final long startChunk = chunks - ii - 1;
                                     try (final Index chunkOk =
                                             restampAdditions.subindexByPos(startChunk * control.rightChunkSize(),
                                                     (startChunk + 1) * control.rightChunkSize())) {
@@ -1505,10 +1516,9 @@ public class AsOfJoinHelper {
 
     private static QueryTable makeResult(QueryTable leftTable, Table rightTable, RedirectionIndex redirectionIndex,
             MatchPair[] columnsToAdd, boolean refreshing) {
-        final Map<String, ColumnSource> columnSources = new LinkedHashMap<>(leftTable.getColumnSourceMap());
+        final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         Arrays.stream(columnsToAdd).forEach(mp -> {
-            // noinspection unchecked
-            final ReadOnlyRedirectedColumnSource rightSource =
+            final ReadOnlyRedirectedColumnSource<?> rightSource =
                     new ReadOnlyRedirectedColumnSource<>(redirectionIndex, rightTable.getColumnSource(mp.right()));
             if (refreshing) {
                 rightSource.startTrackingPrevValues();

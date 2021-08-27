@@ -28,8 +28,8 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     }
 
     @Override
-    WritableSource reinterpretForSerialization() {
-        return (WritableSource) reinterpret(long.class);
+    WritableSource<Long> reinterpretForSerialization() {
+        return (WritableSource<Long>) reinterpret(long.class);
     }
 
     @Override
@@ -38,7 +38,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     }
 
     @Override
-    public void copy(ColumnSource<DBDateTime> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends DBDateTime> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.get(sourceKey));
     }
 

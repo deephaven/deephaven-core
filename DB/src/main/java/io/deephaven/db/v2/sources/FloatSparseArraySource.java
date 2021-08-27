@@ -84,9 +84,9 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         final Index index = sb.getIndex();
 
         final int size = index.intSize();
-        final float[] data = (float[])new float[size];
+        final float[] data = new float[size];
         // noinspection unchecked
-        final ColumnSource<Float> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<Float> reinterpreted = (ColumnSource<Float>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableFloatChunk<Values> destChunk = ResettableWritableFloatChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -104,7 +104,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         final float[] data = (float[])in.readObject();
         final FloatChunk<Values> srcChunk = FloatChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Float> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Float> reinterpreted = (WritableSource<Float>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -169,7 +169,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
 
     // region copy method
     @Override
-    public void copy(ColumnSource<Float> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Float> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getFloat(sourceKey));
     }
     // endregion copy method
