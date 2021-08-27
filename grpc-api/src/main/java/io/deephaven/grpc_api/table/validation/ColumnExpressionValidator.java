@@ -1,5 +1,7 @@
 package io.deephaven.grpc_api.table.validation;
 
+import com.github.javaparser.ParseProblemException;
+import com.github.javaparser.ParseResult;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -20,7 +22,6 @@ import io.deephaven.db.v2.select.codegen.FormulaAnalyzer;
 import io.deephaven.libs.GroovyStaticImports;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseException;
-import com.github.javaparser.TokenMgrError;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
@@ -156,26 +157,30 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         validateInvocations(timeConversionResult.getConvertedFormula());
     }
 
+    private static final JavaParser staticJavaParser = new JavaParser();
     private static void validateInvocations(String expression) {
-        // copied, modified from DBLanguageParser.java
-        // before parsing, finish Deephaven-specific language features:
+        //copied, modified from DBLanguageParser.java
+        //before parsing, finish Deephaven-specific language features:
         expression = DBLanguageParser.convertBackticks(expression);
         expression = DBLanguageParser.convertSingleEquals(expression);
 
-        // then, parse into an AST
-        final Expression expr;
+        //then, parse into an AST
+        final ParseResult<Expression> result;
         try {
-            synchronized (JavaParser.class) { // this is not thread-safe because it's all static...
-                expr = JavaParser.parseExpression(expression);
+            synchronized (staticJavaParser) {           //this is not thread-safe because it's all static...
+                result = staticJavaParser.parseExpression(expression);
             }
-        } catch (final ParseException | TokenMgrError e) {
-            // in theory not possible, since we already parsed once
+        } catch (final ParseProblemException e) {
+            //in theory not possible, since we already parsed once
             throw new IllegalStateException("Error occurred while re-parsing formula for whitelist", e);
         }
 
-        // now that we finally have the AST...
-        // check method and constructor calls that weren't already checked
-        expr.accept(new ColumnExpressionValidator(), null);
+        //now that we finally have the AST...
+        //check method and constructor calls that weren't already checked
+        if (!result.isSuccessful()) {
+            throw new IllegalArgumentException("Invalid expression " + expression + ": " + result.getProblems().toString());
+        }
+        result.getResult().ifPresent(expr -> expr.accept(new ColumnExpressionValidator(), null));
     }
 
     @Override
