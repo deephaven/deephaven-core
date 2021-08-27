@@ -313,28 +313,27 @@ public abstract class SparseArrayColumnSource<T>
         return getSparseMemoryColumnSource(size, type, null);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(long size, Class<T> type,
             @Nullable Class<?> componentType) {
-        final SparseArrayColumnSource<T> result;
+        final SparseArrayColumnSource<?> result;
         if (type == byte.class || type == Byte.class) {
-            result = (SparseArrayColumnSource<T>) new ByteSparseArraySource();
+            result = new ByteSparseArraySource();
         } else if (type == char.class || type == Character.class) {
-            result = (SparseArrayColumnSource<T>) new CharacterSparseArraySource();
+            result = new CharacterSparseArraySource();
         } else if (type == double.class || type == Double.class) {
-            result = (SparseArrayColumnSource<T>) new DoubleSparseArraySource();
+            result = new DoubleSparseArraySource();
         } else if (type == float.class || type == Float.class) {
-            result = (SparseArrayColumnSource<T>) new FloatSparseArraySource();
+            result = new FloatSparseArraySource();
         } else if (type == int.class || type == Integer.class) {
-            result = (SparseArrayColumnSource<T>) new IntegerSparseArraySource();
+            result = new IntegerSparseArraySource();
         } else if (type == long.class || type == Long.class) {
-            result = (SparseArrayColumnSource<T>) new LongSparseArraySource();
+            result = new LongSparseArraySource();
         } else if (type == short.class || type == Short.class) {
-            result = (SparseArrayColumnSource<T>) new ShortSparseArraySource();
+            result = new ShortSparseArraySource();
         } else if (type == boolean.class || type == Boolean.class) {
-            result = (SparseArrayColumnSource<T>) new BooleanSparseArraySource();
+            result = new BooleanSparseArraySource();
         } else if (type == DBDateTime.class) {
-            result = (SparseArrayColumnSource<T>) new DateTimeSparseArraySource();
+            result = new DateTimeSparseArraySource();
         } else {
             if (componentType != null) {
                 result = new ObjectSparseArraySource<>(type, componentType);
@@ -345,7 +344,8 @@ public abstract class SparseArrayColumnSource<T>
         if (size != 0) {
             result.ensureCapacity(size);
         }
-        return result;
+        // noinspection unchecked
+        return (SparseArrayColumnSource<T>) result;
     }
 
     public static ColumnSource<?> getSparseMemoryColumnSource(Object dataArray) {

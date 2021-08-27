@@ -51,7 +51,7 @@ public class TestObjectSparseArraySource {
         final ObjectSparseArraySource source = new ObjectSparseArraySource<>(String.class);
 
         final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
-        final WritableObjectChunk<?, Values> dest = WritableObjectChunk.makeWritableChunk(chunkSize);
+        final WritableObjectChunk<?, ? extends Values> dest = WritableObjectChunk.makeWritableChunk(chunkSize);
 
         source.fillChunk(fillContext, dest, Index.FACTORY.getIndexByRange(0, 1023));
         for (int ii = 0; ii < 1024; ++ii) {
@@ -108,7 +108,7 @@ public class TestObjectSparseArraySource {
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final ObjectChunk<?, Values> result = source.getChunk(getContext, Index.FACTORY.getIndexByRange(0, 1023)).asObjectChunk();
+        final ObjectChunk<?, ? extends Values> result = source.getChunk(getContext, Index.FACTORY.getIndexByRange(0, 1023)).asObjectChunk();
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, null, result.get(ii));
         }
@@ -166,7 +166,7 @@ public class TestObjectSparseArraySource {
     }
 
     private void checkRandomFill(int chunkSize, ObjectSparseArraySource source, ColumnSource.FillContext fillContext,
-                                 WritableObjectChunk<?, Values> dest, Object[] expectations, Index index, boolean usePrev) {
+                                 WritableObjectChunk<?, ? extends Values> dest, Object[] expectations, Index index, boolean usePrev) {
         for (final OrderedKeys.Iterator okIt = index.getOrderedKeysIterator(); okIt.hasMore(); ) {
             final OrderedKeys nextOk = okIt.getNextOrderedKeysWithLength(chunkSize);
 
@@ -185,7 +185,7 @@ public class TestObjectSparseArraySource {
     }
 
     private void checkRangeFill(int chunkSize, ObjectSparseArraySource source, ColumnSource.FillContext fillContext,
-                                WritableObjectChunk<?, Values> dest, Object[] expectations, int firstKey, int lastKey, boolean usePrev) {
+                                WritableObjectChunk<?, ? extends Values> dest, Object[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
         final Index index = Index.FACTORY.getIndexByRange(firstKey, lastKey);
         offset = firstKey;
@@ -209,7 +209,7 @@ public class TestObjectSparseArraySource {
         for (final OrderedKeys.Iterator it = index.getOrderedKeysIterator(); it.hasMore(); ) {
             final OrderedKeys nextOk = it.getNextOrderedKeysWithLength(chunkSize);
 
-            final ObjectChunk<?, Values> result;
+            final ObjectChunk<?, ? extends Values> result;
             if (usePrev) {
                 result = source.getPrevChunk(getContext, nextOk).asObjectChunk();
             } else {
@@ -227,7 +227,7 @@ public class TestObjectSparseArraySource {
         }
     }
 
-    private void checkRangeResults(Object[] expectations, int offset, OrderedKeys nextOk, ObjectChunk<?, Values> result) {
+    private void checkRangeResults(Object[] expectations, int offset, OrderedKeys nextOk, ObjectChunk<?, ? extends Values> result) {
         for (int ii = 0; ii < nextOk.size(); ++ii) {
             checkFromValues("expectations[" + offset + " + " + ii + " = " + (ii + offset) + "] vs. dest[" + ii + "]", expectations[ii + offset], result.get(ii));
         }
@@ -303,7 +303,7 @@ public class TestObjectSparseArraySource {
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try (final Index keys = Index.FACTORY.getEmptyIndex();
-             final WritableObjectChunk<?, Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
+             final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }

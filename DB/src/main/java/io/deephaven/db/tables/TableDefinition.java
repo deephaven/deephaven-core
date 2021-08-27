@@ -190,10 +190,12 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
 
     /**
      * @param columnName the column name to search for
+     * @param <T> The target type, as a type parameter. Inferred from context.
      * @return The column definition for the supplied name, or null if no such column exists in this table definition.
      */
-    public ColumnDefinition<?> getColumn(@NotNull final String columnName) {
-        return getColumnNameMap().get(columnName);
+    public <T> ColumnDefinition<T> getColumn(@NotNull final String columnName) {
+        // noinspection unchecked
+        return (ColumnDefinition<T>) getColumnNameMap().get(columnName);
     }
 
     /**

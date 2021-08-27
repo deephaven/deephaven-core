@@ -8,9 +8,10 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 
 class ChunkMerger<ATTR extends Attributes.Any> {
     // Copy the data back into the positions where it needs to go.
-    static <ATTR extends Attributes.Any> void merge(Chunk<? extends ATTR> bChunk, Chunk<? extends ATTR> dChunk,
-            OrderedKeys bKeys,
-            OrderedKeys dKeys, WritableChunk<? super ATTR> dest) {
+    static <ATTR extends Attributes.Any> void merge(
+            Chunk<? extends ATTR> bChunk, Chunk<? extends ATTR> dChunk,
+            OrderedKeys bKeys, OrderedKeys dKeys,
+            WritableChunk<? super ATTR> dest) {
         final ChunkMerger<ATTR> bMerger = new ChunkMerger<>(bChunk, bKeys);
         final ChunkMerger<ATTR> dMerger = new ChunkMerger<>(dChunk, dKeys);
 

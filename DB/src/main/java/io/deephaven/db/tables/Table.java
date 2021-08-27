@@ -290,23 +290,23 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Retrieves a {@code ColumnSource}. It is conveniently casted to @{code ColumnSource<T>} using the type that caller
+     * Retrieves a {@code ColumnSource}. It is conveniently cast to @{code ColumnSource<T>} using the type that caller
      * expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class} object
      * to verify that the data type is a subclass of the expected class.
      *
-     * @param sourceName The name of the column.
+     * @param sourceName The name of the column
      * @param <T> The target type, as a type parameter. Inferred from context.
-     * @return The column source for {@code sourceName}, parameterized by {@code T}.
+     * @return The column source for {@code sourceName}, parameterized by {@code T}
      */
     <T> ColumnSource<T> getColumnSource(String sourceName);
 
     /**
      * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} it to the target class {@code clazz}.
      *
-     * @param sourceName The name of the column.
-     * @param clazz The target type.
+     * @param sourceName The name of the column
+     * @param clazz The target type
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
-     * @return The column source for {@code sourceName}, parameterized by {@code T}.
+     * @return The column source for {@code sourceName}, parameterized by {@code T}
      */
     default <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz) {
         @SuppressWarnings("rawtypes")
@@ -337,31 +337,29 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     // Column Iterators
     // -----------------------------------------------------------------------------------------------------------------
 
-    @SuppressWarnings("unchecked")
     default <TYPE> Iterator<TYPE> columnIterator(@NotNull final String columnName) {
-        final Class<TYPE> type = (Class<TYPE>) getDefinition().getColumn(columnName).getDataType();
+        // noinspection rawtypes
+        Iterator result;
+        final Class<TYPE> type = getDefinition().<TYPE>getColumn(columnName).getDataType();
         if (type == byte.class || type == Byte.class) {
-            return (Iterator<TYPE>) byteColumnIterator(columnName);
+            result = byteColumnIterator(columnName);
+        } else if (type == char.class || type == Character.class) {
+            result = characterColumnIterator(columnName);
+        } else if (type == double.class || type == Double.class) {
+            result = doubleColumnIterator(columnName);
+        } else if (type == float.class || type == Float.class) {
+            result = floatColumnIterator(columnName);
+        } else if (type == int.class || type == Integer.class) {
+            result = integerColumnIterator(columnName);
+        } else if (type == long.class || type == Long.class) {
+            result = longColumnIterator(columnName);
+        } else if (type == short.class || type == Short.class) {
+            result = shortColumnIterator(columnName);
+        } else {
+            result = new ColumnIterator<>(this, columnName);
         }
-        if (type == char.class || type == Character.class) {
-            return (Iterator<TYPE>) characterColumnIterator(columnName);
-        }
-        if (type == double.class || type == Double.class) {
-            return (Iterator<TYPE>) doubleColumnIterator(columnName);
-        }
-        if (type == float.class || type == Float.class) {
-            return (Iterator<TYPE>) floatColumnIterator(columnName);
-        }
-        if (type == int.class || type == Integer.class) {
-            return (Iterator<TYPE>) integerColumnIterator(columnName);
-        }
-        if (type == long.class || type == Long.class) {
-            return (Iterator<TYPE>) longColumnIterator(columnName);
-        }
-        if (type == short.class || type == Short.class) {
-            return (Iterator<TYPE>) shortColumnIterator(columnName);
-        }
-        return new ColumnIterator<>(this, columnName);
+        // noinspection unchecked
+        return result;
     }
 
     default ByteColumnIterator byteColumnIterator(@NotNull final String columnName) {
@@ -846,8 +844,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * NOTE: This is a really just an updateView(), and behaves accordingly for column ordering and (re)placement. This
      * doesn't work on data that has been brought fully into memory (e.g. via select()). Use a view instead.
      *
-     * @param dateTimeColumnName name of date time column
-     * @param nanosColumnName name of nanos column
+     * @param dateTimeColumnName Name of date time column
+     * @param nanosColumnName Name of nanos column
      * @return The new table, constructed as explained above.
      */
     @AsyncMethod

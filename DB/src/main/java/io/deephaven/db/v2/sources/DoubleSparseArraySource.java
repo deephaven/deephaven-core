@@ -84,7 +84,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
         final Index index = sb.getIndex();
 
         final int size = index.intSize();
-        final double[] data = new double[size];
+        final double[] data = (double[])new double[size];
         // noinspection unchecked
         final ColumnSource<Double> reinterpreted = (ColumnSource<Double>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
@@ -391,7 +391,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
 
     /**
     * Decides whether to record the previous value.
-    * @param key
+    * @param key the index to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.

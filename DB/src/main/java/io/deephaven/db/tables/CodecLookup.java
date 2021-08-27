@@ -85,11 +85,11 @@ public class CodecLookup {
      * @param columnDefinition The {@link ColumnDefinition}
      * @return The {@link ObjectCodec}
      */
-    public static <TYPE> ObjectCodec<? super TYPE> lookup(
+    public static <TYPE> ObjectCodec<TYPE> lookup(
             @NotNull final ColumnDefinition<TYPE> columnDefinition,
             @NotNull final ColumnToCodecMappings codecMappings) {
         final String colName = columnDefinition.getName();
-        final ObjectCodec<? super TYPE> codec = lookup(
+        final ObjectCodec<TYPE> codec = lookup(
                 columnDefinition.getDataType(),
                 codecMappings.getCodecName(colName),
                 codecMappings.getCodecArgs(colName));

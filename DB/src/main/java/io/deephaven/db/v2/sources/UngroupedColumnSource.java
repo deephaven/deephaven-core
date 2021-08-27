@@ -46,10 +46,11 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
         super(type);
     }
 
-    public UngroupedColumnSource(Class type, Class elementType) {
+    public UngroupedColumnSource(Class<T> type, Class<?> elementType) {
         super(type, elementType);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public static UngroupedColumnSource getColumnSource(ColumnSource column) {
         if (column instanceof AggregateColumnSource) {
             return ((AggregateColumnSource) column).ungrouped();

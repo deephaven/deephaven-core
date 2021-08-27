@@ -206,6 +206,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     // endregion primitive get
 
     // region allocateNullFilledBlock
+    @SuppressWarnings("SameParameterValue")
     final byte [] allocateNullFilledBlock(int size) {
         final byte [] newBlock = new byte[size];
         Arrays.fill(newBlock, NULL_BYTE);
@@ -390,7 +391,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     /**
     * Decides whether to record the previous value.
-    * @param key
+    * @param key the index to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -545,7 +546,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     @Override
     void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
-        final WritableByteChunk byteChunk = dest.asWritableByteChunk();
+        final WritableByteChunk<? super Values> byteChunk = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == Index.NULL_KEY) {

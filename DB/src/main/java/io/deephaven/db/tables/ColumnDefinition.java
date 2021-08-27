@@ -383,7 +383,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
-    public ColumnDefinition<?> clone() {
+    public ColumnDefinition<TYPE> clone() {
         return new ColumnDefinition<>(this);
     }
 
@@ -508,13 +508,13 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.name = name;
     }
 
-    private Class<? super TYPE> dataType;
+    private Class<TYPE> dataType;
 
-    public Class<? super TYPE> getDataType() {
+    public Class<TYPE> getDataType() {
         return dataType;
     }
 
-    void setDataType(Class<? super TYPE> dataType) {
+    void setDataType(Class<TYPE> dataType) {
         this.dataType = dataType;
     }
 
@@ -576,8 +576,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
 
     @Override
     public ColumnDefinition<TYPE> safeClone() {
-        // noinspection unchecked
-        return (ColumnDefinition<TYPE>) clone();
+        return clone();
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {

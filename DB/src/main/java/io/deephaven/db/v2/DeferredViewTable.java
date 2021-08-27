@@ -278,16 +278,23 @@ public class DeferredViewTable extends RedefinableTable {
         /**
          * Returns the table in a form that the user can run queries on it. This may be as simple as returning a
          * reference, but for amorphous tables, this means we need to do the work to instantiate it.
+         *
+         * @return the table
          */
         public abstract Table get();
 
         /**
-         * @return the definition, without instantiating the table.
+         * Get the definition, without instantiating the table.
+         *
+         * @return the definition of the table
          */
+
         public abstract TableDefinition getDefinition();
 
         /**
-         * @return the size the uninitialized table should return.
+         * What size should the uninitialized table return.
+         *
+         * @return the size
          */
         public abstract long getSize();
 

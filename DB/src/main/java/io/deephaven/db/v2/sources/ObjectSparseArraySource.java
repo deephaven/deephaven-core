@@ -41,16 +41,12 @@ import static io.deephaven.db.v2.sources.sparse.SparseConstants.*;
  */
 public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> implements MutableColumnSourceGetDefaults.ForObject<T> {
     // region recyclers
-    @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null)); // we'll hold onto previous values, fix that
-    @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler2 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new Object[BLOCK2_SIZE][], null);
-    @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler1 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new ObjectOneOrN.Block2[BLOCK1_SIZE], null);
-    @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler0 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new ObjectOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
@@ -60,7 +56,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
      * the ArraySource does not want (or does not yet want) to track previous values. Deserialized ArraySources never
      * track previous values.
      */
-    protected transient UpdateCommitter<ObjectSparseArraySource<?>> prevFlusher = null;
+    protected transient UpdateCommitter<ObjectSparseArraySource> prevFlusher = null;
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
@@ -82,7 +78,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         isArrayType = DbArrayBase.class.isAssignableFrom(type);
     }
 
-    ObjectSparseArraySource(Class<T> type, Class<?> componentType) {
+    ObjectSparseArraySource(Class<T> type, Class componentType) {
         super(type, componentType);
         blocks = new ObjectOneOrN.Block0<>();
         isArrayType = DbArrayBase.class.isAssignableFrom(type);
@@ -96,7 +92,6 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final Index index = sb.getIndex();
 
         final int size = index.intSize();
-        //noinspection unchecked
         final T [] data = (T [])new Object[size];
         // noinspection unchecked
         final ColumnSource<T> reinterpreted = (ColumnSource<T>) reinterpretForSerialization();
@@ -114,7 +109,6 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         blocks = new ObjectOneOrN.Block0<T>();
 
         final Index index = (Index)in.readObject();
-        //noinspection unchecked
         final T [] data = (T [])in.readObject();
         final ObjectChunk<T, Values> srcChunk = ObjectChunk.chunkWrap(data);
         // noinspection unchecked
@@ -174,7 +168,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
         if (isArrayType && value instanceof DbArrayBase) {
             final DbArrayBase<?> dbArray = (DbArrayBase<?>) value;
-            //noinspection unchecked
+            // noinspection unchecked
             set(destKey, (T) dbArray.getDirect());
         } else {
             set(destKey, value);
@@ -214,7 +208,6 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     // endregion primitive get
 
     // region allocateNullFilledBlock
-    @SuppressWarnings("SameParameterValue")
     final T[] allocateNullFilledBlock(int size){
         //noinspection unchecked
         return (T[]) new Object[size];
@@ -398,7 +391,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     /**
     * Decides whether to record the previous value.
-    * @param key
+    * @param key the index to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -553,7 +546,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     @Override
     void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
-        final WritableObjectChunk ObjectChunk = dest.asWritableObjectChunk();
+        final WritableObjectChunk<T, ? super Values> ObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == Index.NULL_KEY) {

@@ -357,7 +357,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         @Override
         public Object[] getEnumsForColumn(String columnName) {
-            if (getTableDefinition().getColumn(columnName).getDataType() == Boolean.class) {
+            if (getTableDefinition().getColumn(columnName).getDataType().equals(Boolean.class)) {
                 return BOOLEAN_ENUM_ARRAY;
             }
             return enumValues.get(columnName);
