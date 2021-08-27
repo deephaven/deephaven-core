@@ -63,25 +63,24 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
     /**
      * Create a DBLanguageParser and parse the given {@code expression}. After construction, the
-     * {@link DBLanguageParser.Result result} of parsing the {@code expression} is available with
-     * the {@link #getResult()}} method.
+     * {@link DBLanguageParser.Result result} of parsing the {@code expression} is available with the
+     * {@link #getResult()}} method.
      *
      * @param expression The query language expression to parse
      * @param packageImports Wildcard package imports
      * @param classImports Individual class imports
-     * @param staticImports Wildcard static imports. All static variables and methods for the given
-     *        classes are imported.
+     * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
+     *        imported.
      * @param variables A map of the names of scope variables to their types
-     * @param variableParameterizedTypes A map of the names of scope variables to their paramterized
-     *        types
+     * @param variableParameterizedTypes A map of the names of scope variables to their parameterized types
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public DBLanguageParser(String expression,
-                            Collection<Package> packageImports,
-                            Collection<Class<?>> classImports,
-                            Collection<Class<?>> staticImports,
-                            Map<String, Class<?>> variables,
-                            Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
         this(expression, packageImports, classImports, staticImports, variables,
                 variableParameterizedTypes, true);
     }
@@ -102,11 +101,11 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public DBLanguageParser(String expression,
-                            Collection<Package> packageImports,
-                            Collection<Class<?>> classImports,
-                            Collection<Class<?>> staticImports,
-                            Map<String, Class<?>> variables,
-                            Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
             throws QueryLanguageParseException {
         this.packageImports = packageImports == null ? Collections.emptySet()
                 : Require.notContainsNull(packageImports, "packageImports");
@@ -427,12 +426,12 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     private Class<?> getMethodReturnType(Class<?> scope, String methodName, Class<?>[] paramTypes,
-                                         Class<?>[][] parameterizedTypes) {
+            Class<?>[][] parameterizedTypes) {
         return getMethod(scope, methodName, paramTypes, parameterizedTypes).getReturnType();
     }
 
     private Class<?> calculateMethodReturnTypeUsingGenerics(Method method, Class<?>[] paramTypes,
-                                                            Class<?>[][] parameterizedTypes) {
+            Class<?>[][] parameterizedTypes) {
         Type genericReturnType = method.getGenericReturnType();
 
         int arrayDimensions = 0;
@@ -486,7 +485,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
     @SuppressWarnings({"ConstantConditions"})
     private Constructor<?> getConstructor(final Class<?> scope, final Class<?>[] paramTypes,
-                                          final Class<?>[][] parameterizedTypes) {
+            final Class<?>[][] parameterizedTypes) {
         final ArrayList<Constructor<?>> acceptableConstructors = new ArrayList<>();
 
         for (final Constructor<?> constructor : scope.getConstructors()) {
@@ -799,8 +798,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
      *         appropriate to pass to {@code executable}
      */
     private Expression[] convertParameters(final Executable executable,
-                                           final Class<?>[] argumentTypes, final Class<?>[] expressionTypes,
-                                           final Class<?>[][] parameterizedTypes, Expression[] expressions) {
+            final Class<?>[] argumentTypes, final Class<?>[] expressionTypes,
+            final Class<?>[][] parameterizedTypes, Expression[] expressions) {
         final int nArgs = argumentTypes.length; // Number of declared arguments
         for (int ai = 0; ai < (executable.isVarArgs() ? nArgs - 1 : nArgs); ai++) {
             if (argumentTypes[ai] != expressionTypes[ai] && argumentTypes[ai].isPrimitive()
@@ -1110,10 +1109,10 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 isWidening = isWideningPrimitiveConversion(unboxedExprType, ret);
                 // Unboxing and Identity conversions are always OK
                 if (!ret.equals(unboxedExprType) &&
-                        /*
-                         * Boolean is the only boxed type that can be cast to boolean, and boolean is the only primitive
-                         * type to which Boolean can be cast:
-                         */
+                /*
+                 * Boolean is the only boxed type that can be cast to boolean, and boolean is the only primitive type to
+                 * which Boolean can be cast:
+                 */
                         (boolean.class.equals(ret) ^ Boolean.class.equals(exprType)
                                 // Only Character can be cast to char:
                                 || char.class.equals(ret) && !Character.class.equals(exprType)
@@ -1248,9 +1247,9 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         // in a switch() statement, which apparently does not support qualified names. And we can't use
         // names that conflict with java.lang's boxed types.
 
-        BytePrimitive(byte.class), ShortPrimitive(short.class), CharPrimitive(char.class),
-        IntPrimitive(int.class), LongPrimitive(long.class), FloatPrimitive(float.class),
-        DoublePrimitive(double.class), BooleanPrimitive(boolean.class);
+        BytePrimitive(byte.class), ShortPrimitive(short.class), CharPrimitive(char.class), IntPrimitive(
+                int.class), LongPrimitive(long.class), FloatPrimitive(
+                        float.class), DoublePrimitive(double.class), BooleanPrimitive(boolean.class);
 
         private final Class<?> primitiveClass;
 
@@ -1333,7 +1332,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
         if (classA == NULL_CLASS && io.deephaven.util.type.TypeUtils.getUnboxedType(classB) != null) {
             n.setThenExpr(new NameExpr("NULL_" + io.deephaven.util.type.TypeUtils.getUnboxedType(classB)
-                            .getSimpleName().toUpperCase()));
+                    .getSimpleName().toUpperCase()));
             classA = n.getThenExpr().accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
         } else if (classB == NULL_CLASS && io.deephaven.util.type.TypeUtils.getUnboxedType(classA) != null) {
             n.setElseExpr(new NameExpr("NULL_" + TypeUtils.getUnboxedType(classA).getSimpleName().toUpperCase()));
@@ -1603,19 +1602,16 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (isPotentialImplicitCall(method.getDeclaringClass())) {
             if (scope == null) { // python func call or Groovy closure call
                 /*
-                 * python func call
-                 * 1. the func is defined at the main module level and already wrapped in CallableWrapper
-                 * 2. the func will be called via CallableWrapper.call() method
+                 * python func call 1. the func is defined at the main module level and already wrapped in
+                 * CallableWrapper 2. the func will be called via CallableWrapper.call() method
                  */
                 printer.append(innerPrinter);
                 printer.append(n.getNameAsString());
                 printer.append(".call");
             } else {
                 /*
-                 * python method call
-                 * 1. need to reference the method with PyObject.getAttribute();
-                 * 2. wrap the method reference in CallableWrapper()
-                 * 3. the method will be called via CallableWrapper.call()
+                 * python method call 1. need to reference the method with PyObject.getAttribute(); 2. wrap the method
+                 * reference in CallableWrapper() 3. the method will be called via CallableWrapper.call()
                  */
                 if (!n.getNameAsString().equals("call")) {
                     // to be backwards compatible with the syntax func.call(...)
