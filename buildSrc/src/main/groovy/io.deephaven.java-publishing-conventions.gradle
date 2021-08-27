@@ -18,10 +18,15 @@ def developerId = 'devinrsmith'
 def developerName = 'Devin Smith'
 def developerEmail = 'devinsmith@deephaven.io'
 
+def artifactPrefix = 'deephaven-'
+
+archivesBaseName = "${artifactPrefix}${project.name}"
+
 publishing {
   publications {
     mavenJava(MavenPublication) {
       from components.java
+      artifactId = archivesBaseName
       pom {
         description = project.description
         url = 'https://github.com/deephaven/deephaven-core'
