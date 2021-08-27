@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.nio.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -200,6 +199,7 @@ public class ParquetTableWriter {
             if (cleanupPaths != null) {
                 for (String cleanupPath : cleanupPaths) {
                     try {
+                        // noinspection ResultOfMethodCallIgnored
                         new File(cleanupPath).delete();
                     } catch (Exception x) {
                         // ignore.
@@ -251,10 +251,12 @@ public class ParquetTableWriter {
             // noinspection rawtypes
             for (Map.Entry<String, ? extends ColumnSource> nameToSource : t.getColumnSourceMap().entrySet()) {
                 String name = nameToSource.getKey();
-                ColumnSource<?> columnSource = nameToSource.getValue();
+                // noinspection rawtypes
+                ColumnSource columnSource = nameToSource.getValue();
                 try {
-                    writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name),
-                            writeInstructions);
+                    // noinspection unchecked
+                    writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource,
+                            definition.getColumn(name), writeInstructions);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException("Failed to write column " + name, e);
                 }
@@ -276,9 +278,9 @@ public class ParquetTableWriter {
                 }
                 viewColumnsTransform.add(new SourceColumn(colName));
             } else {
-                // noinspection unchecked
-                viewColumnsTransform
-                        .add(new NullSelectColumn(column.getDataType(), column.getComponentType(), colName));
+                // noinspection unchecked,rawtypes
+                viewColumnsTransform.add(new NullSelectColumn(
+                        column.getDataType(), column.getComponentType(), colName));
             }
         }
         if (viewColumnsTransform.size() > 0) {
@@ -337,16 +339,16 @@ public class ParquetTableWriter {
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(), codecName, extraMetaData);
     }
 
-    private static void writeColumnSource(
+    private static <DATA_TYPE> void writeColumnSource(
             final Index tableIndex,
             final RowGroupWriter rowGroupWriter,
             final String name,
-            final ColumnSource columnSourceIn,
-            final ColumnDefinition columnDefinition,
+            final ColumnSource<DATA_TYPE> columnSourceIn,
+            final ColumnDefinition<DATA_TYPE> columnDefinition,
             final ParquetInstructions writeInstructions) throws IllegalAccessException, IOException {
         Index index = tableIndex;
-        ColumnSource columnSource = columnSourceIn;
-        ColumnSource lengthSource = null;
+        ColumnSource<DATA_TYPE> columnSource = columnSourceIn;
+        ColumnSource<?> lengthSource = null;
         Index lengthIndex = null;
         int targetSize = getTargetSize(columnSource.getType());
         Supplier<Integer> rowStepGetter;
@@ -356,7 +358,7 @@ public class ParquetTableWriter {
                 && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
                 && !CodecLookup.codecRequired(columnDefinition)) {
             targetSize = getTargetSize(columnSource.getComponentType());
-            HashMap<String, ColumnSource> columns = new HashMap<>();
+            HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
             Table t = new QueryTable(index, columns);
             lengthSource = t
@@ -372,6 +374,7 @@ public class ParquetTableWriter {
                     final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
                 while (it.hasMore()) {
                     OrderedKeys ok = it.getNextOrderedKeysWithLength(LOCAL_CHUNK_SIZE);
+                    // noinspection unchecked
                     IntChunk<Values> chunk = (IntChunk<Values>) lengthSource.getChunk(context, ok);
                     for (int i = 0; i < chunk.size(); i++) {
                         if (chunk.get(i) != Integer.MIN_VALUE) {
@@ -419,13 +422,15 @@ public class ParquetTableWriter {
             rowStepGetter = valuesStepGetter = () -> finalTargetSize;
             stepsCount = (int) (index.size() / finalTargetSize + ((index.size() % finalTargetSize) == 0 ? 0 : 1));
         }
-        Class columnType = columnSource.getType();
+        Class<DATA_TYPE> columnType = columnSource.getType();
         if (columnType == DBDateTime.class) {
-            columnSource = ReinterpretUtilities.dateTimeToLongSource(columnSource);
+            // noinspection unchecked
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtilities.dateTimeToLongSource(columnSource);
             columnType = columnSource.getType();
         }
         if (columnType == Boolean.class) {
-            columnSource = ReinterpretUtilities.booleanToByteSource(columnSource);
+            // noinspection unchecked
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtilities.booleanToByteSource(columnSource);
         }
         ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
 
@@ -482,7 +487,8 @@ public class ParquetTableWriter {
                             final OrderedKeys.Iterator it = lengthIndex.getOrderedKeysIterator()) {
                         while (it.hasMore()) {
                             final OrderedKeys ok = it.getNextOrderedKeysWithLength(rowStepGetter.get());
-                            final IntChunk chunk = (IntChunk) lengthSource.getChunk(context, ok);
+                            // noinspection unchecked
+                            final IntChunk<Values> chunk = (IntChunk<Values>) lengthSource.getChunk(context, ok);
                             final IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
                             chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
                             newBuffer.limit(chunk.size());
@@ -508,7 +514,6 @@ public class ParquetTableWriter {
             }
         }
         if (!usedDictionary) {
-            // noinspection unchecked
             try (final TransferObject<?> transferObject =
                     getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
                 final boolean supportNulls = supportNulls(columnType);
@@ -525,7 +530,9 @@ public class ParquetTableWriter {
                         transferObject.fetchData(ok);
                         transferObject.propagateChunkData();
                         if (lengthIndexIt != null) {
-                            final IntChunk lenChunk = (IntChunk) lengthSource.getChunk(lengthSourceContext,
+                            // noinspection unchecked
+                            final IntChunk<Values> lenChunk = (IntChunk<Values>) lengthSource.getChunk(
+                                    lengthSourceContext,
                                     lengthIndexIt.getNextOrderedKeysWithLength(rowStepGetter.get()));
                             lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                             repeatCount.limit(lenChunk.size());
@@ -544,15 +551,15 @@ public class ParquetTableWriter {
         columnWriter.close();
     }
 
-    private static Function<Object, Object> getToParquetConversion(Class type) {
+    private static Function<Object, Object> getToParquetConversion(Class<?> type) {
         if (type == String.class) {
-            // noinspection unchecked
+            // noinspection unchecked,rawtypes
             return (Function) (Function<String, Binary>) Binary::fromString;
         }
         throw new UnsupportedOperationException("Dictionary storage not supported for " + type);
     }
 
-    private static Function<Integer, Object[]> getKeyArrayBuilder(Class type) {
+    private static Function<Integer, Object[]> getKeyArrayBuilder(Class<?> type) {
         if (type == String.class) {
             return Binary[]::new;
         }
@@ -563,7 +570,7 @@ public class ParquetTableWriter {
         return dataType == String.class;
     }
 
-    private static Object getNullValue(Class columnType) {
+    private static Object getNullValue(Class<?> columnType) {
         if (columnType == Boolean.class) {
             return (byte) -1;
         } else if (columnType == char.class) {
@@ -584,11 +591,11 @@ public class ParquetTableWriter {
         return null;
     }
 
-    private static boolean supportNulls(Class columnType) {
+    private static boolean supportNulls(Class<?> columnType) {
         return !columnType.isPrimitive();
     }
 
-    private static int getTargetSize(Class columnType) throws IllegalAccessException {
+    private static int getTargetSize(Class<?> columnType) throws IllegalAccessException {
         if (columnType == Boolean.class) {
             return PAGE_SIZE * 8;
         }
@@ -598,7 +605,7 @@ public class ParquetTableWriter {
         if (columnType == String.class) {
             return PAGE_SIZE / Integer.BYTES;
         }
-        Field bytesCountField = null;
+        Field bytesCountField;
         try {
             bytesCountField = TypeUtils.getBoxedType(columnType).getField("BYTES");
             return PAGE_SIZE / ((Integer) bytesCountField.get(null));
@@ -608,7 +615,7 @@ public class ParquetTableWriter {
     }
 
 
-    private static <DATA_TYPE> TransferObject getDestinationBuffer(
+    private static <DATA_TYPE> TransferObject<?> getDestinationBuffer(
             final ColumnSource<DATA_TYPE> columnSource,
             final ColumnDefinition<DATA_TYPE> columnDefinition,
             final int targetSize,
@@ -643,8 +650,8 @@ public class ParquetTableWriter {
         } else if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, targetSize);
         }
-        final ObjectCodec<DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
-        return new CodecTransfer(columnSource, codec, targetSize);
+        final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
+        return new CodecTransfer<>(columnSource, codec, targetSize);
     }
 
     interface TransferObject<B> extends Context {
@@ -662,10 +669,10 @@ public class ParquetTableWriter {
 
         private final C chunk;
         private final B buffer;
-        private final ColumnSource columnSource;
-        private ChunkSource.FillContext context;
+        private final ColumnSource<?> columnSource;
+        private final ChunkSource.FillContext context;
 
-        PrimitiveTransfer(ColumnSource columnSource, C chunk, B buffer, int targetSize) {
+        PrimitiveTransfer(ColumnSource<?> columnSource, C chunk, B buffer, int targetSize) {
             this.columnSource = columnSource;
             this.chunk = chunk;
             this.buffer = buffer;
@@ -705,10 +712,10 @@ public class ParquetTableWriter {
 
         private ShortChunk<Values> chunk;
         private final IntBuffer buffer;
-        private final ColumnSource columnSource;
+        private final ColumnSource<?> columnSource;
         private final ChunkSource.GetContext context;
 
-        ShortTransfer(ColumnSource columnSource, int targetSize) {
+        ShortTransfer(ColumnSource<?> columnSource, int targetSize) {
 
             this.columnSource = columnSource;
             this.buffer = IntBuffer.allocate(targetSize);
@@ -737,6 +744,7 @@ public class ParquetTableWriter {
 
         @Override
         public void fetchData(OrderedKeys ok) {
+            // noinspection unchecked
             chunk = (ShortChunk<Values>) columnSource.getChunk(context, ok);
         }
 
@@ -748,12 +756,12 @@ public class ParquetTableWriter {
 
     static class CharTransfer implements TransferObject<IntBuffer> {
 
-        private final ColumnSource columnSource;
+        private final ColumnSource<?> columnSource;
         private final ChunkSource.GetContext context;
         private CharChunk<Values> chunk;
         private final IntBuffer buffer;
 
-        CharTransfer(ColumnSource columnSource, int targetSize) {
+        CharTransfer(ColumnSource<?> columnSource, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = IntBuffer.allocate(targetSize);
             context = this.columnSource.makeGetContext(targetSize);
@@ -780,6 +788,7 @@ public class ParquetTableWriter {
 
         @Override
         public void fetchData(OrderedKeys ok) {
+            // noinspection unchecked
             chunk = (CharChunk<Values>) columnSource.getChunk(context, ok);
         }
 
@@ -793,10 +802,10 @@ public class ParquetTableWriter {
 
         private ByteChunk<Values> chunk;
         private final IntBuffer buffer;
-        private final ColumnSource columnSource;
+        private final ColumnSource<?> columnSource;
         private final ChunkSource.GetContext context;
 
-        ByteTransfer(ColumnSource columnSource, int targetSize) {
+        ByteTransfer(ColumnSource<?> columnSource, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = IntBuffer.allocate(targetSize);
             context = this.columnSource.makeGetContext(targetSize);
@@ -823,6 +832,7 @@ public class ParquetTableWriter {
 
         @Override
         public void fetchData(OrderedKeys ok) {
+            // noinspection unchecked
             chunk = (ByteChunk<Values>) columnSource.getChunk(context, ok);
         }
 
@@ -837,10 +847,10 @@ public class ParquetTableWriter {
         private final ChunkSource.GetContext context;
         private ObjectChunk<String, Values> chunk;
         private final Binary[] buffer;
-        private final ColumnSource columnSource;
+        private final ColumnSource<?> columnSource;
 
 
-        StringTransfer(ColumnSource columnSource, int targetSize) {
+        StringTransfer(ColumnSource<?> columnSource, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = new Binary[targetSize];
             context = this.columnSource.makeGetContext(targetSize);
@@ -866,6 +876,7 @@ public class ParquetTableWriter {
 
         @Override
         public void fetchData(OrderedKeys ok) {
+            // noinspection unchecked
             chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, ok);
         }
 
@@ -875,16 +886,16 @@ public class ParquetTableWriter {
         }
     }
 
-    static class CodecTransfer implements TransferObject<Binary[]> {
+    static class CodecTransfer<T> implements TransferObject<Binary[]> {
 
         private final ChunkSource.GetContext context;
-        private final ObjectCodec codec;
-        private ObjectChunk<Object, Values> chunk;
+        private final ObjectCodec<? super T> codec;
+        private ObjectChunk<T, Values> chunk;
         private final Binary[] buffer;
-        private final ColumnSource columnSource;
+        private final ColumnSource<T> columnSource;
 
 
-        CodecTransfer(ColumnSource columnSource, ObjectCodec codec, int targetSize) {
+        CodecTransfer(ColumnSource<T> columnSource, ObjectCodec<? super T> codec, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = new Binary[targetSize];
             context = this.columnSource.makeGetContext(targetSize);
@@ -894,7 +905,7 @@ public class ParquetTableWriter {
         @Override
         public void propagateChunkData() {
             for (int i = 0; i < chunk.size(); i++) {
-                Object value = chunk.get(i);
+                T value = chunk.get(i);
                 buffer[i] = value == null ? null : Binary.fromConstantByteArray(codec.encode(value));
             }
         }
@@ -911,7 +922,8 @@ public class ParquetTableWriter {
 
         @Override
         public void fetchData(OrderedKeys ok) {
-            chunk = (ObjectChunk<Object, Values>) columnSource.getChunk(context, ok);
+            // noinspection unchecked
+            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, ok);
         }
 
         @Override

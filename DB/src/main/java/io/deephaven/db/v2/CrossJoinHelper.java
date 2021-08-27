@@ -94,10 +94,8 @@ public class CrossJoinHelper {
                     final Index resultIndex = jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable,
                             bucketingContext.rightSources);
 
-                    return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultIndex, cs -> {
-                        // noinspection unchecked
-                        return new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive());
-                    });
+                    return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultIndex,
+                            cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
                 }
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
@@ -108,10 +106,8 @@ public class CrossJoinHelper {
                 jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
                 final Index resultIndex = jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources);
-                final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultIndex, cs -> {
-                    // noinspection unchecked
-                    return new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive());
-                });
+                final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultIndex,
+                        cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
 
                 jsm.startTrackingPrevValues();
                 final ModifiedColumnSet.Transformer leftTransformer = leftTable.newModifiedColumnSetTransformer(
@@ -200,10 +196,8 @@ public class CrossJoinHelper {
 
             final Index resultIndex = jsm.build(leftTable, rightTable);
 
-            final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultIndex, cs -> {
-                // noinspection unchecked
-                return new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive());
-            });
+            final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultIndex,
+                    cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
 
             final ModifiedColumnSet.Transformer rightTransformer =
                     rightTable.newModifiedColumnSetTransformer(resultTable, columnsToAdd);
@@ -875,10 +869,8 @@ public class CrossJoinHelper {
                 new CrossJoinShiftState(Math.max(numRightBitsToReserve, CrossJoinShiftState.getMinBits(rightTable)));
 
         final Index resultIndex = Index.FACTORY.getEmptyIndex();
-        final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, crossJoinState, resultIndex, cs -> {
-            // noinspection unchecked
-            return new BitMaskingColumnSource<>(crossJoinState, cs);
-        });
+        final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, crossJoinState, resultIndex,
+                cs -> new BitMaskingColumnSource<>(crossJoinState, cs));
         final ModifiedColumnSet.Transformer leftTransformer =
                 leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
         final ModifiedColumnSet.Transformer rightTransformer =
@@ -1198,18 +1190,18 @@ public class CrossJoinHelper {
     }
 
     @NotNull
-    private static <T extends ColumnSource> QueryTable makeResult(
+    private static <T extends ColumnSource<?>> QueryTable makeResult(
             @NotNull final QueryTable leftTable,
             @NotNull final Table rightTable,
             @NotNull final MatchPair[] columnsToAdd,
             @NotNull final CrossJoinShiftState joinState,
             @NotNull final Index resultIndex,
-            @NotNull final Function<ColumnSource, T> newRightColumnSource) {
-        final Map<String, ColumnSource> columnSourceMap = new LinkedHashMap<>();
+            @NotNull final Function<ColumnSource<?>, T> newRightColumnSource) {
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
 
-        for (final Map.Entry<String, ColumnSource> leftColumn : leftTable.getColumnSourceMap().entrySet()) {
-            // noinspection unchecked
-            final BitShiftingColumnSource wrappedSource = new BitShiftingColumnSource(joinState, leftColumn.getValue());
+        for (final Map.Entry<String, ColumnSource<?>> leftColumn : leftTable.getColumnSourceMap().entrySet()) {
+            final BitShiftingColumnSource<?> wrappedSource =
+                    new BitShiftingColumnSource<>(joinState, leftColumn.getValue());
             columnSourceMap.put(leftColumn.getKey(), wrappedSource);
         }
 

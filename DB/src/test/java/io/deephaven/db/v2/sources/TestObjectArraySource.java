@@ -164,7 +164,7 @@ public class TestObjectArraySource {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
         final Index fullRange = sequentialBuilder.getIndex();
-        final Map<String, ObjectArraySource> oneAndOnly = new HashMap<>();
+        final Map<String, ObjectArraySource<?>> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource<?> source = formulaColumn.getDataView();
@@ -281,7 +281,7 @@ public class TestObjectArraySource {
         final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
-        final WritableObjectChunk<?, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
+        final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
             assertTrue(okIterator.hasMore());
@@ -302,7 +302,7 @@ public class TestObjectArraySource {
         final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
-        final WritableObjectChunk<?, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
+        final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
             assertTrue(okIterator.hasMore());
@@ -376,14 +376,14 @@ public class TestObjectArraySource {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
         final Index fullRange = sequentialBuilder.getIndex();
-        final Map<String, ObjectArraySource> oneAndOnly = new HashMap<>();
+        final Map<String, ObjectArraySource<?>> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource source = formulaColumn.getDataView();
         final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
-        final WritableObjectChunk<?, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
+        final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
             assertTrue(okIterator.hasMore());
@@ -524,7 +524,7 @@ public class TestObjectArraySource {
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try (final Index keys = Index.FACTORY.getEmptyIndex();
-             final WritableObjectChunk<?, Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
+             final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
@@ -549,7 +549,7 @@ public class TestObjectArraySource {
         Shuffle.shuffleArray(rng, keys);
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
-             final WritableObjectChunk<?, Values> dest = WritableObjectChunk.makeWritableChunk(keys.length);
+             final WritableObjectChunk<?, ? extends Values> dest = WritableObjectChunk.makeWritableChunk(keys.length);
              final ResettableLongChunk<KeyIndices> rlc = ResettableLongChunk.makeResettableChunk()) {
             rlc.resetFromTypedArray(keys, 0, keys.length);
             source.fillChunkUnordered(ctx, dest, rlc);

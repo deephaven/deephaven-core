@@ -81,8 +81,8 @@ public class TstUtils {
             }
 
             if (columnSource instanceof TreeMapSource) {
-                final TreeMapSource treeMapSource = (TreeMapSource) columnSource;
                 // noinspection unchecked
+                final TreeMapSource<Object> treeMapSource = (TreeMapSource<Object>) columnSource;
                 treeMapSource.add(colIndex, boxedArray);
             } else if (columnSource instanceof DateTimeTreeMapSource) {
                 final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource) columnSource;
@@ -135,7 +135,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomStringArrayCol(String colName, int size, Random random, int maxSz) {
-        final String data[][] = new String[size][];
+        final String[][] data = new String[size][];
         for (int i = 0; i < data.length; i++) {
             final String[] v = new String[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -147,7 +147,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomStringSetCol(String colName, int size, Random random, int maxSz) {
-        final StringSet data[] = new StringSet[size];
+        final StringSet[] data = new StringSet[size];
         for (int i = 0; i < data.length; i++) {
             final String[] v = new String[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -185,7 +185,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomFloatCol(String colName, int size, Random random) {
-        final float data[] = new float[size];
+        final float[] data = new float[size];
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextFloat();
         }
@@ -193,7 +193,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomShortCol(String colName, int size, Random random) {
-        final short data[] = new short[size];
+        final short[] data = new short[size];
         for (int i = 0; i < data.length; i++) {
             data[i] = (short) random.nextInt(Short.MAX_VALUE);
         }
@@ -201,7 +201,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomLongCol(String colName, int size, Random random) {
-        final long data[] = new long[size];
+        final long[] data = new long[size];
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextLong();
         }
@@ -209,7 +209,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomBooleanCol(String colName, int size, Random random) {
-        final Boolean data[] = new Boolean[size];
+        final Boolean[] data = new Boolean[size];
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextBoolean();
         }
@@ -217,7 +217,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomCharCol(String colName, int size, Random random) {
-        final char data[] = new char[size];
+        final char[] data = new char[size];
         for (int i = 0; i < data.length; i++) {
             data[i] = (char) random.nextInt();
         }
@@ -225,7 +225,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomByteCol(String colName, int size, Random random) {
-        final byte data[] = new byte[size];
+        final byte[] data = new byte[size];
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte) random.nextInt();
         }
@@ -233,7 +233,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomByteArrayCol(String colName, int size, Random random, int maxSz) {
-        final byte data[][] = new byte[size][];
+        final byte[][] data = new byte[size][];
         for (int i = 0; i < size; i++) {
             final byte[] b = new byte[random.nextInt(maxSz)];
             random.nextBytes(b);
@@ -243,7 +243,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomBooleanArrayCol(String colName, int size, Random random, int maxSz) {
-        final Boolean data[][] = new Boolean[size][];
+        final Boolean[][] data = new Boolean[size][];
         for (int i = 0; i < size; i++) {
             final Boolean[] v = new Boolean[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -255,7 +255,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomIntArrayCol(String colName, int size, Random random, int maxSz) {
-        final int data[][] = new int[size][];
+        final int[][] data = new int[size][];
         for (int i = 0; i < size; i++) {
             final int[] v = new int[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -267,7 +267,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomLongArrayCol(String colName, int size, Random random, int maxSz) {
-        final long data[][] = new long[size][];
+        final long[][] data = new long[size][];
         for (int i = 0; i < size; i++) {
             final long[] v = new long[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -279,7 +279,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomShortArrayCol(String colName, int size, Random random, int maxSz) {
-        final short data[][] = new short[size][];
+        final short[][] data = new short[size][];
         for (int i = 0; i < size; i++) {
             final short[] v = new short[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -291,7 +291,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomDoubleArrayCol(String colName, int size, Random random, int maxSz) {
-        final double data[][] = new double[size][];
+        final double[][] data = new double[size][];
         for (int i = 0; i < size; i++) {
             final double[] v = new double[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -303,7 +303,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomFloatArrayCol(String colName, int size, Random random, int maxSz) {
-        final float data[][] = new float[size][];
+        final float[][] data = new float[size][];
         for (int i = 0; i < size; i++) {
             final float[] v = new float[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -315,7 +315,7 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomCharArrayCol(String colName, int size, Random random, int maxSz) {
-        final char data[][] = new char[size][];
+        final char[][] data = new char[size][];
         for (int i = 0; i < size; i++) {
             final char[] v = new char[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
@@ -342,11 +342,11 @@ public class TstUtils {
         return ColumnHolder.createColumnHolder(colName, false, data);
     }
 
-    public static void validate(final EvalNuggetInterface en[]) {
+    public static void validate(final EvalNuggetInterface[] en) {
         validate("", en);
     }
 
-    public static void validate(final String ctxt, final EvalNuggetInterface en[]) {
+    public static void validate(final String ctxt, final EvalNuggetInterface[] en) {
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println();
             System.out.println("================ NEXT ITERATION ================");
@@ -411,8 +411,8 @@ public class TstUtils {
         final int endSlots = targetSize - (int) fillIn.size();
 
         double density = ((random.nextGaussian() / 0.25) + 0.5);
-        density = density < 0.1 ? 0.1 : density;
-        density = density > 1 ? 1 : density;
+        density = Math.max(density, 0.1);
+        density = Math.min(density, 1);
         final long rangeSize = (long) ((1.0 / density) * endSlots);
         final Index expansion =
                 selectSubIndexSet(endSlots, Index.FACTORY.getIndexByRange(maxKey + 1, maxKey + rangeSize + 1), random);
@@ -425,7 +425,7 @@ public class TstUtils {
         return fillIn;
     }
 
-    public static ColumnInfo[] initColumnInfos(String names[], Generator... generators) {
+    public static ColumnInfo[] initColumnInfos(String[] names, Generator... generators) {
         if (names.length != generators.length) {
             throw new IllegalArgumentException(
                     "names and generator lengths mismatch: " + names.length + " != " + generators.length);
@@ -439,7 +439,7 @@ public class TstUtils {
         return result;
     }
 
-    public static ColumnInfo[] initColumnInfos(String names[], ColumnInfo.ColAttributes attributes[],
+    public static ColumnInfo[] initColumnInfos(String[] names, ColumnInfo.ColAttributes[] attributes,
             Generator... generators) {
         if (names.length != generators.length) {
             throw new IllegalArgumentException(
@@ -454,7 +454,7 @@ public class TstUtils {
         return result;
     }
 
-    public static ColumnInfo[] initColumnInfos(String names[], List<List<ColumnInfo.ColAttributes>> attributes,
+    public static ColumnInfo[] initColumnInfos(String[] names, List<List<ColumnInfo.ColAttributes>> attributes,
             Generator... generators) {
         if (names.length != generators.length) {
             throw new IllegalArgumentException(
@@ -470,11 +470,11 @@ public class TstUtils {
         return result;
     }
 
-    public static QueryTable getTable(int size, Random random, ColumnInfo columnInfos[]) {
+    public static QueryTable getTable(int size, Random random, ColumnInfo[] columnInfos) {
         return getTable(true, size, random, columnInfos);
     }
 
-    public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo columnInfos[]) {
+    public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo[] columnInfos) {
         final Index index = getInitialIndex(size, random);
         for (ColumnInfo columnInfo : columnInfos) {
             columnInfo.populateMap(index, random);
@@ -498,7 +498,7 @@ public class TstUtils {
     }
 
     public static QueryTable testTable(Index index, ColumnHolder... columnHolders) {
-        final Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(index, columnHolder));
         }
@@ -522,7 +522,7 @@ public class TstUtils {
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
         final Index index = columnHolders.length == 0 ? Index.FACTORY.getEmptyIndex()
                 : Index.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));
-        final Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(index, columnHolder));
         }
@@ -536,13 +536,13 @@ public class TstUtils {
 
         final AbstractColumnSource result;
         if (columnHolder instanceof ImmutableColumnHolder) {
-            // noinspection unchecked
-            result = new ImmutableTreeMapSource(columnHolder.dataType, index, boxedData);
+            // noinspection unchecked,rawtypes
+            result = new ImmutableTreeMapSource<>(columnHolder.dataType, index, boxedData);
         } else if (columnHolder.dataType.equals(DBDateTime.class) && columnHolder.data instanceof long[]) {
             result = new DateTimeTreeMapSource(index, (long[]) columnHolder.data);
         } else {
-            // noinspection unchecked
-            result = new TreeMapSource(columnHolder.dataType, index, boxedData);
+            // noinspection unchecked,rawtypes
+            result = new TreeMapSource<>(columnHolder.dataType, index, boxedData);
         }
 
         if (columnHolder.grouped) {
@@ -556,8 +556,7 @@ public class TstUtils {
         final Index index = table.getIndex().getPrevIndex();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
-            // noinspection unchecked
-            columnSourceMap.put(k, new PrevColumnSource(cs));
+            columnSourceMap.put(k, new PrevColumnSource<>(cs));
         });
         return new QueryTable(index, columnSourceMap);
     }
@@ -566,7 +565,7 @@ public class TstUtils {
         final Index index = table.getIndex().getPrevIndex();
 
         final List<ColumnHolder<?>> cols = new ArrayList<>();
-        for (Map.Entry<String, ? extends ColumnSource> mapEntry : table.getColumnSourceMap().entrySet()) {
+        for (Map.Entry<String, ? extends ColumnSource<?>> mapEntry : table.getColumnSourceMap().entrySet()) {
             final String name = mapEntry.getKey();
             final ColumnSource<?> columnSource = mapEntry.getValue();
             final List<Object> data = new ArrayList<>();
@@ -2252,6 +2251,5 @@ public class TstUtils {
         if (failed) {
             throw new RuntimeException("Debug candidate: seed=" + bestSeed + " steps=" + bestSteps);
         }
-        LiveTableTestCase.printTableUpdates = origPrintTableUpdates;
     }
 }

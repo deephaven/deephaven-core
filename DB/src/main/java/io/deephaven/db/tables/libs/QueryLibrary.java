@@ -152,11 +152,11 @@ public class QueryLibrary {
         return Collections.unmodifiableCollection(currLibrary.get().packageImports.values());
     }
 
-    public static Collection<Class> getClassImports() {
+    public static Collection<Class<?>> getClassImports() {
         return Collections.unmodifiableCollection(currLibrary.get().classImports.values());
     }
 
-    public static Collection<Class> getStaticImports() {
+    public static Collection<Class<?>> getStaticImports() {
         return Collections.unmodifiableCollection(currLibrary.get().staticImports.values());
     }
 }

@@ -27,7 +27,7 @@ import java.util.*;
 
 public class UnionSourceManager {
 
-    private final UnionColumnSource[] sources;
+    private final UnionColumnSource<?>[] sources;
     private final Index index;
     private final List<ModifiedColumnSet.Transformer> modColumnTransformers = new ArrayList<>();
     private final ModifiedColumnSet modifiedColumnSet;
@@ -48,9 +48,8 @@ public class UnionSourceManager {
 
     public UnionSourceManager(TableDefinition tableDefinition,
             @Nullable NotificationQueue.Dependency parentDependency) {
-        // noinspection unchecked
         sources = tableDefinition.getColumnList().stream()
-                .map((cd) -> new UnionColumnSource(cd.getDataType(), cd.getComponentType(), unionRedirection, this))
+                .map((cd) -> new UnionColumnSource<>(cd.getDataType(), cd.getComponentType(), unionRedirection, this))
                 .toArray(UnionColumnSource[]::new);
         names = tableDefinition.getColumnList().stream().map(ColumnDefinition::getName).toArray(String[]::new);
         this.parentDependency = parentDependency;
@@ -111,12 +110,12 @@ public class UnionSourceManager {
 
     /**
      * Adds a table to the managed constituents.
-     * 
+     *
      * @param table the new table
      * @param onNewTableMapKey whether this table is being added after the initial setup
      */
     public synchronized void addTable(@NotNull final Table table, final boolean onNewTableMapKey) {
-        final Map<String, ? extends ColumnSource> sources = table.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> sources = table.getColumnSourceMap();
         if (onNewTableMapKey) {
             Require.requirement(!isUsingComponentsSafe(), "!isUsingComponentsSafe()");
         }
@@ -126,11 +125,11 @@ public class UnionSourceManager {
         unionRedirection.appendTable(table.getIndex().lastKey());
 
         for (int i = 0; i < this.sources.length; i++) {
-            final ColumnSource sourceToAdd = sources.get(names[i]);
+            final ColumnSource<?> sourceToAdd = sources.get(names[i]);
             Assert.assertion(sourceToAdd != null, "sources.get(names[i]) != null", names[i],
                     "names[i]");
-            // noinspection unchecked
-            this.sources[i].appendColumnSource(sourceToAdd);
+            // noinspection unchecked,rawtypes
+            this.sources[i].appendColumnSource((ColumnSource) sourceToAdd);
         }
         final int tableId = tables.size();
         tables.add(table);
@@ -166,8 +165,8 @@ public class UnionSourceManager {
         }
     }
 
-    public Map<String, UnionColumnSource> getColumnSources() {
-        final Map<String, UnionColumnSource> result = new LinkedHashMap<>();
+    public Map<String, UnionColumnSource<?>> getColumnSources() {
+        final Map<String, UnionColumnSource<?>> result = new LinkedHashMap<>();
         for (int i = 0; i < sources.length; i++) {
             result.put(names[i], sources[i]);
         }

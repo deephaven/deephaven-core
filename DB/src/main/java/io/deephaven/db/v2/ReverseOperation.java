@@ -66,15 +66,14 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final Index indexToReverse = usePrev ? parent.getIndex().getPrevIndex() : parent.getIndex();
         prevPivot = pivotPoint = computePivot(indexToReverse.lastKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
-        final Map<String, ColumnSource> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource> entry : parent.getColumnSourceMap().entrySet()) {
-            // noinspection unchecked
-            resultMap.put(entry.getKey(), new ReversedColumnSource(entry.getValue(), this));
+        final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
+        for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
+            resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
 
         final Index index = transform(indexToReverse);
@@ -86,7 +85,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Reverse);
 
         if (!parent.isRefreshing()) {
-            return new Result(resultTable);
+            return new Result<>(resultTable);
         }
 
         final ShiftAwareListener listener =
@@ -97,7 +96,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
                     }
                 };
 
-        return new Result(resultTable, listener);
+        return new Result<>(resultTable, listener);
     }
 
     private void onUpdate(final ShiftAwareListener.Update upstream) {
@@ -223,7 +222,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index, or vice versa.
-     * 
+     *
      * @param indexToTransform the outer index
      * @return the corresponding inner index
      */
@@ -233,7 +232,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle, or vice versa.
-     * 
+     *
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */
@@ -262,7 +261,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index, or vice versa.
-     * 
+     *
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */
@@ -272,7 +271,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle, or vice versa.
-     * 
+     *
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */

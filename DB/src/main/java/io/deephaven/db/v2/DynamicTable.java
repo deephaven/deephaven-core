@@ -144,7 +144,7 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
 
     /**
      * Retrieve the {@link ModifiedColumnSet} that will be used when propagating updates from this table.
-     * 
+     *
      * @param columnNames the columns that should belong to the resulting set.
      * @return the resulting ModifiedColumnSet for the given columnNames
      */
@@ -204,19 +204,19 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
     /**
      * Create a transformer that uses an identity mapping from one ColumnSourceMap to another. The two CSMs must have
      * equivalent column names and column ordering.
-     * 
+     *
      * @param newColumns the column source map for result table
      * @return a simple Transformer that makes a cheap, but CSM compatible copy
      */
     default ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(
-            final Map<String, ColumnSource> newColumns) {
+            final Map<String, ColumnSource<?>> newColumns) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Create a transformer that uses an identity mapping from one DynamicTable to another. The two tables must have
      * equivalent column names and column ordering.
-     * 
+     *
      * @param other the result table
      * @return a simple Transformer that makes a cheap, but CSM compatible copy
      */

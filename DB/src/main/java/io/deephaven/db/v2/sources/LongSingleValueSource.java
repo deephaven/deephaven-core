@@ -83,7 +83,7 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
     }
 
     @Override
-    public final void copy(ColumnSource<Long> sourceColumn, long sourceKey, long destKey) {
+    public final void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
         set(sourceColumn.get(sourceKey));
     }
 
@@ -93,7 +93,7 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final LongChunk chunk = src.asLongChunk();
+        final LongChunk<? extends Attributes.Values> chunk = src.asLongChunk();
         set(chunk.get(0));
     }
 
@@ -103,7 +103,7 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final LongChunk chunk = src.asLongChunk();
+        final LongChunk<? extends Attributes.Values> chunk = src.asLongChunk();
         set(chunk.get(0));
     }
 }

@@ -30,12 +30,12 @@ import static io.deephaven.db.util.IterableUtils.makeCommaSeparatedList;
 public class JavaKernelBuilder {
     private static final String FORMULA_KERNEL_FACTORY_NAME = "__FORMULA_KERNEL_FACTORY";
 
-    public static Result create(String cookedFormulaString, Class returnedType, String timeInstanceVariables,
-            Map<String, RichType> columns, Map<String, Class> arrays, Map<String, Class> params) {
+    public static Result create(String cookedFormulaString, Class<?> returnedType, String timeInstanceVariables,
+            Map<String, RichType> columns, Map<String, Class<?>> arrays, Map<String, Class<?>> params) {
         final JavaKernelBuilder jkf = new JavaKernelBuilder(cookedFormulaString, returnedType, timeInstanceVariables,
                 columns, arrays, params);
         final String classBody = jkf.generateKernelClassBody();
-        final Class clazz = compileFormula(cookedFormulaString, classBody, "Formula");
+        final Class<?> clazz = compileFormula(cookedFormulaString, classBody, "Formula");
         final FormulaKernelFactory fkf;
         try {
             fkf = (FormulaKernelFactory) clazz.getField(FORMULA_KERNEL_FACTORY_NAME).get(null);
@@ -46,7 +46,7 @@ public class JavaKernelBuilder {
     }
 
     private final String cookedFormulaString;
-    private final Class returnedType;
+    private final Class<?> returnedType;
     private final String timeInstanceVariables;
 
     /**
@@ -56,14 +56,14 @@ public class JavaKernelBuilder {
     /**
      * name -> type
      */
-    private final Map<String, Class> arrays;
+    private final Map<String, Class<?>> arrays;
     /**
      * name -> type
      */
-    private final Map<String, Class> params;
+    private final Map<String, Class<?>> params;
 
-    private JavaKernelBuilder(String cookedFormulaString, Class returnedType, String timeInstanceVariables,
-            Map<String, RichType> columns, Map<String, Class> arrays, Map<String, Class> params) {
+    private JavaKernelBuilder(String cookedFormulaString, Class<?> returnedType, String timeInstanceVariables,
+            Map<String, RichType> columns, Map<String, Class<?>> arrays, Map<String, Class<?>> params) {
         this.cookedFormulaString = cookedFormulaString;
         this.returnedType = returnedType;
         this.timeInstanceVariables = timeInstanceVariables;
@@ -235,10 +235,10 @@ public class JavaKernelBuilder {
         }
 
         if (columnArrayLambda != null) {
-            for (Map.Entry<String, Class> entry : arrays.entrySet()) {
+            for (Map.Entry<String, Class<?>> entry : arrays.entrySet()) {
                 final String name = entry.getKey() + DhFormulaColumn.COLUMN_SUFFIX;
-                final Class dataType = entry.getValue();
-                final Class dbArrayType = DhFormulaColumn.getDbArrayType(dataType);
+                final Class<?> dataType = entry.getValue();
+                final Class<?> dbArrayType = DhFormulaColumn.getDbArrayType(dataType);
                 final String dbArrayTypeAsString = dbArrayType.getCanonicalName() +
                         (TypeUtils.isConvertibleToPrimitive(dataType) ? "" : "<" + dataType.getCanonicalName() + ">");
                 final ColumnArrayParameter cap = new ColumnArrayParameter(name, dbArrayType, dbArrayTypeAsString);
@@ -247,9 +247,9 @@ public class JavaKernelBuilder {
         }
 
         if (paramLambda != null) {
-            for (Map.Entry<String, Class> entry : params.entrySet()) {
+            for (Map.Entry<String, Class<?>> entry : params.entrySet()) {
                 final String name = entry.getKey();
-                final Class type = entry.getValue();
+                final Class<?> type = entry.getValue();
                 final ParamParameter pp = new ParamParameter(name, type, type.getCanonicalName());
                 addIfNotNull(results, paramLambda.apply(pp));
             }
@@ -257,12 +257,13 @@ public class JavaKernelBuilder {
         return results;
     }
 
-    private static Class compileFormula(final String what, final String classBody, final String className) {
+    @SuppressWarnings("SameParameterValue")
+    private static Class<?> compileFormula(final String what, final String classBody, final String className) {
         // System.out.printf("compileFormula: formulaString is %s. Code is...%n%s%n", what, classBody);
         try (final QueryPerformanceNugget nugget =
                 QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Class>) () -> CompilerTools
+            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () -> CompilerTools
                     .compile(className, classBody, CompilerTools.FORMULA_PREFIX));
         } catch (PrivilegedActionException pae) {
             throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
@@ -272,10 +273,10 @@ public class JavaKernelBuilder {
 
     public static class Result {
         public final String classBody;
-        public final Class clazz;
+        public final Class<?> clazz;
         public final FormulaKernelFactory formulaKernelFactory;
 
-        public Result(String classBody, Class clazz, FormulaKernelFactory formulaKernelFactory) {
+        public Result(String classBody, Class<?> clazz, FormulaKernelFactory formulaKernelFactory) {
             this.classBody = classBody;
             this.clazz = clazz;
             this.formulaKernelFactory = formulaKernelFactory;
@@ -290,10 +291,10 @@ public class JavaKernelBuilder {
 
     private static class ChunkParameter {
         final String name;
-        final Class type;
+        final Class<?> type;
         final String typeString;
 
-        ChunkParameter(final String name, final Class type, final String typeString) {
+        ChunkParameter(final String name, final Class<?> type, final String typeString) {
             this.name = name;
             this.type = type;
             this.typeString = typeString;
@@ -302,10 +303,10 @@ public class JavaKernelBuilder {
 
     private static class ColumnArrayParameter {
         final String name;
-        final Class arrayType;
+        final Class<?> arrayType;
         final String arrayTypeAsString;
 
-        ColumnArrayParameter(String name, Class arrayType, String arrayTypeAsString) {
+        ColumnArrayParameter(String name, Class<?> arrayType, String arrayTypeAsString) {
             this.name = name;
             this.arrayType = arrayType;
             this.arrayTypeAsString = arrayTypeAsString;
@@ -314,10 +315,10 @@ public class JavaKernelBuilder {
 
     private static class ParamParameter {
         final String name;
-        final Class type;
+        final Class<?> type;
         final String typeString;
 
-        ParamParameter(String name, Class type, String typeString) {
+        ParamParameter(String name, Class<?> type, String typeString) {
             this.name = name;
             this.type = type;
             this.typeString = typeString;

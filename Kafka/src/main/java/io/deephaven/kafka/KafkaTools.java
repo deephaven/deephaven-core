@@ -115,7 +115,7 @@ public class KafkaTools {
     }
 
     private static void pushColumnTypesFromAvroField(
-            final List<ColumnDefinition> columnsOut,
+            final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> mappedOut,
             final String prefix,
             final Schema.Field field,
@@ -135,7 +135,7 @@ public class KafkaTools {
     }
 
     private static void pushColumnTypesFromAvroField(
-            final List<ColumnDefinition> columnsOut,
+            final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> mappedOut,
             final String prefix,
             final Schema.Field field,
@@ -213,7 +213,7 @@ public class KafkaTools {
     }
 
     public static void avroSchemaToColumnDefinitions(
-            final List<ColumnDefinition> columns,
+            final List<ColumnDefinition<?>> columns,
             final Map<String, String> mappedOut,
             final Schema schema,
             final Function<String, String> fieldNameToColumnName) {
@@ -232,14 +232,14 @@ public class KafkaTools {
     }
 
     public static void avroSchemaToColumnDefinitions(
-            final List<ColumnDefinition> columns,
+            final List<ColumnDefinition<?>> columns,
             final Schema schema,
             final Function<String, String> fieldNameToColumnName) {
         avroSchemaToColumnDefinitions(columns, null, schema, fieldNameToColumnName);
     }
 
     public static void avroSchemaToColumnDefinitions(
-            final List<ColumnDefinition> columns,
+            final List<ColumnDefinition<?>> columns,
             final Schema schema) {
         avroSchemaToColumnDefinitions(columns, schema, DIRECT_MAPPING);
     }
@@ -509,7 +509,7 @@ public class KafkaTools {
 
         final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
         getCommonCols(commonColumns, 0, kafkaConsumerProperties);
-        final List<ColumnDefinition> columnDefinitions = new ArrayList<>();
+        final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>();
         int[] commonColumnIndices = new int[3];
         int nextColumnIndex = 0;
         for (int i = 0; i < 3; ++i) {
@@ -664,7 +664,7 @@ public class KafkaTools {
     private static KeyOrValueIngestData getIngestData(
             final KeyOrValue keyOrValue,
             final Properties kafkaConsumerProperties,
-            final List<ColumnDefinition> columnDefinitions,
+            final List<ColumnDefinition<?>> columnDefinitions,
             final MutableInt nextColumnIndexMut,
             final KeyOrValueSpec keyOrValueSpec) {
         if (keyOrValueSpec.dataFormat() == DataFormat.IGNORE) {
@@ -717,7 +717,7 @@ public class KafkaTools {
             case SIMPLE:
                 data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
                 final KeyOrValueSpec.Simple simpleSpec = (KeyOrValueSpec.Simple) keyOrValueSpec;
-                final ColumnDefinition colDef;
+                final ColumnDefinition<?> colDef;
                 if (simpleSpec.dataType == null) {
                     colDef = getKeyOrValueCol(keyOrValue, kafkaConsumerProperties, simpleSpec.columnName, false);
                 } else {
@@ -766,7 +766,7 @@ public class KafkaTools {
     };
 
     private static void getCommonCol(
-            @NotNull final ColumnDefinition[] columnsToSet,
+            @NotNull final ColumnDefinition<?>[] columnsToSet,
             final int outOffset,
             @NotNull final Properties consumerProperties,
             @NotNull final String columnNameProperty,

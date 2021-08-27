@@ -83,7 +83,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         final int size = index.intSize();
         final char[] data = (char[])new char[size];
         // noinspection unchecked
-        final ColumnSource<Character> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<Character> reinterpreted = (ColumnSource<Character>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableCharChunk<Values> destChunk = ResettableWritableCharChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -101,7 +101,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         final char[] data = (char[])in.readObject();
         final CharChunk<Values> srcChunk = CharChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Character> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Character> reinterpreted = (WritableSource<Character>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -166,7 +166,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     // region copy method
     @Override
-    public void copy(ColumnSource<Character> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getChar(sourceKey));
     }
     // endregion copy method
@@ -203,6 +203,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     // endregion primitive get
 
     // region allocateNullFilledBlock
+    @SuppressWarnings("SameParameterValue")
     final char [] allocateNullFilledBlock(int size) {
         final char [] newBlock = new char[size];
         Arrays.fill(newBlock, NULL_CHAR);
@@ -387,7 +388,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     /**
     * Decides whether to record the previous value.
-    * @param key
+    * @param key the index to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -542,7 +543,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     @Override
     void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
-        final WritableCharChunk charChunk = dest.asWritableCharChunk();
+        final WritableCharChunk<? super Values> charChunk = dest.asWritableCharChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == Index.NULL_KEY) {

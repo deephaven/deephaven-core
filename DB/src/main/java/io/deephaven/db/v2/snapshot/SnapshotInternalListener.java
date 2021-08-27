@@ -12,21 +12,21 @@ import io.deephaven.db.v2.utils.Index;
 import java.util.Map;
 
 public class SnapshotInternalListener extends BaseTable.ShiftAwareListenerImpl {
-    private QueryTable triggerTable;
+    private final QueryTable triggerTable;
     private final boolean lazySnapshot;
     private final Table snapshotTable;
     private long snapshotPrevLength;
     private final QueryTable result;
-    private final Map<String, SingleValueColumnSource> resultLeftColumns;
-    private final Map<String, ArrayBackedColumnSource> resultRightColumns;
+    private final Map<String, SingleValueColumnSource<?>> resultLeftColumns;
+    private final Map<String, ArrayBackedColumnSource<?>> resultRightColumns;
     private final Index resultIndex;
 
     public SnapshotInternalListener(QueryTable triggerTable,
             boolean lazySnapshot,
             Table snapshotTable,
             QueryTable result,
-            Map<String, SingleValueColumnSource> resultLeftColumns,
-            Map<String, ArrayBackedColumnSource> resultRightColumns,
+            Map<String, SingleValueColumnSource<?>> resultLeftColumns,
+            Map<String, ArrayBackedColumnSource<?>> resultRightColumns,
             Index resultIndex) {
         super("snapshot " + result.getColumnSourceMap().keySet().toString(), triggerTable, result);
         this.triggerTable = triggerTable;

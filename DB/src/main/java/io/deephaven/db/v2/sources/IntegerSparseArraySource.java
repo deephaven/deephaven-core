@@ -86,7 +86,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
         final int size = index.intSize();
         final int[] data = (int[])new int[size];
         // noinspection unchecked
-        final ColumnSource<Integer> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<Integer> reinterpreted = (ColumnSource<Integer>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableIntChunk<Values> destChunk = ResettableWritableIntChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -104,7 +104,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
         final int[] data = (int[])in.readObject();
         final IntChunk<Values> srcChunk = IntChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Integer> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Integer> reinterpreted = (WritableSource<Integer>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -169,7 +169,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region copy method
     @Override
-    public void copy(ColumnSource<Integer> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Integer> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getInt(sourceKey));
     }
     // endregion copy method
@@ -206,6 +206,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     // endregion primitive get
 
     // region allocateNullFilledBlock
+    @SuppressWarnings("SameParameterValue")
     final int [] allocateNullFilledBlock(int size) {
         final int [] newBlock = new int[size];
         Arrays.fill(newBlock, NULL_INT);
@@ -390,7 +391,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     /**
     * Decides whether to record the previous value.
-    * @param key
+    * @param key the index to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -545,7 +546,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     @Override
     void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
-        final WritableIntChunk intChunk = dest.asWritableIntChunk();
+        final WritableIntChunk<? super Values> intChunk = dest.asWritableIntChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == Index.NULL_KEY) {

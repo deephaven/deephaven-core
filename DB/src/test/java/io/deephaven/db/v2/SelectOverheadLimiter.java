@@ -27,7 +27,7 @@ public class SelectOverheadLimiter {
     @VisibleForTesting
     static final AtomicInteger conversions = new AtomicInteger(0);
 
-    private SelectOverheadLimiter() {};
+    private SelectOverheadLimiter() {}
 
     private static class OverheadTracker implements IndexShiftData.SingleElementShiftCallback {
         TLongIntHashMap blockReferences = new TLongIntHashMap();
@@ -102,9 +102,8 @@ public class SelectOverheadLimiter {
         // we are refreshing, and within the permitted overhead
 
         final Index index = input.getIndex().clone();
-        final Map<String, SwitchColumnSource> resultColumns = new LinkedHashMap<>();
-        // noinspection unchecked
-        input.getColumnSourceMap().forEach((name, cs) -> resultColumns.put(name, new SwitchColumnSource(cs)));
+        final Map<String, SwitchColumnSource<?>> resultColumns = new LinkedHashMap<>();
+        input.getColumnSourceMap().forEach((name, cs) -> resultColumns.put(name, new SwitchColumnSource<>(cs)));
         final QueryTable result = new QueryTable(index, resultColumns);
 
 
@@ -178,7 +177,6 @@ public class SelectOverheadLimiter {
                 inputRecorder.setValue(null);
                 inputTransformer = null;
 
-                // noinspection unchecked
                 resultColumns.forEach((name, scs) -> scs.setNewCurrent(flatResult.getColumnSource(name)));
 
                 index.clear();

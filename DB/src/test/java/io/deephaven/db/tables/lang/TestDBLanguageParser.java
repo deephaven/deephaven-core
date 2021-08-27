@@ -31,10 +31,10 @@ import static io.deephaven.db.tables.lang.DBLanguageParser.isWideningPrimitiveCo
 public class TestDBLanguageParser extends BaseArrayTestCase {
 
     private HashSet<Package> packageImports;
-    private HashSet<Class> classImports;
-    private HashSet<Class> staticImports;
-    private HashMap<String, Class> variables;
-    private HashMap<String, Class[]> variableParameterizedTypes;
+    private HashSet<Class<?>> classImports;
+    private HashSet<Class<?>> staticImports;
+    private HashMap<String, Class<?>> variables;
+    private HashMap<String, Class<?>[]> variableParameterizedTypes;
 
     @Before
     @Override
@@ -98,7 +98,6 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         variables.put("myEnumValue", DBLanguageParserDummyEnum.class);
         variables.put("myObjectDBArray", DbArray.class);
         variables.put("myIntDBArray", DbIntArray.class);
-        variables.put("myDoubleDBArray", DbDoubleArray.class);
         variables.put("myByteDBArray", DbByteArray.class);
         variables.put("myDoubleDBArray", DbDoubleArray.class);
         // noinspection deprecation
@@ -374,7 +373,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, char.class, new String[] {});
     }
 
-    public void testConvertBackticks() throws Exception {
+    public void testConvertBackticks() {
         Require.equals(
                 DBLanguageParser.convertBackticks("`hello`"),
                 "convertBackticks(\"`hello`\")",
@@ -452,7 +451,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
                 "\"`\\\"'\\\\\"");
     }
 
-    public void testConvertSingleEquals() throws Exception {
+    public void testConvertSingleEquals() {
         Require.equals(
                 DBLanguageParser.convertSingleEquals("a=b"),
                 "convertSingleEquals(\"a=b\")",
@@ -553,13 +552,13 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testPrimitiveLiteralCasts() throws Exception {
         String expression, resultExpression;
 
-        Collection<Pair<String, Class>> literals = Arrays.asList(
+        Collection<Pair<String, Class<?>>> literals = Arrays.asList(
                 new Pair<>("42", int.class),
                 new Pair<>("42L", long.class),
                 new Pair<>("42f", float.class),
                 new Pair<>("42d", double.class),
                 new Pair<>("'c'", char.class));
-        Collection<Pair<String, Class>> targetTypes = Arrays.asList(
+        Collection<Pair<String, Class<?>>> targetTypes = Arrays.asList(
                 new Pair<>("char", char.class),
                 new Pair<>("byte", byte.class),
                 new Pair<>("short", short.class),
@@ -577,8 +576,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
          * The exception is the identity conversion, e.g. "(int)42" or "(double)42d". Since mid-2017, there is are no
          * intermediate functions for these redundant conversions.
          */
-        for (Pair<String, Class> literal : literals) {
-            for (Pair<String, Class> targetType : targetTypes) {
+        for (Pair<String, Class<?>> literal : literals) {
+            for (Pair<String, Class<?>> targetType : targetTypes) {
                 expression = '(' + targetType.first + ')' + literal.first; // e.g. "(int)42"
                 if (targetType.second == literal.second) {
                     resultExpression = expression;
@@ -590,7 +589,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         }
 
         // Test casting booleans types to numeric types (which should fail)
-        for (Pair<String, Class> targetType : targetTypes) {
+        for (Pair<String, Class<?>> targetType : targetTypes) {
             try {
                 try {
                     expression = '(' + targetType.first + ")true"; // e.g. "(int)true"
@@ -605,7 +604,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         }
 
         // Test casting numeric types to booleans (which should fail)
-        for (Pair<String, Class> literal : literals) {
+        for (Pair<String, Class<?>> literal : literals) {
             try {
                 try {
                     resultExpression = expression = "(boolean)" + literal.first; // e.g. "(boolean)42"
@@ -634,7 +633,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testPrimitiveVariableCasts() throws Exception {
         String expression, resultExpression;
 
-        Collection<Pair<String, Class>> numericAndCharVars = Arrays.asList(
+        Collection<Pair<String, Class<?>>> numericAndCharVars = Arrays.asList(
                 new Pair<>("myByte", byte.class),
                 new Pair<>("myShort", short.class),
                 new Pair<>("myChar", char.class),
@@ -642,7 +641,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
                 new Pair<>("myLong", long.class),
                 new Pair<>("myFloat", float.class),
                 new Pair<>("myDouble", double.class));
-        Collection<Pair<String, Class>> numericAndCharTypes = Arrays.asList(
+        Collection<Pair<String, Class<?>>> numericAndCharTypes = Arrays.asList(
                 new Pair<>("byte", byte.class),
                 new Pair<>("short", short.class),
                 new Pair<>("char", char.class),
@@ -660,8 +659,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
          * The exception is the identity conversion, e.g. "(int)myInt" or "(double)myDouble". Since mid-2017, there is
          * are no intermediate functions for these redundant conversions.
          */
-        for (Pair<String, Class> var : numericAndCharVars) {
-            for (Pair<String, Class> targetType : numericAndCharTypes) {
+        for (Pair<String, Class<?>> var : numericAndCharVars) {
+            for (Pair<String, Class<?>> targetType : numericAndCharTypes) {
                 expression = '(' + targetType.first + ')' + var.first; // e.g. "(int)myDouble"
                 if (targetType.second == var.second) {
                     resultExpression = expression;
@@ -673,7 +672,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         }
 
         // Test casting booleans types to numeric/char types (which should fail)
-        for (Pair<String, Class> targetType : numericAndCharTypes) {
+        for (Pair<String, Class<?>> targetType : numericAndCharTypes) {
             try {
                 try {
                     expression = '(' + targetType.first + ")myBoolean"; // e.g. "(int)myBoolean"
@@ -688,7 +687,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         }
 
         // Test casting numeric/char types to booleans (which should fail)
-        for (Pair<String, Class> var : numericAndCharVars) {
+        for (Pair<String, Class<?>> var : numericAndCharVars) {
             try {
                 try {
                     resultExpression = expression = "(boolean)" + var.first; // e.g. "(boolean)myInt"
@@ -733,30 +732,21 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
      * @see #testPrimitiveLiteralCasts()
      * @see #testBoxedToPrimitiveCasts()
      */
-    public void testBoxedToPrimitiveCasts() throws Exception {
+    public void testBoxedToPrimitiveCasts() {
         String expression, resultExpression;
 
-        final List<Class> boxedTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
-        final List<Class> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
+        final List<Class<?>> boxedTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
+        final List<Class<?>> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
         for (int i = 0; i < io.deephaven.util.type.TypeUtils.BOXED_TYPES.size(); i++) {
-            final Class boxedType = boxedTypes.get(i);
-            final String unboxedTypeName = io.deephaven.util.type.TypeUtils.getUnboxedType(boxedType).getName(); // the
-                                                                                                                 // name
-                                                                                                                 // of
-                                                                                                                 // the
-                                                                                                                 // primitive
-                                                                                                                 // type
-                                                                                                                 // that
-                                                                                                                 // this
-                                                                                                                 // boxed
-                                                                                                                 // type
-                                                                                                                 // represents
+            final Class<?> boxedType = boxedTypes.get(i);
+            // the name of the primitive type that this boxed type represents
+            final String unboxedTypeName = io.deephaven.util.type.TypeUtils.getUnboxedType(boxedType).getName();
             final String boxedTypeTestVarName =
                     "my" + Character.toUpperCase(unboxedTypeName.charAt(0)) + unboxedTypeName.substring(1) + "Obj";
 
             for (int j = 0; j < io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES.size(); j++) {
-                final Class primitiveType = primitiveTypes.get(j);
+                final Class<?> primitiveType = primitiveTypes.get(j);
                 final String primitiveTypeName = primitiveType.getName();
 
                 expression = '(' + primitiveTypeName + ")" + boxedTypeTestVarName;
@@ -806,11 +796,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testObjectToPrimitiveOrBoxedCasts() throws Exception {
         String expression, resultExpression;
 
-        Set<Class> boxedAndPrimitiveTypes = new HashSet<>();
+        Set<Class<?>> boxedAndPrimitiveTypes = new HashSet<>();
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
-        for (Class type : boxedAndPrimitiveTypes) {
+        for (Class<?> type : boxedAndPrimitiveTypes) {
             expression = '(' + type.getSimpleName() + ")myObject";
             if (type.isPrimitive() && type != boolean.class) {
                 resultExpression = io.deephaven.util.type.TypeUtils.getUnboxedType(type) + "Cast(myObject)";
@@ -827,11 +817,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testPrimitiveAndBoxedToObjectCasts() throws Exception {
         String expression, resultExpression;
 
-        Set<Class> boxedAndPrimitiveTypes = new HashSet<>();
+        Set<Class<?>> boxedAndPrimitiveTypes = new HashSet<>();
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
-        for (Class type : boxedAndPrimitiveTypes) {
+        for (Class<?> type : boxedAndPrimitiveTypes) {
             expression = '(' + type.getSimpleName() + ")myObject";
             if (type.isPrimitive() && type != boolean.class) {
                 resultExpression = TypeUtils.getUnboxedType(type) + "Cast(myObject)";
@@ -1348,7 +1338,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
              * Also test within a method call. This is essentially the case that prompted the fix. The actual issue with
              * the expression is that the enclosing class name is omitted when trying to access the nested enum
              * (NestedEnum.ONE), but the user experience was poor because the exception was very unclear.
-             * 
+             *
              * There is a test of the proper expression in testComplexExpressions().
              */
             try {
@@ -2018,6 +2008,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         }
     }
 
+    @SuppressWarnings("ClassGetClass") // class.getClass() is the purpose of this test
     public void testClassExpr() throws Exception {
         String expression = "Integer.class";
         String resultExpression = "Integer.class";
@@ -2070,7 +2061,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, "greaterEquals(23, plus(System.currentTimeMillis(), 12))", boolean.class, new String[0]);
     }
 
-    private void expectFailure(String expression, Class resultType) throws Exception {
+    @SuppressWarnings("SameParameterValue")
+    private void expectFailure(String expression, Class<?> resultType) throws Exception {
         try {
             check(expression, expression, resultType, new String[0]);
             fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
@@ -2078,7 +2070,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         }
     }
 
-    private void check(String expression, String resultExpression, Class resultType, String resultVarsUsed[])
+    private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed)
             throws Exception {
         DBLanguageParser.Result result = new DBLanguageParser(expression, packageImports, classImports, staticImports,
                 variables, variableParameterizedTypes).getResult();
@@ -2086,12 +2078,13 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         assertEquals(resultType, result.getType());
         assertEquals(resultExpression, result.getConvertedExpression());
 
-        String variablesUsed[] = result.getVariablesUsed().toArray(new String[0]);
+        String[] variablesUsed = result.getVariablesUsed().toArray(new String[0]);
         Arrays.sort(variablesUsed);
 
         assertEquals(resultVarsUsed, variablesUsed);
     }
 
+    @SuppressWarnings("InnerClassMayBeStatic")
     class TestClass implements Comparable<TestClass> {
         public int compareTo(@NotNull TestClass o) {
             return 0;

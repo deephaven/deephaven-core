@@ -52,11 +52,13 @@ public class ReplicateSourcesAndChunkTest {
         lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
         lines = globalReplacements(lines, "NULL_OBJECT", "null",
-                "ObjectChunk<Any>", "ObjectChunk<?, Any>",
-                "ObjectChunk<Values>", "ObjectChunk<?, Values>",
+                "ObjectChunk<? extends Values>", "ObjectChunk<?, ? extends Values>",
                 "source.getObject", "source.get",
                 "dest.getObject", "dest.get",
                 "source.getPrevObject", "source.getPrev",
+                "ObjectChunk<Values>", "ObjectChunk<?, ? extends Values>",
+                "ObjectChunk<[?] extends Values>", "ObjectChunk<?, ? extends Values>",
+                "Map<String, ObjectArraySource>", "Map<String, ObjectArraySource<?>>",
                 "new ObjectArraySource\\(\\)", "new ObjectArraySource<>\\(String.class\\)",
                 "new ObjectSparseArraySource\\(\\)", "new ObjectSparseArraySource<>\\(String.class\\)");
         lines = removeRegion(lines, "boxing imports");
@@ -70,8 +72,7 @@ public class ReplicateSourcesAndChunkTest {
         lines = globalReplacements(lines,
                 "BooleanChunk(\\s+)", "ObjectChunk<Boolean, ?>$1",
                 "\\(BooleanChunk\\)", "\\(ObjectChunk\\)",
-                "\\(BooleanChunk<Values>\\)", "\\(ObjectChunk<Boolean, Values>\\)",
-                "BooleanChunk<Any>(\\s+)", "ObjectChunk<Boolean, Any>$1",
+                "\\(BooleanChunk<[?] extends Values>\\)", "\\(ObjectChunk<Boolean, ? extends Values>\\)",
                 "BooleanChunk<Values>(\\s+)", "ObjectChunk<Boolean, Values>$1",
                 "BooleanChunk<[?] extends Values>(\\s+)", "ObjectChunk<Boolean, ? extends Values>$1",
                 "asBooleanChunk", "asObjectChunk",
@@ -132,7 +133,7 @@ public class ReplicateSourcesAndChunkTest {
                 "source.getPrevBoolean", "source.getPrevByte",
                 "NULL_BOOLEAN", "BooleanUtils.NULL_BOOLEAN_AS_BYTE",
                 "byte.class", "boolean.class",
-                "BooleanChunk<Values>", "ObjectChunk<Boolean, Values>",
+                "BooleanChunk<[?] extends Values>", "ObjectChunk<Boolean, ? extends Values>",
                 "asBooleanChunk", "asObjectChunk",
                 "values.get\\((.*)\\)", "io.deephaven.db.util.BooleanUtils.booleanAsByte(values.get($1))");
         lines = addImport(lines, BooleanUtils.class);

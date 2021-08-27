@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2;
 
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
@@ -37,14 +38,14 @@ public class InMemoryTable extends QueryTable {
                 columns);
     }
 
-    public InMemoryTable(String columnNames[], Object arrayValues[]) {
+    public InMemoryTable(String[] columnNames, Object[] arrayValues) {
         super(Index.FACTORY.getFlatIndex(Array.getLength(arrayValues[0])), createColumnsMap(columnNames, arrayValues));
     }
 
     public InMemoryTable(TableDefinition definition, final int size) {
         super(Index.FACTORY.getFlatIndex(size),
                 createColumnsMap(
-                        definition.getColumnNames().toArray(new String[definition.getColumnNames().size()]),
+                        definition.getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                         Arrays.stream(definition.getColumns()).map(
                                 x -> Array.newInstance(x.getDataType(), size)).toArray(Object[]::new)));
     }
@@ -53,8 +54,8 @@ public class InMemoryTable extends QueryTable {
         super(definition, index, columns);
     }
 
-    private static Map<String, ColumnSource> createColumnsMap(String[] columnNames, Object[] arrayValues) {
-        Map<String, ColumnSource> map = new LinkedHashMap<>();
+    private static Map<String, ColumnSource<?>> createColumnsMap(String[] columnNames, Object[] arrayValues) {
+        Map<String, ColumnSource<?>> map = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
             map.put(columnNames[i], ArrayBackedColumnSource.getMemoryColumnSourceUntyped((arrayValues[i])));
         }

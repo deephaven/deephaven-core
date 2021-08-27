@@ -98,14 +98,14 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
 
         final QueryTable queryTable = (QueryTable) result;
 
-        final Map<String, ColumnSource> map = queryTable.getColumnSourceMap();
+        final Map<String, ColumnSource<?>> map = queryTable.getColumnSourceMap();
 
         // noinspection unchecked
         final ColumnSource<String>[] columnSources = (ColumnSource<String>[]) new ColumnSource[map.size()];
         int ii = 0;
-        for (ColumnSource cs : map.values()) {
+        for (ColumnSource<?> cs : map.values()) {
             // noinspection unchecked
-            columnSources[ii++] = cs;
+            columnSources[ii++] = (ColumnSource<String>) cs;
         }
 
         for (final Index.Iterator it = queryTable.getIndex().iterator(); it.hasNext();) {

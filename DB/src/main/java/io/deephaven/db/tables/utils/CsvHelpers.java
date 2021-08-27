@@ -638,9 +638,9 @@ public class CsvHelpers {
         final CSVParser parser = new CSVParser(fileReader, parseFormat);
 
         lProgress.update(10, "Reading column names from CSV.");
-        String columnNames[] = new String[0];
+        String[] columnNames = new String[0];
         if (!noHeader || !(header == null)) {
-            columnNames = parser.getHeaderMap().keySet().toArray(new String[0]);
+            columnNames = parser.getHeaderMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             if (columnNames.length == 0) {
                 throw new RuntimeException("No columns found in CSV.");
             }
@@ -680,7 +680,7 @@ public class CsvHelpers {
             }
         }
 
-        Object columnData[] = new Object[columnNames.length];
+        Object[] columnData = new Object[columnNames.length];
         int numRows = csvData.size();
 
         for (int col = 0; col < columnNames.length; col++) {
@@ -702,11 +702,12 @@ public class CsvHelpers {
         }
 
         if (v2) {
-            Map<String, ColumnSource> columnSources = new LinkedHashMap<>();
+            Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>();
             for (int ii = 0; ii < columnNames.length; ii++) {
                 lProgress.update(90 + (ii + 1) * 10 / columnNames.length,
                         "Mapping CSV column " + (ii + 1) + " of " + columnNames.length + " to table.");
-                ColumnSource arrayBackedSource = ArrayBackedColumnSource.getMemoryColumnSourceUntyped(columnData[ii]);
+                ColumnSource<?> arrayBackedSource =
+                        ArrayBackedColumnSource.getMemoryColumnSourceUntyped(columnData[ii]);
                 columnSources.put(columnNames[ii], arrayBackedSource);
             }
             lProgress.finish("");
@@ -752,7 +753,6 @@ public class CsvHelpers {
 
             if (isInteger == null || isInteger) {
                 try {
-                    // noinspection ResultOfMethodCallIgnored
                     Integer.parseInt(value);
                     isInteger = true;
                 } catch (NumberFormatException e) {
@@ -762,7 +762,6 @@ public class CsvHelpers {
 
             if (isLong == null || isLong) {
                 try {
-                    // noinspection ResultOfMethodCallIgnored
                     Long.parseLong(value);
                     isLong = true;
                 } catch (NumberFormatException e) {
@@ -772,7 +771,6 @@ public class CsvHelpers {
 
             if (isDouble == null || isDouble) {
                 try {
-                    // noinspection ResultOfMethodCallIgnored
                     Double.parseDouble(value);
                     isDouble = true;
                 } catch (NumberFormatException e) {
@@ -796,7 +794,7 @@ public class CsvHelpers {
         }
 
         if (isInteger != null && isInteger) {
-            int data[] = new int[numRows];
+            int[] data = new int[numRows];
 
             for (int row = 0; row < numRows; row++) {
                 String value = csvData.get(row).get(col);
@@ -806,7 +804,7 @@ public class CsvHelpers {
 
             return data;
         } else if (isLong != null && isLong) {
-            long data[] = new long[numRows];
+            long[] data = new long[numRows];
 
             for (int row = 0; row < numRows; row++) {
                 String value = csvData.get(row).get(col);
@@ -816,7 +814,7 @@ public class CsvHelpers {
 
             return data;
         } else if (isDouble != null && isDouble) {
-            double data[] = new double[numRows];
+            double[] data = new double[numRows];
 
             for (int row = 0; row < numRows; row++) {
                 String value = csvData.get(row).get(col);
@@ -826,7 +824,7 @@ public class CsvHelpers {
 
             return data;
         } else if (isBoolean != null && isBoolean) {
-            Boolean data[] = new Boolean[numRows];
+            Boolean[] data = new Boolean[numRows];
 
             for (int row = 0; row < numRows; row++) {
                 String value = csvData.get(row).get(col);
@@ -836,7 +834,7 @@ public class CsvHelpers {
 
             return data;
         } else if (isDateTime != null && isDateTime) {
-            DBDateTime data[] = new DBDateTime[numRows];
+            DBDateTime[] data = new DBDateTime[numRows];
 
             for (int row = 0; row < numRows; row++) {
                 DBDateTime value = DBTimeUtils.convertDateTimeQuiet(csvData.get(row).get(col));
@@ -846,7 +844,7 @@ public class CsvHelpers {
 
             return data;
         } else if (isLocalTime != null && isLocalTime) {
-            long data[] = new long[numRows];
+            long[] data = new long[numRows];
 
             for (int row = 0; row < numRows; row++) {
                 data[row] = DBTimeUtils.convertTimeQuiet(csvData.get(row).get(col));
@@ -854,7 +852,7 @@ public class CsvHelpers {
 
             return data;
         } else {
-            String data[] = new String[numRows];
+            String[] data = new String[numRows];
 
             for (int row = 0; row < numRows; row++) {
                 String value = csvData.get(row).get(col);

@@ -34,16 +34,15 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final Index index = parent.getIndex();
-        final Map<String, ColumnSource> resultColumns = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
         final RedirectionIndex redirectionIndex = new WrappedIndexRedirectionIndexImpl(index);
 
         final long size = usePrev ? index.sizePrev() : index.size();
 
-        for (Map.Entry<String, ColumnSource> entry : parent.getColumnSourceMap().entrySet()) {
-            // noinspection unchecked
-            resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource(redirectionIndex, entry.getValue()));
+        for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
+            resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, entry.getValue()));
         }
 
         resultTable = new QueryTable(Index.FACTORY.getFlatIndex(size), resultColumns);
@@ -62,7 +61,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
         prevSize = size;
         mcsTransformer = parent.newModifiedColumnSetIdentityTransformer(resultTable);
-        return new Result(resultTable, resultListener);
+        return new Result<>(resultTable, resultListener);
     }
 
     private final QueryTable parent;

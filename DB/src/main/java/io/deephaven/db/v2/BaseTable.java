@@ -1029,7 +1029,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     private void checkAvailableColumns(String[] columns) {
-        final Map<String, ? extends ColumnSource> sourceMap = getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> sourceMap = getColumnSourceMap();
         final String[] missingColumns =
                 Arrays.stream(columns).filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
 
@@ -1072,7 +1072,7 @@ public abstract class BaseTable extends LivenessArtifact
         // Process the original set of sortable columns, adding them to the new set if one of the below
         // 1) The column exists in the new table and was not renamed in any way but the Identity (C1 = C1)
         // 2) The column does not exist in the new table, but was renamed to another (C2 = C1)
-        final Map<String, ? extends ColumnSource> sourceMap = destination.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> sourceMap = destination.getColumnSourceMap();
         for (String col : currentSortableColumns.split(",")) {
             // Only add it to the set of sortable columns if it hasn't changed in an unknown way
             final String maybeRenamedColumn = columnMapping.get(col);
@@ -1118,7 +1118,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         // Now go through the other columns in the table and add them if they were unchanged
-        final Map<String, ? extends ColumnSource> sourceMap = destination.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> sourceMap = destination.getColumnSourceMap();
         for (String col : currentSortableSet) {
             if (sourceMap.containsKey(col)) {
                 newSortableSet.add(col);
@@ -1154,7 +1154,7 @@ public abstract class BaseTable extends LivenessArtifact
         // TODO: when the user requests to sort absolute.
         final Set<String> unsortable = Arrays.stream(columns)
                 .map(cn -> cn.startsWith("__ABS__") ? cn.replace("__ABS__", "") : cn).collect(Collectors.toSet());
-        unsortable.removeAll(sortableColSet);
+        sortableColSet.forEach(unsortable::remove);
 
         if (unsortable.isEmpty()) {
             return;
@@ -1172,6 +1172,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param destination the table which shall possibly have a column-description attribute created
      */
     void maybeCopyColumnDescriptions(final Table destination) {
+        // noinspection unchecked
         final Map<String, String> sourceDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         maybeCopyColumnDescriptions(destination, sourceDescriptions);
@@ -1185,6 +1186,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param renamedColumns an array of the columns which have been renamed
      */
     void maybeCopyColumnDescriptions(final Table destination, final MatchPair[] renamedColumns) {
+        // noinspection unchecked
         final Map<String, String> oldDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
 
@@ -1214,6 +1216,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param selectColumns columns which may be changed during this operation, and have their descriptions invalidated
      */
     void maybeCopyColumnDescriptions(final Table destination, final SelectColumn[] selectColumns) {
+        // noinspection unchecked
         final Map<String, String> oldDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
 
@@ -1244,8 +1247,10 @@ public abstract class BaseTable extends LivenessArtifact
      */
     void maybeCopyColumnDescriptions(final Table destination, final Table rightTable, final MatchPair[] joinedColumns,
             final MatchPair[] addColumns) {
+        // noinspection unchecked
         final Map<String, String> leftDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+        // noinspection unchecked
         final Map<String, String> rightDescriptions =
                 (Map<String, String>) rightTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
 
@@ -1361,7 +1366,7 @@ public abstract class BaseTable extends LivenessArtifact
         return result;
     }
 
-    public <SL extends SwapListenerBase> void initializeWithSnapshot(
+    public <SL extends SwapListenerBase<?>> void initializeWithSnapshot(
             String logPrefix, SL swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
             Assert.eqFalse(isRefreshing(), "isRefreshing");
@@ -1371,7 +1376,7 @@ public abstract class BaseTable extends LivenessArtifact
         ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);
     }
 
-    public interface SwapListenerFactory<T extends SwapListenerBase> {
+    public interface SwapListenerFactory<T extends SwapListenerBase<?>> {
         T newListener(BaseTable sourceTable);
     }
 
@@ -1383,7 +1388,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @return a swap listener for this table (or null)
      */
     @Nullable
-    public <T extends SwapListenerBase> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
+    public <T extends SwapListenerBase<?>> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
         if (!isRefreshing()) {
             return null;
         }
@@ -1435,7 +1440,7 @@ public abstract class BaseTable extends LivenessArtifact
     @Override
     public Table withColumnDescription(Map<String, String> descriptions) {
         if (!hasColumns(descriptions.keySet())) {
-            final Map<String, ColumnDefinition> existingColumns = getDefinition().getColumnNameMap();
+            final Map<String, ColumnDefinition<?>> existingColumns = getDefinition().getColumnNameMap();
             throw new IllegalArgumentException(
                     "Cannot set column descriptions.  The table does not contain the following columns [ " +
                             descriptions.keySet().stream()

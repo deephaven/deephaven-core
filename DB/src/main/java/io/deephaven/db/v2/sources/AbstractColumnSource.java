@@ -58,6 +58,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         } else if (type == Boolean.class) {
             this.type = type;
         } else {
+            // noinspection rawtypes
             final Class unboxedType = TypeUtils.getUnboxedType(type);
             // noinspection unchecked
             this.type = unboxedType != null ? unboxedType : type;
@@ -230,8 +231,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * found, then returns false.
      */
     private boolean isSerializable() {
-        for (Class clazz = getClass(); clazz != null; clazz = clazz.getSuperclass()) {
-            IsSerializable isSerializable = (IsSerializable) clazz.getAnnotation(IsSerializable.class);
+        for (Class<?> clazz = getClass(); clazz != null; clazz = clazz.getSuperclass()) {
+            IsSerializable isSerializable = clazz.getAnnotation(IsSerializable.class);
             if (isSerializable != null) {
                 return isSerializable.value();
             }
@@ -440,7 +441,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
             super(type);
         }
 
-        protected DefaultedMutable(@NotNull final Class<DATA_TYPE> type, @Nullable final Class elementType) {
+        protected DefaultedMutable(@NotNull final Class<DATA_TYPE> type, @Nullable final Class<?> elementType) {
             super(type, elementType);
         }
     }
@@ -452,7 +453,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
             super(type);
         }
 
-        protected DefaultedImmutable(@NotNull final Class<DATA_TYPE> type, @Nullable final Class elementType) {
+        protected DefaultedImmutable(@NotNull final Class<DATA_TYPE> type, @Nullable final Class<?> elementType) {
             super(type, elementType);
         }
     }

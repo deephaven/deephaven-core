@@ -30,7 +30,7 @@ public class KafkaToolsTest {
     @Test
     public void testAvroSchemaWithNulls() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNull);
-        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         assertEquals(2, colDefs.size());
         assertEquals("Symbol", colDefs.get(0).getName());
@@ -62,7 +62,7 @@ public class KafkaToolsTest {
     @Test
     public void testAvroSchemaWithNesting() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNesting);
-        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         assertEquals(2, colDefs.size());
         assertEquals("NestedField.Symbol", colDefs.get(0).getName());
@@ -89,7 +89,7 @@ public class KafkaToolsTest {
     @Test
     public void testAvroSChemaWithBasicTypesCoverage() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithBasicTypes);
-        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         final int nCols = 6;
         assertEquals(nCols, colDefs.size());
@@ -158,7 +158,7 @@ public class KafkaToolsTest {
             }
             return fieldName;
         };
-        final List<ColumnDefinition> colDefs = new ArrayList();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema, mapping);
         final int nCols = 4;
         assertEquals(nCols, colDefs.size());

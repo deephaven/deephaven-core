@@ -24,7 +24,7 @@ public class ChunkUtils {
 
     /**
      * Generates a {@link LongChunk<OrderedKeyRanges>} from {@link LongChunk<OrderedKeyIndices>} chunk.
-     * 
+     *
      * @param chunk the chunk to convert
      * @return the generated chunk
      */
@@ -62,7 +62,7 @@ public class ChunkUtils {
 
     /**
      * Fills {@code OrderedKeyRanges} into {@code dest} from the provided {@code chunk} and specified source range.
-     * 
+     *
      * @param chunk the chunk to convert
      * @param dest the chunk to fill with ranges
      */
@@ -90,7 +90,7 @@ public class ChunkUtils {
 
     /**
      * Generates a {@link LongChunk<OrderedKeyIndices>} from {@link LongChunk<OrderedKeyRanges>} chunk.
-     * 
+     *
      * @param chunk the chunk to convert
      * @return the generated chunk
      */
@@ -100,7 +100,7 @@ public class ChunkUtils {
 
     /**
      * Generates a {@link LongChunk<OrderedKeyIndices>} from {@link LongChunk<OrderedKeyRanges>} chunk.
-     * 
+     *
      * @param srcOffset the offset into {@code chunk} to begin including in the generated chunk
      * @param chunk the chunk to convert
      * @return the generated chunk
@@ -128,7 +128,7 @@ public class ChunkUtils {
 
     /**
      * Generates a {@link LongChunk<OrderedKeyIndices>} from {@link LongChunk<OrderedKeyRanges>} chunk.
-     * 
+     *
      * @param srcOffset the offset into {@code chunk} to begin including in the generated chunk
      * @param chunk the chunk to convert
      * @param dest the chunk to fill with indices
@@ -280,7 +280,7 @@ public class ChunkUtils {
      * When srcArray and destArray refer to the array, one of these five cases applies:
      *
      * <p>
-     * 
+     *
      * <pre>
      * Case 1: Source starts to the left of dest, and does not overlap. Recommend copying in forward direction.
      * SSSSS
@@ -561,7 +561,7 @@ public class ChunkUtils {
      * @param usePrev Should we read previous values from src
      */
     public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values> src, OrderedKeys srcAllKeys,
-            WritableSource dest,
+            WritableSource<?> dest,
             OrderedKeys destAllKeys, boolean usePrev) {
         if (src == dest) {
             throw new UnsupportedOperationException("This method isn't safe when src == dest");
@@ -605,7 +605,7 @@ public class ChunkUtils {
      * @param usePrev Should we read previous values from src
      */
     public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values>[] sources, OrderedKeys srcAllKeys,
-            WritableSource[] destinations,
+            WritableSource<?>[] destinations,
             OrderedKeys destAllKeys, boolean usePrev) {
         if (srcAllKeys.size() != destAllKeys.size()) {
             final String msg = String.format("Expected srcAllKeys.size() == destAllKeys.size(), but got %d and %d",
@@ -633,8 +633,8 @@ public class ChunkUtils {
                         new SafeCloseableArray<>(destContexts)) {
 
             for (int ss = 0; ss < sources.length; ++ss) {
-                for (int dd = 0; dd < destinations.length; ++dd) {
-                    if (sources[ss] == destinations[dd]) {
+                for (WritableSource<?> destination : destinations) {
+                    if (sources[ss] == destination) {
                         throw new IllegalArgumentException("Source must not equal destination!");
                     }
                 }

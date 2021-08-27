@@ -16,10 +16,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-@SuppressWarnings("unchecked")
 public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements MutableColumnSourceGetDefaults.ForObject<T> {
-    private static final SoftRecycler recycler = new SoftRecycler(DEFAULT_RECYCLER_CAPACITY,
-            () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill((Object[])item, null));
+    @SuppressWarnings("rawtypes")
+    private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+            () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
     transient private T[][] prevBlocks;
     private T[][] blocks;
     private final boolean isArrayType;
@@ -30,7 +30,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         init();
     }
 
-    public ObjectArraySource(Class<T> type, Class componentType) {
+    public ObjectArraySource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
         isArrayType = DbArrayBase.class.isAssignableFrom(type);
         init();
@@ -39,10 +39,12 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     @Override
     public void startTrackingPrevValues() {
         super.startTrackingPrev(blocks.length);
+        //noinspection unchecked
         prevBlocks = (T[][]) new Object[blocks.length][];
     }
 
     private void init() {
+        //noinspection unchecked
         blocks = (T[][]) new Object[INITIAL_NUMBER_OF_BLOCKS][];
         maxIndex = INITIAL_MAX_INDEX;
     }
@@ -84,6 +86,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         if (oldValue == newValue) {
             return oldValue;
         }
+        //noinspection unchecked
         if (shouldRecordPrevious(index, prevBlocks, recycler)) {
             prevBlocks[blockIndex][indexWithinBlock] = oldValue;
         }
@@ -92,11 +95,12 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
         final T value = sourceColumn.get(sourceKey);
 
         if (isArrayType && value instanceof DbArrayBase) {
-            final DbArrayBase dbArray = (DbArrayBase) value;
+            final DbArrayBase<?> dbArray = (DbArrayBase<?>) value;
+            //noinspection unchecked
             set(destKey, (T) dbArray.getDirect());
         } else {
             set(destKey, value);
@@ -119,11 +123,13 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
 
     @Override
     final T[] allocateNullFilledBlock(int size) {
+        //noinspection unchecked
         return (T[])new Object[size];
     }
 
     @Override
     final T[] allocateBlock(int size) {
+        //noinspection unchecked
         return (T[])new Object[size];
     }
 
@@ -140,7 +146,8 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
 
     @Override
     SoftRecycler<T[]> getRecycler() {
-        return recycler;
+        //noinspection unchecked
+        return (SoftRecycler<T[]>) recycler;
     }
 
     @Override
@@ -154,12 +161,12 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk chunk, long position) {
+    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
         Assert.eqNull(prevInUse, "prevInUse");
         final int blockNo = getBlockNo(position);
         final T [] backingArray = blocks[blockNo];
         chunk.asResettableWritableObjectChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
-        return blockNo << LOG_BLOCK_SIZE;
+        return (long)blockNo << LOG_BLOCK_SIZE;
     }
 
     @Override
@@ -174,7 +181,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         indices.forEachLong((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
-                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
             }
             dest.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
@@ -201,7 +208,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         indices.forEachLong((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
-                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
                 ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                 ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];

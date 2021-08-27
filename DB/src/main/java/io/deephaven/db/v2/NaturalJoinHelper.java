@@ -130,19 +130,19 @@ class NaturalJoinHelper {
                         final Map<?, Index> grouping =
                                 bucketingContext.leftSources[0].getGroupToRange(leftTable.getIndex());
 
-                        // noinspection unchecked
+                        // noinspection unchecked,rawtypes
                         final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<Index>> flatResultColumnSources =
                                 AbstractColumnSource.groupingToFlatSources(
                                         (ColumnSource) bucketingContext.leftSources[0], grouping, leftTable.getIndex(),
                                         groupingSize);
-                        final ArrayBackedColumnSource groupSource = flatResultColumnSources.getFirst();
+                        final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
                         indexSource = flatResultColumnSources.getSecond();
 
                         final Table leftTableGrouped =
                                 new QueryTable(Index.FACTORY.getFlatIndex(groupingSize.intValue()),
                                         Collections.singletonMap(columnsToMatch[0].left(), groupSource));
 
-                        final ColumnSource[] groupedSourceArray = {groupSource};
+                        final ColumnSource<?>[] groupedSourceArray = {groupSource};
                         jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
                         jsm.convertLeftGroups(groupingSize.intValue(), leftHashSlots, indexSource);
                     } else {
@@ -180,17 +180,17 @@ class NaturalJoinHelper {
                             bucketingContext.leftSources[0].getGroupToRange(leftTable.getIndex());
 
                     final MutableInt groupingSize = new MutableInt();
-                    // noinspection unchecked
+                    // noinspection unchecked,rawtypes
                     final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<Index>> flatResultColumnSources =
                             AbstractColumnSource.groupingToFlatSources((ColumnSource) bucketingContext.leftSources[0],
                                     grouping, leftTable.getIndex(), groupingSize);
-                    final ArrayBackedColumnSource groupSource = flatResultColumnSources.getFirst();
+                    final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
                     final ObjectArraySource<Index> indexSource = flatResultColumnSources.getSecond();
 
                     final Table leftTableGrouped = new QueryTable(Index.FACTORY.getFlatIndex(groupingSize.intValue()),
                             Collections.singletonMap(columnsToMatch[0].left(), groupSource));
 
-                    final ColumnSource[] groupedSourceArray = {groupSource};
+                    final ColumnSource<?>[] groupedSourceArray = {groupSource};
                     final StaticChunkedNaturalJoinStateManager jsm =
                             new StaticChunkedNaturalJoinStateManager(groupedSourceArray,
                                     StaticChunkedNaturalJoinStateManager.hashTableSize(groupingSize.intValue()),
@@ -392,11 +392,10 @@ class NaturalJoinHelper {
             @NotNull final MatchPair[] columnsToAdd,
             @NotNull final RedirectionIndex redirectionIndex,
             final boolean rightRefreshingColumns) {
-        final Map<String, ColumnSource> columnSourceMap = new LinkedHashMap<>(leftTable.getColumnSourceMap());
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         for (MatchPair mp : columnsToAdd) {
-            // noinspection unchecked
-            final ReadOnlyRedirectedColumnSource redirectedColumnSource =
-                    new ReadOnlyRedirectedColumnSource(redirectionIndex, rightTable.getColumnSource(mp.right()));
+            final ReadOnlyRedirectedColumnSource<?> redirectedColumnSource =
+                    new ReadOnlyRedirectedColumnSource<>(redirectionIndex, rightTable.getColumnSource(mp.right()));
             if (rightRefreshingColumns) {
                 redirectedColumnSource.startTrackingPrevValues();
             }

@@ -11,7 +11,6 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.db.util.PythonScopeJpyImpl;
 import io.deephaven.db.util.PythonScopeJpyImpl.NumbaCallableWrapper;
 import io.deephaven.db.util.caching.C14nUtil;
 import io.deephaven.db.v2.select.codegen.FormulaAnalyzer;
@@ -54,7 +53,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private FormulaAnalyzer.Result analyzedFormula;
     private String timeInstanceVariables;
-    private Map<String, Class> timeNewVariables = null;
+    private Map<String, Class<?>> timeNewVariables = null;
 
     public FormulaColumnPython getFormulaColumnPython() {
         return formulaColumnPython;
@@ -82,8 +81,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
      * @param prev {@code true} for get(), {@code false} for getPrev()
      * @return An appropriate name for a getter
      */
-    private static String getGetterName(Class type, boolean prev) {
-        final Class unboxedType = (type.isPrimitive() ? type : io.deephaven.util.type.TypeUtils.getUnboxedType(type));
+    private static String getGetterName(Class<?> type, boolean prev) {
+        final Class<?> unboxedType =
+                (type.isPrimitive() ? type : io.deephaven.util.type.TypeUtils.getUnboxedType(type));
         final String get = prev ? "getPrev" : "get";
         if (unboxedType == null) {
             return get;
@@ -98,14 +98,14 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
     }
 
-    private static String columnSourceGetMethodReturnType(ColumnSource cs) {
+    private static String columnSourceGetMethodReturnType(ColumnSource<?> cs) {
         final StringBuilder sb = new StringBuilder();
-        Class columnType = cs.getType();
+        Class<?> columnType = cs.getType();
         if (columnType == boolean.class) {
             columnType = Boolean.class;
         }
         sb.append(columnType.getCanonicalName());
-        final Class componentType = cs.getComponentType();
+        final Class<?> componentType = cs.getComponentType();
         if (componentType != null && !componentType.isPrimitive() && columnType.getTypeParameters().length == 1) {
             sb.append("<").append(componentType.getCanonicalName()).append(">");
         }
@@ -113,7 +113,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     private static Map<String, RichType> makeNameToRichTypeDict(final String[] names,
-            final Map<String, ? extends ColumnSource> columnSources) {
+            final Map<String, ? extends ColumnSource<?>> columnSources) {
         final Map<String, RichType> result = new HashMap<>();
         for (final String s : names) {
             final RichType richType;
@@ -122,12 +122,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             } else if (s.equals("ii") || s.equals("k")) {
                 richType = RichType.createNonGeneric(long.class);
             } else {
-                final ColumnSource cs = columnSources.get(s);
-                Class columnType = cs.getType();
+                final ColumnSource<?> cs = columnSources.get(s);
+                Class<?> columnType = cs.getType();
                 if (columnType == boolean.class) {
                     columnType = Boolean.class;
                 }
-                final Class componentType = cs.getComponentType();
+                final Class<?> componentType = cs.getComponentType();
                 if (componentType != null && !componentType.isPrimitive()
                         && columnType.getTypeParameters().length == 1) {
                     richType = RichType.createGeneric(columnType, componentType);
@@ -140,17 +140,17 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         return result;
     }
 
-    private static Map<String, Class> makeNameToTypeDict(final String[] names,
-            final Map<String, ? extends ColumnSource> columnSources) {
-        final Map<String, Class> result = new HashMap<>();
+    private static Map<String, Class<?>> makeNameToTypeDict(final String[] names,
+            final Map<String, ? extends ColumnSource<?>> columnSources) {
+        final Map<String, Class<?>> result = new HashMap<>();
         for (final String s : names) {
-            final ColumnSource cs = columnSources.get(s);
+            final ColumnSource<?> cs = columnSources.get(s);
             result.put(s, cs.getType());
         }
         return result;
     }
 
-    public static Class getDbArrayType(Class declaredType) {
+    public static Class<?> getDbArrayType(Class<?> declaredType) {
         if (!io.deephaven.util.type.TypeUtils.isConvertibleToPrimitive(declaredType) || declaredType == boolean.class
                 || declaredType == Boolean.class) {
             return DbArray.class;
@@ -169,7 +169,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap) {
+    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         try {
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, timeNewVariables);
             final DBTimeUtils.Result timeConversionResult = DBTimeUtils.convertExpression(formulaString);
@@ -198,7 +198,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
 
         // check if this is a column to be created with a numba vectorized function
-        for (Param param : params) {
+        for (Param<?> param : params) {
             if (param.getValue().getClass() == NumbaCallableWrapper.class) {
                 NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
                 formulaColumnPython = FormulaColumnPython.create(this.columnName,
@@ -504,7 +504,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                                 "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = this.[[COL_SOURCE_NAME]].[[GET_CURR_OR_PREV_CHUNK]]("
                                         +
                                         "__typedContext.__subContext[[COL_SOURCE_NAME]], __orderedKeys).[[AS_CHUNK_METHOD]]();"),
-                        "fillChunkHelper(" + Boolean.toString(usePrev)
+                        "fillChunkHelper(" + usePrev
                                 + ", __typedContext, __destination, __orderedKeys[[ADDITIONAL_CHUNK_ARGS]]);"));
 
         final String fillMethodName = String.format("fill%sChunk", usePrev ? "Prev" : "");
@@ -637,9 +637,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         if (columnSourceLambda != null) {
             for (String usedColumn : usedColumns) {
-                final ColumnSource cs = columnSources.get(usedColumn);
+                final ColumnSource<?> cs = columnSources.get(usedColumn);
                 final String columnSourceGetType = columnSourceGetMethodReturnType(cs);
-                final Class csType = cs.getType();
+                final Class<?> csType = cs.getType();
                 final String csTypeString = COLUMN_SOURCE_CLASSNAME + '<'
                         + io.deephaven.util.type.TypeUtils.getBoxedType(cs.getType()).getCanonicalName() + '>';
                 final ColumnSourceParameter csp = new ColumnSourceParameter(usedColumn, csType, columnSourceGetType,
@@ -650,9 +650,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         if (columnArrayLambda != null) {
             for (String uca : usedColumnArrays) {
-                final ColumnSource cs = columnSources.get(uca);
-                final Class dataType = cs.getType();
-                final Class dbArrayType = getDbArrayType(dataType);
+                final ColumnSource<?> cs = columnSources.get(uca);
+                final Class<?> dataType = cs.getType();
+                final Class<?> dbArrayType = getDbArrayType(dataType);
                 final String dbArrayTypeAsString = dbArrayType.getCanonicalName() +
                         (TypeUtils.isConvertibleToPrimitive(dataType) ? "" : "<" + dataType.getCanonicalName() + ">");
                 final ColumnArrayParameter cap = new ColumnArrayParameter(uca + COLUMN_SUFFIX, uca,
@@ -663,7 +663,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         if (paramLambda != null) {
             for (int ii = 0; ii < params.length; ++ii) {
-                final Param p = params[ii];
+                final Param<?> p = params[ii];
                 final ParamParameter pp = new ParamParameter(ii, p.getName(), p.getDeclaredType(),
                         p.getDeclaredTypeName());
                 addIfNotNull(results, paramLambda.apply(pp));
@@ -684,12 +684,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final FormulaAnalyzer.Result af = analyzedFormula;
         final FormulaSourceDescriptor sd = af.sourceDescriptor;
         final Map<String, RichType> columnDict = makeNameToRichTypeDict(sd.sources, columnSources);
-        final Map<String, Class> arrayDict = makeNameToTypeDict(sd.arrays, columnSources);
-        final Map<String, Class> allParamDict = new HashMap<>();
-        for (final Param param : params) {
+        final Map<String, Class<?>> arrayDict = makeNameToTypeDict(sd.arrays, columnSources);
+        final Map<String, Class<?>> allParamDict = new HashMap<>();
+        for (final Param<?> param : params) {
             allParamDict.put(param.getName(), param.getDeclaredType());
         }
-        final Map<String, Class> paramDict = new HashMap<>();
+        final Map<String, Class<?>> paramDict = new HashMap<>();
         for (final String p : sd.params) {
             paramDict.put(p, allParamDict.get(p));
         }
@@ -713,7 +713,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     protected FormulaFactory createFormulaFactory() {
         final String classBody = generateClassBody();
         final String what = "Compile regular formula: " + formulaString;
-        final Class clazz = compileFormula(what, classBody, "Formula");
+        final Class<?> clazz = compileFormula(what, classBody, "Formula");
         try {
             return (FormulaFactory) clazz.getField(FORMULA_FACTORY_NAME).get(null);
         } catch (ReflectiveOperationException e) {
@@ -721,9 +721,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
     }
 
-    private Class compileFormula(final String what, final String classBody, final String className) {
+    @SuppressWarnings("SameParameterValue")
+    private Class<?> compileFormula(final String what, final String classBody, final String className) {
         // System.out.printf("compileFormula: what is %s. Code is...%n%s%n", what, classBody);
-        try (final QueryPerformanceNugget nugget =
+        try (final QueryPerformanceNugget ignored =
                 QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
 
@@ -749,9 +750,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         return null;
                     });
             return AccessController
-                    .doPrivileged((PrivilegedExceptionAction<Class>) () -> CompilerTools.compile(className, classBody,
-                            CompilerTools.FORMULA_PREFIX,
-                            Param.expandParameterClasses(paramClasses)));
+                    .doPrivileged(
+                            (PrivilegedExceptionAction<Class<?>>) () -> CompilerTools.compile(className, classBody,
+                                    CompilerTools.FORMULA_PREFIX,
+                                    Param.expandParameterClasses(paramClasses)));
         } catch (PrivilegedActionException pae) {
             throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
         }
@@ -759,10 +761,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private static class IndexParameter {
         final String name;
-        final Class type;
+        final Class<?> type;
         final String typeString;
 
-        public IndexParameter(String name, Class type, String typeString) {
+        public IndexParameter(String name, Class<?> type, String typeString) {
             this.name = name;
             this.type = type;
             this.typeString = typeString;
@@ -771,12 +773,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private static class ColumnSourceParameter {
         final String name;
-        final Class type;
+        final Class<?> type;
         final String typeString;
-        final ColumnSource columnSource;
+        final ColumnSource<?> columnSource;
         final String columnSourceGetTypeString;
 
-        public ColumnSourceParameter(String name, Class type, String typeString, ColumnSource columnSource,
+        public ColumnSourceParameter(String name, Class<?> type, String typeString, ColumnSource<?> columnSource,
                 String columnSourceGetTypeString) {
             this.name = name;
             this.type = type;

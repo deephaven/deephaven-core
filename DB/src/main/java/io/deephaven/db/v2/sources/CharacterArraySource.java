@@ -128,7 +128,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
     }
 
     @Override
-    public void copy(ColumnSource<Character> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getChar(sourceKey));
     }
 
@@ -229,12 +229,12 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
     }
 
     @Override
-    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk chunk, long position) {
+    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
         Assert.eqNull(prevInUse, "prevInUse");
         final int blockNo = getBlockNo(position);
         final char [] backingArray = blocks[blockNo];
         chunk.asResettableWritableCharChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
-        return blockNo << LOG_BLOCK_SIZE;
+        return ((long)blockNo) << LOG_BLOCK_SIZE;
     }
 
     @Override
@@ -248,7 +248,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
         indices.forAllLongs((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
-                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
             }
             dest.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
@@ -274,7 +274,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
         indices.forAllLongs((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
-                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
+                ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
                 ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                 ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];

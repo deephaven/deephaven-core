@@ -28,7 +28,6 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING
 /**
  * Implementation for chunk-oriented aggregation operations, including {@link Table#by} and {@link Table#byExternal}.
  */
-@SuppressWarnings("rawtypes")
 public class AggregationHelper {
 
     /**
@@ -51,14 +50,14 @@ public class AggregationHelper {
         }
 
         // Compute our key column sources
-        final Map<String, ColumnSource> existingColumnSourceMap = inputTable.getColumnSourceMap();
+        final Map<String, ColumnSource<?>> existingColumnSourceMap = inputTable.getColumnSourceMap();
         final Set<String> keyColumnUpstreamInputColumnNames = new HashSet<>(keyColumns.length);
         final String[] keyColumnNames;
         final String[] aggregatedColumnNames;
-        final ColumnSource[] keyColumnSources;
+        final ColumnSource<?>[] keyColumnSources;
         {
-            final Map<String, ColumnSource> keyColumnSourceMap = new LinkedHashMap<>(keyColumns.length);
-            final Map<String, ColumnSource> fullColumnSourceMap = new LinkedHashMap<>(existingColumnSourceMap);
+            final Map<String, ColumnSource<?>> keyColumnSourceMap = new LinkedHashMap<>(keyColumns.length);
+            final Map<String, ColumnSource<?>> fullColumnSourceMap = new LinkedHashMap<>(existingColumnSourceMap);
             Arrays.stream(keyColumns).forEachOrdered((final SelectColumn keyColumn) -> {
                 keyColumn.initInputs(inputTable.getIndex(), fullColumnSourceMap);
 
@@ -70,7 +69,7 @@ public class AggregationHelper {
                 keyColumnUpstreamInputColumnNames.addAll(thisKeyColumnUpstreamInputColumnNames);
 
                 // Accumulate our column source maps
-                final ColumnSource keyColumnSource = keyColumn.getDataView();
+                final ColumnSource<?> keyColumnSource = keyColumn.getDataView();
                 fullColumnSourceMap.put(keyColumn.getName(), keyColumnSource);
                 keyColumnSourceMap.put(keyColumn.getName(), keyColumnSource);
             });
@@ -84,8 +83,9 @@ public class AggregationHelper {
         final Map<Object, Index> groupingForAggregation =
                 maybeGetGroupingForAggregation(aggregationControl, inputTable, keyColumnSources);
         if (groupingForAggregation != null) {
-            return staticGroupedBy(existingColumnSourceMap, keyColumnNames[0], keyColumnSources[0],
-                    groupingForAggregation);
+            // noinspection unchecked
+            return staticGroupedBy(existingColumnSourceMap, keyColumnNames[0],
+                    (ColumnSource<Object>) keyColumnSources[0], groupingForAggregation);
         }
 
         // Perform a full hashtable backed aggregation
@@ -112,9 +112,8 @@ public class AggregationHelper {
                             Index.FACTORY.getFlatIndex(empty ? 0 : 1),
                             inputTable.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                                     Map.Entry::getKey,
-                                    (final Map.Entry<String, ColumnSource> columnNameToSourceEntry) -> {
-                                        // noinspection unchecked
-                                        final AggregateColumnSource aggregateColumnSource = AggregateColumnSource
+                                    (final Map.Entry<String, ColumnSource<?>> columnNameToSourceEntry) -> {
+                                        final AggregateColumnSource<?, ?> aggregateColumnSource = AggregateColumnSource
                                                 .make(columnNameToSourceEntry.getValue(), resultIndexColumnSource);
                                         aggregateColumnSource.startTrackingPrevValues();
                                         return aggregateColumnSource;
@@ -129,7 +128,7 @@ public class AggregationHelper {
                         final ShiftAwareListener aggregationUpdateListener =
                                 new BaseTable.ShiftAwareListenerImpl("by()", inputTable, resultTable) {
                                     @Override
-                                    public final void onUpdate(@NotNull final Update upstream) {
+                                    public void onUpdate(@NotNull final Update upstream) {
                                         final boolean wasEmpty = inputTable.getIndex().firstKeyPrev() == Index.NULL_KEY;
                                         final boolean isEmpty = inputTable.getIndex().empty();
                                         final Index added;
@@ -185,12 +184,11 @@ public class AggregationHelper {
     }
 
     @NotNull
-    private static QueryTable staticGroupedBy(@NotNull final Map<String, ColumnSource> existingColumnSourceMap,
+    private static <T> QueryTable staticGroupedBy(@NotNull final Map<String, ColumnSource<?>> existingColumnSourceMap,
             @NotNull final String keyColumnName,
-            @NotNull final ColumnSource keyColumnSource,
-            @NotNull final Map<?, Index> groupToIndex) {
-        // noinspection unchecked
-        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<Index>> flatResultColumnSources =
+            @NotNull final ColumnSource<T> keyColumnSource,
+            @NotNull final Map<T, Index> groupToIndex) {
+        final Pair<ArrayBackedColumnSource<T>, ObjectArraySource<Index>> flatResultColumnSources =
                 AbstractColumnSource.groupingToFlatSources(keyColumnSource, groupToIndex);
         final ArrayBackedColumnSource<?> resultKeyColumnSource = flatResultColumnSources.getFirst();
         final ObjectArraySource<Index> resultIndexColumnSource = flatResultColumnSources.getSecond();
@@ -198,13 +196,13 @@ public class AggregationHelper {
         final Index resultIndex = Index.FACTORY.getFlatIndex(groupToIndex.size());
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
         resultColumnSourceMap.put(keyColumnName, resultKeyColumnSource);
-        // noinspection unchecked
         existingColumnSourceMap.entrySet().stream()
-                .filter((final Map.Entry<String, ColumnSource> columnNameToSourceEntry) -> !columnNameToSourceEntry
+                .filter((final Map.Entry<String, ColumnSource<?>> columnNameToSourceEntry) -> !columnNameToSourceEntry
                         .getKey().equals(keyColumnName))
-                .forEachOrdered((final Map.Entry<String, ColumnSource> columnNameToSourceEntry) -> resultColumnSourceMap
-                        .put(columnNameToSourceEntry.getKey(), AggregateColumnSource
-                                .make(columnNameToSourceEntry.getValue(), resultIndexColumnSource)));
+                .forEachOrdered(
+                        (final Map.Entry<String, ColumnSource<?>> columnNameToSourceEntry) -> resultColumnSourceMap
+                                .put(columnNameToSourceEntry.getKey(), AggregateColumnSource
+                                        .make(columnNameToSourceEntry.getValue(), resultIndexColumnSource)));
 
         return new QueryTable(resultIndex, resultColumnSourceMap);
     }
@@ -212,12 +210,12 @@ public class AggregationHelper {
     @NotNull
     private static QueryTable staticHashedBy(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
-            @NotNull final Map<String, ColumnSource> existingColumnSourceMap,
+            @NotNull final Map<String, ColumnSource<?>> existingColumnSourceMap,
             @NotNull final String[] keyColumnNames,
             @NotNull final String[] aggregatedColumnNames,
-            @NotNull final ColumnSource[] keyColumnSources) {
+            @NotNull final ColumnSource<?>[] keyColumnSources) {
         // Reinterpret key column sources as primitives where possible
-        final ColumnSource[] maybeReinterpretedKeyColumnSources = maybeReinterpretKeyColumnSources(keyColumnSources);
+        final ColumnSource<?>[] maybeReinterpretedKeyColumnSources = maybeReinterpretKeyColumnSources(keyColumnSources);
 
         // Prepare our state manager
         final StaticChunkedByAggregationStateManager stateManager =
@@ -238,7 +236,7 @@ public class AggregationHelper {
         final RedirectionIndex resultIndexToHashSlot = new IntColumnSourceRedirectionIndex(groupIndexToHashSlot);
 
         // Construct result column sources
-        final ColumnSource[] keyHashTableSources = stateManager.getKeyHashTableSources();
+        final ColumnSource<?>[] keyHashTableSources = stateManager.getKeyHashTableSources();
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
 
         // Gather the result key columns
@@ -255,7 +253,6 @@ public class AggregationHelper {
         // Gather the result aggregate columns
         final ColumnSource<Index> resultIndexColumnSource =
                 new ReadOnlyRedirectedColumnSource<>(resultIndexToHashSlot, stateManager.getIndexHashTableSource());
-        // noinspection unchecked
         Arrays.stream(aggregatedColumnNames)
                 .forEachOrdered((final String aggregatedColumnName) -> resultColumnSourceMap.put(aggregatedColumnName,
                         AggregateColumnSource.make(existingColumnSourceMap.get(aggregatedColumnName),
@@ -268,10 +265,10 @@ public class AggregationHelper {
     @NotNull
     private static QueryTable incrementalHashedBy(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
-            @NotNull final Map<String, ColumnSource> existingColumnSourceMap,
+            @NotNull final Map<String, ColumnSource<?>> existingColumnSourceMap,
             @NotNull final String[] keyColumnNames,
             @NotNull final String[] aggregatedColumnNames,
-            @NotNull final ColumnSource[] keyColumnSources,
+            @NotNull final ColumnSource<?>[] keyColumnSources,
             @NotNull final Set<String> keyColumnUpstreamInputColumnNames) {
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
         final ShiftAwareSwapListener swapListener =
@@ -280,7 +277,7 @@ public class AggregationHelper {
         inputTable.initializeWithSnapshot("by(" + String.join(",", keyColumnNames) + "-Snapshot", swapListener,
                 (final boolean usePrev, final long beforeClockValue) -> {
                     // Reinterpret key column sources as primitives where possible
-                    final ColumnSource[] maybeReinterpretedKeyColumnSources =
+                    final ColumnSource<?>[] maybeReinterpretedKeyColumnSources =
                             maybeReinterpretKeyColumnSources(keyColumnSources);
 
                     // Prepare our state manager
@@ -322,8 +319,7 @@ public class AggregationHelper {
                             resultIndexToHashSlot, stateManager.getIndexHashTableSource());
                     Arrays.stream(aggregatedColumnNames)
                             .forEachOrdered((final String aggregatedColumnName) -> {
-                                // noinspection unchecked
-                                final AggregateColumnSource aggregatedColumnSource = AggregateColumnSource.make(
+                                final AggregateColumnSource<?, ?> aggregatedColumnSource = AggregateColumnSource.make(
                                         existingColumnSourceMap.get(aggregatedColumnName), resultIndexColumnSource);
                                 aggregatedColumnSource.startTrackingPrevValues();
                                 resultColumnSourceMap.put(aggregatedColumnName, aggregatedColumnSource);
@@ -348,7 +344,7 @@ public class AggregationHelper {
                     final ShiftAwareListener aggregationUpdateListener = new BaseTable.ShiftAwareListenerImpl(
                             "by(" + String.join(",", keyColumnNames) + ')', inputTable, resultTable) {
                         @Override
-                        public final void onUpdate(@NotNull final Update upstream) {
+                        public void onUpdate(@NotNull final Update upstream) {
                             if (updateTracker.clear()) {
                                 stateManager.clearCookies();
                             }
@@ -455,7 +451,7 @@ public class AggregationHelper {
             return noKeyResult;
         }
 
-        final ColumnSource[] keyColumnSources =
+        final ColumnSource<?>[] keyColumnSources =
                 Arrays.stream(keyColumnNames).map(inputTable::getColumnSource).toArray(ColumnSource[]::new);
         final QueryTable subTableSource =
                 dropKeyColumns ? (QueryTable) inputTable.dropColumns(keyColumnNames) : inputTable;
@@ -481,10 +477,10 @@ public class AggregationHelper {
     @NotNull
     private static LocalTableMap staticHashedByExternal(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
-            @NotNull final ColumnSource[] keyColumnSources,
+            @NotNull final ColumnSource<?>[] keyColumnSources,
             @NotNull final QueryTable subTableSource) {
         // Reinterpret key column sources as primitives where possible
-        final ColumnSource[] maybeReinterpretedKeyColumnSources = maybeReinterpretKeyColumnSources(keyColumnSources);
+        final ColumnSource<?>[] maybeReinterpretedKeyColumnSources = maybeReinterpretKeyColumnSources(keyColumnSources);
 
         // Prepare our state manager
         final StaticChunkedByAggregationStateManager stateManager =
@@ -543,7 +539,7 @@ public class AggregationHelper {
     @NotNull
     private static LocalTableMap incrementalHashedByExternal(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
-            @NotNull final ColumnSource[] keyColumnSources,
+            @NotNull final ColumnSource<?>[] keyColumnSources,
             @NotNull final QueryTable subTableSource) {
         throw new UnsupportedOperationException("Never developed");
     }
@@ -552,13 +548,13 @@ public class AggregationHelper {
     private static Map<Object, Index> maybeGetGroupingForAggregation(
             @NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
-            @NotNull final ColumnSource[] keyColumnSources) {
+            @NotNull final ColumnSource<?>[] keyColumnSources) {
         // If we have one grouped key column and the input table is not refreshing use the existing grouping
         if (!aggregationControl.considerGrouping(inputTable, keyColumnSources)) {
             return null;
         }
         // noinspection unchecked
-        final ColumnSource<Object> keyColumnSource = keyColumnSources[0];
+        final ColumnSource<Object> keyColumnSource = (ColumnSource<Object>) keyColumnSources[0];
         if (inputTable.getIndex().hasGrouping(keyColumnSource)) {
             return inputTable.getIndex().getGrouping(keyColumnSource);
         }
@@ -566,9 +562,10 @@ public class AggregationHelper {
     }
 
     @NotNull
-    private static ColumnSource[] maybeReinterpretKeyColumnSources(@NotNull final ColumnSource[] keyColumnSources) {
+    private static ColumnSource<?>[] maybeReinterpretKeyColumnSources(
+            @NotNull final ColumnSource<?>[] keyColumnSources) {
         // TODO: Support symbol tables in reinterpret and re-boxing
-        final ColumnSource[] maybeReinterpretedKeyColumnSources = new ColumnSource[keyColumnSources.length];
+        final ColumnSource<?>[] maybeReinterpretedKeyColumnSources = new ColumnSource[keyColumnSources.length];
         for (int kci = 0; kci < keyColumnSources.length; ++kci) {
             maybeReinterpretedKeyColumnSources[kci] =
                     ReinterpretUtilities.maybeConvertToPrimitive(keyColumnSources[kci]);

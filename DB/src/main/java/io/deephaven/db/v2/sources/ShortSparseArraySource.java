@@ -86,7 +86,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
         final int size = index.intSize();
         final short[] data = (short[])new short[size];
         // noinspection unchecked
-        final ColumnSource<Short> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<Short> reinterpreted = (ColumnSource<Short>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableShortChunk<Values> destChunk = ResettableWritableShortChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -104,7 +104,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
         final short[] data = (short[])in.readObject();
         final ShortChunk<Values> srcChunk = ShortChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Short> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Short> reinterpreted = (WritableSource<Short>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -169,7 +169,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
 
     // region copy method
     @Override
-    public void copy(ColumnSource<Short> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Short> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getShort(sourceKey));
     }
     // endregion copy method
@@ -206,6 +206,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
     // endregion primitive get
 
     // region allocateNullFilledBlock
+    @SuppressWarnings("SameParameterValue")
     final short [] allocateNullFilledBlock(int size) {
         final short [] newBlock = new short[size];
         Arrays.fill(newBlock, NULL_SHORT);
@@ -390,7 +391,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
 
     /**
     * Decides whether to record the previous value.
-    * @param key
+    * @param key the index to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -545,7 +546,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
 
     @Override
     void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
-        final WritableShortChunk shortChunk = dest.asWritableShortChunk();
+        final WritableShortChunk<? super Values> shortChunk = dest.asWritableShortChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == Index.NULL_KEY) {

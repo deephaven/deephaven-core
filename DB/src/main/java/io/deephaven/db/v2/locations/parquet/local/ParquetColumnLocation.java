@@ -112,7 +112,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     }
 
     @Override
-    public final boolean exists() {
+    public boolean exists() {
         // If we see a null columnChunkReaders array, either we don't exist or we are guaranteed to
         // see a non-null
         // pageStores array
@@ -130,7 +130,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
     @Override
     @Nullable
-    public final <METADATA_TYPE> METADATA_TYPE getMetadata(
+    public <METADATA_TYPE> METADATA_TYPE getMetadata(
             @NotNull final ColumnDefinition<?> columnDefinition) {
         if (!hasGroupingTable) {
             return null;
@@ -221,7 +221,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         // noinspection unchecked
         return (ColumnRegionChar<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionChar::createNull, ParquetColumnRegionChar::new,
-                rs -> new ColumnRegionChar.StaticPageStore(tl().getRegionParameters(),
+                rs -> new ColumnRegionChar.StaticPageStore<>(tl().getRegionParameters(),
                         rs.toArray(ColumnRegionChar[]::new)));
     }
 
@@ -231,7 +231,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         // noinspection unchecked
         return (ColumnRegionByte<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionByte::createNull, ParquetColumnRegionByte::new,
-                rs -> new ColumnRegionByte.StaticPageStore(tl().getRegionParameters(),
+                rs -> new ColumnRegionByte.StaticPageStore<>(tl().getRegionParameters(),
                         rs.toArray(ColumnRegionByte[]::new)));
     }
 
@@ -241,7 +241,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         // noinspection unchecked
         return (ColumnRegionShort<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionShort::createNull, ParquetColumnRegionShort::new,
-                rs -> new ColumnRegionShort.StaticPageStore(tl().getRegionParameters(),
+                rs -> new ColumnRegionShort.StaticPageStore<>(tl().getRegionParameters(),
                         rs.toArray(ColumnRegionShort[]::new)));
     }
 
@@ -251,7 +251,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         // noinspection unchecked
         return (ColumnRegionInt<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
-                rs -> new ColumnRegionInt.StaticPageStore(tl().getRegionParameters(),
+                rs -> new ColumnRegionInt.StaticPageStore<>(tl().getRegionParameters(),
                         rs.toArray(ColumnRegionInt[]::new)));
     }
 
@@ -261,7 +261,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         // noinspection unchecked
         return (ColumnRegionLong<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionLong::createNull, ParquetColumnRegionLong::new,
-                rs -> new ColumnRegionLong.StaticPageStore(tl().getRegionParameters(),
+                rs -> new ColumnRegionLong.StaticPageStore<>(tl().getRegionParameters(),
                         rs.toArray(ColumnRegionLong[]::new)));
     }
 
@@ -271,7 +271,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         // noinspection unchecked
         return (ColumnRegionFloat<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionFloat::createNull, ParquetColumnRegionFloat::new,
-                rs -> new ColumnRegionFloat.StaticPageStore(tl().getRegionParameters(),
+                rs -> new ColumnRegionFloat.StaticPageStore<>(tl().getRegionParameters(),
                         rs.toArray(ColumnRegionFloat[]::new)));
     }
 
@@ -281,14 +281,13 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         // noinspection unchecked
         return (ColumnRegionDouble<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionDouble::createNull, ParquetColumnRegionDouble::new,
-                rs -> new ColumnRegionDouble.StaticPageStore(tl().getRegionParameters(),
+                rs -> new ColumnRegionDouble.StaticPageStore<>(tl().getRegionParameters(),
                         rs.toArray(ColumnRegionDouble[]::new)));
     }
 
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
             @NotNull final ColumnDefinition<TYPE> columnDefinition) {
-        // noinspection unchecked
         final Class<TYPE> dataType = columnDefinition.getDataType();
         final ColumnChunkPageStore<ATTR>[] sources = getPageStores(columnDefinition);
         final ColumnChunkPageStore<DictionaryKeys>[] dictKeySources =
@@ -330,7 +329,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @return The page stores
      */
     @NotNull
-    public final ColumnChunkPageStore<ATTR>[] getPageStores(
+    public ColumnChunkPageStore<ATTR>[] getPageStores(
             @NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
         return pageStores;
@@ -546,7 +545,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final String parquetColumnName,
             @NotNull final ColumnChunkReader columnChunkReader,
-            @NotNull final ColumnDefinition columnDefinition) {
+            @NotNull final ColumnDefinition<?> columnDefinition) {
         final PrimitiveType type = columnChunkReader.getType();
         final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
         final String codecFromInstructions =

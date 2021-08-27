@@ -34,22 +34,23 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      * @param componentType the component type for the newly created column source (only applies to Objects)
      * @return an empty ChunkColumnSource
      */
-    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, Class<?> componentType) {
+    @SuppressWarnings("unchecked")
+    static <T> ChunkColumnSource<T> make(ChunkType chunkType, Class<T> dataType, Class<?> componentType) {
         switch (chunkType) {
             case Char:
-                return new CharChunkColumnSource();
+                return (ChunkColumnSource<T>) new CharChunkColumnSource();
             case Byte:
-                return new ByteChunkColumnSource();
+                return (ChunkColumnSource<T>) new ByteChunkColumnSource();
             case Short:
-                return new ShortChunkColumnSource();
+                return (ChunkColumnSource<T>) new ShortChunkColumnSource();
             case Int:
-                return new IntChunkColumnSource();
+                return (ChunkColumnSource<T>) new IntChunkColumnSource();
             case Long:
-                return new LongChunkColumnSource();
+                return (ChunkColumnSource<T>) new LongChunkColumnSource();
             case Float:
-                return new FloatChunkColumnSource();
+                return (ChunkColumnSource<T>) new FloatChunkColumnSource();
             case Double:
-                return new DoubleChunkColumnSource();
+                return (ChunkColumnSource<T>) new DoubleChunkColumnSource();
             case Object:
                 return new ObjectChunkColumnSource<>(dataType, componentType);
             default:

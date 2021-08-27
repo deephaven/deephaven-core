@@ -206,7 +206,7 @@ public class ModifiedColumnSet {
 
     // TODO: combine TableDefinition, ColumnSourceMap, ColumnNames, and IdMap into reusable shared object state.
     // We'll use this to fail-fast when two incompatible MCSs interact.
-    private final Map<String, ColumnSource> columns;
+    private final Map<String, ColumnSource<?>> columns;
     private final String[] columnNames;
     private final TObjectIntHashMap<String> idMap;
 
@@ -224,7 +224,7 @@ public class ModifiedColumnSet {
         /**
          * Propagates changes from one {@link ModifiedColumnSet} to another ModifiedColumnSet that contextually
          * represent different tables. Clears the output set prior to transforming.
-         * 
+         *
          * @param input source table's columns that changed
          * @param output result table's columns to propagate dirty columns to
          */
@@ -236,7 +236,7 @@ public class ModifiedColumnSet {
         /**
          * Propagates changes from {@code input} {@link ModifiedColumnSet} to {@code output} ModifiedColumnSet. Does not
          * clear the {@code output} before propagating.
-         * 
+         *
          * @param input source table's columns that changed (null implies no modified columns)
          * @param output result table's columns to propagate dirty columns to
          */
@@ -260,10 +260,10 @@ public class ModifiedColumnSet {
     /**
      * Create an empty ModifiedColumnSet from the provided Column Source Map. Note: prefer to use the copy constructor
      * on future objects that share this CSM to minimize duplicating state.
-     * 
+     *
      * @param columns The column source map this ModifiedColumnSet will use.
      */
-    public ModifiedColumnSet(final Map<String, ColumnSource> columns) {
+    public ModifiedColumnSet(final Map<String, ColumnSource<?>> columns) {
         this.columns = columns;
         columnNames = columns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         idMap = new TObjectIntHashMap<>(columnNames.length, Constants.DEFAULT_LOAD_FACTOR, -1);
@@ -276,7 +276,7 @@ public class ModifiedColumnSet {
     /**
      * Create a new ModifiedColumnSet that shares all immutable state with the provided MCS. The dirty set will
      * initially be empty.
-     * 
+     *
      * @param other The ModifiedColumnSet to borrow immutable state from.
      */
     public ModifiedColumnSet(final ModifiedColumnSet other) {
@@ -292,7 +292,7 @@ public class ModifiedColumnSet {
 
     /**
      * Create a transformer that is compatible with the class of ModifiedColumnSets that share a ColumnSourceMap.
-     * 
+     *
      * @param columnNames input columns to check for dirtiness
      * @param columnSets output columns to mark dirty when input column is dirty
      * @return a new Transformer instance
@@ -323,11 +323,11 @@ public class ModifiedColumnSet {
     /**
      * Create a transformer that uses an identity mapping from one ColumnSourceMap to another. The two CSM's must have
      * equivalent column names and column ordering.
-     * 
+     *
      * @param newColumns the column source map for result table
      * @return a simple Transformer that makes a cheap, but CSM compatible copy
      */
-    public Transformer newIdentityTransformer(final Map<String, ColumnSource> newColumns) {
+    public Transformer newIdentityTransformer(final Map<String, ColumnSource<?>> newColumns) {
         if (columns == newColumns) {
             throw new IllegalArgumentException(
                     "Do not use a transformer when it is correct to pass-through the ModifiedColumnSet.");
@@ -364,7 +364,7 @@ public class ModifiedColumnSet {
      * parent. Note this is intended to be determined during initialization and never during an update cycle. It is
      * illegal to use the specialized ModifiedColumnSet.EMPTY / ModifiedColumnSet.ALL as their innards do not represent
      * any table.
-     * 
+     *
      * @param columnSet the column set for the dependent table
      * @return whether or not this modified column set must use a Transformer to propagate modified columns
      */
@@ -435,7 +435,7 @@ public class ModifiedColumnSet {
 
     /**
      * Turns on all bits for these columns. Use this method to prepare pre-computed ModifiedColumnSets.
-     * 
+     *
      * @param columnNames the columns which need to be marked dirty
      */
     public void setAll(final String... columnNames) {
@@ -450,7 +450,7 @@ public class ModifiedColumnSet {
 
     /**
      * Marks all columns in the provided column set in this set as dirty.
-     * 
+     *
      * @param columnSet the set of columns to mark dirty
      */
     public void setAll(final ModifiedColumnSet columnSet) {
@@ -467,7 +467,7 @@ public class ModifiedColumnSet {
 
     /**
      * Marks specifically the column with the given index as dirty.
-     * 
+     *
      * @param columnIndex column index to mark dirty
      */
     public void setColumnWithIndex(int columnIndex) {
@@ -476,7 +476,7 @@ public class ModifiedColumnSet {
 
     /**
      * Marks specifically a range of adjacent columns. Start is inclusive, end is exclusive; like the BitSet API.
-     * 
+     *
      * @param columnStart start column index to mark dirty
      * @param columnEndExclusive end column index to mark dirty
      */
@@ -486,7 +486,7 @@ public class ModifiedColumnSet {
 
     /**
      * Turns off all bits for these columns. Use this method to prepare pre-computed ModifiedColumnSets.
-     * 
+     *
      * @param columnNames the columns which need to be marked clean
      */
     public void clearAll(final String... columnNames) {
@@ -501,7 +501,7 @@ public class ModifiedColumnSet {
 
     /**
      * Marks all columns in the provided column set in this set as clean.
-     * 
+     *
      * @param columnSet the set of columns to mark clean
      */
     public void clearAll(final ModifiedColumnSet columnSet) {
@@ -521,7 +521,7 @@ public class ModifiedColumnSet {
 
     /**
      * Check whether or not any columns are currently marked as dirty.
-     * 
+     *
      * @param columnSet the columns to check
      * @return true iff any column is dirty
      */
@@ -535,7 +535,7 @@ public class ModifiedColumnSet {
 
     /**
      * Check whether or not all columns are currently marked as dirty.
-     * 
+     *
      * @param columnSet the columns to check
      * @return true iff all columns match dirtiness
      */

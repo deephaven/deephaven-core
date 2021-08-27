@@ -7,12 +7,16 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.remote.WrappedDelegatingTable;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
@@ -56,8 +60,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
     }
 
     private class State {
-        private final ColumnSource parentSource;
-        private final ColumnSource idSource;
+        private final ColumnSource<?> parentSource;
+        private final ColumnSource<?> idSource;
         private final ReverseLookup reverseLookupListener;
         private final DynamicTable source;
 
@@ -69,10 +73,10 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
         }
 
         public Table invoke() {
-            final Map<String, ColumnSource> nameToColumns = new LinkedHashMap<>(source.getColumnSourceMap());
+            final Map<String, ColumnSource<?>> nameToColumns = new LinkedHashMap<>(source.getColumnSourceMap());
 
             // noinspection unchecked
-            final ColumnSource parentView = new AbstractColumnSource.DefaultedMutable(parentSource.getType()) {
+            final ColumnSource<?> parentView = new AbstractColumnSource.DefaultedMutable(parentSource.getType()) {
                 @Override
                 public Object get(long index) {
                     if (hasParent(index)) {

@@ -192,19 +192,17 @@ public class TestWindowCheck {
             org.junit.Assert.assertNull(exception);
 
             TestCase.assertEquals(table.getIndex(), windowed.first.getIndex());
-            final Map<String, ColumnSource> map = table.getColumnSourceMap();
-            final Map<String, ? extends ColumnSource> map2 = windowed.first.getColumnSourceMap();
+            final Map<String, ColumnSource<?>> map = table.getColumnSourceMap();
+            final Map<String, ? extends ColumnSource<?>> map2 = windowed.first.getColumnSourceMap();
             TestCase.assertEquals(map.size(), map2.size() - 1);
 
-            for (final Map.Entry<String, ? extends ColumnSource> me : map2.entrySet()) {
+            for (final Map.Entry<String, ? extends ColumnSource<?>> me : map2.entrySet()) {
                 if (!me.getKey().equals("InWindow")) {
                     TestCase.assertEquals(map.get(me.getKey()), me.getValue());
                 }
             }
 
-            // noinspection unchecked
             final ColumnSource<DBDateTime> timestamp = table.getColumnSource("Timestamp");
-            // noinspection unchecked
             final ColumnSource<Boolean> inWindow = windowed.first.getColumnSource("InWindow");
 
             final long now = timeProvider.now;

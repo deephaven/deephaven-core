@@ -38,7 +38,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
         this.dcf = Objects.requireNonNull(dcf);
     }
 
-    private void initFromDef(Map<String, ColumnDefinition> columnNameMap) {
+    private void initFromDef(Map<String, ColumnDefinition<?>> columnNameMap) {
         if (initialized) {
             throw new IllegalStateException("Already initialized");
         }
@@ -52,7 +52,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public final List<String> initDef(Map<String, ColumnDefinition> columnNameMap) {
+    public final List<String> initDef(Map<String, ColumnDefinition<?>> columnNameMap) {
         if (!initialized) {
             initFromDef(columnNameMap);
             applyUsedVariables(columnNameMap, new LinkedHashSet<>(dcf.getColumnNames()));
@@ -78,7 +78,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public final FormulaKernel createInstance(DbArrayBase[] arrays, Param[] params) {
+    public final FormulaKernel createInstance(DbArrayBase<?>[] arrays, Param<?>[] params) {
         if (!initialized) {
             throw new IllegalStateException("Must be initialized first");
         }

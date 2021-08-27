@@ -85,16 +85,15 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
-        // TODO: Do I need a closer for getPrevIndex? Some ops have it....
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             final Index fullIndex = usePrev ? closer.add(parent.getIndex().getPrevIndex()) : parent.getIndex();
             final Index indexToUse = closer.add(fullIndex.clone());
 
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
-            final Map<String, ColumnSource> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
+            final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
             matchColumns.forEach(holder -> {
                 final SelectFilter filter = holder.getFilter();
                 filter.init(parent.getDefinition());
@@ -157,7 +156,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 matchColumns.forEach(h -> h.column.setMergedListener(finalMergedListener));
             }
 
-            return new Result(resultTable, eventualListener);
+            return new Result<>(resultTable, eventualListener);
         }
     }
 
@@ -262,7 +261,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     private static class IndexWrapperColumnSource extends AbstractColumnSource<Boolean>
             implements MutableColumnSourceGetDefaults.ForBoolean, SelectFilter.RecomputeListener {
-        private Index source;
+        private final Index source;
         private final SelectFilter filter;
         private boolean doRecompute = false;
         private QueryTable resultTable;
