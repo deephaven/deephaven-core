@@ -2,7 +2,6 @@
 # git ls-files -i --exclude-standard
 #
 # This check is run in CI, see .github/scripts/check-gitignore-rules.sh
-data/
 .idea/
 build/
 buildTest/
