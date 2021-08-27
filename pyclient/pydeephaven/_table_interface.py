@@ -329,7 +329,7 @@ class TableInterface(ABC):
             DHError
 
         """
-        match_rule = MatchRule.GREATER_THAN if match_rule == MatchRule.LESS_THAN else MatchRule.LESS_THAN_EQUAL
+        match_rule = MatchRule.GREATER_THAN if match_rule == MatchRule.GREATER_THAN else MatchRule.GREATER_THAN_EQUAL
         table_op = AsOfJoinOp(table=table, keys=keys, columns_to_add=columns_to_add,
                               match_rule=match_rule)
         return self.table_op_handler(table_op)
