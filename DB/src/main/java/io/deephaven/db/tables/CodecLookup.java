@@ -9,9 +9,9 @@ import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.codec.SerializableCodec;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
-import javax.validation.constraints.NotNull;
 import java.io.Externalizable;
 
 /**

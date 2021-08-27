@@ -8,9 +8,9 @@ import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.grpc_api.barrage.BarrageMessageConsumer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
+import io.deephaven.grpc_api.util.GrpcServiceOverrideBuilder;
 import io.deephaven.grpc_api.util.PassthroughInputStreamMarshaller;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.util.GrpcServiceOverrideBuilder;
 import io.grpc.BindableService;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerServiceDefinition;
@@ -25,24 +25,23 @@ import java.io.InputStream;
 @Singleton
 public class FlightServiceGrpcBinding implements BindableService {
 
-    private final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> delegate;
+    private final FlightServiceGrpcImpl delegate;
 
     @Inject
-    public FlightServiceGrpcBinding(
-            final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> service) {
+    public FlightServiceGrpcBinding(final FlightServiceGrpcImpl service) {
         this.delegate = service;
     }
 
     @Override
     public ServerServiceDefinition bindService() {
         return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService(), FlightServiceGrpc.SERVICE_NAME)
-                .onOpenOverride(delegate::doGetCustom, "DoGet", FlightServiceGrpc.getDoGetMethod(),
+                .onServerStreamingOverride(delegate::doGetCustom, FlightServiceGrpc.getDoGetMethod(),
                         ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance()),
                         PassthroughInputStreamMarshaller.INSTANCE)
-                .onBidiOverride(delegate::doPutCustom, "DoPut", FlightServiceGrpc.getDoPutMethod(),
+                .onBidiOverride(delegate::doPutCustom, FlightServiceGrpc.getDoPutMethod(),
                         PassthroughInputStreamMarshaller.INSTANCE,
                         ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
-                .onBidiOverride(delegate::doExchangeCustom, "DoExchange", FlightServiceGrpc.getDoExchangeMethod(),
+                .onBidiOverride(delegate::doExchangeCustom, FlightServiceGrpc.getDoExchangeMethod(),
                         PassthroughInputStreamMarshaller.INSTANCE,
                         PassthroughInputStreamMarshaller.INSTANCE)
                 .build();

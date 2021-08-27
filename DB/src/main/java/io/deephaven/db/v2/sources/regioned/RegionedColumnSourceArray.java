@@ -2,13 +2,13 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
 
-import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;
 

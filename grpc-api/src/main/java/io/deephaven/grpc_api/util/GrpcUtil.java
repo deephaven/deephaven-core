@@ -16,8 +16,17 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 
 public class GrpcUtil {
-    private static Logger log = LoggerFactory.getLogger(GrpcUtil.class);
+    private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
 
+    /**
+     * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the message if
+     * there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
+     * 
+     * @param log the current class's logger
+     * @param response the responseStream used to send messages to the client
+     * @param lambda the code to safely execute
+     * @param <T> some IOException type, so that we can handle IO errors as well as runtime exceptions.
+     */
     public static <T extends IOException> void rpcWrapper(final Logger log, final StreamObserver<?> response,
             final FunctionalInterfaces.ThrowingRunnable<T> lambda) {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
@@ -34,17 +43,27 @@ public class GrpcUtil {
         }
     }
 
+    /**
+     * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the message if
+     * there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
+     * 
+     * @param log the current class's logger
+     * @param response the responseStream used to send messages to the client
+     * @param lambda the code to safely execute
+     * @param <T> the type of the value to be returned
+     * @return the result of the lambda
+     */
     public static <T> T rpcWrapper(final Logger log, final StreamObserver<?> response, final Callable<T> lambda) {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             return lambda.call();
         } catch (final StatusRuntimeException err) {
             log.error().append(err).endl();
-            response.onError(err);
+            safelyError(response, err);
         } catch (final InterruptedException err) {
             Thread.currentThread().interrupt();
-            response.onError(securelyWrapError(log, err, Code.UNAVAILABLE));
+            safelyError(response, securelyWrapError(log, err, Code.UNAVAILABLE));
         } catch (final Throwable err) {
-            response.onError(securelyWrapError(log, err));
+            safelyError(response, securelyWrapError(log, err));
         }
         return null;
     }
@@ -133,8 +152,23 @@ public class GrpcUtil {
 
     /**
      * Writes an error to the observer in a try/catch block to minimize damage caused by failing observer call.
+     * <p>
+     * </p>
+     * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response
+     * stream.
      */
-    public static <T> void safelyError(final StreamObserver<T> observer, final Code statusCode, final String msg) {
-        safelyExecute(() -> observer.onError(GrpcUtil.statusRuntimeException(statusCode, msg)));
+    public static void safelyError(final StreamObserver<?> observer, final Code statusCode, final String msg) {
+        safelyError(observer, statusRuntimeException(statusCode, msg));
+    }
+
+    /**
+     * Writes an error to the observer in a try/catch block to minimize damage caused by failing observer call.
+     * <p>
+     * </p>
+     * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response
+     * stream.
+     */
+    public static void safelyError(final StreamObserver<?> observer, StatusRuntimeException exception) {
+        safelyExecuteLocked(observer, () -> observer.onError(exception));
     }
 }

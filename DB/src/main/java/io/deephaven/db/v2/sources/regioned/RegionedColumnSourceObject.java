@@ -7,9 +7,7 @@ import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nullable;
-import java.util.function.Supplier;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 

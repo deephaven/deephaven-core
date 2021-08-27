@@ -52,9 +52,7 @@ dependencies {
             project(':deephaven-jpy-ext'),
             project(':Parquet'),
             project(':DHProcess'),
-            project(':proto:proto-backplane-grpc-util'),
             project(':log-factory'),
-            project(':open-api-lang-api'),
             project(':Container'),
             project(':table-api'),
             project(':qst'),
@@ -79,6 +77,8 @@ dependencies {
 
     annotationProcessor 'org.immutables:value:2.8.1'
     compileOnly 'org.immutables:value-annotations:2.8.1'
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
 task jmhRun(type: JavaExec)  {

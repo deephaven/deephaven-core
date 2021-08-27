@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 /**
  * Uses a ChunkerDocument to lookup user cursor and perform autocompletion.
  */
-public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
+public class ChunkerCompleter implements CompletionHandler {
 
     public enum SearchDirection {
         LEFT, BOTH, RIGHT

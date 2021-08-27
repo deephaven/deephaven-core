@@ -149,7 +149,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         LazyPromise<Ticket> promise = new LazyPromise<>();
         final ClientConfiguration config = connection.get().getConfig();
         final Ticket ticket = new Ticket();
-        ticket.setTicket(config.newTicket());
+        ticket.setTicket(config.newTicketRaw());
 
         final JsRunnable closer = () -> {
             boolean run = !cancelled.has(ticket);

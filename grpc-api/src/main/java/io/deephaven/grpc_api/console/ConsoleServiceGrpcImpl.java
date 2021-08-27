@@ -28,10 +28,10 @@ import io.deephaven.io.logger.LogBufferRecordListener;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionLookups;
-import io.deephaven.lang.generated.ParseException;
+import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
-import io.deephaven.lang.parse.api.CompletionParseService;
+import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.*;
@@ -44,6 +44,7 @@ import javax.inject.Singleton;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
@@ -61,6 +62,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private final SessionService sessionService;
     private final LogBuffer logBuffer;
     private final LiveTableMonitor liveTableMonitor;
+
+    private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
 
     private final GlobalSessionProvider globalSessionProvider;
 
@@ -116,7 +119,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
 
             session.newExport(request.getResultId())
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> {
                         final ScriptSession scriptSession;
                         if (sessionType.equals(WORKER_CONSOLE_TYPE)) {
@@ -161,7 +164,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             session.nonExport()
                     .requiresSerialQueue()
                     .require(exportedConsole)
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> {
                         ScriptSession scriptSession = exportedConsole.get();
 
@@ -170,9 +173,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
                         ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
 
-                        changes.created.entrySet().forEach(entry -> diff.addCreated(makeVariableDefinition(entry)));
-                        changes.updated.entrySet().forEach(entry -> diff.addUpdated(makeVariableDefinition(entry)));
-                        changes.removed.entrySet().forEach(entry -> diff.addRemoved(makeVariableDefinition(entry)));
+                        changes.created.entrySet()
+                                .forEach(entry -> diff.addCreated(makeVariableDefinition(entry)));
+                        changes.updated.entrySet()
+                                .forEach(entry -> diff.addUpdated(makeVariableDefinition(entry)));
+                        changes.removed.entrySet()
+                                .forEach(entry -> diff.addRemoved(makeVariableDefinition(entry)));
 
                         responseObserver.onNext(diff.build());
                         responseObserver.onCompleted();
@@ -200,7 +206,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             ExportBuilder<?> exportBuilder = session.nonExport()
                     .requiresSerialQueue()
-                    .onError(responseObserver::onError);
+                    .onError(responseObserver);
 
             if (request.hasConsoleId()) {
                 exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
@@ -233,7 +239,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             session.newExport(request.getTableId())
                     .require(exportedConsole)
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> liveTableMonitor.exclusiveLock().computeLocked(() -> {
                         ScriptSession scriptSession = exportedConsole.get();
                         String tableName = request.getTableName();
@@ -263,116 +269,124 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    // TODO(core#101) autocomplete support
-    @Override
-    public void openDocument(OpenDocumentRequest request, StreamObserver<OpenDocumentResponse> responseObserver) {
-        // when we open a document, we should start a parsing thread that will monitor for changes, and pre-parse
-        // document
-        // so we can respond appropriately when client wants completions.
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
-            session
-                    .nonExport()
-                    .require(exportedConsole)
-                    .onError(responseObserver::onError)
-                    .submit(() -> {
-                        final ScriptSession scriptSession = exportedConsole.get();
-                        final TextDocumentItem doc = request.getTextDocument();
-                        scriptSession.getParser().open(doc.getText(), doc.getUri(), Integer.toString(doc.getVersion()));
-                        safelyExecute(() -> {
-                            responseObserver.onNext(OpenDocumentResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
-                    });
+    private CompletionParser ensureParserForSession(SessionState session) {
+        return parsers.computeIfAbsent(session, s -> {
+            CompletionParser parser = new CompletionParser();
+            s.addOnCloseCallback(() -> {
+                parsers.remove(s);
+                parser.close();
+            });
+            return parser;
         });
     }
 
     @Override
-    public void changeDocument(ChangeDocumentRequest request, StreamObserver<ChangeDocumentResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+    public StreamObserver<AutoCompleteRequest> autoCompleteStream(
+            StreamObserver<AutoCompleteResponse> responseObserver) {
+        return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
-            session
-                    .nonExport()
-                    .require(exportedConsole)
-                    .onError(responseObserver::onError)
-                    .submit(() -> {
-                        final ScriptSession scriptSession = exportedConsole.get();
-                        final VersionedTextDocumentIdentifier text = request.getTextDocument();
-                        @SuppressWarnings("unchecked")
-                        final CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException> parser =
-                                scriptSession.getParser();
-                        parser.update(text.getUri(), Integer.toString(text.getVersion()),
-                                request.getContentChangesList());
-                        safelyExecute(() -> {
-                            responseObserver.onNext(ChangeDocumentResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
-                    });
-        });
-    }
+            CompletionParser parser = ensureParserForSession(session);
+            return new StreamObserver<AutoCompleteRequest>() {
 
-    @Override
-    public void getCompletionItems(GetCompletionItemsRequest request,
-            StreamObserver<GetCompletionItemsResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+                @Override
+                public void onNext(AutoCompleteRequest value) {
+                    switch (value.getRequestCase()) {
+                        case OPEN_DOCUMENT: {
+                            final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
 
-            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
-            final ScriptSession scriptSession = exportedConsole.get();
-            session
-                    .nonExport()
-                    .require(exportedConsole)
-                    .onError(responseObserver::onError)
-                    .submit(() -> {
+                            parser.open(doc.getText(), doc.getUri(), Integer.toString(doc.getVersion()));
+                            break;
+                        }
+                        case CHANGE_DOCUMENT: {
+                            ChangeDocumentRequest request = value.getChangeDocument();
+                            final VersionedTextDocumentIdentifier text = request.getTextDocument();
+                            parser.update(text.getUri(), Integer.toString(text.getVersion()),
+                                    request.getContentChangesList());
+                            break;
+                        }
+                        case GET_COMPLETION_ITEMS: {
+                            GetCompletionItemsRequest request = value.getGetCompletionItems();
+                            SessionState.ExportObject<ScriptSession> exportedConsole =
+                                    session.getExport(request.getConsoleId());
+                            session.nonExport()
+                                    .require(exportedConsole)
+                                    .onError(responseObserver)
+                                    .submit(() -> {
+                                        final VersionedTextDocumentIdentifier doc = request.getTextDocument();
+                                        ScriptSession scriptSession = exportedConsole.get();
+                                        final VariableProvider vars = scriptSession.getVariableProvider();
+                                        final CompletionLookups h = CompletionLookups.preload(scriptSession);
+                                        // The only stateful part of a completer is the CompletionLookups, which are
+                                        // already once-per-session-cached
+                                        // so, we'll just create a new completer for each request. No need to hang onto
+                                        // these guys.
+                                        final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
 
-                        final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-                        final VariableProvider vars = scriptSession.getVariableProvider();
-                        final CompletionLookups h = CompletionLookups.preload(scriptSession);
-                        // The only stateful part of a completer is the CompletionLookups, which are already
-                        // once-per-session-cached
-                        // so, we'll just create a new completer for each request. No need to hand onto these guys.
-                        final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
-                        @SuppressWarnings("unchecked")
-                        final CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException> parser =
-                                scriptSession.getParser();
-                        final ParsedDocument parsed = parser.finish(doc.getUri());
-                        int offset = LspTools.getOffsetFromPosition(parsed.getSource(), request.getPosition());
-                        final Collection<CompletionItem.Builder> results =
-                                completer.runCompletion(parsed, request.getPosition(), offset);
-                        final GetCompletionItemsResponse mangledResults = GetCompletionItemsResponse.newBuilder()
-                                .addAllItems(results.stream().map(
-                                        // insertTextFormat is a default we used to set in constructor;
-                                        // for now, we'll just process the objects before sending back to client
-                                        item -> item.setInsertTextFormat(2).build()).collect(Collectors.toSet()))
-                                .build();
+                                        final ParsedDocument parsed;
+                                        try {
+                                            parsed = parser.finish(doc.getUri());
+                                        } catch (CompletionCancelled exception) {
+                                            if (log.isTraceEnabled()) {
+                                                log.trace().append("Completion canceled").append(exception).endl();
+                                            }
+                                            safelyExecuteLocked(responseObserver,
+                                                    () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                                                            .setCompletionItems(GetCompletionItemsResponse.newBuilder()
+                                                                    .setSuccess(false)
+                                                                    .setRequestId(request.getRequestId()))
+                                                            .build()));
+                                            return;
+                                        }
 
-                        safelyExecute(() -> {
-                            responseObserver.onNext(mangledResults);
-                            responseObserver.onCompleted();
-                        });
-                    });
-        });
-    }
+                                        int offset = LspTools.getOffsetFromPosition(parsed.getSource(),
+                                                request.getPosition());
+                                        final Collection<CompletionItem.Builder> results =
+                                                completer.runCompletion(parsed, request.getPosition(), offset);
+                                        final GetCompletionItemsResponse mangledResults =
+                                                GetCompletionItemsResponse.newBuilder()
+                                                        .setSuccess(true)
+                                                        .setRequestId(request.getRequestId())
+                                                        .addAllItems(results.stream().map(
+                                                                // insertTextFormat is a default we used to set in
+                                                                // constructor;
+                                                                // for now, we'll just process the objects before
+                                                                // sending back to client
+                                                                item -> item.setInsertTextFormat(2).build())
+                                                                .collect(Collectors.toSet()))
+                                                        .build();
 
-    @Override
-    public void closeDocument(CloseDocumentRequest request, StreamObserver<CloseDocumentResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
-            session
-                    .nonExport()
-                    .require(exportedConsole)
-                    .onError(responseObserver::onError)
-                    .submit(() -> {
-                        final ScriptSession scriptSession = exportedConsole.get();
-                        scriptSession.getParser().close(request.getTextDocument().getUri());
-                        safelyExecute(() -> {
-                            responseObserver.onNext(CloseDocumentResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
-                    });
+                                        safelyExecuteLocked(responseObserver,
+                                                () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                                                        .setCompletionItems(mangledResults)
+                                                        .build()));
+                                    });
+                            break;
+                        }
+                        case CLOSE_DOCUMENT: {
+                            CloseDocumentRequest request = value.getCloseDocument();
+                            parser.remove(request.getTextDocument().getUri());
+                            break;
+                        }
+                        case REQUEST_NOT_SET: {
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Autocomplete command missing request");
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    // ignore, client doesn't need us, will be cleaned up later
+                }
+
+                @Override
+                public void onCompleted() {
+                    // just hang up too, browser will reconnect if interested
+                    synchronized (responseObserver) {
+                        responseObserver.onCompleted();
+                    }
+                }
+            };
         });
     }
 
@@ -385,7 +399,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             session.nonExport()
                     .require(exportedConsole)
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> {
                         ScriptSession scriptSession = exportedConsole.get();
 

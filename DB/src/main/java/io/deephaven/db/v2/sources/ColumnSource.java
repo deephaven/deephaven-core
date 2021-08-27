@@ -5,7 +5,6 @@
 package io.deephaven.db.v2.sources;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.tuples.TupleSource;

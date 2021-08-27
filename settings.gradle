@@ -23,7 +23,6 @@ String[] webMods = [
         'web-jupyter-grid', // React Jupyter grid client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
-        'open-api-lang-api', // a lightweight module used to avoid diamond problems with :DB
         'open-api-lang-parser', // a javacc generated general-purpose language parser.
         'open-api-lang-tools', // language processing tools that we want to be accessible to many modules
         'open-api-shared-fu', // general purpose tools and dtos for both client and server

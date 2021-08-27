@@ -400,7 +400,7 @@ public class FlightMessageRoundTripTest {
         CompletableFuture<Table> tableFuture = new CompletableFuture<>();
         SessionState.ExportObject<Table> tableExport = currentSession.getExport(flightDescriptorTicketValue);
         currentSession.nonExport()
-                .onError(exception -> tableFuture.cancel(true))
+                .onErrorHandler(exception -> tableFuture.cancel(true))
                 .require(tableExport)
                 .submit(() -> tableFuture.complete(tableExport.get()));
 

@@ -178,7 +178,7 @@ public class SessionStateTest {
     public void testThrowInExportMain() {
         final MutableBoolean errored = new MutableBoolean();
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
-                .onError(err -> errored.setTrue())
+                .onErrorHandler(err -> errored.setTrue())
                 .submit(() -> {
                     throw new RuntimeException("submit exception");
                 });
@@ -193,7 +193,7 @@ public class SessionStateTest {
     public void testThrowInErrorHandler() {
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
-                .onError(err -> {
+                .onErrorHandler(err -> {
                     throw new RuntimeException("error handler exception");
                 })
                 .submit(() -> {
@@ -436,7 +436,7 @@ public class SessionStateTest {
         expectException(LivenessStateException.class, () -> {
             final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                     .require(e1)
-                    .onError(err -> errored.setTrue())
+                    .onErrorHandler(err -> errored.setTrue())
                     .submit(() -> Assert.gt(e1.get().refCount, "e1.get().refCount", 0));
         });
     }

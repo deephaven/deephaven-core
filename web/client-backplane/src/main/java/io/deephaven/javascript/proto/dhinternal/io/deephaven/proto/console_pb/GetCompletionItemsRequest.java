@@ -148,6 +148,9 @@ public class GetCompletionItemsRequest {
         GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType getPosition();
 
         @JsProperty
+        double getRequestId();
+
+        @JsProperty
         GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType getTextDocument();
 
         @JsProperty
@@ -158,6 +161,9 @@ public class GetCompletionItemsRequest {
 
         @JsProperty
         void setPosition(GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType position);
+
+        @JsProperty
+        void setRequestId(double requestId);
 
         @JsProperty
         void setTextDocument(
@@ -299,6 +305,9 @@ public class GetCompletionItemsRequest {
         GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType getPosition();
 
         @JsProperty
+        double getRequestId();
+
+        @JsProperty
         GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType getTextDocument();
 
         @JsProperty
@@ -309,6 +318,9 @@ public class GetCompletionItemsRequest {
 
         @JsProperty
         void setPosition(GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType position);
+
+        @JsProperty
+        void setRequestId(double requestId);
 
         @JsProperty
         void setTextDocument(
@@ -340,6 +352,8 @@ public class GetCompletionItemsRequest {
 
     public native Position getPosition();
 
+    public native int getRequestId();
+
     public native VersionedTextDocumentIdentifier getTextDocument();
 
     public native boolean hasConsoleId();
@@ -363,6 +377,8 @@ public class GetCompletionItemsRequest {
     public native void setPosition();
 
     public native void setPosition(Position value);
+
+    public native void setRequestId(int value);
 
     public native void setTextDocument();
 
