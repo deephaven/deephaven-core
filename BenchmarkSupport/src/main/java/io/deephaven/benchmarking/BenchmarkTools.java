@@ -25,7 +25,7 @@ import java.util.Random;
 @ScriptApi
 public class BenchmarkTools {
 
-    private static final List<ColumnDefinition> COMMON_RESULT_COLUMNS = Arrays.asList(
+    private static final List<ColumnDefinition<?>> COMMON_RESULT_COLUMNS = Arrays.asList(
             ColumnDefinition.ofString("Benchmark"),
             ColumnDefinition.ofString("Mode"),
             ColumnDefinition.ofInt("Iteration"),
@@ -264,8 +264,8 @@ public class BenchmarkTools {
         return DETAIL_LOG_PREFIX + benchmarkName;
     }
 
-    public static TableDefinition getLogDefinitionWithExtra(List<ColumnDefinition> columnsToAdd) {
-        final List<ColumnDefinition> columns = new ArrayList<>(COMMON_RESULT_COLUMNS);
+    public static TableDefinition getLogDefinitionWithExtra(List<ColumnDefinition<?>> columnsToAdd) {
+        final List<ColumnDefinition<?>> columns = new ArrayList<>(COMMON_RESULT_COLUMNS);
         columns.addAll(columnsToAdd);
 
         return new TableDefinition(columns);

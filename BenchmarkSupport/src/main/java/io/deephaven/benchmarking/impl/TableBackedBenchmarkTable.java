@@ -13,7 +13,7 @@ import java.util.List;
 public class TableBackedBenchmarkTable extends AbstractBenchmarkTable {
     private final Table sourceTable;
 
-    TableBackedBenchmarkTable(String name, Table sourceTable, long rngSeed, List<ColumnGenerator> columnsToAdd) {
+    TableBackedBenchmarkTable(String name, Table sourceTable, long rngSeed, List<ColumnGenerator<?>> columnsToAdd) {
         super(name, rngSeed, columnsToAdd);
         this.sourceTable = sourceTable;
     }

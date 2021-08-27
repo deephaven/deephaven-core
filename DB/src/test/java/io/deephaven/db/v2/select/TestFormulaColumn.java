@@ -46,11 +46,11 @@ public class TestFormulaColumn {
 
     @Parameterized.Parameters(name = "useKernelFormulasProperty = {0}")
     public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] {new Object[] {false}, new Object[] {true}});
+        return Arrays.asList(new Object[] {false}, new Object[] {true});
     }
 
     private final Table testDataTable;
-    private final Map<String, ColumnDefinition> availableColumns;
+    private final Map<String, ColumnDefinition<?>> availableColumns;
     private boolean compilerToolsLogEnabledInitial = false;
     private final boolean useKernelFormulas;
     private boolean kernelFormulasSavedValue;
@@ -397,16 +397,16 @@ public class TestFormulaColumn {
      */
     @Test
     public void testPrimitiveCasts() {
-        final List<Class> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
+        final List<Class<?>> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
         for (int i = 0; i < io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES.size(); i++) {
-            final Class sourceType = primitiveTypes.get(i);
+            final Class<?> sourceType = primitiveTypes.get(i);
             final String sourceTypeName = sourceType.getName();
             final String sourceColName =
                     Character.toUpperCase(sourceTypeName.charAt(0)) + sourceTypeName.substring(1) + "Col";
 
             for (int j = 0; j < io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES.size(); j++) {
-                final Class destType = primitiveTypes.get(j);
+                final Class<?> destType = primitiveTypes.get(j);
                 final String destTypeName = destType.getName();
 
                 String expression = "(" + destTypeName + ")" + sourceColName; // e.g. "TestCast=(int)myShortObj"
@@ -448,11 +448,11 @@ public class TestFormulaColumn {
      */
     @Test
     public void testUnboxingCasts() {
-        final List<Class> boxedTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
-        final List<Class> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
+        final List<Class<?>> boxedTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
+        final List<Class<?>> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
         for (int i = 0; i < boxedTypes.size(); i++) {
-            final Class sourceType = boxedTypes.get(i);
+            final Class<?> sourceType = boxedTypes.get(i);
             final String sourceTypeName = sourceType.getSimpleName();
             final String unboxedSourceTypeName = io.deephaven.util.type.TypeUtils.getUnboxedType(sourceType).getName();
             final String unboxedSourceTypeNameProperCase =
@@ -461,7 +461,7 @@ public class TestFormulaColumn {
             final String boxedTypeConstructorCall = "new " + sourceTypeName + '(' + sourceColName + ')';
 
             for (int j = 0; j < primitiveTypes.size(); j++) {
-                Class destType = primitiveTypes.get(j);
+                Class<?> destType = primitiveTypes.get(j);
                 final String destTypeName = destType.getName();
                 final String destTypeCast = '(' + destTypeName + ')';
                 final String expression = destTypeCast + boxedTypeConstructorCall; // e.g. "(double)new Integer(IntCol)"
@@ -551,7 +551,7 @@ public class TestFormulaColumn {
         testWrapWithCastHelper(Object.class, null);
     }
 
-    private void testWrapWithCastHelper(final Class type, final String cast) {
+    private void testWrapWithCastHelper(final Class<?> type, final String cast) {
         final String theFormula = "theFormula";
         final String expected = cast == null ? theFormula
                 : DBLanguageFunctionUtil.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
@@ -663,7 +663,7 @@ public class TestFormulaColumn {
      * @param index The index to check
      */
     private void checkPrimitive(int index, String formulaString, Object expectedResult) {
-        Class unboxedType = expectedResult == null ? null : TypeUtils.getUnboxedType(expectedResult.getClass());
+        Class<?> unboxedType = expectedResult == null ? null : TypeUtils.getUnboxedType(expectedResult.getClass());
 
         if (unboxedType == byte.class) {
             check(index, formulaString, ((Number) expectedResult).byteValue());

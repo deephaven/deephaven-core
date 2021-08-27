@@ -42,7 +42,7 @@ public class IndexCoalescerTest {
     }
 
     private ModifiedColumnSet newMCSForColumns(final String... names) {
-        Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (final String name : names) {
             columns.put(name, new ShortSingleValueSource());
         }

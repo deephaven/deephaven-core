@@ -14,7 +14,7 @@ import java.util.Map;
 public class LiveQueryTable extends QueryTable implements LiveTable {
     Index.RandomBuilder additionsBuilder = Index.FACTORY.getRandomBuilder();
 
-    public LiveQueryTable(Index index, Map<String, ? extends ColumnSource> result) {
+    public LiveQueryTable(Index index, Map<String, ? extends ColumnSource<?>> result) {
         super(index, result);
     }
 

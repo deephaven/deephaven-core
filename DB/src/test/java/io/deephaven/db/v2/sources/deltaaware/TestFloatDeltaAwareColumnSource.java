@@ -176,7 +176,7 @@ public class TestFloatDeltaAwareColumnSource {
 
         // Current...
         try (ChunkSource.GetContext context = dacs.makeGetContext(chunkSize)) {
-            FloatChunk<Values> chunk;
+            FloatChunk<? extends Values> chunk;
 
             chunk = dacs.getChunk(context, index0).asFloatChunk();
             checkChunk(chunk, expectedCurrent, index0);
@@ -190,7 +190,7 @@ public class TestFloatDeltaAwareColumnSource {
         }
     }
 
-    private static void checkChunk(FloatChunk<Values> values, Map<Long, Float> expected, Index keys) {
+    private static void checkChunk(FloatChunk<? extends Values> values, Map<Long, Float> expected, Index keys) {
         int sliceOffset = 0;
         for (final Index.Iterator it = keys.iterator(); it.hasNext(); ) {
             final long key = it.nextLong();

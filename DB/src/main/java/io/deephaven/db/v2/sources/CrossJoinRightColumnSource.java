@@ -319,8 +319,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        // noinspection unchecked
-        return new ReinterpretToOriginal(alternateDataType);
+        return new ReinterpretToOriginal<>(alternateDataType);
     }
 
     private class ReinterpretToOriginal<ALTERNATE_DATA_TYPE> extends CrossJoinRightColumnSource<ALTERNATE_DATA_TYPE> {
@@ -330,7 +329,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
         }
 
         @Override
-        public boolean allowsReinterpret(@NotNull Class alternateDataType) {
+        public <INNER_ALTERNATIVE_DATA_TYPE> boolean allowsReinterpret(
+                @NotNull Class<INNER_ALTERNATIVE_DATA_TYPE> alternateDataType) {
             return alternateDataType == CrossJoinRightColumnSource.this.getType();
         }
 
@@ -406,7 +406,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
         private final DupExpandKernel dupExpandKernel;
         private final PermuteKernel permuteKernel;
 
-        FillContext(final CrossJoinRightColumnSource cs, final int chunkCapacity, final SharedContext sharedContext) {
+        FillContext(final CrossJoinRightColumnSource<?> cs, final int chunkCapacity,
+                final SharedContext sharedContext) {
             if (sharedContext == null) {
                 shareable = new Shareable(cs.rightIsLive, false, chunkCapacity);
             } else {

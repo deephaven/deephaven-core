@@ -251,7 +251,7 @@ public abstract class SourceTable extends RedefinableTable {
                 createSwapListenerIfRefreshing((final BaseTable parent) -> new ShiftAwareSwapListener(parent) {
 
                     @Override
-                    public final void destroy() {
+                    public void destroy() {
                         // NB: We can't call super.destroy() because we don't want to try to remove ourselves from the
                         // coalesced table (see override for removeUpdateListener), but we are probably not missing
                         // anything by not having super.destroy() invoke its own super.destroy().
@@ -259,7 +259,7 @@ public abstract class SourceTable extends RedefinableTable {
                     }
 
                     @Override
-                    public final void subscribeForUpdates() {
+                    public void subscribeForUpdates() {
                         listenForUpdatesUncoalesced(this);
                     }
                 });
@@ -274,7 +274,7 @@ public abstract class SourceTable extends RedefinableTable {
                         new ShiftAwareListenerImpl("SourceTable.coalesce", this, resultTable) {
 
                             @Override
-                            protected final void destroy() {
+                            protected void destroy() {
                                 // NB: This implementation cannot call super.destroy() for the same reason as the swap
                                 // listener
                                 removeUpdateListenerUncoalesced(this);

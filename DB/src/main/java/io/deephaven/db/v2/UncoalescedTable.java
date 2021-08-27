@@ -138,17 +138,17 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public ColumnSource getColumnSource(String sourceName) {
+    public ColumnSource<?> getColumnSource(String sourceName) {
         return coalesce().getColumnSource(sourceName);
     }
 
     @Override
-    public Map<String, ? extends ColumnSource> getColumnSourceMap() {
+    public Map<String, ? extends ColumnSource<?>> getColumnSourceMap() {
         return coalesce().getColumnSourceMap();
     }
 
     @Override
-    public Collection<? extends ColumnSource> getColumnSources() {
+    public Collection<? extends ColumnSource<?>> getColumnSources() {
         return coalesce().getColumnSources();
     }
 

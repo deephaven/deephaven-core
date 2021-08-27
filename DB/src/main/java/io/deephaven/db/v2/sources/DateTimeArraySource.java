@@ -42,7 +42,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
 
 
     @Override
-    public void copy(ColumnSource<DBDateTime> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends DBDateTime> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.get(sourceKey));
     }
 
@@ -218,7 +218,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
             DateTimeArraySource.super.set(key, value);
         }
 
-        public void copy(ColumnSource<Long> sourceColumn, long sourceKey, long destKey) {
+        public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
             DateTimeArraySource.super.set(destKey, sourceColumn.getLong(sourceKey));
         }
 

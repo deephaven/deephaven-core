@@ -14,7 +14,7 @@ import java.util.Map;
  * {@implNote This class is part of the Deephaven engine, and not intended for direct use.}
  */
 final public class PreserveColumnLayer extends DependencyLayerBase {
-    PreserveColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc, ColumnSource cs, String[] deps,
+    PreserveColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc, ColumnSource<?> cs, String[] deps,
             ModifiedColumnSet mcsBuilder) {
         super(inner, name, sc, cs, deps, mcsBuilder);
     }
@@ -27,9 +27,9 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
     }
 
     @Override
-    Map<String, ColumnSource> getColumnSourcesRecurse(GetMode mode) {
+    Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
         // our column is not a new column, so we need to make sure that we do not double enable previous tracking
-        final Map<String, ColumnSource> result = inner.getColumnSourcesRecurse(mode);
+        final Map<String, ColumnSource<?>> result = inner.getColumnSourcesRecurse(mode);
         switch (mode) {
             case New:
                 // we have no new sources

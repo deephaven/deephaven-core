@@ -41,22 +41,22 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @NotNull
     private final Class<D> destDataType;
     @NotNull
-    private final BiFunction<Long, ColumnSource[], D> function;
+    private final BiFunction<Long, ColumnSource<?>[], D> function;
     @NotNull
-    private final Class componentType;
+    private final Class<?> componentType;
 
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull BiFunction<Long, ColumnSource[], D> function) {
+            @NotNull BiFunction<Long, ColumnSource<?>[], D> function) {
         this(sourceNames, destName, destDataType, Object.class, function);
     }
 
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class componentType,
-            @NotNull BiFunction<Long, ColumnSource[], D> function) {
+            @NotNull Class<?> componentType,
+            @NotNull BiFunction<Long, ColumnSource<?>[], D> function) {
         this.sourceNames = sourceNames.stream()
                 .map(NameValidator::validateColumnName)
                 .collect(Collectors.toList());
@@ -79,7 +79,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         if (sourceColumns == null) {
             final List<ColumnSource<?>> localSources = new ArrayList<>(sourceNames.size());
             final List<ColumnSource<?>> localPrev = new ArrayList<>(sourceNames.size());
@@ -89,13 +89,12 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
             // violated
             // and we could provide the wrong answer by not paying attention to the columnsOverride
             sourceNames.forEach(name -> {
-                final ColumnSource localSourceColumnSource = columnsOfInterest.get(name);
+                final ColumnSource<?> localSourceColumnSource = columnsOfInterest.get(name);
                 if (localSourceColumnSource == null) {
                     throw new IllegalArgumentException("Source column " + name + " doesn't exist!");
                 }
 
                 localSources.add(localSourceColumnSource);
-                // noinspection unchecked
                 localPrev.add(new PrevColumnSource<>(localSourceColumnSource));
             });
 
@@ -107,10 +106,10 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap) {
+    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         final MutableObject<List<String>> missingColumnsHolder = new MutableObject<>();
         sourceNames.forEach(name -> {
-            final ColumnDefinition sourceColumnDefinition = columnDefinitionMap.get(name);
+            final ColumnDefinition<?> sourceColumnDefinition = columnDefinitionMap.get(name);
             if (sourceColumnDefinition == null) {
                 List<String> missingColumnsList;
                 if ((missingColumnsList = missingColumnsHolder.getValue()) == null) {
@@ -128,7 +127,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public Class getReturnedType() {
+    public Class<?> getReturnedType() {
         return destDataType;
     }
 
@@ -144,7 +143,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getDataView() {
+    public ColumnSource<D> getDataView() {
         return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
             @Override
             public Object getPrev(long key) {
@@ -195,7 +194,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getLazyView() {
+    public ColumnSource<?> getLazyView() {
         // TODO: memoize
         return getDataView();
     }
@@ -211,7 +210,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public WritableSource newDestInstance(long size) {
+    public WritableSource<?> newDestInstance(long size) {
         throw new UnsupportedOperationException();
     }
 

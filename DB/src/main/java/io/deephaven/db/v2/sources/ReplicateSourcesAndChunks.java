@@ -92,9 +92,10 @@ public class ReplicateSourcesAndChunks {
                 "Object getPrevObject", "T getPrev",
                 "Object current", "T current",
                 "Object prev", "T prev",
+                "ColumnSource<[?] extends Object>", "ColumnSource<? extends T>",
                 "set\\(Object", "set(T",
                 "set\\(long key, Object", "set(long key, T",
-                "final ObjectChunk", "final ObjectChunk<T, ? extends Attributes.Values>",
+                "final ObjectChunk<[?] extends Attributes.Values>", "final ObjectChunk<T, ? extends Attributes.Values>",
                 "unbox\\((.*)\\)", "$1");
         lines = ReplicateUtilities.removeRegion(lines, "UnboxedSetter");
         lines = ReplicateUtilities.replaceRegion(lines, "Constructor", Arrays.asList(
@@ -645,7 +646,7 @@ public class ReplicateSourcesAndChunks {
                 "        }",
                 "",
                 "        @Override",
-                "        public void copy(ColumnSource<Byte> sourceColumn, long sourceKey, long destKey) {",
+                "        public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {",
                 "            set(destKey, sourceColumn.getByte(sourceKey));",
                 "        }",
                 "",
@@ -926,11 +927,12 @@ public class ReplicateSourcesAndChunks {
 
         lines = replaceRegion(lines, "copy method", Arrays.asList(
                 "    @Override",
-                "    public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {",
+                "    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {",
                 "        final T value = sourceColumn.get(sourceKey);",
                 "",
                 "        if (isArrayType && value instanceof DbArrayBase) {",
-                "            final DbArrayBase dbArray = (DbArrayBase) value;",
+                "            final DbArrayBase<?> dbArray = (DbArrayBase<?>) value;",
+                "            // noinspection unchecked",
                 "            set(destKey, (T) dbArray.getDirect());",
                 "        } else {",
                 "            set(destKey, value);",

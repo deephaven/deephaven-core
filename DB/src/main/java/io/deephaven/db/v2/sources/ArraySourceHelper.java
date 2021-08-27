@@ -30,7 +30,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         super(type);
     }
 
-    ArraySourceHelper(Class<T> type, Class componentType) {
+    ArraySourceHelper(Class<T> type, Class<?> componentType) {
         super(type, componentType);
     }
 
@@ -173,7 +173,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     /**
      * This method supports the 'set' method for its inheritors, doing some of the 'inUse' housekeeping that is common
      * to all inheritors.
-     * 
+     *
      * @return true if the inheritor should copy a value from current to prev before setting current; false if it should
      *         just set a current value without touching prev.
      */
@@ -231,7 +231,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     /**
      * This method supports the 'getPrev' method for its inheritors, doing some of the 'inUse' housekeeping that is
      * common to all inheritors.
-     * 
+     *
      * @return true if the inheritor should return a value from its "prev" data structure; false if it should return a
      *         value from its "current" data structure.
      */

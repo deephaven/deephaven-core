@@ -87,11 +87,11 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * In its own coordinate space
      */
-    private final WritableChunkSink baseline;
+    private final WritableChunkSink<Values> baseline;
     /**
      * Also in its own coordinate space (i.e. densely packed)
      */
-    private WritableChunkSink delta;
+    private WritableChunkSink<Values> delta;
 
     @FunctionalInterface
     private interface CapacityEnsurer {
@@ -227,7 +227,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * This method encapsulates some shared logic for the 'get' and 'fill' paths. If you pass in {@code dest} = null, we
      * assume you are doing a 'get'. Otherwise (if {@code dest} is not null), we assume you are doing a 'fill'.
-     * 
+     *
      * @param context The context.
      * @param optionalDest Null if you are doing a get, or destination chunk if you are doing a fill.
      * @param orderedKeys Keys to get.
@@ -262,8 +262,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         }
 
         // Always use "get" to pull in the baseline and delta pieces
-        final Chunk<Values> bChunk = baseline.getChunk(context.baseline.getContext, baselineKeysBS);
-        final Chunk<Values> dChunk = delta.getChunk(context.delta.getContext, deltaKeysDS);
+        final Chunk<? extends Values> bChunk = baseline.getChunk(context.baseline.getContext, baselineKeysBS);
+        final Chunk<? extends Values> dChunk = delta.getChunk(context.delta.getContext, deltaKeysDS);
         // Merge them into either the user-provided chunk, or our own preallocated chunk. Note that 'destToUse' will
         // always be non-null. This is because if we arrived here from fillChunk(), then optionalDest will be non-null.
         // Otherwise (if we arrived here from getChunk()), then optionalDest will be null, but context.optionalChunk
@@ -273,6 +273,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         return destToUse;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static Chunk<? super Values> getOrFillSimple(ChunkSource src, GetAndFillContexts ctx,
             WritableChunk<? super Values> optionalDest,
             OrderedKeys orderedKeys) {
@@ -290,7 +291,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // ==================================================================================================================
 
     @Override
-    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
         final DAContext dactx = (DAContext) context;
         return baseline.getChunk(dactx.baseline.getContext, orderedKeys);
     }
@@ -558,7 +559,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
                 orderedKeyRanges.setSize(2);
                 startKey += baselineOkSize;
                 final OrderedKeys deltaOk = OrderedKeys.wrapKeyRangesChunkAsOrderedKeys(orderedKeyRanges);
-                final Chunk<Values> data = delta.getChunk(deltaCtx, deltaOk);
+                final Chunk<? extends Values> data = delta.getChunk(deltaCtx, deltaOk);
                 baseline.fillFromChunk(baselineCtx, data, baselineOk);
             }
         }
@@ -593,7 +594,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
-    public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
         throw new UnsupportedOperationException();
     }
 
@@ -609,7 +610,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     /**
      * Partitions {@code lhs} into two indices: (lhs intersect rhs) and (lhs minus rhs).
-     * 
+     *
      * @param lhs The {@link OrderedKeys} to partition
      * @param rhs The keys which control the partition operation
      * @param results Allocated by the caller. {@code results[0]} will be set to (lhs intersect rhs). {@code results[1]}
@@ -622,12 +623,14 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     private static class DAContext implements ChunkSource.GetContext, ChunkSource.FillContext {
+        @SuppressWarnings("rawtypes")
         static DAContext createForGet(ChunkType chunkType, ChunkSource baseline, ChunkSource delta, int chunkCapacity) {
             final GetAndFillContexts b = GetAndFillContexts.createForGet(baseline, chunkCapacity);
             final GetAndFillContexts d = GetAndFillContexts.createForGet(delta, chunkCapacity);
             return new DAContext(b, d, chunkType.makeWritableChunk(chunkCapacity));
         }
 
+        @SuppressWarnings("rawtypes")
         static DAContext createForFill(ChunkSource baseline, ChunkSource delta, int chunkCapacity) {
             final GetAndFillContexts b = GetAndFillContexts.createForFill(baseline, chunkCapacity);
             final GetAndFillContexts d = GetAndFillContexts.createForFill(delta, chunkCapacity);
@@ -649,10 +652,12 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     private static class GetAndFillContexts {
+        @SuppressWarnings("rawtypes")
         static GetAndFillContexts createForGet(ChunkSource chunkSource, int chunkCapacity) {
             return new GetAndFillContexts(chunkSource.makeGetContext(chunkCapacity), null);
         }
 
+        @SuppressWarnings("rawtypes")
         static GetAndFillContexts createForFill(ChunkSource chunkSource, int chunkCapacity) {
             return new GetAndFillContexts(chunkSource.makeGetContext(chunkCapacity),
                     chunkSource.makeFillContext(chunkCapacity));

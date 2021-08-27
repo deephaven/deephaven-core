@@ -49,7 +49,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         for (int ii = 0; ii < sortColumnNames.length; ++ii) {
             // noinspection unchecked
-            sortColumns[ii] = QueryTable.maybeTransformToPrimitive(parent.getColumnSource(sortColumnNames[ii]));
+            sortColumns[ii] = (ColumnSource<Comparable<?>>) QueryTable
+                    .maybeTransformToPrimitive(parent.getColumnSource(sortColumnNames[ii]));
 
             Require.requirement(
                     Comparable.class.isAssignableFrom(sortColumns[ii].getType())
@@ -110,8 +111,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         final Index resultIndex = Index.FACTORY.getFlatIndex(sortedKeys.size());
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
-            // noinspection unchecked
+        for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
             resultMap.put(stringColumnSourceEntry.getKey(),
                     new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
         }
@@ -142,8 +142,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         final Index resultIndex = Index.FACTORY.getFlatIndex(initialSortedKeys.size());
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
-            // noinspection unchecked
+        for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
             resultMap.put(stringColumnSourceEntry.getKey(),
                     new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
         }
@@ -246,8 +245,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             sortMapping.fillFromChunk(fillFromContext, LongChunk.chunkWrap(sortedKeys),
                     closer.add(resultIndex.clone()));
 
-            for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
-                // noinspection unchecked
+            for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
                 resultMap.put(stringColumnSourceEntry.getKey(),
                         new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
             }
@@ -259,7 +257,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // source
             for (int ii = 0; ii < sortedColumnsToSortBy.length; ++ii) {
                 // noinspection unchecked
-                sortedColumnsToSortBy[ii] = QueryTable.maybeTransformToPrimitive(sortedColumnsToSortBy[ii]);
+                sortedColumnsToSortBy[ii] =
+                        (ColumnSource<Comparable<?>>) QueryTable.maybeTransformToPrimitive(sortedColumnsToSortBy[ii]);
             }
 
             resultTable = new QueryTable(resultIndex, resultMap);

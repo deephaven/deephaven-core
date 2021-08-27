@@ -35,7 +35,7 @@ import java.util.stream.StreamSupport;
  */
 public class PartitionAwareSourceTable extends SourceTable {
 
-    private final Map<String, ColumnDefinition> partitioningColumnDefinitions;
+    private final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions;
     private final SelectFilter[] partitioningColumnFilters;
 
     /**
@@ -63,7 +63,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
             @Nullable final LiveTableRegistrar liveTableRegistrar,
-            @NotNull final Map<String, ColumnDefinition> partitioningColumnDefinitions,
+            @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
             @Nullable final SelectFilter... partitioningColumnFilters) {
         super(tableDefinition, description, componentFactory, locationProvider, liveTableRegistrar);
         this.partitioningColumnDefinitions = partitioningColumnDefinitions;
@@ -75,7 +75,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
             @Nullable final LiveTableRegistrar liveTableRegistrar,
-            @NotNull final Map<String, ColumnDefinition> partitioningColumnDefinitions,
+            @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
             @Nullable final SelectFilter... partitioningColumnFilters) {
         return new PartitionAwareSourceTable(tableDefinition, description, componentFactory, locationProvider,
                 liveTableRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
@@ -95,7 +95,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                 resultPartitioningColumnFilters);
     }
 
-    private static Map<String, ColumnDefinition> extractPartitioningColumnDefinitions(
+    private static Map<String, ColumnDefinition<?>> extractPartitioningColumnDefinitions(
             @NotNull final TableDefinition tableDefinition) {
         return tableDefinition.getColumnStream()
                 .filter(ColumnDefinition::isPartitioning)
@@ -115,7 +115,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             ArrayList<SelectFilter> groupFilters = new ArrayList<>();
             ArrayList<SelectFilter> otherFilters = new ArrayList<>();
 
-            List<ColumnDefinition> groupingColumns = table.getDefinition().getGroupingColumns();
+            List<ColumnDefinition<?>> groupingColumns = table.getDefinition().getGroupingColumns();
             Set<String> groupingColumnNames =
                     groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
@@ -182,12 +182,13 @@ public class PartitionAwareSourceTable extends SourceTable {
                     partitioningColumnFilters);
         }
         // Some partitioning columns are gone - defer dropping them.
-        final List<ColumnDefinition> newColumnDefinitions = new ArrayList<>(newDefinition.getColumnList());
-        final Map<String, ColumnDefinition> retainedPartitioningColumnDefinitions =
+        final List<ColumnDefinition<?>> newColumnDefinitions = new ArrayList<>(newDefinition.getColumnList());
+        final Map<String, ColumnDefinition<?>> retainedPartitioningColumnDefinitions =
                 extractPartitioningColumnDefinitions(newDefinition);
-        final Collection<ColumnDefinition> droppedPartitioningColumnDefinitions = partitioningColumnDefinitions.values()
-                .stream().filter(cd -> !retainedPartitioningColumnDefinitions.containsKey(cd.getName()))
-                .collect(Collectors.toList());
+        final Collection<ColumnDefinition<?>> droppedPartitioningColumnDefinitions =
+                partitioningColumnDefinitions.values()
+                        .stream().filter(cd -> !retainedPartitioningColumnDefinitions.containsKey(cd.getName()))
+                        .collect(Collectors.toList());
         newColumnDefinitions.addAll(droppedPartitioningColumnDefinitions);
         final PartitionAwareSourceTable redefined = newInstance(new TableDefinition(newColumnDefinitions),
                 description + "-retainColumns",
@@ -216,14 +217,14 @@ public class PartitionAwareSourceTable extends SourceTable {
 
     private static final String LOCATION_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TableLocationKey__";
 
-    @SuppressWarnings("unchecked")
-    private static <T> ColumnSource makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition,
+    private static <T> ColumnSource<? super T> makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition,
             @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
-        final Class<T> dataType = columnDefinition.getDataType();
+        final Class<? super T> dataType = columnDefinition.getDataType();
         final String partitionKey = columnDefinition.getName();
-        final WritableSource<T> result =
+        final WritableSource<? super T> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(locationKeys.size(), dataType, null);
         final MutableLong nextIndex = new MutableLong(0L);
+        // noinspection unchecked
         locationKeys.stream()
                 .map(lk -> (T) lk.getPartitionValue(partitionKey))
                 .forEach((final T partitionValue) -> result.set(nextIndex.getAndIncrement(), partitionValue));
@@ -240,10 +241,9 @@ public class PartitionAwareSourceTable extends SourceTable {
         final List<String> partitionTableColumnNames = Stream.concat(
                 partitioningColumnDefinitions.keySet().stream(),
                 Stream.of(LOCATION_KEY_COLUMN_NAME)).collect(Collectors.toList());
-        final List<ColumnSource> partitionTableColumnSources =
+        final List<ColumnSource<?>> partitionTableColumnSources =
                 new ArrayList<>(partitioningColumnDefinitions.size() + 1);
-        for (final ColumnDefinition columnDefinition : partitioningColumnDefinitions.values()) {
-            // noinspection unchecked
+        for (final ColumnDefinition<?> columnDefinition : partitioningColumnDefinitions.values()) {
             partitionTableColumnSources.add(makePartitionSource(columnDefinition, foundLocationKeys));
         }
         partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys,
@@ -269,7 +269,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         ArrayList<SelectFilter> groupFilters = new ArrayList<>();
         ArrayList<SelectFilter> otherFilters = new ArrayList<>();
 
-        List<ColumnDefinition> groupingColumns = definition.getGroupingColumns();
+        List<ColumnDefinition<?>> groupingColumns = definition.getGroupingColumns();
         Set<String> groupingColumnNames =
                 groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
@@ -335,9 +335,8 @@ public class PartitionAwareSourceTable extends SourceTable {
                     return size != TableLocation.NULL_SIZE && size > 0;
                 }).map(TableLocation::getKey).collect(Collectors.toList());
         final List<String> partitionTableColumnNames = new ArrayList<>(partitioningColumnDefinitions.keySet());
-        final List<ColumnSource> partitionTableColumnSources = new ArrayList<>(partitioningColumnDefinitions.size());
-        for (final ColumnDefinition columnDefinition : partitioningColumnDefinitions.values()) {
-            // noinspection unchecked
+        final List<ColumnSource<?>> partitionTableColumnSources = new ArrayList<>(partitioningColumnDefinitions.size());
+        for (final ColumnDefinition<?> columnDefinition : partitioningColumnDefinitions.values()) {
             partitionTableColumnSources.add(makePartitionSource(columnDefinition, existingLocationKeys));
         }
         return TableTools

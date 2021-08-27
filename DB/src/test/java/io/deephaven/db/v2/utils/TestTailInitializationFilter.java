@@ -8,6 +8,7 @@ import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.LiveTableTestCase;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.TstUtils;
+import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.DateTimeTreeMapSource;
 
 public class TestTailInitializationFilter extends LiveTableTestCase {
@@ -45,7 +46,7 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
             final Index newIndex = Index.FACTORY.getIndexByValues(100, 101, 1100, 1101);
             input.getIndex().insert(newIndex);
-            ((DateTimeTreeMapSource) input.getColumnSource("Timestamp")).add(newIndex, data2);
+            ((DateTimeTreeMapSource) input.<DBDateTime>getColumnSource("Timestamp")).add(newIndex, data2);
             input.notifyListeners(newIndex, TstUtils.i(), TstUtils.i());
         });
 

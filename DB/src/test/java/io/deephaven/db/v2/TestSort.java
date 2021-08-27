@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 @Category(OutOfBandTest.class)
@@ -320,7 +322,7 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     private class MultiColumnSortHelper {
-        private class Wrapper implements Comparable {
+        private class Wrapper implements Comparable<Wrapper> {
             int getSentinel() {
                 return sentinel;
             }
@@ -333,8 +335,7 @@ public class TestSort extends BaseArrayTestCase {
                 this.sign = reverse ? -1 : 1;
             }
 
-            public int compareTo(Object oo) {
-                Wrapper ww = (Wrapper) oo;
+            public int compareTo(@NotNull Wrapper ww) {
                 for (int ii = 0; ii < colsToUse; ++ii) {
                     Comparable comparable = columnData[ii][sentinel];
                     Comparable comparable1 = columnData[ii][ww.getSentinel()];
@@ -606,7 +607,7 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     private QueryTable generateSortTesterTable(int ncols, int size, DataGenerator dataGenerator) {
-        Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (int ii = 0; ii < ncols; ++ii) {
             columns.put("Column" + ii, dataGenerator.generateColumnSource(size));
         }

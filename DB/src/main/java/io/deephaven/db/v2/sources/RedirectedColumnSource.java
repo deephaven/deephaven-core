@@ -34,47 +34,46 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
 
     @Override
     public void set(long key, T value) {
-        // noinspection unchecked
-        ((WritableSource) innerSource).set(redirectionIndex.get(key), value);
+        ((WritableSource<T>) innerSource).set(redirectionIndex.get(key), value);
     }
 
     @Override
     public void set(long key, byte value) {
-        ((WritableSource) innerSource).set(redirectionIndex.get(key), value);
+        ((WritableSource<T>) innerSource).set(redirectionIndex.get(key), value);
     }
 
     @Override
     public void set(long key, char value) {
-        ((WritableSource) innerSource).set(redirectionIndex.get(key), value);
+        ((WritableSource<T>) innerSource).set(redirectionIndex.get(key), value);
     }
 
     @Override
     public void set(long key, double value) {
-        ((WritableSource) innerSource).set(redirectionIndex.get(key), value);
+        ((WritableSource<T>) innerSource).set(redirectionIndex.get(key), value);
     }
 
     @Override
     public void set(long key, float value) {
-        ((WritableSource) innerSource).set(redirectionIndex.get(key), value);
+        ((WritableSource<T>) innerSource).set(redirectionIndex.get(key), value);
     }
 
     @Override
     public void set(long key, int value) {
-        ((WritableSource) innerSource).set(redirectionIndex.get(key), value);
+        ((WritableSource<T>) innerSource).set(redirectionIndex.get(key), value);
     }
 
     @Override
     public void set(long key, long value) {
-        ((WritableSource) innerSource).set(redirectionIndex.get(key), value);
+        ((WritableSource<T>) innerSource).set(redirectionIndex.get(key), value);
     }
 
     @Override
     public void set(long key, short value) {
-        ((WritableSource) innerSource).set(redirectionIndex.get(key), value);
+        ((WritableSource<T>) innerSource).set(redirectionIndex.get(key), value);
     }
 
     @Override
-    public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
         long innerDest = redirectionIndex.get(destKey);
         if (innerDest == -1) {
             innerDest = ++maxInnerIndex;
@@ -84,13 +83,12 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
             ensureCapacity(innerDest + 1);
             maxInnerIndex = innerDest;
         }
-        // noinspection unchecked
-        ((WritableSource) innerSource).copy(sourceColumn, sourceKey, innerDest);
+        ((WritableSource<T>) innerSource).copy(sourceColumn, sourceKey, innerDest);
     }
 
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
-        ((WritableSource) innerSource).ensureCapacity(capacity, nullFill);
+        ((WritableSource<T>) innerSource).ensureCapacity(capacity, nullFill);
     }
 
     private class RedirectionFillFrom implements FillFromContext {
@@ -100,7 +98,7 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
 
         private RedirectionFillFrom(int chunkCapacity) {
             this.redirectionFillContext = redirectionIndex.makeFillContext(chunkCapacity, null);
-            this.innerFillFromContext = ((WritableSource) innerSource).makeFillFromContext(chunkCapacity);
+            this.innerFillFromContext = ((WritableSource<T>) innerSource).makeFillFromContext(chunkCapacity);
             this.redirections = WritableLongChunk.makeWritableChunk(chunkCapacity);
         }
 
@@ -124,7 +122,7 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         redirectionIndex.fillChunk(redirectionFillFrom.redirectionFillContext, redirectionFillFrom.redirections,
                 orderedKeys);
-        ((WritableSource) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
+        ((WritableSource<T>) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
                 redirectionFillFrom.redirections);
     }
 
@@ -135,7 +133,7 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         redirectionIndex.fillChunkUnordered(redirectionFillFrom.redirectionFillContext,
                 redirectionFillFrom.redirections, keys);
-        ((WritableSource) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
+        ((WritableSource<T>) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
                 redirectionFillFrom.redirections);
     }
 }

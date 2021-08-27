@@ -83,7 +83,7 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
     }
 
     @Override
-    public final void copy(ColumnSource<Short> sourceColumn, long sourceKey, long destKey) {
+    public final void copy(ColumnSource<? extends Short> sourceColumn, long sourceKey, long destKey) {
         set(sourceColumn.get(sourceKey));
     }
 
@@ -93,7 +93,7 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final ShortChunk chunk = src.asShortChunk();
+        final ShortChunk<? extends Attributes.Values> chunk = src.asShortChunk();
         set(chunk.get(0));
     }
 
@@ -103,7 +103,7 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final ShortChunk chunk = src.asShortChunk();
+        final ShortChunk<? extends Attributes.Values> chunk = src.asShortChunk();
         set(chunk.get(0));
     }
 }

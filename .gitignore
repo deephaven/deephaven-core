@@ -1,7 +1,7 @@
 # Note: to ensure that new rules don't mask already committed files, run:
 # git ls-files -i --exclude-standard
 #
-# TODO (deephaven-core#1114): Check valid .gitignore rules
+# This check is run in CI, see .github/scripts/check-gitignore-rules.sh
 .idea/
 build/
 buildTest/

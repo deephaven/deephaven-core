@@ -22,9 +22,9 @@ import java.util.Map;
 class CountingTable {
     @NotNull
     static QueryTable getCountingTable(QueryTable nonCountingTable) {
-        Map<String, ColumnSource> countingSources = new LinkedHashMap<>();
-        nonCountingTable.getColumnSourceMap().entrySet().stream()
-                .forEach(x -> countingSources.put(x.getKey(), getCountingColumnSource(x.getValue())));
+        Map<String, ColumnSource<?>> countingSources = new LinkedHashMap<>();
+        nonCountingTable.getColumnSourceMap()
+                .forEach((key, value) -> countingSources.put(key, getCountingColumnSource(value)));
         return new QueryTable(nonCountingTable.getIndex(), countingSources);
     }
 
@@ -48,10 +48,10 @@ class CountingTable {
     }
 
     static private class CountingColumnSourceInvocationHandler implements InvocationHandler {
-        ColumnSource wrappedColumnSource;
+        ColumnSource<?> wrappedColumnSource;
         Map<Method, Integer> methodCounts = new HashMap<>();
 
-        CountingColumnSourceInvocationHandler(ColumnSource wrappedColumnSource) {
+        CountingColumnSourceInvocationHandler(ColumnSource<?> wrappedColumnSource) {
             this.wrappedColumnSource = wrappedColumnSource;
         }
 
@@ -91,7 +91,6 @@ class CountingTable {
                 }
             }
 
-            // noinspection ConfusingArgumentToVarargsMethod
             return wrappedColumnSource.getClass().getMethod(method.getName(), method.getParameterTypes())
                     .invoke(wrappedColumnSource, args);
         }

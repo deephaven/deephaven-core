@@ -228,6 +228,7 @@ public class ParquetTools {
             if (firstCreated != null) {
                 FileUtils.deleteRecursivelyOnNFS(firstCreated);
             } else {
+                // noinspection ResultOfMethodCallIgnored
                 destFile.delete();
             }
             throw e;
@@ -319,6 +320,7 @@ public class ParquetTools {
                 writeParquetTableImpl(source, tableDefinition, writeInstructions, destinations[i], groupingColumns);
             } catch (RuntimeException e) {
                 for (final File destination : destinations) {
+                    // noinspection ResultOfMethodCallIgnored
                     destination.delete();
                 }
                 for (final File firstCreatedDir : firstCreatedDirs) {
@@ -381,7 +383,7 @@ public class ParquetTools {
         if (sourceAttr.isRegularFile()) {
             if (sourceFileName.endsWith(PARQUET_FILE_EXTENSION)) {
                 final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
-                final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(
+                final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
                         tableLocationKey.getFileReader().getSchema(),
                         tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                         instructions);
@@ -497,11 +499,11 @@ public class ParquetTools {
         // TODO (https://github.com/deephaven/deephaven-core/issues/877): Support schema merge when discovering multiple
         // parquet files
         final ParquetTableLocationKey firstKey = foundKeys.get(0);
-        final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(
+        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
                 firstKey.getFileReader().getSchema(),
                 firstKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructions);
-        final List<ColumnDefinition> allColumns =
+        final List<ColumnDefinition<?>> allColumns =
                 new ArrayList<>(firstKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
         for (final String partitionKey : firstKey.getPartitionKeys()) {
             final Comparable<?> partitionValue = firstKey.getPartitionValue(partitionKey);
@@ -509,7 +511,6 @@ public class ParquetTools {
                 throw new IllegalArgumentException("First location key " + firstKey
                         + " has null partition value at partition key " + partitionKey);
             }
-            // noinspection unchecked
             allColumns.add(ColumnDefinition.fromGenericType(partitionKey,
                     getUnboxedTypeIfBoxed(partitionValue.getClass()), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         }
@@ -546,7 +547,7 @@ public class ParquetTools {
     }
 
     private static ParquetSchemaReader.ColumnDefinitionConsumer makeSchemaReaderConsumer(
-            final ArrayList<ColumnDefinition> colsOut) {
+            final ArrayList<ColumnDefinition<?>> colsOut) {
         return (final ParquetSchemaReader.ParquetMessageDefinition parquetColDef) -> {
             Class<?> baseType;
             if (parquetColDef.baseType == boolean.class) {
@@ -620,7 +621,7 @@ public class ParquetTools {
             @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn,
             MutableObject<ParquetInstructions> instructionsOut) {
         final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
-        final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(
+        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructionsIn);
@@ -640,12 +641,11 @@ public class ParquetTools {
      * @param readInstructionsIn Input conversion {@link ParquetInstructions}
      * @return A {@link Pair} with {@link ColumnDefinition ColumnDefinitions} and adjusted {@link ParquetInstructions}
      */
-    public static Pair<List<ColumnDefinition>, ParquetInstructions> convertSchema(
+    public static Pair<List<ColumnDefinition<?>>, ParquetInstructions> convertSchema(
             @NotNull final MessageType schema,
             @NotNull final Map<String, String> keyValueMetadata,
             @NotNull final ParquetInstructions readInstructionsIn) {
-        // noinspection rawtypes
-        final ArrayList<ColumnDefinition> cols = new ArrayList<>();
+        final ArrayList<ColumnDefinition<?>> cols = new ArrayList<>();
         final ParquetSchemaReader.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
         return new Pair<>(cols, ParquetSchemaReader.readParquetSchema(
                 schema,

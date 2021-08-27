@@ -14,7 +14,7 @@ import java.util.Map;
 public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
     private int redirIndexSize;
 
-    public ReplayGroupedFullTable(Index index, Map<String, ? extends ColumnSource> input, String timeColumn,
+    public ReplayGroupedFullTable(Index index, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
             Replayer replayer, String groupingColumn) {
         super(index, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex((int) index.size()),
                 new String[] {groupingColumn});

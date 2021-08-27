@@ -9,6 +9,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.sources.ColumnSource;
@@ -34,9 +35,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         return new TableDefinition(Arrays.asList(columnDefinitions));
     }
 
-    public static TableDefinition inferFrom(Map<String, ? extends ColumnSource> sources) {
-        List<ColumnDefinition> definitions = new ArrayList<>(sources.size());
-        for (Entry<String, ? extends ColumnSource> e : sources.entrySet()) {
+    public static TableDefinition inferFrom(Map<String, ? extends ColumnSource<?>> sources) {
+        List<ColumnDefinition<?>> definitions = new ArrayList<>(sources.size());
+        for (Entry<String, ? extends ColumnSource<?>> e : sources.entrySet()) {
             final String name = e.getKey();
             final ColumnSource<?> source = e.getValue();
             final ColumnDefinition<?> inferred =
@@ -47,7 +48,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     }
 
     public static TableDefinition from(Iterable<ColumnHeader<?>> headers) {
-        List<ColumnDefinition> definitions = new ArrayList<>();
+        List<ColumnDefinition<?>> definitions = new ArrayList<>();
         for (ColumnHeader<?> columnHeader : headers) {
             final ColumnDefinition<?> columnDefinition = ColumnDefinition.from(columnHeader);
             definitions.add(columnDefinition);
@@ -55,19 +56,19 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         return new TableDefinition(definitions);
     }
 
-    private transient Map<String, ColumnDefinition> columnNameMap;
+    private transient Map<String, ColumnDefinition<?>> columnNameMap;
 
     public TableDefinition() {}
 
-    public TableDefinition(@NotNull final List<Class> types, @NotNull final List<String> columnNames) {
+    public TableDefinition(@NotNull final List<Class<?>> types, @NotNull final List<String> columnNames) {
         this(getColumnDefinitions(types, columnNames));
     }
 
-    public TableDefinition(@NotNull final List<ColumnDefinition> columnDefs) {
-        this.setColumns(columnDefs.toArray(new ColumnDefinition[columnDefs.size()]));
+    public TableDefinition(@NotNull final List<ColumnDefinition<?>> columnDefs) {
+        this.setColumns(columnDefs.toArray(new ColumnDefinition[0]));
     }
 
-    public TableDefinition(@NotNull final ColumnDefinition[] columnDefs) {
+    public TableDefinition(@NotNull final ColumnDefinition<?>[] columnDefs) {
         this.setColumns(columnDefs);
     }
 
@@ -112,7 +113,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     /**
      * @return A list view of the column definition array for this table definition.
      */
-    public List<ColumnDefinition> getColumnList() {
+    public List<ColumnDefinition<?>> getColumnList() {
         return Collections.unmodifiableList(Arrays.asList(columns));
     }
 
@@ -126,7 +127,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     /**
      * @return A freshly-allocated, unmodifiable map from column name to column definition.
      */
-    public Map<String, ColumnDefinition> getColumnNameMap() {
+    public Map<String, ColumnDefinition<?>> getColumnNameMap() {
         if (columnNameMap != null) {
             return columnNameMap;
         }
@@ -138,7 +139,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      * @return A freshly-allocated list of column definitions for all partitioning columns, in the same relative order
      *         as in the column definitions array.
      */
-    public List<ColumnDefinition> getPartitioningColumns() {
+    public List<ColumnDefinition<?>> getPartitioningColumns() {
         return getColumnStream().filter(ColumnDefinition::isPartitioning).collect(Collectors.toList());
     }
 
@@ -146,7 +147,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      * @return A freshly-allocated list of column definitions for all grouping columns, in the same relative order as in
      *         the column definitions array.
      */
-    public List<ColumnDefinition> getGroupingColumns() {
+    public List<ColumnDefinition<?>> getGroupingColumns() {
         return getColumnStream().filter(ColumnDefinition::isGrouping).collect(Collectors.toList());
     }
 
@@ -176,7 +177,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     /**
      * @return A freshly-allocated list of column types in the same order as the column definitions array.
      */
-    public List<Class> getColumnTypes() {
+    public List<Class<?>> getColumnTypes() {
         return getColumnStream().map(ColumnDefinition::getDataType).collect(Collectors.toList());
     }
 
@@ -189,10 +190,12 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
 
     /**
      * @param columnName the column name to search for
+     * @param <T> The target type, as a type parameter. Inferred from context.
      * @return The column definition for the supplied name, or null if no such column exists in this table definition.
      */
-    public ColumnDefinition getColumn(@NotNull final String columnName) {
-        return getColumnNameMap().get(columnName);
+    public <T> ColumnDefinition<T> getColumn(@NotNull final String columnName) {
+        // noinspection unchecked
+        return (ColumnDefinition<T>) getColumnNameMap().get(columnName);
     }
 
     /**
@@ -275,11 +278,11 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      */
     public TableDefinition checkCompatibility(@NotNull final TableDefinition other,
             final boolean ignorePartitioningColumns) {
-        List<ColumnDefinition> inOrder = new ArrayList<>();
+        List<ColumnDefinition<?>> inOrder = new ArrayList<>();
 
         // TODO: need to compare in order and be less permissive with partitioning -
         final StringBuilder sb = new StringBuilder();
-        final Map<String, ColumnDefinition> myNamesToColumns = getColumnNameMap();
+        final Map<String, ColumnDefinition<?>> myNamesToColumns = getColumnNameMap();
         for (final ColumnDefinition<?> otherColumn : other.columns) {
             if (ignorePartitioningColumns && otherColumn.isPartitioning())
                 continue;
@@ -315,7 +318,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
             @NotNull final String rhs) {
         final List<String> differences = new ArrayList<>();
 
-        final Map<String, ColumnDefinition> otherColumns = other.getColumnNameMap();
+        final Map<String, ColumnDefinition<?>> otherColumns = other.getColumnNameMap();
         for (final ColumnDefinition<?> thisColumn : columns) {
             final ColumnDefinition<?> otherColumn = otherColumns.get(thisColumn.getName());
             if (otherColumn == null) {
@@ -328,7 +331,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
             // else same
         }
 
-        final Map<String, ColumnDefinition> thisColumns = getColumnNameMap();
+        final Map<String, ColumnDefinition<?>> thisColumns = getColumnNameMap();
         for (final ColumnDefinition<?> otherColumn : other.getColumns()) {
             if (null == thisColumns.get(otherColumn.getName())) {
                 differences.add("column '" + otherColumn.getName() + "' is missing in " + lhs);
@@ -379,7 +382,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
 
     /**
      * Strict comparison (column-wise only).
-     * 
+     *
      * @param other - The object to compare with.
      * @return True if other is a TableDefinition and contains equal ColumnDefinitions in the same order. False
      *         otherwise.
@@ -412,12 +415,12 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
 
     /**
      * Factory helper function for column definitions.
-     * 
+     *
      * @param columnTypes List of column types
      * @param columnNames List of column names, parallel to columnTypes
      * @return A new array of column definitions from the supplied lists of types and names.
      */
-    private static ColumnDefinition<?>[] getColumnDefinitions(@NotNull final List<Class> columnTypes,
+    private static ColumnDefinition<?>[] getColumnDefinitions(@NotNull final List<Class<?>> columnTypes,
             @NotNull final List<String> columnNames) {
         Require.eq(columnTypes.size(), "types.size()", columnNames.size(), "columnNames.size()");
 
@@ -431,15 +434,15 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
 
     /**
      * Factory helper function for column definitions.
-     * 
+     *
      * @param columnTypes Array of column types
      * @param columnNames Array of column names, parallel to columnTypes
      * @param additionalColumnDefs optional additional column definitions to add at the beginning.
      * @return A new array of column definitions from the supplied lists of types and names.
      */
     private static ColumnDefinition<?>[] getColumnDefinitions(
-            @NotNull final Class[] columnTypes, @NotNull final String[] columnNames,
-            ColumnDefinition... additionalColumnDefs) {
+            @NotNull final Class<?>[] columnTypes, @NotNull final String[] columnNames,
+            ColumnDefinition<?>... additionalColumnDefs) {
         Require.eq(columnTypes.length, "types.length", columnNames.length, "columnNames.length");
 
         final ColumnDefinition<?>[] result = new ColumnDefinition[columnTypes.length + additionalColumnDefs.length];
@@ -516,11 +519,11 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         }
         final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning", "IsGrouping"};
         final Object[] resultValues = {
-                columnNames.toArray(new String[columnNames.size()]),
-                columnDataTypes.toArray(new String[columnDataTypes.size()]),
-                columnTypes.toArray(new String[columnTypes.size()]),
-                columnPartitioning.toArray(new Boolean[columnPartitioning.size()]),
-                columnGrouping.toArray(new Boolean[columnGrouping.size()])
+                columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                columnDataTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                columnTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                columnPartitioning.toArray(new Boolean[0]),
+                columnGrouping.toArray(new Boolean[0]),
         };
 
         return new InMemoryTable(resultColumnNames, resultValues);
@@ -551,10 +554,10 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     public static TableDefinition createUserPartitionedTableDefinition(@NotNull final String partitioningColumnName,
             @NotNull final TableDefinition baseDefinition,
             final boolean groupingColumnsAsNormal) {
-        final List<ColumnDefinition> columnDefs = new ArrayList<>();
+        final List<ColumnDefinition<?>> columnDefs = new ArrayList<>();
         columnDefs.add(ColumnDefinition.ofShort(partitioningColumnName).withPartitioning());
-        final List<ColumnDefinition> baseDefs = new ArrayList<>(baseDefinition.getColumnList());
-        for (final ListIterator<ColumnDefinition> iter = baseDefs.listIterator(); iter.hasNext();) {
+        final List<ColumnDefinition<?>> baseDefs = new ArrayList<>(baseDefinition.getColumnList());
+        for (final ListIterator<ColumnDefinition<?>> iter = baseDefs.listIterator(); iter.hasNext();) {
             final ColumnDefinition<?> current = iter.next();
             if (current.getName().equals(partitioningColumnName)) {
                 iter.remove();

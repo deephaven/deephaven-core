@@ -129,7 +129,7 @@ public class QueryTable extends BaseTable {
     private static final Pattern COLUMN_NAME = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
 
     private final Index index;
-    private final LinkedHashMap<String, ColumnSource> columns;
+    private final LinkedHashMap<String, ColumnSource<?>> columns;
     protected transient ModifiedColumnSet modifiedColumnSet;
 
     // Cached data columns
@@ -183,7 +183,7 @@ public class QueryTable extends BaseTable {
     // Cached results
     transient Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations;
 
-    public QueryTable(Index index, Map<String, ? extends ColumnSource> columns) {
+    public QueryTable(Index index, Map<String, ? extends ColumnSource<?>> columns) {
         this(TableDefinition.inferFrom(columns), index, columns);
     }
 
@@ -194,7 +194,7 @@ public class QueryTable extends BaseTable {
      * @param index the index of the new table
      * @param columns the column source map for the table, which will be copied into a new column source map
      */
-    public QueryTable(TableDefinition definition, Index index, Map<String, ? extends ColumnSource> columns) {
+    public QueryTable(TableDefinition definition, Index index, Map<String, ? extends ColumnSource<?>> columns) {
         this(definition, Require.neqNull(index, "index"), new LinkedHashMap<>(columns), null);
     }
 
@@ -206,7 +206,7 @@ public class QueryTable extends BaseTable {
      * @param columns the column source map for the table, which is not copied.
      * @param modifiedColumnSet optional {@link ModifiedColumnSet} that should be re-used if supplied
      */
-    private QueryTable(TableDefinition definition, Index index, LinkedHashMap<String, ColumnSource> columns,
+    private QueryTable(TableDefinition definition, Index index, LinkedHashMap<String, ColumnSource<?>> columns,
             @Nullable ModifiedColumnSet modifiedColumnSet) {
         super(definition, "QueryTable"); // TODO: Better descriptions composed from query chain
         this.index = index;
@@ -259,29 +259,30 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public ColumnSource getColumnSource(String sourceName) {
-        final ColumnSource columnSource = columns.get(sourceName);
+    public <T> ColumnSource<T> getColumnSource(String sourceName) {
+        final ColumnSource<?> columnSource = columns.get(sourceName);
         if (columnSource == null) {
             throw new NoSuchColumnException(columns.keySet(), Collections.singletonList(sourceName));
         }
-        return columnSource;
+        // noinspection unchecked
+        return (ColumnSource<T>) columnSource;
     }
 
     @Override
-    public Map<String, ColumnSource> getColumnSourceMap() {
+    public Map<String, ColumnSource<?>> getColumnSourceMap() {
         return Collections.unmodifiableMap(columns);
     }
 
     @Override
-    public Collection<? extends ColumnSource> getColumnSources() {
+    public Collection<? extends ColumnSource<?>> getColumnSources() {
         return Collections.unmodifiableCollection(columns.values());
     }
 
     @Override
     public DataColumn getColumn(String columnName) {
-        IndexedDataColumn result;
+        IndexedDataColumn<?> result;
         if ((result = indexedDataColumns.get(columnName)) == null) {
-            indexedDataColumns.put(columnName, result = new IndexedDataColumn(columnName, this));
+            indexedDataColumns.put(columnName, result = new IndexedDataColumn<>(columnName, this));
         }
         return result;
     }
@@ -316,7 +317,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(
-            final Map<String, ColumnSource> newColumns) {
+            final Map<String, ColumnSource<?>> newColumns) {
         return modifiedColumnSet.newIdentityTransformer(newColumns);
     }
 
@@ -376,7 +377,7 @@ public class QueryTable extends BaseTable {
 
                 nullColumns.add(0, removedColumn.getName());
 
-                final Map<String, Class> nullColumnsMap = new LinkedHashMap<>(nullColumns.size());
+                final Map<String, Class<?>> nullColumnsMap = new LinkedHashMap<>(nullColumns.size());
                 final Table fLastLevel = lastLevel;
                 nullColumns
                         .forEach(nc -> nullColumnsMap.put(nc, fLastLevel.getDefinition().getColumn(nc).getDataType()));
@@ -476,7 +477,7 @@ public class QueryTable extends BaseTable {
         return QueryPerformanceRecorder.withNugget(
                 "leftJoin(" + table + "," + matchString(columnsToMatch) + "," + matchString(columnsToAdd) + ")",
                 sizeForInstrumentation(), () -> {
-                    String rightColumnKeys[] = new String[columnsToMatch.length];
+                    String[] rightColumnKeys = new String[columnsToMatch.length];
                     for (int i = 0; i < columnsToMatch.length; i++) {
                         MatchPair match = columnsToMatch[i];
                         rightColumnKeys[i] = match.rightColumn;
@@ -488,7 +489,7 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table exactJoin(Table table, MatchPair columnsToMatch[], MatchPair[] columnsToAdd) {
+    public Table exactJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return QueryPerformanceRecorder.withNugget(
                 "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
                         + ")",
@@ -702,7 +703,7 @@ public class QueryTable extends BaseTable {
         for (int i = 0, j = 0; i < colNames.size(); i++) {
             String colName = colNames.get(i);
             if (!groupByColsSet.contains(colName)) {
-                final Class dataType = getDefinition().getColumn(colName).getDataType();
+                final Class<?> dataType = getDefinition().getColumn(colName).getDataType();
                 casting[j] = colName + " = " + getCastFormula(dataType) + colName;
                 if (head)
                     updates[j++] =
@@ -731,12 +732,12 @@ public class QueryTable extends BaseTable {
     }
 
     @NotNull
-    private String getCastFormula(Class dataType) {
+    private String getCastFormula(Class<?> dataType) {
         return "(" + getCastFormulaInternal(dataType) + ")";
     }
 
     @NotNull
-    private String getCastFormulaInternal(Class dataType) {
+    private String getCastFormulaInternal(Class<?> dataType) {
         if (dataType.isPrimitive()) {
             if (dataType == int.class) {
                 return "int";
@@ -835,8 +836,7 @@ public class QueryTable extends BaseTable {
             super(source.getDefinition(), currentMapping, source.columns, null);
             this.source = source;
             this.filters = filters;
-            for (int ii = 0; ii < filters.length; ++ii) {
-                final SelectFilter f = filters[ii];
+            for (final SelectFilter f : filters) {
                 if (f instanceof LivenessReferent) {
                     manage((LivenessReferent) f);
                 }
@@ -1256,8 +1256,8 @@ public class QueryTable extends BaseTable {
                         listenForUpdates(soul);
                     } else {
                         propagateGrouping(selectColumns, resultTable);
-                        for (final ColumnSource columnSource : analyzer.getNewColumnSources().values()) {
-                            ((SparseArrayColumnSource) columnSource).setImmutable();
+                        for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
+                            ((SparseArrayColumnSource<?>) columnSource).setImmutable();
                         }
                     }
                     propagateFlatness(resultTable);
@@ -1283,26 +1283,27 @@ public class QueryTable extends BaseTable {
                 sourceColumn = (SourceColumn) selectColumn;
             }
             if (sourceColumn != null && !usedOutputColumns.contains(sourceColumn.getSourceName())) {
-                final ColumnSource originalColumnSource = getColumnSource(sourceColumn.getSourceName());
-                final ColumnSource selectedColumnSource = resultTable.getColumnSource(sourceColumn.getName());
+                final ColumnSource<?> originalColumnSource = getColumnSource(sourceColumn.getSourceName());
+                final ColumnSource<?> selectedColumnSource = resultTable.getColumnSource(sourceColumn.getName());
                 if (originalColumnSource != selectedColumnSource) {
                     if (originalColumnSource instanceof DeferredGroupingColumnSource) {
-                        final DeferredGroupingColumnSource deferredGroupingSelectedSource =
-                                (DeferredGroupingColumnSource) selectedColumnSource;
-                        final GroupingProvider groupingProvider =
-                                ((DeferredGroupingColumnSource) originalColumnSource).getGroupingProvider();
+                        final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
+                                (DeferredGroupingColumnSource<?>) selectedColumnSource;
+                        final GroupingProvider<?> groupingProvider =
+                                ((DeferredGroupingColumnSource<?>) originalColumnSource).getGroupingProvider();
                         if (groupingProvider != null) {
-                            // noinspection unchecked
-                            deferredGroupingSelectedSource.setGroupingProvider(groupingProvider);
+                            // noinspection unchecked,rawtypes
+                            deferredGroupingSelectedSource.setGroupingProvider((GroupingProvider) groupingProvider);
                         } else if (originalColumnSource.getGroupToRange() != null) {
-                            // noinspection unchecked
-                            deferredGroupingSelectedSource.setGroupToRange(originalColumnSource.getGroupToRange());
+                            // noinspection unchecked,rawtypes
+                            deferredGroupingSelectedSource
+                                    .setGroupToRange((Map) originalColumnSource.getGroupToRange());
                         }
                     } else if (originalColumnSource.getGroupToRange() != null) {
-                        final DeferredGroupingColumnSource deferredGroupingSelectedSource =
-                                (DeferredGroupingColumnSource) selectedColumnSource;
-                        // noinspection unchecked
-                        deferredGroupingSelectedSource.setGroupToRange(originalColumnSource.getGroupToRange());
+                        final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
+                                (DeferredGroupingColumnSource<?>) selectedColumnSource;
+                        // noinspection unchecked,rawtypes
+                        deferredGroupingSelectedSource.setGroupToRange((Map) originalColumnSource.getGroupToRange());
                     } else if (index.hasGrouping(originalColumnSource)) {
                         index.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
                     }
@@ -1511,10 +1512,10 @@ public class QueryTable extends BaseTable {
                     final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
                     if (!existingColumns.containsAll(columnNamesToDrop)) {
                         columnNamesToDrop.removeAll(existingColumns);
-                        throw new RuntimeException("Unknown columns: " + columnNamesToDrop.toString()
+                        throw new RuntimeException("Unknown columns: " + columnNamesToDrop
                                 + ", available columns = " + getColumnSourceMap().keySet());
                     }
-                    final Map<String, ColumnSource> newColumns = new LinkedHashMap<>(columns);
+                    final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(columns);
                     for (String columnName : columnNames) {
                         newColumns.remove(columnName);
                     }
@@ -1595,10 +1596,10 @@ public class QueryTable extends BaseTable {
                     int mcsPairIdx = 0;
                     final MatchPair[] modifiedColumnSetPairs = new MatchPair[columns.size()];
 
-                    Map<String, ColumnSource> newColumns = new LinkedHashMap<>();
-                    for (Map.Entry<String, ? extends ColumnSource> entry : columns.entrySet()) {
+                    Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
+                    for (Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
                         String oldName = entry.getKey();
-                        ColumnSource columnSource = entry.getValue();
+                        ColumnSource<?> columnSource = entry.getValue();
                         String newName = pairLookup.get(oldName);
                         if (newName == null) {
                             newName = oldName;
@@ -1763,7 +1764,7 @@ public class QueryTable extends BaseTable {
         return result.toString();
     }
 
-    static <T extends ColumnSource> void startTrackingPrev(Collection<T> values) {
+    static <T extends ColumnSource<?>> void startTrackingPrev(Collection<T> values) {
         values.forEach(ColumnSource::startTrackingPrevValues);
     }
 
@@ -1858,7 +1859,7 @@ public class QueryTable extends BaseTable {
      * for the table being snapshotted. The leftIndex refers to snapshots that we want to take. Typically this index is
      * expected to have size 1, but in some cases it could be larger. The rightIndex refers to the index of the current
      * table. Therefore we want to take leftIndex.size() snapshots, each of which being rightIndex.size() in size.
-     * 
+     *
      * @param leftColumns Columns making up the triggering data
      * @param leftIndex The currently triggering rows
      * @param rightColumns Columns making up the data being snapshotted
@@ -1869,9 +1870,9 @@ public class QueryTable extends BaseTable {
      * @return The new dest ColumnSource size, calculated as {@code destOffset + leftIndex.size() * rightIndex.size()}
      */
     private static long snapshotHistoryInternal(
-            @NotNull Map<String, ? extends ColumnSource> leftColumns, @NotNull Index leftIndex,
-            @NotNull Map<String, ? extends ColumnSource> rightColumns, @NotNull Index rightIndex,
-            @NotNull Map<String, ? extends WritableSource> dest, long destOffset) {
+            @NotNull Map<String, ? extends ColumnSource<?>> leftColumns, @NotNull Index leftIndex,
+            @NotNull Map<String, ? extends ColumnSource<?>> rightColumns, @NotNull Index rightIndex,
+            @NotNull Map<String, ? extends WritableSource<?>> dest, long destOffset) {
         assert leftColumns.size() + rightColumns.size() == dest.size();
         if (leftIndex.empty() || rightIndex.empty()) {
             // Nothing to do.
@@ -1880,7 +1881,7 @@ public class QueryTable extends BaseTable {
 
         final long newCapacity = destOffset + leftIndex.size() * rightIndex.size();
         // Ensure all the capacities
-        for (WritableSource ws : dest.values()) {
+        for (WritableSource<?> ws : dest.values()) {
             ws.ensureCapacity(newCapacity);
         }
 
@@ -1903,11 +1904,11 @@ public class QueryTable extends BaseTable {
             checkInitiateOperation();
 
             // resultColumns initially contains the left columns, then we insert the right columns into it
-            final Map<String, ArrayBackedColumnSource> resultColumns =
-                    SnapshotUtils.<ArrayBackedColumnSource>createColumnSourceMap(this.getColumnSourceMap(),
+            final Map<String, ArrayBackedColumnSource<?>> resultColumns =
+                    SnapshotUtils.createColumnSourceMap(this.getColumnSourceMap(),
                             ArrayBackedColumnSource::getMemoryColumnSource);
-            final Map<String, ArrayBackedColumnSource> rightColumns =
-                    SnapshotUtils.<ArrayBackedColumnSource>createColumnSourceMap(rightTable.getColumnSourceMap(),
+            final Map<String, ArrayBackedColumnSource<?>> rightColumns =
+                    SnapshotUtils.createColumnSourceMap(rightTable.getColumnSourceMap(),
                             ArrayBackedColumnSource::getMemoryColumnSource);
             resultColumns.putAll(rightColumns);
 
@@ -2008,21 +2009,21 @@ public class QueryTable extends BaseTable {
         }
 
         // Establish the "right" columns using the same names and types as the table being snapshotted
-        final Map<String, ArrayBackedColumnSource> resultRightColumns =
-                SnapshotUtils.<ArrayBackedColumnSource>createColumnSourceMap(
-                        tableToSnapshot.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
+        final Map<String, ArrayBackedColumnSource<?>> resultRightColumns =
+                SnapshotUtils.createColumnSourceMap(tableToSnapshot.getColumnSourceMap(),
+                        ArrayBackedColumnSource::getMemoryColumnSource);
 
         // Now make the "left" columns (namely, the "snapshot key" columns). Because this flavor of "snapshot" only
         // keeps a single snapshot, each snapshot key column will have the same value in every row. So for efficiency we
         // use a SingleValueColumnSource for these columns.
-        final Map<String, SingleValueColumnSource> resultLeftColumns = new LinkedHashMap<>();
+        final Map<String, SingleValueColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
         for (String stampColumn : stampColumns) {
             final Class<?> stampColumnType = getColumnSource(stampColumn).getType();
             resultLeftColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(stampColumnType));
         }
 
         // make our result table
-        final Map<String, ColumnSource> allColumns = new LinkedHashMap<>(resultRightColumns);
+        final Map<String, ColumnSource<?>> allColumns = new LinkedHashMap<>(resultRightColumns);
         allColumns.putAll(resultLeftColumns);
         if (allColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
             throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
@@ -2076,30 +2077,30 @@ public class QueryTable extends BaseTable {
                             ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
                             : stampColumns;
 
-                    final Map<String, ColumnSource> leftColumns = new LinkedHashMap<>();
+                    final Map<String, ColumnSource<?>> leftColumns = new LinkedHashMap<>();
                     for (String stampColumn : useStampColumns) {
-                        final ColumnSource cs = getColumnSource(stampColumn);
+                        final ColumnSource<?> cs = getColumnSource(stampColumn);
                         leftColumns.put(stampColumn, cs);
                     }
 
-                    final Map<String, SparseArrayColumnSource> resultLeftColumns = new LinkedHashMap<>();
-                    for (Map.Entry<String, ColumnSource> entry : leftColumns.entrySet()) {
+                    final Map<String, SparseArrayColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
+                    for (Map.Entry<String, ColumnSource<?>> entry : leftColumns.entrySet()) {
                         final String name = entry.getKey();
-                        final ColumnSource cs = entry.getValue();
-                        final Class type = cs.getType();
-                        final SparseArrayColumnSource stampDest = DbArrayBase.class.isAssignableFrom(type)
+                        final ColumnSource<?> cs = entry.getValue();
+                        final Class<?> type = cs.getType();
+                        final SparseArrayColumnSource<?> stampDest = DbArrayBase.class.isAssignableFrom(type)
                                 ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
                                 : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
 
                         resultLeftColumns.put(name, stampDest);
                     }
 
-                    final Map<String, SparseArrayColumnSource> resultRightColumns =
-                            SnapshotUtils.<SparseArrayColumnSource>createColumnSourceMap(
-                                    rightTable.getColumnSourceMap(),
+                    final Map<String, SparseArrayColumnSource<?>> resultRightColumns =
+                            SnapshotUtils.createColumnSourceMap(rightTable.getColumnSourceMap(),
                                     SparseArrayColumnSource::getSparseMemoryColumnSource);
 
-                    final Map<String, SparseArrayColumnSource> resultColumns = new LinkedHashMap<>(resultRightColumns);
+                    final Map<String, SparseArrayColumnSource<?>> resultColumns =
+                            new LinkedHashMap<>(resultRightColumns);
                     resultColumns.putAll(resultLeftColumns);
                     if (resultColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
                         throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
@@ -2183,7 +2184,7 @@ public class QueryTable extends BaseTable {
      * @param columnSource the column source to possibly reinterpret
      * @return the transformed column source, or the original column source if there is not a relevant transformation
      */
-    static ColumnSource maybeTransformToPrimitive(final ColumnSource<?> columnSource) {
+    static ColumnSource<?> maybeTransformToPrimitive(final ColumnSource<?> columnSource) {
         if (DBDateTime.class.isAssignableFrom(columnSource.getType())) {
             if (columnSource.allowsReinterpret(long.class)) {
                 return columnSource.reinterpret(long.class);
@@ -2237,7 +2238,7 @@ public class QueryTable extends BaseTable {
 
     /**
      * For unit testing, it can be useful to reduce the minimum ungroup base.
-     * 
+     *
      * @param minimumUngroupBase the minimum ungroup base for newly created ungrouped tables.
      * @return The old value of minimumUngroupBase
      */
@@ -2271,10 +2272,10 @@ public class QueryTable extends BaseTable {
 
                     checkInitiateOperation();
 
-                    final Map<String, ColumnSource> arrayColumns = new HashMap<>();
-                    final Map<String, ColumnSource> dbArrayColumns = new HashMap<>();
+                    final Map<String, ColumnSource<?>> arrayColumns = new HashMap<>();
+                    final Map<String, ColumnSource<?>> dbArrayColumns = new HashMap<>();
                     for (String name : columnsToUngroupBy) {
-                        ColumnSource column = getColumnSource(name);
+                        ColumnSource<?> column = getColumnSource(name);
                         if (column.getType().isArray()) {
                             arrayColumns.put(name, column);
                         } else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
@@ -2288,18 +2289,18 @@ public class QueryTable extends BaseTable {
                     final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), minimumUngroupBase);
                     final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase);
 
-                    final Map<String, ColumnSource> resultMap = new LinkedHashMap<>();
-                    for (Map.Entry<String, ColumnSource> es : getColumnSourceMap().entrySet()) {
-                        final ColumnSource column = es.getValue();
+                    final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
+                    for (Map.Entry<String, ColumnSource<?>> es : getColumnSourceMap().entrySet()) {
+                        final ColumnSource<?> column = es.getValue();
                         final String name = es.getKey();
-                        final ColumnSource result;
+                        final ColumnSource<?> result;
                         if (dbArrayColumns.containsKey(name) || arrayColumns.containsKey(name)) {
-                            final UngroupedColumnSource ungroupedSource = UngroupedColumnSource.getColumnSource(column);
+                            final UngroupedColumnSource<?> ungroupedSource =
+                                    UngroupedColumnSource.getColumnSource(column);
                             ungroupedSource.initializeBase(initialBase);
                             result = ungroupedSource;
                         } else {
-                            // noinspection unchecked
-                            result = new BitShiftingColumnSource(shiftState, column);
+                            result = new BitShiftingColumnSource<>(shiftState, column);
                         }
                         resultMap.put(name, result);
                     }
@@ -2342,8 +2343,8 @@ public class QueryTable extends BaseTable {
                                         log.error().append("Modified: ").append(modifiedIndex.toString()).endl();
                                         log.error().append("Removed: ").append(removedIndex.toString()).endl();
 
-                                        for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
-                                            ColumnSource arrayColumn = es.getValue();
+                                        for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
+                                            ColumnSource<?> arrayColumn = es.getValue();
                                             String name = es.getKey();
 
                                             Index.Iterator iterator = index.iterator();
@@ -2358,17 +2359,17 @@ public class QueryTable extends BaseTable {
                                             }
                                         }
 
-                                        for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
-                                            ColumnSource arrayColumn = es.getValue();
+                                        for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
+                                            ColumnSource<?> arrayColumn = es.getValue();
                                             String name = es.getKey();
                                             Index.Iterator iterator = index.iterator();
 
                                             for (int i = 0; i < index.size(); i++) {
                                                 final long next = iterator.nextLong();
                                                 long size = (arrayColumn.get(next) == null ? 0
-                                                        : ((DbArrayBase) arrayColumn.get(next)).size());
+                                                        : ((DbArrayBase<?>) arrayColumn.get(next)).size());
                                                 long prevSize = (arrayColumn.getPrev(next) == null ? 0
-                                                        : ((DbArrayBase) arrayColumn.getPrev(next)).size());
+                                                        : ((DbArrayBase<?>) arrayColumn.getPrev(next)).size());
                                                 log.error().append(name).append("[").append(i).append("] ").append(size)
                                                         .append(" -> ").append(prevSize).endl();
                                             }
@@ -2380,9 +2381,9 @@ public class QueryTable extends BaseTable {
                                                 "newBase");
                                     }
 
-                                    for (ColumnSource source : resultMap.values()) {
+                                    for (ColumnSource<?> source : resultMap.values()) {
                                         if (source instanceof UngroupedColumnSource) {
-                                            ((UngroupedColumnSource) source).setBase(newBase);
+                                            ((UngroupedColumnSource<?>) source).setBase(newBase);
                                         }
                                     }
 
@@ -2401,9 +2402,9 @@ public class QueryTable extends BaseTable {
                                 final Index modified = newIndex;
                                 modified.retain(index);
                                 index.update(added, removed);
-                                for (ColumnSource source : resultMap.values()) {
+                                for (ColumnSource<?> source : resultMap.values()) {
                                     if (source instanceof UngroupedColumnSource) {
-                                        ((UngroupedColumnSource) source).setBase(newBase);
+                                        ((UngroupedColumnSource<?>) source).setBase(newBase);
                                     }
                                 }
                                 shiftState.setNumShiftBitsAndUpdatePrev(newBase);
@@ -2452,8 +2453,8 @@ public class QueryTable extends BaseTable {
                 });
     }
 
-    private long computeModifiedIndicesAndMaxSize(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
+    private long computeModifiedIndicesAndMaxSize(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
             Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base, boolean nullFill) {
         if (nullFill) {
             return computeModifiedIndicesAndMaxSizeNullFill(index, arrayColumns, dbArrayColumns, referenceColumn,
@@ -2463,8 +2464,8 @@ public class QueryTable extends BaseTable {
                 modifyBuilder, addedBuilded, removedBuilder, base);
     }
 
-    private long computeModifiedIndicesAndMaxSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
+    private long computeModifiedIndicesAndMaxSizeNullFill(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
             Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base) {
         long maxSize = 0;
         final Index.Iterator iterator = index.iterator();
@@ -2472,8 +2473,8 @@ public class QueryTable extends BaseTable {
             long maxCur = 0;
             long maxPrev = 0;
             final long next = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
-                final ColumnSource arrayColumn = es.getValue();
+            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
+                final ColumnSource<?> arrayColumn = es.getValue();
                 Object array = arrayColumn.get(next);
                 final int size = (array == null ? 0 : Array.getLength(array));
                 maxCur = Math.max(maxCur, size);
@@ -2481,12 +2482,12 @@ public class QueryTable extends BaseTable {
                 final int prevSize = (prevArray == null ? 0 : Array.getLength(prevArray));
                 maxPrev = Math.max(maxPrev, prevSize);
             }
-            for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
-                final ColumnSource arrayColumn = es.getValue();
-                DbArrayBase array = (DbArrayBase) arrayColumn.get(next);
+            for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
+                final ColumnSource<?> arrayColumn = es.getValue();
+                DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.get(next);
                 final long size = (array == null ? 0 : array.size());
                 maxCur = Math.max(maxCur, size);
-                DbArrayBase prevArray = (DbArrayBase) arrayColumn.getPrev(next);
+                DbArrayBase<?> prevArray = (DbArrayBase<?>) arrayColumn.getPrev(next);
                 final long prevSize = (prevArray == null ? 0 : prevArray.size());
                 maxPrev = Math.max(maxPrev, prevSize);
             }
@@ -2496,14 +2497,14 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private long computeModifiedIndicesAndMaxSizeNormal(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
+    private long computeModifiedIndicesAndMaxSizeNormal(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
             Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base) {
         long maxSize = 0;
         boolean sizeIsInitialized = false;
-        long sizes[] = new long[index.intSize("ungroup")];
-        for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
-            ColumnSource arrayColumn = es.getValue();
+        long[] sizes = new long[index.intSize("ungroup")];
+        for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
+            ColumnSource<?> arrayColumn = es.getValue();
             String name = es.getKey();
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
@@ -2529,8 +2530,8 @@ public class QueryTable extends BaseTable {
 
             }
         }
-        for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
-            ColumnSource arrayColumn = es.getValue();
+        for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
+            ColumnSource<?> arrayColumn = es.getValue();
             String name = es.getKey();
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
@@ -2538,9 +2539,9 @@ public class QueryTable extends BaseTable {
                 Index.Iterator iterator = index.iterator();
                 for (int i = 0; i < index.size(); i++) {
                     final long next = iterator.nextLong();
-                    DbArrayBase array = (DbArrayBase) arrayColumn.get(next);
+                    DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.get(next);
                     sizes[i] = (array == null ? 0 : array.size());
-                    DbArrayBase prevArray = (DbArrayBase) arrayColumn.getPrev(next);
+                    DbArrayBase<?> prevArray = (DbArrayBase<?>) arrayColumn.getPrev(next);
                     long prevSize = (prevArray == null ? 0 : prevArray.size());
                     maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i],
                             next, prevSize, base);
@@ -2550,7 +2551,7 @@ public class QueryTable extends BaseTable {
                 for (int i = 0; i < index.size(); i++) {
                     final long next = iterator.nextLong();
                     Assert.assertion(sizes[i] == 0 && arrayColumn.get(next) == null ||
-                            sizes[i] == ((DbArrayBase) arrayColumn.get(next)).size(),
+                            sizes[i] == ((DbArrayBase<?>) arrayColumn.get(next)).size(),
                             "sizes[i] == ((DbArrayBase)arrayColumn.get(i)).size()",
                             referenceColumn, "referenceColumn", name, "arrayColumn.getName()", i, "row");
                 }
@@ -2573,7 +2574,7 @@ public class QueryTable extends BaseTable {
                 modifyBuilder.addRange(rowKey, rowKey + size - 1);
             }
             removedBuilder.addRange(rowKey + size, rowKey + prevSize - 1);
-        } else if (size > prevSize) {
+        } else {
             if (prevSize > 0) {
                 modifyBuilder.addRange(rowKey, rowKey + prevSize - 1);
             }
@@ -2583,8 +2584,9 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private static long computeMaxSize(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, long[] sizes, boolean nullFill) {
+    @SuppressWarnings("SameParameterValue")
+    private static long computeMaxSize(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, long[] sizes, boolean nullFill) {
         if (nullFill) {
             return computeMaxSizeNullFill(index, arrayColumns, dbArrayColumns, sizes);
         }
@@ -2592,30 +2594,30 @@ public class QueryTable extends BaseTable {
         return computeMaxSizeNormal(index, arrayColumns, dbArrayColumns, referenceColumn, sizes);
     }
 
-    private static long computeMaxSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
+    private static long computeMaxSizeNullFill(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
         long maxSize = 0;
         final Index.Iterator iterator = index.iterator();
         for (int i = 0; i < index.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
-                final ColumnSource arrayColumn = es.getValue();
+            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
+                final ColumnSource<?> arrayColumn = es.getValue();
                 final Object array = arrayColumn.get(nextIndex);
                 final long size = (array == null ? 0 : Array.getLength(array));
                 maxSize = Math.max(maxSize, size);
                 localMax = Math.max(localMax, size);
 
             }
-            for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
-                final ColumnSource arrayColumn = es.getValue();
+            for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
+                final ColumnSource<?> arrayColumn = es.getValue();
                 final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                         && ((UngroupableColumnSource) arrayColumn).isUngroupable();
                 final long size;
                 if (isUngroupable) {
                     size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
                 } else {
-                    final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.get(nextIndex);
+                    final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.get(nextIndex);
                     size = dbArrayBase != null ? dbArrayBase.size() : 0;
                 }
                 maxSize = Math.max(maxSize, size);
@@ -2627,12 +2629,12 @@ public class QueryTable extends BaseTable {
     }
 
 
-    private static long computeMaxSizeNormal(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, long[] sizes) {
+    private static long computeMaxSizeNormal(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, long[] sizes) {
         long maxSize = 0;
         boolean sizeIsInitialized = false;
-        for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
-            ColumnSource arrayColumn = es.getValue();
+        for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
+            ColumnSource<?> arrayColumn = es.getValue();
             String name = es.getKey();
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
@@ -2653,8 +2655,8 @@ public class QueryTable extends BaseTable {
 
             }
         }
-        for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
-            final ColumnSource arrayColumn = es.getValue();
+        for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
+            final ColumnSource<?> arrayColumn = es.getValue();
             final String name = es.getKey();
             final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                     && ((UngroupableColumnSource) arrayColumn).isUngroupable();
@@ -2667,7 +2669,7 @@ public class QueryTable extends BaseTable {
                     if (isUngroupable) {
                         sizes[ii] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                     } else {
-                        final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.get(iterator.nextLong());
+                        final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.get(iterator.nextLong());
                         sizes[ii] = dbArrayBase != null ? dbArrayBase.size() : 0;
                     }
                     maxSize = Math.max(maxSize, sizes[ii]);
@@ -2679,7 +2681,7 @@ public class QueryTable extends BaseTable {
                     if (isUngroupable) {
                         expectedSize = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                     } else {
-                        final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.get(iterator.nextLong());
+                        final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.get(iterator.nextLong());
                         expectedSize = dbArrayBase != null ? dbArrayBase.size() : 0;
                     }
                     Assert.assertion(sizes[i] == expectedSize, "sizes[i] == ((DbArrayBase)arrayColumn.get(i)).size()",
@@ -2690,8 +2692,8 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private static void computePrevSize(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, long[] sizes, boolean nullFill) {
+    private static void computePrevSize(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes, boolean nullFill) {
         if (nullFill) {
             computePrevSizeNullFill(index, arrayColumns, dbArrayColumns, sizes);
         } else {
@@ -2699,28 +2701,28 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static void computePrevSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
+    private static void computePrevSizeNullFill(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
         final Index.Iterator iterator = index.iterator();
         for (int i = 0; i < index.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
-                final ColumnSource arrayColumn = es.getValue();
+            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
+                final ColumnSource<?> arrayColumn = es.getValue();
                 final Object array = arrayColumn.getPrev(nextIndex);
                 final long size = (array == null ? 0 : Array.getLength(array));
                 localMax = Math.max(localMax, size);
 
             }
-            for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
-                final ColumnSource arrayColumn = es.getValue();
+            for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
+                final ColumnSource<?> arrayColumn = es.getValue();
                 final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                         && ((UngroupableColumnSource) arrayColumn).isUngroupable();
                 final long size;
                 if (isUngroupable) {
                     size = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(nextIndex);
                 } else {
-                    final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.getPrev(nextIndex);
+                    final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.getPrev(nextIndex);
                     size = dbArrayBase != null ? dbArrayBase.size() : 0;
                 }
                 localMax = Math.max(localMax, size);
@@ -2729,9 +2731,9 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static void computePrevSizeNormal(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
-        for (ColumnSource arrayColumn : arrayColumns.values()) {
+    private static void computePrevSizeNormal(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
+        for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
             Index.Iterator iterator = index.iterator();
             for (int i = 0; i < index.size(); i++) {
                 Object array = arrayColumn.getPrev(iterator.nextLong());
@@ -2739,7 +2741,7 @@ public class QueryTable extends BaseTable {
             }
             return; // TODO: WTF??
         }
-        for (ColumnSource arrayColumn : dbArrayColumns.values()) {
+        for (ColumnSource<?> arrayColumn : dbArrayColumns.values()) {
             final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                     && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
@@ -2748,7 +2750,7 @@ public class QueryTable extends BaseTable {
                 if (isUngroupable) {
                     sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(iterator.nextLong());
                 } else {
-                    DbArrayBase array = (DbArrayBase) arrayColumn.getPrev(iterator.nextLong());
+                    DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.getPrev(iterator.nextLong());
                     sizes[i] = array == null ? 0 : array.size();
                 }
             }
@@ -2756,8 +2758,8 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static long[] computeSize(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns, boolean nullFill) {
+    private static long[] computeSize(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns, boolean nullFill) {
         if (nullFill) {
             return computeSizeNullFill(index, arrayColumns, dbArrayColumns);
         }
@@ -2765,29 +2767,29 @@ public class QueryTable extends BaseTable {
         return computeSizeNormal(index, arrayColumns, dbArrayColumns);
     }
 
-    private static long[] computeSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns) {
+    private static long[] computeSizeNullFill(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns) {
         final long[] sizes = new long[index.intSize("ungroup")];
         final Index.Iterator iterator = index.iterator();
         for (int i = 0; i < index.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
-                final ColumnSource arrayColumn = es.getValue();
+            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
+                final ColumnSource<?> arrayColumn = es.getValue();
                 final Object array = arrayColumn.get(nextIndex);
                 final long size = (array == null ? 0 : Array.getLength(array));
                 localMax = Math.max(localMax, size);
 
             }
-            for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
-                final ColumnSource arrayColumn = es.getValue();
+            for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
+                final ColumnSource<?> arrayColumn = es.getValue();
                 final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                         && ((UngroupableColumnSource) arrayColumn).isUngroupable();
                 final long size;
                 if (isUngroupable) {
                     size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
                 } else {
-                    final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.get(nextIndex);
+                    final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.get(nextIndex);
                     size = dbArrayBase != null ? dbArrayBase.size() : 0;
                 }
                 localMax = Math.max(localMax, size);
@@ -2797,10 +2799,10 @@ public class QueryTable extends BaseTable {
         return sizes;
     }
 
-    private static long[] computeSizeNormal(Index index, Map<String, ColumnSource> arrayColumns,
-            Map<String, ColumnSource> dbArrayColumns) {
+    private static long[] computeSizeNormal(Index index, Map<String, ColumnSource<?>> arrayColumns,
+            Map<String, ColumnSource<?>> dbArrayColumns) {
         final long[] sizes = new long[index.intSize("ungroup")];
-        for (ColumnSource arrayColumn : arrayColumns.values()) {
+        for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
             Index.Iterator iterator = index.iterator();
             for (int i = 0; i < index.size(); i++) {
                 Object array = arrayColumn.get(iterator.nextLong());
@@ -2808,7 +2810,7 @@ public class QueryTable extends BaseTable {
             }
             return sizes; // TODO: WTF??
         }
-        for (ColumnSource arrayColumn : dbArrayColumns.values()) {
+        for (ColumnSource<?> arrayColumn : dbArrayColumns.values()) {
             final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                     && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
@@ -2817,7 +2819,7 @@ public class QueryTable extends BaseTable {
                 if (isUngroupable) {
                     sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                 } else {
-                    DbArrayBase array = (DbArrayBase) arrayColumn.get(iterator.nextLong());
+                    DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.get(iterator.nextLong());
                     sizes[i] = array == null ? 0 : array.size();
                 }
             }
@@ -2980,7 +2982,7 @@ public class QueryTable extends BaseTable {
 
     /**
      * Saves a weak reference to the result of the given operation.
-     * 
+     *
      * @param memoKey a complete description of the operation, if null no memoization is performed
      * @param operation a supplier for the result
      * @return either the cached or newly generated result
@@ -3050,7 +3052,7 @@ public class QueryTable extends BaseTable {
 
     public <T extends DynamicNode & NotificationStepReceiver> T getResult(final Operation<T> operation) {
         if (operation instanceof MemoizableOperation) {
-            return memoizeResult(((MemoizableOperation) operation).getMemoizedOperationKey(),
+            return memoizeResult(((MemoizableOperation<T>) operation).getMemoizedOperationKey(),
                     () -> getResultNoMemo(operation));
         }
         return getResultNoMemo(operation);

@@ -13,22 +13,22 @@ import java.util.Collections;
 import java.util.Map;
 
 public class SnapshotIncrementalListener extends MergedListener {
-    private QueryTable triggerTable;
+    private final QueryTable triggerTable;
     private final QueryTable resultTable;
-    private final Map<String, SparseArrayColumnSource> resultColumns;
+    private final Map<String, SparseArrayColumnSource<?>> resultColumns;
     private final ListenerRecorder rightListener;
     private final ListenerRecorder leftListener;
     private final QueryTable rightTable;
-    private final Map<String, ? extends ColumnSource> leftColumns;
+    private final Map<String, ? extends ColumnSource<?>> leftColumns;
 
     private Index.IndexUpdateCoalescer rightUpdates;
     private final Index lastRightIndex;
     private boolean firstSnapshot = true;
 
     public SnapshotIncrementalListener(QueryTable triggerTable, QueryTable resultTable,
-            Map<String, SparseArrayColumnSource> resultColumns,
+            Map<String, SparseArrayColumnSource<?>> resultColumns,
             ListenerRecorder rightListener, ListenerRecorder leftListener, QueryTable rightTable,
-            Map<String, ? extends ColumnSource> leftColumns) {
+            Map<String, ? extends ColumnSource<?>> leftColumns) {
         super(Arrays.asList(rightListener, leftListener), Collections.emptyList(), "snapshotIncremental", resultTable);
         this.triggerTable = triggerTable;
         this.resultTable = resultTable;
@@ -92,7 +92,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     }
 
     public static void copyRowsToResult(Index rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
-            Map<String, ? extends ColumnSource> leftColumns, Map<String, SparseArrayColumnSource> resultColumns) {
+            Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
         final Index qtIndex = triggerTable.getIndex();
         if (!qtIndex.empty()) {
             SnapshotUtils.copyStampColumns(leftColumns, qtIndex.lastKey(), resultColumns, rowsToCopy);

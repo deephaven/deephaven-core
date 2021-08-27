@@ -21,5 +21,5 @@ public interface FormulaColumn extends SelectColumn {
         return createFormulaColumn(columnName, formulaString, FormulaParserConfiguration.parser);
     }
 
-    ColumnSource updateData(WritableSource result, long destPos, long sourcePos);
+    ColumnSource<?> updateData(WritableSource<?> result, long destPos, long sourcePos);
 }

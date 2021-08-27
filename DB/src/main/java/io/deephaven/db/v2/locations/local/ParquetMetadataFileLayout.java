@@ -88,30 +88,29 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
 
         final ParquetMetadataConverter converter = new ParquetMetadataConverter();
         final ParquetMetadata metadataFileMetadata = convertMetadata(metadataFile, metadataFileReader, converter);
-        final Pair<List<ColumnDefinition>, ParquetInstructions> leafSchemaInfo = ParquetTools.convertSchema(
+        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> leafSchemaInfo = ParquetTools.convertSchema(
                 metadataFileReader.getSchema(),
                 metadataFileMetadata.getFileMetaData().getKeyValueMetaData(),
                 inputInstructions);
 
         if (commonMetadataFile != null && commonMetadataFile.exists()) {
             final ParquetFileReader commonMetadataFileReader = ParquetTools.getParquetFileReader(commonMetadataFile);
-            final Pair<List<ColumnDefinition>, ParquetInstructions> fullSchemaInfo = ParquetTools.convertSchema(
+            final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo = ParquetTools.convertSchema(
                     commonMetadataFileReader.getSchema(),
                     convertMetadata(commonMetadataFile, commonMetadataFileReader, converter).getFileMetaData()
                             .getKeyValueMetaData(),
                     leafSchemaInfo.getSecond());
-            final List<ColumnDefinition> adjustedColumnDefinitions = new ArrayList<>();
-            final Map<String, ColumnDefinition> leafDefinitionsMap =
+            final List<ColumnDefinition<?>> adjustedColumnDefinitions = new ArrayList<>();
+            final Map<String, ColumnDefinition<?>> leafDefinitionsMap =
                     leafSchemaInfo.getFirst().stream().collect(toMap(ColumnDefinition::getName, Function.identity()));
-            for (final ColumnDefinition fullDefinition : fullSchemaInfo.getFirst()) {
-                final ColumnDefinition leafDefinition = leafDefinitionsMap.get(fullDefinition.getName());
+            for (final ColumnDefinition<?> fullDefinition : fullSchemaInfo.getFirst()) {
+                final ColumnDefinition<?> leafDefinition = leafDefinitionsMap.get(fullDefinition.getName());
                 if (leafDefinition == null) {
                     adjustedColumnDefinitions.add(adjustPartitionDefinition(fullDefinition));
                 } else if (fullDefinition.equals(leafDefinition)) {
                     adjustedColumnDefinitions.add(fullDefinition); // No adjustments to apply in this case
                 } else {
                     final List<String> differences = new ArrayList<>();
-                    // noinspection unchecked
                     fullDefinition.describeDifferences(differences, leafDefinition, "full schema", "file schema", "");
                     throw new TableDataException(String.format("Schema mismatch between %s and %s for column %s: %s",
                             metadataFile, commonMetadataFile, fullDefinition.getName(), differences));
@@ -124,8 +123,8 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
             instructions = leafSchemaInfo.getSecond();
         }
 
-        final List<ColumnDefinition> partitioningColumns = definition.getPartitioningColumns();
-        final Map<String, ColumnDefinition> partitioningColumnsMap = partitioningColumns.stream().collect(
+        final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
+        final Map<String, ColumnDefinition<?>> partitioningColumnsMap = partitioningColumns.stream().collect(
                 toMap(ColumnDefinition::getName, Function.identity(), Assert::neverInvoked, LinkedHashMap::new));
         final Map<String, TIntList> fileNameToRowGroupIndices = new LinkedHashMap<>();
         final List<RowGroup> rowGroups = metadataFileReader.fileMetaData.getRow_groups();
@@ -157,7 +156,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 final boolean useHiveStyle = filePath.getName(0).toString().contains("=");
                 for (int pi = 0; pi < numPartitions; ++pi) {
                     final String pathElement = filePath.getName(pi).toString();
-                    final ColumnDefinition columnDefinition;
+                    final ColumnDefinition<?> columnDefinition;
                     final String partitionKey;
                     final String partitionValueRaw;
                     if (useHiveStyle) {
@@ -207,7 +206,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         }
     }
 
-    private static ColumnDefinition adjustPartitionDefinition(@NotNull final ColumnDefinition columnDefinition) {
+    private static ColumnDefinition<?> adjustPartitionDefinition(@NotNull final ColumnDefinition<?> columnDefinition) {
         if (columnDefinition.getComponentType() != null) {
             return ColumnDefinition.fromGenericType(columnDefinition.getName(), String.class,
                     ColumnDefinition.COLUMNTYPE_PARTITIONING, null);
@@ -235,10 +234,10 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 ColumnDefinition.COLUMNTYPE_PARTITIONING, null);
     }
 
-    private static final Map<Class, Function<String, Comparable<?>>> CONVERSION_FUNCTIONS;
+    private static final Map<Class<?>, Function<String, Comparable<?>>> CONVERSION_FUNCTIONS;
 
     static {
-        final Map<Class, Function<String, Comparable<?>>> conversionFunctionsTemp = new HashMap<>();
+        final Map<Class<?>, Function<String, Comparable<?>>> conversionFunctionsTemp = new HashMap<>();
         conversionFunctionsTemp.put(Boolean.class, Boolean::parseBoolean);
         conversionFunctionsTemp.put(char.class, str -> {
             Require.eq(str.length(), "length", 1);

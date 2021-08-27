@@ -83,7 +83,7 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
     }
 
     @Override
-    public final void copy(ColumnSource<Double> sourceColumn, long sourceKey, long destKey) {
+    public final void copy(ColumnSource<? extends Double> sourceColumn, long sourceKey, long destKey) {
         set(sourceColumn.get(sourceKey));
     }
 
@@ -93,7 +93,7 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final DoubleChunk chunk = src.asDoubleChunk();
+        final DoubleChunk<? extends Attributes.Values> chunk = src.asDoubleChunk();
         set(chunk.get(0));
     }
 
@@ -103,7 +103,7 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final DoubleChunk chunk = src.asDoubleChunk();
+        final DoubleChunk<? extends Attributes.Values> chunk = src.asDoubleChunk();
         set(chunk.get(0));
     }
 }

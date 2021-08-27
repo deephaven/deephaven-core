@@ -61,7 +61,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
     public <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final ColumnToCodecMappings codecMappings) {
-        Class<DATA_TYPE> dataType = TypeUtils.getBoxedType(columnDefinition.getDataType());
+        Class<DATA_TYPE> dataType = (Class<DATA_TYPE>) TypeUtils.getBoxedType(columnDefinition.getDataType());
 
         if (columnDefinition.isPartitioning()) {
             return PartitioningSourceFactory.makePartitioningSource(dataType);

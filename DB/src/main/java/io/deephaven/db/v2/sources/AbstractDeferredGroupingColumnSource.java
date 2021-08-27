@@ -23,7 +23,7 @@ public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractCo
         super(type, null);
     }
 
-    protected AbstractDeferredGroupingColumnSource(Class<T> type, Class componentType) {
+    protected AbstractDeferredGroupingColumnSource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
     }
 

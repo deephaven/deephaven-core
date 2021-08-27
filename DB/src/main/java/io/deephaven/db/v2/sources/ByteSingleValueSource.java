@@ -83,7 +83,7 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
     }
 
     @Override
-    public final void copy(ColumnSource<Byte> sourceColumn, long sourceKey, long destKey) {
+    public final void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
         set(sourceColumn.get(sourceKey));
     }
 
@@ -93,7 +93,7 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final ByteChunk chunk = src.asByteChunk();
+        final ByteChunk<? extends Attributes.Values> chunk = src.asByteChunk();
         set(chunk.get(0));
     }
 
@@ -103,7 +103,7 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final ByteChunk chunk = src.asByteChunk();
+        final ByteChunk<? extends Attributes.Values> chunk = src.asByteChunk();
         set(chunk.get(0));
     }
 }

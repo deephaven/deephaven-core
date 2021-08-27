@@ -3,7 +3,7 @@
  "methods": {
   "addTable": "Adds a table to the managed constituents.\n\n:param table: (io.deephaven.db.tables.Table) - the new table\n:param onNewTableMapKey: (boolean) - whether this table is being added after the initial setup",
   "allowsReinterpret": "Determine whether column sources that use this manager should allow reinterpret.\n\n:return: (boolean) If ColumnSource.reinterpret(Class) is allowed",
-  "getColumnSources": ":return: java.util.Map<java.lang.String,io.deephaven.db.v2.sources.UnionColumnSource>",
+  "getColumnSources": ":return: java.util.Map<java.lang.String,io.deephaven.db.v2.sources.UnionColumnSource<?>>",
   "getComponentTables": ":return: java.util.Collection<io.deephaven.db.tables.Table>",
   "getResult": ":return: io.deephaven.db.v2.QueryTable",
   "isUsingComponentsSafe": "Determine whether using the component tables directly in a subsequent merge will affect the correctness of the\n merge.\n\n:return: (boolean) If using the component tables is allowed.",

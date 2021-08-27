@@ -66,17 +66,17 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public ColumnSource getColumnSource(String sourceName) {
+    public ColumnSource<?> getColumnSource(String sourceName) {
         return parent.getColumnSource(sourceName);
     }
 
     @Override
-    public Map<String, ? extends ColumnSource> getColumnSourceMap() {
+    public Map<String, ? extends ColumnSource<?>> getColumnSourceMap() {
         return parent.getColumnSourceMap();
     }
 
     @Override
-    public Collection<? extends ColumnSource> getColumnSources() {
+    public Collection<? extends ColumnSource<?>> getColumnSources() {
         return parent.getColumnSources();
     }
 

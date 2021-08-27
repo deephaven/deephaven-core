@@ -270,9 +270,9 @@ public class QueryTableSelectUpdateTest {
         };
     }
 
-    private abstract class PartialEvalNugget extends EvalNugget {
+    private abstract static class PartialEvalNugget extends EvalNugget {
         // We listen to table updates, so we know what to compare.
-        class UpdateListener extends InstrumentedListener {
+        static class UpdateListener extends InstrumentedListener {
             UpdateListener() {
                 super("Update RefreshProcedure");
             }
@@ -399,13 +399,13 @@ public class QueryTableSelectUpdateTest {
                 TableTools.showWithIndex(recomputedValue.getSubTable(recomputedBuilder.getIndex()));
             }
 
-            Map<String, ? extends ColumnSource> originalColumns = originalValue.getColumnSourceMap();
-            Map<String, ? extends ColumnSource> recomputedColumns = recomputedValue.getColumnSourceMap();
+            Map<String, ? extends ColumnSource<?>> originalColumns = originalValue.getColumnSourceMap();
+            Map<String, ? extends ColumnSource<?>> recomputedColumns = recomputedValue.getColumnSourceMap();
 
-            for (Map.Entry<String, ? extends ColumnSource> stringColumnSourceEntry : recomputedColumns.entrySet()) {
+            for (Map.Entry<String, ? extends ColumnSource<?>> stringColumnSourceEntry : recomputedColumns.entrySet()) {
                 String columnName = stringColumnSourceEntry.getKey();
-                ColumnSource originalColumnSource = originalColumns.get(columnName);
-                ColumnSource recomputedColumn = stringColumnSourceEntry.getValue();
+                ColumnSource<?> originalColumnSource = originalColumns.get(columnName);
+                ColumnSource<?> recomputedColumn = stringColumnSourceEntry.getValue();
 
                 for (Index.Iterator iterator = checkInvert.iterator(); iterator.hasNext();) {
                     int position = (int) iterator.nextLong();
@@ -628,9 +628,9 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
-    public void testUpdateIncrementalWithI() throws IOException {
+    public void testUpdateIncrementalWithI() {
         Random random = new Random(0);
-        ColumnInfo columnInfo[];
+        ColumnInfo[] columnInfo;
         int size = 50;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -654,7 +654,7 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
-    public void testUpdateEmptyTable() throws IOException {
+    public void testUpdateEmptyTable() {
         QueryTable table = TstUtils.testRefreshingTable(i());
         QueryTable table2 = (QueryTable) table.update("x = i*3", "y = \"\" + k");
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
@@ -685,7 +685,7 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
-    public void testUpdateIndex() throws IOException {
+    public void testUpdateIndex() {
         QueryTable table = TstUtils.testRefreshingTable(i());
         QueryTable table2 = (QueryTable) table.update("Position=i", "Key=\"\" + k");
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
@@ -825,7 +825,7 @@ public class QueryTableSelectUpdateTest {
 
         TestCase.assertSame(selected.getColumnSource("Value"), selected2.getColumnSource("Value"));
         TestCase.assertNotSame(withUpdateView.getColumnSource("Value2"), selected2.getColumnSource("Value2"));
-        TestCase.assertTrue(selected2.getColumnSource("Value2") instanceof LongSparseArraySource);
+        TestCase.assertTrue(selected2.<Long>getColumnSource("Value2") instanceof LongSparseArraySource);
 
         assertTableEquals(prevTable(table), prevTable(selected));
 
@@ -893,7 +893,7 @@ public class QueryTableSelectUpdateTest {
 
         final Table sortedTable = queryTable.sort("intCol");
 
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
                         return SparseSelect.sparseSelect(queryTable, "Sym");
