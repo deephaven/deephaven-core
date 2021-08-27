@@ -167,7 +167,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         // then, parse into an AST
         final ParseResult<Expression> result;
         try {
-            synchronized (staticJavaParser) { // this is not thread-safe because it's all static...
+            synchronized (staticJavaParser) {
                 result = staticJavaParser.parseExpression(expression);
             }
         } catch (final ParseProblemException e) {
@@ -187,15 +187,17 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
     @Override
     public Void visit(final MethodCallExpr n, final Void arg) {
         // verify that this is a call on a supported instance, or is one of the supported static methods
-        if (n.getScope() == null) {
-            if (!whitelistedStaticMethods.contains(n.getName())) {
-                throw new IllegalStateException("User expressions are not permitted to use method " + n.getName());
+        if (!n.getScope().isPresent()) {
+            if (!whitelistedStaticMethods.contains(n.getNameAsString())) {
+                throw new IllegalStateException(
+                        "User expressions are not permitted to use method " + n.getNameAsString());
             }
         } else {
             // note that it is possible that there is a scoped static method in this block, and that the
             // user unnecessarily specified the classname TODO handle this if it becomes an issue
-            if (!whitelistedInstanceMethods.contains(n.getName())) {
-                throw new IllegalStateException("User expressions are not permitted to use method " + n.getName());
+            if (!whitelistedInstanceMethods.contains(n.getNameAsString())) {
+                throw new IllegalStateException(
+                        "User expressions are not permitted to use method " + n.getNameAsString());
             }
         }
         return super.visit(n, arg);
