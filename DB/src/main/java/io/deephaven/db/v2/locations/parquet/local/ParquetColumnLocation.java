@@ -288,8 +288,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
             @NotNull final ColumnDefinition<TYPE> columnDefinition) {
-        // noinspection unchecked
-        final Class<TYPE> dataType = (Class<TYPE>) columnDefinition.getDataType();
+        final Class<TYPE> dataType = columnDefinition.getDataType();
         final ColumnChunkPageStore<ATTR>[] sources = getPageStores(columnDefinition);
         final ColumnChunkPageStore<DictionaryKeys>[] dictKeySources =
                 getDictionaryKeysPageStores(columnDefinition);

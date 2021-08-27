@@ -548,7 +548,6 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             final RedirectionIndex emptyRedirectionIndex) {
         final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
         for (int ii = 0; ii < columns.length; ii++) {
-            // noinspection unchecked
             writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[ii].getDataType(),
                     columns[ii].getComponentType());
             finalColumns.put(columns[ii].getName(),

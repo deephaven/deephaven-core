@@ -157,7 +157,6 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         if (replacementType != null) {
             return NullValueColumnSource.getInstance(replacementType, null);
         } else {
-            // noinspection unchecked
             return NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
         }
     }
