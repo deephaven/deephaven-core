@@ -51,3 +51,6 @@ jobs:
         with:
           name: check-ci-reports
           path: '**/build/reports/tests/**'
+
+      - name: Check gitignore rules again
+        run: .github/scripts/check-gitignore-rules.sh
