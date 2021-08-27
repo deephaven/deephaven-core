@@ -572,7 +572,7 @@ def getKey(groupByColumnSources, row):
     """
     Returns a SmartKey for the specified row from a set of ColumnSources.
     
-    :param groupByColumnSources: (io.deephaven.db.v2.sources.ColumnSource[]) - a set of ColumnSources from which to retrieve the data
+    :param groupByColumnSources: (io.deephaven.db.v2.sources.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
     :param row: (long) - the row number for which to retrieve data
     :return: (java.lang.Object) a Deephaven SmartKey object
     """
@@ -585,7 +585,7 @@ def getPrevKey(groupByColumnSources, row):
     """
     Returns a SmartKey for the row previous to the specified row from a set of ColumnSources.
     
-    :param groupByColumnSources: (io.deephaven.db.v2.sources.ColumnSource[]) - a set of ColumnSources from which to retrieve the data
+    :param groupByColumnSources: (io.deephaven.db.v2.sources.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
     :param row: (long) - the row number for which to retrieve the previous row's data
     :return: (java.lang.Object) a Deephaven SmartKey object
     """
@@ -703,12 +703,12 @@ def newTable(*args):
     *Overload 1*  
       :param size: (long) - the number of rows to allocate
       :param names: (java.util.List<java.lang.String>) - a List of column names
-      :param columnSources: (java.util.List<io.deephaven.db.v2.sources.ColumnSource>) - a List of the ColumnSource(s)
+      :param columnSources: (java.util.List<io.deephaven.db.v2.sources.ColumnSource<?>>) - a List of the ColumnSource(s)
       :return: (io.deephaven.db.v2.DynamicTable) a Deephaven DynamicTable
       
     *Overload 2*  
       :param size: (long) - the number of rows to allocate
-      :param columns: (java.util.Map<java.lang.String,io.deephaven.db.v2.sources.ColumnSource>) - a Map of column names and ColumnSources
+      :param columns: (java.util.Map<java.lang.String,io.deephaven.db.v2.sources.ColumnSource<?>>) - a Map of column names and ColumnSources
       :return: (io.deephaven.db.v2.DynamicTable) a Deephaven DynamicTable
       
     *Overload 3*  

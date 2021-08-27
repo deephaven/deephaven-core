@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.select.AbstractConditionFilter$Filter",
  "methods": {
-  "filter": ":param selection: io.deephaven.db.v2.utils.Index\n:param fullSet: io.deephaven.db.v2.utils.Index\n:param table: io.deephaven.db.tables.Table\n:param usePrev: boolean\n:param formula: java.lang.String\n:param params: io.deephaven.db.tables.select.Param...\n:return: io.deephaven.db.v2.utils.Index"
+  "filter": ":param selection: io.deephaven.db.v2.utils.Index\n:param fullSet: io.deephaven.db.v2.utils.Index\n:param table: io.deephaven.db.tables.Table\n:param usePrev: boolean\n:param formula: java.lang.String\n:param params: io.deephaven.db.tables.select.Param<?>...\n:return: io.deephaven.db.v2.utils.Index"
  },
  "path": "io.deephaven.db.v2.select.AbstractConditionFilter.Filter",
  "typeName": "interface"

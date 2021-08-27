@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.grpc_api.arrow.ArrowFlightUtil$DoExchangeMarshaller$Factory",
  "methods": {
-  "openExchange": ":param session: io.deephaven.grpc_api.session.SessionState\n:param observer: io.grpc.stub.StreamObserver<java.io.InputStream>\n:return: io.deephaven.grpc_api.arrow.ArrowFlightUtil.DoExchangeMarshaller<ArrowFlightUtil.DoExchangeMarshaller.Factory.Options,ArrowFlightUtil.DoExchangeMarshaller.Factory.View>"
+  "openExchange": ":param session: io.deephaven.grpc_api.session.SessionState\n:param observer: io.grpc.stub.StreamObserver<java.io.InputStream>\n:return: io.deephaven.grpc_api.arrow.ArrowFlightUtil.DoExchangeMarshaller"
  },
  "path": "io.deephaven.grpc_api.arrow.ArrowFlightUtil.DoExchangeMarshaller.Factory",
  "typeName": "interface"

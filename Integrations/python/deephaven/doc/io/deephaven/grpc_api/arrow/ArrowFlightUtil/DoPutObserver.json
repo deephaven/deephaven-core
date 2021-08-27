@@ -2,7 +2,6 @@
  "className": "io.deephaven.grpc_api.arrow.ArrowFlightUtil$DoPutObserver",
  "methods": {
   "onError": ":param t: java.lang.Throwable",
-  "onMessageReceived": ":param mi: io.deephaven.grpc_api.arrow.ArrowFlightUtil.MessageInfo",
   "onNext": ":param request: java.io.InputStream"
  },
  "path": "io.deephaven.grpc_api.arrow.ArrowFlightUtil.DoPutObserver",
