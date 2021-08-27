@@ -16,7 +16,7 @@ services:
     expose:
       - '80'
     volumes:
-      - data:/data
+      - ./data:/data
       - web-tmp:/tmp
 
   grpc-proxy:

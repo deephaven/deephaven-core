@@ -5,7 +5,6 @@
 .idea/
 build/
 buildTest/
-data/
 out/
 .gradle/
 *.ipr
@@ -26,6 +25,7 @@ irisDb.history
 Containers/dockers/packages*
 Containers/dockers/third-party/*
 **/.DS_Store
+/data/
 /test.*
 /test
 /Test*
