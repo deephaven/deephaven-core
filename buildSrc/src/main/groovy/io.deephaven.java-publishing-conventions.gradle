@@ -9,14 +9,24 @@ java {
   withSourcesJar()
 }
 
-// TODO: parameterize based on io.deephaven.tools.License
-def licenseName = 'Deephaven Community License Agreement 1.0'
-def licenseUrl = 'https://github.com/deephaven/deephaven-core/blob/main/LICENSE.md'
-
 // TODO: parameterize, or choose deephaven group email
 def developerId = 'devinrsmith'
 def developerName = 'Devin Smith'
 def developerEmail = 'devinsmith@deephaven.io'
+
+def projectUrl = 'https://github.com/deephaven/deephaven-core'
+def orgName = 'Deephaven Data Labs'
+def orgUrl = 'https://deephaven.io/'
+
+def licenseName = ext.license.name
+def licenseUrl = ext.license.url
+
+def issuesSystem = 'GitHub Issues'
+def issuesUrl = 'https://github.com/deephaven/deephaven-core/issues'
+
+def scmUrl = 'https://github.com/deephaven/deephaven-core'
+def scmConnection = 'scm:git:git://github.com/deephaven/deephaven-core.git'
+def scmDevConnection = 'scm:git:ssh://github.com/deephaven/deephaven-core.git'
 
 publishing {
   publications {
@@ -25,7 +35,11 @@ publishing {
       artifactId = archivesBaseName
       pom {
         description = project.description
-        url = 'https://github.com/deephaven/deephaven-core'
+        url = projectUrl
+        organization {
+          name = orgName
+          url = orgUrl
+        }
         licenses {
           license {
             name = licenseName
@@ -33,15 +47,21 @@ publishing {
           }
         }
         scm {
-          url = 'https://github.com/deephaven/deephaven-core/tree/main'
-          connection = 'scm:git:git://github.com/deephaven/deephaven-core.git'
-          developerConnection = 'scm:git:ssh://github.com/deephaven/deephaven-core.git'
+          url = scmUrl
+          connection = scmConnection
+          developerConnection = scmDevConnection
+        }
+        issueManagement {
+          system = issuesSystem
+          url = issuesUrl
         }
         developers {
           developer {
             id = developerId
             name = developerName
             email = developerEmail
+            organization = orgName
+            organizationUrl = orgUrl
           }
         }
       }
