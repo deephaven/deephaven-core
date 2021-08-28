@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'The java client session dagger library'
+description = 'The client session dagger library'
 
 dependencies {
     api project(':client-session')

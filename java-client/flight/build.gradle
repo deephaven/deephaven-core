@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'The java client flight library'
+description = 'The client flight library'
 
 dependencies {
     api project(':client-session')
