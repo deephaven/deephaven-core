@@ -189,6 +189,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             propagationJob.markUpdates();
         } else {
             // don't have to wait for the propagation job to accept these fields into the known field map
+            knownFieldMap.keySet().removeAll(removedFields);
             knownFieldMap.putAll(addedFields);
 
             // let's not duplicate information when a client does actually join
