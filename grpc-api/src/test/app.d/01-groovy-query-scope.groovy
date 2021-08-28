@@ -1,6 +1,6 @@
 import io.deephaven.db.tables.utils.TableTools
 
 // Use QueryScope! Careful; this leaks into the REPL state!
-size = 42
-hello = TableTools.emptyTable(size)
-world = TableTools.timeTable("00:00:01")
+size_qs = 42
+hello_qs = TableTools.emptyTable(size_qs)
+world_qs = TableTools.timeTable("00:00:01")

@@ -94,7 +94,7 @@ public class ApplicationTest {
         }
 
         @Override
-        public void onRemoveField(ApplicationState app, String name) {
+        public void onRemoveField(ApplicationState app, Field<?> field) {
             // ignore
         }
     }

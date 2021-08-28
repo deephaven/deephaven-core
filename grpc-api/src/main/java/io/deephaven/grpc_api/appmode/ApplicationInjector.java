@@ -2,9 +2,11 @@ package io.deephaven.grpc_api.appmode;
 
 import io.deephaven.appmode.ApplicationConfig;
 import io.deephaven.appmode.ApplicationState;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -70,12 +72,14 @@ public class ApplicationInjector {
         // Note: if we need to be more specific about which application we are starting, we can print out the path of
         // the application.
         log.info().append("Starting application '").append(config.toString()).append('\'').endl();
-        final ApplicationState app = ApplicationFactory.create(applicationDir, config,
-                globalSessionProvider.getGlobalSession(), applicationListener);
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final ApplicationState app = ApplicationFactory.create(applicationDir, config,
+                    globalSessionProvider.getGlobalSession(), applicationListener);
 
-        int numExports = app.listFields().size();
-        log.info().append("\tfound ").append(numExports).append(" exports").endl();
+            int numExports = app.listFields().size();
+            log.info().append("\tfound ").append(numExports).append(" exports").endl();
 
-        ticketResolver.onApplicationLoad(app);
+            ticketResolver.onApplicationLoad(app);
+        }
     }
 }

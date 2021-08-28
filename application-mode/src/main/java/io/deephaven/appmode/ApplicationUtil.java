@@ -20,6 +20,20 @@ public class ApplicationUtil {
         return Boolean.parseBoolean((String) properties.getOrDefault("enabled", "true"));
     }
 
+    public static boolean isAsciiPrintable(final CharSequence cs) {
+        if (cs == null) {
+            return false;
+        }
+        int sz = cs.length();
+        for (int i = 0; i < sz; ++i) {
+            char ch = cs.charAt(i);
+            if (ch < 32 || ch >= 127) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static boolean isFileProperty(final String propName) {
         if (!propName.startsWith(FILE_PROP_PREFIX)
                 || propName.length() == FILE_PROP_PREFIX.length()) {

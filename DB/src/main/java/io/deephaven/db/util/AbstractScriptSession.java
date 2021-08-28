@@ -127,7 +127,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
             applyVariableChangeToDiff(diff, name, entry.getValue(), null);
         }
 
-        if (changeListener != null) {
+        if (changeListener != null && !diff.isEmpty()) {
             changeListener.onScopeChanges(this, diff);
         }
 
@@ -193,7 +193,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
 
     /**
      * Evaluates command in the context of the current ScriptSession.
-     * 
+     *
      * @param command the command to evaluate
      * @param scriptName an optional script name, which may be ignored by the implementation, or used improve error
      *        messages or for other internal purposes

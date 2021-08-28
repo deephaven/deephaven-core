@@ -8,6 +8,10 @@ import io.deephaven.db.plot.FigureWidget;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.util.ScriptSession;
+import io.deephaven.db.util.liveness.LivenessArtifact;
+import io.deephaven.db.util.liveness.LivenessManager;
+import io.deephaven.db.util.liveness.LivenessReferent;
+import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
@@ -43,6 +47,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     private final AppMode mode;
     private final Scheduler scheduler;
     private final SessionService sessionService;
+    private final LivenessTracker tracker = new LivenessTracker();
 
     /** The list of Field listeners */
     private final Set<Subscription> subscriptions = new LinkedHashSet<>();
@@ -51,7 +56,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     private final FieldUpdatePropagationJob propagationJob = new FieldUpdatePropagationJob();
 
     /** Which fields have been updated since we last propagated? */
-    private final Set<AppFieldId> addedFields = new HashSet<>();
+    private final Map<AppFieldId, Field<?>> addedFields = new HashMap<>();
     /** Which fields have been removed since we last propagated? */
     private final Set<AppFieldId> removedFields = new HashSet<>();
     /** Which fields have been updated since we last propagated? */
@@ -76,17 +81,38 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
         changes.removed.keySet().stream().map(AppFieldId::fromScopeName).forEach(id -> {
             updatedFields.remove(id);
-            if (!addedFields.remove(id)) {
+            Field<?> oldField = addedFields.remove(id);
+            if (oldField != null) {
+                tracker.maybeUnmanage(oldField.value());
+            } else {
                 removedFields.add(id);
             }
-            knownFieldMap.remove(id);
         });
 
         for (final String name : changes.updated.keySet()) {
             final AppFieldId id = AppFieldId.fromScopeName(name);
-            final ScopeField field = (ScopeField) knownFieldMap.get(id);
-            field.value = scriptSession.unwrapObject(scriptSession.getVariable(name));
-            updatedFields.add(id);
+
+            boolean recentField = false;
+            ScopeField field = (ScopeField) addedFields.get(id);
+            if (field == null) {
+                field = (ScopeField) knownFieldMap.get(id);
+            } else {
+                recentField = true;
+            }
+
+            // Note the order w.r.t. the tracker is intentional to avoid dropping ref count to zero
+            Object newValue = scriptSession.unwrapObject(scriptSession.getVariable(name));
+            Object oldValue = field.value();
+
+            if (newValue != oldValue) {
+                tracker.maybeManage(newValue);
+                tracker.maybeUnmanage(oldValue);
+            }
+
+            field.value = newValue;
+            if (!recentField) {
+                updatedFields.add(id);
+            }
         }
 
         for (final String name : changes.created.keySet()) {
@@ -99,32 +125,34 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 throw new IllegalStateException(
                         String.format("Field information could not be generated for scope variable '%s'", name));
             }
-            addedFields.add(id);
-            knownFieldMap.put(id, field);
+            tracker.maybeManage(field.value);
+            final Field<?> oldField = addedFields.put(id, field);
+            if (oldField != null) {
+                throw new IllegalStateException(
+                        String.format("Script session notified of new field but was already existing '%s'", name));
+            }
         }
 
         schedulePropagationOrClearIncrementalState();
     }
 
     @Override
-    public synchronized void onRemoveField(ApplicationState app, String name) {
+    public synchronized void onRemoveField(ApplicationState app, Field<?> oldField) {
         if (!mode.hasVisibilityToAppExports()) {
             return;
         }
 
-        final AppFieldId id = AppFieldId.from(app, name);
-        if (knownFieldMap.remove(id) != null) {
-            updatedFields.remove(id);
-            if (!addedFields.remove(id)) {
-                removedFields.add(id);
-            }
-        } else {
-            log.warn().append("Removing unknown field: ").append(id.toString()).endl();
+        final AppFieldId id = AppFieldId.from(app, oldField.name());
+        Field<?> recentlyAdded = addedFields.remove(id);
+        if (recentlyAdded != null) {
+            tracker.maybeUnmanage(recentlyAdded.value());
+            return;
         }
+        updatedFields.remove(id);
+        removedFields.add(id);
 
         schedulePropagationOrClearIncrementalState();
     }
-
 
     @Override
     public synchronized void onNewField(final ApplicationState app, final Field<?> field) {
@@ -139,11 +167,18 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                     app.id(), field.name()));
         }
 
-        final Field<?> oldValue = knownFieldMap.put(id, field);
-        if (oldValue == null) {
-            addedFields.add(id);
-        } else {
+        tracker.maybeManage(field.value());
+
+        final Field<?> knownField = knownFieldMap.get(id);
+        if (knownField != null && !removedFields.contains(id)) {
             updatedFields.add(id);
+            tracker.maybeUnmanage(knownField.value());
+            knownFieldMap.put(id, field);
+        } else {
+            final Field<?> recentlyAdded = addedFields.put(id, field);
+            if (recentlyAdded != null) {
+                tracker.maybeUnmanage(recentlyAdded.value());
+            }
         }
 
         schedulePropagationOrClearIncrementalState();
@@ -153,6 +188,10 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         if (!subscriptions.isEmpty()) {
             propagationJob.markUpdates();
         } else {
+            // don't have to wait for the propagation job to accept these fields into the known field map
+            knownFieldMap.putAll(addedFields);
+
+            // let's not duplicate information when a client does actually join
             addedFields.clear();
             removedFields.clear();
             updatedFields.clear();
@@ -162,12 +201,27 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     private synchronized void propagateUpdates() {
         propagationJob.markRunning();
         final FieldsChangeUpdate.Builder builder = FieldsChangeUpdate.newBuilder();
-        addedFields.forEach(id -> builder.addCreated(getFieldInfo(id, knownFieldMap.get(id))));
-        addedFields.clear();
 
-        removedFields.forEach(id -> builder.addRemoved(getRemovedFieldInfo(id)));
+        // We only unmanage when we can no longer send it to a new observer.
+        removedFields.forEach(id -> {
+            final Field<?> oldField = knownFieldMap.get(id);
+            if (oldField == null) {
+                log.error().append("Removing old field but field not known; fieldId = ").append(id.toString()).endl();
+            } else {
+                tracker.maybeUnmanage(oldField.value());
+                builder.addRemoved(getRemovedFieldInfo(id));
+            }
+        });
         removedFields.clear();
 
+        // We manage all referents when they are added.
+        addedFields.forEach((id, field) -> {
+            knownFieldMap.put(id, field);
+            builder.addCreated(getFieldInfo(id, field));
+        });
+        addedFields.clear();
+
+        // Updated fields are managed/unmanaged during notification of update.
         updatedFields.forEach(id -> builder.addUpdated(getFieldInfo(id, knownFieldMap.get(id))));
         updatedFields.clear();
         final FieldsChangeUpdate update = builder.build();
@@ -381,6 +435,21 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         private void notifyObserverAborted() {
             GrpcUtil.safelyExecute(
                     () -> observer.onError(GrpcUtil.statusRuntimeException(Code.ABORTED, "subscription cancelled")));
+        }
+    }
+
+
+    private static class LivenessTracker extends LivenessArtifact {
+        private <T> void maybeManage(T object) {
+            if (object instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(object)) {
+                manage((LivenessReferent) object);
+            }
+        }
+
+        private <T> void maybeUnmanage(T object) {
+            if (object instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(object)) {
+                unmanage((LivenessReferent) object);
+            }
         }
     }
 }

@@ -1,16 +1,14 @@
-package io.deephaven.grpc_api.appmode;
-
-import io.deephaven.appmode.ApplicationState;
+package io.deephaven.appmode;
 
 import java.util.function.Consumer;
 
 /**
  * This application context can be used to get access to the application state from within script applications.
- *
+ * <p/>
  * {@link ApplicationContext#get} is only valid during the initial invocation of a script application during start up of
  * Application Mode. Scripts may dynamically add fields after start up by capturing and using the ApplicationState after
  * the script after having returned execution control to the begin the server process.
- *
+ * <p/>
  * Each application owns and manages a unique ApplicationState.
  */
 public class ApplicationContext {
@@ -29,7 +27,7 @@ public class ApplicationContext {
         initializer.accept(get());
     }
 
-    static void runUnderContext(final ApplicationState context, final Runnable runner) {
+    public static void runUnderContext(final ApplicationState context, final Runnable runner) {
         ApplicationContext.states.set(context);
         try {
             runner.run();

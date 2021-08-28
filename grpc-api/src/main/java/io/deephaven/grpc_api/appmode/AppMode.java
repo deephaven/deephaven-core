@@ -22,10 +22,10 @@ public enum AppMode {
     }
 
     public boolean hasVisibilityToAppExports() {
-        return this != CONSOLE_ONLY;
+        return this == HYBRID || this == APP_ONLY;
     }
 
     public boolean hasVisibilityToConsoleExports() {
-        return this != APP_ONLY;
+        return this == HYBRID || this == CONSOLE_ONLY;
     }
 }

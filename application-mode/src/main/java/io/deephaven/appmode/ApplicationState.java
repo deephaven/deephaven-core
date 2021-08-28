@@ -16,7 +16,7 @@ public class ApplicationState {
     public interface Listener {
         void onNewField(ApplicationState app, Field<?> field);
 
-        void onRemoveField(ApplicationState app, String name);
+        void onRemoveField(ApplicationState app, Field<?> field);
     }
 
     private final Listener listener;
@@ -48,7 +48,7 @@ public class ApplicationState {
     }
 
     public synchronized void clearFields() {
-        fields.keySet().forEach(name -> listener.onRemoveField(this, name));
+        fields.forEach((name, field) -> listener.onRemoveField(this, field));
         fields.clear();
     }
 
@@ -75,8 +75,9 @@ public class ApplicationState {
     }
 
     public synchronized void setField(Field<?> field) {
-        if (fields.containsKey(field.name())) {
-            listener.onRemoveField(this, field.name());
+        Field<?> oldField = fields.remove(field.name());
+        if (oldField != null) {
+            listener.onRemoveField(this, field);
         }
         listener.onNewField(this, field);
         fields.put(field.name(), field);
@@ -93,8 +94,9 @@ public class ApplicationState {
     }
 
     public synchronized void removeField(String name) {
-        if (fields.remove(name) != null) {
-            listener.onRemoveField(this, name);
+        Field<?> field = fields.remove(name);
+        if (field != null) {
+            listener.onRemoveField(this, field);
         }
     }
 
