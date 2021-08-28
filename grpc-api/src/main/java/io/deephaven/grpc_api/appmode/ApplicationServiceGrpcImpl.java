@@ -28,11 +28,9 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -174,7 +172,6 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         updatedFields.clear();
         final FieldsChangeUpdate update = builder.build();
 
-        log.info().append("fields updated: ").append(update.toString()).endl();
         subscriptions.forEach(sub -> sub.send(update));
     }
 
@@ -192,6 +189,12 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 subscriptions.add(subscription);
             }
         });
+    }
+
+    synchronized void remove(Subscription sub) {
+        if (subscriptions.remove(sub)) {
+            sub.notifyObserverAborted();
+        }
     }
 
     private static FieldInfo getRemovedFieldInfo(final AppFieldId id) {
@@ -337,6 +340,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
      */
     private class Subscription implements Closeable {
         private final SessionState session;
+
+        // guarded by parent sync
         private final StreamObserver<FieldsChangeUpdate> observer;
 
         public Subscription(final SessionState session, final StreamObserver<FieldsChangeUpdate> observer) {
@@ -350,7 +355,19 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             session.addOnCloseCallback(this);
         }
 
-        synchronized boolean send(FieldsChangeUpdate changes) {
+        void onCancel() {
+            if (session.removeOnCloseCallback(this)) {
+                close();
+            }
+        }
+
+        @Override
+        public void close() {
+            remove(this);
+        }
+
+        // must be sync wrt parent
+        private boolean send(FieldsChangeUpdate changes) {
             try {
                 observer.onNext(changes);
             } catch (RuntimeException ignored) {
@@ -360,17 +377,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             return true;
         }
 
-        void onCancel() {
-            if (session.removeOnCloseCallback(this)) {
-                close();
-            }
-        }
-
-        @Override
-        public synchronized void close() {
-            synchronized (ApplicationServiceGrpcImpl.this) {
-                subscriptions.remove(this);
-            }
+        // must be sync wrt parent
+        private void notifyObserverAborted() {
             GrpcUtil.safelyExecute(
                     () -> observer.onError(GrpcUtil.statusRuntimeException(Code.ABORTED, "subscription cancelled")));
         }
