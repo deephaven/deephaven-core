@@ -11,9 +11,6 @@ dependencies {
     api 'org.apache.arrow:flight-core:5.0.0'
     implementation 'org.apache.arrow:flight-grpc:5.0.0'
 
-    implementation 'com.google.dagger:dagger:2.31.1'
-    annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
-
     annotationProcessor 'org.immutables:value:2.8.1'
     compileOnly 'org.immutables:value-annotations:2.8.1'
 
