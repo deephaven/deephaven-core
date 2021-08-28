@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'The client flight dagger library'
+description = 'The Deephaven client flight dagger library'
 
 dependencies {
     api project(':client-flight')

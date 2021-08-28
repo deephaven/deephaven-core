@@ -2,7 +2,7 @@ plugins {
   id 'java-library'
 }
 
-description = 'The table operations API'
+description = 'The Deephaven table operations API'
 
 dependencies {
   annotationProcessor 'org.immutables:value:2.8.1'

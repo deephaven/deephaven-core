@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'The Query Syntax Tree POJOs'
+description = 'The Deephaven Query Syntax Tree POJOs'
 
 dependencies {
     api project(':table-api')

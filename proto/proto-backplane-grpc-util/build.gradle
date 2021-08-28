@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'The proto-backplane-grpc-util'
+description = 'The Deephaven proto-backplane-grpc-util'
 
 dependencies {
     api project(':proto:proto-backplane-grpc')
