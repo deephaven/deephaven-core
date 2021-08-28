@@ -30,8 +30,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.deephaven.db.util.PythonScopeJpyImpl.CallableWrapper;
-
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
  *
@@ -59,18 +57,20 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * @throws IOException if an IO error occurs running initialization scripts
      */
     public PythonDeephavenSession(boolean runInitScripts) throws IOException {
-        this(runInitScripts, false);
+        this(null, runInitScripts, false);
     }
 
     /**
      * Create a Python ScriptSession.
      *
+     * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @throws IOException if an IO error occurs running initialization scripts
      */
-    public PythonDeephavenSession(boolean runInitScripts, boolean isDefaultScriptSession) throws IOException {
-        super(isDefaultScriptSession);
+    public PythonDeephavenSession(final Listener listener, boolean runInitScripts, boolean isDefaultScriptSession)
+            throws IOException {
+        super(listener, isDefaultScriptSession);
 
         JpyInit.init(log);
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
@@ -108,7 +108,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * IPython kernel session.
      */
     public PythonDeephavenSession(PythonScope<?> scope) {
-        super(false);
+        super(null, false);
 
         this.scope = scope;
         this.evaluator = null;
@@ -191,6 +191,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     public void setVariable(String name, Object value) {
+        super.setVariable(name, value);
         PyDictWrapper globals = scope.globals();
         if (value == null) {
             try {

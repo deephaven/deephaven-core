@@ -238,7 +238,7 @@ public class BrowserStream<T> implements Closeable {
     }
 
     public void onError(final RuntimeException e) {
-        if (session.removeOnCloseCallback(this) != null) {
+        if (session.removeOnCloseCallback(this)) {
             log.error().append(logIdentity).append("closing browser stream on unexpected exception: ").append(e).endl();
             this.marshaller.onError(e);
         }
@@ -250,7 +250,7 @@ public class BrowserStream<T> implements Closeable {
     }
 
     private void onComplete() {
-        if (session.removeOnCloseCallback(this) != null) {
+        if (session.removeOnCloseCallback(this)) {
             log.debug().append(logIdentity).append("browser stream completed").endl();
             this.marshaller.onCompleted();
         }

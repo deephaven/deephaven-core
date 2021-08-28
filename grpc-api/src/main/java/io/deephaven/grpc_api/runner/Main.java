@@ -19,7 +19,7 @@ public class Main {
         }
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
         System.out.printf("# Starting %s%n", Main.class.getName());
 
         // No classes should be loaded before we bootstrap additional system properties

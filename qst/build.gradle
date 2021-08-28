@@ -6,7 +6,7 @@ dependencies {
     api project(':table-api')
 
     annotationProcessor 'org.immutables:value:2.8.1'
-    compileOnly 'org.immutables:value-annotations:2.8.1'
+    compileOnly project(':util-immutables')
 
     testImplementation(platform('org.junit:junit-bom:5.7.2'))
     testImplementation 'org.junit.jupiter:junit-jupiter'

@@ -45,7 +45,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                                 ExportTicketHelper.descriptorToArrowTicket(descriptor));
                     }
 
-                    throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No such flight exists");
+                    throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "No such flight exists");
                 });
     }
 

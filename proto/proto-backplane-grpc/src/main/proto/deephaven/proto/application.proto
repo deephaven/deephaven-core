@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+import "deephaven/proto/ticket.proto";
+
+/*
+ * Allows clients to list fields that are accessible to them.
+ */
+service ApplicationService {
+
+  /*
+   * Request the list of the fields exposed via the worker.
+   *
+   * - The first received message contains all fields that are currently available
+   *   on the worker. None of these fields will be RemovedFields.
+   * - Subsequent messages modify the existing state. Fields are identified by
+   *   their ticket and may be replaced or removed.
+   */
+  rpc listFields(ListFieldsRequest) returns (stream FieldsChangeUpdate) {}
+
+}
+
+message ListFieldsRequest {
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}
+
+/*
+ * Represents a batch of fields.
+ */
+message FieldsChangeUpdate {
+  repeated FieldInfo created = 1;
+  repeated FieldInfo updated = 2;
+  repeated FieldInfo removed = 3;
+}
+
+/*
+ * A lightweight object describing the exposed field.
+ */
+message FieldInfo {
+  Ticket ticket = 1;
+  string field_name = 2;
+  FieldType field_type = 3;
+  string field_description = 4;
+  string application_name = 5; // display-friendly identification
+  string application_id = 6; // computer-friendly identification
+
+  message FieldType {
+    oneof field {
+      CustomInfo custom = 1;
+      TableInfo table = 2;
+      // reserved = 3; // for TreeTable
+      // reserved = 4; // for TableMap
+      FigureInfo figure = 5;
+      // reserved = 6; // for PANDAS
+
+      // use values above 4096 for custom client behavior
+    }
+  }
+}
+
+/*
+ * RemovedField represents that the provided ticket is no longer available.
+ */
+message RemovedField {
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}
+
+/*
+ * CustomInfo can be used to provide information about an exposed field in an unstructured way.
+ *
+ * Alternatively, one can extend FieldType and re-build with custom types of their own structure.
+ */
+message CustomInfo {
+  string type = 1; // application-specific type to identify the purpose of this custom field reference
+}
+
+/*
+ * Lightly describe a Table.
+ */
+message TableInfo {
+  // Schema as described in Arrow Message.fbs::Message.
+  bytes schema_header = 1;
+
+  // Whether or not this table might change.
+  bool is_static = 2;
+
+  // The current number of rows for this table.
+  sint64 size = 3 [jstype=JS_STRING];
+}
+
+/*
+ * Lightly describes a Figure.
+ */
+message FigureInfo {
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}

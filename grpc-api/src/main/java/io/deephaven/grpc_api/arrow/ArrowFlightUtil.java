@@ -564,7 +564,7 @@ public class ArrowFlightUtil {
         }
 
         private void tryClose() {
-            if (session.removeOnCloseCallback(this) != null) {
+            if (session.removeOnCloseCallback(this)) {
                 close();
             }
         }

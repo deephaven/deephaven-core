@@ -6,7 +6,6 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 import java.lang.reflect.Array;
-import java.util.Objects;
 
 /**
  * A java native array type.
