@@ -18,10 +18,6 @@ def developerId = 'devinrsmith'
 def developerName = 'Devin Smith'
 def developerEmail = 'devinsmith@deephaven.io'
 
-def artifactPrefix = 'deephaven-'
-
-archivesBaseName = "${artifactPrefix}${project.name}"
-
 publishing {
   publications {
     mavenJava(MavenPublication) {
@@ -68,11 +64,7 @@ signing {
   String signingKey = findProperty("signingKey")
   String signingPassword = findProperty("signingPassword")
   if (signingKey != null && signingPassword != null) {
-    // In CI, it's harder to pass a file; so we use the in-memory version.
+    // In CI, it's harder to pass a file; so if specified, we use the in-memory version.
     useInMemoryPgpKeys(signingKey, signingPassword)
   }
-  // Otherwise, it will use the properties:
-  // signing.keyId
-  // signing.secretKeyRingFile
-  // signing.password
 }

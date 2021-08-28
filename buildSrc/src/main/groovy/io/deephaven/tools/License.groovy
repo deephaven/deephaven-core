@@ -2,6 +2,7 @@ package io.deephaven.tools
 
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
+import org.gradle.api.plugins.BasePluginConvention
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
@@ -94,6 +95,7 @@ class License {
 
     TaskProvider<Sync> syncSourceSetLicense(String licenseSourceSetDir) {
         def copyrightYear = '2021'
+        def archivesBaseName = (project.convention.plugins.get('base') as BasePluginConvention).archivesBaseName
         syncLicensesProvider(
                 project,
                 'syncSourceSetLicense',
@@ -101,11 +103,12 @@ class License {
                 license.name,
                 notice.name,
                 copyrightYear,
-                project.name)
+                archivesBaseName)
     }
 
     TaskProvider<Sync> syncDockerLicense() {
         def copyrightYear = '2021'
+        def archivesBaseName = (project.convention.plugins.get('base') as BasePluginConvention).archivesBaseName
         syncLicensesProvider(
                 project,
                 'syncDockerLicense',
@@ -113,10 +116,10 @@ class License {
                 license.name,
                 notice.name,
                 copyrightYear,
-                project.name)
+                archivesBaseName)
     }
 
-    private TaskProvider<Sync> syncLicensesProvider(Project project, String taskName, String destDir, String licenseFilename, String noticeFilename, String copyrightYear, String projectName) {
+    private TaskProvider<Sync> syncLicensesProvider(Project project, String taskName, String destDir, String licenseFilename, String noticeFilename, String copyrightYear, String archivesBaseName) {
         project.tasks.register(taskName, Sync) {
             it.from(license)
             it.from(notice)
@@ -126,7 +129,7 @@ class License {
             it.rename(licenseFilename, OUTPUT_LICENSE_NAME)
             it.rename(noticeFilename, OUTPUT_NOTICE_NAME)
 
-            it.expand(copyrightYear: copyrightYear, projectName: project.name)
+            it.expand(copyrightYear: copyrightYear, projectName: archivesBaseName)
 
             // Make sure we invalidate this task if the structure changes
             it.inputs.property('OUTPUT_LICENSE_NAME', OUTPUT_LICENSE_NAME)
@@ -136,7 +139,7 @@ class License {
             it.inputs.property('noticeFilename', noticeFilename)
 
             it.inputs.property('copyrightYear', copyrightYear)
-            it.inputs.property('projectName', projectName)
+            it.inputs.property('projectName', archivesBaseName)
         }
     }
 }
