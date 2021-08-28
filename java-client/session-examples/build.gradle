@@ -70,10 +70,24 @@ task createTableManagerScripts(type: CreateStartScripts) {
             '-XX:+UseStringDeduplication' ]
 }
 
+
+task createExecuteScriptScripts(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.ExecuteScript'
+    applicationName = 'execute-script'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
 applicationDistribution.into('bin') {
     from(createHammerSessionsScripts)
     from(createPublishTablesScripts)
     from(createWriteQstsScripts)
     from(createTableManagerScripts)
+    from(createExecuteScriptScripts)
     fileMode = 0755
 }

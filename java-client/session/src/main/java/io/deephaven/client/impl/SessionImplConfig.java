@@ -8,18 +8,14 @@ import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServic
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Immutable
 @BuildableStyle
 public abstract class SessionImplConfig {
-
-    private static final boolean DELEGATE_TO_BATCH_DEFAULT =
-            Boolean.getBoolean("deephaven.session.batch");
-
-    private static final boolean MIXIN_STACKTRACE_DEFAULT =
-            Boolean.getBoolean("deephaven.session.batch.stacktraces");
 
     public static Builder builder() {
         return ImmutableSessionImplConfig.builder();
@@ -41,7 +37,7 @@ public abstract class SessionImplConfig {
      */
     @Default
     public boolean delegateToBatch() {
-        return DELEGATE_TO_BATCH_DEFAULT;
+        return Boolean.getBoolean("deephaven.session.batch");
     }
 
     /**
@@ -52,7 +48,40 @@ public abstract class SessionImplConfig {
      */
     @Default
     public boolean mixinStacktrace() {
-        return MIXIN_STACKTRACE_DEFAULT;
+        return Boolean.getBoolean("deephaven.session.batch.stacktraces");
+    }
+
+    /**
+     * The session execute timeout. By default, is {@code PT1m}. The default can be overridden via the system property
+     * {@code deephaven.session.executeTimeout}.
+     *
+     * @return the session execute timeout
+     */
+    @Default
+    public Duration executeTimeout() {
+        return Duration.parse(System.getProperty("deephaven.session.executeTimeout", "PT1m"));
+    }
+
+    /**
+     * The {@link SessionImpl#close()} timeout. By default, is {@code PT5s}. The default can be overridden via the
+     * system property {@code deephaven.session.closeTimeout}.
+     *
+     * @return the session close timeout
+     */
+    @Default
+    public Duration closeTimeout() {
+        return Duration.parse(System.getProperty("deephaven.session.closeTimeout", "PT5s"));
+    }
+
+    /**
+     * The expected script console type. By default, is not set. The default can be overridden via the system property
+     * {@code deephaven.console.type}.
+     *
+     * @return the expected script console type
+     */
+    @Default
+    public Optional<String> consoleType() {
+        return Optional.ofNullable(System.getProperty("deephaven.console.type", null));
     }
 
     public final SessionImpl createSession(SessionServiceBlockingStub stubBlocking) {
@@ -76,6 +105,10 @@ public abstract class SessionImplConfig {
         Builder delegateToBatch(boolean delegateToBatch);
 
         Builder mixinStacktrace(boolean mixinStacktrace);
+
+        Builder closeTimeout(Duration closeTimeout);
+
+        Builder consoleType(Optional<String> consoleType);
 
         SessionImplConfig build();
     }

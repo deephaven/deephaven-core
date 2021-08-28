@@ -36,21 +36,21 @@ final class ExportStates {
     private long batchCount;
     private long releaseCount;
 
-    ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub) {
+    ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub, int nextTicket) {
         this.session = Objects.requireNonNull(session);
         this.sessionStub = Objects.requireNonNull(sessionStub);
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exports = new HashMap<>();
-        this.nextTicket = 1;
+        this.nextTicket = nextTicket;
     }
 
     @VisibleForTesting
-    ExportStates(SessionServiceStub sessionStub, TableServiceStub tableStub) {
+    ExportStates(SessionServiceStub sessionStub, TableServiceStub tableStub, int nextTicket) {
         this.session = null;
         this.sessionStub = Objects.requireNonNull(sessionStub);
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exports = new HashMap<>();
-        this.nextTicket = 1;
+        this.nextTicket = nextTicket;
     }
 
     long batchCount() {

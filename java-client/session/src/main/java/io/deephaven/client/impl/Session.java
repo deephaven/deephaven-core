@@ -1,10 +1,15 @@
 package io.deephaven.client.impl;
 
-
+import io.deephaven.client.impl.script.Changes;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
 import io.deephaven.qst.table.TableSpec;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A session represents a client-side connection to a Deephaven server.
@@ -29,6 +34,46 @@ public interface Session extends AutoCloseable, TableHandleManager {
      * @return the exports
      */
     List<Export> export(ExportsRequest request);
+
+    // ----------------------------------------------------------
+
+    /**
+     * Execute the given {@code code} against the script session.
+     *
+     * @param code the code
+     * @return the changes
+     * @throws InterruptedException if the current thread is interrupted
+     * @throws ExecutionException if the request has an exception
+     * @throws TimeoutException if the request times out
+     */
+    Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException;
+
+    /**
+     * Execute the given {@code path path's} code against the script session.
+     *
+     * @param path the path to the code
+     * @return the changes
+     * @throws InterruptedException if the current thread is interrupted
+     * @throws ExecutionException if the request has an exception
+     * @throws TimeoutException if the request times out
+     */
+    Changes executeScript(Path path) throws IOException, InterruptedException, ExecutionException, TimeoutException;
+
+    /**
+     * Execute the given {@code code} against the script session.
+     *
+     * @param code the code
+     * @return the changes future
+     */
+    CompletableFuture<Changes> executeCodeFuture(String code);
+
+    /**
+     * Execute the given {@code path path's} code against the script session.
+     *
+     * @param path the path to the code
+     * @return the changes future
+     */
+    CompletableFuture<Changes> executeScriptFuture(Path path) throws IOException;
 
     // ----------------------------------------------------------
 
