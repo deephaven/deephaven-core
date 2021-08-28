@@ -1,0 +1,8 @@
+pandas~=1.2.5
+pyarrow~=4.0.1
+grpcio
+setuptools~=47.1.0
+protobuf
+wheel
+sphinx
+bitstring~=3.1.7
