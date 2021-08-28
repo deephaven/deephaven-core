@@ -42,6 +42,7 @@ import static io.deephaven.proto.backplane.grpc.ExportNotification.State.FAILED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.PENDING;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.QUEUED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.RELEASED;
+import static io.deephaven.proto.backplane.grpc.ExportNotification.State.RUNNING;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.UNKNOWN;
 
 public class SessionStateTest {
@@ -810,9 +811,9 @@ public class SessionStateTest {
         final SessionState.ExportObject<SessionState> e1 =
                 session.<SessionState>newExport(nextExportId++).submit(() -> session);
         scheduler.runUntilQueueEmpty();
-        Assert.eq(listener.notifications.size(), "notifications.size()", 5);
+        Assert.eq(listener.notifications.size(), "notifications.size()", 6);
         listener.validateIsRefreshComplete(0);
-        listener.validateNotificationQueue(e1, UNKNOWN, PENDING, QUEUED, EXPORTED);
+        listener.validateNotificationQueue(e1, UNKNOWN, PENDING, QUEUED, RUNNING, EXPORTED);
     }
 
     @Test
@@ -884,10 +885,10 @@ public class SessionStateTest {
         listener.validateNotificationQueue(e1, UNKNOWN);
         listener.validateNotificationQueue(e2, UNKNOWN, PENDING);
         listener.validateNotificationQueue(e3, UNKNOWN, PENDING, QUEUED);
-        listener.validateNotificationQueue(e4, UNKNOWN, PENDING, QUEUED, EXPORTED);
-        listener.validateNotificationQueue(e5, UNKNOWN, PENDING, QUEUED, EXPORTED, RELEASED);
+        listener.validateNotificationQueue(e4, UNKNOWN, PENDING, QUEUED, RUNNING, EXPORTED);
+        listener.validateNotificationQueue(e5, UNKNOWN, PENDING, QUEUED, RUNNING, EXPORTED, RELEASED);
         listener.validateNotificationQueue(e6, UNKNOWN, CANCELLED);
-        listener.validateNotificationQueue(e7, UNKNOWN, PENDING, QUEUED, FAILED);
+        listener.validateNotificationQueue(e7, UNKNOWN, PENDING, QUEUED, RUNNING, FAILED);
         listener.validateNotificationQueue(e8, UNKNOWN, PENDING, DEPENDENCY_FAILED);
     }
 
@@ -1191,10 +1192,10 @@ public class SessionStateTest {
         scheduler.runUntilQueueEmpty();
 
         listener.validateIsRefreshComplete(3);
-        listener.validateNotificationQueue(b1, QUEUED, EXPORTED);
-        listener.validateNotificationQueue(b2, QUEUED, EXPORTED);
-        listener.validateNotificationQueue(b3, QUEUED, EXPORTED);
-        listener.validateNotificationQueue(b4, UNKNOWN, PENDING, QUEUED, EXPORTED);
+        listener.validateNotificationQueue(b1, QUEUED, RUNNING, EXPORTED);
+        listener.validateNotificationQueue(b2, QUEUED, RUNNING, EXPORTED);
+        listener.validateNotificationQueue(b3, QUEUED, RUNNING, EXPORTED);
+        listener.validateNotificationQueue(b4, UNKNOWN, PENDING, QUEUED, RUNNING, EXPORTED);
     }
 
     @Test

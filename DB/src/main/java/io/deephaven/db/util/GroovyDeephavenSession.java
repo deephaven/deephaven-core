@@ -121,11 +121,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     private transient SourceClosure sourceOnceClosure;
 
     public GroovyDeephavenSession(final RunScripts runScripts) throws IOException {
-        this(runScripts, false);
+        this(null, runScripts, false);
     }
 
-    public GroovyDeephavenSession(final RunScripts runScripts, boolean isDefaultScriptSession) throws IOException {
-        super(isDefaultScriptSession);
+    public GroovyDeephavenSession(final Listener changeListener,
+            final RunScripts runScripts,
+            boolean isDefaultScriptSession) throws IOException {
+        super(changeListener, isDefaultScriptSession);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
@@ -626,6 +628,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     public void setVariable(String name, Object value) {
+        super.setVariable(name, value);
         groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), value);
     }
 

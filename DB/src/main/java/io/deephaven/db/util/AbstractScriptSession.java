@@ -15,6 +15,8 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -46,7 +48,11 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
     protected final QueryLibrary queryLibrary;
     protected final CompilerTools.Context compilerContext;
 
-    protected AbstractScriptSession(boolean isDefaultScriptSession) {
+    private final Listener changeListener;
+
+    protected AbstractScriptSession(Listener changeListener, boolean isDefaultScriptSession) {
+        this.changeListener = changeListener;
+
         final UUID scriptCacheId = UuidCreator.getRandomBased();
         classCacheDirectory = new File(CLASS_CACHE_LOCATION, UuidCreator.toString(scriptCacheId));
         createOrClearDirectory(classCacheDirectory);
@@ -78,7 +84,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
     }
 
     @Override
-    public final Changes evaluateScript(final String script, final @Nullable String scriptName) {
+    public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
         final Map<String, Object> existingScope = new HashMap<>(getVariables());
 
         // store pointers to exist query scope static variables
@@ -106,39 +112,75 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
 
         // produce a diff
         final Changes diff = new Changes();
-        final Map<String, ExportedObjectType> types = new HashMap<>();
         for (final Map.Entry<String, Object> entry : newScope.entrySet()) {
-            final Object value = entry.getValue();
-            final ExportedObjectType type = ExportedObjectType.fromObject(value);
-            if (!type.isDisplayableInSwing()) {
-                continue;
-            }
-            types.put(entry.getKey(), type);
-            final Object existingObject = existingScope.get(entry.getKey());
-            // if the name still has a binding but the type changed, it is a removed+created
-            if (ExportedObjectType.fromObject(existingObject) == type) {
-                if (unwrapObject(value) != unwrapObject(existingObject)) {
-                    diff.updated.put(entry.getKey(), type);
-                }
-            } else {
-                diff.created.put(entry.getKey(), type);
-            }
+            final String name = entry.getKey();
+            final Object existingValue = existingScope.get(name);
+            final Object newValue = entry.getValue();
+            applyVariableChangeToDiff(diff, name, existingValue, newValue);
         }
 
         for (final Map.Entry<String, Object> entry : existingScope.entrySet()) {
             final String name = entry.getKey();
-            final Object value = entry.getValue();
-
-            final ExportedObjectType type = ExportedObjectType.fromObject(value);
-            if (type.isDisplayableInSwing()) {
-                if (type != types.get(name)) {
-                    // either the name no longer exists, or it has a new type, and we mark it as removed (see above)
-                    diff.removed.put(entry.getKey(), type);
-                }
+            if (newScope.containsKey(name)) {
+                continue; // this is already handled even if old or new values are non-displayable
             }
+            applyVariableChangeToDiff(diff, name, entry.getValue(), null);
+        }
+
+        if (changeListener != null) {
+            changeListener.onScopeChanges(this, diff);
         }
 
         return diff;
+    }
+
+    private void applyVariableChangeToDiff(final Changes diff, String name, Object fromValue, Object toValue) {
+        fromValue = unwrapObject(fromValue);
+        final ExportedObjectType fromType = ExportedObjectType.fromObject(fromValue);
+        if (!fromType.isDisplayable()) {
+            fromValue = null;
+        }
+        toValue = unwrapObject(toValue);
+        final ExportedObjectType toType = ExportedObjectType.fromObject(toValue);
+        if (!toType.isDisplayable()) {
+            toValue = null;
+        }
+        if (fromValue == toValue) {
+            return;
+        }
+
+        if (fromValue == null) {
+            diff.created.put(name, toType);
+        } else if (toValue == null) {
+            diff.removed.put(name, fromType);
+        } else if (fromType != toType) {
+            diff.created.put(name, toType);
+            diff.removed.put(name, fromType);
+        } else {
+            diff.updated.put(name, toType);
+        }
+    }
+
+    @Override
+    public Changes evaluateScript(Path scriptPath) {
+        try {
+            final String script = FileUtils.readTextFile(scriptPath.toFile());
+            return evaluateScript(script, scriptPath.toString());
+        } catch (IOException err) {
+            throw new UncheckedDeephavenException(
+                    String.format("could not read script file %s: ", scriptPath.toString()), err);
+        }
+    }
+
+    @Override
+    public synchronized void setVariable(String name, Object value) {
+        if (changeListener != null) {
+            Changes changes = new Changes();
+            applyVariableChangeToDiff(changes, name, getVariable(name, null), value);
+            if (!changes.isEmpty()) {
+                changeListener.onScopeChanges(this, changes);
+            }
+        }
     }
 
     @Override

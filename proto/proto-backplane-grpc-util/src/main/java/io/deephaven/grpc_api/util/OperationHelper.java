@@ -67,6 +67,10 @@ public class OperationHelper {
                 return Stream.of(op.getFlatten().getSourceId());
             case RUN_CHART_DOWNSAMPLE:
                 return Stream.of(op.getRunChartDownsample().getSourceId());
+            case FETCH_TABLE:
+                return Stream.of(op.getFetchTable().getSourceId());
+            case FETCH_PANDAS_TABLE:
+                return Stream.of(op.getFetchPandasTable().getSourceId());
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

@@ -249,74 +249,62 @@ public class BinaryReader {
     public static native BinaryReader alloc_STATIC(BinaryReader.AllocBytesUnionType bytes);
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes, double start, double length) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes, double start) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(
             JsArray<Double> bytes, double start, double length) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(JsArray<Double> bytes, double start) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(JsArray<Double> bytes) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes, double start, double length) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes, double start) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes, double start, double length) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes, double start) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }

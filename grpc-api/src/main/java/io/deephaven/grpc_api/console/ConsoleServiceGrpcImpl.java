@@ -8,8 +8,7 @@ import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.plot.FigureWidget;
 import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.remote.preview.ColumnPreviewManager;
+import io.deephaven.db.util.DelegatingScriptSession;
 import io.deephaven.db.util.ExportedObjectType;
 import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
@@ -19,7 +18,6 @@ import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
 import io.deephaven.grpc_api.session.TicketRouter;
-import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
@@ -32,8 +30,6 @@ import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.*;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -55,13 +51,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private static final Logger log = LoggerFactory.getLogger(ConsoleServiceGrpcImpl.class);
 
     public static final String WORKER_CONSOLE_TYPE =
-            Configuration.getInstance().getStringWithDefault("io.deephaven.console.type", "python");
+            Configuration.getInstance().getStringWithDefault("deephaven.console.type", "python");
+    public static final boolean REMOTE_CONSOLE_DISABLED =
+            Configuration.getInstance().getBooleanWithDefault("deephaven.console.disable", false);
 
     private final Map<String, Provider<ScriptSession>> scriptTypes;
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final LogBuffer logBuffer;
-    private final LiveTableMonitor liveTableMonitor;
 
     private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
 
@@ -72,13 +69,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             final TicketRouter ticketRouter,
             final SessionService sessionService,
             final LogBuffer logBuffer,
-            final LiveTableMonitor liveTableMonitor,
             final GlobalSessionProvider globalSessionProvider) {
         this.scriptTypes = scriptTypes;
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.logBuffer = logBuffer;
-        this.liveTableMonitor = liveTableMonitor;
         this.globalSessionProvider = globalSessionProvider;
 
         if (!scriptTypes.containsKey(WORKER_CONSOLE_TYPE)) {
@@ -94,11 +89,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void getConsoleTypes(final GetConsoleTypesRequest request,
             final StreamObserver<GetConsoleTypesResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            // TODO (#702): initially show all console types; the first console determines the global console type
-            // thereafter
-            responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
-                    .addConsoleTypes(WORKER_CONSOLE_TYPE)
-                    .build());
+            if (!REMOTE_CONSOLE_DISABLED) {
+                // TODO (#702): initially show all console types; the first console determines the global console type
+                // thereafter
+                responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
+                        .addConsoleTypes(WORKER_CONSOLE_TYPE)
+                        .build());
+            }
             responseObserver.onCompleted();
         });
     }
@@ -107,6 +104,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void startConsole(StartConsoleRequest request, StreamObserver<StartConsoleResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             SessionState session = sessionService.getCurrentSession();
+            if (REMOTE_CONSOLE_DISABLED) {
+                responseObserver
+                        .onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Remote console disabled"));
+                return;
+            }
+
             // TODO auth hook, ensure the user can do this (owner of worker or admin)
             // session.getAuthContext().requirePrivilege(CreateConsole);
 
@@ -123,7 +126,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .submit(() -> {
                         final ScriptSession scriptSession;
                         if (sessionType.equals(WORKER_CONSOLE_TYPE)) {
-                            scriptSession = globalSessionProvider.getGlobalSession();
+                            scriptSession = new DelegatingScriptSession(globalSessionProvider.getGlobalSession());
                         } else {
                             scriptSession = new NoLanguageDeephavenSession(sessionType);
                             log.error().append("Session type '" + sessionType + "' is disabled." +
@@ -145,6 +148,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     @Override
     public void subscribeToLogs(LogSubscriptionRequest request, StreamObserver<LogSubscriptionData> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            if (REMOTE_CONSOLE_DISABLED) {
+                responseObserver
+                        .onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Remote console disabled"));
+                return;
+            }
             SessionState session = sessionService.getCurrentSession();
             // if that didn't fail, we at least are authenticated, but possibly not authorized
             // TODO auth hook, ensure the user can do this (owner of worker or admin). same rights as creating a console
@@ -187,7 +195,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     private static VariableDefinition makeVariableDefinition(Map.Entry<String, ExportedObjectType> entry) {
-        return VariableDefinition.newBuilder().setName(entry.getKey()).setType(entry.getValue().name()).build();
+        return VariableDefinition.newBuilder().setTitle(entry.getKey()).setType(entry.getValue().name())
+                .setId(ScopeTicketResolver.ticketForName(entry.getKey())).build();
     }
 
     @Override
@@ -225,47 +234,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
                 responseObserver.onCompleted();
             });
-        });
-    }
-
-    // TODO will be moved to a more general place, serve as a general "Fetch from scope" and this will be deprecated
-    @Override
-    public void fetchTable(FetchTableRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-
-            SessionState.ExportObject<ScriptSession> exportedConsole =
-                    ticketRouter.resolve(session, request.getConsoleId());
-
-            session.newExport(request.getTableId())
-                    .require(exportedConsole)
-                    .onError(responseObserver)
-                    .submit(() -> liveTableMonitor.exclusiveLock().computeLocked(() -> {
-                        ScriptSession scriptSession = exportedConsole.get();
-                        String tableName = request.getTableName();
-                        if (!scriptSession.hasVariableName(tableName)) {
-                            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                                    "No value exists with name " + tableName);
-                        }
-
-                        // Explicit typecheck to catch any wrong-type-ness right away
-                        Object result = scriptSession.unwrapObject(scriptSession.getVariable(tableName));
-                        if (!(result instanceof Table)) {
-                            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                    "Value bound to name " + tableName + " is not a Table");
-                        }
-
-                        // Apply preview columns TODO core#107 move to table service
-                        Table table = ColumnPreviewManager.applyPreview((Table) result);
-
-                        safelyExecute(() -> {
-                            final TableReference resultRef =
-                                    TableReference.newBuilder().setTicket(request.getTableId()).build();
-                            responseObserver.onNext(TableServiceGrpcImpl.buildTableCreationResponse(resultRef, table));
-                            responseObserver.onCompleted();
-                        });
-                        return table;
-                    }));
         });
     }
 
@@ -394,25 +362,17 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-
-            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
+            final SessionState.ExportObject<Object> figure = ticketRouter.resolve(session, request.getSourceId());
 
             session.nonExport()
-                    .require(exportedConsole)
+                    .require(figure)
                     .onError(responseObserver)
                     .submit(() -> {
-                        ScriptSession scriptSession = exportedConsole.get();
-
-                        String figureName = request.getFigureName();
-                        if (!scriptSession.hasVariableName(figureName)) {
-                            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                                    "No value exists with name " + figureName);
-                        }
-
-                        Object result = scriptSession.unwrapObject(scriptSession.getVariable(figureName));
+                        Object result = figure.get();
                         if (!(result instanceof FigureWidget)) {
-                            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                    "Value bound to name " + figureName + " is not a FigureWidget");
+                            final String name = ticketRouter.getLogNameFor(request.getSourceId());
+                            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                                    "Value bound to ticket " + name + " is not a FigureWidget");
                         }
                         FigureWidget widget = (FigureWidget) result;
 
@@ -456,7 +416,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         }
 
         private void tryClose() {
-            if (session.removeOnCloseCallback(this) != null) {
+            if (session.removeOnCloseCallback(this)) {
                 close();
             }
         }

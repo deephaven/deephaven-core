@@ -8,6 +8,7 @@ import dagger.multibindings.IntoSet;
 import io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.grpc_api.table.ops.DropColumnsGrpcImpl;
 import io.deephaven.grpc_api.table.ops.EmptyTableGrpcImpl;
+import io.deephaven.grpc_api.table.ops.FetchTableGrpcImpl;
 import io.deephaven.grpc_api.table.ops.FilterTableGrpcImpl;
 import io.deephaven.grpc_api.table.ops.FlattenTableGrpcImpl;
 import io.deephaven.grpc_api.table.ops.GrpcTableOperation;
@@ -172,4 +173,9 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE)
     GrpcTableOperation<?> bindOperationRunChartDownsample(RunChartDownsampleGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.FETCH_TABLE)
+    GrpcTableOperation<?> bindFetchTable(FetchTableGrpcImpl op);
 }

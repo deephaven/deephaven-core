@@ -14,8 +14,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ch
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
+import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
-import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
@@ -23,10 +23,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.deephaven.web.shared.ide.CommandResult;
 import io.deephaven.web.shared.ide.ExecutionHandle;
-import io.deephaven.web.shared.ide.VariableChanges;
-import io.deephaven.web.shared.ide.VariableDefinition;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
@@ -96,27 +93,23 @@ public class IdeSession extends HasEventHandling {
         };
     }
 
-    public Promise<JsTable> getTable(String name) {
-        final Promise<JsTable> table = connection.getTable(name, result);
+    public Promise<JsTable> getTable(String id) {
+        JsVariableDefinition varDef = new JsVariableDefinition(JsVariableChanges.TABLE, "", id, "");
+        final Promise<JsTable> table = connection.getTable(varDef);
         final CustomEventInit event = CustomEventInit.create();
         event.setDetail(table);
         fireEvent(EVENT_TABLE_OPENED, event);
         return table;
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    @JsIgnore
-    public Promise<JsTreeTable> getTreeTable(String name) {
-        return connection.getTreeTable(name, result);
-    }
-
-    public Promise<JsFigure> getFigure(String name) {
-        return connection.getFigure(name, result);
+    public Promise<JsFigure> getFigure(String id) {
+        JsVariableDefinition varDef = new JsVariableDefinition(JsVariableChanges.FIGURE, "", id, "");
+        return connection.getFigure(varDef);
     }
 
     public Promise<Object> getObject(Object definitionObject) {
         JsVariableDefinition definition = JsVariableDefinition.from(definitionObject);
-        return connection.getObject(definition, result);
+        return connection.getObject(definition);
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
@@ -149,13 +142,17 @@ public class IdeSession extends HasEventHandling {
                 .then(ignore -> Promise.resolve((Void) null));
     }
 
+    public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
+        return connection.subscribeToFieldUpdates(callback);
+    }
+
     public void close() {
         pendingAutocompleteCalls.clear();// let the timer clean up the rest for now
         closer.run();
     }
 
     public CancellablePromise<JsCommandResult> runCode(String code) {
-        LazyPromise<CommandResult> promise = new LazyPromise<>();
+        LazyPromise<JsCommandResult> promise = new LazyPromise<>();
         ExecuteCommandRequest request = new ExecuteCommandRequest();
         request.setConsoleId(this.result);
         request.setCode(code);
@@ -163,14 +160,11 @@ public class IdeSession extends HasEventHandling {
             connection.consoleServiceClient().executeCommand(request, connection.metadata(), c::apply);
         });
         runCodePromise.then(response -> {
-            CommandResult commandResult = new CommandResult();
-            commandResult.setError(response.getErrorMessage());
-            VariableChanges changes = new VariableChanges();
-            changes.created = copyVariables(response.getCreatedList());
-            changes.updated = copyVariables(response.getUpdatedList());
-            changes.removed = copyVariables(response.getRemovedList());
-            commandResult.setChanges(changes);
-            promise.succeed(commandResult);
+            JsVariableChanges changes = new JsVariableChanges(
+                    copyVariables(response.getCreatedList()),
+                    copyVariables(response.getUpdatedList()),
+                    copyVariables(response.getRemovedList()));
+            promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
             return null;
         }, err -> {
             promise.fail(err);
@@ -178,7 +172,6 @@ public class IdeSession extends HasEventHandling {
         });
 
         CancellablePromise<JsCommandResult> result = promise.asPromise(
-                res -> new JsCommandResult(res),
                 () -> {
                     // cancelled.add(handle);
                     // CancelCommandRequest cancelRequest = new CancelCommandRequest();
@@ -195,11 +188,14 @@ public class IdeSession extends HasEventHandling {
         return result;
     }
 
-    private VariableDefinition[] copyVariables(
+    private JsVariableDefinition[] copyVariables(
             JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
-        VariableDefinition[] array = new VariableDefinition[0];
-        // noinspection ConstantConditions
-        list.forEach((item, p1, p2) -> array[array.length] = new VariableDefinition(item.getName(), item.getType()));
+        JsVariableDefinition[] array = new JsVariableDefinition[0];
+        list.forEach((item, p1, p2) -> {
+            // noinspection ConstantConditions
+            return array[array.length] =
+                    new JsVariableDefinition(item.getType(), item.getTitle(), item.getId().getTicket_asB64(), "");
+        });
         return array;
     }
 

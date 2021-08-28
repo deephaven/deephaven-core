@@ -50,6 +50,9 @@ public interface StateMap {
     @JsProperty(name = "RELEASED")
     double getRELEASED();
 
+    @JsProperty(name = "RUNNING")
+    double getRUNNING();
+
     @JsProperty(name = "UNKNOWN")
     double getUNKNOWN();
 
@@ -85,6 +88,9 @@ public interface StateMap {
 
     @JsProperty(name = "RELEASED")
     void setRELEASED(double RELEASED);
+
+    @JsProperty(name = "RUNNING")
+    void setRUNNING(double RUNNING);
 
     @JsProperty(name = "UNKNOWN")
     void setUNKNOWN(double UNKNOWN);

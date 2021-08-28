@@ -6,10 +6,10 @@ dependencies {
   api project(':qst')
   api project(':proto:proto-backplane-grpc-util')
 
-  compileOnly 'javax.inject:javax.inject:1'
-
   annotationProcessor 'org.immutables:value:2.8.1'
-  compileOnly 'org.immutables:value-annotations:2.8.1'
+  compileOnly project(':util-immutables')
+
+  compileOnly 'javax.inject:javax.inject:1'
 
   testImplementation(platform('org.junit:junit-bom:5.7.2'))
 
