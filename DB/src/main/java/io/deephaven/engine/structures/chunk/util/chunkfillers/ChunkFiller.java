@@ -7,7 +7,7 @@ import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 
 public interface ChunkFiller {
     static ChunkFiller fromChunkType(final ChunkType chunkType) {

@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.structures.chunk.Attributes.Any;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;

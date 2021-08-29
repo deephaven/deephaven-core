@@ -21,7 +21,7 @@ import io.deephaven.engine.v2.by.SortedFirstBy;
 import io.deephaven.engine.v2.by.SortedLastBy;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.PrevColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;

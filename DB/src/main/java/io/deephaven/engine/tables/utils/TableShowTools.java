@@ -6,9 +6,10 @@ package io.deephaven.engine.tables.utils;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;

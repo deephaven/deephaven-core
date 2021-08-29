@@ -14,7 +14,7 @@ import io.deephaven.engine.structures.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.engine.v2.utils.cast.ToDoubleCast;
 import com.tdunning.math.stats.TDigest;
 import org.jetbrains.annotations.NotNull;

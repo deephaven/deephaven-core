@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

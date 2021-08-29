@@ -6,9 +6,9 @@ import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.structures.chunk.page.Page;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

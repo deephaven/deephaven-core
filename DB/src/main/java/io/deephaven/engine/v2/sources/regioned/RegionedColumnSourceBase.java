@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sources.AbstractDeferredGroupingColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

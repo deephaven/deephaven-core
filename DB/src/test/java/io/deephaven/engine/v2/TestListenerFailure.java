@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.FormulaEvaluationException;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import junit.framework.TestCase;
 
 import java.util.List;

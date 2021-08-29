@@ -9,9 +9,9 @@ import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
 

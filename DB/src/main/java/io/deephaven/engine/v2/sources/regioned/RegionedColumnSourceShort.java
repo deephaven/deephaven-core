@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.structures.rowset.ReadOnlyIndex.NULL_KEY;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**

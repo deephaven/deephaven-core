@@ -6,13 +6,14 @@ package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;

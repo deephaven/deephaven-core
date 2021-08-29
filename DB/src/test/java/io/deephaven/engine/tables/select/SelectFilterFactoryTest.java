@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.select.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;

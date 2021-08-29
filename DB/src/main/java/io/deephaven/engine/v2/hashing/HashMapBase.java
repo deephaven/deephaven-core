@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.hashing;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 import gnu.trove.TLongCollection;
 import gnu.trove.function.TLongFunction;
 import gnu.trove.impl.PrimeFinder;

@@ -3,8 +3,8 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 /**

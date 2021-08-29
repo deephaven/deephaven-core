@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.LongSparseArraySource;
-import io.deephaven.engine.v2.utils.ContiguousRedirectionIndexImpl;
+import io.deephaven.engine.structures.rowredirection.ContiguousRedirectionIndexImpl;
 import io.deephaven.engine.v2.utils.LongColumnSourceRedirectionIndex;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
-import io.deephaven.engine.v2.utils.RedirectionIndexLockFreeImpl;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndexLockFreeImpl;
 
 /**
  * Makes a redirection Index based on the type provided by the join control.

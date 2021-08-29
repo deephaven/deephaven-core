@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
@@ -18,8 +20,8 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * {@link io.deephaven.engine.v2.SourceTable source tables} can be thought of a tree of partitions with
  * {@link io.deephaven.engine.v2.locations.TableLocation table locations} at the leaf nodes. When building the
- * {@link io.deephaven.engine.v2.utils.Index Index} for such a {@link io.deephaven.engine.tables.Table table}, we
- * statically partition the available element address space from [0, {@value Long#MAX_VALUE} <i>(2^63-1)</i>].
+ * {@link Index Index} for such a {@link io.deephaven.engine.tables.Table table}, we statically partition the available
+ * element address space from [0, {@value Long#MAX_VALUE} <i>(2^63-1)</i>].
  *
  * <p>
  * We constrain the size at these leaf nodes in order to support a partitioning of the element address space into region
@@ -49,7 +51,7 @@ public interface RegionedColumnSource<DATA_TYPE>
      * Address bits allocated to the sub-region element index.
      * <p>
      * Note that we do not use the sign bit, as negative index keys are not permitted (or used to signify the
-     * {@link io.deephaven.engine.v2.utils.ReadOnlyIndex#NULL_KEY null key}).
+     * {@link ReadOnlyIndex#NULL_KEY null key}).
      */
     int SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS = Long.SIZE - 1 - REGION_INDEX_ADDRESS_BITS;
 

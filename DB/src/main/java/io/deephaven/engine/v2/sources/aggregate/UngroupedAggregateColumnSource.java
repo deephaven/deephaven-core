@@ -10,12 +10,12 @@ import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.util.LongChunkAppender;
 import io.deephaven.engine.structures.chunk.util.LongChunkIterator;
-import io.deephaven.engine.v2.utils.CurrentOnlyIndex;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowset.CurrentOnlyIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.utils.Index.NULL_KEY;
+import static io.deephaven.engine.structures.rowset.Index.NULL_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 /**

@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;

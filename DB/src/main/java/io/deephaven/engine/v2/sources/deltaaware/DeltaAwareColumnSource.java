@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.v2.sources.deltaaware;
 
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;

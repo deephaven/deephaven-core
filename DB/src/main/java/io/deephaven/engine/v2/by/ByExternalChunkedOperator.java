@@ -1,6 +1,9 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.*;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;

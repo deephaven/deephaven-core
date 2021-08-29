@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 
 /**

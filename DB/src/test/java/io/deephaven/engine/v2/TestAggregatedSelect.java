@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.libs.primitives.DoubleNumericPrimitives;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.tables.utils.ParquetTools;

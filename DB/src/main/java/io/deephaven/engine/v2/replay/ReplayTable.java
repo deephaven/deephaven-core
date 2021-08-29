@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.util.Map;
 

@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.SortedIndex;
 import junit.framework.TestCase;
 
 import java.util.*;

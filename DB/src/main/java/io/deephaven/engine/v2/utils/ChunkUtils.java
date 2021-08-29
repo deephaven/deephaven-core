@@ -7,6 +7,7 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.SizeException;
 import io.deephaven.engine.structures.chunk.ChunkSource;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.*;

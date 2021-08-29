@@ -8,7 +8,7 @@ import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.v2.locations.GroupingProvider;
 import io.deephaven.engine.structures.chunk.Attributes;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;

@@ -1,5 +1,9 @@
 package io.deephaven.engine.v2.join;
 
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.*;
@@ -15,9 +19,9 @@ import io.deephaven.engine.structures.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.ssa.ChunkSsaStamp;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
 import io.deephaven.engine.v2.ssa.SsaSsaStamp;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.compact.CompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
+import io.deephaven.util.SizedSafeCloseable;
 
 import java.util.Arrays;
 import java.util.Collections;

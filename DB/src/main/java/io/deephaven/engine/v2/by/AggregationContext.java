@@ -11,7 +11,7 @@ import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.structures.chunk.SharedContext;
 import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.UpdateSizeCalculator;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 

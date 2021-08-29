@@ -5,7 +5,7 @@ import io.deephaven.engine.util.tuples.EmptyTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

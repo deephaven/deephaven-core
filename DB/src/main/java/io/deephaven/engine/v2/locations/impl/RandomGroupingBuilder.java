@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;

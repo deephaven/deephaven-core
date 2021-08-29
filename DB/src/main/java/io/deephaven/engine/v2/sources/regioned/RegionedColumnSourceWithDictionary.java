@@ -11,10 +11,10 @@ import io.deephaven.engine.v2.sources.Releasable;
 import io.deephaven.engine.v2.sources.RowIdSource;
 import io.deephaven.engine.structures.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.structures.rowset.ReadOnlyIndex.NULL_KEY;
 
 /**
  * {@link RegionedColumnSourceObject} with support for dictionary access via {@link SymbolTableSource} methods. Note

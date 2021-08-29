@@ -6,10 +6,10 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
-import io.deephaven.engine.v2.utils.WrappedIndexRedirectionIndexImpl;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
+import io.deephaven.engine.structures.rowredirection.WrappedIndexRedirectionIndexImpl;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.LinkedHashMap;

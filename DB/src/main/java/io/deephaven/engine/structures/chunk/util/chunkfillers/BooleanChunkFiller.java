@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableBooleanChunk;
 import io.deephaven.engine.structures.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public final class BooleanChunkFiller implements ChunkFiller {

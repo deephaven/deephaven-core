@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.config.InputTableStatusListener;

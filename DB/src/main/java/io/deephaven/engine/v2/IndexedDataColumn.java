@@ -10,7 +10,7 @@ import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.iterators.*;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

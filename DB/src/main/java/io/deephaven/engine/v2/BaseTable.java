@@ -6,6 +6,9 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;

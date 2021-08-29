@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.annotations.TestUseOnly;
 
 public class ComparableRangeFilter extends AbstractRangeFilter {

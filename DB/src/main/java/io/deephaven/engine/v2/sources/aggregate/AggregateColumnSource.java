@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.UngroupableColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
 import io.deephaven.engine.structures.chunk.util.SimpleTypeMap;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.BiFunction;

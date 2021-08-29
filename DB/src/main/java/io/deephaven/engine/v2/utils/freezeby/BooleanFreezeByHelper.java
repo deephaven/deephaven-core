@@ -10,7 +10,7 @@ package io.deephaven.engine.v2.utils.freezeby;
 import io.deephaven.engine.v2.sources.BooleanArraySource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 
 class BooleanFreezeByHelper implements FreezeByOperator.FreezeByHelper {
     private final BooleanArraySource resultSource;

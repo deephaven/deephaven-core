@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 

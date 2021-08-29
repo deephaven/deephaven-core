@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 
 import java.util.*;
 

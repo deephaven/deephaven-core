@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;

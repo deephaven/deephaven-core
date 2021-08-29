@@ -32,7 +32,7 @@ import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

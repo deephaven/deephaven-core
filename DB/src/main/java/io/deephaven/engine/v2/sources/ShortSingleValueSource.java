@@ -12,7 +12,7 @@ import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.ShortChunk;
 import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.type.TypeUtils.unbox;

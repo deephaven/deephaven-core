@@ -14,7 +14,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.table.sort.SortDirective;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;

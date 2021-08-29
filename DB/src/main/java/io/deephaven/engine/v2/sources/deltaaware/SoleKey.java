@@ -3,10 +3,10 @@ package io.deephaven.engine.v2.sources.deltaaware;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.LongAbortableConsumer;
-import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.iterationhelpers.LongAbortableConsumer;
+import io.deephaven.engine.structures.iterationhelpers.LongRangeAbortableConsumer;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 
 class SoleKey implements OrderedKeys {
     private long key;

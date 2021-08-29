@@ -5,6 +5,11 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowredirection.ContiguousRedirectionIndexImpl;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndexLockFreeImpl;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication

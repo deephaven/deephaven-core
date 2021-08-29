@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.TimeProvider;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 

@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

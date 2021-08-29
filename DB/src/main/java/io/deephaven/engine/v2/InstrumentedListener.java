@@ -5,8 +5,8 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class InstrumentedListener extends InstrumentedListenerBase implements Listener {

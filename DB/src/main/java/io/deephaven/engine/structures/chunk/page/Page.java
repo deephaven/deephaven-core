@@ -5,8 +5,8 @@ import io.deephaven.engine.structures.chunk.Attributes.Any;
 import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.structures.chunk.DefaultChunkSource;
 import io.deephaven.engine.structures.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -140,7 +140,7 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
      * Assuming {@code searchIterator} is position at its first index key on this page, consume all keys on this page.
      *
      * @param searchIterator The iterator to advance
-     * @return The result of {@link io.deephaven.engine.v2.utils.ReadOnlyIndex.SearchIterator#advance(long)}
+     * @return The result of {@link ReadOnlyIndex.SearchIterator#advance(long)}
      */
     @FinalDefault
     default boolean advanceToNextPage(@NotNull final ReadOnlyIndex.SearchIterator searchIterator) {

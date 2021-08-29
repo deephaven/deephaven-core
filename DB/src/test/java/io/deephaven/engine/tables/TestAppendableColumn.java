@@ -6,7 +6,7 @@ package io.deephaven.engine.tables;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import junit.framework.TestCase;
 

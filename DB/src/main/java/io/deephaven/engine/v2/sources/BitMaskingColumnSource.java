@@ -4,7 +4,7 @@ import io.deephaven.engine.structures.chunk.SharedContext;
 import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.structures.chunk.util.chunkfillers.ChunkFiller;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 import io.deephaven.engine.v2.CrossJoinShiftState;

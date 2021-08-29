@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.tuples;
 
 import io.deephaven.engine.structures.chunk.ChunkSource;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import org.jetbrains.annotations.NotNull;
@@ -8,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * Factory to produce immutable tuples from a long key in {@link io.deephaven.engine.v2.utils.Index} space.
+ * Factory to produce immutable tuples from a long key in {@link Index} space.
  */
 public interface TupleSource<TUPLE_TYPE> extends TupleExporter<TUPLE_TYPE>, ChunkSource.WithPrev<Attributes.Values> {
 

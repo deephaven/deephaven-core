@@ -8,11 +8,10 @@ import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.IndexBuilder;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 

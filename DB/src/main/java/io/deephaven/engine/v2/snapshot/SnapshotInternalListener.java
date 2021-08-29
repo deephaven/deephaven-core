@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.LazySnapshotTable;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.SingleValueColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.util.Map;
 

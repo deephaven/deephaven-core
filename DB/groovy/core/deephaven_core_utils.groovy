@@ -140,12 +140,6 @@ for( String n : calendarNames() ) {
 // import static io.deephaven.engine.plot.Font.FontStyle
 //////////////////// Colors ////////////////////////
 
-import io.deephaven.engine.plot.PlotStyle
-import io.deephaven.engine.plot.axistransformations.AxisTransforms
-import io.deephaven.engine.plot.colors.ColorMaps
-
-import static io.deephaven.engine.plot.PlottingConvenience.*
-
 for( String c : io.deephaven.gui.color.Color.colorNames() ) {
     publishVariable( "COLOR_" + c, io.deephaven.gui.color.Color.valueOf(c) )
 }
@@ -163,13 +157,13 @@ colorTable = {
 //////////////////// Count Metrics //////////////////////////
 
 resetMetricsCounts = {
-    io.deephaven.engine.v2.utils.metrics.MetricsManager.resetCounters()
+    io.deephaven.engine.structures.metrics.MetricsManager.resetCounters()
 }
 
 getMetricsCounts = {
-    io.deephaven.engine.v2.utils.metrics.MetricsManager.getCounters()
+    io.deephaven.engine.structures.metrics.MetricsManager.getCounters()
 }
 
 printMetricsCounts = {
-    println(io.deephaven.engine.v2.utils.metrics.MetricsManager.getCounters())
+    println(io.deephaven.engine.structures.metrics.MetricsManager.getCounters())
 }

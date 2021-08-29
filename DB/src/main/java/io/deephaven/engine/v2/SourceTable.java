@@ -17,7 +17,7 @@ import io.deephaven.engine.tables.live.LiveTableRegistrar;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.internal.log.LoggerFactory;
 import org.apache.commons.lang3.mutable.Mutable;

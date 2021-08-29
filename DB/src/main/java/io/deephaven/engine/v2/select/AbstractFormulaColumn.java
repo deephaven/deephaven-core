@@ -17,7 +17,7 @@ import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.v2.dbarrays.*;
 import io.deephaven.engine.v2.select.formula.*;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;

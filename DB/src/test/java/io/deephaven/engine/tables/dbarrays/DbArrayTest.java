@@ -7,7 +7,7 @@ package io.deephaven.engine.tables.dbarrays;
 import io.deephaven.engine.v2.dbarrays.DbArrayColumnWrapper;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import junit.framework.TestCase;

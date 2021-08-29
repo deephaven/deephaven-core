@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 

@@ -11,9 +11,9 @@ import io.deephaven.engine.structures.chunk.ResettableWritableChunk;
 import io.deephaven.engine.structures.chunk.SharedContext;
 import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ShiftedOrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.ShiftedOrderedKeys;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

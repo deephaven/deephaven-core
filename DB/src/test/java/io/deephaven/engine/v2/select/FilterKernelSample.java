@@ -11,7 +11,7 @@ import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.DoubleChunk;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.ShortChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.*;
 import static io.deephaven.engine.structures.chunk.Attributes.*;

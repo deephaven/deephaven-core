@@ -15,7 +15,7 @@ import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

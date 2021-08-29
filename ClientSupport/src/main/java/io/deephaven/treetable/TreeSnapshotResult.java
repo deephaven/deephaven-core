@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

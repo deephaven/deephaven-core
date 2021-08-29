@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;

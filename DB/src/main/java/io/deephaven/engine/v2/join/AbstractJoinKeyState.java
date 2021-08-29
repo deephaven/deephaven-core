@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.join;
 
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 
 public abstract class AbstractJoinKeyState implements JoinKeyState {
     private int slot1;

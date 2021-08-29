@@ -19,7 +19,7 @@ import io.deephaven.engine.v2.HierarchicalTableInfo;
 import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.v2.TableMap;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.lang.reflect.Array;
 import java.util.*;

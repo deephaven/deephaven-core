@@ -9,7 +9,7 @@ import io.deephaven.engine.structures.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.structures.rowset.ReadOnlyIndex.NULL_KEY;
 
 abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
         extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>

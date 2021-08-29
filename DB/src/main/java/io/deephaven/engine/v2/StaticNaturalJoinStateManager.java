@@ -1,5 +1,9 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.structures.rowredirection.ContiguousRedirectionIndexImpl;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndexLockFreeImpl;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.LongSparseArraySource;

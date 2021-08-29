@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.structures.chunk;
 
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.structures.chunk.Attributes.Any;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 

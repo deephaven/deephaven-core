@@ -22,7 +22,7 @@ import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.MatchFilter.MatchType;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;

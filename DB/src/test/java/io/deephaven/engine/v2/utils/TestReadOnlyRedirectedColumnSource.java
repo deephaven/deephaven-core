@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;

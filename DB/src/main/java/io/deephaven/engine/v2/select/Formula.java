@@ -6,8 +6,8 @@ import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.Context;
 import io.deephaven.engine.structures.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;

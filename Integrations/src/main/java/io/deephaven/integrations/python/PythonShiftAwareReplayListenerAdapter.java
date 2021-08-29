@@ -7,8 +7,8 @@ package io.deephaven.integrations.python;
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedShiftAwareListenerAdapter;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 

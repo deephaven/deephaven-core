@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 /**
  * Listener for table changes.

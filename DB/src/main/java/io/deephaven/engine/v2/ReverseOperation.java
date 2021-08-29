@@ -9,9 +9,9 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.ReversedColumnSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.IndexBuilder;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

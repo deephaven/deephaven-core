@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.type.TypeUtils;
 

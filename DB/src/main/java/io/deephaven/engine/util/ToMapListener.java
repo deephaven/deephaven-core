@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedShiftAwareListenerAdapter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.TerminalNotification;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import org.jetbrains.annotations.NotNull;

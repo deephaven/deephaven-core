@@ -1,5 +1,6 @@
 package io.deephaven.engine.structures.chunk;
 
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,8 +19,8 @@ import java.util.function.Supplier;
  *
  * <p>
  * For example, {@link io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource}s that share the same
- * {@link io.deephaven.engine.v2.utils.RedirectionIndex} cache a chunk of redirections for the most recent chunk of
- * ordered keys they have been handed.
+ * {@link RedirectionIndex} cache a chunk of redirections for the most recent chunk of ordered keys they have been
+ * handed.
  *
  * <p>
  * It's important that "nested" usage follows the convention of creating a new instance and passing that instance to

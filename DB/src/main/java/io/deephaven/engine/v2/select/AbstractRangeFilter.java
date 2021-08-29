@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.SortedColumnsAttribute;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.math.BigDecimal;
 import java.util.Collections;

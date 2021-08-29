@@ -4,8 +4,8 @@ import io.deephaven.base.Procedure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
 import java.io.IOException;

@@ -5,11 +5,10 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.TimeProvider;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
-import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
 import java.io.PrintWriter;
@@ -19,7 +18,6 @@ import java.util.Random;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.tables.utils.TableTools.intCol;
 import static io.deephaven.engine.v2.TstUtils.*;

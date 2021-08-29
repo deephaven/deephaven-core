@@ -11,9 +11,9 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.KeyRangeGroupingProvider;
-import io.deephaven.engine.v2.utils.CurrentOnlyIndex;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.CurrentOnlyIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.SoftReference;

@@ -34,7 +34,7 @@ def _defineSymbols():
     global _java_type_MetricsManager
     if _java_type_MetricsManager is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_MetricsManager = jpy.get_type("io.deephaven.engine.v2.utils.metrics.MetricsManager")
+        _java_type_MetricsManager = jpy.get_type("io.deephaven.engine.structures.metrics.MetricsManager")
 
     global _java_type_PerformanceQueries
     if _java_type_PerformanceQueries is None:

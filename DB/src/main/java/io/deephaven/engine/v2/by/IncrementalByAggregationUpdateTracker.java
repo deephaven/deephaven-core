@@ -9,9 +9,9 @@ import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 import org.jetbrains.annotations.NotNull;
 
 /**

@@ -8,6 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.tables.lang.DBLanguageParser.QueryLanguageParseException;

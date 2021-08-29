@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.StandaloneTableLocationKey;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

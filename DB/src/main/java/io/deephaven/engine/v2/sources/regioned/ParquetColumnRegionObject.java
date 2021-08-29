@@ -6,7 +6,7 @@ import io.deephaven.engine.structures.chunk.Attributes.Any;
 import io.deephaven.engine.structures.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.structures.chunk.page.ChunkPage;
 import io.deephaven.engine.structures.chunk.page.Page;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;

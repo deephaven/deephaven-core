@@ -1,8 +1,6 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -10,8 +8,8 @@ import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.TestUseOnly;

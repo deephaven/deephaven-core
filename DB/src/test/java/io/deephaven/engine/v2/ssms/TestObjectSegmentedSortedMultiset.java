@@ -16,7 +16,7 @@ import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssa.SsaTestHelpers;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.compact.ObjectCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;

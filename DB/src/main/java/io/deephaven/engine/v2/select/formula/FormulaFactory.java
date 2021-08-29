@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.select.formula;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.v2.select.Formula;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.util.Map;
 

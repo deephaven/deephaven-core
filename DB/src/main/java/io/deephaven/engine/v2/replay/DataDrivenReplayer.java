@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.replay;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import gnu.trove.list.array.TLongArrayList;
 
 public class DataDrivenReplayer extends Replayer {

@@ -12,9 +12,9 @@ import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

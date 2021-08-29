@@ -9,8 +9,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 
 class AsOfStampContext implements Context {
     private final ChunkType stampType;

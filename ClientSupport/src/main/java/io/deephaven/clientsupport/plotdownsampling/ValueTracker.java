@@ -6,8 +6,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.Chunk;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;

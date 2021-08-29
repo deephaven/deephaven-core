@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;

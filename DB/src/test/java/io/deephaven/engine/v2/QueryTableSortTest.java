@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.test.types.OutOfBandTest;

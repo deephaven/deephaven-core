@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableCharChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;

@@ -6,8 +6,8 @@ import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 

@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.NotificationStepSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.FunctionalInterfaces;

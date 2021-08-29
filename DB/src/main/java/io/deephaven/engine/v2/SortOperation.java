@@ -6,6 +6,10 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.hashing.HashMapK4V4;

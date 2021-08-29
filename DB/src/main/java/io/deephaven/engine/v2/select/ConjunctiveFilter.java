@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.util.*;
 

@@ -4,7 +4,7 @@ import io.deephaven.dbtypes.DbImage;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
 

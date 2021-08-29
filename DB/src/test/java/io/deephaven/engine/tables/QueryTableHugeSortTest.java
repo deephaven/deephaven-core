@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.After;
 import org.junit.Test;

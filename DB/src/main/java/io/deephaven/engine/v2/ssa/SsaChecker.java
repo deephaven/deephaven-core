@@ -9,7 +9,7 @@ import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 
 public interface SsaChecker {
     default void checkSsa(SegmentedSortedArray ssa, ColumnSource<?> columnSource, OrderedKeys orderedKeys) {

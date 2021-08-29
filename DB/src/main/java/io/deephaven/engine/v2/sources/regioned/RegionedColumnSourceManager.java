@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.v2.ColumnToCodecMappings;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Assert;
@@ -15,7 +15,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.ColumnSourceManager;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 

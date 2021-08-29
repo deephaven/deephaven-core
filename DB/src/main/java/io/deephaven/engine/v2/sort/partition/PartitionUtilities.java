@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sort.partition;
 
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.hash.TLongHashSet;
 

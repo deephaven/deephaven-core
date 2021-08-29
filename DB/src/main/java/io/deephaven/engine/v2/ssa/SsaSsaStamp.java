@@ -6,8 +6,8 @@ import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 
 public interface SsaSsaStamp {
     static SsaSsaStamp make(ChunkType type, boolean reverse) {

@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.util.Map;
 

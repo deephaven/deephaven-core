@@ -18,7 +18,7 @@ import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.engine.structures.chunk.ChunkType;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.internal.log.LoggerFactory;
 import io.grpc.CallOptions;
 import io.grpc.Channel;

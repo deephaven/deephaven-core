@@ -4,9 +4,9 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.structures.rowset.ReadOnlyIndex.NULL_KEY;
 
 /**
  * Regioned column source implementation for columns of {@link DBDateTime}s.

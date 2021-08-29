@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.v2.select.ChunkFilter;
 
 public class ChunkMatchFilterFactory {

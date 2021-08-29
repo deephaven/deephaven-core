@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
 import io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;

@@ -12,7 +12,7 @@ import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.WritableIntChunk;
 import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.structures.chunk.page.Page;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 

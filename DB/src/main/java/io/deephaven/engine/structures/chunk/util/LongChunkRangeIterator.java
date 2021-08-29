@@ -2,9 +2,10 @@ package io.deephaven.engine.structures.chunk.util;
 
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
 import io.deephaven.engine.structures.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
+import io.deephaven.engine.structures.iterationhelpers.LongRangeAbortableConsumer;
+import io.deephaven.engine.structures.iterationhelpers.LongRangeIterator;
 
-public class LongChunkRangeIterator implements io.deephaven.engine.v2.utils.LongRangeIterator {
+public class LongChunkRangeIterator implements LongRangeIterator {
     private final LongChunk<OrderedKeyRanges> ck;
     private final int lastj;
     private int j;

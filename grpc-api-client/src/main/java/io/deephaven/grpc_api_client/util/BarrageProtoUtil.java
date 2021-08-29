@@ -8,8 +8,8 @@ import com.google.common.io.LittleEndianDataInputStream;
 import com.google.common.io.LittleEndianDataOutputStream;
 import com.google.protobuf.CodedInputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.v2.utils.ExternalizableIndexUtils;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.ExternalizableIndexUtils;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import org.jetbrains.annotations.NotNull;
 

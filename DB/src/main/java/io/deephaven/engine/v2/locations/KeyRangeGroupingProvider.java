@@ -1,11 +1,12 @@
 package io.deephaven.engine.v2.locations;
 
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for {@link GroupingProvider}s that operate on metadata derived from a {@link ColumnLocation} for a given
- * {@link io.deephaven.engine.v2.utils.Index} key range.
+ * {@link Index} key range.
  */
 public interface KeyRangeGroupingProvider<DATA_TYPE> extends GroupingProvider<DATA_TYPE> {
 

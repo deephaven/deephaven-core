@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.v2.ShiftAwareListener;
 
 /**

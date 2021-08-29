@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.engine.structures.rowset.Index;
 
 public class ShiftData {
 

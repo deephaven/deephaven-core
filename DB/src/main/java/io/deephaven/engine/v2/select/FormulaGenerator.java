@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.util.List;
 import java.util.Map;

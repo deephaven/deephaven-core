@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
 import io.deephaven.engine.v2.NotificationStepReceiver;
 import io.deephaven.engine.v2.ShiftAwareSwapListener;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.ExportTicketHelper;

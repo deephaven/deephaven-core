@@ -7,6 +7,8 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.IndexBuilder;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;

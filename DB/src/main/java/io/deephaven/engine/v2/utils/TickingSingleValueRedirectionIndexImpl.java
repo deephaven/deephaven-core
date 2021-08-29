@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowredirection.SingleValueRedirectionIndex;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;

@@ -6,7 +6,7 @@ package io.deephaven.engine.tables.dbarrays;
 
 import io.deephaven.engine.v2.dbarrays.DbCharArrayColumnWrapper;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import junit.framework.TestCase;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

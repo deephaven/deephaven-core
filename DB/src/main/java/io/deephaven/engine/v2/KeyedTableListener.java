@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 

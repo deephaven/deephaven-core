@@ -10,7 +10,7 @@ package io.deephaven.engine.v2.utils.freezeby;
 import io.deephaven.engine.v2.sources.FloatArraySource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 
 class FloatFreezeByHelper implements FreezeByOperator.FreezeByHelper {
     private final FloatArraySource resultSource;

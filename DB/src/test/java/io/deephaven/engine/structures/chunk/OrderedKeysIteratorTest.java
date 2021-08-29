@@ -3,8 +3,8 @@ package io.deephaven.engine.structures.chunk;
 
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.junit.Test;
 
 import java.util.Random;

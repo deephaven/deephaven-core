@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;

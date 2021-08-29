@@ -3,14 +3,12 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.select;
 
-import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.DhShortComparisons;
-import io.deephaven.engine.util.DhLongComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.ShortRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;

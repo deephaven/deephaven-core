@@ -5,7 +5,7 @@ import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.IndexShiftDataExpander;
 
 import java.util.Arrays;

@@ -3,6 +3,7 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;

@@ -1,5 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;

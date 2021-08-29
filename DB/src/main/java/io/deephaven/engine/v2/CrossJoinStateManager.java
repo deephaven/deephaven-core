@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 public interface CrossJoinStateManager {
     Index getRightIndexFromLeftIndex(long leftIndex);

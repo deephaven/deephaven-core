@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.ReverseOperation;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.SharedContext;
 import io.deephaven.engine.structures.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.v2.utils.reverse.ReverseKernel;
 import org.jetbrains.annotations.NotNull;
 

@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.dbarrays.DbByteArrayDirect;
 import io.deephaven.engine.tables.dbarrays.DbIntArrayDirect;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
 import org.jetbrains.annotations.NotNull;

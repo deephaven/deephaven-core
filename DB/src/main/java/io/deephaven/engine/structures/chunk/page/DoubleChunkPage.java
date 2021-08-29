@@ -5,7 +5,7 @@ package io.deephaven.engine.structures.chunk.page;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 public class DoubleChunkPage<ATTR extends Attributes.Any> extends DoubleChunk<ATTR> implements ChunkPage<ATTR> {

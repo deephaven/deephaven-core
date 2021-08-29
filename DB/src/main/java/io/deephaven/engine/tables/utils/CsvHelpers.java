@@ -14,7 +14,7 @@ import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.progress.MinProcessStatus;

@@ -8,8 +8,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.Nullable;
 

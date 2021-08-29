@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
@@ -32,7 +32,7 @@ import io.deephaven.engine.v2.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableShortArraySource;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.v2.utils.ShiftData;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.BooleanArray;

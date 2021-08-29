@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;

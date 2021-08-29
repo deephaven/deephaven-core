@@ -4,9 +4,9 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 

@@ -12,8 +12,8 @@ import io.deephaven.engine.structures.chunk.ResettableWritableChunk;
 import io.deephaven.engine.structures.chunk.WritableCharChunk;
 import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.structures.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 

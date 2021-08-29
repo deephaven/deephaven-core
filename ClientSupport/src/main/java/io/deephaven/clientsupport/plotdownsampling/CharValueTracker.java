@@ -5,7 +5,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.Chunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

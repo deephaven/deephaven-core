@@ -1,5 +1,10 @@
 package io.deephaven.engine.tables.libs;
 
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.IndexBuilder;
+import io.deephaven.engine.structures.util.ArrayUtils;
+
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -21,7 +26,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.util.type.TypeUtils.class,
                 io.deephaven.engine.tables.Table.class,
                 io.deephaven.engine.tables.DataColumn.class,
-                io.deephaven.engine.tables.utils.ArrayUtils.class,
+                ArrayUtils.class,
                 io.deephaven.engine.tables.utils.DBDateTime.class,
                 io.deephaven.engine.tables.utils.DBTimeUtils.class,
                 io.deephaven.base.string.cache.CompressedString.class,
@@ -30,9 +35,9 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.engine.tables.utils.DBPeriod.class,
                 io.deephaven.engine.tables.select.Param.class,
                 io.deephaven.engine.v2.sources.ColumnSource.class,
-                io.deephaven.engine.v2.utils.Index.class,
-                io.deephaven.engine.v2.utils.IndexBuilder.class,
-                io.deephaven.engine.v2.utils.Index.SequentialBuilder.class,
+                Index.class,
+                IndexBuilder.class,
+                Index.SequentialBuilder.class,
                 io.deephaven.engine.util.LongSizedDataStructure.class,
                 java.util.concurrent.ConcurrentHashMap.class,
                 io.deephaven.engine.structures.chunk.Attributes.class,
@@ -56,7 +61,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.engine.structures.chunk.WritableObjectChunk.class,
                 io.deephaven.engine.structures.chunk.Context.class,
                 io.deephaven.engine.v2.select.ConditionFilter.FilterKernel.class,
-                io.deephaven.engine.v2.utils.OrderedKeys.class));
+                OrderedKeys.class));
     }
 
     @Override

@@ -8,6 +8,8 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 

@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.DhFloatComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.FloatRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
 

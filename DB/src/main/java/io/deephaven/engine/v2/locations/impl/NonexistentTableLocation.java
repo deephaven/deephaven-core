@@ -4,7 +4,7 @@ import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.TableKey;
 import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.locations.TableLocationKey;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 
 /**

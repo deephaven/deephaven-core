@@ -6,9 +6,9 @@ package io.deephaven.engine.v2.replay;
 
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowset.IndexBuilder;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 
 import java.util.Map;
 

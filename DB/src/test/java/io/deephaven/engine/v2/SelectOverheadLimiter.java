@@ -2,12 +2,13 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.sources.SwitchColumnSource;
 import io.deephaven.engine.v2.sources.sparse.SparseConstants;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.map.hash.TLongIntHashMap;
 import org.apache.commons.lang3.mutable.MutableObject;

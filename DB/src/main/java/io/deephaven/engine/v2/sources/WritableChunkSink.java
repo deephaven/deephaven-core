@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 public interface WritableChunkSink<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {

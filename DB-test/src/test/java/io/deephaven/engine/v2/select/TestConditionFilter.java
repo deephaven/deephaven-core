@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.jpy.PythonTest;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jpy.PyInputMode;

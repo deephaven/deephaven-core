@@ -10,10 +10,10 @@ import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.sized.SizedChunk;
 import io.deephaven.engine.structures.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.SizedSafeCloseable;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.util.SizedSafeCloseable;
 
 import static io.deephaven.engine.structures.chunk.Attributes.*;
 

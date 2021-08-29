@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.LongAbortableConsumer;
+import io.deephaven.engine.structures.iterationhelpers.LongAbortableConsumer;
 
 public abstract class SinkFiller implements WritableChunkSink.FillFromContext, LongAbortableConsumer {
     public static SinkFiller create(final ChunkType chunkType) {

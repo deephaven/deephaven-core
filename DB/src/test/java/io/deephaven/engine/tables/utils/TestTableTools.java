@@ -8,6 +8,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.util.liveness.LivenessScope;

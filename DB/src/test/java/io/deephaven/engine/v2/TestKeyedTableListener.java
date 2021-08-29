@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 

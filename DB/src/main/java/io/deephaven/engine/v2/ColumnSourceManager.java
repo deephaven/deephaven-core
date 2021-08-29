@@ -6,7 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;

@@ -12,8 +12,8 @@ import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 
 import java.util.function.LongToIntFunction;
 

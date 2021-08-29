@@ -9,8 +9,8 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;

@@ -2,6 +2,11 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
+import io.deephaven.engine.structures.rowredirection.StaticSingleValueRedirectionIndexImpl;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
@@ -18,11 +23,11 @@ import io.deephaven.engine.structures.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.ssa.ChunkSsaStamp;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
 import io.deephaven.engine.v2.ssa.SsaSsaStamp;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.compact.CompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.SizedSafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 

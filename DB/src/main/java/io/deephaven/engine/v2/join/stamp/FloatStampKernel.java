@@ -11,7 +11,7 @@ import io.deephaven.engine.structures.chunk.FloatChunk;
 import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 
 public class FloatStampKernel implements StampKernel {

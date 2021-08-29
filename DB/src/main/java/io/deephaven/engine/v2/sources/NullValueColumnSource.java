@@ -13,7 +13,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.v2.utils.ShiftData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

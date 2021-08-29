@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 

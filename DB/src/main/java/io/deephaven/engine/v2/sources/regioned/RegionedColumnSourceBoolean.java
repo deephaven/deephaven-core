@@ -3,12 +3,12 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.structures.rowset.ReadOnlyIndex.NULL_KEY;
 
 /**
  * Regioned column source implementation for columns of Booleans.

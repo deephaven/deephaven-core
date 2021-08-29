@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.structures.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.apache.commons.lang3.mutable.MutableInt;
 

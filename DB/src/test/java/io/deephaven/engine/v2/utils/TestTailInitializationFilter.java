@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
@@ -8,7 +9,6 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
-import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 
 public class TestTailInitializationFilter extends LiveTableTestCase {

@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
 import io.deephaven.engine.tables.dbarrays.DbIntArray;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;

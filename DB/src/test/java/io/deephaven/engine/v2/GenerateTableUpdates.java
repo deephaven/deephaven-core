@@ -11,8 +11,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.ArrayList;

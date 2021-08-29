@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sources.ArrayGenerator;
 import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.structures.chunk.ObjectChunk;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import org.junit.After;
 import org.junit.Before;

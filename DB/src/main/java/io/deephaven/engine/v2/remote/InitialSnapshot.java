@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.remote;
 
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 
 import java.io.Serializable;
 

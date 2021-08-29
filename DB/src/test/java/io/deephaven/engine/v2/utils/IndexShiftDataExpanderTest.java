@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.LogicalClock;

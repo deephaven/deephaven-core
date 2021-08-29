@@ -16,7 +16,7 @@ import io.deephaven.engine.structures.chunk.WritableIntChunk;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.structures.chunk.WritableObjectChunk;
 import io.deephaven.engine.structures.chunk.util.pools.PoolableChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.grpc_api_client.barrage.chunk.array.ArrayExpansionKernel;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
