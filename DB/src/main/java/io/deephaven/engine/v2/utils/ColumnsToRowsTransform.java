@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.BitShiftingColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 

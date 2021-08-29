@@ -46,12 +46,11 @@ import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.v2.TableMap;
 import io.deephaven.engine.v2.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.SingleValueObjectColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.ChunkSource;
+import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 import org.jetbrains.annotations.NotNull;
 

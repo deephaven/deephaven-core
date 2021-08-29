@@ -1,22 +1,22 @@
 package io.deephaven.engine.v2.sources;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import static io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import static io.deephaven.engine.structures.chunk.Attributes.Values;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.CrossJoinStateManager;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkStream;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ResettableWritableChunk;
-import io.deephaven.engine.v2.sources.chunk.ResettableWritableLongChunk;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.ChunkStream;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.ResettableWritableChunk;
+import io.deephaven.engine.structures.chunk.ResettableWritableLongChunk;
+import io.deephaven.engine.structures.chunk.SharedContext;
+import io.deephaven.engine.structures.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.WritableIntChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.apache.commons.lang3.mutable.MutableInt;

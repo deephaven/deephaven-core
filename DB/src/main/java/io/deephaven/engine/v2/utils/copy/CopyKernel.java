@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils.copy;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.structures.chunk.Attributes.*;
 
 public interface CopyKernel {
     static CopyKernel makeCopyKernel(ChunkType chunkType) {

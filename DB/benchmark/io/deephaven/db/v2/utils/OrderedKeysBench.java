@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.openjdk.jmh.annotations.*;

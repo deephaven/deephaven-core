@@ -6,12 +6,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.timsort;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.DhCharComparisons;
 
 import io.deephaven.engine.v2.sort.IntSortKernel;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 /**

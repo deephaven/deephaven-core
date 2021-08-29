@@ -9,9 +9,9 @@ import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ShortArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Keys;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.Any;
+import io.deephaven.engine.structures.chunk.Attributes.Keys;
+import io.deephaven.engine.structures.chunk.*;
 
 public class ShortLongMegaMergeDescendingKernel {
     private ShortLongMegaMergeDescendingKernel() {

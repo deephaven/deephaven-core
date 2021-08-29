@@ -2,11 +2,11 @@ package io.deephaven.engine.v2.sort.radix;
 
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.sort.LongSortKernel;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.Any;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 
 class ByteRadixSortKernel {
     public static LongSortKernel createContext(int size, SortingOrder order, boolean last) {

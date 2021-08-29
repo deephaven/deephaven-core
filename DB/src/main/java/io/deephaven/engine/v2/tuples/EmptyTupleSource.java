@@ -4,7 +4,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.util.tuples.EmptyTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 

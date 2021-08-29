@@ -31,7 +31,7 @@ import io.deephaven.engine.v2.parquet.ParquetInstructions;
 import io.deephaven.engine.v2.parquet.ParquetSchemaReader;
 import io.deephaven.engine.v2.parquet.ParquetTableWriter;
 import io.deephaven.engine.v2.parquet.metadata.ColumnTypeInfo;
-import io.deephaven.engine.v2.sources.chunk.util.SimpleTypeMap;
+import io.deephaven.engine.structures.chunk.util.SimpleTypeMap;
 import io.deephaven.engine.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

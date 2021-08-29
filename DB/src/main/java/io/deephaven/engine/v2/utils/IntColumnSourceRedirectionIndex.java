@@ -3,11 +3,11 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.SharedContext;
+import io.deephaven.engine.structures.chunk.WritableIntChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import org.jetbrains.annotations.NotNull;
 
 public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {

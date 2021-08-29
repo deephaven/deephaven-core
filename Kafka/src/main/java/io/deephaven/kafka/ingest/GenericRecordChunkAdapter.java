@@ -6,7 +6,7 @@ package io.deephaven.kafka.ingest;
 
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;

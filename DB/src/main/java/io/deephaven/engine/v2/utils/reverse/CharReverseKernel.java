@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils.reverse;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.structures.chunk.Attributes.*;
 
 public class CharReverseKernel {
     public static <T extends Any> void reverse(WritableCharChunk<T> chunkToReverse) {

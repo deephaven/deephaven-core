@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 
 public class SsmDistinctContext implements IterativeChunkedAggregationOperator.SingletonContext {

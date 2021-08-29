@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.structures.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;

@@ -2,7 +2,6 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.tuples.SmartKeySource;
 
 import java.util.Arrays;

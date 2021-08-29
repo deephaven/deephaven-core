@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils.cast;
 
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.Any;
 import io.deephaven.util.QueryConstants;
 
 /**

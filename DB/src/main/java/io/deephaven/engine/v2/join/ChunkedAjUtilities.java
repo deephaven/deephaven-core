@@ -3,19 +3,19 @@ package io.deephaven.engine.v2.join;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sort.LongSortKernel;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedChunk;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.sized.SizedChunk;
+import io.deephaven.engine.structures.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.engine.v2.utils.SizedSafeCloseable;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.structures.chunk.Attributes.*;
 
 class ChunkedAjUtilities {
     static void bothIncrementalLeftSsaShift(IndexShiftData shiftData, SegmentedSortedArray leftSsa,

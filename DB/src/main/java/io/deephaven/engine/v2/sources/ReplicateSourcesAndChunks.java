@@ -4,24 +4,22 @@
 
 package io.deephaven.engine.v2.sources;
 
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.util.DhObjectComparisons;
 import io.deephaven.engine.v2.sources.aggregate.CharAggregateColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.page.CharChunkPage;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedCharChunk;
-import io.deephaven.engine.v2.sources.chunk.util.factories.CharChunkFactory;
-import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.CharChunkFiller;
-import io.deephaven.engine.v2.sources.chunk.util.pools.CharChunkPool;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.page.CharChunkPage;
+import io.deephaven.engine.structures.chunk.sized.SizedCharChunk;
+import io.deephaven.engine.structures.chunk.util.factories.CharChunkFactory;
+import io.deephaven.engine.structures.chunk.util.chunkfillers.CharChunkFiller;
+import io.deephaven.engine.structures.chunk.util.pools.CharChunkPool;
 import io.deephaven.engine.v2.sources.chunkcolumnsource.CharChunkColumnSource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableCharArraySource;
 import io.deephaven.engine.v2.sources.sparse.CharOneOrN;
 import org.apache.commons.io.FileUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;

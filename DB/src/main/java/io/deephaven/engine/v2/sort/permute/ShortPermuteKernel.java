@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.permute;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.structures.chunk.Attributes.*;
 
 public class ShortPermuteKernel {
     public static <T extends Any> void permute(ShortChunk<? extends T> inputValues, IntChunk<ChunkPositions> outputPositions, WritableShortChunk<? super T> outputValues) {

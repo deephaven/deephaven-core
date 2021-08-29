@@ -3,8 +3,8 @@ package io.deephaven.clientsupport.plotdownsampling;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.v2.utils.Index;
 import org.jetbrains.annotations.Nullable;
 

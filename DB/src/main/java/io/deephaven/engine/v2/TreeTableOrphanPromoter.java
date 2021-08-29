@@ -7,16 +7,12 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.remote.WrappedDelegatingTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
-import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.*;

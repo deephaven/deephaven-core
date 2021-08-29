@@ -1,7 +1,7 @@
 package io.deephaven.stream;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.WritableChunk;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -14,7 +14,7 @@ public interface StreamConsumer extends StreamFailureConsumer {
      *
      * <p>
      * Ownership of {@code data} passes to the consumer, which must be sure to
-     * {@link io.deephaven.engine.v2.sources.chunk.util.pools.PoolableChunk#close close} each chunk when it's no longer
+     * {@link io.deephaven.engine.structures.chunk.util.pools.PoolableChunk#close close} each chunk when it's no longer
      * needed.
      *
      * <p>

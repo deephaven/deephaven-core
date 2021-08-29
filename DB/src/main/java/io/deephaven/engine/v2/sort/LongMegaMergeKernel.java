@@ -4,9 +4,9 @@ import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.sort.megamerge.*;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.structures.chunk.Attributes.*;
 
 /**
  * The LongMegaMergeKernel merges sorted chunks into a column source, with a parallel long array of Index keys.

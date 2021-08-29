@@ -6,9 +6,9 @@ package io.deephaven.engine.tables.dbarrays;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.WritableChunk;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

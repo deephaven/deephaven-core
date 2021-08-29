@@ -3,15 +3,14 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.stamp;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.DhCharComparisons;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.CharChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.CharChunk;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
 
 

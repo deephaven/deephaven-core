@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.select.setinclusion;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.util.type.TypeUtils;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;

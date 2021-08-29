@@ -16,8 +16,8 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.Index.SequentialBuilder;
 import io.deephaven.engine.v2.utils.OrderedKeys;
@@ -77,7 +77,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
 
-        class Context implements io.deephaven.engine.v2.sources.chunk.Context {
+        class Context implements io.deephaven.engine.structures.chunk.Context {
             public final WritableLongChunk<OrderedKeyIndices> resultChunk;
 
             public Context(int maxChunkSize) {
@@ -120,7 +120,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             this.invertedIterator = inverted.getOrderedKeysIterator();
         }
 
-        static class Context implements io.deephaven.engine.v2.sources.chunk.Context {
+        static class Context implements io.deephaven.engine.structures.chunk.Context {
             private final WritableLongChunk<OrderedKeyIndices> chunk;
 
             Context(int chunkSize) {
@@ -138,7 +138,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.engine.v2.sources.chunk.Context context,
+        public Chunk getChunk(@NotNull io.deephaven.engine.structures.chunk.Context context,
                 @NotNull OrderedKeys orderedKeys) {
             final WritableLongChunk<OrderedKeyIndices> wlc = ((Context) context).chunk;
             final OrderedKeys valuesForChunk = invertedIterator.getNextOrderedKeysWithLength(orderedKeys.size());
@@ -174,7 +174,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.engine.v2.sources.chunk.Context context,
+        public Chunk getChunk(@NotNull io.deephaven.engine.structures.chunk.Context context,
                 @NotNull OrderedKeys orderedKeys) {
             final LongChunk lc = super.getChunk(context, orderedKeys).asLongChunk();
             final WritableIntChunk<Attributes.Any> wic = ((IntegerContext) context).intChunk;
@@ -193,7 +193,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             this.chunkType = chunkType;
         }
 
-        class Context implements io.deephaven.engine.v2.sources.chunk.Context {
+        class Context implements io.deephaven.engine.structures.chunk.Context {
             private final WritableChunk chunk;
             long pos = 0;
 
@@ -220,7 +220,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.engine.v2.sources.chunk.Context context,
+        public Chunk getChunk(@NotNull io.deephaven.engine.structures.chunk.Context context,
                 @NotNull OrderedKeys orderedKeys) {
             final Context ctx = (Context) context;
             final WritableLongChunk wlc = ctx.chunk.asWritableLongChunk();
@@ -238,7 +238,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.engine.v2.sources.chunk.Context context,
+        public Chunk getChunk(@NotNull io.deephaven.engine.structures.chunk.Context context,
                 @NotNull OrderedKeys orderedKeys) {
             final Context ctx = (Context) context;
             final WritableIntChunk wic = ctx.chunk.asWritableIntChunk();

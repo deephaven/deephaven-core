@@ -3,17 +3,15 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.structures.chunk.ObjectChunk;
 
-import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
+import io.deephaven.engine.structures.chunk.WritableObjectChunk;
 
 import io.deephaven.engine.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.BooleanChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.junit.After;

@@ -20,7 +20,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;

@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Attributes;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 

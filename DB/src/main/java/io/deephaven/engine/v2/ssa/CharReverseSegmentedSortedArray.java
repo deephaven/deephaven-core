@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.Any;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.list.TIntList;

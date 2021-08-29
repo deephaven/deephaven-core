@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
-import io.deephaven.engine.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.structures.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.Random;

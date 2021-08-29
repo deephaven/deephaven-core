@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.hashing.IntChunkEquals;
 import io.deephaven.engine.v2.sources.ByteAsBooleanColumnSource;
 import io.deephaven.engine.v2.sources.LongAsDateTimeColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;

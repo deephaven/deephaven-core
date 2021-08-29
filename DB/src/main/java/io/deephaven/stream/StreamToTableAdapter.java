@@ -1,10 +1,8 @@
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.DeephavenException;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -16,9 +14,9 @@ import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;

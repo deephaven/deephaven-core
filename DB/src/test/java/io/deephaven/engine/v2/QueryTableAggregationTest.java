@@ -23,7 +23,7 @@ import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
-import io.deephaven.engine.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.structures.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;

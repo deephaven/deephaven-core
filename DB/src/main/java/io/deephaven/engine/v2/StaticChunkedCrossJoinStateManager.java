@@ -13,8 +13,8 @@ import io.deephaven.engine.v2.hashing.ObjectChunkIdentityEquals;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.*;
 
 // mixin rehash

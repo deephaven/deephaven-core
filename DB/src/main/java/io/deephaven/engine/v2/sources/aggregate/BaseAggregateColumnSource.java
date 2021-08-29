@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
+import io.deephaven.engine.structures.chunk.SharedContext;
 import io.deephaven.engine.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
 

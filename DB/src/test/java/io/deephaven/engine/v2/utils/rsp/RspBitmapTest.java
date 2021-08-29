@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.Shuffle;

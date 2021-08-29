@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SafeCloseable;

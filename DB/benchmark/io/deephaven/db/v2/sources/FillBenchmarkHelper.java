@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.openjdk.jmh.infra.Blackhole;
 

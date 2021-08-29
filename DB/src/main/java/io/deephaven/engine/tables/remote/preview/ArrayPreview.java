@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables.remote.preview;
 
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.ChunkType;
 
 /**
  * A Preview Type for Arrays and DbArray. Converts long arrays to a String "[1, 2, 3, 4, 5...]"

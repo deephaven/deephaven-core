@@ -8,15 +8,15 @@
 package io.deephaven.grpc_api_client.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
-import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
+import io.deephaven.engine.structures.chunk.DoubleChunk;
 import io.deephaven.util.QueryConstants;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.WritableDoubleChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.WritableDoubleChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
 import org.jetbrains.annotations.Nullable;
 

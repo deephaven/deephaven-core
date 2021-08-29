@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.WritableChunk;
 import org.jetbrains.annotations.NotNull;
 
 /**

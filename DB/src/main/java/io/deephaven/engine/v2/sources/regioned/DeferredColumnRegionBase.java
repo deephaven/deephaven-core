@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 

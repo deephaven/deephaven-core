@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.engine.v2.by.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.ChunkType;
 import gnu.trove.stack.TIntStack;
 import gnu.trove.stack.array.TIntArrayStack;
 import org.apache.commons.io.FileUtils;

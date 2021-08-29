@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.engine.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.sources.deltaaware.TestCharacterDeltaAwareColumnSource;
 import org.apache.commons.io.FileUtils;
 

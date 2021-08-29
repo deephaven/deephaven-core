@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.join.dupcompact;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
 public interface DupCompactKernel extends Context {
     static DupCompactKernel makeDupCompact(ChunkType chunkType, boolean reverse) {

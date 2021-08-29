@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.iterators.IntegerColumnIterator;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import junit.framework.TestCase;
 
 import java.util.*;

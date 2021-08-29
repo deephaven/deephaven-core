@@ -4,7 +4,6 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.base.SleepUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
@@ -12,7 +11,6 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBPeriod;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.tables.verify.TableAssertions;
@@ -20,7 +18,7 @@ import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.select.chunkfilters.IntRangeComparator;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.UnionRedirection;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.test.types.OutOfBandTest;
@@ -34,7 +32,6 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.NumberFormat;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

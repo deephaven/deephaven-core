@@ -15,7 +15,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.QueryTableTestBase.JoinIncrement;
-import io.deephaven.engine.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.structures.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;

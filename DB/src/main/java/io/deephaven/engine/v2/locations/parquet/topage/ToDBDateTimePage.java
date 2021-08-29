@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Attributes;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 

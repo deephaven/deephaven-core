@@ -5,9 +5,9 @@ package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ArrayGenerator;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.ChunkSource;
+import io.deephaven.engine.structures.chunk.IntChunk;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
 
 import org.junit.After;

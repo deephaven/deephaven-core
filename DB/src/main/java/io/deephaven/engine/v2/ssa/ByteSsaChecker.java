@@ -6,11 +6,11 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.ByteChunkEquals;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ByteChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.ByteChunk;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 
 public class ByteSsaChecker implements SsaChecker {

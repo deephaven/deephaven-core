@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.*;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements OrderedKeys {

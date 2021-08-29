@@ -7,8 +7,8 @@ import io.deephaven.engine.util.tuples.generated.ShortLongTuple;
 import io.deephaven.engine.v2.sort.timsort.ShortLongTimsortKernel;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.Index;
 
 import java.util.stream.IntStream;

@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.tuples;
 
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkBoxer;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.OrderedKeys;

@@ -3,15 +3,14 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources.deltaaware;
 
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.structures.chunk.ObjectChunk;
 
 import io.deephaven.engine.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ArrayGenerator;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.BooleanChunk;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.ChunkSource;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
 
 import org.junit.After;
@@ -22,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanDeltaAwareColumnSource {

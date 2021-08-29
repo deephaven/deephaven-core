@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.v2.utils.ShiftData;
 
 import java.io.IOException;

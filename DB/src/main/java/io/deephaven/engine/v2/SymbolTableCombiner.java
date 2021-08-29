@@ -13,15 +13,14 @@ import io.deephaven.engine.v2.hashing.IntChunkEquals;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.*;
 
 // mixin rehash
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QInt\E
-import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash

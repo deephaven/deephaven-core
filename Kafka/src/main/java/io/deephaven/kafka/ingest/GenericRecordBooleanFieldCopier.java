@@ -1,9 +1,9 @@
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableByteChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.ObjectChunk;
+import io.deephaven.engine.structures.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.WritableByteChunk;
 import io.deephaven.util.BooleanUtils;
 import org.apache.avro.generic.GenericRecord;
 

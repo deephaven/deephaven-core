@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
 import java.util.Arrays;
 import java.util.Map;

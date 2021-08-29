@@ -5,7 +5,7 @@ import io.deephaven.base.verify.Require;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.locations.ColumnLocation;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

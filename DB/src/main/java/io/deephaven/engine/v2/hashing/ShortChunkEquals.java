@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.hashing;
 
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.Any;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkPositions;
 
 // region name
 public class ShortChunkEquals implements ChunkEquals {

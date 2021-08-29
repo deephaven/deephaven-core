@@ -6,9 +6,9 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.rsp.RspArray;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;

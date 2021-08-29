@@ -4,13 +4,11 @@
 
 package io.deephaven.grpc_api.arrow;
 
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.grpc_api.barrage.BarrageMessageConsumer;
-import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.util.GrpcServiceOverrideBuilder;
 import io.deephaven.grpc_api.util.PassthroughInputStreamMarshaller;
-import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
 import io.grpc.BindableService;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerServiceDefinition;

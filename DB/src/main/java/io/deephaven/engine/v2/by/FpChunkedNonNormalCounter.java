@@ -4,7 +4,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 

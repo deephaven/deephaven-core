@@ -9,9 +9,9 @@ import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedChunk;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.sized.SizedChunk;
+import io.deephaven.engine.structures.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.ssa.ChunkSsaStamp;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
 import io.deephaven.engine.v2.ssa.SsaSsaStamp;
@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static io.deephaven.engine.v2.RightIncrementalChunkedAsOfJoinStateManager.*;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.structures.chunk.Attributes.*;
 
 public class BucketedChunkedAjMergedListener extends MergedListener {
     private final JoinListenerRecorder leftRecorder;

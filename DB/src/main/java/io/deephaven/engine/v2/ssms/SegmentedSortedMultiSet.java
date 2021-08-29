@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.*;
 
 import javax.validation.constraints.NotNull;
 import java.util.Arrays;

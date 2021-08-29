@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.hashing;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.Any;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.LongChunk;
 
 public interface ToLongCast<T extends Any> extends ToLongFunctor<T> {
     LongChunk<T> apply(Chunk<T> input);

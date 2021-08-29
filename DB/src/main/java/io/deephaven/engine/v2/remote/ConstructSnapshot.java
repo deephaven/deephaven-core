@@ -20,7 +20,6 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.live.WaitNotification;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessManager;
 import io.deephaven.engine.util.liveness.LivenessScope;
@@ -30,11 +29,10 @@ import io.deephaven.engine.v2.InstrumentedListener;
 import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.internal.log.LoggerFactory;
@@ -43,10 +41,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import static io.deephaven.engine.structures.chunk.Attributes.Values;
 
 /**
  * A Set of static utilities for computing values from a table while avoiding the use of the LTM lock. This class

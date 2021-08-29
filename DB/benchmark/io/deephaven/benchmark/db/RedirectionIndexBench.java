@@ -3,7 +3,7 @@ package io.deephaven.benchmark.db;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;

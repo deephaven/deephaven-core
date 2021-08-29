@@ -7,16 +7,16 @@
 
 package io.deephaven.grpc_api_client.barrage.chunk.array;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ByteChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableByteChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedByteChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.ByteChunk;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.IntChunk;
+import io.deephaven.engine.structures.chunk.ObjectChunk;
+import io.deephaven.engine.structures.chunk.WritableByteChunk;
+import io.deephaven.engine.structures.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.WritableIntChunk;
+import io.deephaven.engine.structures.chunk.WritableObjectChunk;
+import io.deephaven.engine.structures.chunk.sized.SizedByteChunk;
 
 public class ByteArrayExpansionKernel implements ArrayExpansionKernel {
     private final static byte[] ZERO_LEN_ARRAY = new byte[0];

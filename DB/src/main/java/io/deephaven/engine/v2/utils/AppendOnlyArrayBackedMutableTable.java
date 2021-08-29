@@ -3,14 +3,13 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.NullValueColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

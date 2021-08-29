@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

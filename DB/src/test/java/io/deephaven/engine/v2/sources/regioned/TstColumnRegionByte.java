@@ -5,10 +5,10 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableByteChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.page.Page;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.WritableByteChunk;
+import io.deephaven.engine.structures.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.page.Page;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;

@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
-import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
+import io.deephaven.engine.structures.chunk.page.ChunkPage;
 import io.deephaven.engine.v2.sources.StringSetImpl;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.parquet.ColumnPageReader;
 import org.jetbrains.annotations.NotNull;

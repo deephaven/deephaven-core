@@ -4,10 +4,9 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.base.Procedure;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.iterators.*;
 import io.deephaven.engine.v2.sources.*;
@@ -18,8 +17,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.function.DoubleConsumer;
-import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 import java.util.stream.StreamSupport;
 

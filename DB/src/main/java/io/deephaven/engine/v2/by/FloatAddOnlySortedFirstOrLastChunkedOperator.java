@@ -7,11 +7,11 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.util.DhFloatComparisons;
 import io.deephaven.engine.v2.sources.FloatArraySource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;

@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.dupexpand;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
 public class ByteDupExpandKernel implements DupExpandKernel {
     public static final ByteDupExpandKernel INSTANCE = new ByteDupExpandKernel();

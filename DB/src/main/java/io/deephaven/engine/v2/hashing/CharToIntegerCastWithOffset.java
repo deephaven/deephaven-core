@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.hashing;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.CharChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.structures.chunk.Attributes.Any;
+import io.deephaven.engine.structures.chunk.CharChunk;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.IntChunk;
+import io.deephaven.engine.structures.chunk.WritableIntChunk;
 
 /**
  * Cast the values in the input chunk to an int and add the specified offset.

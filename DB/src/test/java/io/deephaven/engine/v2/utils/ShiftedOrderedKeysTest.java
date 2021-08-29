@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.LongChunk;
 import org.junit.Test;
 
 public class ShiftedOrderedKeysTest extends OrderedKeysTestBase {

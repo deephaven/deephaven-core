@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.sortcheck;
 
 import io.deephaven.engine.util.DhDoubleComparisons;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.DoubleChunk;
+import io.deephaven.engine.structures.chunk.Chunk;
 
 public class DoubleSortCheck implements SortCheck {
     static final SortCheck INSTANCE = new DoubleSortCheck();

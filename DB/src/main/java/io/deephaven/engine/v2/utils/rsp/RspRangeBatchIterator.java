@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils.rsp;
 
 import io.deephaven.configuration.Configuration;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.rsp.container.Container;
 import io.deephaven.engine.v2.utils.rsp.container.SearchRangeIterator;
 import io.deephaven.engine.v2.utils.rsp.container.SingletonContainer;

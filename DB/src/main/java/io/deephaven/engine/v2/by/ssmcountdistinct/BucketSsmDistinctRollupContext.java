@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
 public class BucketSsmDistinctRollupContext extends SsmDistinctRollupContext
         implements IterativeChunkedAggregationOperator.BucketedContext {

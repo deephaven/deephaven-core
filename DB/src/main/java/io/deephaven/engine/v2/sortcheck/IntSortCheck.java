@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.sortcheck;
 
 import io.deephaven.engine.util.DhIntComparisons;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.IntChunk;
+import io.deephaven.engine.structures.chunk.Chunk;
 
 public class IntSortCheck implements SortCheck {
     static final SortCheck INSTANCE = new IntSortCheck();

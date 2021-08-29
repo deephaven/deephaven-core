@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.dupexpand;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
 public class FloatDupExpandKernel implements DupExpandKernel {
     public static final FloatDupExpandKernel INSTANCE = new FloatDupExpandKernel();

@@ -4,8 +4,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.ChunkSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

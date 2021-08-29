@@ -7,11 +7,11 @@ import io.deephaven.engine.v2.hashing.ToLongCast;
 import io.deephaven.engine.v2.hashing.ToLongFunctor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 

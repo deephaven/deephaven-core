@@ -3,9 +3,9 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.ChunkSource;
+import io.deephaven.engine.structures.chunk.SharedContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

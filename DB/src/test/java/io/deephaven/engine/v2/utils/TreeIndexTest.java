@@ -6,9 +6,9 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.v2.TstUtils;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import static io.deephaven.engine.v2.utils.rsp.RspArray.BLOCK_SIZE;
 import static io.deephaven.engine.v2.utils.rsp.RspArray.BLOCK_LAST;
 

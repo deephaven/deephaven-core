@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.sort.radix;
 
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.sort.LongSortKernel;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.*;
 
 public class BooleanLongRadixSortKernel {
     public static <ATTR extends Any, KEY_INDICES extends Keys> LongSortKernel<ATTR, KEY_INDICES> createContext(int size, SortingOrder order, boolean preserveValues) {

@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.CharChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableCharChunk;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.CharChunk;
+import io.deephaven.engine.structures.chunk.WritableCharChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.junit.After;

@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 
 class ChunkMerger<ATTR extends Attributes.Any> {

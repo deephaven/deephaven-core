@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.ChunkSource;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 

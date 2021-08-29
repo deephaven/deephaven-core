@@ -5,13 +5,13 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.util.SafeCloseable;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
 
 /**
  * An ordered collection of long keys.

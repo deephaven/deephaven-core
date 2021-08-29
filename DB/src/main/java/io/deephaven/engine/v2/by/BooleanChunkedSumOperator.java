@@ -8,8 +8,8 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Collections;

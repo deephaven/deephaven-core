@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;

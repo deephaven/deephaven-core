@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableLong;
 

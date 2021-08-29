@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.Attributes;
 import org.junit.Test;
 
 import java.util.function.Supplier;

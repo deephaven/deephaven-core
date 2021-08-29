@@ -29,7 +29,7 @@ import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.InstrumentedListener;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.sources.chunk.util.pools.MultiChunkPool;
+import io.deephaven.engine.structures.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.v2.utils.TerminalNotification;
 import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.SafeCloseable;

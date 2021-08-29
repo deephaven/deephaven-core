@@ -6,8 +6,8 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 
 import gnu.trove.map.hash.TLongLongHashMap;
 import org.jetbrains.annotations.NotNull;

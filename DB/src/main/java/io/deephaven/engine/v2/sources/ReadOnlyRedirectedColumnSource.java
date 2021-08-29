@@ -5,17 +5,17 @@ import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import static io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import static io.deephaven.engine.structures.chunk.Attributes.Values;
 import static io.deephaven.util.QueryConstants.*;
 
 public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {

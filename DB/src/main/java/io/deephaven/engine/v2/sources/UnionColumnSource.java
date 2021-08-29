@@ -6,10 +6,10 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.sources.chunk.ResettableWritableChunk;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.structures.chunk.Attributes.*;
+import io.deephaven.engine.structures.chunk.ResettableWritableChunk;
+import io.deephaven.engine.structures.chunk.SharedContext;
+import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.OrderedKeys;

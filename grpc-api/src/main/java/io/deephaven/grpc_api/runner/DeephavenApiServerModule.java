@@ -4,7 +4,7 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.sources.chunk.util.pools.MultiChunkPool;
+import io.deephaven.engine.structures.chunk.util.pools.MultiChunkPool;
 import io.deephaven.grpc_api.appmode.AppModeModule;
 import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.auth.AuthContextModule;

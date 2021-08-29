@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.select.chunkfilters;
 
 import io.deephaven.engine.util.DhFloatComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
 
 public class FloatRangeComparator {
     private FloatRangeComparator() {} // static use only

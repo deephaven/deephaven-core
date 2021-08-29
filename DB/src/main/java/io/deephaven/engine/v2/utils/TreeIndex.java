@@ -11,12 +11,12 @@ import java.util.function.LongConsumer;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.logger.Logger;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
 
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;

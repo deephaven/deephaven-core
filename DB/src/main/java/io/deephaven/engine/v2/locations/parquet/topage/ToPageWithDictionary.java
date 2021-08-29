@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
 import io.deephaven.engine.v2.sources.StringSetImpl;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.DictionaryKeys;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.structures.chunk.Attributes.Any;
+import io.deephaven.engine.structures.chunk.Attributes.DictionaryKeys;
+import io.deephaven.engine.structures.chunk.ChunkType;
+import io.deephaven.engine.structures.chunk.ObjectChunk;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ColumnPageReader;
 import io.deephaven.parquet.DataWithOffsets;

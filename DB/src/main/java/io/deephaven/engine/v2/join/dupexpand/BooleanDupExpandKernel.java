@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.dupexpand;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
 public class BooleanDupExpandKernel implements DupExpandKernel {
     public static final BooleanDupExpandKernel INSTANCE = new BooleanDupExpandKernel();

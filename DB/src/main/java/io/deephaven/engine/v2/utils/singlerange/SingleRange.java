@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils.singlerange;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.rsp.RspArray;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;

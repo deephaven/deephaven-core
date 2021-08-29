@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
+import io.deephaven.engine.structures.chunk.LongChunk;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.util.LongChunkAppender;
+import io.deephaven.engine.structures.chunk.util.LongChunkIterator;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.SingleRangeOrderedKeys;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
@@ -12,8 +12,8 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
 import static org.junit.Assert.*;
 
 public class SingleRangeTest {

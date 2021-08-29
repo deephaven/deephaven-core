@@ -5,13 +5,11 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.LongConsumer;
 
 // This worked-out example is a sketch of the problem we are trying to solve.
 //

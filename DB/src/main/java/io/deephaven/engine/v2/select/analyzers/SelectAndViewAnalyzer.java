@@ -9,7 +9,6 @@ import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import io.deephaven.engine.v2.utils.RedirectionIndex;

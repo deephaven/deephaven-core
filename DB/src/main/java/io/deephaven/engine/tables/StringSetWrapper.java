@@ -6,7 +6,7 @@ package io.deephaven.engine.tables;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.structures.chunk.ObjectChunk;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

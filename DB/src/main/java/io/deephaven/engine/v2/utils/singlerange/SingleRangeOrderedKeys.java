@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.utils.singlerange;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 
 public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements SingleRangeMixin {

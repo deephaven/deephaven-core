@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.sortcheck;
 
 import io.deephaven.engine.util.DhByteComparisons;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ByteChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.structures.chunk.ByteChunk;
+import io.deephaven.engine.structures.chunk.Chunk;
 
 public class ByteSortCheck implements SortCheck {
     static final SortCheck INSTANCE = new ByteSortCheck();

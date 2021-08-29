@@ -9,7 +9,7 @@ package io.deephaven.engine.v2.utils.freezeby;
 
 import io.deephaven.engine.v2.sources.ByteArraySource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.utils.OrderedKeys;
 
 class ByteFreezeByHelper implements FreezeByOperator.FreezeByHelper {

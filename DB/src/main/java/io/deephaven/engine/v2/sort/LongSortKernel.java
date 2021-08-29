@@ -3,9 +3,9 @@ package io.deephaven.engine.v2.sort;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.sort.radix.BooleanLongRadixSortKernel;
 import io.deephaven.engine.v2.sort.timsort.*;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.structures.chunk.*;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.structures.chunk.Attributes.*;
 
 /**
  * The SortKernel sorts a chunk of primitive value together with a parallel LongChunk of KeyIndices.

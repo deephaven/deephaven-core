@@ -7,7 +7,6 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.distinct;
 
-import io.deephaven.engine.v2.sources.BoxedColumnSource;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DbDateTimeSsmSourceWrapper;
 
@@ -19,11 +18,11 @@ import io.deephaven.engine.v2.by.ssmcountdistinct.LongSsmBackedSource;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DistinctOperatorFactory;
 import io.deephaven.engine.v2.by.ssmcountdistinct.SsmDistinctContext;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.structures.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.v2.utils.Index;

@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.LongAbortableConsumer;
 import io.deephaven.engine.v2.utils.rsp.container.Container;
 import io.deephaven.engine.v2.utils.rsp.container.ContainerShortBatchIterator;
