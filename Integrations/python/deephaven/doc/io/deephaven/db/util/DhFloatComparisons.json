@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.util.DhFloatComparisons",
+ "className": "io.deephaven.engine.util.DhFloatComparisons",
  "methods": {
   "compare": ":param lhs: float\n:param rhs: float\n:return: int",
   "eq": ":param lhs: float\n:param rhs: float\n:return: boolean",
@@ -8,6 +8,6 @@
   "leq": ":param lhs: float\n:param rhs: float\n:return: boolean",
   "lt": ":param lhs: float\n:param rhs: float\n:return: boolean"
  },
- "path": "io.deephaven.db.util.DhFloatComparisons",
+ "path": "io.deephaven.engine.util.DhFloatComparisons",
  "typeName": "class"
 }

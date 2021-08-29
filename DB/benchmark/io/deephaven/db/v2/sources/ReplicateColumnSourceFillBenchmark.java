@@ -1,4 +1,4 @@
-package io.deephaven.db.v2.sources;
+package io.deephaven.engine.v2.sources;
 
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 

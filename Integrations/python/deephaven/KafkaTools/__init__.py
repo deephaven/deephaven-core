@@ -54,7 +54,7 @@ def _defineSymbols():
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
-        _stream_table_tools_ = jpy.get_type("io.deephaven.db.v2.StreamTableTools")
+        _stream_table_tools_ = jpy.get_type("io.deephaven.engine.v2.StreamTableTools")
         _avro_schema_type_ = jpy.get_type("org.apache.avro.Schema")
         SEEK_TO_BEGINNING = getattr(_java_type_, 'SEEK_TO_BEGINNING')
         DONT_SEEK = getattr(_java_type_, 'DONT_SEEK')
@@ -258,18 +258,18 @@ except Exception as e:
 def avroSchemaToColumnDefinitions(*args):
     """
     *Overload 1*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
+      :param columns: java.util.List<io.deephaven.engine.tables.ColumnDefinition<?>>
       :param mappedOut: java.util.Map<java.lang.String,java.lang.String>
       :param schema: org.apache.avro.Schema
       :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
       
     *Overload 2*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
+      :param columns: java.util.List<io.deephaven.engine.tables.ColumnDefinition<?>>
       :param schema: org.apache.avro.Schema
       :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
       
     *Overload 3*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
+      :param columns: java.util.List<io.deephaven.engine.tables.ColumnDefinition<?>>
       :param schema: org.apache.avro.Schema
     """
     

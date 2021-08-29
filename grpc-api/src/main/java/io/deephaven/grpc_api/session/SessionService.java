@@ -2,8 +2,8 @@ package io.deephaven.grpc_api.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.grpc.Status;

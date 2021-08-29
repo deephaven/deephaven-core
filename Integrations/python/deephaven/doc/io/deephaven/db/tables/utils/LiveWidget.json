@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.tables.utils.LiveWidget",
+ "className": "io.deephaven.engine.tables.utils.LiveWidget",
  "methods": {},
- "path": "io.deephaven.db.tables.utils.LiveWidget",
+ "path": "io.deephaven.engine.tables.utils.LiveWidget",
  "text": "Marker interface for dynamic GUI widgets.",
  "typeName": "interface"
 }

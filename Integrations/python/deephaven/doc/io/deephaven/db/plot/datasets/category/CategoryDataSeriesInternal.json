@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.db.plot.datasets.category.CategoryDataSeriesInternal",
+ "className": "io.deephaven.engine.plot.datasets.category.CategoryDataSeriesInternal",
  "methods": {
   "categories": "Gets the categories of the dataset.\n\n:return: (java.util.Collection<java.lang.Comparable>) all categories in the dataset",
-  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - new axes.\n:return: (io.deephaven.db.plot.datasets.category.CategoryDataSeriesInternal) copy of the series on a different set of axes.",
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.engine.plot.AxesImpl) - new axes.\n:return: (io.deephaven.engine.plot.datasets.category.CategoryDataSeriesInternal) copy of the series on a different set of axes.",
   "drawYError": ":return: boolean",
   "getCategoryLocation": "Get the row key of the specified series.\n\n:param category: java.lang.Comparable\n:return: long",
   "getColor": "Gets the Paint for the given data point.\n\n:param category: (java.lang.Comparable) - category\n:return: (io.deephaven.gui.color.Paint) Paint for the given data point",
@@ -15,7 +15,7 @@
   "getStartY": ":param category: java.lang.Comparable\n:return: java.lang.Number",
   "getValue": "Gets the numeric value corresponding to the given category.\n\n:param category: (java.lang.Comparable) - category\n:return: (java.lang.Number) numeric value corresponding to the given category"
  },
- "path": "io.deephaven.db.plot.datasets.category.CategoryDataSeriesInternal",
+ "path": "io.deephaven.engine.plot.datasets.category.CategoryDataSeriesInternal",
  "text": "Dataset with discrete and numeric components. Discrete values must extend Comparable and are called\n categories.",
  "typeName": "interface"
 }

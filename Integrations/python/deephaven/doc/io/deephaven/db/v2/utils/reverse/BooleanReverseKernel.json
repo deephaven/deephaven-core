@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.db.v2.utils.reverse.BooleanReverseKernel",
+ "className": "io.deephaven.engine.v2.utils.reverse.BooleanReverseKernel",
  "methods": {
-  "reverse": "Note: Java generics information - <T extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param chunkToReverse: io.deephaven.db.v2.sources.chunk.WritableBooleanChunk<T>"
+  "reverse": "Note: Java generics information - <T extends io.deephaven.engine.v2.sources.chunk.Attributes.Any>\n\n:param chunkToReverse: io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk<T>"
  },
- "path": "io.deephaven.db.v2.utils.reverse.BooleanReverseKernel",
+ "path": "io.deephaven.engine.v2.utils.reverse.BooleanReverseKernel",
  "typeName": "class"
 }

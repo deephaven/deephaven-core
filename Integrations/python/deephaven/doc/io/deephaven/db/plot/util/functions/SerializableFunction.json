@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.plot.util.functions.SerializableFunction",
+ "className": "io.deephaven.engine.plot.util.functions.SerializableFunction",
  "methods": {},
- "path": "io.deephaven.db.plot.util.functions.SerializableFunction",
+ "path": "io.deephaven.engine.plot.util.functions.SerializableFunction",
  "text": "A serializable function.",
  "typeName": "interface"
 }

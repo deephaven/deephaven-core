@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.AsOfJoinHelper$SsaFactory",
+ "className": "io.deephaven.engine.v2.AsOfJoinHelper$SsaFactory",
  "methods": {},
- "path": "io.deephaven.db.v2.AsOfJoinHelper.SsaFactory",
+ "path": "io.deephaven.engine.v2.AsOfJoinHelper.SsaFactory",
  "typeName": "interface"
 }

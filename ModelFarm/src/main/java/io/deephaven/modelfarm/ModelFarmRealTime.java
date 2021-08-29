@@ -5,7 +5,7 @@
 package io.deephaven.modelfarm;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.modelfarm.util.KeyedPriorityBlockingQueue;

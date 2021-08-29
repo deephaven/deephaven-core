@@ -1,11 +1,11 @@
 {
- "className": "io.deephaven.db.v2.Listener",
+ "className": "io.deephaven.engine.v2.Listener",
  "methods": {
-  "getNotification": "Creates a notification for the table changes.\n\n:param added: (io.deephaven.db.v2.utils.Index) - rows added\n:param removed: (io.deephaven.db.v2.utils.Index) - rows removed\n:param modified: (io.deephaven.db.v2.utils.Index) - rows modified\n:return: (io.deephaven.db.tables.live.NotificationQueue.IndexUpdateNotification) table change notification",
-  "onUpdate": "Process notification of table changes.\n\n:param added: (io.deephaven.db.v2.utils.Index) - rows added\n:param removed: (io.deephaven.db.v2.utils.Index) - rows removed\n:param modified: (io.deephaven.db.v2.utils.Index) - rows modified",
-  "setInitialImage": "Sets the index for the initial data.\n\n:param initialImage: (io.deephaven.db.v2.utils.Index) - initial image"
+  "getNotification": "Creates a notification for the table changes.\n\n:param added: (io.deephaven.engine.v2.utils.Index) - rows added\n:param removed: (io.deephaven.engine.v2.utils.Index) - rows removed\n:param modified: (io.deephaven.engine.v2.utils.Index) - rows modified\n:return: (io.deephaven.engine.tables.live.NotificationQueue.IndexUpdateNotification) table change notification",
+  "onUpdate": "Process notification of table changes.\n\n:param added: (io.deephaven.engine.v2.utils.Index) - rows added\n:param removed: (io.deephaven.engine.v2.utils.Index) - rows removed\n:param modified: (io.deephaven.engine.v2.utils.Index) - rows modified",
+  "setInitialImage": "Sets the index for the initial data.\n\n:param initialImage: (io.deephaven.engine.v2.utils.Index) - initial image"
  },
- "path": "io.deephaven.db.v2.Listener",
+ "path": "io.deephaven.engine.v2.Listener",
  "text": "Listener for table changes.",
  "typeName": "interface"
 }

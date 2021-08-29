@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.plot.datasets.ColumnNameConstants",
+ "className": "io.deephaven.engine.plot.datasets.ColumnNameConstants",
  "methods": {},
- "path": "io.deephaven.db.plot.datasets.ColumnNameConstants",
+ "path": "io.deephaven.engine.plot.datasets.ColumnNameConstants",
  "typeName": "class"
 }

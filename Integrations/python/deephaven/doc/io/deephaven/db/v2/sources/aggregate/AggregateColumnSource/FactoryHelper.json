@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.sources.aggregate.AggregateColumnSource$FactoryHelper",
+ "className": "io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource$FactoryHelper",
  "methods": {},
- "path": "io.deephaven.db.v2.sources.aggregate.AggregateColumnSource.FactoryHelper",
+ "path": "io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource.FactoryHelper",
  "typeName": "class"
 }

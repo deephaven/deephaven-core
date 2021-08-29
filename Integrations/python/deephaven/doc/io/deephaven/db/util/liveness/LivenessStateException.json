@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.util.liveness.LivenessStateException",
+ "className": "io.deephaven.engine.util.liveness.LivenessStateException",
  "methods": {},
- "path": "io.deephaven.db.util.liveness.LivenessStateException",
+ "path": "io.deephaven.engine.util.liveness.LivenessStateException",
  "text": "Exception class thrown when incorrect usage of a LivenessReferent is detected.",
  "typeName": "class"
 }

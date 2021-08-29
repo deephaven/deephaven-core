@@ -101,12 +101,12 @@ StringUtils.cacheSize=65536
 scriptSessionProviders=Groovy,Python
 scriptSessionExtension.groovy=Groovy
 scriptSessionExtension.py=Python
-scriptSessionProvider.Groovy=io.deephaven.db.util.GroovyDeephavenSession
-scriptSessionProvider.Python=io.deephaven.db.util.PythonDeephavenSession
+scriptSessionProvider.Groovy=io.deephaven.engine.util.GroovyDeephavenSession
+scriptSessionProvider.Python=io.deephaven.engine.util.PythonDeephavenSession
 
 # Scala has not been extensively tested, and is experimental.  If you have obfuscated Jars in your classpath, the
 # session may not start.
-scriptSessionProvider.Scala=io.deephaven.db.util.ScalaDeephavenSession
+scriptSessionProvider.Scala=io.deephaven.engine.util.ScalaDeephavenSession
 
 #
 # Web API Server configuration

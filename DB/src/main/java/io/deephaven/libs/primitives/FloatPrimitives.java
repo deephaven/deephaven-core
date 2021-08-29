@@ -7,10 +7,10 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.db.tables.dbarrays.DbFloatArray;
-import io.deephaven.db.tables.dbarrays.DbFloatArrayDirect;
+import io.deephaven.engine.tables.dbarrays.DbFloatArray;
+import io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.util.LongSizedDataStructure;
+import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.set.TFloatSet;
 import gnu.trove.set.hash.TFloatHashSet;

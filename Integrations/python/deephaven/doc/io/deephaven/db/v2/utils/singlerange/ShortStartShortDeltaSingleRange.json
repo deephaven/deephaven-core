@@ -1,11 +1,11 @@
 {
- "className": "io.deephaven.db.v2.utils.singlerange.ShortStartShortDeltaSingleRange",
+ "className": "io.deephaven.engine.v2.utils.singlerange.ShortStartShortDeltaSingleRange",
  "methods": {
-  "copy": ":return: io.deephaven.db.v2.utils.singlerange.ShortStartShortDeltaSingleRange",
+  "copy": ":return: io.deephaven.engine.v2.utils.singlerange.ShortStartShortDeltaSingleRange",
   "getCardinality": ":return: long",
   "rangeEnd": ":return: long",
   "rangeStart": ":return: long"
  },
- "path": "io.deephaven.db.v2.utils.singlerange.ShortStartShortDeltaSingleRange",
+ "path": "io.deephaven.engine.v2.utils.singlerange.ShortStartShortDeltaSingleRange",
  "typeName": "class"
 }

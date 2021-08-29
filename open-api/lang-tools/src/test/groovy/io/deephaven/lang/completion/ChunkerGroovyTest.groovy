@@ -1,6 +1,6 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.db.util.VariableProvider
+import io.deephaven.engine.util.VariableProvider
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification
 

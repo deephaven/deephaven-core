@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.by.ssmcountdistinct.SsmDistinctContext",
+ "className": "io.deephaven.engine.v2.by.ssmcountdistinct.SsmDistinctContext",
  "methods": {},
- "path": "io.deephaven.db.v2.by.ssmcountdistinct.SsmDistinctContext",
+ "path": "io.deephaven.engine.v2.by.ssmcountdistinct.SsmDistinctContext",
  "typeName": "class"
 }

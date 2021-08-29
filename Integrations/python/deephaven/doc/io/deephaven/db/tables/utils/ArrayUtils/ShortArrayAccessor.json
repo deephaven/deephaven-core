@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.tables.utils.ArrayUtils$ShortArrayAccessor",
+ "className": "io.deephaven.engine.tables.utils.ArrayUtils$ShortArrayAccessor",
  "methods": {
   "copyArray": ":param sourceArray: java.lang.Object\n:param pos: int\n:param length: int",
   "fill": ":param from: int\n:param to: int\n:param value: java.lang.Short",
@@ -8,6 +8,6 @@
   "length": ":return: int",
   "set": ":param index: int\n:param value: java.lang.Short"
  },
- "path": "io.deephaven.db.tables.utils.ArrayUtils.ShortArrayAccessor",
+ "path": "io.deephaven.engine.tables.utils.ArrayUtils.ShortArrayAccessor",
  "typeName": "class"
 }

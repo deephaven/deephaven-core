@@ -2,10 +2,10 @@ package io.deephaven.grpc_api.table.ops;
 
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.web.shared.data.LocalDate;
 import io.deephaven.web.shared.data.LocalTime;
 import io.deephaven.grpc_api.session.SessionState;

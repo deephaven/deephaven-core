@@ -97,7 +97,7 @@ public class ColumnValueDehydrater {
                         return val == -Double.MAX_VALUE ? nullSentinel() : Double.toString(val);
                     case "long":
                     case "java.lang.Long":
-                    case "io.deephaven.db.tables.utils.DBDateTime":
+                    case "io.deephaven.engine.tables.utils.DBDateTime":
                         // TODO: check if Long.MIN_VALUE actually works as expected from js;
                         // in theory, the cast here will make the rounding, if any, equivalent
                         return val == (double) Long.MIN_VALUE ? nullSentinel() : Long.toString((long) val);
@@ -130,7 +130,7 @@ public class ColumnValueDehydrater {
                     case "java.lang.String":
                         return arrayComponent ? v : // arrays are escaped in the forEach loop above
                                 v.replaceAll(nullSentinel(), ESCAPER + nullSentinel());
-                    case "io.deephaven.db.tables.utils.DBDateTime":
+                    case "io.deephaven.engine.tables.utils.DBDateTime":
                         // TODO: check if datetime string to parse into a long timestamp.
                         // otherwise, we expect long ints for DBDateTime (for now)
                     case "int":

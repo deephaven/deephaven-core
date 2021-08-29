@@ -51,7 +51,7 @@ task groovyStaticImportGeneratorAssert(type: JavaExec, dependsOn: 'classes') {
 task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateAxesPlotMethods'
 
-    main = 'io.deephaven.db.plot.util.GenerateAxesPlotMethods'
+    main = 'io.deephaven.engine.plot.util.GenerateAxesPlotMethods'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -63,7 +63,7 @@ task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
 task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateAxesPlotMethods to assert that the generated code has not changed'
 
-    main = 'io.deephaven.db.plot.util.GenerateAxesPlotMethods'
+    main = 'io.deephaven.engine.plot.util.GenerateAxesPlotMethods'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -76,7 +76,7 @@ task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
 task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateMultiSeries'
 
-    main = 'io.deephaven.db.plot.util.GenerateMultiSeries'
+    main = 'io.deephaven.engine.plot.util.GenerateMultiSeries'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -88,7 +88,7 @@ task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
 task generateMultiSeriesAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateMultiSeries to assert that the generated code has not changed'
 
-    main = 'io.deephaven.db.plot.util.GenerateMultiSeries'
+    main = 'io.deephaven.engine.plot.util.GenerateMultiSeries'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -102,7 +102,7 @@ task generateFigureImmutable(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateFigureImmutable'
     dependsOn generateAxesPlotMethods, generateMultiSeries
 
-    main = 'io.deephaven.db.plot.util.GenerateFigureImmutable'
+    main = 'io.deephaven.engine.plot.util.GenerateFigureImmutable'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -115,7 +115,7 @@ task generateFigureImmutableAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateFigureImmutable to assert that the generated code has not changed'
     dependsOn generateAxesPlotMethodsAssert, generateMultiSeriesAssert
 
-    main = 'io.deephaven.db.plot.util.GenerateFigureImmutable'
+    main = 'io.deephaven.engine.plot.util.GenerateFigureImmutable'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -129,7 +129,7 @@ task generatePlottingConvenience(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePlottingConvenience'
     dependsOn generateFigureImmutable
 
-    main = 'io.deephaven.db.plot.util.GeneratePlottingConvenience'
+    main = 'io.deephaven.engine.plot.util.GeneratePlottingConvenience'
     args devRoot
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -142,7 +142,7 @@ task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePlottingConvenience to assert that the generated code has not changed'
     dependsOn generateFigureImmutableAssert
 
-    main = 'io.deephaven.db.plot.util.GeneratePlottingConvenience'
+    main = 'io.deephaven.engine.plot.util.GeneratePlottingConvenience'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -212,24 +212,24 @@ tasks.register("generatePyDocAssert") {
 
 def pythonStaticMethodsArgs = ['io.deephaven.util.calendar.Calendars',
                                     '/Integrations/python/deephaven/Calendars/__init__.py',
-                               'io.deephaven.db.tables.utils.DBTimeUtils',
+                               'io.deephaven.engine.tables.utils.DBTimeUtils',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/DBTimeUtilsPreamble.txt',
                                     '/Integrations/python/deephaven/DBTimeUtils/__init__.py',
-                               'io.deephaven.db.tables.utils.ParquetTools',
+                               'io.deephaven.engine.tables.utils.ParquetTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/ParquetToolsPreamble.txt',
                                     '/Integrations/python/deephaven/ParquetTools/__init__.py',
-                               'io.deephaven.db.tables.utils.TableTools',
+                               'io.deephaven.engine.tables.utils.TableTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/TableToolsPreamble.txt',
                                     '/Integrations/python/deephaven/TableTools/__init__.py',
-                               'io.deephaven.db.v2.by.ComboAggregateFactory',
+                               'io.deephaven.engine.v2.by.ComboAggregateFactory',
                                     '/Integrations/python/deephaven/ComboAggregateFactory/__init__.py',
-                               'io.deephaven.db.plot.colors.ColorMaps',
+                               'io.deephaven.engine.plot.colors.ColorMaps',
                                    '/Integrations/python/deephaven/Plot/ColorMaps/__init__.py',
-                               'io.deephaven.db.tables.utils.WindowCheck',
+                               'io.deephaven.engine.tables.utils.WindowCheck',
                                     '/Integrations/python/deephaven/TableManipulation/WindowCheck.py',
-                               'io.deephaven.db.v2.utils.TableLoggers',
+                               'io.deephaven.engine.v2.utils.TableLoggers',
                                     '/Integrations/python/deephaven/TableLoggers/__init__.py',
-                               'io.deephaven.db.v2.utils.PerformanceQueries',
+                               'io.deephaven.engine.v2.utils.PerformanceQueries',
                                     '/Integrations/python/deephaven/PerformanceQueries/__init__.py',
                                'io.deephaven.kafka.KafkaTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/KafkaToolsPreamble.txt',

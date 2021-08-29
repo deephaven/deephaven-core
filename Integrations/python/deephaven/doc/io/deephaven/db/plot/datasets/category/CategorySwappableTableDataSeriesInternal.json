@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.plot.datasets.category.CategorySwappableTableDataSeriesInternal",
+ "className": "io.deephaven.engine.plot.datasets.category.CategorySwappableTableDataSeriesInternal",
  "methods": {},
- "path": "io.deephaven.db.plot.datasets.category.CategorySwappableTableDataSeriesInternal",
+ "path": "io.deephaven.engine.plot.datasets.category.CategorySwappableTableDataSeriesInternal",
  "typeName": "interface"
 }

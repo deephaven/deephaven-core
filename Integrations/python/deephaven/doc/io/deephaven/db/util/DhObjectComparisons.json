@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.util.DhObjectComparisons",
+ "className": "io.deephaven.engine.util.DhObjectComparisons",
  "methods": {
   "compare": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: int",
   "eq": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: boolean",
@@ -8,6 +8,6 @@
   "leq": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: boolean",
   "lt": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: boolean"
  },
- "path": "io.deephaven.db.util.DhObjectComparisons",
+ "path": "io.deephaven.engine.util.DhObjectComparisons",
  "typeName": "class"
 }

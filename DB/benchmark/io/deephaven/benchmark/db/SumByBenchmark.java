@@ -1,11 +1,11 @@
 package io.deephaven.benchmark.db;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.v2.QueryTable;
+import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import static io.deephaven.db.v2.by.ComboAggregateFactory.AggCombo;
-import static io.deephaven.db.v2.by.ComboAggregateFactory.AggMin;
-import static io.deephaven.db.v2.by.ComboAggregateFactory.AggMax;
+import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggCombo;
+import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggMin;
+import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggMax;
 
 @SuppressWarnings("unused")
 @State(Scope.Thread)

@@ -1,8 +1,8 @@
 package io.deephaven.benchmarking.impl;
 
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.QueryTableTestBase;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.v2.QueryTableTestBase;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;

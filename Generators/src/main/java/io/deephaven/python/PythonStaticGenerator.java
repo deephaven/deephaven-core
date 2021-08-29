@@ -24,15 +24,15 @@ public class PythonStaticGenerator {
     private static final List<String> customKafkaTools = Arrays.asList(); // "consumeToTable"
     // which methods should just be skipped
     private static final List<String> skipGeneration = Arrays.asList(
-            "io.deephaven.db.tables.utils.TableTools,display",
-            "io.deephaven.db.tables.utils.DBTimeUtils,convertJimDateTimeQuiet",
-            "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuiet",
-            "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuietFast",
-            "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuietFastTz",
-            "io.deephaven.db.tables.utils.DBTimeUtils,diff",
-            "io.deephaven.db.tables.utils.DBTimeUtils,yearDiff",
-            "io.deephaven.db.tables.utils.DBTimeUtils,dayDiff",
-            "io.deephaven.db.plot.colors.ColorMaps,closureMap",
+            "io.deephaven.engine.tables.utils.TableTools,display",
+            "io.deephaven.engine.tables.utils.DBTimeUtils,convertJimDateTimeQuiet",
+            "io.deephaven.engine.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuiet",
+            "io.deephaven.engine.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuietFast",
+            "io.deephaven.engine.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuietFastTz",
+            "io.deephaven.engine.tables.utils.DBTimeUtils,diff",
+            "io.deephaven.engine.tables.utils.DBTimeUtils,yearDiff",
+            "io.deephaven.engine.tables.utils.DBTimeUtils,dayDiff",
+            "io.deephaven.engine.plot.colors.ColorMaps,closureMap",
             "io.deephaven.kafka.KafkaTools,consumeToTable",
             "io.deephaven.kafka.KafkaTools,jsonSpec",
             "io.deephaven.kafka.KafkaTools,avroSpec",
@@ -106,9 +106,9 @@ public class PythonStaticGenerator {
         final String beginMethod = "@_passThrough\ndef " + methodName + "(" + paramString + "):" +
                 PythonGeneratorParser.getMethodDocstring(classDocContainer, methodName, 4) + "\n";
         final String endMethod;
-        if ((javaClass.equals("io.deephaven.db.tables.utils.ParquetTools")
+        if ((javaClass.equals("io.deephaven.engine.tables.utils.ParquetTools")
                 && customParquetTools.contains(methodName)) ||
-                (javaClass.equals("io.deephaven.db.tables.utils.TableTools")
+                (javaClass.equals("io.deephaven.engine.tables.utils.TableTools")
                         && customTableTools.contains(methodName))
                 ||
                 (javaClass.equals("io.deephaven.kafka.KafkaTools")

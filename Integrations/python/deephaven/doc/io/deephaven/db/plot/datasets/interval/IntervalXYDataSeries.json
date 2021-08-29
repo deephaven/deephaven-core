@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.plot.datasets.interval.IntervalXYDataSeries",
+ "className": "io.deephaven.engine.plot.datasets.interval.IntervalXYDataSeries",
  "methods": {},
- "path": "io.deephaven.db.plot.datasets.interval.IntervalXYDataSeries",
+ "path": "io.deephaven.engine.plot.datasets.interval.IntervalXYDataSeries",
  "text": "XYDataSeriesInternal suitable for bar charts.",
  "typeName": "interface"
 }

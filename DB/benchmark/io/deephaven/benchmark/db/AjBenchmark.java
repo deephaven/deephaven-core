@@ -1,9 +1,9 @@
 package io.deephaven.benchmark.db;
 
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.utils.metrics.MetricsManager;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.v2.utils.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.FuzzyNumColumnGenerator;

@@ -2,13 +2,13 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.LongChunk;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.IndexShiftData;
-import io.deephaven.db.v2.utils.IndexUtilities;
-import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.IndexUtilities;
+import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.Arrays;

@@ -4,7 +4,7 @@
 
 package io.deephaven.python;
 
-import io.deephaven.db.plot.Figure;
+import io.deephaven.engine.plot.Figure;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -20,19 +20,19 @@ import java.util.stream.Collectors;
 public class PythonPlottingGenerator {
 
     private static final Logger log = Logger.getLogger(PythonPlottingGenerator.class.toString());
-    private static final String FIGURE_PATH = "io.deephaven.db.plot.Figure";
-    private static final String PLOTTING_CONVENIENCE_PATH = "io.deephaven.db.plot.PlottingConvenience";
+    private static final String FIGURE_PATH = "io.deephaven.engine.plot.Figure";
+    private static final String PLOTTING_CONVENIENCE_PATH = "io.deephaven.engine.plot.PlottingConvenience";
     private static final String[] PLOTTING_CONVENIENCE_DOC_PATHS = {
-            "io.deephaven.db.plot.Figure",
+            "io.deephaven.engine.plot.Figure",
             "io.deephaven.gui.color.Color",
-            "io.deephaven.db.plot.PlotStyle",
-            "io.deephaven.db.plot.LineStyle",
-            "io.deephaven.db.plot.Font",
-            "io.deephaven.db.plot.themes.Themes",
-            "io.deephaven.db.plot.filters.Selectables",
-            "io.deephaven.db.plot.composite.ScatterPlotMatrix",
-            "io.deephaven.db.plot.FigureFactory",
-            "io.deephaven.db.plot.axistransformations.AxisTransforms"
+            "io.deephaven.engine.plot.PlotStyle",
+            "io.deephaven.engine.plot.LineStyle",
+            "io.deephaven.engine.plot.Font",
+            "io.deephaven.engine.plot.themes.Themes",
+            "io.deephaven.engine.plot.filters.Selectables",
+            "io.deephaven.engine.plot.composite.ScatterPlotMatrix",
+            "io.deephaven.engine.plot.FigureFactory",
+            "io.deephaven.engine.plot.axistransformations.AxisTransforms"
     };
 
     private static String devroot;

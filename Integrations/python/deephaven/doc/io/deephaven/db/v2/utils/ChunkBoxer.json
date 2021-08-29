@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.db.v2.utils.ChunkBoxer",
+ "className": "io.deephaven.engine.v2.utils.ChunkBoxer",
  "methods": {
-  "getBoxer": ":param type: io.deephaven.db.v2.sources.chunk.ChunkType\n:param capacity: int\n:return: io.deephaven.db.v2.utils.ChunkBoxer.BoxerKernel"
+  "getBoxer": ":param type: io.deephaven.engine.v2.sources.chunk.ChunkType\n:param capacity: int\n:return: io.deephaven.engine.v2.utils.ChunkBoxer.BoxerKernel"
  },
- "path": "io.deephaven.db.v2.utils.ChunkBoxer",
+ "path": "io.deephaven.engine.v2.utils.ChunkBoxer",
  "text": "Convert an arbitrary chunk to a chunk of boxed objects.",
  "typeName": "class"
 }

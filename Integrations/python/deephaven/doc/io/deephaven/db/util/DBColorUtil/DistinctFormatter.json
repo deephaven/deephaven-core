@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.util.DBColorUtil$DistinctFormatter",
+ "className": "io.deephaven.engine.util.DBColorUtil$DistinctFormatter",
  "methods": {},
- "path": "io.deephaven.db.util.DBColorUtil.DistinctFormatter",
+ "path": "io.deephaven.engine.util.DBColorUtil.DistinctFormatter",
  "typeName": "class"
 }

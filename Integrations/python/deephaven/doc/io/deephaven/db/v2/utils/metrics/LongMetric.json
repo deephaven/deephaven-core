@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.db.v2.utils.metrics.LongMetric",
+ "className": "io.deephaven.engine.v2.utils.metrics.LongMetric",
  "methods": {
   "accept": ":param v: long",
   "sample": ":param v: long"
  },
- "path": "io.deephaven.db.v2.utils.metrics.LongMetric",
+ "path": "io.deephaven.engine.v2.utils.metrics.LongMetric",
  "typeName": "interface"
 }

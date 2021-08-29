@@ -63,7 +63,7 @@ def query_update_performance_set(evaluationNumber):
     :return:
     """
 
-    _jtype_ = jpy.get_type("io.deephaven.db.v2.utils.PerformanceQueries")
+    _jtype_ = jpy.get_type("io.deephaven.engine.v2.utils.PerformanceQueries")
 
     tableMap = _jtype_.queryUpdatePerformanceMap(evaluationNumber)
     add_tables_from_map_to_binding(tableMap)

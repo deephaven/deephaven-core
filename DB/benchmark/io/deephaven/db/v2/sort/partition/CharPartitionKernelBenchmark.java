@@ -1,9 +1,9 @@
-package io.deephaven.db.v2.sort.partition;
+package io.deephaven.engine.v2.sort.partition;
 
-import io.deephaven.db.util.tuples.generated.CharLongTuple;
-import io.deephaven.db.v2.sort.timsort.BaseTestCharTimSortKernel;
-import io.deephaven.db.v2.sort.timsort.TestTimSortKernel;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.util.tuples.generated.CharLongTuple;
+import io.deephaven.engine.v2.sort.timsort.BaseTestCharTimSortKernel;
+import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
+import io.deephaven.engine.v2.utils.Index;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.List;

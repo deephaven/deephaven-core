@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.tables.verify.SortedAssertionFailure",
+ "className": "io.deephaven.engine.tables.verify.SortedAssertionFailure",
  "methods": {},
- "path": "io.deephaven.db.tables.verify.SortedAssertionFailure",
+ "path": "io.deephaven.engine.tables.verify.SortedAssertionFailure",
  "typeName": "class"
 }

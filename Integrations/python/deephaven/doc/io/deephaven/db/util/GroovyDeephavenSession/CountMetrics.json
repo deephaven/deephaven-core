@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.db.util.GroovyDeephavenSession$CountMetrics",
+ "className": "io.deephaven.engine.util.GroovyDeephavenSession$CountMetrics",
  "methods": {
   "getScriptPath": ":return: java.lang.String",
   "priority": ":return: int"
  },
- "path": "io.deephaven.db.util.GroovyDeephavenSession.CountMetrics",
+ "path": "io.deephaven.engine.util.GroovyDeephavenSession.CountMetrics",
  "typeName": "class"
 }

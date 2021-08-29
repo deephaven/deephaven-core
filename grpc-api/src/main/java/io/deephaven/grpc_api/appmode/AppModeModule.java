@@ -4,7 +4,7 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.multibindings.IntoSet;
 import io.deephaven.appmode.ApplicationState;
-import io.deephaven.db.util.ScriptSession;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.grpc_api.session.TicketResolver;
 import io.grpc.BindableService;
 

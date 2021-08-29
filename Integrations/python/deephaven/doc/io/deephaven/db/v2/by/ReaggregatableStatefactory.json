@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.by.ReaggregatableStatefactory",
+ "className": "io.deephaven.engine.v2.by.ReaggregatableStatefactory",
  "methods": {},
- "path": "io.deephaven.db.v2.by.ReaggregatableStatefactory",
+ "path": "io.deephaven.engine.v2.by.ReaggregatableStatefactory",
  "typeName": "class"
 }

@@ -412,20 +412,20 @@ class TestTableTools(unittest.TestCase):
 
         with self.subTest(msg="col with datetime"):
             col1 = TableTools.col('datetime1', datetime.utcnow())
-            self.assertEqual(col1.dataType.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col1.dataType.toString(), 'class io.deephaven.engine.tables.utils.DBDateTime')
             # print("table from string = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
             col2 = TableTools.col('datetime2', datetime.utcnow(), datetime.utcnow(), None)
-            self.assertEqual(col2.dataType.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col2.dataType.toString(), 'class io.deephaven.engine.tables.utils.DBDateTime')
             # print("table from datetime varargs = \n{}".format(TableTools.html(TableTools.newTable(col2))))
 
         with self.subTest(msg="col with date"):
             col1 = TableTools.col('date1', date.today())
-            self.assertEqual(col1.dataType.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col1.dataType.toString(), 'class io.deephaven.engine.tables.utils.DBDateTime')
             # print("table from string = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
             col2 = TableTools.col('date2', date.today(), date.today(), None)
-            self.assertEqual(col2.dataType.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col2.dataType.toString(), 'class io.deephaven.engine.tables.utils.DBDateTime')
             # print("table from date varargs = \n{}".format(TableTools.html(TableTools.newTable(col2))))
 
         with self.subTest(msg="col with no argument"):
@@ -476,20 +476,20 @@ class TestTableTools(unittest.TestCase):
 
         with self.subTest(msg="colSource with datetime"):
             col1 = TableTools.colSource(datetime.utcnow())
-            self.assertEqual(col1.getType().toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col1.getType().toString(), 'class io.deephaven.engine.tables.utils.DBDateTime')
             # print("table from string = \n{}".format(TableTools.html(TableTools.newTable(1, {'datetime1': col1}))))
 
             col2 = TableTools.colSource(datetime.utcnow(), datetime.utcnow(), None)
-            self.assertEqual(col2.getType().toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col2.getType().toString(), 'class io.deephaven.engine.tables.utils.DBDateTime')
             # print("table from datetime varargs = \n{}".format(TableTools.html(TableTools.newTable(3, {'datetime2': col2}))))
 
         with self.subTest(msg="colSource with date"):
             col1 = TableTools.colSource(date.today())
-            self.assertEqual(col1.getType().toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col1.getType().toString(), 'class io.deephaven.engine.tables.utils.DBDateTime')
             # print("table from string = \n{}".format(TableTools.html(TableTools.newTable(1, {'date1': col1}))))
 
             col2 = TableTools.colSource(date.today(), date.today(), None)
-            self.assertEqual(col2.getType().toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col2.getType().toString(), 'class io.deephaven.engine.tables.utils.DBDateTime')
             # print("table from date varargs = \n{}".format(TableTools.html(TableTools.newTable(3, {'date2': col2}))))
 
     def testBreakingCases(self):

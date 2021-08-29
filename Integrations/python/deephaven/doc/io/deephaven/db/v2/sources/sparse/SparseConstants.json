@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.sources.sparse.SparseConstants",
+ "className": "io.deephaven.engine.v2.sources.sparse.SparseConstants",
  "methods": {},
- "path": "io.deephaven.db.v2.sources.sparse.SparseConstants",
+ "path": "io.deephaven.engine.v2.sources.sparse.SparseConstants",
  "typeName": "class"
 }

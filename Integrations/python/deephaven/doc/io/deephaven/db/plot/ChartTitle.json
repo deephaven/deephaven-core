@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.db.plot.ChartTitle",
+ "className": "io.deephaven.engine.plot.ChartTitle",
  "methods": {
-  "getPlotInfo": ":return: io.deephaven.db.plot.errors.PlotInfo"
+  "getPlotInfo": ":return: io.deephaven.engine.plot.errors.PlotInfo"
  },
- "path": "io.deephaven.db.plot.ChartTitle",
+ "path": "io.deephaven.engine.plot.ChartTitle",
  "text": "Static chart title",
  "typeName": "class"
 }

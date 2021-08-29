@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.exceptions.StateException",
+ "className": "io.deephaven.engine.exceptions.StateException",
  "methods": {},
- "path": "io.deephaven.db.exceptions.StateException",
+ "path": "io.deephaven.engine.exceptions.StateException",
  "typeName": "class"
 }

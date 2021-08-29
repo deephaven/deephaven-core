@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.db.tables.libs.QueryLibraryImportsServiceLoader",
+ "className": "io.deephaven.engine.tables.libs.QueryLibraryImportsServiceLoader",
  "methods": {
   "classes": ":return: java.util.Set<java.lang.Class<?>>",
   "packages": ":return: java.util.Set<java.lang.Package>",
   "statics": ":return: java.util.Set<java.lang.Class<?>>"
  },
- "path": "io.deephaven.db.tables.libs.QueryLibraryImportsServiceLoader",
+ "path": "io.deephaven.engine.tables.libs.QueryLibraryImportsServiceLoader",
  "typeName": "class"
 }

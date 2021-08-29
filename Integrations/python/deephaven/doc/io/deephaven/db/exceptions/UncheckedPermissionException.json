@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.exceptions.UncheckedPermissionException",
+ "className": "io.deephaven.engine.exceptions.UncheckedPermissionException",
  "methods": {},
- "path": "io.deephaven.db.exceptions.UncheckedPermissionException",
+ "path": "io.deephaven.engine.exceptions.UncheckedPermissionException",
  "text": "An UncheckedDeephavenException that indicates an issue with permissions.",
  "typeName": "class"
 }

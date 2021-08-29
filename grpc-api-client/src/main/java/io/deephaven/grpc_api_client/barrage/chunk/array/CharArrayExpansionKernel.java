@@ -4,16 +4,16 @@
 
 package io.deephaven.grpc_api_client.barrage.chunk.array;
 
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.CharChunk;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.IntChunk;
-import io.deephaven.db.v2.sources.chunk.ObjectChunk;
-import io.deephaven.db.v2.sources.chunk.WritableCharChunk;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
-import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.db.v2.sources.chunk.sized.SizedCharChunk;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.CharChunk;
+import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.sources.chunk.IntChunk;
+import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableCharChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
+import io.deephaven.engine.v2.sources.chunk.sized.SizedCharChunk;
 
 public class CharArrayExpansionKernel implements ArrayExpansionKernel {
     private final static char[] ZERO_LEN_ARRAY = new char[0];

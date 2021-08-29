@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults$ForObject",
+ "className": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults$ForObject",
  "methods": {},
- "path": "io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults.ForObject",
+ "path": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults.ForObject",
  "text": "Default interface for immutable Object ColumnSource implementations.",
  "typeName": "interface"
 }

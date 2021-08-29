@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.util.file.FileHandleFactory$OpenOptionsHelper",
+ "className": "io.deephaven.engine.util.file.FileHandleFactory$OpenOptionsHelper",
  "methods": {},
- "path": "io.deephaven.db.util.file.FileHandleFactory.OpenOptionsHelper",
+ "path": "io.deephaven.engine.util.file.FileHandleFactory.OpenOptionsHelper",
  "typeName": "class"
 }

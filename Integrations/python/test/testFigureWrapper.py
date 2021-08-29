@@ -422,7 +422,7 @@ class TestFigureWrapper(unittest.TestCase):
 
         # NB: the error message:
         #   java.lang.UnsupportedOperationException: Series type does not support this method.
-        #   seriesType=class io.deephaven.db.plot.datasets.xy.XYDataSeriesTableArray
+        #   seriesType=class io.deephaven.engine.plot.datasets.xy.XYDataSeriesTableArray
         #   method='@Override public  FigureImpl pointsVisible( java.lang.Boolean visible, java.lang.Object... keys )'
 
         # TODO: seriesNamingFunction(*args)?,pointColorByY(func, *keys)?

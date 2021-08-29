@@ -1,14 +1,14 @@
 package io.deephaven.grpc_api.runner;
 
 import io.deephaven.grpc_api.appmode.ApplicationInjector;
-import io.deephaven.db.util.AbstractScriptSession;
+import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.utils.MemoryTableLoggers;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.v2.utils.MemoryTableLoggers;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.grpc_api.log.LogInit;

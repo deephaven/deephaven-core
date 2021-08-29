@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.db.util.file.FileHandleAccessor",
+ "className": "io.deephaven.engine.util.file.FileHandleAccessor",
  "methods": {
   "toString": ":return: java.lang.String"
  },
- "path": "io.deephaven.db.util.file.FileHandleAccessor",
+ "path": "io.deephaven.engine.util.file.FileHandleAccessor",
  "text": "Base class for accessors that wrap a FileHandle with support for interruption and asynchronous close.",
  "typeName": "class"
 }

@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.v2.sources.StringSetImpl",
+ "className": "io.deephaven.engine.v2.sources.StringSetImpl",
  "methods": {
   "contains": ":param value: java.lang.String\n:return: boolean",
   "containsAll": ":param values: java.lang.String...\n:return: boolean",
@@ -14,7 +14,7 @@
   "toString": ":return: java.lang.String",
   "values": ":return: java.lang.String[]"
  },
- "path": "io.deephaven.db.v2.sources.StringSetImpl",
+ "path": "io.deephaven.engine.v2.sources.StringSetImpl",
  "text": "The StringSet implementation used by column sources.",
  "typeName": "class"
 }

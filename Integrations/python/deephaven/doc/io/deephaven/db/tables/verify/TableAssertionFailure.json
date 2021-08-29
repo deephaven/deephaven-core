@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.tables.verify.TableAssertionFailure",
+ "className": "io.deephaven.engine.tables.verify.TableAssertionFailure",
  "methods": {},
- "path": "io.deephaven.db.tables.verify.TableAssertionFailure",
+ "path": "io.deephaven.engine.tables.verify.TableAssertionFailure",
  "typeName": "class"
 }

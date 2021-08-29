@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.tables.utils.TableToolsShowControl",
+ "className": "io.deephaven.engine.tables.utils.TableToolsShowControl",
  "methods": {},
- "path": "io.deephaven.db.tables.utils.TableToolsShowControl",
+ "path": "io.deephaven.engine.tables.utils.TableToolsShowControl",
  "typeName": "class"
 }

@@ -4,9 +4,9 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
-import io.deephaven.db.util.GroovyDeephavenSession;
-import io.deephaven.db.util.GroovyDeephavenSession.RunScripts;
-import io.deephaven.db.util.ScriptSession;
+import io.deephaven.engine.util.GroovyDeephavenSession;
+import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
+import io.deephaven.engine.util.ScriptSession;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

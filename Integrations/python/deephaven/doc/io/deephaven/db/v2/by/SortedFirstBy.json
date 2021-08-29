@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.by.SortedFirstBy",
+ "className": "io.deephaven.engine.v2.by.SortedFirstBy",
  "methods": {},
- "path": "io.deephaven.db.v2.by.SortedFirstBy",
+ "path": "io.deephaven.engine.v2.by.SortedFirstBy",
  "typeName": "class"
 }

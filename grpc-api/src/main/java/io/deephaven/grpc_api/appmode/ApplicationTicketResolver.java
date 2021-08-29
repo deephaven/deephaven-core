@@ -5,7 +5,7 @@ import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.Field;
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolverBase;
 import io.deephaven.grpc_api.session.TicketRouter;

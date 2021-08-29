@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults$LongBacked",
+ "className": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults$LongBacked",
  "methods": {},
- "path": "io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults.LongBacked",
+ "path": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults.LongBacked",
  "text": "Default interface for immutable long-backed ColumnSource implementations.",
  "typeName": "interface"
 }

@@ -4,7 +4,7 @@
 
 package io.deephaven.integrations.common;
 
-import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.util.QueryConstants;
 
 /**

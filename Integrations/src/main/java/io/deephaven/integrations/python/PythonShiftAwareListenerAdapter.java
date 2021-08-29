@@ -4,10 +4,10 @@
 
 package io.deephaven.integrations.python;
 
-import io.deephaven.db.v2.InstrumentedShiftAwareListenerAdapter;
+import io.deephaven.engine.v2.InstrumentedShiftAwareListenerAdapter;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
-import io.deephaven.db.v2.DynamicTable;
+import io.deephaven.engine.v2.DynamicTable;
 
 
 /**

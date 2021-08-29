@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.db.util.liveness.LivenessManager",
+ "className": "io.deephaven.engine.util.liveness.LivenessManager",
  "methods": {
-  "manage": "Add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add",
-  "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added"
+  "manage": "Add the specified referent to this manager.\n\n:param referent: (io.deephaven.engine.util.liveness.LivenessReferent) - The referent to add",
+  "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.engine.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added"
  },
- "path": "io.deephaven.db.util.liveness.LivenessManager",
+ "path": "io.deephaven.engine.util.liveness.LivenessManager",
  "text": "Interface for objects that retainReference LivenessReferents until such time as they are no longer necessary.",
  "typeName": "interface"
 }

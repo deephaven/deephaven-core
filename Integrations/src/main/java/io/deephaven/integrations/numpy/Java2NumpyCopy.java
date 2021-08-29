@@ -1,10 +1,10 @@
 package io.deephaven.integrations.numpy;
 
 import io.deephaven.dbtypes.DbImage;
-import io.deephaven.db.tables.DataColumn;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.tables.DataColumn;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
 

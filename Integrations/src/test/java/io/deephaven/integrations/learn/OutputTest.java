@@ -33,7 +33,7 @@ public class OutputTest {
         Assert.assertEquals(type, output.getType());
     }
 
-    @Test(expected = io.deephaven.db.tables.utils.NameValidator.InvalidNameException.class)
+    @Test(expected = io.deephaven.engine.tables.utils.NameValidator.InvalidNameException.class)
     public void invalidColumnNameTest() {
         final String colName = " Outcol";
         final Function<Object[], Object> func = args -> args;

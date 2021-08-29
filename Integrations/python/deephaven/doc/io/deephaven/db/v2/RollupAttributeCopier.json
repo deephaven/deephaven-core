@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.v2.RollupAttributeCopier",
+ "className": "io.deephaven.engine.v2.RollupAttributeCopier",
  "methods": {},
- "path": "io.deephaven.db.v2.RollupAttributeCopier",
+ "path": "io.deephaven.engine.v2.RollupAttributeCopier",
  "text": "Copies attributes for constituent leafs or intermediate level rollups.",
  "typeName": "class"
 }

@@ -1,12 +1,12 @@
 {
- "className": "io.deephaven.db.tablelogger.UpdatePerformanceLogLogger",
+ "className": "io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger",
  "methods": {
   "getColumnDbTypes": ":return: java.lang.Class<?>[]",
   "getColumnNames": ":return: java.lang.String[]",
   "getDefaultTableName": ":return: java.lang.String",
-  "getTableDefinition": ":return: io.deephaven.db.tables.TableDefinition",
-  "log": "*Overload 1*  \n  :param intervalLevelDetails: io.deephaven.db.v2.utils.UpdatePerformanceTracker.IntervalLevelDetails\n  :param performanceEntry: io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry\n  \n*Overload 2*  \n  :param flags: io.deephaven.tablelogger.Row.Flags\n  :param intervalLevelDetails: io.deephaven.db.v2.utils.UpdatePerformanceTracker.IntervalLevelDetails\n  :param performanceEntry: io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry"
+  "getTableDefinition": ":return: io.deephaven.engine.tables.TableDefinition",
+  "log": "*Overload 1*  \n  :param intervalLevelDetails: io.deephaven.engine.v2.utils.UpdatePerformanceTracker.IntervalLevelDetails\n  :param performanceEntry: io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry\n  \n*Overload 2*  \n  :param flags: io.deephaven.tablelogger.Row.Flags\n  :param intervalLevelDetails: io.deephaven.engine.v2.utils.UpdatePerformanceTracker.IntervalLevelDetails\n  :param performanceEntry: io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry"
  },
- "path": "io.deephaven.db.tablelogger.UpdatePerformanceLogLogger",
+ "path": "io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger",
  "typeName": "class"
 }

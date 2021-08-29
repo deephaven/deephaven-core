@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.db.util.GroovyDeephavenSession$InitScript",
+ "className": "io.deephaven.engine.util.GroovyDeephavenSession$InitScript",
  "methods": {
   "getScriptPath": ":return: java.lang.String",
   "priority": ":return: int"
  },
- "path": "io.deephaven.db.util.GroovyDeephavenSession.InitScript",
+ "path": "io.deephaven.engine.util.GroovyDeephavenSession.InitScript",
  "typeName": "interface"
 }

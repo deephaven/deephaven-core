@@ -1,11 +1,11 @@
 {
- "className": "io.deephaven.db.v2.utils.singlerange.SingleLongSingleRange",
+ "className": "io.deephaven.engine.v2.utils.singlerange.SingleLongSingleRange",
  "methods": {
-  "copy": ":return: io.deephaven.db.v2.utils.singlerange.SingleRange",
+  "copy": ":return: io.deephaven.engine.v2.utils.singlerange.SingleRange",
   "getCardinality": ":return: long",
   "rangeEnd": ":return: long",
   "rangeStart": ":return: long"
  },
- "path": "io.deephaven.db.v2.utils.singlerange.SingleLongSingleRange",
+ "path": "io.deephaven.engine.v2.utils.singlerange.SingleLongSingleRange",
  "typeName": "class"
 }

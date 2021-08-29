@@ -4,8 +4,8 @@
 
 package io.deephaven.grpc_api.barrage;
 
-import io.deephaven.db.v2.utils.BarrageMessage;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.v2.utils.BarrageMessage;
+import io.deephaven.engine.v2.sources.chunk.ChunkType;
 
 import java.io.InputStream;
 

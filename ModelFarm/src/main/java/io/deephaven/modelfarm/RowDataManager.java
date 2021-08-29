@@ -4,7 +4,7 @@
 
 package io.deephaven.modelfarm;
 
-import io.deephaven.db.v2.DynamicTable;
+import io.deephaven.engine.v2.DynamicTable;
 
 /**
  * An interface for accessing and querying data contained in rows of a dynamic table.

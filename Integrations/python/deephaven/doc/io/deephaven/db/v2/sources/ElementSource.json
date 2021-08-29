@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.v2.sources.ElementSource",
+ "className": "io.deephaven.engine.v2.sources.ElementSource",
  "methods": {
   "get": ":param index: long\n:return: ElementSource.T",
   "getBoolean": ":param index: long\n:return: java.lang.Boolean",
@@ -20,6 +20,6 @@
   "getPrevShort": ":param index: long\n:return: short",
   "getShort": ":param index: long\n:return: short"
  },
- "path": "io.deephaven.db.v2.sources.ElementSource",
+ "path": "io.deephaven.engine.v2.sources.ElementSource",
  "typeName": "interface"
 }

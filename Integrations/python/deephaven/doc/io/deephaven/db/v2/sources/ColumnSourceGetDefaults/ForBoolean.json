@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.v2.sources.ColumnSourceGetDefaults$ForBoolean",
+ "className": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults$ForBoolean",
  "methods": {
   "getBoolean": ":param index: long\n:return: java.lang.Boolean",
   "getByte": ":param index: long\n:return: byte",
@@ -10,7 +10,7 @@
   "getLong": ":param index: long\n:return: long",
   "getShort": ":param index: long\n:return: short"
  },
- "path": "io.deephaven.db.v2.sources.ColumnSourceGetDefaults.ForBoolean",
+ "path": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults.ForBoolean",
  "text": "Default interface for Boolean ColumnSource implementations.",
  "typeName": "interface"
 }

@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.exceptions.TableIOException",
+ "className": "io.deephaven.engine.exceptions.TableIOException",
  "methods": {},
- "path": "io.deephaven.db.exceptions.TableIOException",
+ "path": "io.deephaven.engine.exceptions.TableIOException",
  "typeName": "class"
 }

@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.db;
 
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.select.SelectFilterFactory;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;

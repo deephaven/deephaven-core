@@ -1,17 +1,17 @@
 package io.deephaven.util.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.libs.QueryLibrary;
-import io.deephaven.db.tables.select.QueryScope;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.libs.QueryLibrary;
+import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
 
 import io.deephaven.test.types.OutOfBandTest;
 import java.time.LocalDate;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.db.tables.utils.TableTools.emptyTable;
+import static io.deephaven.engine.tables.utils.TableTools.emptyTable;
 
 /**
  * Tests for {@link StaticCalendarMethods}

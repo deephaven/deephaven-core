@@ -2,12 +2,12 @@ package io.deephaven.treetable;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.base.Pair;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.v2.QueryTable;
+import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

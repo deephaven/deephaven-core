@@ -1,15 +1,15 @@
 {
- "className": "io.deephaven.db.plot.datasets.DataSeriesInternal",
+ "className": "io.deephaven.engine.plot.datasets.DataSeriesInternal",
  "methods": {
-  "axes": "Gets the axes on which this data will be plotted.\n\n:return: (io.deephaven.db.plot.AxesImpl) axes on which this data will be plotted",
-  "chart": "Gets the chart on which this data will be plotted.\n\n:return: (io.deephaven.db.plot.ChartImpl) chart on which this data will be plotted",
-  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - new axes.\n:return: (io.deephaven.db.plot.datasets.DataSeriesInternal) copy of the series on a different set of axes.",
+  "axes": "Gets the axes on which this data will be plotted.\n\n:return: (io.deephaven.engine.plot.AxesImpl) axes on which this data will be plotted",
+  "chart": "Gets the chart on which this data will be plotted.\n\n:return: (io.deephaven.engine.plot.ChartImpl) chart on which this data will be plotted",
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.engine.plot.AxesImpl) - new axes.\n:return: (io.deephaven.engine.plot.datasets.DataSeriesInternal) copy of the series on a different set of axes.",
   "getErrorBarColor": "Gets the color of the error bars.\n\n:return: (io.deephaven.gui.color.Paint) error bar color",
   "getGradientVisible": "Gets whether the bar gradient is visible.\n\n:return: (boolean) whether the bar gradient is visible",
   "getLineColor": "Gets the line color.\n\n:return: (io.deephaven.gui.color.Paint) line color",
-  "getLineStyle": "Gets the line style.\n\n:return: (io.deephaven.db.plot.LineStyle) line style",
+  "getLineStyle": "Gets the line style.\n\n:return: (io.deephaven.engine.plot.LineStyle) line style",
   "getLinesVisible": "Gets whether lines are visible.\n\n:return: (java.lang.Boolean) whether lines are visible",
-  "getPlotInfo": ":return: io.deephaven.db.plot.errors.PlotInfo",
+  "getPlotInfo": ":return: io.deephaven.engine.plot.errors.PlotInfo",
   "getPointLabelFormat": "Gets the point label format.\n\n:return: (java.lang.String) point label format",
   "getPointsVisible": "Gets whether points are visible.\n\n:return: (java.lang.Boolean) whether points are visible",
   "getSeriesColor": "Gets the series color.\n\n:return: (io.deephaven.gui.color.Paint) series color",
@@ -19,7 +19,7 @@
   "name": "Gets the name of this data series.\n\n:return: (java.lang.Comparable) name of this data series",
   "size": "Gets the size of this data set.\n\n:return: (int) size of this data set"
  },
- "path": "io.deephaven.db.plot.datasets.DataSeriesInternal",
+ "path": "io.deephaven.engine.plot.datasets.DataSeriesInternal",
  "text": "A generic data series.",
  "typeName": "interface"
 }

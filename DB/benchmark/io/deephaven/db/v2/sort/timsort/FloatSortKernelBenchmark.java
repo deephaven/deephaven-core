@@ -1,9 +1,9 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSortKernelBenchmark and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
-package io.deephaven.db.v2.sort.timsort;
+package io.deephaven.engine.v2.sort.timsort;
 
-import io.deephaven.db.util.tuples.generated.FloatLongTuple;
+import io.deephaven.engine.util.tuples.generated.FloatLongTuple;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.*;

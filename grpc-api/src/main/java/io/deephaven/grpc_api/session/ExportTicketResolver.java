@@ -5,7 +5,7 @@
 package io.deephaven.grpc_api.session;
 
 import com.google.rpc.Code;
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import org.apache.arrow.flight.impl.Flight;

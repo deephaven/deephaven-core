@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.util.DhDoubleComparisons",
+ "className": "io.deephaven.engine.util.DhDoubleComparisons",
  "methods": {
   "compare": ":param lhs: double\n:param rhs: double\n:return: int",
   "eq": ":param lhs: double\n:param rhs: double\n:return: boolean",
@@ -8,6 +8,6 @@
   "leq": ":param lhs: double\n:param rhs: double\n:return: boolean",
   "lt": ":param lhs: double\n:param rhs: double\n:return: boolean"
  },
- "path": "io.deephaven.db.util.DhDoubleComparisons",
+ "path": "io.deephaven.engine.util.DhDoubleComparisons",
  "typeName": "class"
 }

@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.hashing.HashMapK2V2",
+ "className": "io.deephaven.engine.v2.hashing.HashMapK2V2",
  "methods": {},
- "path": "io.deephaven.db.v2.hashing.HashMapK2V2",
+ "path": "io.deephaven.engine.v2.hashing.HashMapK2V2",
  "typeName": "class"
 }

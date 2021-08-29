@@ -6,11 +6,11 @@ package io.deephaven.grpc_api.example;
 
 import com.google.protobuf.ByteString;
 import io.deephaven.base.formatters.FormatBitSet;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.v2.InstrumentedShiftAwareListener;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
+import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.barrage.BarrageClientSubscription;
 import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;

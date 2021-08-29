@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.tables.utils.ArrayUtils$ByteArrayAccessor",
+ "className": "io.deephaven.engine.tables.utils.ArrayUtils$ByteArrayAccessor",
  "methods": {
   "copyArray": ":param sourceArray: java.lang.Object\n:param pos: int\n:param length: int",
   "fill": ":param from: int\n:param to: int\n:param value: java.lang.Byte",
@@ -8,6 +8,6 @@
   "length": ":return: int",
   "set": ":param index: int\n:param value: java.lang.Byte"
  },
- "path": "io.deephaven.db.tables.utils.ArrayUtils.ByteArrayAccessor",
+ "path": "io.deephaven.engine.tables.utils.ArrayUtils.ByteArrayAccessor",
  "typeName": "class"
 }

@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.tables.StringSetWrapper",
+ "className": "io.deephaven.engine.tables.StringSetWrapper",
  "methods": {
   "addStringToSet": ":param val: java.lang.String",
   "contains": ":param value: java.lang.String\n:return: boolean",
@@ -15,7 +15,7 @@
   "toString": ":return: java.lang.String",
   "values": ":return: java.lang.String[]"
  },
- "path": "io.deephaven.db.tables.StringSetWrapper",
+ "path": "io.deephaven.engine.tables.StringSetWrapper",
  "text": "HashSet-backed StringSet implementation.",
  "typeName": "class"
 }

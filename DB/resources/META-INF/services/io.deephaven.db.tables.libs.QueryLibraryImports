@@ -1,2 +1,2 @@
-io.deephaven.db.tables.libs.QueryLibraryImportsConfiguration
-io.deephaven.db.tables.libs.QueryLibraryImportsDefaults
+io.deephaven.engine.tables.libs.QueryLibraryImportsConfiguration
+io.deephaven.engine.tables.libs.QueryLibraryImportsDefaults

@@ -1,12 +1,12 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharPartitionKernelBenchmark and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
-package io.deephaven.db.v2.sort.partition;
+package io.deephaven.engine.v2.sort.partition;
 
-import io.deephaven.db.util.tuples.generated.LongLongTuple;
-import io.deephaven.db.v2.sort.timsort.BaseTestLongTimSortKernel;
-import io.deephaven.db.v2.sort.timsort.TestTimSortKernel;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.util.tuples.generated.LongLongTuple;
+import io.deephaven.engine.v2.sort.timsort.BaseTestLongTimSortKernel;
+import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
+import io.deephaven.engine.v2.utils.Index;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.List;

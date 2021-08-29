@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.exceptions.ArgumentException",
+ "className": "io.deephaven.engine.exceptions.ArgumentException",
  "methods": {},
- "path": "io.deephaven.db.exceptions.ArgumentException",
+ "path": "io.deephaven.engine.exceptions.ArgumentException",
  "typeName": "class"
 }

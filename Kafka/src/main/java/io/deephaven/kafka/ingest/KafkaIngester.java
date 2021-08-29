@@ -9,7 +9,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;

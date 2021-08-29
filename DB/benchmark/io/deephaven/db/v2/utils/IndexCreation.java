@@ -1,4 +1,4 @@
-package io.deephaven.db.v2.utils;
+package io.deephaven.engine.v2.utils;
 
 import io.deephaven.benchmarking.BenchUtil;
 import org.openjdk.jmh.annotations.*;

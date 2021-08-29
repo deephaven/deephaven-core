@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.utils.Index$RandomBuilder",
+ "className": "io.deephaven.engine.v2.utils.Index$RandomBuilder",
  "methods": {},
- "path": "io.deephaven.db.v2.utils.Index.RandomBuilder",
+ "path": "io.deephaven.engine.v2.utils.Index.RandomBuilder",
  "typeName": "interface"
 }

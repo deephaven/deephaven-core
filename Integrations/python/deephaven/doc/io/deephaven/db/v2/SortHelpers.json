@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.SortHelpers",
+ "className": "io.deephaven.engine.v2.SortHelpers",
  "methods": {},
- "path": "io.deephaven.db.v2.SortHelpers",
+ "path": "io.deephaven.engine.v2.SortHelpers",
  "typeName": "class"
 }

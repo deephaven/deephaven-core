@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.util.DBColorUtilImpl",
+ "className": "io.deephaven.engine.util.DBColorUtilImpl",
  "methods": {
   "background": "Creates a table format encoding with specified background color and an unformatted foreground.\n\n*Overload 1*  \n  :param color: (io.deephaven.gui.color.Color) - color represented by a Color\n  :return: (long) table format encoding with specified background color and unformatted foreground\n  \n*Overload 2*  \n  :param color: (java.lang.String) - the hex representation or the case-insensitive color name\n  :return: (long) table format encoding with specified background color and unformatted foreground",
   "backgroundForeground": "Creates a table format encoding with specified foreground and background colors.\n\n*Overload 1*  \n  :param bg: (io.deephaven.gui.color.Color) - background color represented by a Color\n  :param fg: (io.deephaven.gui.color.Color) - foreground color represented by a Color\n  :return: (long) table format encoding with specified foreground and background colors\n  \n*Overload 2*  \n  :param bg: (java.lang.String) - background color represented by a String. This may be the hex representation or the\n          case-insensitive color name\n  :param fg: (java.lang.String) - foreground color represented by a String. This may be the hex representation or the\n          case-insensitive color name\n  :return: (long) table format encoding with specified foreground and background colors",
@@ -21,7 +21,7 @@
   "toLong": "Gets the formatting long of the input color\n\n*Overload 1*  \n  :param color: (long) - color encoded in a long\n  :return: (long) formatting long of the input color\n  \n*Overload 2*  \n  :param color: (io.deephaven.gui.color.Color) - color represented by a Color\n  :return: (long) formatting long of the input color\n  \n*Overload 3*  \n  :param color: (java.lang.String) - the hex representation or the case-insensitive color name\n  :return: (long) formatting long of the input color",
   "valueOf": "Returns the long value for the color with the given name. For example,\n DBColorUtil.valueOf(\"VIVID_BLUE\") == Color.VIVID_BLUE.\n \n This method has been deprecated. The new method is toLong(String)\n\n\n:param colorName: (java.lang.String) - The name of the color to retrieve.\n:return: (long) The long value for the given color"
  },
- "path": "io.deephaven.db.util.DBColorUtilImpl",
+ "path": "io.deephaven.engine.util.DBColorUtilImpl",
  "text": "Formatting methods from DBColorUtil. Exists so that we can statically import the DBColorUtil methods without\n importing the color fields. TODO: remove once DBColorUtil field and Color field conflicts are\n resolved. TODO: This class won't be necessary once we can import DBColorUtil as static again. TODO\n (deephaven/deephaven-core/issues/175): Move this to a new module and package",
  "typeName": "class"
 }

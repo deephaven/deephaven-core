@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeriesSwappableTableArray",
+ "className": "io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeriesSwappableTableArray",
  "methods": {
-  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - new axes.\n:return: (io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeriesSwappableTableArray) copy of the series on a different set of axes."
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.engine.plot.AxesImpl) - new axes.\n:return: (io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeriesSwappableTableArray) copy of the series on a different set of axes."
  },
- "path": "io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeriesSwappableTableArray",
+ "path": "io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeriesSwappableTableArray",
  "typeName": "class"
 }

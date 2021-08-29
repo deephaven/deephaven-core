@@ -1,11 +1,11 @@
 {
- "className": "io.deephaven.db.plot.SeriesCollection$SeriesDescription",
+ "className": "io.deephaven.engine.plot.SeriesCollection$SeriesDescription",
  "methods": {
-  "getSeries": "Gets the data series.\n\n:return: (io.deephaven.db.plot.SeriesInternal) data series.",
-  "getType": "Gets the type of data series.\n\n:return: (io.deephaven.db.plot.SeriesCollection.SeriesType) type of data series.",
+  "getSeries": "Gets the data series.\n\n:return: (io.deephaven.engine.plot.SeriesInternal) data series.",
+  "getType": "Gets the type of data series.\n\n:return: (io.deephaven.engine.plot.SeriesCollection.SeriesType) type of data series.",
   "isMultiSeries": "True if the series is a multiseries. False otherwise.\n\n:return: (boolean) true if the series is a multiseries. False otherwise."
  },
- "path": "io.deephaven.db.plot.SeriesCollection.SeriesDescription",
+ "path": "io.deephaven.engine.plot.SeriesCollection.SeriesDescription",
  "text": "Description of a data series.",
  "typeName": "class"
 }

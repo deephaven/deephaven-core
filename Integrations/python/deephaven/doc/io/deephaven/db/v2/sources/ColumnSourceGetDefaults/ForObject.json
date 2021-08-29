@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.v2.sources.ColumnSourceGetDefaults$ForObject",
+ "className": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults$ForObject",
  "methods": {
   "getBoolean": ":param index: long\n:return: java.lang.Boolean",
   "getByte": ":param index: long\n:return: byte",
@@ -10,7 +10,7 @@
   "getLong": ":param index: long\n:return: long",
   "getShort": ":param index: long\n:return: short"
  },
- "path": "io.deephaven.db.v2.sources.ColumnSourceGetDefaults.ForObject",
+ "path": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults.ForObject",
  "text": "Default interface for Object ColumnSource implementations.",
  "typeName": "interface"
 }

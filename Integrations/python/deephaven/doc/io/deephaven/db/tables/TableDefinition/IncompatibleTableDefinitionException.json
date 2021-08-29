@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.tables.TableDefinition$IncompatibleTableDefinitionException",
+ "className": "io.deephaven.engine.tables.TableDefinition$IncompatibleTableDefinitionException",
  "methods": {},
- "path": "io.deephaven.db.tables.TableDefinition.IncompatibleTableDefinitionException",
+ "path": "io.deephaven.engine.tables.TableDefinition.IncompatibleTableDefinitionException",
  "text": "Runtime exception representing an incompatibility between table definitions.",
  "typeName": "class"
 }

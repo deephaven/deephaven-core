@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.util.DhLongComparisons",
+ "className": "io.deephaven.engine.util.DhLongComparisons",
  "methods": {
   "compare": ":param lhs: long\n:param rhs: long\n:return: int",
   "eq": ":param lhs: long\n:param rhs: long\n:return: boolean",
@@ -8,6 +8,6 @@
   "leq": ":param lhs: long\n:param rhs: long\n:return: boolean",
   "lt": ":param lhs: long\n:param rhs: long\n:return: boolean"
  },
- "path": "io.deephaven.db.util.DhLongComparisons",
+ "path": "io.deephaven.engine.util.DhLongComparisons",
  "typeName": "class"
 }

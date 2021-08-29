@@ -2,11 +2,11 @@ package io.deephaven.grpc_api.table.ops;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.tables.DataColumn;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.select.SelectColumnFactory;
-import io.deephaven.db.v2.by.ComboAggregateFactory;
-import io.deephaven.db.v2.select.SelectColumn;
+import io.deephaven.engine.tables.DataColumn;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.select.SelectColumnFactory;
+import io.deephaven.engine.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.validation.ColumnExpressionValidator;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;

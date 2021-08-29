@@ -5,12 +5,12 @@
 package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
-import io.deephaven.db.v2.BaseTable;
-import io.deephaven.db.v2.InstrumentedShiftAwareListener;
-import io.deephaven.db.v2.NotificationStepReceiver;
-import io.deephaven.db.v2.ShiftAwareSwapListener;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.v2.BaseTable;
+import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
+import io.deephaven.engine.v2.NotificationStepReceiver;
+import io.deephaven.engine.v2.ShiftAwareSwapListener;
+import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;

@@ -1,13 +1,13 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.v2.sources.BooleanArraySource;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.LongArraySource;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.sources.BooleanArraySource;
+import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.sources.LongArraySource;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;

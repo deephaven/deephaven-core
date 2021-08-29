@@ -1,9 +1,9 @@
 package io.deephaven.benchmark.db;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.SparseSelect;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.v2.SparseSelect;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;

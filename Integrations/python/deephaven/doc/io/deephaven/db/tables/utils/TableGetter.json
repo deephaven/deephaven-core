@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.tables.utils.TableGetter",
+ "className": "io.deephaven.engine.tables.utils.TableGetter",
  "methods": {},
- "path": "io.deephaven.db.tables.utils.TableGetter",
+ "path": "io.deephaven.engine.tables.utils.TableGetter",
  "typeName": "class"
 }

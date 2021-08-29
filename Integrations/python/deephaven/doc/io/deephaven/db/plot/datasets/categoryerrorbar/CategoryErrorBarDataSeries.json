@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeries",
+ "className": "io.deephaven.engine.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeries",
  "methods": {},
- "path": "io.deephaven.db.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeries",
+ "path": "io.deephaven.engine.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeries",
  "text": "An CategoryDataSeries with error bars.",
  "typeName": "interface"
 }

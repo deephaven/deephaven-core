@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.v2.utils.IndexShiftData$Iterator",
+ "className": "io.deephaven.engine.v2.utils.IndexShiftData$Iterator",
  "methods": {
   "beginRange": ":return: long",
   "endRange": ":return: long",
@@ -7,6 +7,6 @@
   "polarityReversed": ":return: boolean",
   "shiftDelta": ":return: long"
  },
- "path": "io.deephaven.db.v2.utils.IndexShiftData.Iterator",
+ "path": "io.deephaven.engine.v2.utils.IndexShiftData.Iterator",
  "typeName": "interface"
 }

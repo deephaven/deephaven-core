@@ -1,16 +1,16 @@
 package io.deephaven.grpc_api.table;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.SystemicObjectTracker;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.db.v2.ModifiedColumnSet;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.ShiftAwareListener;
-import io.deephaven.db.v2.TstUtils;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.SystemicObjectTracker;
+import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.v2.QueryTable;
+import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.TstUtils;
+import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
@@ -29,8 +29,8 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.UUID;
 
-import static io.deephaven.db.v2.TstUtils.addToTable;
-import static io.deephaven.db.v2.TstUtils.i;
+import static io.deephaven.engine.v2.TstUtils.addToTable;
+import static io.deephaven.engine.v2.TstUtils.i;
 
 public class ExportTableUpdateListenerTest {
 

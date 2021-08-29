@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.tables.remote.preview.PreviewType",
+ "className": "io.deephaven.engine.tables.remote.preview.PreviewType",
  "methods": {},
- "path": "io.deephaven.db.tables.remote.preview.PreviewType",
+ "path": "io.deephaven.engine.tables.remote.preview.PreviewType",
  "text": "A Preview Type is used for columns that should be previewed rather than sending all of the data for each value.",
  "typeName": "interface"
 }

@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.v2.sources.chunk.Attributes$Keys",
+ "className": "io.deephaven.engine.v2.sources.chunk.Attributes$Keys",
  "methods": {},
- "path": "io.deephaven.db.v2.sources.chunk.Attributes.Keys",
+ "path": "io.deephaven.engine.v2.sources.chunk.Attributes.Keys",
  "text": "The chunk contains individual index keys or index ranges.",
  "typeName": "interface"
 }

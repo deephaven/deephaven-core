@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.db.v2.ssa.LongSsaChecker",
+ "className": "io.deephaven.engine.v2.ssa.LongSsaChecker",
  "methods": {
-  "checkSsa": ":param ssa: io.deephaven.db.v2.ssa.SegmentedSortedArray\n:param valueChunk: io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param tableIndexChunk: io.deephaven.db.v2.sources.chunk.LongChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.KeyIndices>"
+  "checkSsa": ":param ssa: io.deephaven.engine.v2.ssa.SegmentedSortedArray\n:param valueChunk: io.deephaven.engine.v2.sources.chunk.Chunk<? extendsio.deephaven.engine.v2.sources.chunk.Attributes.Values>\n:param tableIndexChunk: io.deephaven.engine.v2.sources.chunk.LongChunk<? extendsio.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices>"
  },
- "path": "io.deephaven.db.v2.ssa.LongSsaChecker",
+ "path": "io.deephaven.engine.v2.ssa.LongSsaChecker",
  "typeName": "class"
 }

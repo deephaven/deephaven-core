@@ -2,11 +2,11 @@ package io.deephaven.grpc_api.appmode;
 
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.Field;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.util.AbstractScriptSession;
-import io.deephaven.db.util.GroovyDeephavenSession;
-import io.deephaven.db.util.PythonDeephavenSession;
-import io.deephaven.db.v2.JUnit4QueryTableTestBase;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.util.AbstractScriptSession;
+import io.deephaven.engine.util.GroovyDeephavenSession;
+import io.deephaven.engine.util.PythonDeephavenSession;
+import io.deephaven.engine.v2.JUnit4QueryTableTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;

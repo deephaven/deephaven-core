@@ -1,11 +1,11 @@
 package io.deephaven.lang.completion;
 
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.select.QueryScope.MissingVariableException;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.util.VariableProvider;
+import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.tables.select.QueryScope.MissingVariableException;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.HasScope;
 import io.deephaven.lang.api.IsScope;

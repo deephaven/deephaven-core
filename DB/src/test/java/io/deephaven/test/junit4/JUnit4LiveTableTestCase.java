@@ -1,6 +1,6 @@
 package io.deephaven.test.junit4;
 
-import io.deephaven.db.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.LiveTableTestCase;
 
 /**
  * When you want to extend LiveTableTestCase, but you need to use JUnit 4 annotations, like @Category

@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.db.plot.datasets.xy.XYDataSeriesInternal",
+ "className": "io.deephaven.engine.plot.datasets.xy.XYDataSeriesInternal",
  "methods": {
-  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - new axes.\n:return: (io.deephaven.db.plot.datasets.xy.XYDataSeriesInternal) copy of the series on a different set of axes.",
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.engine.plot.AxesImpl) - new axes.\n:return: (io.deephaven.engine.plot.datasets.xy.XYDataSeriesInternal) copy of the series on a different set of axes.",
   "drawXError": ":return: boolean",
   "drawYError": ":return: boolean",
   "getEndX": ":param i: int\n:return: double",
@@ -15,7 +15,7 @@
   "getX": "Gets the x value of the data point at index i.\n\n:param i: (int) - index\n:return: (double) x value of this data point at index i",
   "getY": "Gets the y value of the data point at index i.\n\n:param i: (int) - index\n:return: (double) x value of this data point at index i"
  },
- "path": "io.deephaven.db.plot.datasets.xy.XYDataSeriesInternal",
+ "path": "io.deephaven.engine.plot.datasets.xy.XYDataSeriesInternal",
  "text": "DataSeriesInternal with two numerical components, x and y. Data points are numbered and are accessed with an\n index.",
  "typeName": "interface"
 }

@@ -296,7 +296,7 @@ public class CsvTypeParser {
     public static final String LOCAL_DATE = "localdate";
 
     // DbDateTime and LocalTime are not visible to this code
-    private static final String DATE_TIME_TYPE = "io.deephaven.db.tables.utils.DBDateTime";
+    private static final String DATE_TIME_TYPE = "io.deephaven.engine.tables.utils.DBDateTime";
     private static final String LOCAL_TIME_TYPE = "java.time.LocalTime";
 
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss";

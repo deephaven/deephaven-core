@@ -1,8 +1,8 @@
 package io.deephaven.util.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
 
 public class TestBusinessSchedule extends BaseArrayTestCase {
 

@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.util.ScriptSession$Changes",
+ "className": "io.deephaven.engine.util.ScriptSession$Changes",
  "methods": {},
- "path": "io.deephaven.db.util.ScriptSession.Changes",
+ "path": "io.deephaven.engine.util.ScriptSession.Changes",
  "typeName": "class"
 }

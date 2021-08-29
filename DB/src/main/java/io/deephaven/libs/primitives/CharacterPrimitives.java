@@ -4,10 +4,10 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.db.tables.dbarrays.DbCharArray;
-import io.deephaven.db.tables.dbarrays.DbCharArrayDirect;
+import io.deephaven.engine.tables.dbarrays.DbCharArray;
+import io.deephaven.engine.tables.dbarrays.DbCharArrayDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.util.LongSizedDataStructure;
+import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TCharArrayList;
 import gnu.trove.set.TCharSet;
 import gnu.trove.set.hash.TCharHashSet;

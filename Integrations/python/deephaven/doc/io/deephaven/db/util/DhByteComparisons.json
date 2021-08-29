@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.util.DhByteComparisons",
+ "className": "io.deephaven.engine.util.DhByteComparisons",
  "methods": {
   "compare": ":param lhs: byte\n:param rhs: byte\n:return: int",
   "eq": ":param lhs: byte\n:param rhs: byte\n:return: boolean",
@@ -8,6 +8,6 @@
   "leq": ":param lhs: byte\n:param rhs: byte\n:return: boolean",
   "lt": ":param lhs: byte\n:param rhs: byte\n:return: boolean"
  },
- "path": "io.deephaven.db.util.DhByteComparisons",
+ "path": "io.deephaven.engine.util.DhByteComparisons",
  "typeName": "class"
 }

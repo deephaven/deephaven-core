@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.v2.utils.copy.CopyKernel$Utils",
+ "className": "io.deephaven.engine.v2.utils.copy.CopyKernel$Utils",
  "methods": {},
- "path": "io.deephaven.db.v2.utils.copy.CopyKernel.Utils",
+ "path": "io.deephaven.engine.v2.utils.copy.CopyKernel.Utils",
  "typeName": "class"
 }

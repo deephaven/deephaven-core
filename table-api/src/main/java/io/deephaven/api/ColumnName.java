@@ -4,7 +4,7 @@ import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.value.Value;
-import io.deephaven.db.tables.utils.NameValidator;
+import io.deephaven.engine.tables.utils.NameValidator;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;

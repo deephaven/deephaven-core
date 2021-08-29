@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.db.util.PerformanceScript",
+ "className": "io.deephaven.engine.util.PerformanceScript",
  "methods": {
   "getScriptPath": ":return: java.lang.String",
   "priority": ":return: int"
  },
- "path": "io.deephaven.db.util.PerformanceScript",
+ "path": "io.deephaven.engine.util.PerformanceScript",
  "typeName": "class"
 }

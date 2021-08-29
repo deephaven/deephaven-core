@@ -2,8 +2,8 @@ package io.deephaven.integrations.numpy;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.utils.TableTools;
 
 public class Java2NumpyCopyTest extends BaseArrayTestCase {
 

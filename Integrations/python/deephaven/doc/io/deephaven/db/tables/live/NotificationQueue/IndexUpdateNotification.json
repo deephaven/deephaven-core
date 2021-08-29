@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.db.tables.live.NotificationQueue$IndexUpdateNotification",
+ "className": "io.deephaven.engine.tables.live.NotificationQueue$IndexUpdateNotification",
  "methods": {},
- "path": "io.deephaven.db.tables.live.NotificationQueue.IndexUpdateNotification",
+ "path": "io.deephaven.engine.tables.live.NotificationQueue.IndexUpdateNotification",
  "typeName": "interface"
 }

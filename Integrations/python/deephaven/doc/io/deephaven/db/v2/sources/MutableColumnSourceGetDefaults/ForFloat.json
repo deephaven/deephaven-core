@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.db.v2.sources.MutableColumnSourceGetDefaults$ForFloat",
+ "className": "io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults$ForFloat",
  "methods": {
   "getPrev": ":param index: long\n:return: java.lang.Float",
   "getPrevBoolean": ":param index: long\n:return: java.lang.Boolean",
@@ -10,7 +10,7 @@
   "getPrevLong": ":param index: long\n:return: long",
   "getPrevShort": ":param index: long\n:return: short"
  },
- "path": "io.deephaven.db.v2.sources.MutableColumnSourceGetDefaults.ForFloat",
+ "path": "io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults.ForFloat",
  "text": "Default interface for mutable float ColumnSource implementations.",
  "typeName": "interface"
 }

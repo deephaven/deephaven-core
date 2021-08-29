@@ -1,13 +1,13 @@
 {
- "className": "io.deephaven.db.v2.by.ComboAggregateFactory$CountComboBy",
+ "className": "io.deephaven.engine.v2.by.ComboAggregateFactory$CountComboBy",
  "methods": {
-  "forRollup": ":return: io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy",
-  "getMemoKey": ":return: io.deephaven.db.v2.by.AggregationMemoKey",
-  "getResultPairs": ":return: io.deephaven.db.tables.select.MatchPair[]",
+  "forRollup": ":return: io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy",
+  "getMemoKey": ":return: io.deephaven.engine.v2.by.AggregationMemoKey",
+  "getResultPairs": ":return: io.deephaven.engine.tables.select.MatchPair[]",
   "getSourceColumns": ":return: java.lang.String[]",
-  "getUnderlyingStateFactory": ":return: io.deephaven.db.v2.by.AggregationStateFactory",
+  "getUnderlyingStateFactory": ":return: io.deephaven.engine.v2.by.AggregationStateFactory",
   "toString": ":return: java.lang.String"
  },
- "path": "io.deephaven.db.v2.by.ComboAggregateFactory.CountComboBy",
+ "path": "io.deephaven.engine.v2.by.ComboAggregateFactory.CountComboBy",
  "typeName": "class"
 }

@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.db.plot.AxisLocation",
+ "className": "io.deephaven.engine.plot.AxisLocation",
  "methods": {
   "equals": ":param o: java.lang.Object\n:return: boolean",
   "hashCode": ":return: int"
  },
- "path": "io.deephaven.db.plot.AxisLocation",
+ "path": "io.deephaven.engine.plot.AxisLocation",
  "text": "Location of Axis within a figure.",
  "typeName": "class"
 }

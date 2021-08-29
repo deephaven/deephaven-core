@@ -5,12 +5,12 @@
 package io.deephaven.grpc_api_client.barrage.chunk;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.util.pools.PoolableChunk;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.sources.chunk.util.pools.PoolableChunk;
+import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.OrderedKeys;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;

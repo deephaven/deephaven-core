@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.db;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;

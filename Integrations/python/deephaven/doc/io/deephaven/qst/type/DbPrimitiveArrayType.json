@@ -7,6 +7,6 @@
   "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.ArrayType.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.qst.type.DbPrimitiveArrayType",
- "text": "The primitive array types under the package io.deephaven.db.tables.dbarrays.",
+ "text": "The primitive array types under the package io.deephaven.engine.tables.dbarrays.",
  "typeName": "class"
 }
