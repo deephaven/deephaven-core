@@ -182,14 +182,14 @@ def createDeephavenTestExecTask = {
 createDeephavenTestExecTask('sortKernelBenchmark', 'io.deephaven.engine.v2.sort.SortKernelBenchmark')
 createDeephavenTestExecTask('partitionKernelBenchmark', 'io.deephaven.engine.v2.sort.PartitionKernelBenchmark')
 createDeephavenTestExecTask('columnSourceFillBenchmark', 'io.deephaven.engine.v2.sources.ColumnSourceFillBenchmark')
-createDeephavenTestExecTask('naturalJoinBenchmark', 'io.deephaven.benchmark.db.NaturalJoinBenchmark')
-createDeephavenTestExecTask('ajBenchmark', 'io.deephaven.benchmark.db.AjBenchmark')
-createDeephavenTestExecTask('matchFilterBenchmark', 'io.deephaven.benchmark.db.MatchFilterBenchmark')
-createDeephavenTestExecTask('rcsBenchmark', 'io.deephaven.benchmark.db.RegionedColumnSourceBenchmark')
-createDeephavenTestExecTask('byBenchmark', 'io.deephaven.benchmark.db.ByBenchmark')
-createDeephavenTestExecTask('sumByBenchmark', 'io.deephaven.benchmark.db.SumByBenchmark')
-createDeephavenTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.db.PercentileByBenchmark')
-createDeephavenTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.db.LastByBenchmark')
+createDeephavenTestExecTask('naturalJoinBenchmark', 'io.deephaven.benchmark.engine.NaturalJoinBenchmark')
+createDeephavenTestExecTask('ajBenchmark', 'io.deephaven.benchmark.engine.AjBenchmark')
+createDeephavenTestExecTask('matchFilterBenchmark', 'io.deephaven.benchmark.engine.MatchFilterBenchmark')
+createDeephavenTestExecTask('rcsBenchmark', 'io.deephaven.benchmark.engine.RegionedColumnSourceBenchmark')
+createDeephavenTestExecTask('byBenchmark', 'io.deephaven.benchmark.engine.ByBenchmark')
+createDeephavenTestExecTask('sumByBenchmark', 'io.deephaven.benchmark.engine.SumByBenchmark')
+createDeephavenTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.engine.PercentileByBenchmark')
+createDeephavenTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.engine.LastByBenchmark')
 
 createTestExecTask('replicateTuples', 'io.deephaven.engine.v2.tuples.TupleSourceCodeGenerator')
 createTestExecTask('replicateSortKernelTests', 'io.deephaven.engine.v2.sort.timsort.ReplicateSortKernelTests')
@@ -261,7 +261,7 @@ spotless {
                 '**/**Double*.java',
                 '**/**Object*.java',
                 '**/**StateManager.java',
-                'src/main/java/io/deephaven/db/v2/SymbolTableCombiner.java',
+                'src/main/java/io/deephaven/engine/v2/SymbolTableCombiner.java',
                 'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
                 'src/test/java/**/*Sample.java'
         )
@@ -289,9 +289,9 @@ test {
 // The Parallel tests are now functionally equivalent to the Serial test logic
 // TODO (deephaven-core#643): Fix "leaking" parallel tests
 TestTools.addDbTest(project, 'Parallel', false, false, true)
-// testSerial: non-parallel, not a db test, isolated
+// testSerial: non-parallel, not a engine test, isolated
 TestTools.addDbTest(project, 'Serial', false, false, true)
-// testOutOfBand: non-parallel, not a db test, not isolated
+// testOutOfBand: non-parallel, not a engine test, not isolated
 TestTools.addDbTest(project, 'OutOfBand', false, false, false)
 
 // The configuration of this with respect to the build environment isn't very tight.

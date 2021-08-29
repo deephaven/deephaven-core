@@ -572,8 +572,8 @@ public class DBLanguageFunctionGenerator {
         buf.append("}\n");
         testBuf.append("}\n");
 
-        String fileName = "./DB/src/main/java/io/deephaven/db/tables/lang/DBLanguageFunctionUtil.java";
-        String testFileName = "./DB/src/test/java/io/deephaven/db/tables/lang/TestDBLanguageFunctionUtil.java";
+        String fileName = "./DB/src/main/java/io/deephaven/engine/tables/lang/DBLanguageFunctionUtil.java";
+        String testFileName = "./DB/src/test/java/io/deephaven/engine/tables/lang/TestDBLanguageFunctionUtil.java";
         try {
             try (BufferedWriter out = new BufferedWriter(new FileWriter(fileName))) {
                 out.write(buf.toString());

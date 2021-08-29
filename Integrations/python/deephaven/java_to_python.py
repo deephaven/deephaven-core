@@ -260,7 +260,7 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
         return None
 
     if _isDbArray(javaArray):
-        # convert a db array to a java array, if necessary
+        # convert a engine array to a java array, if necessary
         return convertJavaArray(javaArray.toArray(), convertNulls=convertNulls)
 
     # is it an array?

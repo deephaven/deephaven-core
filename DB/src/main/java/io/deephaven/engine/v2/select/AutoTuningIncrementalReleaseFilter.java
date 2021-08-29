@@ -41,7 +41,7 @@ import java.text.DecimalFormat;
  * <pre>
  * import io.deephaven.engine.v2.select.AutoTuningIncrementalReleaseFilter
  *
- * quotes = db.t("FeedOS", "EquityQuoteL1").where("Date=lastBusinessDateNy()")
+ * quotes = engine.t("FeedOS", "EquityQuoteL1").where("Date=lastBusinessDateNy()")
  * filter=new AutoTuningIncrementalReleaseFilter(10000, 10000, 1)
  * quotesFiltered = quotes.where(filter)
  * currentQuote = quotesFiltered.lastBy("LocalCodeStr").update("Mid=(Bid + Ask)/2")
@@ -64,7 +64,7 @@ import java.text.DecimalFormat;
  * <pre>
  * import io.deephaven.engine.v2.select.AutoTuningIncrementalReleaseFilter
  *
- * quotes = db.t("FeedOS", "EquityQuoteL1").where("Date=lastBusinessDateNy()")
+ * quotes = engine.t("FeedOS", "EquityQuoteL1").where("Date=lastBusinessDateNy()")
  * logger = new io.deephaven.io.logger.StreamLoggerImpl()
  * filterQuotes=new AutoTuningIncrementalReleaseFilter(logger, 10000, 10000, 1.0d, true)
  * quotesFiltered = quotes.where(filterQuotes)
@@ -85,8 +85,8 @@ import java.text.DecimalFormat;
  * <pre>
  * import io.deephaven.engine.v2.select.AutoTuningIncrementalReleaseFilter
  *
- * quotes = db.t("FeedOS", "EquityQuoteL1").where("Date=lastBusinessDateNy()")
- * trades = db.t("FeedOS", "EquityTradeL1").where("Date=lastBusinessDateNy()")
+ * quotes = engine.t("FeedOS", "EquityQuoteL1").where("Date=lastBusinessDateNy()")
+ * trades = engine.t("FeedOS", "EquityTradeL1").where("Date=lastBusinessDateNy()")
  * filterQuotes=new AutoTuningIncrementalReleaseFilter(10000, 10000, 1, true)
  * quotesFiltered = quotes.where(filterQuotes)
  * filterTrades=new AutoTuningIncrementalReleaseFilter(10000, 10000, 1, true)

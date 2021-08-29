@@ -474,7 +474,7 @@ public class TestFormulaColumn {
                     expectedResults[2] = null;
 
                     boxedTypeNullPointer = null; // would be "(Boolean)null", but tests don't use this
-                    boxedQueryConstantsNull = null; // does not apply to booleans in the db.
+                    boxedQueryConstantsNull = null; // does not apply to booleans in the engine.
                 } else { // i != j; Unboxing/unboxing and widening conversions
 
                     expectedResults[0] = getBoxedBaseVal(0, destType);

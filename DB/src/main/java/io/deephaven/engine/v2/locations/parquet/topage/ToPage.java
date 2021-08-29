@@ -24,7 +24,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
     Class<?> getNativeType();
 
     /**
-     * @return The native type for the elements of db arrays produced by this object.
+     * @return The native type for the elements of engine arrays produced by this object.
      * @apiNote
      */
     @NotNull

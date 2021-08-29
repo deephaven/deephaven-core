@@ -22,12 +22,12 @@ dependencies {
 spotless {
     java {
         targetExclude(
-                'src/main/java/io/deephaven/db/plot/Axes.java',
-                'src/main/java/io/deephaven/db/plot/AxesImpl.java',
-                'src/main/java/io/deephaven/db/plot/Figure.java',
-                'src/main/java/io/deephaven/db/plot/FigureImpl.java',
-                'src/main/java/io/deephaven/db/plot/PlottingConvenience.java',
-                'src/main/java/io/deephaven/db/plot/datasets/multiseries/**'
+                'src/main/java/io/deephaven/engine/plot/Axes.java',
+                'src/main/java/io/deephaven/engine/plot/AxesImpl.java',
+                'src/main/java/io/deephaven/engine/plot/Figure.java',
+                'src/main/java/io/deephaven/engine/plot/FigureImpl.java',
+                'src/main/java/io/deephaven/engine/plot/PlottingConvenience.java',
+                'src/main/java/io/deephaven/engine/plot/datasets/multiseries/**'
         )
     }
 }

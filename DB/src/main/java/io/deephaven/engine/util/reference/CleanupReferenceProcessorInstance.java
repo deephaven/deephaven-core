@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.ref.ReferenceQueue;
 
 /**
- * Dedicated {@link java.lang.ref.ReferenceQueue} suppliers for various db purposes.
+ * Dedicated {@link java.lang.ref.ReferenceQueue} suppliers for various engine purposes.
  */
 public enum CleanupReferenceProcessorInstance {
 

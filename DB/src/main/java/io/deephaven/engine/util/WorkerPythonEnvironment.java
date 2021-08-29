@@ -16,7 +16,7 @@ import java.io.UncheckedIOException;
 /**
  * This class is the support infrastructure for running Python remote queries.
  *
- * It is a singleton that contains an instance of a PythonHolder. All of the specially handled db operations from a
+ * It is a singleton that contains an instance of a PythonHolder. All of the specially handled engine operations from a
  * remote Python session should execute queries which interact wtih this class. The script sessions that run for
  * PersistentQueries or consoles are handled separately by the {@link PythonDeephavenSession}.
  */

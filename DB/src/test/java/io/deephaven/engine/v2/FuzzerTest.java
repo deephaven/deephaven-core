@@ -112,7 +112,7 @@ public class FuzzerTest {
 
     @Test
     public void testFuzzer() throws IOException, InterruptedException {
-        testFuzzerScriptFile(0, "/DB/src/test/java/io/deephaven/db/v2/fuzzertest.groovy", true);
+        testFuzzerScriptFile(0, "/DB/src/test/java/io/deephaven/engine/v2/fuzzertest.groovy", true);
     }
 
     private void testFuzzerScriptFile(final long timeSeed, String s, boolean realtime)

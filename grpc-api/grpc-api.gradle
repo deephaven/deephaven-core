@@ -59,7 +59,7 @@ dependencies {
     flightTestCompile 'org.apache.arrow:flight-grpc:4.0.0'
 }
 
-// testOutOfBand: non-parallel, not a db test, not isolated
+// testOutOfBand: non-parallel, not a engine test, not isolated
 TestTools.addDbTest(project, 'OutOfBand', false, false, false)
 
 check.dependsOn(tasks.register('flightTest', Test) {

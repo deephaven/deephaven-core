@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * <p>
  * Example:
  * <p>
- * cd DB/build/classes/java/test/ jar cfv QueryFactory.jar io/deephaven/db/v2/QueryFactory*
+ * cd DB/build/classes/java/test/ jar cfv QueryFactory.jar io/deephaven/engine/v2/QueryFactory*
  * <p>
  * This will get you a QueryFactory jar you can use on the remote servers.
  * <p>

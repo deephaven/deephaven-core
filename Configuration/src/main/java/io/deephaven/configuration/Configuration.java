@@ -54,7 +54,7 @@ public class Configuration extends PropertyFile {
     /** Token used for workspace substitution */
     private static final String WORKSPACE_TOKEN = "<workspace>";
 
-    /** Token used for db root directory substitution */
+    /** Token used for engine root directory substitution */
     private static final String DB_ROOT_TOKEN = "<dbroot>";
 
     /** Ordered list of properties that can specify the configuration root file */
@@ -180,7 +180,7 @@ public class Configuration extends PropertyFile {
     /**
      * Normalize a directory path. This performs the following substitutions and manipulations.
      * <ul>
-     * <li>{@code <dbroot>} - replaced with the on disk database root directory, usually /db</li>
+     * <li>{@code <dbroot>} - replaced with the on disk database root directory, usually /engine</li>
      * <li>{@code <workspace>} - replaced with the process workspace</li>
      * <li>{@code <devroot>} - replaced with the installation root directory</li>
      * <li>{@code <processname>} - replaced with the process name</li>

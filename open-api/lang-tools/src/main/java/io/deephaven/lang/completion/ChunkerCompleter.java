@@ -1012,11 +1012,11 @@ public class ChunkerCompleter implements CompletionHandler {
             return result;
         }
         switch (o.getName()) {
-            // This used to be where we'd intercept certain well-known-service-variables, like "db";
+            // This used to be where we'd intercept certain well-known-service-variables, like "engine";
             // leaving this here in case we have add and such service to the OSS completer.
         }
         // Ok, maybe the user hasn't run the query yet.
-        // See if there's any named assign's that have a value of db.i|t|etc
+        // See if there's any named assign's that have a value of engine.i|t|etc
 
         final List<ChunkerAssign> assignments = findAssignment(doc, request, o.getName());
         for (ChunkerAssign assignment : assignments) {
@@ -1353,12 +1353,12 @@ public class ChunkerCompleter implements CompletionHandler {
         // And, finally, failing that, we'll do some random guessing based on "well-known column names".
 
 
-        // guess table name from the scope; either a reference to a table, or a db.i|t call.
+        // guess table name from the scope; either a reference to a table, or a engine.i|t call.
         // for now, we are not going to do complex scope inspections to guess at not-yet-run update operations.
         if (scope != null && scope.size() > 0) {
             IsScope root = scope.get(0);
             if (root instanceof ChunkerIdent) {
-                if ("db".equals(root.getName())) {
+                if ("engine".equals(root.getName())) {
                     if (scope.size() > 1) {
                         root = scope.get(1);
                     }
