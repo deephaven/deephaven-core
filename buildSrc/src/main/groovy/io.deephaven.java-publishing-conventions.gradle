@@ -9,10 +9,9 @@ java {
   withSourcesJar()
 }
 
-// TODO: parameterize, or choose deephaven group email
-def developerId = 'devinrsmith'
-def developerName = 'Devin Smith'
-def developerEmail = 'devinsmith@deephaven.io'
+def developerId = 'deephaven'
+def developerName = 'Deephaven Developers'
+def developerEmail = 'developers@deephaven.io'
 
 def projectUrl = 'https://github.com/deephaven/deephaven-core'
 def orgName = 'Deephaven Data Labs'
@@ -72,7 +71,7 @@ publishing {
       name = 'ossrh'
       // ossrhUsername, ossrhPassword
       credentials(PasswordCredentials)
-      def releasesRepoUrl = "fake" //https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+      def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
       def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
       url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
     }
@@ -88,3 +87,19 @@ signing {
     useInMemoryPgpKeys(signingKey, signingPassword)
   }
 }
+
+def assertIsRelease = tasks.register('assertIsRelease') {
+  it.doLast {
+    if (System.getenv('CI') != 'true') {
+      throw new IllegalStateException('Release error: env CI must be true')
+    }
+    def actualGithubRef = System.getenv('GITHUB_REF')
+    def expectedGithubRef = "refs/heads/release/v${project.version}"
+    if (actualGithubRef != expectedGithubRef) {
+      throw new IllegalStateException("Release error: env GITHUB_REF '${actualGithubRef}' does not match expected '${expectedGithubRef}'. Bad tag? Bump version?")
+    }
+  }
+}
+
+// This is an extra safety checks to make sure we don't publish incorrectly
+publishMavenJavaPublicationToOssrhRepository.dependsOn(assertIsRelease)

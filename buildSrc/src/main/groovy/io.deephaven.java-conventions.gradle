@@ -2,9 +2,9 @@ plugins {
   id 'java'
 }
 
-def artifactPrefix = 'deephaven-'
+def archivesBaseNamePrefix = 'deephaven-'
 
-archivesBaseName = "${artifactPrefix}${project.name}"
+archivesBaseName = "${archivesBaseNamePrefix}${project.name}"
 
 java {
   toolchain {
