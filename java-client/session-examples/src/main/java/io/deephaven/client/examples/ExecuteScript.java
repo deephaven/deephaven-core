@@ -13,6 +13,8 @@ import java.nio.file.Path;
         description = "Execute a script", version = "0.1.0")
 class ExecuteScript extends SingleSessionExampleBase {
 
+    // The following is dependant on:
+    // TODO(deephaven-core#1157): Plumb SessionImplConfig.Builder options through dagger
     /*
      * static class Type {
      * 

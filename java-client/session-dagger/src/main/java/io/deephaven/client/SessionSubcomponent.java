@@ -28,6 +28,8 @@ public interface SessionSubcomponent extends SessionFactory {
 
         Builder scheduler(@BindsInstance ScheduledExecutorService scheduler);
 
+        // TODO(deephaven-core#1157): Plumb SessionImplConfig.Builder options through dagger
+
         SessionSubcomponent build();
     }
 }
