@@ -177,5 +177,7 @@ dockerCompose.isRequiredBy(pyFunctionalTest)
 dockerCompose {
     waitForTcpPortsTimeout = java.time.Duration.ofMinutes(2)
     waitForHealthyStateTimeout = java.time.Duration.ofMinutes(1)
+    // Avoid compose project mangling: we are depending on the default
+    // name for the compose network (matching the directory name)
     projectName=null
 }
