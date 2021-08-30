@@ -48,7 +48,7 @@ public class NaturalJoinMultipleColumnsFillChunkBench extends RedirectionBenchBa
         final String t1PartCol = "T1PartCol";
         builder1 = BenchmarkTools.persistentTableBuilder("T1", tableSize);
         builder1.setSeed(0xDEADB00F)
-            .addColumn(BenchmarkTools.stringCol(t1PartCol, 4, 5, 7, 0xFEEDBEEF));
+                .addColumn(BenchmarkTools.stringCol(t1PartCol, 4, 5, 7, 0xFEEDBEEF));
         t1Cols = new String[numberOfJoinColumns + t1NumberOfAdditionalColumns + 1];
         int nT1Cols = 0;
         t1Cols[nT1Cols++] = t1PartCol;
@@ -74,7 +74,7 @@ public class NaturalJoinMultipleColumnsFillChunkBench extends RedirectionBenchBa
         final String t2PartCol = "T2PartCol";
         builder2 = BenchmarkTools.persistentTableBuilder("T2", tableSize);
         builder2.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol(t2PartCol, 4, 5, 7, 0xFEEDB00F));
+                .addColumn(BenchmarkTools.stringCol(t2PartCol, 4, 5, 7, 0xFEEDB00F));
         final String[] t2Cols = new String[numberOfJoinColumns + t2NumberOfAdditionalColumns + 1];
         int nT2Cols = 0;
         t2Cols[nT2Cols++] = t2PartCol;
@@ -95,20 +95,19 @@ public class NaturalJoinMultipleColumnsFillChunkBench extends RedirectionBenchBa
         final Table t2 = bmTable2.getTable().coalesce();
         final long sizePerStep = Math.max(t1.size() / steps, 1);
         final IncrementalReleaseFilter incrementalReleaseFilter =
-            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table t1Released = t1.where(incrementalReleaseFilter);
         final Table live;
         final String joinColsStr = String.join(",", joinCols);
         final String joinColumnsToAddStr = String.join(",", joinColumnsToAdd);
         if (doSelect) {
-            live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> t1Released
-                .select(t1Cols).sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr));
+            live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
+                    () -> t1Released.select(t1Cols).sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr));
         } else {
             live = t1Released.sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr);
         }
         return new QueryData(
-            live, incrementalReleaseFilter, steps, joinCols,
-            WritableLongChunk.makeWritableChunk(chunkCapacity));
+                live, incrementalReleaseFilter, steps, joinCols, WritableLongChunk.makeWritableChunk(chunkCapacity));
     }
 
     public static void main(String[] args) {

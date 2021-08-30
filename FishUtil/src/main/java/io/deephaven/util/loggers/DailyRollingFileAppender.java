@@ -18,8 +18,7 @@ public class DailyRollingFileAppender extends org.apache.log4j.DailyRollingFileA
         super();
     }
 
-    public DailyRollingFileAppender(Layout layout, String filename, String datePattern)
-        throws IOException {
+    public DailyRollingFileAppender(Layout layout, String filename, String datePattern) throws IOException {
         super(layout, filename, datePattern);
     }
 
@@ -27,8 +26,8 @@ public class DailyRollingFileAppender extends org.apache.log4j.DailyRollingFileA
         // i'll activate it myself...
     }
 
-    public synchronized void setFile(String fileName, boolean append, boolean bufferedIO,
-        int bufferSize) throws IOException {
+    public synchronized void setFile(String fileName, boolean append, boolean bufferedIO, int bufferSize)
+            throws IOException {
         LogLog.debug("setFile called: " + fileName + ", " + append);
 
         // It does not make sense to have immediate flush and bufferedIO.

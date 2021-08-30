@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Splits a String on a character ignoring that character inside quotes and back ticks. For example
- * splitting on a comma:
+ * Splits a String on a character ignoring that character inside quotes and back ticks. For example splitting on a
+ * comma:
  *
  * 'a,b', "c,d", 'e', "f", g splits to ['a,b'] ["c,d"] ['e'] ["f"] [g]
  */

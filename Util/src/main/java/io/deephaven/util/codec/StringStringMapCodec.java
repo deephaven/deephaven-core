@@ -9,8 +9,7 @@ import java.util.Map;
 /**
  * ObjectCodec implementation for Maps of String to String.
  *
- * Each map is encoded as an integer length, followed by UTF-8 encoded strings for each key and
- * value.
+ * Each map is encoded as an integer length, followed by UTF-8 encoded strings for each key and value.
  *
  * A null map is represented as an array of zero bytes.
  */

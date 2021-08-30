@@ -6,7 +6,6 @@ package io.deephaven.grpc_api.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.rpc.Code;
-import com.google.rpc.Status;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
@@ -18,7 +17,6 @@ import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.db.tables.remotequery.QueryProcessingResults;
 import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.db.util.liveness.Liveness;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
@@ -40,7 +38,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.grpc.StatusRuntimeException;
-import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -65,26 +62,24 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
 /**
  * SessionState manages all exports for a single session.
  *
- * It manages exported {@link io.deephaven.db.util.liveness.LivenessReferent}. It cascades failures
- * to child dependencies.
+ * It manages exported {@link io.deephaven.db.util.liveness.LivenessReferent}. It cascades failures to child
+ * dependencies.
  *
  * TODO: - cyclical dependency detection - out-of-order dependency timeout
  *
  * Details Regarding Data Structure of ExportObjects:
  *
- * The exportMap map, exportListeners list, exportListenerVersion, and export object's
- * exportListenerVersion work together to enable a listener to synchronize with outstanding exports
- * in addition to sending the listener updates while they continue to subscribe.
+ * The exportMap map, exportListeners list, exportListenerVersion, and export object's exportListenerVersion work
+ * together to enable a listener to synchronize with outstanding exports in addition to sending the listener updates
+ * while they continue to subscribe.
  *
  * - SessionState::exportMap's purpose is to map from the export id to the export object -
  * SessionState::exportListeners' purpose is to keep a list of active subscribers -
- * SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already
- * seen a status
+ * SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already seen a status
  *
- * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate
- * that the refresh has completed. A listener may see an update for an export before receiving the
- * "refresh has completed" message. A listener should be prepared to receive duplicate/redundant
- * updates.
+ * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the refresh has
+ * completed. A listener may see an update for an export before receiving the "refresh has completed" message. A
+ * listener should be prepared to receive duplicate/redundant updates.
  */
 public class SessionState {
     // Some work items will be dependent on other exports, but do not export anything themselves.
@@ -115,28 +110,25 @@ public class SessionState {
     private final String sessionId;
     private volatile SessionService.TokenExpiration expiration = null;
     private static final AtomicReferenceFieldUpdater<SessionState, SessionService.TokenExpiration> EXPIRATION_UPDATER =
-        AtomicReferenceFieldUpdater.newUpdater(SessionState.class,
-            SessionService.TokenExpiration.class, "expiration");
+            AtomicReferenceFieldUpdater.newUpdater(SessionState.class, SessionService.TokenExpiration.class,
+                    "expiration");
 
     // some types of exports have a more sound story if the server tells the client what to call it
     private volatile int nextServerAllocatedId = -1;
     private static final AtomicIntegerFieldUpdater<SessionState> SERVER_EXPORT_UPDATER =
-        AtomicIntegerFieldUpdater.newUpdater(SessionState.class, "nextServerAllocatedId");
+            AtomicIntegerFieldUpdater.newUpdater(SessionState.class, "nextServerAllocatedId");
 
     // maintains all requested exports by this client's session
-    private final KeyedIntObjectHashMap<ExportObject<?>> exportMap =
-        new KeyedIntObjectHashMap<>(EXPORT_OBJECT_ID_KEY);
+    private final KeyedIntObjectHashMap<ExportObject<?>> exportMap = new KeyedIntObjectHashMap<>(EXPORT_OBJECT_ID_KEY);
 
     // the list of active listeners
     private final List<ExportListener> exportListeners = new CopyOnWriteArrayList<>();
     private volatile int exportListenerVersion = 0;
 
-    // Usually, export life cycles are managed explicitly with the life cycle of the session state.
-    // However, we need
-    // to be able to close non-exports that are not in the map but are otherwise satisfying
-    // outstanding gRPC requests.
+    // Usually, export life cycles are managed explicitly with the life cycle of the session state. However, we need
+    // to be able to close non-exports that are not in the map but are otherwise satisfying outstanding gRPC requests.
     private final SimpleReferenceManager<Closeable, WeakSimpleReference<Closeable>> onCloseCallbacks =
-        new SimpleReferenceManager<>(WeakSimpleReference::new, false);
+            new SimpleReferenceManager<>(WeakSimpleReference::new, false);
 
     @AssistedInject
     public SessionState(final Scheduler scheduler, @Assisted final AuthContext authContext) {
@@ -148,9 +140,8 @@ public class SessionState {
     }
 
     /**
-     * This method is controlled by SessionService to update the expiration whenever the session is
-     * refreshed.
-     * 
+     * This method is controlled by SessionService to update the expiration whenever the session is refreshed.
+     *
      * @param expiration the initial expiration time and session token
      */
     @VisibleForTesting
@@ -164,15 +155,14 @@ public class SessionState {
         }
 
         log.info().append(logPrefix)
-            .append("token initialized to '").append(expiration.token.toString())
-            .append("' which expires at ").append(expiration.deadline.toString())
-            .append(".").endl();
+                .append("token initialized to '").append(expiration.token.toString())
+                .append("' which expires at ").append(expiration.deadline.toString())
+                .append(".").endl();
     }
 
     /**
-     * This method is controlled by SessionService to update the expiration whenever the session is
-     * refreshed.
-     * 
+     * This method is controlled by SessionService to update the expiration whenever the session is refreshed.
+     *
      * @param expiration the new expiration time and session token
      */
     @VisibleForTesting
@@ -194,9 +184,9 @@ public class SessionState {
         }
 
         log.info().append(logPrefix)
-            .append("token rotating to '").append(expiration.token.toString())
-            .append("' which expires at ").append(expiration.deadline.toString())
-            .append(".").endl();
+                .append("token rotating to '").append(expiration.token.toString())
+                .append("' which expires at ").append(expiration.deadline.toString())
+                .append(".").endl();
     }
 
     /**
@@ -226,7 +216,7 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided ticket.
-     * 
+     *
      * @param ticket the export ticket
      * @return a future-like object that represents this export
      */
@@ -236,18 +226,17 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided ticket.
-     * 
+     *
      * @param ticket the export ticket
      * @return a future-like object that represents this export
      */
-    // TODO #412 use this or remove it
     public <T> ExportObject<T> getExport(final Flight.Ticket ticket) {
         return getExport(ExportTicketHelper.ticketToExportId(ticket));
     }
 
     /**
      * Grab the ExportObject for the provided id.
-     * 
+     *
      * @param exportId the export handle id
      * @return a future-like object that represents this export
      */
@@ -259,14 +248,13 @@ public class SessionState {
 
         final ExportObject<T> result;
 
-        // If this a non-export or server side export, then it must already exist or else is a user
-        // error.
+        // If this a non-export or server side export, then it must already exist or else is a user error.
         if (exportId <= NON_EXPORT_ID) {
             result = (ExportObject<T>) exportMap.get(exportId);
 
             if (result == null) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Export id " + exportId + " does not exist and cannot be used out-of-order!");
+                        "Export id " + exportId + " does not exist and cannot be used out-of-order!");
             }
         } else {
             result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
@@ -277,7 +265,7 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided id if it already exists, otherwise return null.
-     * 
+     *
      * @param exportId the export handle id
      * @return a future-like object that represents this export
      */
@@ -292,7 +280,7 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided id if it already exists, otherwise return null.
-     * 
+     *
      * @param ticket the export ticket
      * @return a future-like object that represents this export
      */
@@ -302,8 +290,8 @@ public class SessionState {
     }
 
     /**
-     * Create and export a pre-computed element. This is typically used in scenarios where the
-     * number of exports is not known in advance by the requesting client.
+     * Create and export a pre-computed element. This is typically used in scenarios where the number of exports is not
+     * known in advance by the requesting client.
      *
      * @param export the result of the export
      * @param <T> the export type
@@ -317,8 +305,7 @@ public class SessionState {
         final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
 
         // noinspection unchecked
-        final ExportObject<T> result =
-            (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+        final ExportObject<T> result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
         result.setResult(export);
         return result;
     }
@@ -358,16 +345,14 @@ public class SessionState {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
         if (exportId <= 0) {
-            throw new IllegalArgumentException(
-                "exportId's <= 0 are reserved for server allocation only");
+            throw new IllegalArgumentException("exportId's <= 0 are reserved for server allocation only");
         }
         return new ExportBuilder<>(exportId);
     }
 
     /**
-     * Create an ExportBuilder to perform work after dependencies are satisfied that itself does not
-     * create any exports.
-     * 
+     * Create an ExportBuilder to perform work after dependencies are satisfied that itself does not create any exports.
+     *
      * @return an export builder
      */
     public <T> ExportBuilder<T> nonExport() {
@@ -395,11 +380,11 @@ public class SessionState {
      * Remove an on-close callback bound to the life of the session.
      *
      * @param onClose the callback to no longer invoke at end-of-life
-     * @return The item if it was removed, else null
+     * @return true iff the callback was removed
      */
-    public Closeable removeOnCloseCallback(final Closeable onClose) {
+    public boolean removeOnCloseCallback(final Closeable onClose) {
         synchronized (onCloseCallbacks) {
-            return onCloseCallbacks.remove(onClose);
+            return onCloseCallbacks.remove(onClose) != null;
         }
     }
 
@@ -407,8 +392,7 @@ public class SessionState {
      * Notes that this session has expired and exports should be released.
      */
     public void onExpired() {
-        // note that once we set expiration to null; we are not able to add any more objects to the
-        // exportMap
+        // note that once we set expiration to null; we are not able to add any more objects to the exportMap
         SessionService.TokenExpiration prevToken = expiration;
         while (prevToken != null) {
             if (EXPIRATION_UPDATER.compareAndSet(this, prevToken, null)) {
@@ -438,8 +422,7 @@ public class SessionState {
                 try {
                     callback.close();
                 } catch (final IOException e) {
-                    log.error().append(logPrefix).append("error during onClose callback: ")
-                        .append(e).endl();
+                    log.error().append(logPrefix).append("error during onClose callback: ").append(e).endl();
                 }
             });
             onCloseCallbacks.clear();
@@ -450,12 +433,11 @@ public class SessionState {
      * @return true iff the provided export state is a failure state
      */
     public static boolean isExportStateFailure(final ExportNotification.State state) {
-        return state == ExportNotification.State.FAILED
-            || state == ExportNotification.State.CANCELLED
-            || state == ExportNotification.State.DEPENDENCY_FAILED
-            || state == ExportNotification.State.DEPENDENCY_NEVER_FOUND
-            || state == ExportNotification.State.DEPENDENCY_RELEASED
-            || state == ExportNotification.State.DEPENDENCY_CANCELLED;
+        return state == ExportNotification.State.FAILED || state == ExportNotification.State.CANCELLED
+                || state == ExportNotification.State.DEPENDENCY_FAILED
+                || state == ExportNotification.State.DEPENDENCY_NEVER_FOUND
+                || state == ExportNotification.State.DEPENDENCY_RELEASED
+                || state == ExportNotification.State.DEPENDENCY_CANCELLED;
     }
 
     /**
@@ -470,11 +452,11 @@ public class SessionState {
      *
      *
      * Note: we reuse ExportObject for non-exporting tasks that have export dependencies.
-     * 
+     *
      * @param <T> Is context sensitive depending on the export.
      *
-     * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not
-     *          export anything itself.
+     * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
+     *          itself.
      * @apiNote Non-exports do not publish state changes.
      */
     public final static class ExportObject<T> extends LivenessArtifact {
@@ -490,33 +472,22 @@ public class SessionState {
         /** This indicates whether or not this export should use the serial execution queue. */
         private boolean requiresSerialQueue;
 
-        /**
-         * This is a reference of the work to-be-done. It is non-null only during the PENDING state.
-         */
+        /** This is a reference of the work to-be-done. It is non-null only during the PENDING state. */
         private Callable<T> exportMain;
-        /**
-         * This is a reference to the error handler to call if this item enters one of the failure
-         * states.
-         */
+        /** This is a reference to the error handler to call if this item enters one of the failure states. */
         private ExportErrorHandler errorHandler;
 
         /** used to keep track of which children need notification on export completion */
         private List<ExportObject<?>> children = Collections.emptyList();
-        /**
-         * used to manage liveness of dependencies (to prevent a dependency from being released
-         * before it is used)
-         */
+        /** used to manage liveness of dependencies (to prevent a dependency from being released before it is used) */
         private List<ExportObject<?>> parents = Collections.emptyList();
 
-        /**
-         * used to detect when this object is ready for export (is visible for atomic int field
-         * updater)
-         */
+        /** used to detect when this object is ready for export (is visible for atomic int field updater) */
         private volatile int dependentCount = -1;
         @SuppressWarnings("unchecked")
         private static final AtomicIntegerFieldUpdater<ExportObject<?>> DEPENDENT_COUNT_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(
-                (Class<ExportObject<?>>) (Class<?>) ExportObject.class, "dependentCount");
+                AtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>) (Class<?>) ExportObject.class,
+                        "dependentCount");
 
         /** used to identify and propagate error details */
         private String errorId;
@@ -528,8 +499,8 @@ public class SessionState {
         private ExportObject(final SessionState session, final int exportId) {
             this.session = session;
             this.exportId = exportId;
-            this.logIdentity = isNonExport() ? Integer.toHexString(System.identityHashCode(this))
-                : Long.toString(exportId);
+            this.logIdentity =
+                    isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
             setState(ExportNotification.State.UNKNOWN);
 
             // non-exports stay alive until they have been exported
@@ -539,8 +510,8 @@ public class SessionState {
         }
 
         /**
-         * Create an ExportObject that is not tied to any session. These must be non-exports that
-         * have require no work to be performed. These export objects can be used as dependencies.
+         * Create an ExportObject that is not tied to any session. These must be non-exports that have require no work
+         * to be performed. These export objects can be used as dependencies.
          *
          * @param result the object to wrap in an export
          */
@@ -564,13 +535,11 @@ public class SessionState {
         /**
          * Sets the dependencies and tracks liveness dependencies.
          *
-         * @param parents the dependencies that must be exported prior to invoking the exportMain
-         *        callable
+         * @param parents the dependencies that must be exported prior to invoking the exportMain callable
          */
         private synchronized void setDependencies(final List<ExportObject<?>> parents) {
             if (dependentCount != -1) {
-                throw new IllegalStateException(
-                    "dependencies can only be set once on an exportable object");
+                throw new IllegalStateException("dependencies can only be set once on an exportable object");
             }
 
             this.parents = parents;
@@ -579,30 +548,27 @@ public class SessionState {
 
             if (log.isDebugEnabled()) {
                 final Exception e = new RuntimeException();
-                final LogEntry entry = log.debug().append(e).nl().append(session.logPrefix)
-                    .append("export '").append(logIdentity)
-                    .append("' has ").append(dependentCount).append(" dependencies remaining: ");
+                final LogEntry entry =
+                        log.debug().append(e).nl().append(session.logPrefix).append("export '").append(logIdentity)
+                                .append("' has ").append(dependentCount).append(" dependencies remaining: ");
                 for (ExportObject<?> parent : parents) {
-                    entry.nl().append('\t').append(parent.logIdentity).append(" is ")
-                        .append(parent.getState().name());
+                    entry.nl().append('\t').append(parent.logIdentity).append(" is ").append(parent.getState().name());
                 }
                 entry.endl();
             }
         }
 
         /**
-         * Sets the dependencies and initializes the relevant data structures to include this export
-         * as a child for each.
+         * Sets the dependencies and initializes the relevant data structures to include this export as a child for
+         * each.
          *
          * @param exportMain the exportMain callable to invoke when dependencies are satisfied
-         * @param errorHandler the errorHandler to notify so that it may propagate errors to the
-         *        requesting client
+         * @param errorHandler the errorHandler to notify so that it may propagate errors to the requesting client
          */
-        private synchronized void setWork(final Callable<T> exportMain,
-            final ExportErrorHandler errorHandler, final boolean requiresSerialQueue) {
+        private synchronized void setWork(final Callable<T> exportMain, final ExportErrorHandler errorHandler,
+                final boolean requiresSerialQueue) {
             if (this.exportMain != null) {
-                throw new IllegalStateException(
-                    "work can only be set once on an exportable object");
+                throw new IllegalStateException("work can only be set once on an exportable object");
             }
             this.requiresSerialQueue = requiresSerialQueue;
 
@@ -612,8 +578,8 @@ public class SessionState {
             }
 
             if (isNonExport()) {
-                // exports are retained via the exportMap; non-exports need to be retained while
-                // their work is outstanding
+                // exports are retained via the exportMap; non-exports need to be retained while their work is
+                // outstanding
                 retainReference();
             }
 
@@ -626,8 +592,7 @@ public class SessionState {
                 scheduleExport();
             } else {
                 for (final ExportObject<?> parent : parents) {
-                    // we allow parents to be null to simplify calling conventions around optional
-                    // dependencies
+                    // we allow parents to be null to simplify calling conventions around optional dependencies
                     if (parent == null || !parent.maybeAddDependency(this)) {
                         onResolveOne(parent);
                     }
@@ -639,15 +604,14 @@ public class SessionState {
         /**
          * WARNING! This method call is only safe to use in the following patterns:
          * <p/>
-         * 1) If an export (or non-export) {@link ExportBuilder#require}'d this export then the
-         * method is valid from within the Callable/Runnable passed to {@link ExportBuilder#submit}.
+         * 1) If an export (or non-export) {@link ExportBuilder#require}'d this export then the method is valid from
+         * within the Callable/Runnable passed to {@link ExportBuilder#submit}.
          * <p/>
-         * 2) By first obtaining a reference to the {@link ExportObject}, and then observing its
-         * state as {@link ExportNotification.State#EXPORTED}. The caller must abide by the Liveness
-         * API and dropReference.
+         * 2) By first obtaining a reference to the {@link ExportObject}, and then observing its state as
+         * {@link ExportNotification.State#EXPORTED}. The caller must abide by the Liveness API and dropReference.
          * <p/>
          * Example:
-         * 
+         *
          * <pre>
          * {@code
          *  <T> T getFromExport(ExportObject<T> export) {
@@ -672,11 +636,11 @@ public class SessionState {
                 throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
 
-            // Note: an export may be released while still being a dependency of queued work; so
-            // let's make sure we're still valid
+            // Note: an export may be released while still being a dependency of queued work; so let's make sure we're
+            // still valid
             if (result == null) {
                 throw new IllegalStateException(
-                    "Dependent export '" + exportId + "' is null and in state " + state.name());
+                        "Dependent export '" + exportId + "' is null and in state " + state.name());
             }
 
             return result;
@@ -690,8 +654,8 @@ public class SessionState {
         }
 
         /**
-         * @return the ticket for this export; note if this is a non-export the returned ticket will
-         *         not resolve to anything and is considered an invalid ticket
+         * @return the ticket for this export; note if this is a non-export the returned ticket will not resolve to
+         *         anything and is considered an invalid ticket
          */
         public Ticket getExportId() {
             return ExportTicketHelper.exportIdToTicket(exportId);
@@ -699,7 +663,7 @@ public class SessionState {
 
         /**
          * Add dependency if object export has not yet completed.
-         * 
+         *
          * @param child the dependent task
          * @return true if the child was added as a dependency
          */
@@ -721,30 +685,29 @@ public class SessionState {
         }
 
         /**
-         * This helper notifies any export notification listeners, and propagates resolution to
-         * children that depend on this export.
+         * This helper notifies any export notification listeners, and propagates resolution to children that depend on
+         * this export.
          *
          * @param state the new state for this export
          */
         private synchronized void setState(final ExportNotification.State state) {
             if ((this.state == ExportNotification.State.EXPORTED && isNonExport())
-                || isExportStateTerminal(this.state)) {
-                throw new IllegalStateException(
-                    "cannot change state if export is already in terminal state");
+                    || isExportStateTerminal(this.state)) {
+                throw new IllegalStateException("cannot change state if export is already in terminal state");
             }
             this.state = state;
 
             // Send an export notification before possibly notifying children of our state change.
             if (exportId != NON_EXPORT_ID) {
                 log.debug().append(session.logPrefix).append("export '").append(logIdentity)
-                    .append("' is ExportState.").append(state.name()).endl();
+                        .append("' is ExportState.").append(state.name()).endl();
 
                 final ExportNotification notification = makeExportNotification();
                 exportListenerVersion = session.exportListenerVersion;
                 session.exportListeners.forEach(listener -> listener.notify(notification));
             } else {
                 log.debug().append(session.logPrefix).append("non-export '").append(logIdentity)
-                    .append("' is ExportState.").append(state.name()).endl();
+                        .append("' is ExportState.").append(state.name()).endl();
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
@@ -760,15 +723,14 @@ public class SessionState {
                 errorHandler = null;
             }
 
-            if ((state == ExportNotification.State.EXPORTED && isNonExport())
-                || isExportStateTerminal(state)) {
+            if ((state == ExportNotification.State.EXPORTED && isNonExport()) || isExportStateTerminal(state)) {
                 dropReference();
             }
         }
 
         /**
          * Decrements parent counter and kicks off the export if that was the last dependency.
-         * 
+         *
          * @param parent the parent that just resolved; it may have failed
          */
         private void onResolveOne(@Nullable final ExportObject<?> parent) {
@@ -781,8 +743,7 @@ public class SessionState {
             if (parent != null && isExportStateTerminal(parent.state)) {
                 synchronized (this) {
                     errorId = parent.errorId;
-                    ExportNotification.State terminalState =
-                        ExportNotification.State.DEPENDENCY_FAILED;
+                    ExportNotification.State terminalState = ExportNotification.State.DEPENDENCY_FAILED;
 
                     if (errorId == null) {
                         final String errorDetails;
@@ -798,14 +759,13 @@ public class SessionState {
                             default:
                                 // Note: the other error states should have non-null errorId
                                 errorDetails = "dependency does not have its own error defined " +
-                                    "and is in an unexpected state: " + parent.state;
+                                        "and is in an unexpected state: " + parent.state;
                                 break;
                         }
 
                         errorId = UuidCreator.toString(UuidCreator.getRandomBased());
                         dependentHandle = parent.logIdentity;
-                        log.error().append("Internal Error '").append(errorId).append("' ")
-                            .append(errorDetails).endl();
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
                     }
 
                     setState(terminalState);
@@ -847,10 +807,10 @@ public class SessionState {
             final Callable<T> capturedExport;
             synchronized (this) {
                 capturedExport = exportMain;
-                if (state != ExportNotification.State.QUEUED || session.isExpired()
-                    || capturedExport == null) {
+                if (state != ExportNotification.State.QUEUED || session.isExpired() || capturedExport == null) {
                     return; // had a cancel race with client
                 }
+                setState(ExportNotification.State.RUNNING);
             }
             Exception exception = null;
             boolean shouldLog = false;
@@ -858,10 +818,10 @@ public class SessionState {
             QueryProcessingResults queryProcessingResults = null;
             try (final AutoCloseable ignored = LivenessScopeStack.open()) {
                 queryProcessingResults = new QueryProcessingResults(
-                    QueryPerformanceRecorder.getInstance());
+                        QueryPerformanceRecorder.getInstance());
 
                 evaluationNumber = QueryPerformanceRecorder.getInstance()
-                    .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
+                        .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
                 try {
                     setResult(capturedExport.call());
                 } finally {
@@ -877,8 +837,7 @@ public class SessionState {
                 synchronized (this) {
                     if (!isExportStateTerminal(state)) {
                         errorId = UuidCreator.toString(UuidCreator.getRandomBased());
-                        log.error().append("Internal Error '").append(errorId).append("' ")
-                            .append(err).endl();
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
                         setState(ExportNotification.State.FAILED);
                     }
                 }
@@ -894,17 +853,17 @@ public class SessionState {
                 final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
                 try {
                     final QueryPerformanceNugget nugget = Require.neqNull(
-                        queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),
-                        "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
+                            queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),
+                            "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
 
                     // noinspection SynchronizationOnLocalVariableOrMethodParameter
                     synchronized (qplLogger) {
                         qplLogger.log(evaluationNumber,
-                            queryProcessingResults,
-                            nugget);
+                                queryProcessingResults,
+                                nugget);
                     }
                     final List<QueryPerformanceNugget> nuggets =
-                        queryProcessingResults.getRecorder().getOperationLevelPerformanceData();
+                            queryProcessingResults.getRecorder().getOperationLevelPerformanceData();
                     // noinspection SynchronizationOnLocalVariableOrMethodParameter
                     synchronized (qoplLogger) {
                         int opNo = 0;
@@ -938,8 +897,7 @@ public class SessionState {
                     // client may race a cancel with setResult
                     if (!isExportStateTerminal(state)) {
                         this.result = result;
-                        if (result instanceof LivenessReferent
-                            && DynamicNode.notDynamicOrIsRefreshing(result)) {
+                        if (result instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(result)) {
                             manage((LivenessReferent) result);
                         }
                         setState(ExportNotification.State.EXPORTED);
@@ -968,8 +926,7 @@ public class SessionState {
         }
 
         /**
-         * Releases this export; it will cancel the work and dependent exports proactively when
-         * possible.
+         * Releases this export; it will cancel the work and dependent exports proactively when possible.
          */
         public synchronized void cancel() {
             if (session == null) {
@@ -995,8 +952,8 @@ public class SessionState {
          */
         private synchronized ExportNotification makeExportNotification() {
             final ExportNotification.Builder builder = ExportNotification.newBuilder()
-                .setTicket(ExportTicketHelper.exportIdToTicket(exportId))
-                .setExportState(state);
+                    .setTicket(ExportTicketHelper.exportIdToTicket(exportId))
+                    .setExportState(state);
 
             if (errorId != null) {
                 builder.setContext(errorId);
@@ -1031,8 +988,7 @@ public class SessionState {
      * @param observer the observer to no longer be subscribed
      * @return The item if it was removed, else null
      */
-    public StreamObserver<ExportNotification> removeExportListener(
-        final StreamObserver<ExportNotification> observer) {
+    public StreamObserver<ExportNotification> removeExportListener(final StreamObserver<ExportNotification> observer) {
         final MutableObject<ExportListener> wrappedListener = new MutableObject<>();
         final boolean found = exportListeners.removeIf(wrap -> {
             if (wrappedListener.getValue() != null) {
@@ -1126,10 +1082,10 @@ public class SessionState {
 
             // notify that the refresh has completed
             notify(ExportNotification.newBuilder()
-                .setTicket(ExportTicketHelper.exportIdToTicket(NON_EXPORT_ID))
-                .setExportState(ExportNotification.State.EXPORTED)
-                .setContext("refresh is complete")
-                .build());
+                    .setTicket(ExportTicketHelper.exportIdToTicket(NON_EXPORT_ID))
+                    .setExportState(ExportNotification.State.EXPORTED)
+                    .setContext("refresh is complete")
+                    .build());
             log.info().append(logPrefix).append("refresh complete for listener ").append(id).endl();
         }
 
@@ -1152,17 +1108,17 @@ public class SessionState {
          *
          * @param resultState the final state of the export
          * @param errorContext an identifier to locate the details as to why the export failed
-         * @param dependentExportId an identifier for the export id of the dependent that caused the
-         *        failure if applicable
+         * @param dependentExportId an identifier for the export id of the dependent that caused the failure if
+         *        applicable
          */
-        void onError(final ExportNotification.State resultState,
-            @Nullable final String errorContext, @Nullable final String dependentExportId);
+        void onError(final ExportNotification.State resultState, @Nullable final String errorContext,
+                @Nullable final String dependentExportId);
     }
     @FunctionalInterface
     public interface ExportErrorGrpcHandler {
         /**
-         * This error handler receives a grpc friendly {@link StatusRuntimeException} that can be
-         * directly sent to {@link io.grpc.stub.StreamObserver#onError}.
+         * This error handler receives a grpc friendly {@link StatusRuntimeException} that can be directly sent to
+         * {@link io.grpc.stub.StreamObserver#onError}.
          *
          * @param notification the notification to forward to the grpc client
          */
@@ -1183,26 +1139,24 @@ public class SessionState {
                 this.export = new ExportObject<>(SessionState.this, NON_EXPORT_ID);
             } else {
                 // noinspection unchecked
-                this.export =
-                    (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+                this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
                 switch (this.export.getState()) {
                     case UNKNOWN:
                         return;
                     case RELEASED:
                     case CANCELLED:
                         throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                            "export already released/cancelled id: " + exportId);
+                                "export already released/cancelled id: " + exportId);
                     default:
                         throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                            "cannot re-export to existing exportId: " + exportId);
+                                "cannot re-export to existing exportId: " + exportId);
                 }
             }
         }
 
         /**
-         * Some exports must happen serially w.r.t. other exports. For example, an export that
-         * acquires the exclusive LTM lock. We enqueue these dependencies independently of the
-         * otherwise regularly concurrent exports.
+         * Some exports must happen serially w.r.t. other exports. For example, an export that acquires the exclusive
+         * LTM lock. We enqueue these dependencies independently of the otherwise regularly concurrent exports.
          *
          * @return this builder
          */
@@ -1212,8 +1166,8 @@ public class SessionState {
         }
 
         /**
-         * Invoke this method to set the required dependencies for this export. A parent may be null
-         * to simplify usage of optional export dependencies.
+         * Invoke this method to set the required dependencies for this export. A parent may be null to simplify usage
+         * of optional export dependencies.
          *
          * @param dependencies the parent dependencies
          * @return this builder
@@ -1224,8 +1178,8 @@ public class SessionState {
         }
 
         /**
-         * Invoke this method to set the required dependencies for this export. A parent may be null
-         * to simplify usage of optional export dependencies.
+         * Invoke this method to set the required dependencies for this export. A parent may be null to simplify usage
+         * of optional export dependencies.
          *
          * @param dependencies the parent dependencies
          * @return this builder
@@ -1236,8 +1190,11 @@ public class SessionState {
         }
 
         /**
-         * Invoke this method to set the error handler to be notified if this export fails. Only one
-         * error handler may be set.
+         * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
+         * be set.
+         * <p>
+         * </p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
          *
          * @param errorHandler the error handler to be notified
          * @return this builder
@@ -1251,32 +1208,51 @@ public class SessionState {
         }
 
         /**
-         * Invoke this method to set the error handler to be notified if this export fails. Only one
-         * error handler may be set. This is a convenience method for use with
-         * {@link io.grpc.stub.StreamObserver}.
+         * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
+         * be set.
+         * <p>
+         * </p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
          *
          * @param errorHandler the error handler to be notified
          * @return this builder
          */
-        public ExportBuilder<T> onError(final ExportErrorGrpcHandler errorHandler) {
+        public ExportBuilder<T> onErrorHandler(final ExportErrorGrpcHandler errorHandler) {
             return onError(((resultState, errorContext, dependentExportId) -> {
                 final String dependentStr = dependentExportId == null ? ""
-                    : (" (related parent export id: " + dependentExportId + ")");
-                errorHandler.onError(StatusProto.toStatusRuntimeException(Status.newBuilder()
-                    .setCode(Code.FAILED_PRECONDITION.getNumber())
-                    .setMessage("Details Logged w/ID '" + errorContext + "'" + dependentStr)
-                    .build()));
+                        : (" (related parent export id: " + dependentExportId + ")");
+                errorHandler.onError(GrpcUtil.statusRuntimeException(
+                        Code.FAILED_PRECONDITION,
+                        "Details Logged w/ID '" + errorContext + "'" + dependentStr));
             }));
         }
 
         /**
-         * This method is the final method for submitting an export to the session. The provided
-         * callable is enqueued on the scheduler when all dependencies have been satisfied. Only the
-         * dependencies supplied to the builder are guaranteed to be resolved when the exportMain is
-         * executing.
+         * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
+         * be set. This is a convenience method for use with {@link io.grpc.stub.StreamObserver}.
+         * <p>
+         * </p>
+         * Invoking onError will be synchronized on the StreamObserver instance, so callers can rely on that mechanism
+         * to deal with more than one thread trying to write to the stream.
          *
-         * Warning! It is the SessionState owner's responsibility to wait to release any dependency
-         * until after this exportMain callable/runnable has complete.
+         * @param streamObserver the streamObserver to be notified of any error
+         * @return this builder
+         */
+        public ExportBuilder<T> onError(StreamObserver<?> streamObserver) {
+            return onErrorHandler(statusRuntimeException -> {
+                synchronized (streamObserver) {
+                    streamObserver.onError(statusRuntimeException);
+                }
+            });
+        }
+
+        /**
+         * This method is the final method for submitting an export to the session. The provided callable is enqueued on
+         * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
+         * guaranteed to be resolved when the exportMain is executing.
+         *
+         * Warning! It is the SessionState owner's responsibility to wait to release any dependency until after this
+         * exportMain callable/runnable has complete.
          *
          * @param exportMain the callable that generates the export
          * @return the submitted export object
@@ -1287,13 +1263,12 @@ public class SessionState {
         }
 
         /**
-         * This method is the final method for submitting an export to the session. The provided
-         * runnable is enqueued on the scheduler when all dependencies have been satisfied. Only the
-         * dependencies supplied to the builder are guaranteed to be resolved when the exportMain is
-         * executing.
+         * This method is the final method for submitting an export to the session. The provided runnable is enqueued on
+         * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
+         * guaranteed to be resolved when the exportMain is executing.
          *
-         * Warning! It is the SessionState owner's responsibility to wait to release any dependency
-         * until after this exportMain callable/runnable has complete.
+         * Warning! It is the SessionState owner's responsibility to wait to release any dependency until after this
+         * exportMain callable/runnable has complete.
          *
          * @param exportMain the runnable to execute once dependencies have resolved
          * @return the submitted export object
@@ -1313,8 +1288,7 @@ public class SessionState {
         }
 
         /**
-         * @return the export id of this export or {@link SessionState#NON_EXPORT_ID} if is a
-         *         non-export
+         * @return the export id of this export or {@link SessionState#NON_EXPORT_ID} if is a non-export
          */
         public int getExportId() {
             return exportId;
@@ -1322,25 +1296,24 @@ public class SessionState {
     }
 
     private static final KeyedIntObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY =
-        new KeyedIntObjectKey.BasicStrict<ExportObject<?>>() {
-            @Override
-            public int getIntKey(final ExportObject<?> exportObject) {
-                return exportObject.exportId;
-            }
-        };
+            new KeyedIntObjectKey.BasicStrict<ExportObject<?>>() {
+                @Override
+                public int getIntKey(final ExportObject<?> exportObject) {
+                    return exportObject.exportId;
+                }
+            };
 
     private final KeyedIntObjectHash.ValueFactory<ExportObject<?>> EXPORT_OBJECT_VALUE_FACTORY =
-        new KeyedIntObjectHash.ValueFactory.Strict<ExportObject<?>>() {
-            @Override
-            public ExportObject<?> newValue(final int key) {
-                if (isExpired()) {
-                    throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
-                        "session has expired");
-                }
+            new KeyedIntObjectHash.ValueFactory.Strict<ExportObject<?>>() {
+                @Override
+                public ExportObject<?> newValue(final int key) {
+                    if (isExpired()) {
+                        throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+                    }
 
-                final ExportObject<Object> retval = new ExportObject<>(SessionState.this, key);
-                retval.retainReference();
-                return retval;
-            }
-        };
+                    final ExportObject<Object> retval = new ExportObject<>(SessionState.this, key);
+                    retval.retainReference();
+                    return retval;
+                }
+            };
 }

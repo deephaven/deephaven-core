@@ -1,8 +1,8 @@
 /*
  * (c) the authors Licensed under the Apache License, Version 2.0.
  *
- * The code in this file is a heavily modified version of the original in the RoaringBitmap library;
- * please see https://roaringbitmap.org/
+ * The code in this file is a heavily modified version of the original in the RoaringBitmap library; please see
+ * https://roaringbitmap.org/
  *
  */
 
@@ -25,8 +25,7 @@ public final class BitmapContainer extends Container implements Cloneable {
     protected static final int BITMAP_SIZE_IN_BYTES = BITMAP_CAPACITY * Long.BYTES;
 
     /**
-     * optimization flag: whether the cardinality of the bitmaps is maintained through branchless
-     * operations
+     * optimization flag: whether the cardinality of the bitmaps is maintained through branchless operations
      */
     public static final boolean USE_BRANCHLESS = true;
 
@@ -69,8 +68,8 @@ public final class BitmapContainer extends Container implements Cloneable {
     }
 
     /**
-     * Create a bitmap container with a run of ones from start to end. Caller must ensure that the
-     * range isn't so small that an ArrayContainer should have been created instead
+     * Create a bitmap container with a run of ones from start to end. Caller must ensure that the range isn't so small
+     * that an ArrayContainer should have been created instead
      *
      * @param start first index
      * @param end end index (exclusive)
@@ -95,10 +94,10 @@ public final class BitmapContainer extends Container implements Cloneable {
     // For tests.
     BitmapContainer(final long[] newBitmap, final int newCardinality) {
         if (newBitmap.length != BITMAP_CAPACITY ||
-            newCardinality < 0 ||
-            newCardinality > MAX_RANGE) {
+                newCardinality < 0 ||
+                newCardinality > MAX_RANGE) {
             throw new IllegalArgumentException(
-                "newBitmap.length=" + newBitmap.length + ", newCardinality=" + newCardinality);
+                    "newBitmap.length=" + newBitmap.length + ", newCardinality=" + newCardinality);
         }
         cardinality = newCardinality;
         bitmap = newBitmap;
@@ -144,15 +143,12 @@ public final class BitmapContainer extends Container implements Cloneable {
         while (bitmap[i--] == 0) {
             ++backZeroes;
         }
-        final int bitsAvailableInNonZeroWords =
-            (BITMAP_CAPACITY - frontZeroes - backZeroes) * Long.BYTES * 8;
+        final int bitsAvailableInNonZeroWords = (BITMAP_CAPACITY - frontZeroes - backZeroes) * Long.BYTES * 8;
         // One every other bit set maximizes number of runs.
         final int runsUpperBound1 = bitsAvailableInNonZeroWords / 2;
         final int zeroBitsInNonZeroWords = bitsAvailableInNonZeroWords - cardinality;
-        final int runsUpperBound2 = 1 + zeroBitsInNonZeroWords; // Spread the fingers in one hand: 4
-                                                                // holes => 5 fingers.
-        if (Math.min(runsUpperBound1,
-            runsUpperBound2) < ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD / 2) {
+        final int runsUpperBound2 = 1 + zeroBitsInNonZeroWords; // Spread the fingers in one hand: 4 holes => 5 fingers.
+        if (Math.min(runsUpperBound1, runsUpperBound2) < ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD / 2) {
             return toRunContainer();
         }
         return this;
@@ -228,7 +224,7 @@ public final class BitmapContainer extends Container implements Cloneable {
     }
 
     private Container setImpl(
-        final short x, final Supplier<BitmapContainer> self, final Supplier<BitmapContainer> copy) {
+            final short x, final Supplier<BitmapContainer> self, final Supplier<BitmapContainer> copy) {
         if (contains(x)) {
             return self.get();
         }
@@ -281,8 +277,7 @@ public final class BitmapContainer extends Container implements Cloneable {
         return andRangeImpl(!shared, rangeStart, rangeEnd);
     }
 
-    private Container andRangeImpl(final boolean inPlace, final int rangeStart,
-        final int rangeEnd) {
+    private Container andRangeImpl(final boolean inPlace, final int rangeStart, final int rangeEnd) {
         if (rangeEnd <= rangeStart || isEmpty()) {
             return Container.empty();
         }
@@ -461,8 +456,7 @@ public final class BitmapContainer extends Container implements Cloneable {
     public boolean contains(final int rangeStart, final int rangeEnd) {
         final ValuesInRangeContext ctx = new ValuesInRangeContext(rangeStart, rangeEnd);
         if (ctx.iFirst == ctx.iLast) {
-            return ((bitmap[ctx.iLast] & ctx.maskFirst & ctx.maskLast) == (ctx.maskFirst
-                & ctx.maskLast));
+            return ((bitmap[ctx.iLast] & ctx.maskFirst & ctx.maskLast) == (ctx.maskFirst & ctx.maskLast));
         }
         if ((bitmap[ctx.iFirst] & ctx.maskFirst) != ctx.maskFirst) {
             return false;
@@ -543,8 +537,7 @@ public final class BitmapContainer extends Container implements Cloneable {
         }
     }
 
-    int fillArrayWithSkipValue(final short[] array, final short valueToSkip,
-        final PositionHint positionHintOut) {
+    int fillArrayWithSkipValue(final short[] array, final short valueToSkip, final PositionHint positionHintOut) {
         int pos = 0;
         int base = 0;
         for (long bits : bitmap) {
@@ -569,8 +562,7 @@ public final class BitmapContainer extends Container implements Cloneable {
         long bef = bitmap[index];
         long mask = 1L << xAsInt;
         final boolean isOnAndWillBeTurnedOff = (bef & mask) != 0;
-        if (isOnAndWillBeTurnedOff
-            && cardinality <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
+        if (isOnAndWillBeTurnedOff && cardinality <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
             if (cardinality > 3) {
                 final ArrayContainer ac = new ArrayContainer(cardinality - 1);
                 ac.loadDataWithSkipValue(this, x, null);
@@ -695,8 +687,7 @@ public final class BitmapContainer extends Container implements Cloneable {
             eatZeroes();
             if (nextPos < 0) {
                 while (bitmap[savedPos] == 0) {
-                    ++savedPos; // there is some nonzero element otherwise we would have returned
-                                // earlier.
+                    ++savedPos; // there is some nonzero element otherwise we would have returned earlier.
                 }
                 curr = (savedPos + 1) * 64 - Long.numberOfLeadingZeros(bitmap[savedPos]) - 1;
                 return false;
@@ -899,8 +890,7 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container iand(final ArrayContainer b2) {
-        // We always produce an ArrayContainer result for and(ArrayContainer), so this will never be
-        // in-place.
+        // We always produce an ArrayContainer result for and(ArrayContainer), so this will never be in-place.
         return and(b2);
     }
 
@@ -1500,9 +1490,9 @@ public final class BitmapContainer extends Container implements Cloneable {
     }
 
     private Container unsetImpl(
-        final short v,
-        final boolean inPlace,
-        final PositionHint positionHintOut) {
+            final short v,
+            final boolean inPlace,
+            final PositionHint positionHintOut) {
         final int x = toIntUnsigned(v);
         final int index = x / 64;
         final long bef = bitmap[index];
@@ -1695,7 +1685,7 @@ public final class BitmapContainer extends Container implements Cloneable {
     public Container select(final int startRank, final int endRank) {
         if (endRank <= startRank || endRank > cardinality) {
             throw new IllegalArgumentException(
-                "startRank=" + startRank + ", endRank=" + endRank + ", cardinality=" + cardinality);
+                    "startRank=" + startRank + ", endRank=" + endRank + ", cardinality=" + cardinality);
         }
         final int card = endRank - startRank;
         if (card < ArrayContainer.DEFAULT_MAX_SIZE) {
@@ -1739,8 +1729,7 @@ public final class BitmapContainer extends Container implements Cloneable {
         int oend = -1; // inclusive
         int wordIndex = 0;
         if (isEmpty()) {
-            throw new IllegalArgumentException(
-                "select Ranges for invalid pos=" + inPositions.start());
+            throw new IllegalArgumentException("select Ranges for invalid pos=" + inPositions.start());
         }
         int wordAccumBitCount = Long.bitCount(bitmap[0]);
         int prevWordAccumBitCount = 0;
@@ -1755,8 +1744,7 @@ public final class BitmapContainer extends Container implements Cloneable {
                 prevWordAccumBitCount = wordAccumBitCount;
                 wordAccumBitCount += Long.bitCount(bitmap[wordIndex]);
             }
-            int key = wordIndex * 64
-                + ContainerUtil.select(bitmap[wordIndex], istart - prevWordAccumBitCount);
+            int key = wordIndex * 64 + ContainerUtil.select(bitmap[wordIndex], istart - prevWordAccumBitCount);
             if (ostart == -1) {
                 ostart = oend = key;
             } else {
@@ -1777,8 +1765,7 @@ public final class BitmapContainer extends Container implements Cloneable {
                     prevWordAccumBitCount = wordAccumBitCount;
                     wordAccumBitCount += Long.bitCount(bitmap[wordIndex]);
                 }
-                key = wordIndex * 64
-                    + ContainerUtil.select(bitmap[wordIndex], j - prevWordAccumBitCount);
+                key = wordIndex * 64 + ContainerUtil.select(bitmap[wordIndex], j - prevWordAccumBitCount);
                 if (oend + 1 == key) {
                     oend = key;
                 } else {
@@ -1791,8 +1778,7 @@ public final class BitmapContainer extends Container implements Cloneable {
     }
 
     @Override
-    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues,
-        final int maxPos) {
+    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
         if (!inValues.hasNext()) {
             return false;
         }
@@ -1851,8 +1837,8 @@ public final class BitmapContainer extends Container implements Cloneable {
                 pos = findSecondHalf(k, rj, kAccumBitCount);
                 if (pos < 0) {
                     throw new IllegalArgumentException("findRanges for invalid key=" + j);
-                    // Note we do not validate potential values between istart and iend, just the
-                    // endpoints of the range.
+                    // Note we do not validate potential values between istart and iend, just the endpoints of the
+                    // range.
                 }
                 if (pos > maxPos) {
                     outPositions.accept(ostart, oend + 1);
@@ -2323,8 +2309,7 @@ public final class BitmapContainer extends Container implements Cloneable {
     public void validate() {
         final int computedCard = computeCardinality(this);
         if (computedCard != cardinality) {
-            throw new IllegalStateException(
-                "computedCard=" + computedCard + ", cardinality=" + cardinality);
+            throw new IllegalStateException("computedCard=" + computedCard + ", cardinality=" + cardinality);
         }
     }
 

@@ -5,7 +5,6 @@ import elemental2.core.JsMap;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
@@ -23,9 +22,8 @@ import java.util.*;
 /**
  * Instances of this class are responsible for bringing CTS back to life.
  *
- * The {@link RequestBatcher} class has been refactored to take an interface,
- * {@link HasTableBinding}, which the TableReviver implements, so that it can assemble "rebuild this
- * state" requests.
+ * The {@link RequestBatcher} class has been refactored to take an interface, {@link HasTableBinding}, which the
+ * TableReviver implements, so that it can assemble "rebuild this state" requests.
  *
  */
 public class TableReviver implements HasTableBinding {
@@ -45,8 +43,8 @@ public class TableReviver implements HasTableBinding {
             enqueued = new IdentityHashSet<>();
             LazyPromise.runLater(() -> {
                 final ClientTableState[] toRevive = enqueued.stream()
-                    .filter(ClientTableState::shouldResuscitate)
-                    .toArray(ClientTableState[]::new);
+                        .filter(ClientTableState::shouldResuscitate)
+                        .toArray(ClientTableState[]::new);
                 enqueued = null;
                 doRevive(toRevive, metadata);
             });
@@ -74,18 +72,17 @@ public class TableReviver implements HasTableBinding {
         for (ClientTableState state : reviveFirst) {
             JsLog.debug("Attempting revive on ", state);
             state.maybeRevive(metadata).then(
-                success -> {
-                    state.forActiveLifecycles(t -> t.revive(state));
-                    return null;
-                }, failure -> {
-                    state.forActiveLifecycles(t -> t.die(failure));
-                    return null;
-                });
+                    success -> {
+                        state.forActiveLifecycles(t -> t.revive(state));
+                        return null;
+                    }, failure -> {
+                        state.forActiveLifecycles(t -> t.die(failure));
+                        return null;
+                    });
         }
 
         if (!reviveLast.isEmpty()) {
-            // Instead of using RequestBatcher, we should just be rebuilding the SerializedTableOps
-            // directly.
+            // Instead of using RequestBatcher, we should just be rebuilding the SerializedTableOps directly.
             int cnt = 0, page = 6;
             BatchBuilder builder = new BatchBuilder();
             Map<TableTicket, ClientTableState> all = new LinkedHashMap<>();
@@ -118,8 +115,8 @@ public class TableReviver implements HasTableBinding {
         JsLog.debug("Sending revivification request", LazyString.of(req));
 
         // TODO core#242 - this isn't tested at all, and mostly doesn't make sense
-        ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper
-            .of(connection.tableServiceClient().batch(req, connection.metadata()));
+        ResponseStreamWrapper<ExportedTableCreationResponse> stream =
+                ResponseStreamWrapper.of(connection.tableServiceClient().batch(req, connection.metadata()));
         stream.onData(response -> {
             TableReference resultid = response.getResultId();
             if (!resultid.hasTicket()) {
@@ -139,7 +136,7 @@ public class TableReviver implements HasTableBinding {
             }
         });
         stream.onEnd(status -> {
-            if (status.getCode() != Code.OK) {
+            if (status.isOk()) {
                 for (ClientTableState failed : all.values()) {
                     failed.forActiveLifecycles(t -> t.die(status.getDetails()));
                 }
@@ -193,19 +190,19 @@ public class TableReviver implements HasTableBinding {
     @Override
     public void rollback() {
         assert false : "Revivification requests should not be sent through the RequestBatcher " +
-            "(who is, currently, the only caller of rollback())";
+                "(who is, currently, the only caller of rollback())";
     }
 
     @Override
     public void setRollback(ActiveTableBinding rollbackTo) {
         assert false : "Revivification requests should not be sent through the RequestBatcher " +
-            "(who is, currently, the only caller of setRollback())";
+                "(who is, currently, the only caller of setRollback())";
     }
 
     @Override
     public void maybeReviveSubscription() {
         // should never be called
         assert false : "Revivification requests should not be sent through the RequestBatcher " +
-            "(who is, currently, the only caller of maybeReviveSubscription())";
+                "(who is, currently, the only caller of maybeReviveSubscription())";
     }
 }

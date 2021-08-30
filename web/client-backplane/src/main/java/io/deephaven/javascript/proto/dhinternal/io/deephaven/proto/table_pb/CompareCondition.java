@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.CompareCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.CompareCondition",
+        namespace = JsPackage.GLOBAL)
 public class CompareCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -82,12 +82,11 @@ public class CompareCondition {
             CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType getReference();
 
             @JsProperty
-            void setLiteral(
-                CompareCondition.ToObjectReturnType.LhsFieldType.LiteralFieldType literal);
+            void setLiteral(CompareCondition.ToObjectReturnType.LhsFieldType.LiteralFieldType literal);
 
             @JsProperty
             void setReference(
-                CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType reference);
+                    CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType reference);
         }
 
         @JsOverlay
@@ -188,12 +187,11 @@ public class CompareCondition {
             CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType getReference();
 
             @JsProperty
-            void setLiteral(
-                CompareCondition.ToObjectReturnType0.LhsFieldType.LiteralFieldType literal);
+            void setLiteral(CompareCondition.ToObjectReturnType0.LhsFieldType.LiteralFieldType literal);
 
             @JsProperty
             void setReference(
-                CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType reference);
+                    CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType reference);
         }
 
         @JsOverlay
@@ -231,12 +229,12 @@ public class CompareCondition {
     public static native CompareCondition deserializeBinary(Uint8Array bytes);
 
     public static native CompareCondition deserializeBinaryFromReader(
-        CompareCondition message, Object reader);
+            CompareCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(CompareCondition message, Object writer);
 
     public static native CompareCondition.ToObjectReturnType toObject(
-        boolean includeInstance, CompareCondition msg);
+            boolean includeInstance, CompareCondition msg);
 
     public native void clearLhs();
 

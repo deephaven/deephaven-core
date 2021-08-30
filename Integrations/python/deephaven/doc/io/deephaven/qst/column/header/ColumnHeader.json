@@ -20,6 +20,6 @@
   "start": ":param initialCapacity: int\n:return: io.deephaven.qst.column.header.ColumnHeader.Rows"
  },
  "path": "io.deephaven.qst.column.header.ColumnHeader",
- "text": "A column header is name and type pair.\n\n \n Multiple column headers, up to 9, can be strongly-linked together to provide a convenient\n interface for building new tables in a row-oriented, type-safe manner.",
+ "text": "A column header is name and type pair.\n\n \n Multiple column headers, up to 9, can be strongly-linked together to provide a convenient interface for building\n new tables in a row-oriented, type-safe manner.",
  "typeName": "class"
 }

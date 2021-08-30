@@ -95,7 +95,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final int size = index.intSize();
         final byte[] data = (byte[])new byte[size];
         // noinspection unchecked
-        final ColumnSource<Byte> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<Byte> reinterpreted = (ColumnSource<Byte>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableByteChunk<Values> destChunk = ResettableWritableByteChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -113,7 +113,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final byte[] data = (byte[])in.readObject();
         final ByteChunk<Values> srcChunk = ByteChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Byte> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Byte> reinterpreted = (WritableSource<Byte>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -178,7 +178,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
 
     // region copy method
     @Override
-    public void copy(ColumnSource<Boolean> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Boolean> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getBoolean(sourceKey));
     }
     // endregion copy method
@@ -215,6 +215,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     // endregion primitive get
 
     // region allocateNullFilledBlock
+    @SuppressWarnings("SameParameterValue")
     final byte [] allocateNullFilledBlock(int size) {
         final byte [] newBlock = new byte[size];
         Arrays.fill(newBlock, NULL_BOOLEAN_AS_BYTE);
@@ -399,7 +400,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
 
     /**
     * Decides whether to record the previous value.
-    * @param key
+    * @param key the index to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -849,7 +850,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public void copy(ColumnSource<Byte> sourceColumn, long sourceKey, long destKey) {
+        public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
             set(destKey, sourceColumn.getByte(sourceKey));
         }
 

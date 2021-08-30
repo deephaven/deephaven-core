@@ -16,22 +16,22 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
     private final TableDefinition definition;
 
     public AbstractGeneratedTable(@NotNull String name, long nRows, long rngSeed,
-        @NotNull List<ColumnGenerator> generators) {
+            @NotNull List<ColumnGenerator<?>> generators) {
         super(name, rngSeed, generators);
         this.nRows = nRows;
-        List<ColumnDefinition> definitions = getGeneratorMap()
-            .values()
-            .stream()
-            .map(ColumnGenerator::getDefinition)
-            .map(ColumnDefinition::withNormal)
-            .collect(Collectors.toList());
+        List<ColumnDefinition<?>> definitions = getGeneratorMap()
+                .values()
+                .stream()
+                .map(ColumnGenerator::getDefinition)
+                .map(ColumnDefinition::withNormal)
+                .collect(Collectors.toList());
         definition = new TableDefinition(definitions);
     }
 
     protected Table generateTable() {
         return SparseSelect.sparseSelect(TableTools.emptyTable(nRows).updateView(
-            getGeneratorMap().entrySet().stream()
-                .map(ent -> ent.getValue().getUpdateString(ent.getKey())).toArray(String[]::new)));
+                getGeneratorMap().entrySet().stream().map(ent -> ent.getValue().getUpdateString(ent.getKey()))
+                        .toArray(String[]::new)));
     }
 
     @Override

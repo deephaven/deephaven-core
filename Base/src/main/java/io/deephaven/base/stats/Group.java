@@ -30,8 +30,8 @@ public class Group {
     }
 
     /** get or create a named, top-level item */
-    synchronized <V extends Value> Item<V> makeItem(String name,
-        Function.Unary<V, Long> valueFactory, String description, long now) {
+    synchronized <V extends Value> Item<V> makeItem(String name, Function.Unary<V, Long> valueFactory,
+            String description, long now) {
         for (Item i : items) {
             if (i.getName().equals(name)) {
                 return i;
@@ -43,8 +43,8 @@ public class Group {
     }
 
     /** get or create a named, top-level item */
-    synchronized <V extends Value, Arg> Item<V> makeItem(String name,
-        Function.Binary<V, Long, Arg> valueFactory, String description, long now, Arg arg) {
+    synchronized <V extends Value, Arg> Item<V> makeItem(String name, Function.Binary<V, Long, Arg> valueFactory,
+            String description, long now, Arg arg) {
         for (Item i : items) {
             if (i.getName().equals(name)) {
                 return i;
@@ -96,8 +96,7 @@ public class Group {
     }
 
     /**
-     * Update the histories of all items in this group, logging all updated intervals >=
-     * logInterval.
+     * Update the histories of all items in this group, logging all updated intervals >= logInterval.
      */
     public void update(ItemUpdateListener listener, long logInterval, long now, long appNow) {
         Item[] arr = itemsArray;

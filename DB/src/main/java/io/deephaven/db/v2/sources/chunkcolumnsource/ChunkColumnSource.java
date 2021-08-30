@@ -31,32 +31,30 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunkType the type of chunk
      * @param dataType the datatype for the newly created column source
-     * @param componentType the component type for the newly created column source (only applies to
-     *        Objects)
+     * @param componentType the component type for the newly created column source (only applies to Objects)
      * @return an empty ChunkColumnSource
      */
-    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType,
-        Class<?> componentType) {
+    @SuppressWarnings("unchecked")
+    static <T> ChunkColumnSource<T> make(ChunkType chunkType, Class<T> dataType, Class<?> componentType) {
         switch (chunkType) {
             case Char:
-                return new CharChunkColumnSource();
+                return (ChunkColumnSource<T>) new CharChunkColumnSource();
             case Byte:
-                return new ByteChunkColumnSource();
+                return (ChunkColumnSource<T>) new ByteChunkColumnSource();
             case Short:
-                return new ShortChunkColumnSource();
+                return (ChunkColumnSource<T>) new ShortChunkColumnSource();
             case Int:
-                return new IntChunkColumnSource();
+                return (ChunkColumnSource<T>) new IntChunkColumnSource();
             case Long:
-                return new LongChunkColumnSource();
+                return (ChunkColumnSource<T>) new LongChunkColumnSource();
             case Float:
-                return new FloatChunkColumnSource();
+                return (ChunkColumnSource<T>) new FloatChunkColumnSource();
             case Double:
-                return new DoubleChunkColumnSource();
+                return (ChunkColumnSource<T>) new DoubleChunkColumnSource();
             case Object:
                 return new ObjectChunkColumnSource<>(dataType, componentType);
             default:
-                throw new IllegalArgumentException(
-                    "Can not make ChunkColumnSource of type " + chunkType);
+                throw new IllegalArgumentException("Can not make ChunkColumnSource of type " + chunkType);
         }
     }
 
@@ -65,12 +63,11 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunkType the type of chunk
      * @param dataType the datatype for the newly created column source
-     * @param sharedOffsetForData an array list representing the shared offsets for data across
-     *        several ChunkColumnSources
+     * @param sharedOffsetForData an array list representing the shared offsets for data across several
+     *        ChunkColumnSources
      * @return an empty ChunkColumnSource
      */
-    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType,
-        TLongArrayList sharedOffsetForData) {
+    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, TLongArrayList sharedOffsetForData) {
         return make(chunkType, dataType, null, sharedOffsetForData);
     }
 
@@ -79,14 +76,13 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunkType the type of chunk
      * @param dataType the datatype for the newly created column source
-     * @param componentType the component type for the newly created column source (only applies to
-     *        Objects)
-     * @param sharedOffsetForData an array list representing the shared offsets for data across
-     *        several ChunkColumnSources
+     * @param componentType the component type for the newly created column source (only applies to Objects)
+     * @param sharedOffsetForData an array list representing the shared offsets for data across several
+     *        ChunkColumnSources
      * @return an empty ChunkColumnSource
      */
     static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, Class<?> componentType,
-        TLongArrayList sharedOffsetForData) {
+            TLongArrayList sharedOffsetForData) {
         switch (chunkType) {
             case Char:
                 return new CharChunkColumnSource(sharedOffsetForData);
@@ -105,8 +101,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
             case Object:
                 return new ObjectChunkColumnSource<>(dataType, componentType, sharedOffsetForData);
             default:
-                throw new IllegalArgumentException(
-                    "Can not make ChunkColumnSource of type " + chunkType);
+                throw new IllegalArgumentException("Can not make ChunkColumnSource of type " + chunkType);
         }
     }
 
@@ -122,8 +117,8 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
     /**
      * Reset the column source to be ready for reuse.
      * <p>
-     * Clear will discard the currently held chunks. This should not be called if a table will
-     * continue to reference the column source; as it violates the immutability contract.
+     * Clear will discard the currently held chunks. This should not be called if a table will continue to reference the
+     * column source; as it violates the immutability contract.
      */
     void clear();
 

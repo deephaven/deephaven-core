@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.ChartDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.ChartDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class ChartDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -85,13 +85,12 @@ public class ChartDescriptor {
 
                     @JsOverlay
                     default void setBusinessPeriodsList(Object[] businessPeriodsList) {
-                        setBusinessPeriodsList(
-                            Js.<JsArray<Object>>uncheckedCast(businessPeriodsList));
+                        setBusinessPeriodsList(Js.<JsArray<Object>>uncheckedCast(businessPeriodsList));
                     }
 
                     @JsProperty
                     void setDate(
-                        ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType.DateFieldType date);
+                            ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType.DateFieldType date);
                 }
 
                 @JsOverlay
@@ -124,27 +123,27 @@ public class ChartDescriptor {
 
                 @JsOverlay
                 default void setBusinessPeriodsList(
-                    ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType[] businessPeriodsList) {
+                        ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType[] businessPeriodsList) {
                     setBusinessPeriodsList(
-                        Js.<JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>>uncheckedCast(
-                            businessPeriodsList));
+                            Js.<JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>>uncheckedCast(
+                                    businessPeriodsList));
                 }
 
                 @JsProperty
                 void setBusinessPeriodsList(
-                    JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType> businessPeriodsList);
+                        JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType> businessPeriodsList);
 
                 @JsOverlay
                 default void setHolidaysList(
-                    ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType[] holidaysList) {
+                        ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType[] holidaysList) {
                     setHolidaysList(
-                        Js.<JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>uncheckedCast(
-                            holidaysList));
+                            Js.<JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>uncheckedCast(
+                                    holidaysList));
                 }
 
                 @JsProperty
                 void setHolidaysList(
-                    JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType> holidaysList);
+                        JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType> holidaysList);
 
                 @JsProperty
                 void setName(String name);
@@ -223,7 +222,7 @@ public class ChartDescriptor {
 
             @JsProperty
             void setBusinessCalendarDescriptor(
-                ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType businessCalendarDescriptor);
+                    ChartDescriptor.ToObjectReturnType.AxesListFieldType.BusinessCalendarDescriptorFieldType businessCalendarDescriptor);
 
             @JsProperty
             void setColor(String color);
@@ -260,8 +259,7 @@ public class ChartDescriptor {
 
             @JsOverlay
             default void setMajorTickLocationsList(double[] majorTickLocationsList) {
-                setMajorTickLocationsList(
-                    Js.<JsArray<Double>>uncheckedCast(majorTickLocationsList));
+                setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(majorTickLocationsList));
             }
 
             @JsProperty
@@ -483,26 +481,26 @@ public class ChartDescriptor {
 
             @JsOverlay
             default void setDataSourcesList(
-                ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.DataSourcesListFieldType[] dataSourcesList) {
+                    ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.DataSourcesListFieldType[] dataSourcesList) {
                 setDataSourcesList(
-                    Js.<JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.DataSourcesListFieldType>>uncheckedCast(
-                        dataSourcesList));
+                        Js.<JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.DataSourcesListFieldType>>uncheckedCast(
+                                dataSourcesList));
             }
 
             @JsProperty
             void setDataSourcesList(
-                JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.DataSourcesListFieldType> dataSourcesList);
+                    JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.DataSourcesListFieldType> dataSourcesList);
 
             @JsProperty
             void setGradientVisible(Object gradientVisible);
 
             @JsProperty
             void setLineColor(
-                ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.LineColorFieldType lineColor);
+                    ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.LineColorFieldType lineColor);
 
             @JsProperty
             void setLinesVisible(
-                ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.LinesVisibleFieldType linesVisible);
+                    ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.LinesVisibleFieldType linesVisible);
 
             @JsProperty
             void setName(String name);
@@ -524,7 +522,7 @@ public class ChartDescriptor {
 
             @JsProperty
             void setPointSize(
-                ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.PointSizeFieldType pointSize);
+                    ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType.PointSizeFieldType pointSize);
 
             @JsProperty
             void setPointsVisible(Object pointsVisible);
@@ -613,7 +611,7 @@ public class ChartDescriptor {
 
                 @JsProperty
                 void setOneClick(
-                    ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType oneClick);
+                        ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
                 @JsProperty
                 void setTableId(double tableId);
@@ -674,15 +672,15 @@ public class ChartDescriptor {
 
             @JsOverlay
             default void setDataSourcesList(
-                ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType[] dataSourcesList) {
+                    ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType[] dataSourcesList) {
                 setDataSourcesList(
-                    Js.<JsArray<ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType>>uncheckedCast(
-                        dataSourcesList));
+                        Js.<JsArray<ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType>>uncheckedCast(
+                                dataSourcesList));
             }
 
             @JsProperty
             void setDataSourcesList(
-                JsArray<ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType> dataSourcesList);
+                    JsArray<ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType> dataSourcesList);
 
             @JsProperty
             void setGradientVisible(boolean gradientVisible);
@@ -771,8 +769,8 @@ public class ChartDescriptor {
         @JsOverlay
         default void setAxesList(ChartDescriptor.ToObjectReturnType.AxesListFieldType[] axesList) {
             setAxesList(
-                Js.<JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType>>uncheckedCast(
-                    axesList));
+                    Js.<JsArray<ChartDescriptor.ToObjectReturnType.AxesListFieldType>>uncheckedCast(
+                            axesList));
         }
 
         @JsProperty
@@ -795,29 +793,28 @@ public class ChartDescriptor {
 
         @JsProperty
         void setMultiSeriesList(
-            JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType> multiSeriesList);
+                JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType> multiSeriesList);
 
         @JsOverlay
         default void setMultiSeriesList(
-            ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType[] multiSeriesList) {
+                ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType[] multiSeriesList) {
             setMultiSeriesList(
-                Js.<JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType>>uncheckedCast(
-                    multiSeriesList));
+                    Js.<JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType>>uncheckedCast(
+                            multiSeriesList));
         }
 
         @JsProperty
         void setRowspan(double rowspan);
 
         @JsProperty
-        void setSeriesList(
-            JsArray<ChartDescriptor.ToObjectReturnType.SeriesListFieldType> seriesList);
+        void setSeriesList(JsArray<ChartDescriptor.ToObjectReturnType.SeriesListFieldType> seriesList);
 
         @JsOverlay
         default void setSeriesList(
-            ChartDescriptor.ToObjectReturnType.SeriesListFieldType[] seriesList) {
+                ChartDescriptor.ToObjectReturnType.SeriesListFieldType[] seriesList) {
             setSeriesList(
-                Js.<JsArray<ChartDescriptor.ToObjectReturnType.SeriesListFieldType>>uncheckedCast(
-                    seriesList));
+                    Js.<JsArray<ChartDescriptor.ToObjectReturnType.SeriesListFieldType>>uncheckedCast(
+                            seriesList));
         }
 
         @JsProperty
@@ -903,13 +900,12 @@ public class ChartDescriptor {
 
                     @JsOverlay
                     default void setBusinessPeriodsList(Object[] businessPeriodsList) {
-                        setBusinessPeriodsList(
-                            Js.<JsArray<Object>>uncheckedCast(businessPeriodsList));
+                        setBusinessPeriodsList(Js.<JsArray<Object>>uncheckedCast(businessPeriodsList));
                     }
 
                     @JsProperty
                     void setDate(
-                        ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType.DateFieldType date);
+                            ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType.DateFieldType date);
                 }
 
                 @JsOverlay
@@ -942,27 +938,27 @@ public class ChartDescriptor {
 
                 @JsOverlay
                 default void setBusinessPeriodsList(
-                    ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType[] businessPeriodsList) {
+                        ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType[] businessPeriodsList) {
                     setBusinessPeriodsList(
-                        Js.<JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>>uncheckedCast(
-                            businessPeriodsList));
+                            Js.<JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>>uncheckedCast(
+                                    businessPeriodsList));
                 }
 
                 @JsProperty
                 void setBusinessPeriodsList(
-                    JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType> businessPeriodsList);
+                        JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType> businessPeriodsList);
 
                 @JsOverlay
                 default void setHolidaysList(
-                    ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType[] holidaysList) {
+                        ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType[] holidaysList) {
                     setHolidaysList(
-                        Js.<JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>uncheckedCast(
-                            holidaysList));
+                            Js.<JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>uncheckedCast(
+                                    holidaysList));
                 }
 
                 @JsProperty
                 void setHolidaysList(
-                    JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType> holidaysList);
+                        JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType> holidaysList);
 
                 @JsProperty
                 void setName(String name);
@@ -1041,7 +1037,7 @@ public class ChartDescriptor {
 
             @JsProperty
             void setBusinessCalendarDescriptor(
-                ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType businessCalendarDescriptor);
+                    ChartDescriptor.ToObjectReturnType0.AxesListFieldType.BusinessCalendarDescriptorFieldType businessCalendarDescriptor);
 
             @JsProperty
             void setColor(String color);
@@ -1078,8 +1074,7 @@ public class ChartDescriptor {
 
             @JsOverlay
             default void setMajorTickLocationsList(double[] majorTickLocationsList) {
-                setMajorTickLocationsList(
-                    Js.<JsArray<Double>>uncheckedCast(majorTickLocationsList));
+                setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(majorTickLocationsList));
             }
 
             @JsProperty
@@ -1301,26 +1296,26 @@ public class ChartDescriptor {
 
             @JsOverlay
             default void setDataSourcesList(
-                ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.DataSourcesListFieldType[] dataSourcesList) {
+                    ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.DataSourcesListFieldType[] dataSourcesList) {
                 setDataSourcesList(
-                    Js.<JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.DataSourcesListFieldType>>uncheckedCast(
-                        dataSourcesList));
+                        Js.<JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.DataSourcesListFieldType>>uncheckedCast(
+                                dataSourcesList));
             }
 
             @JsProperty
             void setDataSourcesList(
-                JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.DataSourcesListFieldType> dataSourcesList);
+                    JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.DataSourcesListFieldType> dataSourcesList);
 
             @JsProperty
             void setGradientVisible(Object gradientVisible);
 
             @JsProperty
             void setLineColor(
-                ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.LineColorFieldType lineColor);
+                    ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.LineColorFieldType lineColor);
 
             @JsProperty
             void setLinesVisible(
-                ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.LinesVisibleFieldType linesVisible);
+                    ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.LinesVisibleFieldType linesVisible);
 
             @JsProperty
             void setName(String name);
@@ -1342,7 +1337,7 @@ public class ChartDescriptor {
 
             @JsProperty
             void setPointSize(
-                ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.PointSizeFieldType pointSize);
+                    ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType.PointSizeFieldType pointSize);
 
             @JsProperty
             void setPointsVisible(Object pointsVisible);
@@ -1431,7 +1426,7 @@ public class ChartDescriptor {
 
                 @JsProperty
                 void setOneClick(
-                    ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType oneClick);
+                        ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
                 @JsProperty
                 void setTableId(double tableId);
@@ -1492,15 +1487,15 @@ public class ChartDescriptor {
 
             @JsOverlay
             default void setDataSourcesList(
-                ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType[] dataSourcesList) {
+                    ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType[] dataSourcesList) {
                 setDataSourcesList(
-                    Js.<JsArray<ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType>>uncheckedCast(
-                        dataSourcesList));
+                        Js.<JsArray<ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType>>uncheckedCast(
+                                dataSourcesList));
             }
 
             @JsProperty
             void setDataSourcesList(
-                JsArray<ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType> dataSourcesList);
+                    JsArray<ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType> dataSourcesList);
 
             @JsProperty
             void setGradientVisible(boolean gradientVisible);
@@ -1589,8 +1584,8 @@ public class ChartDescriptor {
         @JsOverlay
         default void setAxesList(ChartDescriptor.ToObjectReturnType0.AxesListFieldType[] axesList) {
             setAxesList(
-                Js.<JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType>>uncheckedCast(
-                    axesList));
+                    Js.<JsArray<ChartDescriptor.ToObjectReturnType0.AxesListFieldType>>uncheckedCast(
+                            axesList));
         }
 
         @JsProperty
@@ -1613,29 +1608,28 @@ public class ChartDescriptor {
 
         @JsProperty
         void setMultiSeriesList(
-            JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType> multiSeriesList);
+                JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType> multiSeriesList);
 
         @JsOverlay
         default void setMultiSeriesList(
-            ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType[] multiSeriesList) {
+                ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType[] multiSeriesList) {
             setMultiSeriesList(
-                Js.<JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType>>uncheckedCast(
-                    multiSeriesList));
+                    Js.<JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType>>uncheckedCast(
+                            multiSeriesList));
         }
 
         @JsProperty
         void setRowspan(double rowspan);
 
         @JsProperty
-        void setSeriesList(
-            JsArray<ChartDescriptor.ToObjectReturnType0.SeriesListFieldType> seriesList);
+        void setSeriesList(JsArray<ChartDescriptor.ToObjectReturnType0.SeriesListFieldType> seriesList);
 
         @JsOverlay
         default void setSeriesList(
-            ChartDescriptor.ToObjectReturnType0.SeriesListFieldType[] seriesList) {
+                ChartDescriptor.ToObjectReturnType0.SeriesListFieldType[] seriesList) {
             setSeriesList(
-                Js.<JsArray<ChartDescriptor.ToObjectReturnType0.SeriesListFieldType>>uncheckedCast(
-                    seriesList));
+                    Js.<JsArray<ChartDescriptor.ToObjectReturnType0.SeriesListFieldType>>uncheckedCast(
+                            seriesList));
         }
 
         @JsProperty
@@ -1656,12 +1650,12 @@ public class ChartDescriptor {
     public static native ChartDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native ChartDescriptor deserializeBinaryFromReader(
-        ChartDescriptor message, Object reader);
+            ChartDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(ChartDescriptor message, Object writer);
 
     public static native ChartDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, ChartDescriptor msg);
+            boolean includeInstance, ChartDescriptor msg);
 
     public native AxisDescriptor addAxes();
 

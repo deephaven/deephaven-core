@@ -12,13 +12,12 @@ public class Stats {
 
     /** A non-static interface to the Stats component. */
     public interface Maker {
-        <V extends Value> Item<V> makeItem(String groupName, String itemName,
-            Function.Unary<V, Long> valueFactory);
+        <V extends Value> Item<V> makeItem(String groupName, String itemName, Function.Unary<V, Long> valueFactory);
 
         Maker DEFAULT = new Maker() {
             @Override
             public <V extends Value> Item<V> makeItem(String groupName, String itemName,
-                Function.Unary<V, Long> valueFactory) {
+                    Function.Unary<V, Long> valueFactory) {
                 return Stats.makeItem(groupName, itemName, valueFactory);
             }
         };
@@ -65,88 +64,80 @@ public class Stats {
 
     /** get or create a new item */
     public static synchronized <V extends Value> Item<V> makeItem(String groupName, String itemName,
-        Function.Unary<V, Long> valueFactory) {
-        return makeItem(groupName, itemName, valueFactory, UNKNOWN_DESCRIPTION,
-            timeSource.currentTimeMillis());
+            Function.Unary<V, Long> valueFactory) {
+        return makeItem(groupName, itemName, valueFactory, UNKNOWN_DESCRIPTION, timeSource.currentTimeMillis());
     }
 
     /** get or create a new item */
     public static synchronized <V extends Value> Item<V> makeItem(String groupName, String itemName,
-        Function.Unary<V, Long> valueFactory, long now) {
+            Function.Unary<V, Long> valueFactory, long now) {
         return makeItem(groupName, itemName, valueFactory, UNKNOWN_DESCRIPTION, now);
     }
 
     /** get or create a new item */
     public static synchronized <V extends Value> Item<V> makeItem(String groupName, String itemName,
-        Function.Unary<V, Long> valueFactory, String description) {
-        return makeItem(groupName, itemName, valueFactory, description,
-            timeSource.currentTimeMillis());
+            Function.Unary<V, Long> valueFactory, String description) {
+        return makeItem(groupName, itemName, valueFactory, description, timeSource.currentTimeMillis());
     }
 
     /** get or create a new item */
     public static synchronized <V extends Value> Item<V> makeItem(String groupName, String itemName,
-        Function.Unary<V, Long> valueFactory, String description, long now) {
+            Function.Unary<V, Long> valueFactory, String description, long now) {
         Group g = makeGroup(groupName, null);
         return g.makeItem(itemName, valueFactory, description, now);
     }
 
 
     /** get or create a new item with a one-argument factory */
-    public static synchronized <V extends Value, Arg> Item<V> makeItem(String groupName,
-        String itemName, Function.Binary<V, Long, Arg> valueFactory, Arg arg) {
-        return makeItem(groupName, itemName, valueFactory, UNKNOWN_DESCRIPTION,
-            timeSource.currentTimeMillis(), arg);
+    public static synchronized <V extends Value, Arg> Item<V> makeItem(String groupName, String itemName,
+            Function.Binary<V, Long, Arg> valueFactory, Arg arg) {
+        return makeItem(groupName, itemName, valueFactory, UNKNOWN_DESCRIPTION, timeSource.currentTimeMillis(), arg);
     }
 
     /** get or create a new item with a one-argument factory */
-    public static synchronized <V extends Value, Arg> Item<V> makeItem(String groupName,
-        String itemName, Function.Binary<V, Long, Arg> valueFactory, long now, Arg arg) {
+    public static synchronized <V extends Value, Arg> Item<V> makeItem(String groupName, String itemName,
+            Function.Binary<V, Long, Arg> valueFactory, long now, Arg arg) {
         return makeItem(groupName, itemName, valueFactory, UNKNOWN_DESCRIPTION, now, arg);
     }
 
     /** get or create a new item with a one-argument factory */
-    public static synchronized <V extends Value, Arg> Item<V> makeItem(String groupName,
-        String itemName, Function.Binary<V, Long, Arg> valueFactory, String description, Arg arg) {
-        return makeItem(groupName, itemName, valueFactory, description,
-            timeSource.currentTimeMillis(), arg);
+    public static synchronized <V extends Value, Arg> Item<V> makeItem(String groupName, String itemName,
+            Function.Binary<V, Long, Arg> valueFactory, String description, Arg arg) {
+        return makeItem(groupName, itemName, valueFactory, description, timeSource.currentTimeMillis(), arg);
     }
 
     /** get or create a new item with a one-argument factory */
-    public static synchronized <V extends Value, Arg> Item<V> makeItem(String groupName,
-        String itemName, Function.Binary<V, Long, Arg> valueFactory, String description, long now,
-        Arg arg) {
+    public static synchronized <V extends Value, Arg> Item<V> makeItem(String groupName, String itemName,
+            Function.Binary<V, Long, Arg> valueFactory, String description, long now, Arg arg) {
         Group g = makeGroup(groupName, null);
         return g.makeItem(itemName, valueFactory, description, now, arg);
     }
 
     /** get or create a new histogrammed item */
-    public static synchronized <V extends Value> Item<HistogramState> makeHistogram(
-        String groupName, String itemName, long rangeMin, long rangeMax, int numBuckets) {
-        return makeHistogram(groupName, itemName, UNKNOWN_DESCRIPTION,
-            timeSource.currentTimeMillis(), rangeMin, rangeMax, numBuckets);
+    public static synchronized <V extends Value> Item<HistogramState> makeHistogram(String groupName, String itemName,
+            long rangeMin, long rangeMax, int numBuckets) {
+        return makeHistogram(groupName, itemName, UNKNOWN_DESCRIPTION, timeSource.currentTimeMillis(), rangeMin,
+                rangeMax, numBuckets);
     }
 
     /** get or create a new histogrammed item */
-    public static synchronized <V extends Value> Item<HistogramState> makeHistogram(
-        String groupName, String itemName, long now, long rangeMin, long rangeMax, int numBuckets) {
-        return makeHistogram(groupName, itemName, UNKNOWN_DESCRIPTION, now, rangeMin, rangeMax,
-            numBuckets);
+    public static synchronized <V extends Value> Item<HistogramState> makeHistogram(String groupName, String itemName,
+            long now, long rangeMin, long rangeMax, int numBuckets) {
+        return makeHistogram(groupName, itemName, UNKNOWN_DESCRIPTION, now, rangeMin, rangeMax, numBuckets);
     }
 
     /** get or create a new histogrammed item */
-    public static synchronized <V extends Value> Item<HistogramState> makeHistogram(
-        String groupName, String itemName, String description, long rangeMin, long rangeMax,
-        int numBuckets) {
-        return makeHistogram(groupName, itemName, description, timeSource.currentTimeMillis(),
-            rangeMin, rangeMax, numBuckets);
+    public static synchronized <V extends Value> Item<HistogramState> makeHistogram(String groupName, String itemName,
+            String description, long rangeMin, long rangeMax, int numBuckets) {
+        return makeHistogram(groupName, itemName, description, timeSource.currentTimeMillis(), rangeMin, rangeMax,
+                numBuckets);
     }
 
     /** get or create a new histogrammed item */
-    public static synchronized <V extends Value> Item<HistogramState> makeHistogram(
-        String groupName, String itemName, String description, long now, long rangeMin,
-        long rangeMax, int numBuckets) {
+    public static synchronized <V extends Value> Item<HistogramState> makeHistogram(String groupName, String itemName,
+            String description, long now, long rangeMin, long rangeMax, int numBuckets) {
         return Stats.makeItem(groupName, itemName, HistogramState.FACTORY, description, now,
-            new HistogramState.Spec(groupName, itemName, rangeMin, rangeMax, numBuckets));
+                new HistogramState.Spec(groupName, itemName, rangeMin, rangeMax, numBuckets));
     }
 
     /** return an array of all groups */
@@ -171,11 +162,9 @@ public class Stats {
     }
 
     /**
-     * Update the histories of all items in all groups, logging all updated intervals >=
-     * logInterval.
+     * Update the histories of all items in all groups, logging all updated intervals >= logInterval.
      */
-    public synchronized static void update(ItemUpdateListener listener, long now, long appNow,
-        long logInterval) {
+    public synchronized static void update(ItemUpdateListener listener, long now, long appNow, long logInterval) {
         for (Group g : groups) {
             g.update(listener, logInterval, now, appNow);
         }

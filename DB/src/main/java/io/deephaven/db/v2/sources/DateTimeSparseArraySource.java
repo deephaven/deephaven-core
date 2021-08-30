@@ -21,15 +21,15 @@ import static io.deephaven.db.v2.sources.sparse.SparseConstants.IN_USE_MASK;
  * Array-backed ColumnSource for DBDateTimes. Allows reinterpret as long.
  */
 public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBDateTime>
-    implements MutableColumnSourceGetDefaults.ForLongAsDateTime, DefaultChunkSource<Values> {
+        implements MutableColumnSourceGetDefaults.ForLongAsDateTime, DefaultChunkSource<Values> {
 
     public DateTimeSparseArraySource() {
         super(DBDateTime.class);
     }
 
     @Override
-    WritableSource reinterpretForSerialization() {
-        return (WritableSource) reinterpret(long.class);
+    WritableSource<Long> reinterpretForSerialization() {
+        return (WritableSource<Long>) reinterpret(long.class);
     }
 
     @Override
@@ -38,13 +38,13 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     }
 
     @Override
-    public void copy(ColumnSource<DBDateTime> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends DBDateTime> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.get(sourceKey));
     }
 
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
-        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return alternateDataType == long.class;
     }
 
@@ -52,7 +52,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     // the ArrayBackedColumnSource fillChunk can't handle changing the type
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-        @NotNull OrderedKeys orderedKeys) {
+            @NotNull OrderedKeys orderedKeys) {
         final ChunkFiller filler = dest.getChunkFiller();
         if (orderedKeys.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
             filler.fillByRanges(this, orderedKeys, dest);
@@ -62,8 +62,8 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context,
-        @NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull OrderedKeys orderedKeys) {
         final ChunkFiller filler = dest.getChunkFiller();
         if (orderedKeys.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
             filler.fillPrevByRanges(this, orderedKeys, dest);
@@ -78,16 +78,14 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     }
 
     @Override
-    public Chunk<Values> getPrevChunk(@NotNull GetContext context,
-        @NotNull OrderedKeys orderedKeys) {
+    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
         return getPrevChunkByFilling(context, orderedKeys);
     }
 
     @Override
     void fillByUnorderedKeys(@NotNull WritableChunk<? super Values> dest,
-        @NotNull LongChunk<? extends Attributes.KeyIndices> keys) {
-        final WritableObjectChunk<DBDateTime, ? super Values> objectChunk =
-            dest.asWritableObjectChunk();
+            @NotNull LongChunk<? extends Attributes.KeyIndices> keys) {
+        final WritableObjectChunk<DBDateTime, ? super Values> objectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             if (firstKey == Index.NULL_KEY) {
@@ -121,9 +119,8 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     }
 
     void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest,
-        @NotNull LongChunk<? extends Attributes.KeyIndices> keys) {
-        final WritableObjectChunk<DBDateTime, ? super Values> objectChunk =
-            dest.asWritableObjectChunk();
+            @NotNull LongChunk<? extends Attributes.KeyIndices> keys) {
+        final WritableObjectChunk<DBDateTime, ? super Values> objectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             if (firstKey == Index.NULL_KEY) {
@@ -150,18 +147,15 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
             }
 
             final long[] prevInUse = (prevFlusher == null || this.prevInUse == null) ? null
-                : this.prevInUse.getInnermostBlockByKeyOrNull(firstKey);
-            final long[] prevBlock =
-                prevInUse == null ? null : prevBlocks.getInnermostBlockByKeyOrNull(firstKey);
+                    : this.prevInUse.getInnermostBlockByKeyOrNull(firstKey);
+            final long[] prevBlock = prevInUse == null ? null : prevBlocks.getInnermostBlockByKeyOrNull(firstKey);
             while (ii <= lastII) {
                 final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
                 final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
                 final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 
                 final long[] blockToUse =
-                    (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0)
-                        ? prevBlock
-                        : block;
+                        (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0) ? prevBlock : block;
                 final long nanos = blockToUse == null ? NULL_LONG : blockToUse[indexWithinBlock];
                 objectChunk.set(ii++, nanos == NULL_LONG ? null : new DBDateTime(nanos));
             }
@@ -170,8 +164,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     }
 
     @Override
-    public void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys,
-        Chunk<? extends Values> src) {
+    public void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
         final ObjectChunk<DBDateTime, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<Attributes.OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
         int offset = 0;
@@ -237,8 +230,8 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context,
-        @NotNull Chunk<? extends Values> src, @NotNull LongChunk<Attributes.KeyIndices> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull LongChunk<Attributes.KeyIndices> keys) {
         if (keys.size() == 0) {
             return;
         }
@@ -264,8 +257,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
                 throw new UnsupportedOperationException("Source chunk is an alias for target data");
             }
 
-            // This conditional with its constant condition should be very friendly to the branch
-            // predictor.
+            // This conditional with its constant condition should be very friendly to the branch predictor.
 
             long key = keys.get(ii);
             do {
@@ -279,8 +271,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
                 }
                 final DBDateTime time = chunk.get(ii++);
                 block[indexWithinBlock] = (time == null) ? NULL_LONG : time.getNanos();
-            } while (ii < keys.size() && (key = keys.get(ii)) >= minKeyInCurrentBlock
-                && key <= maxKeyInCurrentBlock);
+            } while (ii < keys.size() && (key = keys.get(ii)) >= minKeyInCurrentBlock && key <= maxKeyInCurrentBlock);
         }
     }
 }

@@ -4,7 +4,7 @@
   "addColumn": ":param column: java.lang.String",
   "applyFunction": ":param function: java.util.function.Function<io.deephaven.db.tables.Table,io.deephaven.db.tables.Table>",
   "getColumns": ":return: java.util.Set<java.lang.String>",
-  "getFetchViewColumns": "Get the set of columns to .view() when the table is fetched.  Typically this is identical to getColumns()\n however, there are situations where the transformations applied to a TableMap result in columns that are not\n present in the base tableMap.  (for example catHistPlot).\n\n:return: java.util.Set<java.lang.String>",
+  "getFetchViewColumns": "Get the set of columns to .view() when the table is fetched. Typically this is identical to getColumns()\n however, there are situations where the transformations applied to a TableMap result in columns that are not\n present in the base tableMap. (for example catHistPlot).\n\n:return: java.util.Set<java.lang.String>",
   "getKeyColumns": ":return: java.util.Set<java.lang.String>",
   "getKeyColumnsOrdered": ":return: java.lang.String[]",
   "getPlotInfo": ":return: io.deephaven.db.plot.errors.PlotInfo",

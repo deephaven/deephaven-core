@@ -54,7 +54,7 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
                 new EvalNugget() {
                     public Table e() {
                         return LiveTableMonitor.DEFAULT.exclusiveLock()
-                            .computeLocked(() -> result.update("Arg0=Arg.substring(0, 1)"));
+                                .computeLocked(() -> result.update("Arg0=Arg.substring(0, 1)"));
                     }
                 },
                 new UpdateValidatorNugget(result),
@@ -98,15 +98,14 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
 
         final QueryTable queryTable = (QueryTable) result;
 
-        final Map<String, ColumnSource> map = queryTable.getColumnSourceMap();
+        final Map<String, ColumnSource<?>> map = queryTable.getColumnSourceMap();
 
         // noinspection unchecked
-        final ColumnSource<String>[] columnSources =
-            (ColumnSource<String>[]) new ColumnSource[map.size()];
+        final ColumnSource<String>[] columnSources = (ColumnSource<String>[]) new ColumnSource[map.size()];
         int ii = 0;
-        for (ColumnSource cs : map.values()) {
+        for (ColumnSource<?> cs : map.values()) {
             // noinspection unchecked
-            columnSources[ii++] = cs;
+            columnSources[ii++] = (ColumnSource<String>) cs;
         }
 
         for (final Index.Iterator it = queryTable.getIndex().iterator(); it.hasNext();) {

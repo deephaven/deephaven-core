@@ -364,6 +364,7 @@ except Exception as e:
 def base64Fingerprint(source):
     """
     Compute the SHA256 hash of the input table and return it in base64 string format.
+     
     
     :param source: (io.deephaven.db.tables.Table) - The table to fingerprint
     :return: (java.lang.String) The SHA256 hash of the table data and TableDefinition
@@ -450,8 +451,10 @@ def colSource(*args):
 def computeFingerprint(source):
     """
     Compute the SHA256 hash of the input table.
-    The hash is computed using every value in each row, using toString for unrecognized objects.
-     The hash also includes the input table definition column names and types.
+     
+    
+     The hash is computed using every value in each row, using toString for unrecognized objects. The hash also
+     includes the input table definition column names and types.
      
     
     :param source: (io.deephaven.db.tables.Table) - The table to fingerprint
@@ -489,7 +492,8 @@ def diff(*args):
       :param actualResult: (io.deephaven.db.tables.Table) - first Deephaven table object to compare
       :param expectedResult: (io.deephaven.db.tables.Table) - second Deephaven table object to compare
       :param maxDiffLines: (long) - stop comparing after this many differences are found
-      :param itemsToSkip: (java.util.EnumSet<io.deephaven.db.tables.utils.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double values
+      :param itemsToSkip: (java.util.EnumSet<io.deephaven.db.tables.utils.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double
+              values
       :return: (java.lang.String) String report of the detected differences
     """
     
@@ -504,8 +508,10 @@ def diffPair(actualResult, expectedResult, maxDiffLines, itemsToSkip):
     :param actualResult: (io.deephaven.db.tables.Table) - first Deephaven table object to compare
     :param expectedResult: (io.deephaven.db.tables.Table) - second Deephaven table object to compare
     :param maxDiffLines: (long) - stop comparing after this many differences are found
-    :param itemsToSkip: (java.util.EnumSet<io.deephaven.db.tables.utils.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double values
-    :return: (io.deephaven.base.Pair<java.lang.String,java.lang.Long>) a pair of String report of the detected differences, and the first different row (0 if there are no different data values)
+    :param itemsToSkip: (java.util.EnumSet<io.deephaven.db.tables.utils.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double
+            values
+    :return: (io.deephaven.base.Pair<java.lang.String,java.lang.Long>) a pair of String report of the detected differences, and the first different row (0 if there are no
+             different data values)
     """
     
     return _java_type_.diffPair(actualResult, expectedResult, maxDiffLines, itemsToSkip)
@@ -566,7 +572,7 @@ def getKey(groupByColumnSources, row):
     """
     Returns a SmartKey for the specified row from a set of ColumnSources.
     
-    :param groupByColumnSources: (io.deephaven.db.v2.sources.ColumnSource[]) - a set of ColumnSources from which to retrieve the data
+    :param groupByColumnSources: (io.deephaven.db.v2.sources.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
     :param row: (long) - the row number for which to retrieve data
     :return: (java.lang.Object) a Deephaven SmartKey object
     """
@@ -579,7 +585,7 @@ def getPrevKey(groupByColumnSources, row):
     """
     Returns a SmartKey for the row previous to the specified row from a set of ColumnSources.
     
-    :param groupByColumnSources: (io.deephaven.db.v2.sources.ColumnSource[]) - a set of ColumnSources from which to retrieve the data
+    :param groupByColumnSources: (io.deephaven.db.v2.sources.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
     :param row: (long) - the row number for which to retrieve the previous row's data
     :return: (java.lang.Object) a Deephaven SmartKey object
     """
@@ -642,13 +648,15 @@ def merge(*args):
     """
     Concatenates multiple Deephaven Tables into a single Table.
     
-     The resultant table will have rows from the same table together, in the order they
-     are specified as inputs.
-    When ticking tables grow, they may run out of the 'pre-allocated' space for newly added rows. When more key-
+     
+     The resultant table will have rows from the same table together, in the order they are specified as inputs.
+     
+    
+     When ticking tables grow, they may run out of the 'pre-allocated' space for newly added rows. When more key-
      space is needed, tables in higher key-space are shifted to yet higher key-space to make room for new rows. Shifts
-     are handled efficiently, but some downstream operations generate a linear O(n) amount of work per shifted row. When
-     possible, one should favor ordering the constituent tables first by static/non-ticking sources followed by tables
-     that are expected to grow at slower rates, and finally by tables that grow without bound.
+     are handled efficiently, but some downstream operations generate a linear O(n) amount of work per shifted row.
+     When possible, one should favor ordering the constituent tables first by static/non-ticking sources followed by
+     tables that are expected to grow at slower rates, and finally by tables that grow without bound.
     
     *Overload 1*  
       :param theList: (java.util.List<io.deephaven.db.tables.Table>) - a List of Tables to be concatenated
@@ -695,12 +703,12 @@ def newTable(*args):
     *Overload 1*  
       :param size: (long) - the number of rows to allocate
       :param names: (java.util.List<java.lang.String>) - a List of column names
-      :param columnSources: (java.util.List<io.deephaven.db.v2.sources.ColumnSource>) - a List of the ColumnSource(s)
+      :param columnSources: (java.util.List<io.deephaven.db.v2.sources.ColumnSource<?>>) - a List of the ColumnSource(s)
       :return: (io.deephaven.db.v2.DynamicTable) a Deephaven DynamicTable
       
     *Overload 2*  
       :param size: (long) - the number of rows to allocate
-      :param columns: (java.util.Map<java.lang.String,io.deephaven.db.v2.sources.ColumnSource>) - a Map of column names and ColumnSources
+      :param columns: (java.util.Map<java.lang.String,io.deephaven.db.v2.sources.ColumnSource<?>>) - a Map of column names and ColumnSources
       :return: (io.deephaven.db.v2.DynamicTable) a Deephaven DynamicTable
       
     *Overload 3*  
@@ -750,7 +758,8 @@ def objColSource(*values):
 @_passThrough
 def readCsv(*args):
     """
-    Returns a memory table created from importing CSV data. The first row must be column names. Column data types are inferred from the data.
+    Returns a memory table created from importing CSV data. The first row must be column names. Column data types are
+     inferred from the data.
     
     *Overload 1*  
       :param is: (java.io.InputStream) - an InputStream providing access to the CSV data.
@@ -767,13 +776,17 @@ def readCsv(*args):
       
     *Overload 4*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
+      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+              use as a delimiter.
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
       
     *Overload 5*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+              use as a delimiter.
+      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
+              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+              logger.
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
       
     *Overload 6*  
@@ -782,15 +795,18 @@ def readCsv(*args):
       
     *Overload 7*  
       :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar.
-                       If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
+              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+              logger.
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
       
     *Overload 8*  
       :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar.
-                       If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+              use as a delimiter.
+      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
+              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+              logger.
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
     """
     
@@ -818,17 +834,23 @@ def readHeaderlessCsv(*args):
       
     *Overload 4*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+              use as a delimiter.
+      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
+              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+              logger.
       :param header: (java.util.Collection<java.lang.String>) - Column names to use for the resultant table.
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
       
     *Overload 5*  
       :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar.
-                       If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
-      :param header: (java.util.Collection<java.lang.String>) - Column names to use for the resultant table, or null if column names should be automatically generated.
+      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+              use as a delimiter.
+      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
+              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+              logger.
+      :param header: (java.util.Collection<java.lang.String>) - Column names to use for the resultant table, or null if column names should be automatically
+              generated.
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
     """
     
@@ -861,7 +883,8 @@ def roundDecimalColumnsExcept(table, *columnsNotToRound):
      float columns rounded to longs, except for the specified columnsNotToRound.
     
     :param table: io.deephaven.db.tables.Table
-    :param columnsNotToRound: (java.lang.String...) - The names of the double and float columns not to round to longs
+    :param columnsNotToRound: (java.lang.String...) - The names of the double and float columns not to round to
+            longs
     :return: (io.deephaven.db.tables.Table) The new Table, with columns modified as explained above
     """
     
@@ -953,7 +976,8 @@ def showCommaDelimited(*args):
 @_passThrough
 def showWithIndex(*args):
     """
-    Prints the first few rows of a table to standard output, and also prints the details of the index and record positions that provided the values.
+    Prints the first few rows of a table to standard output, and also prints the details of the index and record
+     positions that provided the values.
     
     *Overload 1*  
       :param source: (io.deephaven.db.tables.Table) - a Deephaven table object

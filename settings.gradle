@@ -23,7 +23,6 @@ String[] webMods = [
         'web-jupyter-grid', // React Jupyter grid client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
-        'open-api-lang-api', // a lightweight module used to avoid diamond problems with :DB
         'open-api-lang-parser', // a javacc generated general-purpose language parser.
         'open-api-lang-tools', // language processing tools that we want to be accessible to many modules
         'open-api-shared-fu', // general purpose tools and dtos for both client and server
@@ -142,6 +141,30 @@ include(':envoy')
 
 include(':grpc-proxy')
 
+include(':java-client-session')
+project(':java-client-session').projectDir = file('java-client/session')
+
+include(':java-client-flight')
+project(':java-client-flight').projectDir = file('java-client/flight')
+
+include(':java-client-session-dagger')
+project(':java-client-session-dagger').projectDir = file('java-client/session-dagger')
+
+include(':java-client-flight-dagger')
+project(':java-client-flight-dagger').projectDir = file('java-client/flight-dagger')
+
+include(':java-client-session-examples')
+project(':java-client-session-examples').projectDir = file('java-client/session-examples')
+
+include(':java-client-flight-examples')
+project(':java-client-flight-examples').projectDir = file('java-client/flight-examples')
+
+include(':qst:graphviz')
+
+include(':application-mode')
+
+include(':util-immutables')
+project(':util-immutables').projectDir = file('Util/util-immutables')
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {

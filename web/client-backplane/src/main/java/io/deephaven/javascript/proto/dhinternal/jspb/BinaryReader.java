@@ -239,88 +239,72 @@ public class BinaryReader {
 
     @JsMethod(name = "alloc")
     public static native BinaryReader alloc_STATIC(
-        BinaryReader.AllocBytesUnionType bytes, double start, double length);
+            BinaryReader.AllocBytesUnionType bytes, double start, double length);
 
     @JsMethod(name = "alloc")
     public static native BinaryReader alloc_STATIC(
-        BinaryReader.AllocBytesUnionType bytes, double start);
+            BinaryReader.AllocBytesUnionType bytes, double start);
 
     @JsMethod(name = "alloc")
     public static native BinaryReader alloc_STATIC(BinaryReader.AllocBytesUnionType bytes);
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes, double start, double length) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start,
-            length);
+        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes, double start) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(
-        JsArray<Double> bytes, double start, double length) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start,
-            length);
+            JsArray<Double> bytes, double start, double length) {
+        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(JsArray<Double> bytes, double start) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(JsArray<Double> bytes) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes, double start, double length) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start,
-            length);
+        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes, double start) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes, double start, double length) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start,
-            length);
+        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes, double start) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
-    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes) {
         return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
@@ -350,8 +334,7 @@ public class BinaryReader {
 
     public BinaryReader(ArrayBuffer bytes) {}
 
-    public BinaryReader(BinaryReader.ConstructorBytesUnionType bytes, double start,
-        double length) {}
+    public BinaryReader(BinaryReader.ConstructorBytesUnionType bytes, double start, double length) {}
 
     public BinaryReader(BinaryReader.ConstructorBytesUnionType bytes, double start) {}
 
@@ -386,7 +369,7 @@ public class BinaryReader {
     public native BinaryReader alloc();
 
     public native BinaryReader alloc(
-        BinaryReader.AllocBytesUnionType bytes, double start, double length);
+            BinaryReader.AllocBytesUnionType bytes, double start, double length);
 
     public native BinaryReader alloc(BinaryReader.AllocBytesUnionType bytes, double start);
 
@@ -508,7 +491,7 @@ public class BinaryReader {
     public native double readFloat();
 
     public native void readGroup(
-        double field, Message message, BinaryReader.ReadGroupReaderFn reader);
+            double field, Message message, BinaryReader.ReadGroupReaderFn reader);
 
     public native double readInt32();
 
@@ -591,7 +574,7 @@ public class BinaryReader {
     public native String readVarintHash64();
 
     public native void registerReadCallback(
-        String callbackName, BinaryReader.RegisterReadCallbackCallbackFn callback);
+            String callbackName, BinaryReader.RegisterReadCallbackCallbackFn callback);
 
     public native void reset();
 
@@ -630,7 +613,7 @@ public class BinaryReader {
     }
 
     public native void setBlock(
-        BinaryReader.SetBlockBytesUnionType bytes, double start, double length);
+            BinaryReader.SetBlockBytesUnionType bytes, double start, double length);
 
     public native void setBlock(BinaryReader.SetBlockBytesUnionType bytes, double start);
 

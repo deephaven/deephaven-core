@@ -9,8 +9,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * This interface is a slightly weaker version of java.io.Externalizable, in that it only allows the
- * use of the DataInput and -Output interfaces for reading and writing, not ObjectInput and -Output.
+ * This interface is a slightly weaker version of java.io.Externalizable, in that it only allows the use of the
+ * DataInput and -Output interfaces for reading and writing, not ObjectInput and -Output.
  */
 public interface Encodeable {
     public void encode(DataOutput out) throws IOException;

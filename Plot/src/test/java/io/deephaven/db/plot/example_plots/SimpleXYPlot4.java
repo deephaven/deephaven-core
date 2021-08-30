@@ -18,15 +18,15 @@ public class SimpleXYPlot4 {
         Figure fig = FigureFactory.figure();
 
         Figure cht = fig.newChart(0)
-            .chartTitle("triad_mixing")
-            .chartTitleFont("Courier", "PLAIN", 40);
+                .chartTitle("triad_mixing")
+                .chartTitleFont("Courier", "PLAIN", 40);
 
         Figure ax = cht.newAxes()
-            .xLabel("X1")
-            .yLabel("Y1")
-            .plot("Func0", x -> -5)
-            .plot("Func1", x -> -4)
-            .plot("Func2", x -> -3).lineStyle(thickDash);
+                .xLabel("X1")
+                .yLabel("Y1")
+                .plot("Func0", x -> -5)
+                .plot("Func1", x -> -4)
+                .plot("Func2", x -> -3).lineStyle(thickDash);
 
         ExamplePlotUtils.display(ax);
     }

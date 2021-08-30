@@ -5,6 +5,6 @@
   "getCacheInitializer": ":param valueType: java.lang.Class<?>\n:param maximumCachedMappingsString: java.lang.String\n:return: java.lang.String"
  },
  "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache",
- "text": "An LRU mapping cache that relies on an queue of intrusively doubly-linked nodes for keeping track of\n eviction policy details.",
+ "text": "An LRU mapping cache that relies on an queue of intrusively doubly-linked nodes for keeping track of eviction policy\n details.",
  "typeName": "class"
 }

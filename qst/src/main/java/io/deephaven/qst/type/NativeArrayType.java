@@ -6,7 +6,6 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 import java.lang.reflect.Array;
-import java.util.Objects;
 
 /**
  * A java native array type.
@@ -26,12 +25,12 @@ public abstract class NativeArrayType<T, ComponentType> extends ArrayTypeBase<T,
     }
 
     public static <T, ComponentType> NativeArrayType<T, ComponentType> of(Class<T> arrayType,
-        Type<ComponentType> componentType) {
+            Type<ComponentType> componentType) {
         return ImmutableNativeArrayType.of(arrayType, componentType);
     }
 
     public static <ComponentType> NativeArrayType<?, ComponentType> toArrayType(
-        GenericType<ComponentType> type) {
+            GenericType<ComponentType> type) {
         // Note: in Java 12+, we can use Class#arrayType()
         final Class<?> clazz = Array.newInstance(type.clazz(), 0).getClass();
         return NativeArrayType.of(clazz, type);

@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 public class AsyncSystem {
 
     private static class AsyncSystemExitUncaughtExceptionHandler implements
-        UncaughtExceptionHandler {
+            UncaughtExceptionHandler {
 
         private final PrintStream out;
         private final int status;
@@ -41,20 +41,19 @@ public class AsyncSystem {
     }
 
     /**
-     * Starts an asynchronous call to {@link System#exit(int)}. A new daemon thread will be started
-     * and it will invoke only {@code System.exit(status)}. In the event that
-     * {@link System#exit(int)} throws an exception, the name of the thread and the stacktrace will
-     * be printed out.
+     * Starts an asynchronous call to {@link System#exit(int)}. A new daemon thread will be started and it will invoke
+     * only {@code System.exit(status)}. In the event that {@link System#exit(int)} throws an exception, the name of the
+     * thread and the stacktrace will be printed out.
      *
      * <p>
-     * Note: this call will return, unlike a direct call to {@link System#exit(int)}. Callers should
-     * manage this as appropriate.
+     * Note: this call will return, unlike a direct call to {@link System#exit(int)}. Callers should manage this as
+     * appropriate.
      *
      * @param name the name to attach to the thread
      * @param status exit status
      * @param out the output print stream (on exception)
-     * @throws SecurityException if a security manager exists and its {@code checkExit} method
-     *         doesn't allow exit with the specified status.
+     * @throws SecurityException if a security manager exists and its {@code checkExit} method doesn't allow exit with
+     *         the specified status.
      */
     public static void exit(String name, int status, PrintStream out) {
         // preemptively checks security manager in the same way that System.exit does
@@ -63,25 +62,23 @@ public class AsyncSystem {
             security.checkExit(status);
         }
         createThread(name, status, out)
-            .start();
+                .start();
     }
 
     /**
-     * Prints out a message and stacktrace, and then calls {@link #exit(String, int, PrintStream)}.
-     * This should <b>only</b> be called from {@link UncaughtExceptionHandler uncaught exception
-     * handlers}.
+     * Prints out a message and stacktrace, and then calls {@link #exit(String, int, PrintStream)}. This should
+     * <b>only</b> be called from {@link UncaughtExceptionHandler uncaught exception handlers}.
      *
      * @param thread the thread
      * @param throwable the throwable
      * @param status the status
      * @param out the print stream
      */
-    public static void exitUncaught(Thread thread, Throwable throwable, int status,
-        PrintStream out) {
+    public static void exitUncaught(Thread thread, Throwable throwable, int status, PrintStream out) {
         try {
             out.println(String.format(
-                "Uncaught exception in thread %s. Shutting down with asynchronous system exit.",
-                thread));
+                    "Uncaught exception in thread %s. Shutting down with asynchronous system exit.",
+                    thread));
             throwable.printStackTrace(out);
         } finally {
             exit(thread.getName(), status, out);
@@ -96,8 +93,8 @@ public class AsyncSystem {
     }
 
     /**
-     * Prints out a message and stacktrace, and then calls {@link #exit(String, int, PrintStream)}.
-     * This can be called from a thread which catches its own exceptions and wants to exit.
+     * Prints out a message and stacktrace, and then calls {@link #exit(String, int, PrintStream)}. This can be called
+     * from a thread which catches its own exceptions and wants to exit.
      *
      * @param thread the thread
      * @param throwable the throwable
@@ -106,16 +103,16 @@ public class AsyncSystem {
      * @param message the optional additional message
      */
     public static void exitCaught(Thread thread, Throwable throwable, int status, PrintStream out,
-        @Nullable String message) {
+            @Nullable String message) {
         try {
             if (message == null) {
                 out.println(String.format(
-                    "Caught exception in thread %s. Shutting down with asynchronous system exit.",
-                    thread));
+                        "Caught exception in thread %s. Shutting down with asynchronous system exit.",
+                        thread));
             } else {
                 out.println(String.format(
-                    "Caught exception in thread %s: %s. Shutting down with asynchronous system exit.",
-                    thread, message));
+                        "Caught exception in thread %s: %s. Shutting down with asynchronous system exit.",
+                        thread, message));
             }
             throwable.printStackTrace(out);
         } finally {
@@ -125,9 +122,9 @@ public class AsyncSystem {
 
     private static Thread createThread(String name, int status, PrintStream out) {
         return new AsyncSystemExitThread(
-            String.format("AsyncSystemExit[%d,%s]", status, name),
-            status,
-            out);
+                String.format("AsyncSystemExit[%d,%s]", status, name),
+                status,
+                out);
     }
 
     private static class AsyncSystemExitThread extends Thread {

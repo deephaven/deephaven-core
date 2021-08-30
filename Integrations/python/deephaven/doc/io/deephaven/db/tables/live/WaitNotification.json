@@ -2,10 +2,10 @@
  "className": "io.deephaven.db.tables.live.WaitNotification",
  "methods": {
   "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
-  "canExecute": "Can this notification be executed?  That is, are all of it's dependencies satisfied.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) true if this notification can be executed, false if it has unmet dependencies",
+  "canExecute": "Can this notification be executed? That is, are all of it's dependencies satisfied.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) true if this notification can be executed, false if it has unmet dependencies",
   "waitForSatisfaction": "Wait for all of the specified dependencies to be satisfied on the specified step.\n\n:param step: (long) - The step to wait for satisfaction on\n:param dependencies: (io.deephaven.db.tables.live.NotificationQueue.Dependency...) - The dependencies to wait for\n:return: (boolean) True if the dependencies became satisfied on the specified step, false if the cycle had already completed"
  },
  "path": "io.deephaven.db.tables.live.WaitNotification",
- "text": "One-shot NotificationQueue.Notification that can be delivered when a set of\n dependencies are satisfied.\n This allows for an external observer to wait for multiple dependencies to be satisfied using\n waitForSatisfaction(long, NotificationQueue.Dependency...).",
+ "text": "One-shot NotificationQueue.Notification that can be delivered when a set of\n dependencies are satisfied. This allows for an external observer to wait for\n multiple dependencies to be satisfied using waitForSatisfaction(long, NotificationQueue.Dependency...).",
  "typeName": "class"
 }

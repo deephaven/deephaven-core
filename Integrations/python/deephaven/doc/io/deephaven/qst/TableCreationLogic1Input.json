@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.TableCreationLogic1Input",
+ "methods": {
+  "create": "Note: Java generics information - <T extends io.deephaven.api.TableOperations<T,\nT>>\n\n:param t1: T\n:return: T"
+ },
+ "path": "io.deephaven.qst.TableCreationLogic1Input",
+ "text": "An encapsulation of the logic to create a single table, when the table type is also TableOperations.",
+ "typeName": "interface"
+}

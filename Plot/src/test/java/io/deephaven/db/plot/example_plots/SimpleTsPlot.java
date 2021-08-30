@@ -31,9 +31,9 @@ public class SimpleTsPlot {
 
         for (int i = 0; i < size * size; i++) {
             fig = fig.newChart()
-                .newAxes()
-                .plot("Test1", x1, y1)
-                .plot("Test2", x2, y2);
+                    .newAxes()
+                    .plot("Test1", x1, y1)
+                    .plot("Test2", x2, y2);
         }
 
         ExamplePlotUtils.display(fig);

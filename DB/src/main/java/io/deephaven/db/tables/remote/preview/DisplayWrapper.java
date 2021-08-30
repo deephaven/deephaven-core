@@ -6,12 +6,12 @@ import org.jetbrains.annotations.Nullable;
 import java.io.Serializable;
 
 /**
- * Wraps Objects that cannot be displayed (e.g. not serializable or an unknown class) and allows
- * them to be displayed as a String.
+ * Wraps Objects that cannot be displayed (e.g. not serializable or an unknown class) and allows them to be displayed as
+ * a String.
  */
 public class DisplayWrapper implements Serializable {
     private static final int MAX_CHARACTERS =
-        Configuration.getInstance().getIntegerWithDefault("DisplayWrapper.maxCharacters", 10000);
+            Configuration.getInstance().getIntegerWithDefault("DisplayWrapper.maxCharacters", 10000);
     private final String displayString;
 
     /**

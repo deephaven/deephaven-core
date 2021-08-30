@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.select.formula.FormulaKernelFactory",
  "methods": {
-  "createInstance": ":param arrays: io.deephaven.db.tables.dbarrays.DbArrayBase[]\n:param params: io.deephaven.db.tables.select.Param[]\n:return: io.deephaven.db.v2.select.formula.FormulaKernel"
+  "createInstance": ":param arrays: io.deephaven.db.tables.dbarrays.DbArrayBase<?>[]\n:param params: io.deephaven.db.tables.select.Param<?>[]\n:return: io.deephaven.db.v2.select.formula.FormulaKernel"
  },
  "path": "io.deephaven.db.v2.select.formula.FormulaKernelFactory",
  "typeName": "interface"

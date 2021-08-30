@@ -16,8 +16,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * </p>
  *
  * <p>
- * Each time {@link #startUpdateCycle()} is called, the clock transitions to the Updating state and
- * the current {@link #currentValue() value} is incremented by one.
+ * Each time {@link #startUpdateCycle()} is called, the clock transitions to the Updating state and the current
+ * {@link #currentValue() value} is incremented by one.
  * </p>
  *
  * <p>
@@ -34,14 +34,14 @@ public enum LogicalClock {
     public enum State {
 
         /**
-         * Clock state for logical timestamps when the associated
-         * {@link io.deephaven.db.tables.live.LiveTableMonitor} is propagating updates.
+         * Clock state for logical timestamps when the associated {@link io.deephaven.db.tables.live.LiveTableMonitor}
+         * is propagating updates.
          */
         Updating,
 
         /**
-         * Clock state for logical timestamps when the associated
-         * {@link io.deephaven.db.tables.live.LiveTableMonitor} is <em>not</em> propagating updates.
+         * Clock state for logical timestamps when the associated {@link io.deephaven.db.tables.live.LiveTableMonitor}
+         * is <em>not</em> propagating updates.
          */
         Idle
     }
@@ -114,28 +114,25 @@ public enum LogicalClock {
     /**
      * Increment the current step and set the clock state to {@link State#Idle idle}.
      *
-     * @implNote The clock must have been {@link State#Updating updating} before this method is
-     *           called.
+     * @implNote The clock must have been {@link State#Updating updating} before this method is called.
      */
     public final void completeUpdateCycle() {
         final long value = currentValue.get();
         Assert.eq(getState(value), "getState(value)", State.Updating);
-        Assert.eq(currentValue.incrementAndGet(), "currentValue.incrementAndGet()", value + 1,
-            "value + 1");
+        Assert.eq(currentValue.incrementAndGet(), "currentValue.incrementAndGet()", value + 1, "value + 1");
     }
 
     /**
      * After we complete a table refresh, we must ensure that the logical clock is idle.
      *
      * <p>
-     * The only valid possibilities are (1) we have completed the cycle, in which case we return; or
-     * (2) we have terminated the cycle early and have the same value as at the start of our
-     * updating cycle, in which case we complete the cycle.
+     * The only valid possibilities are (1) we have completed the cycle, in which case we return; or (2) we have
+     * terminated the cycle early and have the same value as at the start of our updating cycle, in which case we
+     * complete the cycle.
      * </p>
      *
      * <p>
-     * If our clock is any other value; then it was changed out from under us and we throw an
-     * exception.
+     * If our clock is any other value; then it was changed out from under us and we throw an exception.
      * </p>
      *
      * @param updatingCycleValue the clock value at the end of {@link #startUpdateCycle}
@@ -147,13 +144,12 @@ public enum LogicalClock {
         }
         if (value == updatingCycleValue) {
             ProcessEnvironment.getDefaultLog(LogicalClock.class).warn()
-                .append("LogicalClock cycle was not completed in normal operation, value=")
-                .append(value).endl();
+                    .append("LogicalClock cycle was not completed in normal operation, value=").append(value).endl();
             completeUpdateCycle();
             return;
         }
         throw new IllegalStateException("Inconsistent LogicalClock value at end of cycle, expected "
-            + (updatingCycleValue + 1) + ", encountered " + value);
+                + (updatingCycleValue + 1) + ", encountered " + value);
     }
 
     /**

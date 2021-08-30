@@ -2,7 +2,7 @@
  "className": "io.deephaven.modelfarm.ExecPrioritizer",
  "methods": {
   "execHappened": "A new execution happened using this row data.\n\n:param data: (ExecPrioritizer.DATATYPE) - data used in the execution.",
-  "priority": "Compute the priority for processing the data at the indicated table index.\n\n:param dataManager: (ExecPrioritizer.ROWDATAMANAGERTYPE) - interface for accessing and querying data contained in rows of a dynamic table.\n:param index: (long) - index of the data in the fit data manager source table.\n:return: (int) priority of processing the data at the indicated index.  Higher numbers are higher priority."
+  "priority": "Compute the priority for processing the data at the indicated table index.\n\n:param dataManager: (ExecPrioritizer.ROWDATAMANAGERTYPE) - interface for accessing and querying data contained in rows of a dynamic table.\n:param index: (long) - index of the data in the fit data manager source table.\n:return: (int) priority of processing the data at the indicated index. Higher numbers are higher priority."
  },
  "path": "io.deephaven.modelfarm.ExecPrioritizer",
  "text": "An interface for prioritizing the execution of table rows.",

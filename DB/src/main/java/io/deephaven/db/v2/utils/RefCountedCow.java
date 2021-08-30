@@ -9,15 +9,14 @@ import io.deephaven.util.annotations.VisibleForTesting;
 
 /**
  * <p>
- * This class enables a pattern of use where objects can be shared from multiple
- * references/identities while they are used read-only.
+ * This class enables a pattern of use where objects can be shared from multiple references/identities while they are
+ * used read-only.
  *
  * Note this is not thread safe.
  *
- * A class derives from this class and users of it call getWriteRef() to obtain a reference that can
- * be modified. That may return the same object (with an increased ref count), or may return a deep
- * copy of it if other readers of the object exist. Effectively this creates a copy-on-write sharing
- * strategy.
+ * A class derives from this class and users of it call getWriteRef() to obtain a reference that can be modified. That
+ * may return the same object (with an increased ref count), or may return a deep copy of it if other readers of the
+ * object exist. Effectively this creates a copy-on-write sharing strategy.
  * </p>
  *
  * <p>
@@ -62,25 +61,24 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * </p>
  *
  * <p>
- * Note this implementation does minimal concurrency protection, since it assumes it will run under
- * the protection mechanisms of live update table and its clock, ie, reads can concurrently access
- * objects being mutated, but will realize near the end their operation was invalidated by a clock
- * change and will toss their results.
+ * Note this implementation does minimal concurrency protection, since it assumes it will run under the protection
+ * mechanisms of live update table and its clock, ie, reads can concurrently access objects being mutated, but will
+ * realize near the end their operation was invalidated by a clock change and will toss their results.
  * </p>
  *
  * @param <T> A class that will extend us, to get RefCounted functionality.
  */
 public abstract class RefCountedCow<T> {
     private static final boolean debug = RspArray.debug ||
-        Configuration.getInstance().getBooleanForClassWithDefault(
-            RefCountedCow.class, "debug", false);
+            Configuration.getInstance().getBooleanForClassWithDefault(
+                    RefCountedCow.class, "debug", false);
 
     /**
-     * Field updater for refCount, so we can avoid creating an
-     * {@link java.util.concurrent.atomic.AtomicInteger} for each instance.
+     * Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
+     * each instance.
      */
     private static final AtomicIntegerFieldUpdater<RefCountedCow> REFCOUNT_UPDATER =
-        AtomicIntegerFieldUpdater.newUpdater(RefCountedCow.class, "refCount");
+            AtomicIntegerFieldUpdater.newUpdater(RefCountedCow.class, "refCount");
 
     /**
      * The actual value of our reference count.
@@ -122,13 +120,13 @@ public abstract class RefCountedCow<T> {
     }
 
     /**
-     * Obtain a new reference to this object; the reference count will increase. This operation is
-     * cheap and does not do a deep copy of the object's payload; if a mutator is called through
-     * this reference, the reference will make a copy of its payload first, before applying the
-     * mutation, to keep other read only accessor of the previously shared payload unnaffected.
+     * Obtain a new reference to this object; the reference count will increase. This operation is cheap and does not do
+     * a deep copy of the object's payload; if a mutator is called through this reference, the reference will make a
+     * copy of its payload first, before applying the mutation, to keep other read only accessor of the previously
+     * shared payload unnaffected.
      *
-     * Note this assumes a pattern of use for derived classes where mutators return a reference,
-     * which may or may not point to the same object on which the mutation was called.
+     * Note this assumes a pattern of use for derived classes where mutators return a reference, which may or may not
+     * point to the same object on which the mutation was called.
      *
      * Also note this is not thread safe.
      *
@@ -168,9 +166,8 @@ public abstract class RefCountedCow<T> {
     public abstract T deepCopy();
 
     /**
-     * Derived classes should implement self() by simply "return this" of the right type. This
-     * method exists only as an implementation artifact for a type safe implementation of the
-     * curiously recurring generic pattern.
+     * Derived classes should implement self() by simply "return this" of the right type. This method exists only as an
+     * implementation artifact for a type safe implementation of the curiously recurring generic pattern.
      *
      * @return this object, with the right, most derived type.
      */
@@ -187,8 +184,8 @@ public abstract class RefCountedCow<T> {
     protected void notifyAfterRelease() {}
 
     /**
-     * Obtain a reference to this object that can be modified without affecting other references.
-     * Note this is not thread safe.
+     * Obtain a reference to this object that can be modified without affecting other references. Note this is not
+     * thread safe.
      *
      * @return If this object is shared, a deep copy of this object, otherwise the object itself.
      */
@@ -198,13 +195,12 @@ public abstract class RefCountedCow<T> {
             Assert.gtZero(count, "count");
         }
         return (count > 1)
-            ? deepCopy()
-            : self();
+                ? deepCopy()
+                : self();
     }
 
     /**
-     * Query whether this object will copy itself first before mutations. Note this is not thread
-     * safe.
+     * Query whether this object will copy itself first before mutations. Note this is not thread safe.
      *
      * @return true if this object is not shared and can be mutated directly
      */

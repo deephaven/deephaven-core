@@ -13,15 +13,14 @@ public class ScriptEnginePlaypen {
         ScriptEngineManager factory = new ScriptEngineManager();
 
         for (ScriptEngineFactory sef : factory.getEngineFactories()) {
-            System.out.println(
-                sef.getEngineName() + ", " + sef.getLanguageName() + ", " + sef.getNames());
+            System.out.println(sef.getEngineName() + ", " + sef.getLanguageName() + ", " + sef.getNames());
         }
 
         ScriptEngine engine = factory.getEngineByName("scala");
 
         if (engine instanceof IMain) {
             scala.collection.immutable.List<String> emptyList = scala.collection.JavaConverters
-                .collectionAsScalaIterable((List<String>) Collections.EMPTY_LIST).toList();
+                    .collectionAsScalaIterable((List<String>) Collections.EMPTY_LIST).toList();
             ((IMain) engine).bind("z", "Int", 5, emptyList);
             ((IMain) engine).bind("y", "Int", 6, emptyList);
         } else {

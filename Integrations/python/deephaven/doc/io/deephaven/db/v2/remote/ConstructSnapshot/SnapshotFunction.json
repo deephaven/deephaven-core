@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.remote.ConstructSnapshot$SnapshotFunction",
  "methods": {
-  "call": "A function that would like to take a snapshot of data guarded by a retry loop with data consistency tests.\n\n:param usePrev: (boolean) - Whether data from the previous cycle should be used (otherwise use this cycle)\n:param beforeClockValue: (long) - The clock value that we captured before the function began; the function can use\n                         this value to bail out early if it notices something has gone wrong\n:return: (boolean) true if the function was successful, false if it should be retried"
+  "call": "A function that would like to take a snapshot of data guarded by a retry loop with data consistency tests.\n\n:param usePrev: (boolean) - Whether data from the previous cycle should be used (otherwise use this cycle)\n:param beforeClockValue: (long) - The clock value that we captured before the function began; the function can use this\n        value to bail out early if it notices something has gone wrong\n:return: (boolean) true if the function was successful, false if it should be retried"
  },
  "path": "io.deephaven.db.v2.remote.ConstructSnapshot.SnapshotFunction",
  "typeName": "interface"

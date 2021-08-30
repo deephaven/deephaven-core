@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public abstract class AbstractTupleSource<TUPLE_TYPE>
-    implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Attributes.Values> {
+        implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Attributes.Values> {
 
     private final ColumnSource[] columnSources;
     private final List<ColumnSource> listColumnSources;
@@ -38,8 +38,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
     @Override
     public final void fillChunk(@NotNull FillContext context,
-        @NotNull WritableChunk<? super Attributes.Values> destination,
-        @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
@@ -55,8 +54,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
     @Override
     public final void fillPrevChunk(@NotNull FillContext context,
-        @NotNull WritableChunk<? super Attributes.Values> destination,
-        @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
@@ -70,9 +68,8 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
         convertChunks(destination, orderedKeys.intSize(), chunks);
     }
 
-    protected abstract void convertChunks(
-        @NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize,
-        Chunk<Attributes.Values>[] chunks);
+    protected abstract void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize,
+            Chunk<Attributes.Values>[] chunks);
 
     class TupleFillContext implements FillContext {
 
@@ -81,8 +78,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
         TupleFillContext(int chunkCapacity, SharedContext sharedContext) {
 
-            this.getContexts =
-                Stream.of(columnSources).map(cs -> cs.makeGetContext(chunkCapacity, sharedContext))
+            this.getContexts = Stream.of(columnSources).map(cs -> cs.makeGetContext(chunkCapacity, sharedContext))
                     .toArray(GetContext[]::new);
             // noinspection unchecked
             this.chunks = new Chunk[columnSources.length];

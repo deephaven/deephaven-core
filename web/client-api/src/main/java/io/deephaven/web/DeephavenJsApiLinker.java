@@ -22,13 +22,13 @@ public class DeephavenJsApiLinker extends AbstractLinker {
     }
 
     @Override
-    public ArtifactSet link(TreeLogger logger, LinkerContext context, ArtifactSet artifacts,
-        boolean onePermutation) throws UnableToCompleteException {
+    public ArtifactSet link(TreeLogger logger, LinkerContext context, ArtifactSet artifacts, boolean onePermutation)
+            throws UnableToCompleteException {
         return this.link(logger, context, artifacts);
     }
 
     public ArtifactSet link(TreeLogger logger, LinkerContext context, ArtifactSet artifacts)
-        throws UnableToCompleteException {
+            throws UnableToCompleteException {
 
         ArtifactSet toReturn = new ArtifactSet(artifacts);
         DefaultTextOutput out = new DefaultTextOutput(true);
@@ -43,8 +43,7 @@ public class DeephavenJsApiLinker extends AbstractLinker {
         }
 
         if (results.size() > 1) {
-            logger.log(TreeLogger.ERROR,
-                "Expected 1 permutation, found " + results.size() + " permutations.");
+            logger.log(TreeLogger.ERROR, "Expected 1 permutation, found " + results.size() + " permutations.");
             throw new UnableToCompleteException();
         }
 

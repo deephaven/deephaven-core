@@ -31,8 +31,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
     // Resource to hold the container sit may be pointing to.
     private SpanView sitView;
     private static final int BUFSZ =
-        Configuration.getInstance().getIntegerForClassWithDefault(RspIterator.class, "bufferSize",
-            122);
+            Configuration.getInstance().getIntegerForClassWithDefault(RspIterator.class, "bufferSize", 122);
     private boolean hasNext;
 
     RspIterator(final RspArray.SpanCursorForward p, final long firstSpanSkipCount) {
@@ -97,8 +96,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
         return c;
     }
 
-    public int copyTo(final WritableLongChunk<? extends KeyIndices> chunk, final int offset,
-        final int max) {
+    public int copyTo(final WritableLongChunk<? extends KeyIndices> chunk, final int offset, final int max) {
         int c = 0;
         while (hasNext) {
             if (!sit.hasNext()) {
@@ -120,8 +118,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
         final Object s = p.span();
         if (RspArray.isSingletonSpan(s)) {
             if (skipCount != 0) {
-                throw new IllegalArgumentException(
-                    "skipCount=" + skipCount + " and next span is single element");
+                throw new IllegalArgumentException("skipCount=" + skipCount + " and next span is single element");
             }
             final long singletonValue = RspArray.spanInfoToSingletonSpanValue(spanInfo);
             sitView.reset();
@@ -161,8 +158,8 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 }
 
                 @Override
-                public int copyTo(final WritableLongChunk<? extends KeyIndices> chunk,
-                    final int offset, final int max) {
+                public int copyTo(final WritableLongChunk<? extends KeyIndices> chunk, final int offset,
+                        final int max) {
                     if (max <= 0 || v == -1) {
                         return 0;
                     }
@@ -213,8 +210,8 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 }
 
                 @Override
-                public int copyTo(final WritableLongChunk<? extends KeyIndices> chunk,
-                    final int offset, final int max) {
+                public int copyTo(final WritableLongChunk<? extends KeyIndices> chunk, final int offset,
+                        final int max) {
                     int c = 0;
                     final long last = Math.min(curr + max - 1, end);
                     while (curr <= last) {
@@ -242,8 +239,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
             public long nextLong() {
                 if (bi >= count) {
                     if (buf == null) {
-                        // Lazy initialize to avoid the allocation in the cases it might never be
-                        // used
+                        // Lazy initialize to avoid the allocation in the cases it might never be used
                         // (eg, pure forEachLong consumption).
                         buf = new short[BUFSZ];
                     }
@@ -287,8 +283,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
             }
 
             @Override
-            public int copyTo(final WritableLongChunk<? extends KeyIndices> chunk, final int offset,
-                final int max) {
+            public int copyTo(final WritableLongChunk<? extends KeyIndices> chunk, final int offset, final int max) {
                 int c = 0;
                 if (buf == null) {
                     // Lazy initialize to avoid the allocation in the cases it might never be used

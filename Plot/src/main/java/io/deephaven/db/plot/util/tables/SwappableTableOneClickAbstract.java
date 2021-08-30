@@ -12,8 +12,7 @@ import java.util.*;
 /**
  * Holds a handle on a one click table that may get swapped out for another table.
  */
-public abstract class SwappableTableOneClickAbstract extends SwappableTable
-    implements SwappableTableMap {
+public abstract class SwappableTableOneClickAbstract extends SwappableTable implements SwappableTableMap {
     private static final long serialVersionUID = 2L;
 
     protected final long updateInterval;
@@ -23,10 +22,10 @@ public abstract class SwappableTableOneClickAbstract extends SwappableTable
     private final Comparable seriesName;
 
     protected SwappableTableOneClickAbstract(@NotNull final Comparable seriesName,
-        final long updateInterval,
-        @NotNull final TableMapHandle tableMapHandle,
-        final boolean requireAllFiltersToDisplay,
-        @NotNull final String[] byColumns) {
+            final long updateInterval,
+            @NotNull final TableMapHandle tableMapHandle,
+            final boolean requireAllFiltersToDisplay,
+            @NotNull final String[] byColumns) {
         super(tableMapHandle);
         Require.neqNull(byColumns, "byColumns");
         this.tableMapHandle = tableMapHandle;

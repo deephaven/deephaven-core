@@ -23,17 +23,17 @@ import static io.deephaven.util.QueryConstants.*;
  */
 @SuppressWarnings("unused")
 public class TypeUtils {
-    private static final Map<Class, Class> primitiveToBoxed;
-    private static final Map<Class, Class> boxedToPrimitive;
+    private static final Map<Class<?>, Class<?>> primitiveToBoxed;
+    private static final Map<Class<?>, Class<?>> boxedToPrimitive;
 
-    public static final Set<Class> PRIMITIVE_TYPES;
-    public static final Set<Class> BOXED_TYPES;
+    public static final Set<Class<?>> PRIMITIVE_TYPES;
+    public static final Set<Class<?>> BOXED_TYPES;
 
-    public static final Map<String, Class> primitiveClassNameToClass;
+    public static final Map<String, Class<?>> primitiveClassNameToClass;
 
     static {
-        LinkedHashMap<Class, Class> primitiveToBoxedTemp = new LinkedHashMap<>();
-        LinkedHashMap<Class, Class> boxedToPrimitiveTemp = new LinkedHashMap<>();
+        LinkedHashMap<Class<?>, Class<?>> primitiveToBoxedTemp = new LinkedHashMap<>();
+        LinkedHashMap<Class<?>, Class<?>> boxedToPrimitiveTemp = new LinkedHashMap<>();
 
         // Note: ordering here matters! Tests in TestDBLanguageParser depend on it.
         primitiveToBoxedTemp.put(byte.class, Byte.class);
@@ -44,7 +44,7 @@ public class TypeUtils {
         primitiveToBoxedTemp.put(float.class, Float.class);
         primitiveToBoxedTemp.put(double.class, Double.class);
         primitiveToBoxedTemp.put(boolean.class, Boolean.class);
-        for (Map.Entry<Class, Class> classClassEntry : primitiveToBoxedTemp.entrySet()) {
+        for (Map.Entry<Class<?>, Class<?>> classClassEntry : primitiveToBoxedTemp.entrySet()) {
             boxedToPrimitiveTemp.put(classClassEntry.getValue(), classClassEntry.getKey());
         }
 
@@ -52,10 +52,9 @@ public class TypeUtils {
         boxedToPrimitive = Collections.unmodifiableMap(boxedToPrimitiveTemp);
 
         PRIMITIVE_TYPES = Collections.unmodifiableSet(primitiveToBoxedTemp.keySet());
-        BOXED_TYPES =
-            Collections.unmodifiableSet(new LinkedHashSet<>(primitiveToBoxedTemp.values()));
-        primitiveClassNameToClass = Collections.unmodifiableMap(
-            PRIMITIVE_TYPES.stream().collect(Collectors.toMap(Class::getName, type -> type)));
+        BOXED_TYPES = Collections.unmodifiableSet(new LinkedHashSet<>(primitiveToBoxedTemp.values()));
+        primitiveClassNameToClass = Collections
+                .unmodifiableMap(PRIMITIVE_TYPES.stream().collect(Collectors.toMap(Class::getName, type -> type)));
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -64,13 +63,12 @@ public class TypeUtils {
     }
 
     /**
-     * Returns a reference type corresponding to the given {@code type}. If {@code type} is itself a
-     * reference type, then {@code type} is returned. If {@code type} is a primitive type, then the
-     * appropriate boxed type is returned.
-     * 
+     * Returns a reference type corresponding to the given {@code type}. If {@code type} is itself a reference type,
+     * then {@code type} is returned. If {@code type} is a primitive type, then the appropriate boxed type is returned.
+     *
      * @param type The type
      */
-    public static Class getBoxedType(Class type) {
+    public static Class<?> getBoxedType(Class<?> type) {
         if (!type.isPrimitive()) {
             return type;
         }
@@ -78,14 +76,14 @@ public class TypeUtils {
     }
 
     /**
-     * Returns the primitive type corresponding to the given {@code type}. If {@code type} is itself
-     * a primitive type, then {@code type} is returned. If {@code type} is neither a primitive type
-     * nor a boxed type, then {@code null} is returned.
-     * 
+     * Returns the primitive type corresponding to the given {@code type}. If {@code type} is itself a primitive type,
+     * then {@code type} is returned. If {@code type} is neither a primitive type nor a boxed type, then {@code null} is
+     * returned.
+     *
      * @param type The type
      * @return type's primitive equivalent, or null
      */
-    public static Class getUnboxedType(Class type) {
+    public static Class<?> getUnboxedType(Class<?> type) {
         if (type.isPrimitive()) {
             return type;
         }
@@ -94,12 +92,12 @@ public class TypeUtils {
 
     /**
      * Same as {@link #getUnboxedType(Class)}, but returns non-wrapper classes unmolested.
-     * 
+     *
      * @param type The type
      * @return type's unboxed equivalent, or type
      */
-    public static Class getUnboxedTypeIfBoxed(@NotNull final Class type) {
-        final Class unboxedType = getUnboxedType(type);
+    public static Class<?> getUnboxedTypeIfBoxed(@NotNull final Class<?> type) {
+        final Class<?> unboxedType = getUnboxedType(type);
         return unboxedType != null ? unboxedType : type;
     }
 
@@ -146,7 +144,7 @@ public class TypeUtils {
     public static float[] toFloatArray(byte[] array) {
         float[] result = new float[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (float) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -162,7 +160,7 @@ public class TypeUtils {
     public static float[] toFloatArray(short[] array) {
         float[] result = new float[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (float) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -202,7 +200,7 @@ public class TypeUtils {
     public static short[] toShortArray(byte[] array) {
         short[] result = new short[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (short) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -234,7 +232,7 @@ public class TypeUtils {
     public static long[] toLongArray(int[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (long) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -242,7 +240,7 @@ public class TypeUtils {
     public static long[] toLongArray(short[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (long) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -250,7 +248,7 @@ public class TypeUtils {
     public static long[] toLongArray(byte[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (long) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -274,7 +272,7 @@ public class TypeUtils {
     public static int[] toIntArray(byte[] array) {
         int[] result = new int[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (int) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -282,7 +280,7 @@ public class TypeUtils {
     public static int[] toIntArray(short[] array) {
         int[] result = new int[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (int) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -306,7 +304,7 @@ public class TypeUtils {
     public static double[] toDoubleArray(float[] array) {
         double[] result = new double[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (double) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -314,7 +312,7 @@ public class TypeUtils {
     public static double[] toDoubleArray(int[] array) {
         double[] result = new double[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (double) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -322,7 +320,7 @@ public class TypeUtils {
     public static double[] toDoubleArray(short[] array) {
         double[] result = new double[array.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (double) array[i];
+            result[i] = array[i];
         }
         return result;
     }
@@ -341,18 +339,17 @@ public class TypeUtils {
         return result;
     }
 
-    public static boolean isConvertibleToPrimitive(Class type) {
-        final Class unboxedType = TypeUtils.getUnboxedType(type);
-        return unboxedType != null && unboxedType != boolean.class; // TODO:
-                                                                    // isConvertibleToPrimitive(Boolean.class)
-                                                                    // == false ???
+    public static boolean isConvertibleToPrimitive(Class<?> type) {
+        final Class<?> unboxedType = TypeUtils.getUnboxedType(type);
+        return unboxedType != null && unboxedType != boolean.class; // TODO: isConvertibleToPrimitive(Boolean.class) ==
+                                                                    // false ???
     }
 
-    public static boolean isBoxedType(Class exprType) {
+    public static boolean isBoxedType(Class<?> exprType) {
         return BOXED_TYPES.contains(exprType);
     }
 
-    public static String nullConstantForType(Class type) {
+    public static String nullConstantForType(Class<?> type) {
         if (type == char.class) {
             return "QueryConstants.NULL_CHAR";
         } else if (type == byte.class) {
@@ -375,16 +372,14 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is equal to one of the six numeric primitives: float, double, int, long,
-     * short, or byte.
+     * Whether the class is equal to one of the six numeric primitives: float, double, int, long, short, or byte.
      *
      * @param c class
      * @return true if {@code c} is a numeric primitive, false otherwise
      */
-    public static boolean isPrimitiveNumeric(@NotNull final Class c) {
+    public static boolean isPrimitiveNumeric(@NotNull final Class<?> c) {
         return c.equals(double.class) || c.equals(float.class)
-            || c.equals(int.class) || c.equals(long.class) || c.equals(short.class)
-            || c.equals(byte.class);
+                || c.equals(int.class) || c.equals(long.class) || c.equals(short.class) || c.equals(byte.class);
     }
 
     /**
@@ -393,7 +388,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Number.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedNumeric(@NotNull final Class c) {
+    public static boolean isBoxedNumeric(@NotNull final Class<?> c) {
         return Number.class.isAssignableFrom(c);
     }
 
@@ -403,7 +398,7 @@ public class TypeUtils {
      * @param c class
      * @return true if {@code c} equals char.class, false otherwise
      */
-    public static boolean isPrimitiveChar(@NotNull final Class c) {
+    public static boolean isPrimitiveChar(@NotNull final Class<?> c) {
         return c.equals(char.class);
     }
 
@@ -413,7 +408,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Character.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedChar(@NotNull final Class c) {
+    public static boolean isBoxedChar(@NotNull final Class<?> c) {
         return Character.class.isAssignableFrom(c);
     }
 
@@ -423,7 +418,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Integer.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedInteger(@NotNull final Class c) {
+    public static boolean isBoxedInteger(@NotNull final Class<?> c) {
         return Integer.class.isAssignableFrom(c);
     }
 
@@ -433,7 +428,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Long.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedLong(@NotNull final Class c) {
+    public static boolean isBoxedLong(@NotNull final Class<?> c) {
         return Long.class.isAssignableFrom(c);
     }
 
@@ -443,7 +438,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Short.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedShort(@NotNull final Class c) {
+    public static boolean isBoxedShort(@NotNull final Class<?> c) {
         return Short.class.isAssignableFrom(c);
     }
 
@@ -453,7 +448,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Float.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedFloat(@NotNull final Class c) {
+    public static boolean isBoxedFloat(@NotNull final Class<?> c) {
         return Float.class.isAssignableFrom(c);
     }
 
@@ -463,7 +458,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Double.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedDouble(@NotNull final Class c) {
+    public static boolean isBoxedDouble(@NotNull final Class<?> c) {
         return Double.class.isAssignableFrom(c);
     }
 
@@ -473,7 +468,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Byte.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedByte(@NotNull final Class c) {
+    public static boolean isBoxedByte(@NotNull final Class<?> c) {
         return Byte.class.isAssignableFrom(c);
     }
 
@@ -483,7 +478,7 @@ public class TypeUtils {
      * @param c class
      * @return true if the class is a boxed arithmetic type, false otherwise
      */
-    public static boolean isBoxedArithmetic(@NotNull final Class c) {
+    public static boolean isBoxedArithmetic(@NotNull final Class<?> c) {
         return isBoxedLong(c) || isBoxedInteger(c) || isBoxedShort(c) || isBoxedByte(c);
     }
 
@@ -493,7 +488,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Boolean.class is assignable from {@code c}, false otherwise
      */
-    public static boolean isBoxedBoolean(@NotNull final Class c) {
+    public static boolean isBoxedBoolean(@NotNull final Class<?> c) {
         return Boolean.class.isAssignableFrom(c);
     }
 
@@ -503,7 +498,7 @@ public class TypeUtils {
      * @param c class
      * @return true if {@code c} is numeric, false otherwise
      */
-    public static boolean isNumeric(@NotNull final Class c) {
+    public static boolean isNumeric(@NotNull final Class<?> c) {
         return isPrimitiveNumeric(c) || isBoxedNumeric(c);
     }
 
@@ -513,7 +508,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Character.class is assignable from {@code c} or {@code c} equals char.class
      */
-    public static boolean isCharacter(@NotNull final Class c) {
+    public static boolean isCharacter(@NotNull final Class<?> c) {
         return isPrimitiveChar(c) || isBoxedChar(c);
     }
 
@@ -523,9 +518,9 @@ public class TypeUtils {
      * @param type The class.
      * @return true if the type is a DBDateTime or {@link Date}.
      */
-    public static boolean isDateTime(Class type) {
+    public static boolean isDateTime(Class<?> type) {
         return Date.class.isAssignableFrom(type) || type.getAnnotation(IsDateTime.class) != null
-            && ((IsDateTime) type.getAnnotation(IsDateTime.class)).value();
+                && type.getAnnotation(IsDateTime.class).value();
     }
 
     /**
@@ -534,7 +529,7 @@ public class TypeUtils {
      * @param type the class
      * @return true if the type is a String, false otherwise
      */
-    public static boolean isString(Class type) {
+    public static boolean isString(Class<?> type) {
         return String.class.isAssignableFrom(type);
     }
 
@@ -544,7 +539,7 @@ public class TypeUtils {
      * @param type the class
      * @return true if the type is BigInteger or BigDecimal, false otherwise
      */
-    public static boolean isBigNumeric(Class type) {
+    public static boolean isBigNumeric(Class<?> type) {
         return BigInteger.class.isAssignableFrom(type) || BigDecimal.class.isAssignableFrom(type);
     }
 
@@ -554,7 +549,7 @@ public class TypeUtils {
      * @param type the class
      * @return true if the type is primitive or Serializable
      */
-    public static boolean isPrimitiveOrSerializable(Class type) {
+    public static boolean isPrimitiveOrSerializable(Class<?> type) {
         return type.isPrimitive() || Serializable.class.isAssignableFrom(type);
     }
 
@@ -564,16 +559,14 @@ public class TypeUtils {
      * @param type the class
      * @return true if it is a float type, false otherwise
      */
-    public static boolean isFloatType(Class type) {
-        return type.equals(double.class) || type.equals(float.class) || isBoxedDouble(type)
-            || isBoxedFloat(type);
+    public static boolean isFloatType(Class<?> type) {
+        return type.equals(double.class) || type.equals(float.class) || isBoxedDouble(type) || isBoxedFloat(type);
     }
 
     /**
-     * Converts an Object to a String for writing to a workspace. This is meant to be used in
-     * conjunction with {@code TypeUtils.fromString}. Strings, Numbers, and primitives will all
-     * convert using {@code Obect.toString}. Serializable objects will be encoded in base64. All
-     * others will return null.
+     * Converts an Object to a String for writing to a workspace. This is meant to be used in conjunction with
+     * {@code TypeUtils.fromString}. Strings, Numbers, and primitives will all convert using {@code Obect.toString}.
+     * Serializable objects will be encoded in base64. All others will return null.
      *
      * @param o the object to convert
      * @return a String representation of the object, null if it cannot be converted
@@ -585,23 +578,21 @@ public class TypeUtils {
         }
 
         final Class<?> type = o.getClass();
-        // isNumeric gets BigInteger and BigDecimal in addition to everything gotten by
-        // isConvertibleToPrimitive
+        // isNumeric gets BigInteger and BigDecimal in addition to everything gotten by isConvertibleToPrimitive
         if (type == String.class || isConvertibleToPrimitive(type) || isNumeric(type)) {
             return o.toString();
         } else if (o instanceof Serializable) {
             return encode64Serializable((Serializable) o);
         }
 
-        throw new RuntimeException("Failed to convert object of type " + type.getCanonicalName()
-            + ".  Type not supported");
+        throw new RuntimeException(
+                "Failed to convert object of type " + type.getCanonicalName() + ".  Type not supported");
     }
 
     /**
-     * Creates an Object from a String. This is meant to be used in conjunction with
-     * {@code TypeUtils.objectToString} Strings, Numbers, and primitives will all parse using their
-     * boxed type parsing methods. Serializable types will be decoded from base64. Returns null if
-     * the String fails to parse.
+     * Creates an Object from a String. This is meant to be used in conjunction with {@code TypeUtils.objectToString}
+     * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
+     * be decoded from base64. Returns null if the String fails to parse.
      *
      * @param string the String to parse
      * @param typeString the Canonical Name of the class type
@@ -620,10 +611,9 @@ public class TypeUtils {
     }
 
     /**
-     * Creates an Object from a String. This is meant to be used in conjunction with
-     * {@code TypeUtils.objectToString} Strings, Numbers, and primitives will all parse using their
-     * boxed type parsing methods. Serializable types will be decoded from base64. Returns null if
-     * the String fails to parse.
+     * Creates an Object from a String. This is meant to be used in conjunction with {@code TypeUtils.objectToString}
+     * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
+     * be decoded from base64. Returns null if the String fails to parse.
      *
      * @param string the String to parse
      * @param type the type of the object
@@ -662,24 +652,23 @@ public class TypeUtils {
         } catch (IOException ioe) {
             throw ioe;
         } catch (Exception e) {
-            throw new RuntimeException(
-                "Failed to parse " + string + "into type " + type.getCanonicalName(), e);
+            throw new RuntimeException("Failed to parse " + string + "into type " + type.getCanonicalName(), e);
         }
 
-        throw new RuntimeException("Failed to parse " + string + "into type "
-            + type.getCanonicalName() + ".  Type not supported");
+        throw new RuntimeException(
+                "Failed to parse " + string + "into type " + type.getCanonicalName() + ".  Type not supported");
     }
 
     /**
      * Encodes a Serializable Object into base64 String.
-     * 
+     *
      * @param serializable the object to encode
      * @return the base64 encoded string
      * @throws IOException if the string cannot be encoded
      */
     public static String encode64Serializable(Serializable serializable) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream os = new ObjectOutputStream(bos)) {
+                ObjectOutputStream os = new ObjectOutputStream(bos)) {
             os.writeObject(serializable);
             return Base64.getEncoder().encodeToString(bos.toByteArray());
         }
@@ -693,35 +682,30 @@ public class TypeUtils {
      * @throws IOException if the string cannot be decoded
      * @throws ClassNotFoundException if the Object type is unknown
      */
-    public static Object decode64Serializable(String string)
-        throws IOException, ClassNotFoundException {
+    public static Object decode64Serializable(String string) throws IOException, ClassNotFoundException {
         try (ObjectInputStream is =
-            new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
+                new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
             return is.readObject();
         }
     }
 
     /**
      * Determine the Class from the Type.
-     *
-     * @param paramType
-     * @return
      */
-    public static Class getErasedType(Type paramType) {
+    public static Class<?> getErasedType(Type paramType) {
         if (paramType instanceof Class) {
-            return (Class) paramType;
+            return (Class<?>) paramType;
         } else if (paramType instanceof ParameterizedType) {
-            return (Class) // We are asking the parameterized type for it's raw type, which is
-                           // always Class
+            return (Class<?>) // We are asking the parameterized type for it's raw type, which is always Class
             ((ParameterizedType) paramType).getRawType();
         } else if (paramType instanceof WildcardType) {
             final Type[] upper = ((WildcardType) paramType).getUpperBounds();
             return getErasedType(upper[0]);
         } else if (paramType instanceof java.lang.reflect.TypeVariable) {
-            final Type[] bounds = ((TypeVariable) paramType).getBounds();
+            final Type[] bounds = ((TypeVariable<?>) paramType).getBounds();
             if (bounds.length > 1) {
-                Class[] erasedBounds = new Class[bounds.length];
-                Class weakest = null;
+                Class<?>[] erasedBounds = new Class[bounds.length];
+                Class<?> weakest = null;
                 for (int i = 0; i < erasedBounds.length; i++) {
                     erasedBounds[i] = getErasedType(bounds[i]);
                     if (i == 0) {
@@ -745,11 +729,11 @@ public class TypeUtils {
     /**
      * Determine the weakest parent of the two provided Classes.
      *
-     * @param one
-     * @param two
+     * @param one one class to compare
+     * @param two the other class to compare
      * @return the weakest parent Class
      */
-    private static Class getWeakest(Class one, Class two) {
+    private static Class<?> getWeakest(Class<?> one, Class<?> two) {
         if (one.isAssignableFrom(two)) {
             return one;
         } else if (two.isAssignableFrom(one)) {
@@ -760,7 +744,7 @@ public class TypeUtils {
         Set<Class<?>> twoInterfaces = getFlattenedInterfaces(two);
         // Keep only shared interfaces
         oneInterfaces.retainAll(twoInterfaces);
-        Class strongest = Object.class;
+        Class<?> strongest = Object.class;
         for (Class<?> cls : oneInterfaces) {
             // There is a winning type...
             if (strongest.isAssignableFrom(cls)) {
@@ -769,15 +753,14 @@ public class TypeUtils {
                 return Object.class;
             }
         }
-        // Will be Object.class if there were no shared interfaces (or shared interfaces were not
-        // compatible).
+        // Will be Object.class if there were no shared interfaces (or shared interfaces were not compatible).
         return strongest;
     }
 
-    private static Set<Class<?>> getFlattenedInterfaces(Class cls) {
+    private static Set<Class<?>> getFlattenedInterfaces(Class<?> cls) {
         final Set<Class<?>> set = new HashSet<>();
         while (cls != null && cls != Object.class) {
-            for (Class iface : cls.getInterfaces()) {
+            for (Class<?> iface : cls.getInterfaces()) {
                 collectInterfaces(set, iface);
             }
             cls = cls.getSuperclass();
@@ -796,8 +779,8 @@ public class TypeUtils {
     }
 
 
-    public static Class classForName(String className) throws ClassNotFoundException {
-        Class result = primitiveClassNameToClass.get(className);
+    public static Class<?> classForName(String className) throws ClassNotFoundException {
+        Class<?> result = primitiveClassNameToClass.get(className);
         if (result == null) {
             return Class.forName(className);
         } else {
@@ -810,58 +793,59 @@ public class TypeUtils {
         public abstract T get(T result);
     }
 
-    public static TypeBoxer getTypeBoxer(Class type) {
+    @SuppressWarnings("unchecked")
+    public static <T> TypeBoxer<T> getTypeBoxer(Class<T> type) {
         if (type == byte.class || type == Byte.class) {
-            return new TypeBoxer<Byte>() {
+            return (TypeBoxer<T>) new TypeBoxer<Byte>() {
                 @Override
                 public Byte get(Byte result) {
                     return (result == NULL_BYTE ? null : result);
                 }
             };
         } else if (type == char.class || type == Character.class) {
-            return new TypeBoxer<Character>() {
+            return (TypeBoxer<T>) new TypeBoxer<Character>() {
                 @Override
                 public Character get(Character result) {
                     return (result == NULL_CHAR ? null : result);
                 }
             };
         } else if (type == double.class || type == Double.class) {
-            return new TypeBoxer<Double>() {
+            return (TypeBoxer<T>) new TypeBoxer<Double>() {
                 @Override
                 public Double get(Double result) {
                     return (result == NULL_DOUBLE ? null : result);
                 }
             };
         } else if (type == float.class || type == Float.class) {
-            return new TypeBoxer<Float>() {
+            return (TypeBoxer<T>) new TypeBoxer<Float>() {
                 @Override
                 public Float get(Float result) {
                     return (result == NULL_FLOAT ? null : result);
                 }
             };
         } else if (type == int.class || type == Integer.class) {
-            return new TypeBoxer<Integer>() {
+            return (TypeBoxer<T>) new TypeBoxer<Integer>() {
                 @Override
                 public Integer get(Integer result) {
                     return (result == NULL_INT ? null : result);
                 }
             };
         } else if (type == long.class || type == Long.class) {
-            return new TypeBoxer<Long>() {
+            return (TypeBoxer<T>) new TypeBoxer<Long>() {
                 @Override
                 public Long get(Long result) {
                     return (result == NULL_LONG ? null : result);
                 }
             };
         } else if (type == short.class || type == Short.class) {
-            return new TypeBoxer<Short>() {
+            return (TypeBoxer<T>) new TypeBoxer<Short>() {
                 @Override
                 public Short get(Short result) {
                     return (result == NULL_SHORT ? null : result);
                 }
             };
         } else {
-            return new TypeBoxer() {
+            return (TypeBoxer<T>) new TypeBoxer<Object>() {
                 @Override
                 public Object get(Object result) {
                     return result;

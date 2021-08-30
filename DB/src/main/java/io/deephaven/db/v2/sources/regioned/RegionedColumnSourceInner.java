@@ -9,23 +9,22 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 /**
  * <p>
- * Base class for column source which reaches its regions by reaching into the regions of an outer
- * column source. These derive directly from {@link RegionedColumnSourceBase}, and thus don't
- * maintain their own array of regions.
+ * Base class for column source which reaches its regions by reaching into the regions of an outer column source. These
+ * derive directly from {@link RegionedColumnSourceBase}, and thus don't maintain their own array of regions.
  * </p>
  *
  * <p>
- * Extending classes will typically override {@link RegionedPageStore#getRegion(int)} to reach into
- * the outer column source.
+ * Extending classes will typically override {@link RegionedPageStore#getRegion(int)} to reach into the outer column
+ * source.
  * </p>
  */
 abstract class RegionedColumnSourceInner<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>, OUTER_DATA_TYPE, OUTER_REGION_TYPE extends ColumnRegion<ATTR>>
-    extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE> {
+        extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE> {
 
     private final RegionedColumnSourceBase<OUTER_DATA_TYPE, ATTR, OUTER_REGION_TYPE> outerColumnSource;
 
     RegionedColumnSourceInner(@NotNull Class<DATA_TYPE> type,
-        RegionedColumnSourceBase<OUTER_DATA_TYPE, ATTR, OUTER_REGION_TYPE> outerColumnSource) {
+            RegionedColumnSourceBase<OUTER_DATA_TYPE, ATTR, OUTER_REGION_TYPE> outerColumnSource) {
         super(type);
         this.outerColumnSource = outerColumnSource;
     }
@@ -36,8 +35,7 @@ abstract class RegionedColumnSourceInner<DATA_TYPE, ATTR extends Attributes.Valu
     }
 
     @Override
-    public final int addRegion(@NotNull ColumnDefinition<?> columnDefinition,
-        @NotNull ColumnLocation columnLocation) {
+    public final int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
         return outerColumnSource.addRegion(columnDefinition, columnLocation);
     }
 
@@ -49,8 +47,7 @@ abstract class RegionedColumnSourceInner<DATA_TYPE, ATTR extends Attributes.Valu
     @Override
     @OverridingMethodsMustInvokeSuper
     public void releaseCachedResources() {
-        // We are a reinterpreted column of the outer column source, so if we're asked to release
-        // our resources, release
+        // We are a reinterpreted column of the outer column source, so if we're asked to release our resources, release
         // the real resources in the underlying column.
         super.releaseCachedResources();
         getOuterColumnSource().releaseCachedResources();

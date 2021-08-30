@@ -13,8 +13,7 @@ import java.util.stream.Stream;
 /**
  * A collection of methods around retrieving objects from the given Python scope.
  * <p>
- * The scope is likely coming from some sort of Python dictionary. The scope might be local, global,
- * or other.
+ * The scope is likely coming from some sort of Python dictionary. The scope might be local, global, or other.
  *
  * @param <PyObj> the implementation's raw Python object type
  */
@@ -52,8 +51,8 @@ public interface PythonScope<PyObj> {
     /**
      * The helper method to turn a raw key into a string key.
      * <p>
-     * Note: this assumes that all the keys are strings, which is not always true. Keys can also be
-     * tuples. TODO: revise interface as appropriate if this becomes an issue.
+     * Note: this assumes that all the keys are strings, which is not always true. Keys can also be tuples. TODO: revise
+     * interface as appropriate if this becomes an issue.
      *
      * @param key the raw key
      * @return the string key
@@ -64,8 +63,8 @@ public interface PythonScope<PyObj> {
     /**
      * The helper method to turn a raw value into an implementation specific object.
      * <p>
-     * This method should NOT convert PyObj of None type to null - we need to preserve the None
-     * object so it works with other Optional return values.
+     * This method should NOT convert PyObj of None type to null - we need to preserve the None object so it works with
+     * other Optional return values.
      *
      * @param value the raw value
      * @return the converted object value
@@ -90,7 +89,7 @@ public interface PythonScope<PyObj> {
      */
     default Optional<Object> getValue(String name) {
         return getValueRaw(name)
-            .map(this::convertValue);
+                .map(this::convertValue);
     }
 
     /**
@@ -103,7 +102,7 @@ public interface PythonScope<PyObj> {
      */
     default <T> Optional<T> getValue(String name, Class<T> clazz) {
         return getValue(name)
-            .map(clazz::cast);
+                .map(clazz::cast);
     }
 
     /**
@@ -116,7 +115,7 @@ public interface PythonScope<PyObj> {
     default <T> Optional<T> getValueUnchecked(String name) {
         // noinspection unchecked
         return getValue(name)
-            .map(x -> (T) x);
+                .map(x -> (T) x);
     }
 
     /**
@@ -126,19 +125,18 @@ public interface PythonScope<PyObj> {
      */
     default Stream<String> getKeys() {
         return getKeysRaw()
-            .map(this::convertStringKey);
+                .map(this::convertStringKey);
     }
 
     /**
-     * Equivalent to {@link #getEntriesRaw()}, where the keys have been converted via
-     * {@link #convertStringKey(PyObj)} and the values via {@link #convertValue(PyObj)}
+     * Equivalent to {@link #getEntriesRaw()}, where the keys have been converted via {@link #convertStringKey(PyObj)}
+     * and the values via {@link #convertValue(PyObj)}
      *
      * @return the string keys and converted values
      */
     default Stream<Entry<String, Object>> getEntries() {
         return getEntriesRaw()
-            .map(e -> new SimpleImmutableEntry<>(convertStringKey(e.getKey()),
-                convertValue(e.getValue())));
+                .map(e -> new SimpleImmutableEntry<>(convertStringKey(e.getKey()), convertValue(e.getValue())));
     }
 
     /**
@@ -148,7 +146,7 @@ public interface PythonScope<PyObj> {
      */
     default Collection<String> getKeysCollection() {
         return getKeys()
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     /**
@@ -158,14 +156,13 @@ public interface PythonScope<PyObj> {
      */
     default Map<String, Object> getEntriesMap() {
         return getEntries()
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
         // we're currently making sure that we don't convert None to null...
         /*
          * // workaround since the collector doesn't work w/ null values //
-         * https://bugs.openjdk.java.net/browse/JDK-8148463 return getEntries() .collect(
-         * HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
-         * HashMap::putAll);
+         * https://bugs.openjdk.java.net/browse/JDK-8148463 return getEntries() .collect( HashMap::new, (map, entry) ->
+         * map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
          */
     }
 

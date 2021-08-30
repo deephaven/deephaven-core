@@ -41,7 +41,7 @@ public class AggregationFormulaStateFactory extends AggregationIndexStateFactory
                 return false;
             final MemoKey memoKey = (MemoKey) o;
             return Objects.equals(formula, memoKey.formula) &&
-                Objects.equals(columnParamName, memoKey.columnParamName);
+                    Objects.equals(columnParamName, memoKey.columnParamName);
         }
 
         @Override

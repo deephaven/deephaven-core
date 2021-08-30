@@ -11,17 +11,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * The base implementation of {@link BenchmarkTable}. This includes all of the common things that
- * the other specializations require.
+ * The base implementation of {@link BenchmarkTable}. This includes all of the common things that the other
+ * specializations require.
  */
 public abstract class AbstractBenchmarkTable implements BenchmarkTable {
     private final String name;
     private final long rngSeed;
-    private Map<String, ColumnGenerator> generatorMap = Collections.emptyMap();
+    private Map<String, ColumnGenerator<?>> generatorMap = Collections.emptyMap();
     private ExtendedRandom rand;
 
-    AbstractBenchmarkTable(@NotNull String name, long rngSeed,
-        @NotNull List<ColumnGenerator> generators) {
+    AbstractBenchmarkTable(@NotNull String name, long rngSeed, @NotNull List<ColumnGenerator<?>> generators) {
         this.name = name;
         this.rngSeed = rngSeed;
         this.rand = new NormalExtendedRandom(new Random(rngSeed));
@@ -34,11 +33,11 @@ public abstract class AbstractBenchmarkTable implements BenchmarkTable {
      *
      * @param generators The {@link ColumnGenerator}s to map.
      */
-    private void populateAndAddGenerators(@NotNull List<ColumnGenerator> generators) {
+    private void populateAndAddGenerators(@NotNull List<ColumnGenerator<?>> generators) {
         this.generatorMap = generators.isEmpty() ? Collections.emptyMap() : new LinkedHashMap<>();
 
         // Build a mapping, as well as a tableDef to use.
-        for (final ColumnGenerator gen : generators) {
+        for (final ColumnGenerator<?> gen : generators) {
             final String varName = "_gen_" + getName() + "_" + gen.getName();
             generatorMap.put(varName, gen);
             QueryScope.addParam(varName, gen);
@@ -48,7 +47,7 @@ public abstract class AbstractBenchmarkTable implements BenchmarkTable {
     /**
      * @return the map of column names to {@link ColumnGenerator}s
      */
-    Map<String, ColumnGenerator> getGeneratorMap() {
+    Map<String, ColumnGenerator<?>> getGeneratorMap() {
         return generatorMap;
     }
 

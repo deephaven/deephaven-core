@@ -6,8 +6,7 @@ import junit.framework.TestCase;
 import java.util.stream.Collectors;
 
 public class TestMoveColumns extends TestCase {
-    private static final Table table =
-        TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
+    private static final Table table = TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
     private static final int numCols = table.getColumns().length;
 
     public void testMoveColumns() {
@@ -138,14 +137,12 @@ public class TestMoveColumns extends TestCase {
     }
 
     private void checkColumnOrder(Table t, String expectedOrder) {
-        final String order =
-            t.getColumnSourceMap().keySet().stream().collect(Collectors.joining(""));
+        final String order = t.getColumnSourceMap().keySet().stream().collect(Collectors.joining(""));
         assertEquals(expectedOrder, order);
     }
 
     private void checkColumnValueOrder(Table t, String expectedOrder) {
-        final String order =
-            t.getColumnSourceMap().values().stream().mapToInt((col) -> col.getInt(0))
+        final String order = t.getColumnSourceMap().values().stream().mapToInt((col) -> col.getInt(0))
                 .mapToObj(String::valueOf).collect(Collectors.joining(""));
         assertEquals(expectedOrder, order);
     }

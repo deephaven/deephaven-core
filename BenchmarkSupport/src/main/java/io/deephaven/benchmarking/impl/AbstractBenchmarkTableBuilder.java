@@ -10,14 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The basic implementation of {@link BenchmarkTableBuilder}. It allows users to specify table type
- * and add columns, while specifying their RNG properties.
+ * The basic implementation of {@link BenchmarkTableBuilder}. It allows users to specify table type and add columns,
+ * while specifying their RNG properties.
  */
 public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableBuilder>
-    implements BenchmarkTableBuilder {
+        implements BenchmarkTableBuilder {
     protected final String name;
-    protected final KeyedObjectHash<String, ColumnGenerator> columns =
-        new KeyedObjectHash<>(new ColumnGeneratorKey());
+    protected final KeyedObjectHash<String, ColumnGenerator<?>> columns =
+            new KeyedObjectHash<>(new ColumnGeneratorKey());
     protected long rngSeed = 0;
     final long size;
 
@@ -37,30 +37,31 @@ public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableB
     @Override
     public SELF setSeed(long seed) {
         rngSeed = seed;
+        // noinspection unchecked
         return (SELF) this;
     }
 
     @Override
-    public SELF addColumn(ColumnGenerator generator) {
+    public SELF addColumn(ColumnGenerator<?> generator) {
         if (!columns.add(generator)) {
             throw new IllegalArgumentException("Column " + generator.getName() + " already exists");
         }
 
+        // noinspection unchecked
         return (SELF) this;
     }
 
 
-    private static final class ColumnGeneratorKey
-        extends KeyedObjectKey.Basic<String, ColumnGenerator> {
+    private static final class ColumnGeneratorKey extends KeyedObjectKey.Basic<String, ColumnGenerator<?>> {
         @Override
-        public String getKey(ColumnGenerator columnGenerator) {
+        public String getKey(ColumnGenerator<?> columnGenerator) {
             return columnGenerator.getName();
         }
     }
 
     @NotNull
-    protected List<ColumnGenerator> getColumnGenerators() {
-        final List<ColumnGenerator> generators = new ArrayList<>(columns.size());
+    protected List<ColumnGenerator<?>> getColumnGenerators() {
+        final List<ColumnGenerator<?>> generators = new ArrayList<>(columns.size());
         columns.forEach(generators::add);
         return generators;
     }

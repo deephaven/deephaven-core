@@ -11,8 +11,7 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 
 /**
- * Base class for accessors that wrap a {@link FileHandle} with support for interruption and
- * asynchronous close.
+ * Base class for accessors that wrap a {@link FileHandle} with support for interruption and asynchronous close.
  */
 public abstract class FileHandleAccessor {
 
@@ -27,9 +26,8 @@ public abstract class FileHandleAccessor {
      * @param fileHandleCreator The function used to make file handles
      * @param file The abstract path name to access
      */
-    protected FileHandleAccessor(
-        @NotNull final FileHandleFactory.FileToHandleFunction fileHandleCreator,
-        @NotNull final File file) {
+    protected FileHandleAccessor(@NotNull final FileHandleFactory.FileToHandleFunction fileHandleCreator,
+            @NotNull final File file) {
         this.fileHandleCreator = fileHandleCreator;
         this.file = Utils.fileGetAbsoluteFilePrivileged(file);
         fileHandle = makeHandle();
@@ -54,8 +52,8 @@ public abstract class FileHandleAccessor {
     }
 
     /**
-     * Replace the file handle with a new one if the closed handle passed in is still current, and
-     * return the (possibly changed) current value.
+     * Replace the file handle with a new one if the closed handle passed in is still current, and return the (possibly
+     * changed) current value.
      *
      * @param previousLocalHandle The closed handle that calling code would like to replace
      * @return The current file handle, possibly newly created

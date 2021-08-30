@@ -9,8 +9,7 @@ import org.jpy.PyObject;
 import java.util.Objects;
 
 /**
- * A python filter kernel which is implemented by passing the chunks as arrays into the python
- * function.
+ * A python filter kernel which is implemented by passing the chunks as arrays into the python function.
  *
  * @see io.deephaven.db.v2.select.python.FilterKernelPythonSingularFunction
  */
@@ -32,17 +31,17 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
 
     @Override
     public LongChunk<OrderedKeyIndices> filter(
-        Context context,
-        LongChunk<OrderedKeyIndices> indices,
-        Chunk... inputChunks) {
+            Context context,
+            LongChunk<OrderedKeyIndices> indices,
+            Chunk... inputChunks) {
         final int size = indices.size();
         final io.deephaven.db.v2.select.python.ArgumentsChunked arguments =
-            io.deephaven.db.v2.select.python.ArgumentsChunked.buildArguments(inputChunks);
+                io.deephaven.db.v2.select.python.ArgumentsChunked.buildArguments(inputChunks);
         final boolean[] results = function
-            .call(boolean[].class, CALL_METHOD, arguments.getParamTypes(), arguments.getParams());
+                .call(boolean[].class, CALL_METHOD, arguments.getParamTypes(), arguments.getParams());
         if (size != results.length) {
             throw new IllegalStateException(
-                "FilterKernelPythonChunkedFunction returned results are not the proper size");
+                    "FilterKernelPythonChunkedFunction returned results are not the proper size");
         }
         context.resultChunk.setSize(0);
         for (int i = 0; i < size; ++i) {

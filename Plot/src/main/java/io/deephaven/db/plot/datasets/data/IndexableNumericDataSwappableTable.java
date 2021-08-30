@@ -9,8 +9,8 @@ import io.deephaven.db.plot.util.ArgumentValidations;
 import io.deephaven.db.plot.util.tables.SwappableTable;
 
 /**
- * {@link IndexableData} dataset whose data is a column in a {@link SwappableTable} and whose
- * indices are the row numbers of the column.
+ * {@link IndexableData} dataset whose data is a column in a {@link SwappableTable} and whose indices are the row
+ * numbers of the column.
  *
  * The column must be numeric.
  */
@@ -20,27 +20,24 @@ public class IndexableNumericDataSwappableTable extends LiveIndexableNumericData
     private final String column;
 
     /**
-     * Creates an IndexableNumericDataSwappableTable instance. The numeric data is a {@code column}
-     * in the {@code swappableTable}. Indices are the row numbers of the column.
+     * Creates an IndexableNumericDataSwappableTable instance. The numeric data is a {@code column} in the
+     * {@code swappableTable}. Indices are the row numbers of the column.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code swappableTable} and {@code column}
-     *         must not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code swappableTable} and {@code column} must not be null
      * @throws IllegalArgumentException {@code column} must be a column in {@code swappableTable}
      * @throws RuntimeException {@code column} must be numeric
      * @param swappableTable swappable table
      * @param column column of {@code swappableTable} holding the data values
      * @param plotInfo plot information
      */
-    public IndexableNumericDataSwappableTable(final SwappableTable swappableTable,
-        final String column, final PlotInfo plotInfo) {
+    public IndexableNumericDataSwappableTable(final SwappableTable swappableTable, final String column,
+            final PlotInfo plotInfo) {
         super(plotInfo);
         ArgumentValidations.assertNotNull(swappableTable, "swappableTable", getPlotInfo());
         ArgumentValidations.assertNotNull(column, "column", getPlotInfo());
-        ArgumentValidations.assertColumnsInTable(swappableTable.getTableDefinition(), plotInfo,
-            column);
+        ArgumentValidations.assertColumnsInTable(swappableTable.getTableDefinition(), plotInfo, column);
         ArgumentValidations.assertIsNumericOrTime(swappableTable.getTableDefinition(), column,
-            "Attempting to create a dataseries with a non-numeric column: column=" + column,
-            plotInfo);
+                "Attempting to create a dataseries with a non-numeric column: column=" + column, plotInfo);
         this.swappableTable = swappableTable;
         this.column = column;
     }

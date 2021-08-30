@@ -8,8 +8,7 @@ import io.deephaven.db.v2.sources.ObjectArraySource;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.utils.Index;
-
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTracker {
     private final ObjectArraySource<T> source;

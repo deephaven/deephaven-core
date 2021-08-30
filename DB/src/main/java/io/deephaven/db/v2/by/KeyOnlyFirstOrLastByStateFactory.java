@@ -3,8 +3,7 @@ package io.deephaven.db.v2.by;
 import java.util.Objects;
 
 /**
- * A Flavor of FirstBy that produces no values from the original table, only a named column of
- * source keys.
+ * A Flavor of FirstBy that produces no values from the original table, only a named column of source keys.
  */
 public class KeyOnlyFirstOrLastByStateFactory extends IterativeIndexStateFactory {
 
@@ -27,8 +26,7 @@ public class KeyOnlyFirstOrLastByStateFactory extends IterativeIndexStateFactory
             if (o == null || getClass() != o.getClass())
                 return false;
             MemoKey memoKey = (MemoKey) o;
-            return Objects.equals(resultColumnName, memoKey.resultColumnName)
-                && type == memoKey.type;
+            return Objects.equals(resultColumnName, memoKey.resultColumnName) && type == memoKey.type;
         }
 
         @Override
@@ -44,7 +42,7 @@ public class KeyOnlyFirstOrLastByStateFactory extends IterativeIndexStateFactory
 
         if (type != AggType.First && type != AggType.Last) {
             throw new IllegalArgumentException(
-                "KeyOnlyFirstOrLastByStateFactory only support AggType.First and AggType.Last");
+                    "KeyOnlyFirstOrLastByStateFactory only support AggType.First and AggType.Last");
         }
     }
 

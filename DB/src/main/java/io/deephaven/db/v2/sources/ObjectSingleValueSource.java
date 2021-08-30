@@ -72,7 +72,7 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
     }
 
     @Override
-    public final void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
+    public final void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
         set(sourceColumn.get(sourceKey));
     }
 

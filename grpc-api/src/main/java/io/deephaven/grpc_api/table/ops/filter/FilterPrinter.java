@@ -91,8 +91,8 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onComparison(CompareCondition.CompareOperation operation,
-        CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
+    public Void onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs,
+            Value rhs) {
         accept(lhs);
         switch (operation) {
             case LESS_THAN:
@@ -128,8 +128,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-        MatchType matchType) {
+    public Void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
         if (candidatesList.isEmpty()) {
             // should have already been pruned
             return null;
@@ -176,8 +175,8 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onContains(Reference reference, String searchString,
-        CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Void onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
+            MatchType matchType) {
         if (matchType == MatchType.INVERTED) {
             sb.append("!");
         }
@@ -194,8 +193,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
-        MatchType matchType) {
+    public Void onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
         if (matchType == MatchType.INVERTED) {
             sb.append("!");
         }
@@ -255,10 +253,8 @@ public class FilterPrinter implements FilterVisitor<Void> {
                 } else if (Double.isNaN(doubleVal)) {
                     sb.append("Double.NaN");
                 } else {
-                    // Cast the double value to a long, then test to see if they actually compare to
-                    // the same
-                    // value - if they do not, we have some decimal value and need the entire double
-                    // to be
+                    // Cast the double value to a long, then test to see if they actually compare to the same
+                    // value - if they do not, we have some decimal value and need the entire double to be
                     // appended, if they do, then we just append the integer instead.
                     long longVal = (long) doubleVal;
                     if (longVal - doubleVal != 0) {

@@ -103,8 +103,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] groupBySpecs =
-            request.getGroupByColumnsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] groupBySpecs = request.getGroupByColumnsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         final SelectColumn[] groupByColumns = SelectColumnFactory.getExpressions(groupBySpecs);
         ColumnExpressionValidator.validateColumnExpressions(groupByColumns, groupBySpecs, parent);
 
@@ -148,8 +147,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
             case WEIGHTED_AVG:
                 return parent.wavgBy(aggregate.getColumnName(), groupByColumns);
             default:
-                throw new UnsupportedOperationException(
-                    "Unsupported aggregate: " + aggregate.getType());
+                throw new UnsupportedOperationException("Unsupported aggregate: " + aggregate.getType());
         }
     }
 
@@ -159,7 +157,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 Arrays.stream(groupByColumns).map(SelectColumn::getName).collect(Collectors.toSet());
 
         final ComboAggregateFactory.ComboBy[] comboBy =
-            new ComboAggregateFactory.ComboBy[aggregates.size()];
+                new ComboAggregateFactory.ComboBy[aggregates.size()];
 
         for (int i = 0; i < aggregates.size(); i++) {
             final ComboAggregateRequest.Aggregate agg = aggregates.get(i);
@@ -174,12 +172,9 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                                         && agg.getColumnName().equals(n))))
                         .toArray(String[]::new);
             } else {
-                matchPairs =
-                    agg.getMatchPairsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-                final SelectColumn[] matchPairExpressions =
-                    SelectColumnFactory.getExpressions(matchPairs);
-                ColumnExpressionValidator.validateColumnExpressions(matchPairExpressions,
-                    matchPairs, parent);
+                matchPairs = agg.getMatchPairsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                final SelectColumn[] matchPairExpressions = SelectColumnFactory.getExpressions(matchPairs);
+                ColumnExpressionValidator.validateColumnExpressions(matchPairExpressions, matchPairs, parent);
             }
 
             final Supplier<ComboAggregateFactory.ComboBy> comboMapper = () -> {
@@ -205,8 +200,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                     case MEDIAN:
                         return ComboAggregateFactory.AggMed(matchPairs);
                     case PERCENTILE:
-                        return ComboAggregateFactory.AggPct(agg.getPercentile(), agg.getAvgMedian(),
-                            matchPairs);
+                        return ComboAggregateFactory.AggPct(agg.getPercentile(), agg.getAvgMedian(), matchPairs);
                     case STD:
                         return ComboAggregateFactory.AggStd(matchPairs);
                     case VAR:
@@ -214,8 +208,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                     case WEIGHTED_AVG:
                         return ComboAggregateFactory.AggWAvg(agg.getColumnName(), matchPairs);
                     default:
-                        throw new UnsupportedOperationException(
-                            "Unsupported aggregate: " + agg.getType());
+                        throw new UnsupportedOperationException("Unsupported aggregate: " + agg.getType());
                 }
             };
 

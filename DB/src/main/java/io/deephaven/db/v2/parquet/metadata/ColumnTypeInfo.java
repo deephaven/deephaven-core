@@ -10,8 +10,8 @@ import java.util.Optional;
 
 /**
  * <p>
- * Representation class for per-column type information stored in key-value metadata for
- * Deephaven-written Parquet files.
+ * Representation class for per-column type information stored in key-value metadata for Deephaven-written Parquet
+ * files.
  * <p>
  * Currently only used for columns requiring non-default deserialization or type selection
  */

@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Abstract class for uncoalesced tables. These tables have deferred work that must be done before
- * data can be operated on.
+ * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
+ * on.
  */
 public abstract class UncoalescedTable extends BaseTable implements Table {
 
@@ -32,16 +32,15 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     private volatile DynamicTable coalesced;
 
-    public UncoalescedTable(@NotNull final TableDefinition definition,
-        @NotNull final String description) {
+    public UncoalescedTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         super(definition, description);
     }
 
     /**
      * Produce the actual coalesced result table, suitable for caching.
      * <p>
-     * Note that if this table must have listeners registered, etc, setting these up is the
-     * implementation's responsibility.
+     * Note that if this table must have listeners registered, etc, setting these up is the implementation's
+     * responsibility.
      * <p>
      * Also note that the implementation should copy attributes, as in
      * {@code copyAttributes(resultTable, CopyAttributeOperation.Coalesce)}.
@@ -64,8 +63,8 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     /**
-     * Proactively set the coalesced result table. See {@link #doCoalesce()} for the caller's
-     * responsibilities. Note that it is an error to call this more than once with a non-null input.
+     * Proactively set the coalesced result table. See {@link #doCoalesce()} for the caller's responsibilities. Note
+     * that it is an error to call this more than once with a non-null input.
      *
      * @param coalesced The coalesced result table, suitable for caching
      */
@@ -109,8 +108,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
         ((DynamicTable) coalesce()).removeUpdateListener(listener);
     }
 
-    protected final void removeUpdateListenerUncoalesced(
-        @NotNull final ShiftAwareListener listener) {
+    protected final void removeUpdateListenerUncoalesced(@NotNull final ShiftAwareListener listener) {
         super.removeUpdateListener(listener);
     }
 
@@ -140,17 +138,17 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public ColumnSource getColumnSource(String sourceName) {
+    public ColumnSource<?> getColumnSource(String sourceName) {
         return coalesce().getColumnSource(sourceName);
     }
 
     @Override
-    public Map<String, ? extends ColumnSource> getColumnSourceMap() {
+    public Map<String, ? extends ColumnSource<?>> getColumnSourceMap() {
         return coalesce().getColumnSourceMap();
     }
 
     @Override
-    public Collection<? extends ColumnSource> getColumnSources() {
+    public Collection<? extends ColumnSource<?>> getColumnSources() {
         return coalesce().getColumnSources();
     }
 
@@ -171,7 +169,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion,
-        MatchPair... columnsToMatch) {
+            MatchPair... columnsToMatch) {
         return coalesce().whereIn(groupStrategy, rightTable, inclusion, columnsToMatch);
     }
 
@@ -262,31 +260,29 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-        AsOfMatchRule asOfMatchRule) {
+            AsOfMatchRule asOfMatchRule) {
         return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
     @Override
     public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-        AsOfMatchRule asOfMatchRule) {
+            AsOfMatchRule asOfMatchRule) {
         return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
     @Override
-    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch,
-        MatchPair[] columnsToAdd) {
+    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return coalesce().naturalJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
     public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-        int numRightBitsToReserve) {
+            int numRightBitsToReserve) {
         return coalesce().join(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
     }
 
     @Override
-    public Table by(AggregationStateFactory aggregationStateFactory,
-        SelectColumn... groupByColumns) {
+    public Table by(AggregationStateFactory aggregationStateFactory, SelectColumn... groupByColumns) {
         return coalesce().by(aggregationStateFactory, groupByColumns);
     }
 
@@ -301,8 +297,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName,
-        SelectColumn... groupByColumns) {
+    public Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns) {
         return coalesce().applyToAllBy(formulaColumn, columnParamName, groupByColumns);
     }
 
@@ -383,7 +378,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
-        SelectColumn... columns) {
+            SelectColumn... columns) {
         return coalesce().rollup(comboAggregateFactory, includeConstituents, columns);
     }
 
@@ -408,8 +403,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot,
-        String... stampColumns) {
+    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
         return coalesce().snapshotIncremental(rightTable, doInitialSnapshot, stampColumns);
     }
 

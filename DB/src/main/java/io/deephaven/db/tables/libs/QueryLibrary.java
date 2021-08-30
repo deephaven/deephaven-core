@@ -14,8 +14,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 public class QueryLibrary {
 
-    private static final QueryLibraryImports IMPORTS_INSTANCE =
-        QueryLibraryImports.copyFromServiceLoader();
+    private static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
 
     private final Map<String, Package> packageImports;
     private final Map<String, Class<?>> classImports;
@@ -40,7 +39,7 @@ public class QueryLibrary {
 
     private static volatile QueryLibrary defaultLibrary = null;
     private final static ThreadLocal<QueryLibrary> currLibrary =
-        ThreadLocal.withInitial(QueryLibrary::getDefaultLibrary);
+            ThreadLocal.withInitial(QueryLibrary::getDefaultLibrary);
 
     private static QueryLibrary getDefaultLibrary() {
         if (defaultLibrary == null) {
@@ -63,7 +62,7 @@ public class QueryLibrary {
     public static synchronized void setDefaultLibrary(final QueryLibrary library) {
         if (defaultLibrary != null) {
             throw new IllegalStateException(
-                "It's too late to set default library; it's already set to: " + defaultLibrary);
+                    "It's too late to set default library; it's already set to: " + defaultLibrary);
         }
         defaultLibrary = Objects.requireNonNull(library);
     }
@@ -96,10 +95,8 @@ public class QueryLibrary {
     }
 
     public static void importPackage(Package aPackage) {
-        // Any dynamically-added package, class, or static import may alter the meaning of the Java
-        // code
-        // we are compiling. So when this happens, we dynamically generate a new globally-unique
-        // version string.
+        // Any dynamically-added package, class, or static import may alter the meaning of the Java code
+        // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
         final QueryLibrary lql = currLibrary.get();
         final Package previous = lql.packageImports.put(aPackage.getName(), aPackage);
         if (aPackage != previous) {
@@ -108,10 +105,8 @@ public class QueryLibrary {
     }
 
     public static void importClass(Class aClass) {
-        // Any dynamically-added package, class, or static import may alter the meaning of the Java
-        // code
-        // we are compiling. So when this happens, we dynamically generate a new globally-unique
-        // version string.
+        // Any dynamically-added package, class, or static import may alter the meaning of the Java code
+        // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
         final QueryLibrary lql = currLibrary.get();
         final Class previous = lql.classImports.put(aClass.getCanonicalName(), aClass);
         if (aClass.getClassLoader() instanceof GroovyClassLoader) {
@@ -122,10 +117,8 @@ public class QueryLibrary {
     }
 
     public static void importStatic(Class aClass) {
-        // Any dynamically-added package, class, or static import may alter the meaning of the Java
-        // code
-        // we are compiling. So when this happens, we dynamically generate a new globally-unique
-        // version string.
+        // Any dynamically-added package, class, or static import may alter the meaning of the Java code
+        // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
         final QueryLibrary lql = currLibrary.get();
         final Class previous = lql.staticImports.put(aClass.getCanonicalName(), aClass);
         if (aClass.getClassLoader() instanceof GroovyClassLoader) {
@@ -159,11 +152,11 @@ public class QueryLibrary {
         return Collections.unmodifiableCollection(currLibrary.get().packageImports.values());
     }
 
-    public static Collection<Class> getClassImports() {
+    public static Collection<Class<?>> getClassImports() {
         return Collections.unmodifiableCollection(currLibrary.get().classImports.values());
     }
 
-    public static Collection<Class> getStaticImports() {
+    public static Collection<Class<?>> getStaticImports() {
         return Collections.unmodifiableCollection(currLibrary.get().staticImports.values());
     }
 }

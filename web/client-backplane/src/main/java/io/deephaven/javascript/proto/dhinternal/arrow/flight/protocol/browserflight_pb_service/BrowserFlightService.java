@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb_service.BrowserFlightService",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb_service.BrowserFlightService",
+        namespace = JsPackage.GLOBAL)
 public class BrowserFlightService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface NextDoExchangeType {

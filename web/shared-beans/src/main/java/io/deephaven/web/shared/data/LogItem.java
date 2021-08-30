@@ -11,8 +11,7 @@ public class LogItem implements Serializable {
 
     private double micros; // not using long, as js numbers are all floating point anyway
 
-    private String logLevel; // not an enum because fishlib LogLevel is a class that allows you to
-                             // create your own
+    private String logLevel; // not an enum because fishlib LogLevel is a class that allows you to create your own
 
     private String message;
 

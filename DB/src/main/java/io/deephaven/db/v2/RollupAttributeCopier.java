@@ -8,16 +8,15 @@ import io.deephaven.db.v2.by.ByExternalChunkedOperator;
  */
 public class RollupAttributeCopier {
     /**
-     * When creating constituent leaves, we set the appropriate TableMap and reverse lookup on each
-     * leaf we are creating.
+     * When creating constituent leaves, we set the appropriate TableMap and reverse lookup on each leaf we are
+     * creating.
      */
-    public final static ByExternalChunkedOperator.AttributeCopier LEAF_WITHCONSTITUENTS_INSTANCE =
-        (pt, st) -> {
-            pt.copyAttributes(st, BaseTable.CopyAttributeOperation.ByExternal);
-            st.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Constituent);
-            st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, TableMap.emptyMap());
-            st.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
-        };
+    public final static ByExternalChunkedOperator.AttributeCopier LEAF_WITHCONSTITUENTS_INSTANCE = (pt, st) -> {
+        pt.copyAttributes(st, BaseTable.CopyAttributeOperation.ByExternal);
+        st.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Constituent);
+        st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, TableMap.emptyMap());
+        st.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
+    };
 
     /** For intermediate levels, we must copy the reverse lookup from the deeper level. */
     public final static ByExternalChunkedOperator.AttributeCopier DEFAULT_INSTANCE = (pt, st) -> {

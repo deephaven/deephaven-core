@@ -1,36 +1,38 @@
 package io.deephaven.web.client.api.console;
 
 import elemental2.core.JsArray;
-import io.deephaven.web.shared.ide.VariableChanges;
-import io.deephaven.web.shared.ide.VariableDefinition;
+import elemental2.core.JsObject;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
-
-import java.util.Arrays;
 
 public class JsVariableChanges {
     @JsProperty(namespace = "dh.VariableType")
     public static final String TABLE = "Table",
-        TREETABLE = "TreeTable",
-        TABLEMAP = "TableMap",
-        FIGURE = "Figure",
-        OTHERWIDGET = "OtherWidget",
-        PANDAS = "Pandas";
+            TREETABLE = "TreeTable",
+            TABLEMAP = "TableMap",
+            FIGURE = "Figure",
+            OTHERWIDGET = "OtherWidget",
+            PANDAS = "Pandas";
+    private static final String[] WidgetTypeLookup = {OTHERWIDGET, TABLE, TREETABLE, TABLEMAP, FIGURE, PANDAS};
 
-    private JsVariableDefinition[] created;
-    private JsVariableDefinition[] updated;
-    private JsVariableDefinition[] removed;
+    public static String getVariableTypeFromFieldCase(int fieldCase) {
+        if (fieldCase >= 1 && fieldCase <= WidgetTypeLookup.length) {
+            return WidgetTypeLookup[fieldCase - 1];
+        }
 
-    private static JsVariableDefinition[] convertDefinitions(VariableDefinition[] definitions) {
-        return Arrays.stream(definitions)
-            .map(def -> new JsVariableDefinition(def.getName(), def.getType()))
-            .toArray(JsVariableDefinition[]::new);
+        // otherwise, no idea what this is yet
+        return OTHERWIDGET;
     }
 
-    public JsVariableChanges(VariableChanges changes) {
-        created = convertDefinitions(changes.created);
-        updated = convertDefinitions(changes.updated);
-        removed = convertDefinitions(changes.removed);
+    private final JsVariableDefinition[] created;
+    private final JsVariableDefinition[] updated;
+    private final JsVariableDefinition[] removed;
+
+    public JsVariableChanges(JsVariableDefinition[] created, JsVariableDefinition[] updated,
+            JsVariableDefinition[] removed) {
+        this.created = JsObject.freeze(created);
+        this.updated = JsObject.freeze(updated);
+        this.removed = JsObject.freeze(removed);
     }
 
     @JsProperty

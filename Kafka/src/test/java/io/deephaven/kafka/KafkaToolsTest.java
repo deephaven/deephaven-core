@@ -17,20 +17,20 @@ public class KafkaToolsTest {
     //
 
     private static final String schemaWithNull =
-        "  { "
-            + "    \"type\": \"record\", "
-            + "    \"name\": \"null_schema\","
-            + "    \"namespace\": \"io.deephaven.test\","
-            + "    \"fields\" : ["
-            + "          {\"name\": \"Symbol\", \"type\": \"string\"},"
-            + "          {\"name\": \"Price\",  \"type\": [\"null\", \"double\"] }"
-            + "      ]"
-            + "}";
+            "  { "
+                    + "    \"type\": \"record\", "
+                    + "    \"name\": \"null_schema\","
+                    + "    \"namespace\": \"io.deephaven.test\","
+                    + "    \"fields\" : ["
+                    + "          {\"name\": \"Symbol\", \"type\": \"string\"},"
+                    + "          {\"name\": \"Price\",  \"type\": [\"null\", \"double\"] }"
+                    + "      ]"
+                    + "}";
 
     @Test
     public void testAvroSchemaWithNulls() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNull);
-        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         assertEquals(2, colDefs.size());
         assertEquals("Symbol", colDefs.get(0).getName());
@@ -40,29 +40,29 @@ public class KafkaToolsTest {
     }
 
     private static final String schemaWithNesting =
-        "  { "
-            + "    \"type\": \"record\", "
-            + "    \"name\": \"nested_schema\","
-            + "    \"namespace\": \"io.deephaven.test\","
-            + "    \"fields\" : ["
-            + "          {\"name\": \"NestedField\","
-            + "           \"type\": {"
-            + "                \"type\": \"record\", "
-            + "                \"name\": \"nested_record\","
-            + "                \"namespace\": \"io.deephaven.test.nested_schema\","
-            + "                \"fields\" : ["
-            + "                      {\"name\": \"Symbol\", \"type\": \"string\"},"
-            + "                      {\"name\": \"Price\",  \"type\": \"double\"}"
-            + "                  ]"
-            + "             }"
-            + "          }"
-            + "      ]"
-            + "}";
+            "  { "
+                    + "    \"type\": \"record\", "
+                    + "    \"name\": \"nested_schema\","
+                    + "    \"namespace\": \"io.deephaven.test\","
+                    + "    \"fields\" : ["
+                    + "          {\"name\": \"NestedField\","
+                    + "           \"type\": {"
+                    + "                \"type\": \"record\", "
+                    + "                \"name\": \"nested_record\","
+                    + "                \"namespace\": \"io.deephaven.test.nested_schema\","
+                    + "                \"fields\" : ["
+                    + "                      {\"name\": \"Symbol\", \"type\": \"string\"},"
+                    + "                      {\"name\": \"Price\",  \"type\": \"double\"}"
+                    + "                  ]"
+                    + "             }"
+                    + "          }"
+                    + "      ]"
+                    + "}";
 
     @Test
     public void testAvroSchemaWithNesting() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNesting);
-        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         assertEquals(2, colDefs.size());
         assertEquals("NestedField.Symbol", colDefs.get(0).getName());
@@ -72,24 +72,24 @@ public class KafkaToolsTest {
     }
 
     private static final String schemaWithBasicTypes =
-        "  { "
-            + "    \"type\": \"record\", "
-            + "    \"name\": \"types_schema\","
-            + "    \"namespace\": \"io.deephaven.test\","
-            + "    \"fields\" : ["
-            + "          {\"name\": \"BooleanField\", \"type\": \"boolean\" },"
-            + "          {\"name\": \"IntField\",  \"type\": \"int\" },"
-            + "          {\"name\": \"LongField\",  \"type\": \"long\" },"
-            + "          {\"name\": \"FloatField\",  \"type\": \"float\" },"
-            + "          {\"name\": \"DoubleField\",  \"type\": \"double\" },"
-            + "          {\"name\": \"StringField\",  \"type\": \"string\" }"
-            + "      ]"
-            + "}";
+            "  { "
+                    + "    \"type\": \"record\", "
+                    + "    \"name\": \"types_schema\","
+                    + "    \"namespace\": \"io.deephaven.test\","
+                    + "    \"fields\" : ["
+                    + "          {\"name\": \"BooleanField\", \"type\": \"boolean\" },"
+                    + "          {\"name\": \"IntField\",  \"type\": \"int\" },"
+                    + "          {\"name\": \"LongField\",  \"type\": \"long\" },"
+                    + "          {\"name\": \"FloatField\",  \"type\": \"float\" },"
+                    + "          {\"name\": \"DoubleField\",  \"type\": \"double\" },"
+                    + "          {\"name\": \"StringField\",  \"type\": \"string\" }"
+                    + "      ]"
+                    + "}";
 
     @Test
     public void testAvroSChemaWithBasicTypesCoverage() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithBasicTypes);
-        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         final int nCols = 6;
         assertEquals(nCols, colDefs.size());
@@ -110,44 +110,44 @@ public class KafkaToolsTest {
     }
 
     private static final String schemaWithMoreNesting =
-        "  { "
-            + "    \"type\": \"record\", "
-            + "    \"name\": \"nested_schema\","
-            + "    \"namespace\": \"io.deephaven.test\","
-            + "    \"fields\" : ["
-            + "          {\"name\": \"NestedFields1\","
-            + "           \"type\": {"
-            + "                \"type\": \"record\", "
-            + "                \"name\": \"nested_record1\","
-            + "                \"namespace\": \"io.deephaven.test.nested_schema\","
-            + "                \"fields\" : ["
-            + "                      {\"name\": \"field1\", \"type\": \"int\"},"
-            + "                      {\"name\": \"field2\", \"type\": \"float\"}"
-            + "                  ]"
-            + "             }"
-            + "          },"
-            + "          {\"name\": \"NestedFields2\","
-            + "           \"type\": {"
-            + "                \"type\": \"record\", "
-            + "                \"name\": \"nested_record2\","
-            + "                \"namespace\": \"io.deephaven.test.nested_schema\","
-            + "                \"fields\" : ["
-            + "                      {\"name\": \"NestedFields3\","
-            + "                       \"type\": {"
-            + "                            \"type\": \"record\", "
-            + "                            \"name\": \"nested_record3\","
-            + "                            \"namespace\": \"io.deephaven.test.nested_schema\","
-            + "                            \"fields\" : ["
-            + "                                  {\"name\": \"field3\", \"type\": \"long\"},"
-            + "                                  {\"name\": \"field4\", \"type\": \"double\"}"
-            + "                              ]"
-            + "                         }"
-            + "                      }"
-            + "                  ]"
-            + "             }"
-            + "          }"
-            + "      ]"
-            + "}";
+            "  { "
+                    + "    \"type\": \"record\", "
+                    + "    \"name\": \"nested_schema\","
+                    + "    \"namespace\": \"io.deephaven.test\","
+                    + "    \"fields\" : ["
+                    + "          {\"name\": \"NestedFields1\","
+                    + "           \"type\": {"
+                    + "                \"type\": \"record\", "
+                    + "                \"name\": \"nested_record1\","
+                    + "                \"namespace\": \"io.deephaven.test.nested_schema\","
+                    + "                \"fields\" : ["
+                    + "                      {\"name\": \"field1\", \"type\": \"int\"},"
+                    + "                      {\"name\": \"field2\", \"type\": \"float\"}"
+                    + "                  ]"
+                    + "             }"
+                    + "          },"
+                    + "          {\"name\": \"NestedFields2\","
+                    + "           \"type\": {"
+                    + "                \"type\": \"record\", "
+                    + "                \"name\": \"nested_record2\","
+                    + "                \"namespace\": \"io.deephaven.test.nested_schema\","
+                    + "                \"fields\" : ["
+                    + "                      {\"name\": \"NestedFields3\","
+                    + "                       \"type\": {"
+                    + "                            \"type\": \"record\", "
+                    + "                            \"name\": \"nested_record3\","
+                    + "                            \"namespace\": \"io.deephaven.test.nested_schema\","
+                    + "                            \"fields\" : ["
+                    + "                                  {\"name\": \"field3\", \"type\": \"long\"},"
+                    + "                                  {\"name\": \"field4\", \"type\": \"double\"}"
+                    + "                              ]"
+                    + "                         }"
+                    + "                      }"
+                    + "                  ]"
+                    + "             }"
+                    + "          }"
+                    + "      ]"
+                    + "}";
 
     @Test
     public void testAvroSchemaWithMoreNesting() {
@@ -158,7 +158,7 @@ public class KafkaToolsTest {
             }
             return fieldName;
         };
-        final List<ColumnDefinition> colDefs = new ArrayList();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema, mapping);
         final int nCols = 4;
         assertEquals(nCols, colDefs.size());

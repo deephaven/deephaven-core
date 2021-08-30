@@ -22,11 +22,10 @@ public class OHLCDataSeriesArray extends AbstractXYDataSeries implements OHLCDat
     private final IndexableNumericData close;
 
     /**
-     * Creates an OHLCDataSeriesArray instance. This dataset is suited for open-high-low-close
-     * charts.
+     * Creates an OHLCDataSeriesArray instance. This dataset is suited for open-high-low-close charts.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code time}, {@code open}, {@code high},
-     *         {@code low}, {@code close} must not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code time}, {@code open}, {@code high}, {@code low},
+     *         {@code close} must not be null
      * @param axes axes on which the dataset will be plotted
      * @param id data series id
      * @param name series name
@@ -37,16 +36,14 @@ public class OHLCDataSeriesArray extends AbstractXYDataSeries implements OHLCDat
      * @param close close data
      */
     public OHLCDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
-        final IndexableNumericData time, final IndexableNumericData open,
-        final IndexableNumericData high, final IndexableNumericData low,
-        final IndexableNumericData close) {
+            final IndexableNumericData time, final IndexableNumericData open, final IndexableNumericData high,
+            final IndexableNumericData low, final IndexableNumericData close) {
         this(axes, id, name, time, open, high, low, close, null);
     }
 
     public OHLCDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
-        final IndexableNumericData time, final IndexableNumericData open,
-        final IndexableNumericData high, final IndexableNumericData low,
-        final IndexableNumericData close, final AbstractXYDataSeries series) {
+            final IndexableNumericData time, final IndexableNumericData open, final IndexableNumericData high,
+            final IndexableNumericData low, final IndexableNumericData close, final AbstractXYDataSeries series) {
         super(axes, id, name, series);
         ArgumentValidations.assertNotNull(time, "Time", getPlotInfo());
         ArgumentValidations.assertNotNull(open, "Open", getPlotInfo());

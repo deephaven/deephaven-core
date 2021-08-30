@@ -8,11 +8,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * Factory to produce immutable tuples from a long key in {@link io.deephaven.db.v2.utils.Index}
- * space.
+ * Factory to produce immutable tuples from a long key in {@link io.deephaven.db.v2.utils.Index} space.
  */
-public interface TupleSource<TUPLE_TYPE>
-    extends TupleExporter<TUPLE_TYPE>, ChunkSource.WithPrev<Attributes.Values> {
+public interface TupleSource<TUPLE_TYPE> extends TupleExporter<TUPLE_TYPE>, ChunkSource.WithPrev<Attributes.Values> {
 
     /**
      * Get the {@link ColumnSource}s backing this tuple source.
@@ -46,8 +44,8 @@ public interface TupleSource<TUPLE_TYPE>
     TUPLE_TYPE createTupleFromValues(@NotNull final Object... values);
 
     /**
-     * Create a tuple for the supplied reinterpreted values (e.g., those that come from the
-     * getColumnSources after a reinterpretation by {@link TupleSourceFactory}).
+     * Create a tuple for the supplied reinterpreted values (e.g., those that come from the getColumnSources after a
+     * reinterpretation by {@link TupleSourceFactory}).
      *
      * @param values The values
      * @return The resulting tuple

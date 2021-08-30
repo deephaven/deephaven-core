@@ -21,8 +21,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * An uncoalesced table with view and where operations to be applied after {@link #coalesce()} is
- * forced.
+ * An uncoalesced table with view and where operations to be applied after {@link #coalesce()} is forced.
  */
 public class DeferredViewTable extends RedefinableTable {
 
@@ -32,22 +31,18 @@ public class DeferredViewTable extends RedefinableTable {
     protected final SelectFilter[] deferredFilters;
 
     public DeferredViewTable(@NotNull final TableDefinition definition,
-        @NotNull final String description,
-        @NotNull final TableReference tableReference,
-        @Nullable final String[] deferredDropColumns,
-        @Nullable final SelectColumn[] deferredViewColumns,
-        @Nullable final SelectFilter[] deferredFilters) {
+            @NotNull final String description,
+            @NotNull final TableReference tableReference,
+            @Nullable final String[] deferredDropColumns,
+            @Nullable final SelectColumn[] deferredViewColumns,
+            @Nullable final SelectFilter[] deferredFilters) {
         super(definition, description);
         this.tableReference = tableReference;
         this.deferredDropColumns =
-            deferredDropColumns == null ? CollectionUtil.ZERO_LENGTH_STRING_ARRAY
-                : deferredDropColumns;
+                deferredDropColumns == null ? CollectionUtil.ZERO_LENGTH_STRING_ARRAY : deferredDropColumns;
         this.deferredViewColumns =
-            deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY
-                : deferredViewColumns;
-        this.deferredFilters =
-            deferredFilters == null ? SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY
-                : deferredFilters;
+                deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
+        this.deferredFilters = deferredFilters == null ? SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
         if (deferredFilters != null) {
             for (final SelectFilter sf : deferredFilters) {
                 if (sf instanceof LivenessReferent) {
@@ -64,12 +59,10 @@ public class DeferredViewTable extends RedefinableTable {
         manage(tableReference);
 
         if (haveDrop && haveFilter) {
-            throw new IllegalStateException(
-                "Why do we have a drop and a filter all at the same time?");
+            throw new IllegalStateException("Why do we have a drop and a filter all at the same time?");
         }
         if (haveView && haveFilter) {
-            throw new IllegalStateException(
-                "Why do we have a view and a filter all at the same time?");
+            throw new IllegalStateException("Why do we have a view and a filter all at the same time?");
         }
     }
 
@@ -83,8 +76,7 @@ public class DeferredViewTable extends RedefinableTable {
             return coalesce().where(selectFilters);
         }
 
-        final SelectFilter[] allFilters =
-            Stream.concat(Arrays.stream(deferredFilters), Arrays.stream(selectFilters))
+        final SelectFilter[] allFilters = Stream.concat(Arrays.stream(deferredFilters), Arrays.stream(selectFilters))
                 .map(SelectFilter::copy).toArray(SelectFilter[]::new);
 
         TableReference.TableAndRemainingFilters tableAndRemainingFilters;
@@ -104,10 +96,10 @@ public class DeferredViewTable extends RedefinableTable {
         Table localResult = tableAndRemainingFilters.table;
         if (localResult instanceof DeferredViewTable) {
             localResult = ((DeferredViewTable) localResult)
-                .getResultTableWithWhere(tableAndRemainingFilters.remainingFilters);
+                    .getResultTableWithWhere(tableAndRemainingFilters.remainingFilters);
         } else {
             localResult = localResult.where(Arrays.stream(tableAndRemainingFilters.remainingFilters)
-                .map(SelectFilter::copy).toArray(SelectFilter[]::new));
+                    .map(SelectFilter::copy).toArray(SelectFilter[]::new));
         }
 
         localResult = applyDeferredViews(localResult);
@@ -129,8 +121,8 @@ public class DeferredViewTable extends RedefinableTable {
             result = result.dropColumns(deferredDropColumns);
         }
         if (deferredViewColumns.length > 0) {
-            result = result.view(Arrays.stream(deferredViewColumns).map(SelectColumn::copy)
-                .toArray(SelectColumn[]::new));
+            result = result
+                    .view(Arrays.stream(deferredViewColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new));
         }
         return result;
     }
@@ -170,8 +162,7 @@ public class DeferredViewTable extends RedefinableTable {
                         // we need to rename this column
                         if (selectColumn instanceof SourceColumn) {
                             // this is a rename of the getSourceName to the innerName
-                            renames.put(selectColumn.getName(),
-                                ((SourceColumn) selectColumn).getSourceName());
+                            renames.put(selectColumn.getName(), ((SourceColumn) selectColumn).getSourceName());
                         } else {
                             postFilter = true;
                             break;
@@ -186,9 +177,8 @@ public class DeferredViewTable extends RedefinableTable {
                 if (!renames.isEmpty()) {
                     if (filter instanceof io.deephaven.db.v2.select.MatchFilter) {
                         io.deephaven.db.v2.select.MatchFilter matchFilter =
-                            (io.deephaven.db.v2.select.MatchFilter) filter;
-                        Assert.assertion(renames.size() == 1,
-                            "Match Filters should only use one column!");
+                                (io.deephaven.db.v2.select.MatchFilter) filter;
+                        Assert.assertion(renames.size() == 1, "Match Filters should only use one column!");
                         String newName = renames.get(matchFilter.getColumnName());
                         Assert.neqNull(newName, "newName");
                         preViewFilters.add(matchFilter.renameFilter(newName));
@@ -204,9 +194,8 @@ public class DeferredViewTable extends RedefinableTable {
             }
         }
 
-        return new PreAndPostFilters(
-            preViewFilters.toArray(new SelectFilter[preViewFilters.size()]),
-            postViewFilters.toArray(new SelectFilter[postViewFilters.size()]));
+        return new PreAndPostFilters(preViewFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
+                postViewFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
     @Override
@@ -216,7 +205,7 @@ public class DeferredViewTable extends RedefinableTable {
             PreAndPostFilters preAndPostFilters = applyFilterRenamings(deferredFilters);
 
             TableReference.TableAndRemainingFilters tarf =
-                tableReference.getWithWhere(preAndPostFilters.preViewFilters);
+                    tableReference.getWithWhere(preAndPostFilters.preViewFilters);
             result = tarf.table;
             result = result.where(tarf.remainingFilters);
             result = result.where(preAndPostFilters.postViewFilters);
@@ -240,44 +229,37 @@ public class DeferredViewTable extends RedefinableTable {
             return coalesce().selectDistinct(columns);
         }
 
-        /*
-         * If we have changed the partitioning columns, we should perform the selectDistinct on the
-         * coalesced table.
-         */
+        /* If we have changed the partitioning columns, we should perform the selectDistinct on the coalesced table. */
         if (deferredViewColumns.length > 0) {
-            if (tableReference.getDefinition().getPartitioningColumns().stream()
-                .anyMatch(cd -> Arrays.stream(deferredViewColumns)
-                    .anyMatch(dvc -> dvc.getName().equals(cd.getName())))) {
+            if (tableReference.getDefinition().getPartitioningColumns().stream().anyMatch(
+                    cd -> Arrays.stream(deferredViewColumns).anyMatch(dvc -> dvc.getName().equals(cd.getName())))) {
                 return coalesce().selectDistinct(columns);
             }
         }
 
-        /*
-         * If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult.
-         */
+        /* If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult. */
         Table selectDistinct = tableReference.selectDistinct(columns);
         return selectDistinct == null ? coalesce().selectDistinct(columns) : selectDistinct;
     }
 
     @Override
     protected Table redefine(TableDefinition newDefinition) {
-        ColumnDefinition[] cDefs = newDefinition.getColumns();
+        ColumnDefinition<?>[] cDefs = newDefinition.getColumns();
         SelectColumn[] newView = new SelectColumn[cDefs.length];
         for (int cdi = 0; cdi < cDefs.length; ++cdi) {
             newView[cdi] = new SourceColumn(cDefs[cdi].getName());
         }
-        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinition,
-            description + "-redefined", new SimpleTableReference(this), null, newView, null);
+        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinition, description + "-redefined",
+                new SimpleTableReference(this), null, newView, null);
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
     }
 
     @Override
-    protected Table redefine(TableDefinition newDefinitionExternal,
-        TableDefinition newDefinitionInternal, SelectColumn[] viewColumns,
-        Map<String, Set<String>> columnDependency) {
-        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal,
-            description + "-redefined", new SimpleTableReference(this), null, viewColumns, null);
+    protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
+            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
+        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
+                new SimpleTableReference(this), null, viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
     }
@@ -285,8 +267,7 @@ public class DeferredViewTable extends RedefinableTable {
     /**
      * The table reference hides the table underlying table from us.
      */
-    public static abstract class TableReference extends LivenessArtifact
-        implements SimpleReference<Table> {
+    public static abstract class TableReference extends LivenessArtifact implements SimpleReference<Table> {
 
         TableReference(Table t) {
             if (t.isLive()) {
@@ -295,25 +276,25 @@ public class DeferredViewTable extends RedefinableTable {
         }
 
         /**
-         * Returns the table in a form that the user can run queries on it. This may be as simple as
-         * returning a reference, but for amorphous tables, this means we need to do the work to
-         * instantiate it.
-         * 
-         * @return
+         * Returns the table in a form that the user can run queries on it. This may be as simple as returning a
+         * reference, but for amorphous tables, this means we need to do the work to instantiate it.
+         *
+         * @return the table
          */
         public abstract Table get();
 
         /**
-         * Get the definition, without instantiating it.
-         * 
-         * @return The definition of the table we are referring to
+         * Get the definition, without instantiating the table.
+         *
+         * @return the definition of the table
          */
+
         public abstract TableDefinition getDefinition();
 
         /**
          * What size should the uninitialized table return.
-         * 
-         * @return
+         *
+         * @return the size
          */
         public abstract long getSize();
 
@@ -329,10 +310,10 @@ public class DeferredViewTable extends RedefinableTable {
         }
 
         /**
-         * Get the table in a form that the user can run queries on it. All of the filters that can
-         * be run efficiently should be run before instantiating the full table should be run. Other
-         * filters are returned in the remainingFilters field.
-         * 
+         * Get the table in a form that the user can run queries on it. All of the filters that can be run efficiently
+         * should be run before instantiating the full table should be run. Other filters are returned in the
+         * remainingFilters field.
+         *
          * @param selectFilters filters to maybe apply before returning the table
          * @return the instantiated table and a set of filters that were not applied.
          */
@@ -341,12 +322,12 @@ public class DeferredViewTable extends RedefinableTable {
         }
 
         /**
-         * If possible to execute a selectDistinct without instantiating the full table, then do so.
-         * Otherwise return null.
-         * 
+         * If possible to execute a selectDistinct without instantiating the full table, then do so. Otherwise return
+         * null.
+         *
          * @param columns the columns to selectDistinct
-         * @return null if the operation can not be performed on an uninstantiated table, otherwise
-         *         a new table with the distinct values from strColumns.
+         * @return null if the operation can not be performed on an uninstantiated table, otherwise a new table with the
+         *         distinct values from strColumns.
          */
         public Table selectDistinct(SelectColumn[] columns) {
             return null;

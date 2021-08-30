@@ -15,8 +15,7 @@ import static io.deephaven.db.plot.util.PlotUtils.intToColor;
 /**
  * Base class for {@link DataSeriesInternal}.
  */
-public abstract class AbstractDataSeries extends AbstractSeriesInternal
-    implements DataSeriesInternal, Serializable {
+public abstract class AbstractDataSeries extends AbstractSeriesInternal implements DataSeriesInternal, Serializable {
 
     private static final long serialVersionUID = 8733895549099825055L;
 
@@ -132,8 +131,8 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal
         return yToolTipPattern;
     }
 
-    // below is done as setters so that when the associated methods are implemented, they return the
-    // most precise type for the builder
+    // below is done as setters so that when the associated methods are implemented, they return the most precise type
+    // for the builder
 
     ////////////////////////// visibility //////////////////////////
 

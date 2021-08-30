@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.qst.LabeledValue",
+ "methods": {
+  "name": ":return: java.lang.String",
+  "of": "Note: Java generics information - <T>\n\n:param name: java.lang.String\n:param value: T\n:return: io.deephaven.qst.LabeledValue<T>",
+  "value": ":return: LabeledValue.T"
+ },
+ "path": "io.deephaven.qst.LabeledValue",
+ "typeName": "class"
+}

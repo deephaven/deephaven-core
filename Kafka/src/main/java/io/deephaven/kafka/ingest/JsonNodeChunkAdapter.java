@@ -14,12 +14,12 @@ import java.util.function.IntFunction;
 
 public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
     private JsonNodeChunkAdapter(
-        final TableDefinition definition,
-        final IntFunction<ChunkType> chunkTypeForIndex,
-        final Map<String, String> fieldNamesToColumnNames,
-        final boolean allowNulls) {
+            final TableDefinition definition,
+            final IntFunction<ChunkType> chunkTypeForIndex,
+            final Map<String, String> fieldNamesToColumnNames,
+            final boolean allowNulls) {
         super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls,
-            JsonNodeChunkAdapter::makeFieldCopier);
+                JsonNodeChunkAdapter::makeFieldCopier);
     }
 
     /**
@@ -32,16 +32,16 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
      * @return a JsonRecordChunkAdapter for the given definition and column mapping
      */
     public static JsonNodeChunkAdapter make(
-        final TableDefinition definition,
-        final IntFunction<ChunkType> chunkTypeForIndex,
-        final Map<String, String> fieldNamesToColumnNames,
-        final boolean allowNulls) {
+            final TableDefinition definition,
+            final IntFunction<ChunkType> chunkTypeForIndex,
+            final Map<String, String> fieldNamesToColumnNames,
+            final boolean allowNulls) {
         return new JsonNodeChunkAdapter(
-            definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls);
+                definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls);
     }
 
     private static FieldCopier makeFieldCopier(
-        final String fieldName, final ChunkType chunkType, final Class<?> dataType) {
+            final String fieldName, final ChunkType chunkType, final Class<?> dataType) {
         switch (chunkType) {
             case Char:
                 return new JsonNodeCharFieldCopier(fieldName);

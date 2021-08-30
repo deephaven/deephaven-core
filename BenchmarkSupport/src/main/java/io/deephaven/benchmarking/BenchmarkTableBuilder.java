@@ -11,14 +11,14 @@ public interface BenchmarkTableBuilder {
 
     /**
      * Set the RNG seed to be used to populate the table.
-     * 
+     *
      * @param seed The seed.
      */
     @ScriptApi
     BenchmarkTableBuilder setSeed(long seed);
 
     @ScriptApi
-    BenchmarkTableBuilder addColumn(ColumnGenerator generator);
+    BenchmarkTableBuilder addColumn(ColumnGenerator<?> generator);
 
     /**
      * Create the table based on the current builder.

@@ -20,13 +20,13 @@ import java.io.UTFDataFormatException;
 // TODO: very expensive and extremely complex.
 
 /**
- * This is an OutputStream implementation which places the output into a java.nio.ByteBuffer. The
- * constructor accepts an initial buffer and an instance of ByteBufferSink. When an output operation
- * would cause the buffer to overflow, it is handed to the sink's acceptBuffer() method, which is
- * expected to dispose of the existing contents and return a buffer in which writing can continue.
+ * This is an OutputStream implementation which places the output into a java.nio.ByteBuffer. The constructor accepts an
+ * initial buffer and an instance of ByteBufferSink. When an output operation would cause the buffer to overflow, it is
+ * handed to the sink's acceptBuffer() method, which is expected to dispose of the existing contents and return a buffer
+ * in which writing can continue.
  *
- * Note that the stream contains no state other than the buffer itself, so the buffer and/or the
- * sink can be switched at any time by calling setBuffer() or setSink().
+ * Note that the stream contains no state other than the buffer itself, so the buffer and/or the sink can be switched at
+ * any time by calling setBuffer() or setSink().
  */
 public class ByteBufferOutputStream extends java.io.OutputStream implements DataOutput {
     protected volatile ByteBuffer buf;
@@ -339,8 +339,8 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
     }
 
     @SuppressWarnings("WeakerAccess")
-    public ByteBufferOutputStream appendChars(CharSequence s,
-        @SuppressWarnings("SameParameterValue") int position, int len) throws IOException {
+    public ByteBufferOutputStream appendChars(CharSequence s, @SuppressWarnings("SameParameterValue") int position,
+            int len) throws IOException {
         int remaining;
         while ((remaining = buf.remaining() / 2) < len) {
             for (int i = 0; i < remaining; ++i) {
@@ -361,8 +361,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
         return appendBytes(s, 0, s.length());
     }
 
-    public ByteBufferOutputStream appendBytes(CharSequence s, int position, int len)
-        throws IOException {
+    public ByteBufferOutputStream appendBytes(CharSequence s, int position, int len) throws IOException {
         int remaining;
         while ((remaining = buf.remaining()) < len) {
             for (int i = 0; i < remaining; ++i) {

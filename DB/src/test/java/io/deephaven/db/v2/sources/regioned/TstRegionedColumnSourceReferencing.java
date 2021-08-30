@@ -14,8 +14,7 @@ import java.lang.reflect.Array;
  */
 @SuppressWarnings({"AnonymousInnerClassMayBeStatic"})
 public abstract class TstRegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attributes.Values, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
-    extends
-    TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>> {
+        extends TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>> {
 
     NATIVE_REGION_TYPE[] cr_n;
 

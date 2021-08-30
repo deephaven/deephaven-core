@@ -10,7 +10,7 @@ import io.grpc.BindableService;
 public interface ConsoleModule {
     @Binds
     @IntoSet
-    BindableService bindConsoleServiceImpl(ConsoleServiceGrpcImpl consoleService);
+    BindableService bindConsoleServiceImpl(ConsoleServiceGrpcBinding consoleService);
 
     @Binds
     @IntoSet

@@ -20,19 +20,18 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     Class getType();
 
     /**
-     * Get the array component type, or the type itself. For basic types, this is just the type. For
-     * example, if you have a column of java.lang.String, this also returns java.lang.String. For
-     * array types (java Arrays), or DbArray (which would be returned by getType), you get the type
-     * that is contained within the array. For example, if a single row in this column contains a
-     * DbDoubleArray, getComponentType returns double.
+     * Get the array component type, or the type itself. For basic types, this is just the type. For example, if you
+     * have a column of java.lang.String, this also returns java.lang.String. For array types (java Arrays), or DbArray
+     * (which would be returned by getType), you get the type that is contained within the array. For example, if a
+     * single row in this column contains a DbDoubleArray, getComponentType returns double.
      *
      * @return if type is an array, the type of object within the array. Otherwise type itself.
      */
     Class getComponentType();
 
     /**
-     * Get the contents of this data column in array form. Note that this will return an array of
-     * the appropriate primitive type for columns of non-Boolean primitive types.
+     * Get the contents of this data column in array form. Note that this will return an array of the appropriate
+     * primitive type for columns of non-Boolean primitive types.
      * 
      * @return An appropriately-typed array containing the full contents of this data column
      */
@@ -41,14 +40,12 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     /**
-     * Get the contents of a range of this data column in array form. See {@link #getDirect()} for
-     * an explanation of return types. Note that it's required that
-     * {@code endIndexExclusive - startIndexInclusive < Integer.MAX_VALUE}.
+     * Get the contents of a range of this data column in array form. See {@link #getDirect()} for an explanation of
+     * return types. Note that it's required that {@code endIndexExclusive - startIndexInclusive < Integer.MAX_VALUE}.
      * 
      * @param startIndexInclusive The first position in the data column to include, inclusive
      * @param endIndexExclusive One more than the last position in the data column to include
-     * @return An appropriately-typed array containing the contents of the specified range of this
-     *         data column
+     * @return An appropriately-typed array containing the contents of the specified range of this data column
      */
     default Object getDirect(final long startIndexInclusive, final long endIndexExclusive) {
         // noinspection unchecked
@@ -140,8 +137,8 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     TYPE get(long index);
 
     /**
-     * Return the column's values for the specified row range. Note that this will be a boxed array,
-     * for data columns of primitive types.
+     * Return the column's values for the specified row range. Note that this will be a boxed array, for data columns of
+     * primitive types.
      * 
      * @param startIndexInclusive The first position in the data column to include, inclusive
      * @param endIndexExclusive One more than the last position in the data column to include
@@ -150,8 +147,8 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     TYPE[] get(long startIndexInclusive, long endIndexExclusive);
 
     /**
-     * Return the column's values for the specified rows. Note that this will be a boxed array, for
-     * data columns of primitive types.
+     * Return the column's values for the specified rows. Note that this will be a boxed array, for data columns of
+     * primitive types.
      * 
      * @param indexes The row indexes to fetch
      * @return Return the column's values for the specified rows
@@ -159,8 +156,8 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     TYPE[] get(long... indexes);
 
     /**
-     * Return the column's values for the specified rows. Note that this will be a boxed array, for
-     * data columns of primitive types.
+     * Return the column's values for the specified rows. Note that this will be a boxed array, for data columns of
+     * primitive types.
      * 
      * @param indexes The row indexes to fetch
      * @return Return the column's values for the specified rows

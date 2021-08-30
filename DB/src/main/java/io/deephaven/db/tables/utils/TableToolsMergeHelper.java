@@ -23,58 +23,51 @@ import java.util.stream.Stream;
 public class TableToolsMergeHelper {
 
     public static Table mergeTableMap(LocalTableMap tableMap) {
-        final List<Table> tablesToMergeOrNull =
-            getTablesToMerge(tableMap.values().stream(), tableMap.size());
-        final List<Table> tablesToMerge =
-            tablesToMergeOrNull == null ? Collections.emptyList() : tablesToMergeOrNull;
+        final List<Table> tablesToMergeOrNull = getTablesToMerge(tableMap.values().stream(), tableMap.size());
+        final List<Table> tablesToMerge = tablesToMergeOrNull == null ? Collections.emptyList() : tablesToMergeOrNull;
         return mergeInternal(tableMap.getConstituentDefinitionOrErr(), tablesToMerge, tableMap);
     }
 
     /**
      * @param tableDef = The definition to apply to the result table.
-     * @param tables = The list of tables to merge -- all elements must be non-null and
-     *        un-partitioned.
+     * @param tables = The list of tables to merge -- all elements must be non-null and un-partitioned.
      * @return A new table, containing all the rows from tables, respecting the input ordering.
      */
     public static Table mergeInternal(TableDefinition tableDef, List<Table> tables,
-        NotificationQueue.Dependency parentDependency) {
+            NotificationQueue.Dependency parentDependency) {
         final Set<String> targetColumnNames =
-            tableDef.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
+                tableDef.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
         boolean isStatic = true;
         for (int ti = 0; ti < tables.size(); ++ti) {
             // verify the column names are exactly the same as our target
             final TableDefinition definition = tables.get(ti).getDefinition();
-            final Set<String> columnNames = definition.getColumnStream()
-                .map(ColumnDefinition::getName).collect(Collectors.toSet());
+            final Set<String> columnNames =
+                    definition.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
             isStatic &= !tables.get(ti).isLive();
 
-            if (!targetColumnNames.containsAll(columnNames)
-                || !columnNames.containsAll(targetColumnNames)) {
+            if (!targetColumnNames.containsAll(columnNames) || !columnNames.containsAll(targetColumnNames)) {
                 final Set<String> missingTargets = new HashSet<>(targetColumnNames);
                 missingTargets.removeAll(columnNames);
                 columnNames.removeAll(targetColumnNames);
                 if (missingTargets.isEmpty()) {
                     throw new UnsupportedOperationException(
-                        "Column mismatch for table " + ti + ", additional columns: " + columnNames);
+                            "Column mismatch for table " + ti + ", additional columns: " + columnNames);
                 } else if (columnNames.isEmpty()) {
                     throw new UnsupportedOperationException(
-                        "Column mismatch for table " + ti + ", missing columns: " + missingTargets);
+                            "Column mismatch for table " + ti + ", missing columns: " + missingTargets);
                 } else {
-                    throw new UnsupportedOperationException(
-                        "Column mismatch for table " + ti + ", missing columns: " + missingTargets
-                            + ", additional columns: " + columnNames);
+                    throw new UnsupportedOperationException("Column mismatch for table " + ti + ", missing columns: "
+                            + missingTargets + ", additional columns: " + columnNames);
                 }
             }
 
-            // TODO: Make this check better? It's slightly too permissive, if we want identical
-            // column sets, and not permissive enough if we want the "merge non-conflicting defs
-            // with nulls" behavior.
+            // TODO: Make this check better? It's slightly too permissive, if we want identical column sets, and not
+            // permissive enough if we want the "merge non-conflicting defs with nulls" behavior.
             try {
                 definition.checkCompatibility(tableDef);
             } catch (RuntimeException e) {
-                throw new UnsupportedOperationException("Table definition mismatch for table " + ti,
-                    e);
+                throw new UnsupportedOperationException("Table definition mismatch for table " + ti, e);
             }
         }
 
@@ -82,8 +75,7 @@ public class TableToolsMergeHelper {
             LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
         }
 
-        final UnionSourceManager unionSourceManager =
-            new UnionSourceManager(tableDef, parentDependency);
+        final UnionSourceManager unionSourceManager = new UnionSourceManager(tableDef, parentDependency);
         final QueryTable queryTable = unionSourceManager.getResult();
 
         for (Table table : tables) {
@@ -99,30 +91,29 @@ public class TableToolsMergeHelper {
     }
 
     /**
-     * Given a table that consists of only UnionColumnSources, produce a list of new tables that
-     * represent each one of the unioned sources. This basically will undo the merge operation, so
-     * that the consituents can be reused in an new merge operation. The UnionSourceManager must be
-     * shared across all the columns.
+     * Given a table that consists of only UnionColumnSources, produce a list of new tables that represent each one of
+     * the unioned sources. This basically will undo the merge operation, so that the consituents can be reused in an
+     * new merge operation. The UnionSourceManager must be shared across all the columns.
      *
      * @param table that has only UnionSourceColumns (with the same manager)
      * @return the list of component tables from the manager.
      */
     private static Collection<? extends Table> getComponentTables(Table table) {
 
-        Map<String, ColumnSource> columnSourceMap = ((QueryTable) table).getColumnSourceMap();
+        Map<String, ColumnSource<?>> columnSourceMap = ((QueryTable) table).getColumnSourceMap();
         Assert.assertion(columnSourceMap.size() > 0, "columnSourceMap.size() > 0");
 
         UnionSourceManager unionSourceManager = null;
 
-        for (Map.Entry<String, ColumnSource> entry : columnSourceMap.entrySet()) {
-            UnionColumnSource unionColumnSource = (UnionColumnSource) entry.getValue();
+        for (Map.Entry<String, ColumnSource<?>> entry : columnSourceMap.entrySet()) {
+            UnionColumnSource<?> unionColumnSource = (UnionColumnSource<?>) entry.getValue();
             UnionSourceManager thisUnionSourceManager = unionColumnSource.getUnionSourceManager();
 
             if (unionSourceManager == null) {
                 unionSourceManager = thisUnionSourceManager;
             } else if (unionSourceManager != thisUnionSourceManager) {
                 throw new RuntimeException(
-                    "A table exists with columns from multiple UnionSourceManagers, this doesn't make any sense.");
+                        "A table exists with columns from multiple UnionSourceManagers, this doesn't make any sense.");
             }
         }
 
@@ -130,23 +121,20 @@ public class TableToolsMergeHelper {
             throw new IllegalStateException("UnionSourceManager is null!");
 
         if (unionSourceManager.getColumnSources().equals(columnSourceMap)) {
-            // we've got the original merged table, we can just go ahead and use the components as
-            // is
+            // we've got the original merged table, we can just go ahead and use the components as is
             return unionSourceManager.getComponentTables();
         } else {
-            // the merged table has had things renamed, viewed, dropped or otherwise messed with; so
-            // we need to create
-            // brand new component tables, using the sources from the original that parallel the
-            // merged table
+            // the merged table has had things renamed, viewed, dropped or otherwise messed with; so we need to create
+            // brand new component tables, using the sources from the original that parallel the merged table
             Collection<Table> componentTables = unionSourceManager.getComponentTables();
             ArrayList<Table> result = new ArrayList<>();
             int componentIndex = 0;
             for (Table componentAsTable : componentTables) {
                 QueryTable component = (QueryTable) componentAsTable;
                 // copy the sub sources over
-                Map<String, ColumnSource> componentSources = new LinkedHashMap<>();
-                for (Map.Entry<String, ColumnSource> entry : columnSourceMap.entrySet()) {
-                    final UnionColumnSource unionSource = (UnionColumnSource) entry.getValue();
+                Map<String, ColumnSource<?>> componentSources = new LinkedHashMap<>();
+                for (Map.Entry<String, ColumnSource<?>> entry : columnSourceMap.entrySet()) {
+                    final UnionColumnSource<?> unionSource = (UnionColumnSource<?>) entry.getValue();
                     componentSources.put(entry.getKey(), unionSource.getSubSource(componentIndex));
                 }
                 componentIndex++;
@@ -154,7 +142,7 @@ public class TableToolsMergeHelper {
                 QueryTable viewedTable = new QueryTable(component.getIndex(), componentSources);
                 if (component.isRefreshing()) {
                     component.listenForUpdates(
-                        new BaseTable.ShiftAwareListenerImpl("union view", component, viewedTable));
+                            new BaseTable.ShiftAwareListenerImpl("union view", component, viewedTable));
                 }
                 result.add(viewedTable);
             }
@@ -170,8 +158,7 @@ public class TableToolsMergeHelper {
             if (table == null) {
                 return;
             }
-            if (table instanceof UncoalescedTable
-                || table instanceof TableMapProxyHandler.TableMapProxy) {
+            if (table instanceof UncoalescedTable || table instanceof TableMapProxyHandler.TableMapProxy) {
                 table = table.coalesce();
             }
 
@@ -190,8 +177,7 @@ public class TableToolsMergeHelper {
     }
 
     /**
-     * Determine if table is the output of a previous merge operation and can be broken into
-     * constituents.
+     * Determine if table is the output of a previous merge operation and can be broken into constituents.
      *
      * @param table the table to check
      * @return true if the table is the result of a previous merge.
@@ -204,7 +190,7 @@ public class TableToolsMergeHelper {
         if (!table.hasAttribute(Table.MERGED_TABLE_ATTRIBUTE)) {
             return false;
         }
-        Map<String, ColumnSource> columnSourceMap = queryTable.getColumnSourceMap();
+        Map<String, ColumnSource<?>> columnSourceMap = queryTable.getColumnSourceMap();
         if (columnSourceMap.isEmpty()) {
             return false;
         }
@@ -212,8 +198,7 @@ public class TableToolsMergeHelper {
             return false;
         }
 
-        final UnionColumnSource columnSource =
-            (UnionColumnSource) columnSourceMap.values().iterator().next();
+        final UnionColumnSource<?> columnSource = (UnionColumnSource<?>) columnSourceMap.values().iterator().next();
         return columnSource.getUnionSourceManager().isUsingComponentsSafe();
     }
 }

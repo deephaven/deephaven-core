@@ -17,8 +17,8 @@ import java.nio.file.Paths;
 import java.util.Collections;
 
 public class TableBenchmarkState {
-    private static final TableDefinition RESULT_DEF = BenchmarkTools.getLogDefinitionWithExtra(
-        Collections.singletonList(ColumnDefinition.ofString("Fingerprint")));
+    private static final TableDefinition RESULT_DEF = BenchmarkTools
+            .getLogDefinitionWithExtra(Collections.singletonList(ColumnDefinition.ofString("Fingerprint")));
 
     private final String benchmarkName;
     private final TableBuilder outputBuilder;
@@ -41,8 +41,7 @@ public class TableBenchmarkState {
 
     public void logOutput() throws IOException {
         final Path outputPath = Paths.get(BenchmarkTools.getLogPath())
-            .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName)
-                + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+                .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName) + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
         final Table output = outputBuilder.build();
         ParquetTools.writeTable(output, outputPath.toFile(), RESULT_DEF);
@@ -59,8 +58,8 @@ public class TableBenchmarkState {
         }
 
         outputBuilder.addRow(benchmarkName, params.getMode().toString(), iteration++,
-            BenchmarkTools.buildParameterString(params),
-            TableTools.base64Fingerprint(resultTable));
+                BenchmarkTools.buildParameterString(params),
+                TableTools.base64Fingerprint(resultTable));
     }
 
     public Table setResult(Table result) {

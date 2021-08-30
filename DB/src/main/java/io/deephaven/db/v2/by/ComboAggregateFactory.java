@@ -78,8 +78,8 @@ import java.util.stream.Stream;
  * {@link Table#by(AggregationStateFactory)}.
  *
  * <p>
- * The intended use of this class is to call the {@link #AggCombo(ComboBy...)} method with a set of
- * aggregations defined by:
+ * The intended use of this class is to call the {@link #AggCombo(ComboBy...)} method with a set of aggregations defined
+ * by:
  * <ul>
  * <li>{@link #AggMin}</li>
  * <li>{@link #AggMax}</li>
@@ -123,8 +123,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     public static final String ROLLUP_COLUMN_SUFFIX = "__ROLLUP__";
 
     /**
-     * Create a new ComboAggregateFactory suitable for passing to
-     * {@link Table#by(AggregationStateFactory, String...)}.
+     * Create a new ComboAggregateFactory suitable for passing to {@link Table#by(AggregationStateFactory, String...)}.
      *
      * @param aggregations the aggregations to compute
      *
@@ -139,21 +138,19 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      *
      * @param formula the formula to apply to each group
      * @param formulaParam the parameter name within the formula
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
-    public static ComboBy AggFormula(String formula, String formulaParam,
-        final String... matchPairs) {
-        return new ComboByImpl(new AggregationFormulaStateFactory(formula, formulaParam),
-            matchPairs);
+    public static ComboBy AggFormula(String formula, String formulaParam, final String... matchPairs) {
+        return new ComboByImpl(new AggregationFormulaStateFactory(formula, formulaParam), matchPairs);
     }
 
     /**
      * Create a minimum aggregation, equivalent to {@link Table#minBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggMin(final String... matchPairs) {
@@ -163,8 +160,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a maximum aggregation, equivalent to {@link Table#maxBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggMax(final String... matchPairs) {
@@ -174,8 +171,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a summation aggregation, equivalent to {@link Table#sumBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggSum(final String... matchPairs) {
@@ -185,8 +182,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create an absolute sum aggregation, equivalent to {@link Table#absSumBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggAbsSum(final String... matchPairs) {
@@ -196,8 +193,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a variance aggregation, equivalent to {@link Table#varBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggVar(final String... matchPairs) {
@@ -207,8 +204,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create an average aggregation, equivalent to {@link Table#avgBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggAvg(final String... matchPairs) {
@@ -219,8 +216,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create a weighted average aggregation, equivalent to {@link Table#wavgBy(String, String...)}.
      *
      * @param weight the name of the column to use as the weight for the average
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggWAvg(final String weight, final String... matchPairs) {
@@ -231,8 +228,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create a weighted sum aggregation, equivalent to {@link Table#wsumBy(String, String...)}.
      *
      * @param weight the name of the column to use as the weight for the sum
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggWSum(final String weight, final String... matchPairs) {
@@ -242,8 +239,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a median aggregation, equivalent to {@link Table#medianBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggMed(final String... matchPairs) {
@@ -253,8 +250,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a standard deviation aggregation, equivalent to {@link Table#stdBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggStd(final String... matchPairs) {
@@ -264,8 +261,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a first aggregation, equivalent to {@link Table#firstBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggFirst(final String... matchPairs) {
@@ -275,8 +272,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a last aggregation, equivalent to {@link Table#lastBy(String...)}.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggLast(final String... matchPairs) {
@@ -284,12 +281,11 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     /**
-     * Create a sorted first aggregation, equivalent to
-     * {@link io.deephaven.db.util.SortedBy#sortedFirstBy}.
+     * Create a sorted first aggregation, equivalent to {@link io.deephaven.db.util.SortedBy#sortedFirstBy}.
      *
      * @param sortColumn the column to sort by
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggSortedFirst(final String sortColumn, final String... matchPairs) {
@@ -297,12 +293,11 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     /**
-     * Create a sorted last aggregation, equivalent to
-     * {@link io.deephaven.db.util.SortedBy#sortedLastBy}.
+     * Create a sorted last aggregation, equivalent to {@link io.deephaven.db.util.SortedBy#sortedLastBy}.
      *
      * @param sortColumn the column to sort by
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggSortedLast(final String sortColumn, final String... matchPairs) {
@@ -310,12 +305,11 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     /**
-     * Create a sorted first aggregation, equivalent to
-     * {@link io.deephaven.db.util.SortedBy#sortedFirstBy}.
+     * Create a sorted first aggregation, equivalent to {@link io.deephaven.db.util.SortedBy#sortedFirstBy}.
      *
      * @param sortColumns the column to sort by
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggSortedFirst(final String[] sortColumns, final String... matchPairs) {
@@ -323,12 +317,11 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     /**
-     * Create a sorted last aggregation, equivalent to
-     * {@link io.deephaven.db.util.SortedBy#sortedLastBy}.
+     * Create a sorted last aggregation, equivalent to {@link io.deephaven.db.util.SortedBy#sortedLastBy}.
      *
      * @param sortColumns the columns to sort by
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggSortedLast(final String[] sortColumns, final String... matchPairs) {
@@ -337,9 +330,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
     /**
      * Create an array aggregation, equivalent to {@link Table#by(String...)}.
-     * 
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     *
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggArray(final String... matchPairs) {
@@ -362,10 +355,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      *
      * The output column contains the number of distinct values for the input column in that group.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Null values
-     *         are not counted.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
+     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Null values are not counted.
      */
     public static ComboBy AggCountDistinct(final String... matchPairs) {
         return AggCountDistinct(false, matchPairs);
@@ -376,10 +368,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      *
      * The output column contains the number of distinct values for the input column in that group.
      *
-     * @param countNulls if true null values are counted as a distinct value, otherwise null values
-     *        are ignored
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param countNulls if true null values are counted as a distinct value, otherwise null values are ignored
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggCountDistinct(boolean countNulls, final String... matchPairs) {
@@ -389,13 +380,12 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a distinct aggregation.
      *
-     * The output column contains a {@link io.deephaven.db.tables.dbarrays.DbArrayBase} with the
-     * distinct values for the input column within the group.
+     * The output column contains a {@link io.deephaven.db.tables.dbarrays.DbArrayBase} with the distinct values for the
+     * input column within the group.
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Null values
-     *         are ignored.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
+     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Null values are ignored.
      */
     public static ComboBy AggDistinct(final String... matchPairs) {
         return AggDistinct(false, matchPairs);
@@ -405,13 +395,12 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a distinct aggregation.
      *
-     * The output column contains a {@link io.deephaven.db.tables.dbarrays.DbArrayBase} with the
-     * distinct values for the input column within the group.
+     * The output column contains a {@link io.deephaven.db.tables.dbarrays.DbArrayBase} with the distinct values for the
+     * input column within the group.
      *
-     * @param countNulls if true, then null values are included in the result, otherwise null values
-     *        are ignored
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param countNulls if true, then null values are included in the result, otherwise null values are ignored
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggDistinct(boolean countNulls, final String... matchPairs) {
@@ -428,8 +417,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * <li>The "non unique value" - if there are more than 1 distinct values present</li>
      * </ul>
      *
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggUnique(final String... matchPairs) {
@@ -446,13 +435,11 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * <li>The "non unique value" - if there are more than 1 distinct values present</li>
      * </ul>
      *
-     * @param countNulls if true, then null values are included in the result, otherwise null values
-     *        are ignored
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Output
-     *         columns contain null if there are no values present or there are more than 1 distinct
-     *         values present.
+     * @param countNulls if true, then null values are included in the result, otherwise null values are ignored
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
+     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Output columns contain null if
+     *         there are no values present or there are more than 1 distinct values present.
      */
     public static ComboBy AggUnique(boolean countNulls, final String... matchPairs) {
         return AggUnique(countNulls, null, null, matchPairs);
@@ -468,16 +455,15 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * <li>The "non unique value" - if there are more than 1 distinct values present</li>
      * </ul>
      *
-     * @param countNulls if true, then null values are included in the result, otherwise null values
-     *        are ignored
+     * @param countNulls if true, then null values are included in the result, otherwise null values are ignored
      * @param noKeyValue the value to use if there are no values present
      * @param nonUniqueValue the value to use if there are more than 1 values present
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggUnique(boolean countNulls, Object noKeyValue, Object nonUniqueValue,
-        final String... matchPairs) {
+            final String... matchPairs) {
         return Agg(new UniqueStateFactory(countNulls, noKeyValue, nonUniqueValue), matchPairs);
     }
 
@@ -485,8 +471,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create a percentile aggregation.
      *
      * @param percentile the percentile to calculate
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggPct(double percentile, final String... matchPairs) {
@@ -497,15 +483,13 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create a percentile aggregation.
      *
      * @param percentile the percentile to calculate
-     * @param averageMedian if true, then when the upper values and lower values have an equal size;
-     *        average the highest lower value and lowest upper value to produce the median value for
-     *        integers, longs, doubles, and floats
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param averageMedian if true, then when the upper values and lower values have an equal size; average the highest
+     *        lower value and lowest upper value to produce the median value for integers, longs, doubles, and floats
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
-    public static ComboBy AggPct(double percentile, boolean averageMedian,
-        final String... matchPairs) {
+    public static ComboBy AggPct(double percentile, boolean averageMedian, final String... matchPairs) {
         return Agg(new PercentileByStateFactoryImpl(percentile, averageMedian), matchPairs);
     }
 
@@ -513,8 +497,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create an aggregation.
      *
      * @param factory aggregation factory.
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy Agg(AggregationStateFactory factory, final String... matchPairs) {
@@ -536,8 +520,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create an aggregation.
      *
      * @param factoryType aggregation factory type.
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the
-     *        Output and Input have the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy Agg(AggType factoryType, final String... matchPairs) {
@@ -594,8 +578,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                 factory = new UniqueStateFactory();
                 break;
             case Skip:
-                throw new IllegalArgumentException(
-                    "Skip is not a valid aggregation type for AggCombo.");
+                throw new IllegalArgumentException("Skip is not a valid aggregation type for AggCombo.");
             default:
                 throw new UnsupportedOperationException("Unknown AggType: " + factoryType);
         }
@@ -606,38 +589,35 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create a factory for performing rollups.
      */
     public ComboAggregateFactory rollupFactory() {
-        // we want to leave off the null value column source for children; but add a by external
-        // combo for the rollup
-        return new ComboAggregateFactory(Stream.concat(
-            underlyingAggregations.subList(0, underlyingAggregations.size() - 1).stream().map(x -> {
-                final AggregationStateFactory underlyingStateFactory =
-                    x.getUnderlyingStateFactory();
-                Assert.assertion(underlyingStateFactory instanceof ReaggregatableStatefactory,
-                    "underlyingStateFactory instanceof ReaggregatableStatefactory",
-                    underlyingStateFactory, "UnderlyingStateFactory");
+        // we want to leave off the null value column source for children; but add a by external combo for the rollup
+        return new ComboAggregateFactory(
+                Stream.concat(underlyingAggregations.subList(0, underlyingAggregations.size() - 1).stream().map(x -> {
+                    final AggregationStateFactory underlyingStateFactory = x.getUnderlyingStateFactory();
+                    Assert.assertion(underlyingStateFactory instanceof ReaggregatableStatefactory,
+                            "underlyingStateFactory instanceof ReaggregatableStatefactory", underlyingStateFactory,
+                            "UnderlyingStateFactory");
 
-                // noinspection ConstantConditions
-                final ReaggregatableStatefactory reaggregatableStatefactory =
-                    (ReaggregatableStatefactory) underlyingStateFactory;
+                    // noinspection ConstantConditions
+                    final ReaggregatableStatefactory reaggregatableStatefactory =
+                            (ReaggregatableStatefactory) underlyingStateFactory;
 
-                Assert.assertion(reaggregatableStatefactory.supportsRollup(),
-                    "((ReaggregatableStatefactory)x.getUnderlyingStateFactory()).supportsRollup()",
-                    underlyingStateFactory, "UnderlyingStateFactory");
-                final ReaggregatableStatefactory factory =
-                    reaggregatableStatefactory.rollupFactory();
+                    Assert.assertion(reaggregatableStatefactory.supportsRollup(),
+                            "((ReaggregatableStatefactory)x.getUnderlyingStateFactory()).supportsRollup()",
+                            underlyingStateFactory, "UnderlyingStateFactory");
+                    final ReaggregatableStatefactory factory = reaggregatableStatefactory.rollupFactory();
 
-                final List<String> leftColumns = new ArrayList<>();
-                Collections.addAll(leftColumns, MatchPair.getLeftColumns(x.getResultPairs()));
+                    final List<String> leftColumns = new ArrayList<>();
+                    Collections.addAll(leftColumns, MatchPair.getLeftColumns(x.getResultPairs()));
 
-                return Agg(factory, leftColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-            }), Stream.of(new ExternalComboBy(false))).collect(Collectors.toList()), true, true);
+                    return Agg(factory, leftColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                }), Stream.of(new ExternalComboBy(false))).collect(Collectors.toList()), true, true);
     }
 
     public ComboAggregateFactory forRollup(boolean includeConstituents) {
         final List<ComboBy> newUnderliers =
-            underlyingAggregations.stream().map(ComboBy::forRollup).collect(Collectors.toList());
+                underlyingAggregations.stream().map(ComboBy::forRollup).collect(Collectors.toList());
         newUnderliers.add(includeConstituents ? new ExternalComboBy(true)
-            : new NullComboBy(Collections.singletonMap(RollupInfo.ROLLUP_COLUMN, Object.class)));
+                : new NullComboBy(Collections.singletonMap(RollupInfo.ROLLUP_COLUMN, Object.class)));
         return new ComboAggregateFactory(newUnderliers, true, false);
     }
 
@@ -650,7 +630,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      *
      * @return a new ComboAggregateFactory that will produce null values for the given columns.
      */
-    public ComboAggregateFactory withNulls(Map<String, Class> nullColumns) {
+    public ComboAggregateFactory withNulls(Map<String, Class<?>> nullColumns) {
         final List<ComboBy> newAggregations = new ArrayList<>(underlyingAggregations.size() + 1);
         newAggregations.add(new NullComboBy(nullColumns));
         newAggregations.addAll(underlyingAggregations);
@@ -677,8 +657,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         }
 
         /**
-         * Optimizes the aggregations, collapsing relevant aggregations into single {@link ComboBy
-         * comboBys} where applicable.
+         * Optimizes the aggregations, collapsing relevant aggregations into single {@link ComboBy comboBys} where
+         * applicable.
          *
          * <p>
          * Note: due to the optimization, the combo bys may not be in the same order as specified in
@@ -711,19 +691,16 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         private final String[] rightColumns;
         private final AggregationStateFactory underlyingStateFactory;
 
-        public ComboByImpl(final AggregationStateFactory underlyingStateFactory,
-            final String... matchPairs) {
+        public ComboByImpl(final AggregationStateFactory underlyingStateFactory, final String... matchPairs) {
             this(underlyingStateFactory, MatchPairFactory.getExpressions(matchPairs));
         }
 
         @SuppressWarnings("unused")
-        public ComboByImpl(final AggregationStateFactory underlyingStateFactory,
-            final Collection<String> matchPairs) {
+        public ComboByImpl(final AggregationStateFactory underlyingStateFactory, final Collection<String> matchPairs) {
             this(underlyingStateFactory, MatchPairFactory.getExpressions(matchPairs));
         }
 
-        ComboByImpl(final AggregationStateFactory underlyingStateFactory,
-            final MatchPair... matchPairs) {
+        ComboByImpl(final AggregationStateFactory underlyingStateFactory, final MatchPair... matchPairs) {
             this.matchPairs = matchPairs;
             this.underlyingStateFactory = underlyingStateFactory;
             this.rightColumns = new String[matchPairs.length];
@@ -751,14 +728,13 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         public ComboBy forRollup() {
             if (!(underlyingStateFactory instanceof ReaggregatableStatefactory)) {
                 throw new UnsupportedOperationException(
-                    "Not a reaggregatable state factory: " + underlyingStateFactory);
+                        "Not a reaggregatable state factory: " + underlyingStateFactory);
             }
             if (!((ReaggregatableStatefactory) underlyingStateFactory).supportsRollup()) {
                 throw new UnsupportedOperationException(
-                    "Underlying state factory does not support rollup: " + underlyingStateFactory);
+                        "Underlying state factory does not support rollup: " + underlyingStateFactory);
             }
-            return new ComboByImpl(
-                ((ReaggregatableStatefactory) underlyingStateFactory).forRollup(), matchPairs);
+            return new ComboByImpl(((ReaggregatableStatefactory) underlyingStateFactory).forRollup(), matchPairs);
         }
 
         @Override
@@ -769,9 +745,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         @Override
         public String toString() {
             return "ComboByImpl{" +
-                "matchPairs=" + Arrays.toString(matchPairs) +
-                ", underlyingStateFactory=" + underlyingStateFactory +
-                '}';
+                    "matchPairs=" + Arrays.toString(matchPairs) +
+                    ", underlyingStateFactory=" + underlyingStateFactory +
+                    '}';
         }
     }
 
@@ -817,10 +793,10 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     static public class NullComboBy implements ComboBy {
-        private final Map<String, Class> resultColumns;
+        private final Map<String, Class<?>> resultColumns;
         private final NullAggregationStateFactoryImpl underlyingStateFactory;
 
-        NullComboBy(Map<String, Class> resultColumns) {
+        NullComboBy(Map<String, Class<?>> resultColumns) {
             this.resultColumns = resultColumns;
             this.underlyingStateFactory = new NullAggregationStateFactoryImpl();
         }
@@ -837,8 +813,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         @Override
         public MatchPair[] getResultPairs() {
-            return resultColumns.keySet().stream().map(rc -> new MatchPair(rc, rc))
-                .toArray(MatchPair[]::new);
+            return resultColumns.keySet().stream().map(rc -> new MatchPair(rc, rc)).toArray(MatchPair[]::new);
         }
 
         @Override
@@ -876,8 +851,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         @Override
         public MatchPair[] getResultPairs() {
-            return new MatchPair[] {
-                    new MatchPair(RollupInfo.ROLLUP_COLUMN, RollupInfo.ROLLUP_COLUMN)};
+            return new MatchPair[] {new MatchPair(RollupInfo.ROLLUP_COLUMN, RollupInfo.ROLLUP_COLUMN)};
         }
 
         @Override
@@ -902,8 +876,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         this(aggregations, false, false);
     }
 
-    public ComboAggregateFactory(Collection<ComboBy> aggregations, boolean isRollup,
-        boolean secondLevelRollup) {
+    public ComboAggregateFactory(Collection<ComboBy> aggregations, boolean isRollup, boolean secondLevelRollup) {
         this.isRollup = isRollup;
         this.secondLevel = secondLevelRollup;
         underlyingAggregations.addAll(aggregations);
@@ -911,18 +884,18 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         final Map<String, List<ComboBy>> usedColumns = new LinkedHashMap<>();
 
         for (final ComboBy comboBy : underlyingAggregations) {
-            Stream.of(comboBy.getResultPairs()).map(MatchPair::left).forEach(
-                rl -> usedColumns.computeIfAbsent(rl, x -> new ArrayList<>()).add(comboBy));
+            Stream.of(comboBy.getResultPairs()).map(MatchPair::left)
+                    .forEach(rl -> usedColumns.computeIfAbsent(rl, x -> new ArrayList<>()).add(comboBy));
         }
 
         final Map<String, List<ComboBy>> duplicates =
-            usedColumns.entrySet().stream().filter(kv -> kv.getValue().size() > 1)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                usedColumns.entrySet().stream().filter(kv -> kv.getValue().size() > 1)
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (!duplicates.isEmpty()) {
-            final String errors = duplicates.entrySet().stream()
-                .map(kv -> kv.getKey() + " used " + kv.getValue().size() + " times")
-                .collect(Collectors.joining(", "));
+            final String errors =
+                    duplicates.entrySet().stream().map(kv -> kv.getKey() + " used " + kv.getValue().size() + " times")
+                            .collect(Collectors.joining(", "));
             throw new IllegalArgumentException("Duplicate output columns: " + errors);
         }
     }
@@ -933,16 +906,14 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
     @Override
     public AggregationMemoKey getMemoKey() {
-        final UnderlyingMemoKey[] underlyingMemoKeys =
-            new UnderlyingMemoKey[underlyingAggregations.size()];
+        final UnderlyingMemoKey[] underlyingMemoKeys = new UnderlyingMemoKey[underlyingAggregations.size()];
         for (int ii = 0; ii < underlyingMemoKeys.length; ++ii) {
             final ComboBy comboBy = underlyingAggregations.get(ii);
             final AggregationMemoKey key = comboBy.getMemoKey();
             if (key == null) {
                 return null;
             }
-            underlyingMemoKeys[ii] =
-                new UnderlyingMemoKey(key, comboBy.getSourceColumns(), comboBy.getResultPairs());
+            underlyingMemoKeys[ii] = new UnderlyingMemoKey(key, comboBy.getSourceColumns(), comboBy.getResultPairs());
         }
 
         return new ComboByMemoKey(underlyingMemoKeys);
@@ -955,7 +926,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
 
         private UnderlyingMemoKey(AggregationMemoKey componentMemoKey, String[] sourceColumns,
-            MatchPair[] resultPairs) {
+                MatchPair[] resultPairs) {
             this.componentMemoKey = componentMemoKey;
             this.sourceColumns = sourceColumns;
             this.resultPairs = resultPairs;
@@ -969,8 +940,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                 return false;
             final UnderlyingMemoKey that = (UnderlyingMemoKey) o;
             return Objects.equals(componentMemoKey, that.componentMemoKey) &&
-                Arrays.equals(sourceColumns, that.sourceColumns) &&
-                Arrays.equals(resultPairs, that.resultPairs);
+                    Arrays.equals(sourceColumns, that.sourceColumns) &&
+                    Arrays.equals(resultPairs, that.resultPairs);
         }
 
         @Override
@@ -997,7 +968,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         @Override
         public boolean equals(Object obj) {
             return obj instanceof ComboByMemoKey
-                && Arrays.equals(underlyingMemoKeys, ((ComboByMemoKey) obj).underlyingMemoKeys);
+                    && Arrays.equals(underlyingMemoKeys, ((ComboByMemoKey) obj).underlyingMemoKeys);
         }
     }
 
@@ -1008,7 +979,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
     public List<MatchPair> getMatchPairs() {
         return underlyingAggregations.stream().flatMap(c -> Arrays.stream(c.getResultPairs()))
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public AggregationContextFactory makeAggregationContextFactory() {
@@ -1027,219 +998,182 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                 final boolean isAddOnly = ((BaseTable) table).isAddOnly();
 
                 if (comboBy instanceof CountComboBy) {
-                    operators
-                        .add(new CountAggregationOperator(((CountComboBy) comboBy).resultColumn));
+                    operators.add(new CountAggregationOperator(((CountComboBy) comboBy).resultColumn));
                     inputColumns.add(null);
                     inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                 } else if (comboBy instanceof ComboByImpl) {
-                    final AggregationStateFactory inputAggregationStateFactory =
-                        comboBy.getUnderlyingStateFactory();
+                    final AggregationStateFactory inputAggregationStateFactory = comboBy.getUnderlyingStateFactory();
 
-                    final boolean isNumeric =
-                        inputAggregationStateFactory.getClass() == SumStateFactory.class ||
+                    final boolean isNumeric = inputAggregationStateFactory.getClass() == SumStateFactory.class ||
                             inputAggregationStateFactory.getClass() == AbsSumStateFactory.class ||
                             inputAggregationStateFactory.getClass() == AvgStateFactory.class ||
                             inputAggregationStateFactory.getClass() == VarStateFactory.class ||
                             inputAggregationStateFactory.getClass() == StdStateFactory.class;
                     final boolean isCountDistinct =
-                        inputAggregationStateFactory.getClass() == CountDistinctStateFactory.class;
-                    final boolean isDistinct =
-                        inputAggregationStateFactory.getClass() == DistinctStateFactory.class;
-                    final boolean isSelectDistinct = inputAggregationStateFactory
-                        .getClass() == SelectDistinctStateFactoryImpl.class;
-                    final boolean isAggUnique =
-                        inputAggregationStateFactory.getClass() == UniqueStateFactory.class;
-                    final boolean isMinMax =
-                        inputAggregationStateFactory instanceof MinMaxByStateFactoryImpl;
-                    final boolean isPercentile = inputAggregationStateFactory
-                        .getClass() == PercentileByStateFactoryImpl.class;
+                            inputAggregationStateFactory.getClass() == CountDistinctStateFactory.class;
+                    final boolean isDistinct = inputAggregationStateFactory.getClass() == DistinctStateFactory.class;
+                    final boolean isSelectDistinct =
+                            inputAggregationStateFactory.getClass() == SelectDistinctStateFactoryImpl.class;
+                    final boolean isAggUnique = inputAggregationStateFactory.getClass() == UniqueStateFactory.class;
+                    final boolean isMinMax = inputAggregationStateFactory instanceof MinMaxByStateFactoryImpl;
+                    final boolean isPercentile =
+                            inputAggregationStateFactory.getClass() == PercentileByStateFactoryImpl.class;
                     final boolean isSortedFirstOrLastBy =
-                        inputAggregationStateFactory instanceof SortedFirstOrLastByFactoryImpl;
-                    final boolean isFirst =
-                        inputAggregationStateFactory.getClass() == FirstByStateFactoryImpl.class ||
-                            inputAggregationStateFactory
-                                .getClass() == TrackingFirstByStateFactoryImpl.class
-                            ||
-                            (inputAggregationStateFactory
-                                .getClass() == KeyOnlyFirstOrLastByStateFactory.class &&
-                                !((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory)
-                                    .isLast());
-                    final boolean isLast =
-                        inputAggregationStateFactory.getClass() == LastByStateFactoryImpl.class ||
-                            inputAggregationStateFactory
-                                .getClass() == TrackingLastByStateFactoryImpl.class
-                            ||
-                            (inputAggregationStateFactory
-                                .getClass() == KeyOnlyFirstOrLastByStateFactory.class &&
-                                ((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory)
-                                    .isLast());
-                    final boolean isWeightedAverage = inputAggregationStateFactory
-                        .getClass() == WeightedAverageStateFactoryImpl.class;
-                    final boolean isWeightedSum = inputAggregationStateFactory
-                        .getClass() == WeightedSumStateFactoryImpl.class;
-                    final boolean isAggArray = inputAggregationStateFactory
-                        .getClass() == AggregationIndexStateFactory.class;
-                    final boolean isFormula = inputAggregationStateFactory
-                        .getClass() == AggregationFormulaStateFactory.class;
+                            inputAggregationStateFactory instanceof SortedFirstOrLastByFactoryImpl;
+                    final boolean isFirst = inputAggregationStateFactory.getClass() == FirstByStateFactoryImpl.class ||
+                            inputAggregationStateFactory.getClass() == TrackingFirstByStateFactoryImpl.class ||
+                            (inputAggregationStateFactory.getClass() == KeyOnlyFirstOrLastByStateFactory.class &&
+                                    !((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory).isLast());
+                    final boolean isLast = inputAggregationStateFactory.getClass() == LastByStateFactoryImpl.class ||
+                            inputAggregationStateFactory.getClass() == TrackingLastByStateFactoryImpl.class ||
+                            (inputAggregationStateFactory.getClass() == KeyOnlyFirstOrLastByStateFactory.class &&
+                                    ((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory).isLast());
+                    final boolean isWeightedAverage =
+                            inputAggregationStateFactory.getClass() == WeightedAverageStateFactoryImpl.class;
+                    final boolean isWeightedSum =
+                            inputAggregationStateFactory.getClass() == WeightedSumStateFactoryImpl.class;
+                    final boolean isAggArray =
+                            inputAggregationStateFactory.getClass() == AggregationIndexStateFactory.class;
+                    final boolean isFormula =
+                            inputAggregationStateFactory.getClass() == AggregationFormulaStateFactory.class;
 
                     // noinspection StatementWithEmptyBody
                     if (isSelectDistinct) {
-                        // Select-distinct is accomplished as a side effect of aggregating on the
-                        // group-by columns.
+                        // Select-distinct is accomplished as a side effect of aggregating on the group-by columns.
                     } else {
                         final MatchPair[] comboMatchPairs = ((ComboByImpl) comboBy).matchPairs;
                         if (isSortedFirstOrLastBy) {
+                            // noinspection ConstantConditions
                             final SortedFirstOrLastByFactoryImpl sortedFirstOrLastByFactory =
-                                (SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory;
-                            final boolean isSortedFirstBy =
-                                sortedFirstOrLastByFactory.isSortedFirst();
+                                    (SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory;
+                            final boolean isSortedFirstBy = sortedFirstOrLastByFactory.isSortedFirst();
 
                             final MatchPair[] updatedMatchPairs;
                             if (sortedFirstOrLastByFactory.secondRollup
-                                && sortedFirstOrLastByFactory.getSortColumnNames().length == 1
-                                && sortedFirstOrLastByFactory.getSortColumnNames()[0]
-                                    .endsWith(ROLLUP_COLUMN_SUFFIX)) {
-                                updatedMatchPairs =
-                                    Arrays.copyOf(comboMatchPairs, comboMatchPairs.length + 1);
-                                final String redirectionName =
-                                    sortedFirstOrLastByFactory.getSortColumnNames()[0];
+                                    && sortedFirstOrLastByFactory.getSortColumnNames().length == 1
+                                    && sortedFirstOrLastByFactory.getSortColumnNames()[0]
+                                            .endsWith(ROLLUP_COLUMN_SUFFIX)) {
+                                updatedMatchPairs = Arrays.copyOf(comboMatchPairs, comboMatchPairs.length + 1);
+                                final String redirectionName = sortedFirstOrLastByFactory.getSortColumnNames()[0];
                                 updatedMatchPairs[updatedMatchPairs.length - 1] =
-                                    new MatchPair(redirectionName, redirectionName);
+                                        new MatchPair(redirectionName, redirectionName);
                             } else {
                                 updatedMatchPairs = comboMatchPairs;
                             }
-                            final AggregationContext sflac =
-                                SortedFirstOrLastByAggregationFactory.getAggregationContext(table,
-                                    sortedFirstOrLastByFactory.getSortColumnNames(),
-                                    isSortedFirstBy, true, updatedMatchPairs);
+                            final AggregationContext sflac = SortedFirstOrLastByAggregationFactory
+                                    .getAggregationContext(table, sortedFirstOrLastByFactory.getSortColumnNames(),
+                                            isSortedFirstBy, true, updatedMatchPairs);
                             Assert.eq(sflac.operators.length, "sflac.operators.length", 1);
                             Assert.eq(sflac.inputColumns.length, "sflac.operators.length", 1);
                             Assert.eq(sflac.inputNames.length, "sflac.operators.length", 1);
                             operators.add(sflac.operators[0]);
                             inputColumns.add(sflac.inputColumns[0]);
                             inputNames.add(sflac.inputNames[0]);
-                        } else if (isNumeric || isMinMax || isPercentile || isCountDistinct
-                            || isDistinct || isAggUnique) {
+                        } else if (isNumeric || isMinMax || isPercentile || isCountDistinct || isDistinct
+                                || isAggUnique) {
                             // add the stuff
                             Arrays.stream(comboMatchPairs).forEach(mp -> {
                                 if (isRollup && secondLevel) {
-                                    final boolean isAverage = inputAggregationStateFactory
-                                        .getClass() == AvgStateFactory.class;
-                                    final boolean isStd = inputAggregationStateFactory
-                                        .getClass() == StdStateFactory.class;
-                                    final boolean isVar = inputAggregationStateFactory
-                                        .getClass() == VarStateFactory.class;
+                                    final boolean isAverage =
+                                            inputAggregationStateFactory.getClass() == AvgStateFactory.class;
+                                    final boolean isStd =
+                                            inputAggregationStateFactory.getClass() == StdStateFactory.class;
+                                    final boolean isVar =
+                                            inputAggregationStateFactory.getClass() == VarStateFactory.class;
                                     final boolean isStdVar = isStd || isVar;
                                     if (isAverage || isStdVar) {
-                                        final String runningSumName = mp.left()
-                                            + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final String runningSum2Name = mp.left()
-                                            + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final String nonNullName = mp.left()
-                                            + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final String nanName =
-                                            mp.left() + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final String picName =
-                                            mp.left() + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final String nicName =
-                                            mp.left() + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String runningSumName =
+                                                mp.left() + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String runningSum2Name =
+                                                mp.left() + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String nonNullName =
+                                                mp.left() + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String nanName = mp.left() + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String picName = mp.left() + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String nicName = mp.left() + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
 
                                         final boolean isFloatingPoint = table.hasColumns(nanName);
 
                                         // record non null count
-                                        // noinspection unchecked
                                         inputColumns.add(table.getColumnSource(nonNullName));
                                         inputNames.add(new String[] {nonNullName});
 
                                         // record running sum
-                                        // noinspection unchecked
                                         inputColumns.add(table.getColumnSource(runningSumName));
                                         inputNames.add(new String[] {runningSumName});
 
                                         if (isStdVar) {
-                                            // noinspection unchecked
-                                            inputColumns
-                                                .add(table.getColumnSource(runningSum2Name));
+                                            inputColumns.add(table.getColumnSource(runningSum2Name));
                                             inputNames.add(new String[] {runningSum2Name});
                                         }
 
                                         if (isFloatingPoint) {
                                             // record nans, positive and negative infinities
-                                            // noinspection unchecked
                                             inputColumns.add(table.getColumnSource(nanName));
                                             inputNames.add(new String[] {nanName});
-                                            // noinspection unchecked
                                             inputColumns.add(table.getColumnSource(picName));
                                             inputNames.add(new String[] {picName});
-                                            // noinspection unchecked
                                             inputColumns.add(table.getColumnSource(nicName));
                                             inputNames.add(new String[] {nicName});
                                         }
 
-                                        // then the input column for the updater (reavg/revar)
-                                        // operator
+                                        // then the input column for the updater (reavg/revar) operator
                                         inputColumns.add(null);
 
-                                        // now add add the operators, and the final inputNames that
-                                        // matches the updating operator
+                                        // now add add the operators, and the final inputNames that matches the updating
+                                        // operator
                                         final LongChunkedSumOperator nonNull =
-                                            new LongChunkedSumOperator(false, nonNullName);
+                                                new LongChunkedSumOperator(false, nonNullName);
                                         operators.add(nonNull);
 
                                         if (isFloatingPoint) {
                                             final DoubleChunkedSumOperator runningSum =
-                                                new DoubleChunkedSumOperator(false, runningSumName);
+                                                    new DoubleChunkedSumOperator(false, runningSumName);
                                             operators.add(runningSum);
 
                                             final DoubleChunkedSumOperator runningSum2;
                                             if (isStdVar) {
-                                                runningSum2 = new DoubleChunkedSumOperator(false,
-                                                    runningSum2Name);
+                                                runningSum2 = new DoubleChunkedSumOperator(false, runningSum2Name);
                                                 operators.add(runningSum2);
                                             } else {
                                                 runningSum2 = null;
                                             }
 
                                             final LongChunkedSumOperator nanSum =
-                                                new LongChunkedSumOperator(false, nanName);
+                                                    new LongChunkedSumOperator(false, nanName);
                                             operators.add(nanSum);
                                             final LongChunkedSumOperator picSum =
-                                                new LongChunkedSumOperator(false, picName);
+                                                    new LongChunkedSumOperator(false, picName);
                                             operators.add(picSum);
                                             final LongChunkedSumOperator nicSum =
-                                                new LongChunkedSumOperator(false, nicName);
+                                                    new LongChunkedSumOperator(false, nicName);
                                             operators.add(nicSum);
 
                                             if (isAverage) {
                                                 if (table.getColumnSource(mp.left())
-                                                    .getChunkType() == ChunkType.Float) {
-                                                    operators.add(new FloatChunkedReAvgOperator(
-                                                        mp.left(), runningSum, nonNull, nanSum,
-                                                        picSum, nicSum));
+                                                        .getChunkType() == ChunkType.Float) {
+                                                    operators.add(new FloatChunkedReAvgOperator(mp.left(), runningSum,
+                                                            nonNull, nanSum, picSum, nicSum));
                                                 } else if (table.getColumnSource(mp.left())
-                                                    .getChunkType() == ChunkType.Double) {
-                                                    operators.add(new DoubleChunkedReAvgOperator(
-                                                        mp.left(), runningSum, nonNull, nanSum,
-                                                        picSum, nicSum));
+                                                        .getChunkType() == ChunkType.Double) {
+                                                    operators.add(new DoubleChunkedReAvgOperator(mp.left(), runningSum,
+                                                            nonNull, nanSum, picSum, nicSum));
                                                 } else {
                                                     throw new UnsupportedOperationException();
                                                 }
                                             } else {
-                                                if (table.getColumnSource(mp.left())
-                                                    .getChunkType() == ChunkType.Float
-                                                    || table.getColumnSource(mp.left())
-                                                        .getChunkType() == ChunkType.Double) {
-                                                    operators.add(new FloatChunkedReVarOperator(
-                                                        mp.left(), isStd, runningSum, runningSum2,
-                                                        nonNull, nanSum, picSum, nicSum));
+                                                if (table.getColumnSource(mp.left()).getChunkType() == ChunkType.Float
+                                                        || table.getColumnSource(mp.left())
+                                                                .getChunkType() == ChunkType.Double) {
+                                                    operators.add(new FloatChunkedReVarOperator(mp.left(), isStd,
+                                                            runningSum, runningSum2, nonNull, nanSum, picSum, nicSum));
                                                 } else {
                                                     throw new UnsupportedOperationException();
                                                 }
                                             }
 
                                             // our final operator is updated if any input changes
-                                            final String[] inputNamesForColumn =
-                                                new String[isStdVar ? 6 : 5];
+                                            final String[] inputNamesForColumn = new String[isStdVar ? 6 : 5];
                                             inputNamesForColumn[0] = nonNullName;
                                             inputNamesForColumn[1] = runningSumName;
                                             inputNamesForColumn[2] = nanName;
@@ -1250,126 +1184,103 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                             }
                                             inputNames.add(inputNamesForColumn);
                                         } else if (isStdVar) {
-                                            final boolean isBigInteger =
-                                                BigInteger.class.isAssignableFrom(table
-                                                    .getColumnSource(runningSumName).getType());
-                                            final boolean isBigDecimal =
-                                                BigDecimal.class.isAssignableFrom(table
-                                                    .getColumnSource(runningSumName).getType());
+                                            final boolean isBigInteger = BigInteger.class
+                                                    .isAssignableFrom(table.getColumnSource(runningSumName).getType());
+                                            final boolean isBigDecimal = BigDecimal.class
+                                                    .isAssignableFrom(table.getColumnSource(runningSumName).getType());
 
                                             if (isBigInteger) {
                                                 final BigIntegerChunkedSumOperator runningSum =
-                                                    new BigIntegerChunkedSumOperator(false,
-                                                        runningSumName);
+                                                        new BigIntegerChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
                                                 final BigIntegerChunkedSumOperator runningSum2 =
-                                                    new BigIntegerChunkedSumOperator(false,
-                                                        runningSum2Name);
+                                                        new BigIntegerChunkedSumOperator(false, runningSum2Name);
                                                 operators.add(runningSum2);
-                                                operators.add(
-                                                    new BigIntegerChunkedReVarOperator(mp.left(),
-                                                        isStd, runningSum, runningSum2, nonNull));
+                                                operators.add(new BigIntegerChunkedReVarOperator(mp.left(), isStd,
+                                                        runningSum, runningSum2, nonNull));
                                             } else if (isBigDecimal) {
                                                 final BigDecimalChunkedSumOperator runningSum =
-                                                    new BigDecimalChunkedSumOperator(false,
-                                                        runningSumName);
+                                                        new BigDecimalChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
                                                 final BigDecimalChunkedSumOperator runningSum2 =
-                                                    new BigDecimalChunkedSumOperator(false,
-                                                        runningSum2Name);
+                                                        new BigDecimalChunkedSumOperator(false, runningSum2Name);
                                                 operators.add(runningSum2);
-                                                operators.add(
-                                                    new BigDecimalChunkedReVarOperator(mp.left(),
-                                                        isStd, runningSum, runningSum2, nonNull));
+                                                operators.add(new BigDecimalChunkedReVarOperator(mp.left(), isStd,
+                                                        runningSum, runningSum2, nonNull));
                                             } else {
                                                 final DoubleChunkedSumOperator runningSum =
-                                                    new DoubleChunkedSumOperator(false,
-                                                        runningSumName);
+                                                        new DoubleChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
                                                 final DoubleChunkedSumOperator runningSum2 =
-                                                    new DoubleChunkedSumOperator(false,
-                                                        runningSum2Name);
+                                                        new DoubleChunkedSumOperator(false, runningSum2Name);
                                                 operators.add(runningSum2);
-                                                operators
-                                                    .add(new IntegralChunkedReVarOperator(mp.left(),
-                                                        isStd, runningSum, runningSum2, nonNull));
+                                                operators.add(new IntegralChunkedReVarOperator(mp.left(), isStd,
+                                                        runningSum, runningSum2, nonNull));
                                             }
                                             // our final operator is updated if any input changes
-                                            inputNames.add(new String[] {nonNullName,
-                                                    runningSumName, runningSum2Name});
+                                            inputNames.add(new String[] {nonNullName, runningSumName, runningSum2Name});
                                         } else { // is an average and not floating point
-                                            final boolean isBigDecimal =
-                                                BigDecimal.class.isAssignableFrom(table
-                                                    .getColumnSource(runningSumName).getType());
-                                            final boolean isBigInteger =
-                                                BigInteger.class.isAssignableFrom(table
-                                                    .getColumnSource(runningSumName).getType());
+                                            final boolean isBigDecimal = BigDecimal.class
+                                                    .isAssignableFrom(table.getColumnSource(runningSumName).getType());
+                                            final boolean isBigInteger = BigInteger.class
+                                                    .isAssignableFrom(table.getColumnSource(runningSumName).getType());
 
                                             if (isBigInteger) {
                                                 final BigIntegerChunkedSumOperator runningSum =
-                                                    new BigIntegerChunkedSumOperator(false,
-                                                        runningSumName);
+                                                        new BigIntegerChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
-                                                operators.add(new BigIntegerChunkedReAvgOperator(
-                                                    mp.left(), runningSum, nonNull));
+                                                operators.add(new BigIntegerChunkedReAvgOperator(mp.left(), runningSum,
+                                                        nonNull));
                                             } else if (isBigDecimal) {
                                                 final BigDecimalChunkedSumOperator runningSum =
-                                                    new BigDecimalChunkedSumOperator(false,
-                                                        runningSumName);
+                                                        new BigDecimalChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
-                                                operators.add(new BigDecimalChunkedReAvgOperator(
-                                                    mp.left(), runningSum, nonNull));
+                                                operators.add(new BigDecimalChunkedReAvgOperator(mp.left(), runningSum,
+                                                        nonNull));
                                             } else {
                                                 final LongChunkedSumOperator runningSum =
-                                                    new LongChunkedSumOperator(false,
-                                                        runningSumName);
+                                                        new LongChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
-                                                operators.add(new IntegralChunkedReAvgOperator(
-                                                    mp.left(), runningSum, nonNull));
+                                                operators.add(new IntegralChunkedReAvgOperator(mp.left(), runningSum,
+                                                        nonNull));
                                             }
 
                                             // our final operator is updated if any input changes
-                                            inputNames
-                                                .add(new String[] {nonNullName, runningSumName});
+                                            inputNames.add(new String[] {nonNullName, runningSumName});
                                         }
                                         return;
                                     } else if (isCountDistinct || isDistinct || isAggUnique) {
-                                        final String ssmColName = mp.left()
-                                            + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final ObjectArraySource<SegmentedSortedMultiSet> ssmSource =
-                                            (ObjectArraySource<SegmentedSortedMultiSet>) table
-                                                .getColumnSource(ssmColName);
-                                        final ColumnSource<?> lastLevelResult =
-                                            table.getColumnSource(mp.left());
+                                        final String ssmColName =
+                                                mp.left() + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final ColumnSource<SegmentedSortedMultiSet<?>> ssmSource =
+                                                table.getColumnSource(ssmColName);
+                                        final ColumnSource<?> lastLevelResult = table.getColumnSource(mp.left());
                                         final boolean countNulls;
                                         final IterativeChunkedAggregationOperator op;
                                         if (isDistinct) {
+                                            // noinspection ConstantConditions
                                             countNulls =
-                                                ((DistinctStateFactory) inputAggregationStateFactory)
-                                                    .countNulls();
+                                                    ((DistinctStateFactory) inputAggregationStateFactory).countNulls();
                                             op = IterativeOperatorStateFactory.getDistinctChunked(
-                                                lastLevelResult.getComponentType(), mp.left(),
-                                                countNulls, true, true);
+                                                    lastLevelResult.getComponentType(), mp.left(), countNulls, true,
+                                                    true);
                                         } else if (isCountDistinct) {
-                                            countNulls =
-                                                ((CountDistinctStateFactory) inputAggregationStateFactory)
+                                            // noinspection ConstantConditions
+                                            countNulls = ((CountDistinctStateFactory) inputAggregationStateFactory)
                                                     .countNulls();
-                                            op = IterativeOperatorStateFactory
-                                                .getCountDistinctChunked(
-                                                    ssmSource.getComponentType(), mp.left(),
-                                                    countNulls, true, true);
+                                            op = IterativeOperatorStateFactory.getCountDistinctChunked(
+                                                    ssmSource.getComponentType(), mp.left(), countNulls, true, true);
                                         } else {
+                                            // noinspection ConstantConditions
                                             countNulls =
-                                                ((UniqueStateFactory) inputAggregationStateFactory)
-                                                    .countNulls();
+                                                    ((UniqueStateFactory) inputAggregationStateFactory).countNulls();
+                                            // noinspection ConstantConditions
                                             op = IterativeOperatorStateFactory.getUniqueChunked(
-                                                lastLevelResult.getType(), mp.left(), countNulls,
-                                                true,
-                                                ((UniqueStateFactory) inputAggregationStateFactory)
-                                                    .getNoKeyValue(),
-                                                ((UniqueStateFactory) inputAggregationStateFactory)
-                                                    .getNonUniqueValue(),
-                                                true);
+                                                    lastLevelResult.getType(), mp.left(), countNulls, true,
+                                                    ((UniqueStateFactory) inputAggregationStateFactory).getNoKeyValue(),
+                                                    ((UniqueStateFactory) inputAggregationStateFactory)
+                                                            .getNonUniqueValue(),
+                                                    true);
                                         }
 
                                         inputColumns.add(ssmSource);
@@ -1380,10 +1291,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                     }
                                 }
 
-                                final ColumnSource columnSource = table.getColumnSource(mp.right());
+                                final ColumnSource<?> columnSource = table.getColumnSource(mp.right());
                                 final Class<?> type = columnSource.getType();
-                                final ColumnSource inputSource =
-                                    columnSource.getType() == DBDateTime.class
+                                final ColumnSource<?> inputSource = columnSource.getType() == DBDateTime.class
                                         ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
                                         : columnSource;
 
@@ -1391,49 +1301,41 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                 final boolean hasSource;
                                 if (isMinMax) {
                                     final boolean isMinimum =
-                                        ((MinMaxByStateFactoryImpl) inputAggregationStateFactory)
-                                            .isMinimum();
-                                    final OptionalInt priorMinMax =
-                                        IntStream.range(0, inputColumns.size())
+                                            ((MinMaxByStateFactoryImpl) inputAggregationStateFactory).isMinimum();
+                                    final OptionalInt priorMinMax = IntStream.range(0, inputColumns.size())
                                             .filter(idx -> (inputColumns.get(idx) == inputSource)
-                                                && (operators
-                                                    .get(idx) instanceof SsmChunkedMinMaxOperator))
+                                                    && (operators.get(idx) instanceof SsmChunkedMinMaxOperator))
                                             .findFirst();
                                     if (priorMinMax.isPresent()) {
                                         final SsmChunkedMinMaxOperator ssmChunkedMinMaxOperator =
-                                            (SsmChunkedMinMaxOperator) operators
-                                                .get(priorMinMax.getAsInt());
-                                        operators.add(ssmChunkedMinMaxOperator
-                                            .makeSecondaryOperator(isMinimum, resultName));
+                                                (SsmChunkedMinMaxOperator) operators.get(priorMinMax.getAsInt());
+                                        operators.add(
+                                                ssmChunkedMinMaxOperator.makeSecondaryOperator(isMinimum, resultName));
                                         hasSource = false;
                                     } else {
-                                        operators.add(
-                                            IterativeOperatorStateFactory.getMinMaxChunked(type,
-                                                isMinimum, isStream || isAddOnly, resultName));
+                                        operators.add(IterativeOperatorStateFactory.getMinMaxChunked(type, isMinimum,
+                                                isStream || isAddOnly, resultName));
                                         hasSource = true;
                                     }
                                 } else if (isPercentile) {
                                     if (isRollup) {
                                         throw new UnsupportedOperationException(
-                                            "Percentile or Median can not be used in a rollup!");
+                                                "Percentile or Median can not be used in a rollup!");
                                     }
-                                    operators.add(
-                                        IterativeOperatorStateFactory.getPercentileChunked(type,
+                                    operators.add(IterativeOperatorStateFactory.getPercentileChunked(type,
                                             ((PercentileByStateFactoryImpl) inputAggregationStateFactory)
-                                                .getPercentile(),
+                                                    .getPercentile(),
                                             ((PercentileByStateFactoryImpl) inputAggregationStateFactory)
-                                                .getAverageMedian(),
+                                                    .getAverageMedian(),
                                             resultName));
                                     hasSource = true;
                                 } else {
-                                    operators.add(
-                                        ((IterativeOperatorStateFactory) inputAggregationStateFactory)
+                                    operators.add(((IterativeOperatorStateFactory) inputAggregationStateFactory)
                                             .getChunkedOperator(type, resultName, isRollup));
                                     hasSource = true;
                                 }
 
                                 if (hasSource) {
-                                    // noinspection unchecked
                                     inputColumns.add(inputSource);
                                 } else {
                                     inputColumns.add(null);
@@ -1444,11 +1346,10 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             inputColumns.add(null);
                             final String exposeRedirectionAs;
                             if (isRollup) {
-                                exposeRedirectionAs = makeRedirectionName(
-                                    (IterativeIndexStateFactory) inputAggregationStateFactory);
-                            } else if (inputAggregationStateFactory instanceof KeyOnlyFirstOrLastByStateFactory) {
                                 exposeRedirectionAs =
-                                    ((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory)
+                                        makeRedirectionName((IterativeIndexStateFactory) inputAggregationStateFactory);
+                            } else if (inputAggregationStateFactory instanceof KeyOnlyFirstOrLastByStateFactory) {
+                                exposeRedirectionAs = ((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory)
                                         .getResultColumn();
                             } else {
                                 exposeRedirectionAs = null;
@@ -1456,30 +1357,28 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
                             if (table.isLive()) {
                                 if (isStream) {
-                                    operators.add(isFirst
-                                        ? new StreamFirstChunkedOperator(comboMatchPairs, table)
-                                        : new StreamLastChunkedOperator(comboMatchPairs, table));
+                                    operators.add(isFirst ? new StreamFirstChunkedOperator(comboMatchPairs, table)
+                                            : new StreamLastChunkedOperator(comboMatchPairs, table));
                                 } else if (isAddOnly) {
-                                    operators.add(new AddOnlyFirstOrLastChunkedOperator(isFirst,
-                                        comboMatchPairs, table, exposeRedirectionAs));
+                                    operators.add(new AddOnlyFirstOrLastChunkedOperator(isFirst, comboMatchPairs, table,
+                                            exposeRedirectionAs));
                                 } else {
                                     if (trackedFirstOrLastIndex >= 0) {
                                         final IterativeChunkedAggregationOperator operator =
-                                            operators.get(trackedFirstOrLastIndex);
+                                                operators.get(trackedFirstOrLastIndex);
                                         final FirstOrLastChunkedOperator firstOrLastChunkedOperator =
-                                            (FirstOrLastChunkedOperator) operator;
-                                        operators.add(firstOrLastChunkedOperator
-                                            .makeSecondaryOperator(isFirst, comboMatchPairs, table,
-                                                exposeRedirectionAs));
+                                                (FirstOrLastChunkedOperator) operator;
+                                        operators.add(firstOrLastChunkedOperator.makeSecondaryOperator(isFirst,
+                                                comboMatchPairs, table, exposeRedirectionAs));
                                     } else {
-                                        operators.add(new FirstOrLastChunkedOperator(isFirst,
-                                            comboMatchPairs, table, exposeRedirectionAs));
+                                        operators.add(new FirstOrLastChunkedOperator(isFirst, comboMatchPairs, table,
+                                                exposeRedirectionAs));
                                         trackedFirstOrLastIndex = operators.size() - 1;
                                     }
                                 }
                             } else {
-                                operators.add(new StaticFirstOrLastChunkedOperator(isFirst,
-                                    comboMatchPairs, table, exposeRedirectionAs));
+                                operators.add(new StaticFirstOrLastChunkedOperator(isFirst, comboMatchPairs, table,
+                                        exposeRedirectionAs));
                             }
                             inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                         } else if (isAggArray) {
@@ -1487,23 +1386,19 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                 throw streamUnsupported("AggArray");
                             }
                             inputColumns.add(null);
-                            operators.add(
-                                new ByChunkedOperator((QueryTable) table, true, comboMatchPairs));
+                            operators.add(new ByChunkedOperator((QueryTable) table, true, comboMatchPairs));
                             inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                         } else if (isFormula) {
                             if (isStream) {
                                 throw streamUnsupported("AggFormula");
                             }
                             final AggregationFormulaStateFactory formulaStateFactory =
-                                (AggregationFormulaStateFactory) inputAggregationStateFactory;
-                            final ByChunkedOperator byChunkedOperator =
-                                new ByChunkedOperator((QueryTable) table, false,
+                                    (AggregationFormulaStateFactory) inputAggregationStateFactory;
+                            final ByChunkedOperator byChunkedOperator = new ByChunkedOperator((QueryTable) table, false,
                                     Arrays.stream(comboMatchPairs).map(MatchPair::right)
-                                        .map(MatchPairFactory::getExpression)
-                                        .toArray(MatchPair[]::new));
-                            final FormulaChunkedOperator formulaChunkedOperator =
-                                new FormulaChunkedOperator(byChunkedOperator, true,
-                                    formulaStateFactory.getFormula(),
+                                            .map(MatchPairFactory::getExpression).toArray(MatchPair[]::new));
+                            final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(
+                                    byChunkedOperator, true, formulaStateFactory.getFormula(),
                                     formulaStateFactory.getColumnParamName(), comboMatchPairs);
                             inputColumns.add(null);
                             operators.add(formulaChunkedOperator);
@@ -1512,52 +1407,45 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             final String weightName;
 
                             if (isWeightedAverage) {
-                                weightName =
-                                    ((WeightedAverageStateFactoryImpl) inputAggregationStateFactory)
+                                weightName = ((WeightedAverageStateFactoryImpl) inputAggregationStateFactory)
                                         .getWeightName();
                             } else {
                                 weightName =
-                                    ((WeightedSumStateFactoryImpl) inputAggregationStateFactory)
-                                        .getWeightName();
+                                        ((WeightedSumStateFactoryImpl) inputAggregationStateFactory).getWeightName();
                             }
 
                             final ColumnSource<?> weightSource = table.getColumnSource(weightName);
                             final DoubleWeightRecordingInternalOperator weightOperator =
-                                new DoubleWeightRecordingInternalOperator(
-                                    weightSource.getChunkType());
+                                    new DoubleWeightRecordingInternalOperator(weightSource.getChunkType());
                             inputColumns.add(weightSource);
                             operators.add(weightOperator);
 
                             inputNames.add(Stream
-                                .concat(Stream.of(weightName),
-                                    Arrays.stream(comboMatchPairs).map(MatchPair::right))
-                                .toArray(String[]::new));
+                                    .concat(Stream.of(weightName), Arrays.stream(comboMatchPairs).map(MatchPair::right))
+                                    .toArray(String[]::new));
 
                             Arrays.stream(comboMatchPairs).forEach(mp -> {
-                                final ColumnSource<?> columnSource =
-                                    table.getColumnSource(mp.right());
+                                final ColumnSource<?> columnSource = table.getColumnSource(mp.right());
                                 inputColumns.add(columnSource);
                                 inputNames.add(new String[] {weightName, mp.right()});
                                 if (isWeightedAverage) {
-                                    operators.add(new ChunkedWeightedAverageOperator(
-                                        columnSource.getChunkType(), weightOperator, mp.left()));
+                                    operators.add(new ChunkedWeightedAverageOperator(columnSource.getChunkType(),
+                                            weightOperator, mp.left()));
                                 } else {
-                                    operators.add(new DoubleChunkedWeightedSumOperator(
-                                        columnSource.getChunkType(), weightOperator, mp.left()));
+                                    operators.add(new DoubleChunkedWeightedSumOperator(columnSource.getChunkType(),
+                                            weightOperator, mp.left()));
                                 }
                             });
                         } else {
                             throw new UnsupportedOperationException(
-                                "Unknown ComboByImpl: " + inputAggregationStateFactory.getClass());
+                                    "Unknown ComboByImpl: " + inputAggregationStateFactory.getClass());
                         }
                     }
                 } else if (comboBy instanceof NullComboBy) {
-                    transformers.add(new NullColumnAggregationTransformer(
-                        ((NullComboBy) comboBy).resultColumns));
+                    transformers.add(new NullColumnAggregationTransformer(((NullComboBy) comboBy).resultColumns));
                 } else if (comboBy instanceof ExternalComboBy) {
                     if (!isRollup) {
-                        throw new IllegalStateException(
-                            "ExternalComboBy must be used only with rollups.");
+                        throw new IllegalStateException("ExternalComboBy must be used only with rollups.");
                     }
                     inputColumns.add(null);
                     inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -1572,23 +1460,20 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                     final QueryTable parentTable = (QueryTable) table;
                     final QueryTable adjustedTable;
                     final List<String> columnsToDrop =
-                        parentTable.getDefinition().getColumnStream().map(ColumnDefinition::getName)
-                            .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX))
-                            .collect(Collectors.toList());
+                            parentTable.getDefinition().getColumnStream().map(ColumnDefinition::getName)
+                                    .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).collect(Collectors.toList());
                     if (!columnsToDrop.isEmpty()) {
                         adjustedTable = (QueryTable) parentTable.dropColumns(columnsToDrop);
                     } else {
                         if (includeConstituents) {
-                            adjustedTable = (QueryTable) parentTable
-                                .updateView(RollupInfo.ROLLUP_COLUMN + "=" + null);
+                            adjustedTable = (QueryTable) parentTable.updateView(RollupInfo.ROLLUP_COLUMN + "=" + null);
                         } else {
                             adjustedTable = parentTable;
                         }
                     }
-                    if (adjustedTable != parentTable
-                        && parentTable.hasAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE)) {
+                    if (adjustedTable != parentTable && parentTable.hasAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE)) {
                         adjustedTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE,
-                            parentTable.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE));
+                                parentTable.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE));
                     }
                     final ByExternalChunkedOperator.AttributeCopier copier;
                     if (includeConstituents) {
@@ -1596,29 +1481,25 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                     } else {
                         copier = RollupAttributeCopier.DEFAULT_INSTANCE;
                     }
-                    final ByExternalChunkedOperator tableMapOperator =
-                        new ByExternalChunkedOperator(parentTable, adjustedTable, copier,
-                            Collections.emptyList(), groupByColumns);
+                    final ByExternalChunkedOperator tableMapOperator = new ByExternalChunkedOperator(parentTable,
+                            adjustedTable, copier, Collections.emptyList(), groupByColumns);
                     operators.add(tableMapOperator);
 
                     if (groupByColumns.length == 0) {
                         transformers.add(new StaticColumnSourceTransformer(RollupInfo.ROLLUP_COLUMN,
-                            new SingleValueObjectColumnSource<>(SmartKey.EMPTY)));
+                                new SingleValueObjectColumnSource<>(SmartKey.EMPTY)));
                     } else if (groupByColumns.length == 1) {
-                        transformers
-                            .add(new RollupKeyColumnDuplicationTransformer(groupByColumns[0]));
+                        transformers.add(new RollupKeyColumnDuplicationTransformer(groupByColumns[0]));
                     } else {
-                        transformers
-                            .add(new RollupSmartKeyColumnDuplicationTransformer(groupByColumns));
+                        transformers.add(new RollupSmartKeyColumnDuplicationTransformer(groupByColumns));
                     }
 
-                    transformers.add(new RollupTableMapAndReverseLookupAttributeSetter(
-                        tableMapOperator, this, secondLevel, includeConstituents));
+                    transformers.add(new RollupTableMapAndReverseLookupAttributeSetter(tableMapOperator, this,
+                            secondLevel, includeConstituents));
 
                     externalFound = true;
                 } else {
-                    throw new UnsupportedOperationException(
-                        "Unknown ComboBy: " + comboBy.getClass());
+                    throw new UnsupportedOperationException("Unknown ComboBy: " + comboBy.getClass());
                 }
             }
 
@@ -1627,35 +1508,30 @@ public class ComboAggregateFactory implements AggregationStateFactory {
             }
 
             final IterativeChunkedAggregationOperator[] operatorsArray = operators.toArray(
-                IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY);
-            final AggregationContextTransformer[] transformersArray = transformers.toArray(
-                AggregationContextTransformer.ZERO_LENGTH_AGGREGATION_CONTEXT_TRANSFORMER_ARRAY);
-            final String[][] inputNamesArray =
-                inputNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY);
+                    IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY);
+            final AggregationContextTransformer[] transformersArray = transformers
+                    .toArray(AggregationContextTransformer.ZERO_LENGTH_AGGREGATION_CONTEXT_TRANSFORMER_ARRAY);
+            final String[][] inputNamesArray = inputNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY);
             // noinspection unchecked
             final ChunkSource.WithPrev<Values>[] inputColumnsArray =
-                inputColumns.toArray(ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
+                    inputColumns.toArray(ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
 
-            return new AggregationContext(operatorsArray, inputNamesArray, inputColumnsArray,
-                transformersArray, true);
+            return new AggregationContext(operatorsArray, inputNamesArray, inputColumnsArray, transformersArray, true);
         };
     }
 
-    private static UnsupportedOperationException streamUnsupported(
-        @NotNull final String operatorTypeName) {
+    private static UnsupportedOperationException streamUnsupported(@NotNull final String operatorTypeName) {
         return new UnsupportedOperationException("Stream tables do not support " + operatorTypeName
-            + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
+                + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
     }
 
     @NotNull
-    private static String makeRedirectionName(
-        IterativeIndexStateFactory inputAggregationStateFactory) {
-        return IterativeIndexStateFactory.REDIRECTION_INDEX_PREFIX
-            + inputAggregationStateFactory.rollupColumnIdentifier + ROLLUP_COLUMN_SUFFIX;
+    private static String makeRedirectionName(IterativeIndexStateFactory inputAggregationStateFactory) {
+        return IterativeIndexStateFactory.REDIRECTION_INDEX_PREFIX + inputAggregationStateFactory.rollupColumnIdentifier
+                + ROLLUP_COLUMN_SUFFIX;
     }
 
-    private static class RollupTableMapAndReverseLookupAttributeSetter
-        implements AggregationContextTransformer {
+    private static class RollupTableMapAndReverseLookupAttributeSetter implements AggregationContextTransformer {
         private final ByExternalChunkedOperator tableMapOperator;
         private final ComboAggregateFactory factory;
         private final boolean secondLevel;
@@ -1663,7 +1539,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         private ReverseLookup reverseLookup;
 
         RollupTableMapAndReverseLookupAttributeSetter(ByExternalChunkedOperator tableMapOperator,
-            ComboAggregateFactory factory, boolean secondLevel, boolean includeConstituents) {
+                ComboAggregateFactory factory, boolean secondLevel, boolean includeConstituents) {
             this.tableMapOperator = tableMapOperator;
             this.factory = factory;
             this.secondLevel = secondLevel;
@@ -1672,8 +1548,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         @Override
         public QueryTable transformResult(QueryTable table) {
-            table.setAttribute(QueryTable.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
-                tableMapOperator.getTableMap());
+            table.setAttribute(QueryTable.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, tableMapOperator.getTableMap());
             if (secondLevel || includeConstituents) {
                 table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
             } else {
@@ -1754,16 +1629,14 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         private final Map<ColumnName, List<Pair>> wSums = new HashMap<>();
 
         /**
-         * We'll do our best to maintain the original combo ordering. This will maintain the
-         * user-specified order as long as the user aggregation types were all next to each other.
+         * We'll do our best to maintain the original combo ordering. This will maintain the user-specified order as
+         * long as the user aggregation types were all next to each other.
          *
          * ie:
          *
-         * {@code by(..., [ Sum.of(A), Sum.of(B), Avg.of(C), Avg.of(D) ] )} will not need to be
-         * re-ordered
+         * {@code by(..., [ Sum.of(A), Sum.of(B), Avg.of(C), Avg.of(D) ] )} will not need to be re-ordered
          *
-         * {@code by(..., [ Sum.of(A), Avg.of(C), Avg.of(D), Sum.of(B) ] )} will need to be
-         * re-ordered
+         * {@code by(..., [ Sum.of(A), Avg.of(C), Avg.of(D), Sum.of(B) ] )} will need to be re-ordered
          */
         private final LinkedHashSet<BuildLogic> buildOrder = new LinkedHashSet<>();
 
@@ -1772,8 +1645,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
             void appendTo(List<ComboBy> outs);
         }
 
-        // Unfortunately, it doesn't look like we can add ad-hoc lambdas to buildOrder, they don't
-        // appear to be equal
+        // Unfortunately, it doesn't look like we can add ad-hoc lambdas to buildOrder, they don't appear to be equal
         // across multiple constructions.
         private final BuildLogic buildAbsSums = this::buildAbsSums;
         private final BuildLogic buildArrays = this::buildArrays;
@@ -1807,15 +1679,14 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildWSums(List<ComboBy> combos) {
             for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
-                combos.add(Agg(new WeightedSumStateFactoryImpl(e.getKey().name()),
-                    MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new WeightedSumStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
         private void buildWAvgs(List<ComboBy> combos) {
             for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
-                combos.add(Agg(new WeightedAverageStateFactoryImpl(e.getKey().name()),
-                    MatchPair.fromPairs(e.getValue())));
+                combos.add(
+                        Agg(new WeightedAverageStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
@@ -1827,8 +1698,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildUniques(List<ComboBy> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : uniques.entrySet()) {
-                combos.add(
-                    Agg(new UniqueStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new UniqueStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
@@ -1846,20 +1716,18 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildSortedLasts(List<ComboBy> combos) {
             for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedLasts.entrySet()) {
-                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort
-                // direction
-                String[] columns = e.getKey().stream().map(SortColumn::column).map(ColumnName::name)
-                    .toArray(String[]::new);
+                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
+                String[] columns =
+                        e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
                 combos.add(Agg(new SortedLastBy(columns), MatchPair.fromPairs(e.getValue())));
             }
         }
 
         private void buildSortedFirsts(List<ComboBy> combos) {
             for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedFirsts.entrySet()) {
-                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort
-                // direction
-                String[] columns = e.getKey().stream().map(SortColumn::column).map(ColumnName::name)
-                    .toArray(String[]::new);
+                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
+                String[] columns =
+                        e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
                 combos.add(Agg(new SortedFirstBy(columns), MatchPair.fromPairs(e.getValue())));
             }
         }
@@ -1867,7 +1735,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         private void buildPcts(List<ComboBy> combos) {
             for (Map.Entry<ByteDoubleTuple, List<Pair>> e : pcts.entrySet()) {
                 combos.add(Agg(new PercentileByStateFactoryImpl(e.getKey().getSecondElement(),
-                    e.getKey().getFirstElement() != 0), MatchPair.fromPairs(e.getValue())));
+                        e.getKey().getFirstElement() != 0), MatchPair.fromPairs(e.getValue())));
             }
         }
 
@@ -1879,8 +1747,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildMedians(List<ComboBy> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
-                combos.add(Agg(new PercentileByStateFactoryImpl(0.50d, e.getKey()),
-                    MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new PercentileByStateFactoryImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
@@ -1904,15 +1771,13 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildDistincts(List<ComboBy> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : distincts.entrySet()) {
-                combos.add(
-                    Agg(new DistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new DistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
         private void buildCountDistincts(List<ComboBy> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : countDistincts.entrySet()) {
-                combos.add(Agg(new CountDistinctStateFactory(e.getKey()),
-                    MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new CountDistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
@@ -1967,14 +1832,13 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         @Override
         public void visit(CountDistinct countDistinct) {
             countDistincts.computeIfAbsent(countDistinct.countNulls(), b -> new ArrayList<>())
-                .add(countDistinct.pair());
+                    .add(countDistinct.pair());
             buildOrder.add(buildCountDistincts);
         }
 
         @Override
         public void visit(Distinct distinct) {
-            distincts.computeIfAbsent(distinct.includeNulls(), b -> new ArrayList<>())
-                .add(distinct.pair());
+            distincts.computeIfAbsent(distinct.includeNulls(), b -> new ArrayList<>()).add(distinct.pair());
             buildOrder.add(buildDistincts);
         }
 
@@ -2017,23 +1881,20 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         @Override
         public void visit(Pct pct) {
-            pcts.computeIfAbsent(
-                new ByteDoubleTuple(pct.averageMedian() ? (byte) 1 : (byte) 0, pct.percentile()),
-                b -> new ArrayList<>()).add(pct.pair());
+            pcts.computeIfAbsent(new ByteDoubleTuple(pct.averageMedian() ? (byte) 1 : (byte) 0, pct.percentile()),
+                    b -> new ArrayList<>()).add(pct.pair());
             buildOrder.add(buildPcts);
         }
 
         @Override
         public void visit(SortedFirst sortedFirst) {
-            sortedFirsts.computeIfAbsent(sortedFirst.columns(), b -> new ArrayList<>())
-                .add(sortedFirst.pair());
+            sortedFirsts.computeIfAbsent(sortedFirst.columns(), b -> new ArrayList<>()).add(sortedFirst.pair());
             buildOrder.add(buildSortedFirsts);
         }
 
         @Override
         public void visit(SortedLast sortedLast) {
-            sortedLasts.computeIfAbsent(sortedLast.columns(), b -> new ArrayList<>())
-                .add(sortedLast.pair());
+            sortedLasts.computeIfAbsent(sortedLast.columns(), b -> new ArrayList<>()).add(sortedLast.pair());
             buildOrder.add(buildSortedLasts);
         }
 
@@ -2051,8 +1912,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         @Override
         public void visit(Unique unique) {
-            uniques.computeIfAbsent(unique.includeNulls(), b -> new ArrayList<>())
-                .add(unique.pair());
+            uniques.computeIfAbsent(unique.includeNulls(), b -> new ArrayList<>()).add(unique.pair());
             buildOrder.add(buildUniques);
         }
 

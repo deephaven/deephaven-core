@@ -34,13 +34,13 @@ public class ColumnHeadersTest {
     private static final ColumnHeader<String> HEADER_STRING = ColumnHeader.ofString("String");
     private static final ColumnHeader<Instant> HEADER_INSTANT = ColumnHeader.ofInstant("Instant");
     private static final ColumnHeader<Custom> HEADER_CUSTOM =
-        ColumnHeader.of("Custom", CustomType.of(Custom.class));
+            ColumnHeader.of("Custom", CustomType.of(Custom.class));
 
     @Test
     void h11Header() {
         assertThat(h11().tableHeader()).isEqualTo(TableHeader.of(HEADER_BOOLEAN, HEADER_BYTE,
-            HEADER_CHAR, HEADER_SHORT, HEADER_INT, HEADER_LONG, HEADER_FLOAT, HEADER_DOUBLE,
-            HEADER_STRING, HEADER_INSTANT, HEADER_CUSTOM));
+                HEADER_CHAR, HEADER_SHORT, HEADER_INT, HEADER_LONG, HEADER_FLOAT, HEADER_DOUBLE,
+                HEADER_STRING, HEADER_INSTANT, HEADER_CUSTOM));
     }
 
     @Test

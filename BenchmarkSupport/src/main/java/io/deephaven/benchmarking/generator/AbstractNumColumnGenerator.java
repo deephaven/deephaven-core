@@ -4,7 +4,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 
 /**
  * A {@link ColumnGenerator} that can be used to generate a typed number column
- * 
+ *
  * @param <T> The type.
  */
 public abstract class AbstractNumColumnGenerator<T extends Number> implements ColumnGenerator<T> {
@@ -21,8 +21,7 @@ public abstract class AbstractNumColumnGenerator<T extends Number> implements Co
 
     @Override
     public String getUpdateString(String varName) {
-        return def.getName() + "=(" + def.getDataType().getSimpleName() + ")" + varName
-            + chooseGetter();
+        return def.getName() + "=(" + def.getDataType().getSimpleName() + ")" + varName + chooseGetter();
     }
 
     public abstract byte getByte();
@@ -41,7 +40,7 @@ public abstract class AbstractNumColumnGenerator<T extends Number> implements Co
      * @return the string to use in update() to get the correct type.
      */
     private String chooseGetter() {
-        final Class<T> type = def.getDataType();
+        final Class<? super T> type = def.getDataType();
         if (type == byte.class || type == Byte.class) {
             return ".getByte()";
         } else if (type == short.class || type == Short.class) {

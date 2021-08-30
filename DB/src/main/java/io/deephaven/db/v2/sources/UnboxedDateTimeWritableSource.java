@@ -2,8 +2,7 @@ package io.deephaven.db.v2.sources;
 
 import io.deephaven.db.tables.utils.DBDateTime;
 
-public class UnboxedDateTimeWritableSource extends UnboxedDateTimeColumnSource
-    implements WritableSource<Long> {
+public class UnboxedDateTimeWritableSource extends UnboxedDateTimeColumnSource implements WritableSource<Long> {
     private final WritableSource<DBDateTime> alternateWritableSource;
 
     public UnboxedDateTimeWritableSource(WritableSource<DBDateTime> alternateWritableSource) {
@@ -12,7 +11,7 @@ public class UnboxedDateTimeWritableSource extends UnboxedDateTimeColumnSource
     }
 
     @Override
-    public void copy(ColumnSource<Long> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
         // We assume that the alternate source has a getLong method, so that we can avoid boxing.
         set(destKey, alternateWritableSource.getLong(sourceKey));
     }

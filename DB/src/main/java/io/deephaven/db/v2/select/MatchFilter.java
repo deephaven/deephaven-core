@@ -26,8 +26,7 @@ public class MatchFilter extends SelectFilterImpl {
 
     @NotNull
     private final String columnName;
-    private Object[] values; // TODO: Does values need to be declared volatile (if we go back to the
-                             // double-check)?
+    private Object[] values; // TODO: Does values need to be declared volatile (if we go back to the double-check)?
     private final String[] strValues;
     private final boolean invertMatch;
     private final boolean caseInsensitive;
@@ -57,8 +56,7 @@ public class MatchFilter extends SelectFilterImpl {
         this(sensitivity, MatchType.Regular, columnName, strValues);
     }
 
-    public MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName,
-        String... strValues) {
+    public MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName, String... strValues) {
         this.columnName = columnName;
         this.strValues = strValues;
         this.caseInsensitive = (sensitivity == CaseSensitivity.IgnoreCase);
@@ -67,10 +65,9 @@ public class MatchFilter extends SelectFilterImpl {
 
     public MatchFilter renameFilter(String newName) {
         io.deephaven.db.v2.select.MatchFilter.MatchType matchType =
-            invertMatch ? io.deephaven.db.v2.select.MatchFilter.MatchType.Inverted
-                : io.deephaven.db.v2.select.MatchFilter.MatchType.Regular;
-        CaseSensitivity sensitivity =
-            (caseInsensitive) ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase;
+                invertMatch ? io.deephaven.db.v2.select.MatchFilter.MatchType.Inverted
+                        : io.deephaven.db.v2.select.MatchFilter.MatchType.Regular;
+        CaseSensitivity sensitivity = (caseInsensitive) ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase;
         if (strValues == null) {
             return new MatchFilter(matchType, newName, values);
         } else {
@@ -112,14 +109,13 @@ public class MatchFilter extends SelectFilterImpl {
             }
             ColumnDefinition column = tableDefinition.getColumn(columnName);
             if (column == null) {
-                throw new RuntimeException(
-                    "Column \"" + columnName + "\" doesn't exist in this table, available columns: "
-                        + tableDefinition.getColumnNames());
+                throw new RuntimeException("Column \"" + columnName
+                        + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
             }
             final List<Object> valueList = new ArrayList<>();
             final QueryScope queryScope = QueryScope.getScope();
             final ColumnTypeConvertor convertor =
-                ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
+                    ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
             for (int valIdx = 0; valIdx < strValues.length; ++valIdx) {
                 if (queryScope.hasParamName(strValues[valIdx])) {
                     Object paramValue = queryScope.readParamValue(strValues[valIdx]);
@@ -128,8 +124,7 @@ public class MatchFilter extends SelectFilterImpl {
                         for (int ai = 0; ai < accessor.length(); ++ai) {
                             valueList.add(convertor.convertParamValue(accessor.get(ai)));
                         }
-                    } else if (paramValue != null
-                        && Collection.class.isAssignableFrom(paramValue.getClass())) {
+                    } else if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
                         for (final Object paramValueMember : (Collection) paramValue) {
                             valueList.add(convertor.convertParamValue(paramValueMember));
                         }
@@ -141,17 +136,13 @@ public class MatchFilter extends SelectFilterImpl {
                     try {
                         convertedValue = convertor.convertStringLiteral(strValues[valIdx]);
                     } catch (Throwable t) {
-                        throw new IllegalArgumentException(
-                            "Failed to convert literal value <" + strValues[valIdx] +
-                                "> for column \"" + columnName + "\" of type "
-                                + column.getDataType().getName(),
-                            t);
+                        throw new IllegalArgumentException("Failed to convert literal value <" + strValues[valIdx] +
+                                "> for column \"" + columnName + "\" of type " + column.getDataType().getName(), t);
                     }
                     valueList.add(convertedValue);
                 }
             }
-            // values = (Object[])ArrayUtils.toArray(valueList,
-            // TypeUtils.getBoxedType(theColumn.getDataType()));
+            // values = (Object[])ArrayUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
             values = valueList.toArray();
             initialized = true;
         }
@@ -234,8 +225,7 @@ public class MatchFilter extends SelectFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
-                        // NB: Boolean.parseBoolean(str) doesn't do what we want here - anything not
-                        // true is false.
+                        // NB: Boolean.parseBoolean(str) doesn't do what we want here - anything not true is false.
                         if (str.equalsIgnoreCase("true")) {
                             return Boolean.TRUE;
                         }
@@ -243,7 +233,7 @@ public class MatchFilter extends SelectFilterImpl {
                             return Boolean.FALSE;
                         }
                         throw new IllegalArgumentException("String " + str
-                            + " isn't a valid boolean value (!str.equalsIgnoreCase(\"true\") && !str.equalsIgnoreCase(\"false\"))");
+                                + " isn't a valid boolean value (!str.equalsIgnoreCase(\"true\") && !str.equalsIgnoreCase(\"false\"))");
                     }
                 };
             } else if (cls == char.class) {
@@ -251,12 +241,11 @@ public class MatchFilter extends SelectFilterImpl {
                     @Override
                     Object convertStringLiteral(String str) {
                         if (str.length() > 1) {
-                            if (str.length() == 3 && str.charAt(0) == '\''
-                                && str.charAt(2) == '\'') {
+                            if (str.length() == 3 && str.charAt(0) == '\'' && str.charAt(2) == '\'') {
                                 return str.charAt(1);
                             } else {
                                 throw new IllegalArgumentException(
-                                    "String " + str + " has length greater than one for column ");
+                                        "String " + str + " has length greater than one for column ");
                             }
                         }
                         return str.charAt(0);
@@ -270,11 +259,10 @@ public class MatchFilter extends SelectFilterImpl {
                             return null;
                         }
                         if ((str.charAt(0) != '"' && str.charAt(0) != '\'' && str.charAt(0) != '`')
-                            || (str.charAt(str.length() - 1) != '"'
-                                && str.charAt(str.length() - 1) != '\''
-                                && str.charAt(str.length() - 1) != '`')) {
+                                || (str.charAt(str.length() - 1) != '"' && str.charAt(str.length() - 1) != '\''
+                                        && str.charAt(str.length() - 1) != '`')) {
                             throw new IllegalArgumentException(
-                                "String literal not enclosed in quotes (\"" + str + "\")");
+                                    "String literal not enclosed in quotes (\"" + str + "\")");
                         }
                         return str.substring(1, str.length() - 1);
                     }
@@ -301,11 +289,9 @@ public class MatchFilter extends SelectFilterImpl {
                             return null;
                         }
                         if ((str.charAt(0) != '"' && str.charAt(0) != '\'' && str.charAt(0) != '`')
-                            || (str.charAt(str.length() - 1) != '"'
-                                && str.charAt(str.length() - 1) != '\''
-                                && str.charAt(str.length() - 1) != '`')) {
-                            throw new IllegalArgumentException(
-                                "String literal not enclosed in quotes");
+                                || (str.charAt(str.length() - 1) != '"' && str.charAt(str.length() - 1) != '\''
+                                        && str.charAt(str.length() - 1) != '`')) {
+                            throw new IllegalArgumentException("String literal not enclosed in quotes");
                         }
                         return new CompressedString(str.substring(1, str.length() - 1));
                     }
@@ -313,8 +299,7 @@ public class MatchFilter extends SelectFilterImpl {
                     @Override
                     Object convertParamValue(Object paramValue) {
                         if (paramValue instanceof String) {
-                            System.out.println("MatchFilter debug: Converting " + paramValue
-                                + " to CompressedString");
+                            System.out.println("MatchFilter debug: Converting " + paramValue + " to CompressedString");
                             return new CompressedString((String) paramValue);
                         }
                         if (paramValue instanceof PyObject && ((PyObject) paramValue).isString()) {
@@ -332,8 +317,7 @@ public class MatchFilter extends SelectFilterImpl {
                     Object convertStringLiteral(String str) {
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
-                                "DBDateTime literal not enclosed in single-quotes (\"" + str
-                                    + "\")");
+                                    "DBDateTime literal not enclosed in single-quotes (\"" + str + "\")");
                         }
                         return DBTimeUtils.convertDateTime(str.substring(1, str.length() - 1));
                     }
@@ -374,7 +358,7 @@ public class MatchFilter extends SelectFilterImpl {
                 };
             } else {
                 throw new IllegalArgumentException(
-                    "Unknown type " + cls.getName() + " for MatchFilter value auto-conversion");
+                        "Unknown type " + cls.getName() + " for MatchFilter value auto-conversion");
             }
         }
     }
@@ -395,10 +379,10 @@ public class MatchFilter extends SelectFilterImpl {
             return false;
         final MatchFilter that = (MatchFilter) o;
         return invertMatch == that.invertMatch &&
-            caseInsensitive == that.caseInsensitive &&
-            Objects.equals(columnName, that.columnName) &&
-            Arrays.equals(values, that.values) &&
-            Arrays.equals(strValues, that.strValues);
+                caseInsensitive == that.caseInsensitive &&
+                Objects.equals(columnName, that.columnName) &&
+                Arrays.equals(values, that.values) &&
+                Arrays.equals(strValues, that.strValues);
     }
 
     @Override
@@ -418,9 +402,8 @@ public class MatchFilter extends SelectFilterImpl {
     @Override
     public SelectFilter copy() {
         if (strValues != null) {
-            return new MatchFilter(
-                caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
-                getMatchType(), columnName, strValues);
+            return new MatchFilter(caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                    getMatchType(), columnName, strValues);
         } else {
             return new MatchFilter(getMatchType(), columnName, values);
 

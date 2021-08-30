@@ -69,27 +69,24 @@ public class PercentileByBenchmark {
 
         if (keyCount == 0) {
             if (!"None".equals(keyType)) {
-                throw new UnsupportedOperationException(
-                    "Zero Key can only be run with keyType == None");
+                throw new UnsupportedOperationException("Zero Key can only be run with keyType == None");
             }
         } else {
             if ("None".equals(keyType)) {
-                throw new UnsupportedOperationException(
-                    "keyType == None can only be run with keyCount==0");
+                throw new UnsupportedOperationException("keyType == None can only be run with keyCount==0");
             }
         }
 
         switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Karl", size)
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
                 builder = BenchmarkTools.persistentTableBuilder("Karl", size);
                 if (grouped) {
-                    throw new UnsupportedOperationException(
-                        "Can not run this benchmark combination.");
+                    throw new UnsupportedOperationException("Can not run this benchmark combination.");
                 }
                 break;
 
@@ -97,14 +94,12 @@ public class PercentileByBenchmark {
                 throw new IllegalStateException("Table type must be Historical or Intraday");
         }
 
-        builder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
+        builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey =
-            (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString", keyCount, 6, 6,
-                0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1,
-            keyCount, SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
+                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
+        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
+                SequentialNumColumnGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {
@@ -121,22 +116,19 @@ public class PercentileByBenchmark {
                 builder.addColumn(intKey);
                 keyName = stringKey.getName() + "," + intKey.getName();
                 if (grouped) {
-                    throw new UnsupportedOperationException(
-                        "Can not run this benchmark combination.");
+                    throw new UnsupportedOperationException("Can not run this benchmark combination.");
                 }
                 break;
             case "None":
                 keyName = "<bad key name for None>";
                 if (grouped) {
-                    throw new UnsupportedOperationException(
-                        "Can not run this benchmark combination.");
+                    throw new UnsupportedOperationException("Can not run this benchmark combination.");
                 }
                 break;
             default:
                 throw new IllegalStateException("Unknown KeyType: " + keyType);
         }
-        keyColumnNames =
-            keyCount > 0 ? keyName.split(",") : CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
+        keyColumnNames = keyCount > 0 ? keyName.split(",") : CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 
         switch (valueCount) {
             case 8:
@@ -157,8 +149,7 @@ public class PercentileByBenchmark {
                 builder.addColumn(BenchmarkTools.numberCol("ValueToSum1", int.class));
                 break;
             default:
-                throw new IllegalArgumentException(
-                    "Can not initialize with " + valueCount + " values.");
+                throw new IllegalArgumentException("Can not initialize with " + valueCount + " values.");
         }
 
         if (grouped) {
@@ -166,10 +157,9 @@ public class PercentileByBenchmark {
         }
 
         final BenchmarkTable bmt = builder
-            .build();
+                .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         table = bmt.getTable().coalesce().dropColumns("PartCol");
     }
@@ -196,8 +186,7 @@ public class PercentileByBenchmark {
     @Benchmark
     public Table percentileByStatic(@NotNull final Blackhole bh) {
         final Function<Table, Table> fut = getFunction();
-        final Table result =
-            LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fut.apply(table));
+        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fut.apply(table));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -210,11 +199,10 @@ public class PercentileByBenchmark {
         } else if (percentileMode.equals("tdigest")) {
             fut = (t) -> {
                 final NonKeyColumnAggregationFactory aggregationContextFactory =
-                    new NonKeyColumnAggregationFactory(
-                        (type, resultName, exposeInternalColumns) -> new TDigestPercentileOperator(
-                            type, 100.0, 0.99, resultName));
-                return ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory,
-                    (QueryTable) t, SelectColumnFactory.getExpressions(keyColumnNames));
+                        new NonKeyColumnAggregationFactory((type, resultName,
+                                exposeInternalColumns) -> new TDigestPercentileOperator(type, 100.0, 0.99, resultName));
+                return ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, (QueryTable) t,
+                        SelectColumnFactory.getExpressions(keyColumnNames));
             };
         } else {
             throw new IllegalArgumentException("Bad mode: " + percentileMode);
@@ -226,7 +214,7 @@ public class PercentileByBenchmark {
     public Table percentileByIncremental(@NotNull final Blackhole bh) {
         final Function<Table, Table> fut = getFunction();
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-            (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fut.apply(t)), table);
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fut.apply(t)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }

@@ -174,8 +174,7 @@ public abstract class ReplacingVisitor {
         if (!changed) {
             return descriptor;
         }
-        return new FilterDescriptor(descriptor.getOperation(), descriptor.getValue(),
-            descriptor.getType(), children);
+        return new FilterDescriptor(descriptor.getOperation(), descriptor.getValue(), descriptor.getType(), children);
     }
 
 }

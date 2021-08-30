@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest",
+        namespace = JsPackage.GLOBAL)
 public class LogSubscriptionRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -67,13 +67,12 @@ public class LogSubscriptionRequest {
     public static native LogSubscriptionRequest deserializeBinary(Uint8Array bytes);
 
     public static native LogSubscriptionRequest deserializeBinaryFromReader(
-        LogSubscriptionRequest message, Object reader);
+            LogSubscriptionRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(LogSubscriptionRequest message,
-        Object writer);
+    public static native void serializeBinaryToWriter(LogSubscriptionRequest message, Object writer);
 
     public static native LogSubscriptionRequest.ToObjectReturnType toObject(
-        boolean includeInstance, LogSubscriptionRequest msg);
+            boolean includeInstance, LogSubscriptionRequest msg);
 
     public native String addLevels(String value, double index);
 

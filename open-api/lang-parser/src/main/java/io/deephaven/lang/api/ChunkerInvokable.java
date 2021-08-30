@@ -10,8 +10,7 @@ import java.util.List;
 /**
  * Represents an ast node that could be invokable.
  *
- * For now, this is methods and constructors, but will likely be expanded to handle closures to some
- * degree as well.
+ * For now, this is methods and constructors, but will likely be expanded to handle closures to some degree as well.
  */
 public interface ChunkerInvokable extends IsScope {
 
@@ -32,7 +31,7 @@ public interface ChunkerInvokable extends IsScope {
         // this fallback shouldn't really be needed.
         assert false : "Invokable without a method name: " + this;
         return tokens(true)
-            .filter(tok -> tok.kind == ChunkerConstants.INVOKE)
-            .first();
+                .filter(tok -> tok.kind == ChunkerConstants.INVOKE)
+                .first();
     }
 }

@@ -44,16 +44,11 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private final Index index;
     private final SwitchColumnSource<?>[] switchSources;
 
-    /**
-     * To start out when we have no data, we use null value column sources which are cheap and
-     * singletons.
-     */
+    /** To start out when we have no data, we use null value column sources which are cheap and singletons. */
     private final NullValueColumnSource<?>[] nullColumnSources;
 
-    // we accumulate data into buffer from the ingester thread; capture it into current on the LTM
-    // thread; move it into
-    // prev after one cycle, and then then the cycle after that we clear out the chunks and reuse
-    // them for the buffers
+    // we accumulate data into buffer from the ingester thread; capture it into current on the LTM thread; move it into
+    // prev after one cycle, and then then the cycle after that we clear out the chunks and reuse them for the buffers
     // they all start out null in the constructor
     private ChunkColumnSource<?>[] bufferChunkSources;
     private ChunkColumnSource<?>[] currentChunkSources;
@@ -63,8 +58,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private List<Exception> enqueuedFailure;
 
     public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
-        @NotNull final StreamPublisher streamPublisher,
-        @NotNull final LiveTableRegistrar liveTableRegistrar) {
+            @NotNull final StreamPublisher streamPublisher,
+            @NotNull final LiveTableRegistrar liveTableRegistrar) {
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
         this.liveTableRegistrar = liveTableRegistrar;
@@ -115,27 +110,24 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
      * @return an array of writable chunks
      */
     public static WritableChunk[] makeChunksForDefinition(TableDefinition definition, int size) {
-        return definition.getColumnStream().map(cd -> makeChunk(cd, size))
-            .toArray(WritableChunk[]::new);
+        return definition.getColumnStream().map(cd -> makeChunk(cd, size)).toArray(WritableChunk[]::new);
     }
 
     @NotNull
     private static ChunkColumnSource<?>[] makeChunkSources(TableDefinition tableDefinition) {
         final TLongArrayList offsets = new TLongArrayList();
         return tableDefinition.getColumnStream().map(cd -> makeChunkSourceForColumn(offsets, cd))
-            .toArray(ChunkColumnSource[]::new);
+                .toArray(ChunkColumnSource[]::new);
     }
 
     @NotNull
-    private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets,
-        ColumnDefinition<?> cd) {
+    private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets, ColumnDefinition<?> cd) {
         final Class<?> replacementType = replacementType(cd.getDataType());
         if (replacementType != null) {
-            return ChunkColumnSource.make(ChunkType.fromElementType(replacementType),
-                replacementType, null, offsets);
+            return ChunkColumnSource.make(ChunkType.fromElementType(replacementType), replacementType, null, offsets);
         } else {
-            return ChunkColumnSource.make(ChunkType.fromElementType(cd.getDataType()),
-                cd.getDataType(), cd.getComponentType(), offsets);
+            return ChunkColumnSource.make(ChunkType.fromElementType(cd.getDataType()), cd.getDataType(),
+                    cd.getComponentType(), offsets);
         }
     }
 
@@ -155,32 +147,28 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     @NotNull
-    private static NullValueColumnSource<?>[] makeNullColumnSources(
-        TableDefinition tableDefinition) {
-        return tableDefinition.getColumnStream()
-            .map(StreamToTableAdapter::makeNullValueColumnSourceFromDefinition)
-            .toArray(NullValueColumnSource<?>[]::new);
+    private static NullValueColumnSource<?>[] makeNullColumnSources(TableDefinition tableDefinition) {
+        return tableDefinition.getColumnStream().map(StreamToTableAdapter::makeNullValueColumnSourceFromDefinition)
+                .toArray(NullValueColumnSource<?>[]::new);
     }
 
-    private static NullValueColumnSource<?> makeNullValueColumnSourceFromDefinition(
-        ColumnDefinition<?> cd) {
+    private static NullValueColumnSource<?> makeNullValueColumnSourceFromDefinition(ColumnDefinition<?> cd) {
         final Class<?> replacementType = replacementType(cd.getDataType());
         if (replacementType != null) {
             return NullValueColumnSource.getInstance(replacementType, null);
         } else {
-            // noinspection unchecked
             return NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
         }
     }
 
     @NotNull
     private static SwitchColumnSource<?>[] makeSwitchSources(TableDefinition definition,
-        NullValueColumnSource<?>[] wrapped, Map<String, ColumnSource<?>> visibleSourcesMap) {
+            NullValueColumnSource<?>[] wrapped, Map<String, ColumnSource<?>> visibleSourcesMap) {
         final SwitchColumnSource<?>[] switchSources = new SwitchColumnSource[wrapped.length];
         final ColumnDefinition<?>[] columns = definition.getColumns();
         for (int ii = 0; ii < wrapped.length; ++ii) {
-            final SwitchColumnSource<?> switchSource = new SwitchColumnSource<>(wrapped[ii],
-                StreamToTableAdapter::maybeClearChunkColumnSource);
+            final SwitchColumnSource<?> switchSource =
+                    new SwitchColumnSource<>(wrapped[ii], StreamToTableAdapter::maybeClearChunkColumnSource);
 
             final ColumnSource<?> visibleSource;
             if (columns[ii].getDataType() == DBDateTime.class) {
@@ -205,8 +193,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     /**
-     * We change the inner columns to long and byte for DBDateTime and Boolean, respectively. We
-     * expect our ingesters to pass us these primitive chunks for those types.
+     * We change the inner columns to long and byte for DBDateTime and Boolean, respectively. We expect our ingesters to
+     * pass us these primitive chunks for those types.
      *
      * @param columnType the type of the outer column
      *
@@ -248,13 +236,13 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     private void doRefresh() {
         synchronized (this) {
-            // if we have an enqueued failure we want to process it first, before we allow the
-            // streamPublisher to flush itself
+            // if we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
+            // itself
             if (enqueuedFailure != null) {
                 throw new UncheckedDeephavenException(
-                    MultiException.maybeWrapInMultiException(
-                        "Multiple errors encountered while ingesting stream",
-                        enqueuedFailure.toArray(new Exception[0])));
+                        MultiException.maybeWrapInMultiException(
+                                "Multiple errors encountered while ingesting stream",
+                                enqueuedFailure.toArray(new Exception[0])));
             }
         }
 
@@ -296,8 +284,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             index.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(
-            new ShiftAwareListener.Update(Index.CURRENT_FACTORY.getFlatIndex(newSize),
+        table.notifyListeners(new ShiftAwareListener.Update(Index.CURRENT_FACTORY.getFlatIndex(newSize),
                 Index.CURRENT_FACTORY.getFlatIndex(oldSize), Index.CURRENT_FACTORY.getEmptyIndex(),
                 IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }
@@ -311,12 +298,11 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 bufferChunkSources = makeChunkSources(tableDefinition);
             }
             if (data.length != bufferChunkSources.length) {
-                // TODO: Our error handling should be better when in the ingester thread; since it
-                // seems proper to kill
+                // TODO: Our error handling should be better when in the ingester thread; since it seems proper to kill
                 // the ingester, and also notify downstream tables
                 // https://github.com/deephaven/deephaven-core/issues/934
-                throw new IllegalStateException("StreamConsumer data length = " + data.length
-                    + " chunks, expected " + bufferChunkSources.length);
+                throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected "
+                        + bufferChunkSources.length);
             }
             for (int ii = 0; ii < data.length; ++ii) {
                 Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");

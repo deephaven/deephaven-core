@@ -41,13 +41,12 @@ public class SimpleXYError {
 
         if (testOHLC) {
             fig = FigureFactory.figure()
-                .plot("S1", date, y1).plotStyle("Line")
-                .twin()
-                .ohlcPlot("S2", date, open, high, low, close).plotStyle("OHLC");
+                    .plot("S1", date, y1).plotStyle("Line")
+                    .twin()
+                    .ohlcPlot("S2", date, open, high, low, close).plotStyle("OHLC");
         } else {
             fig = FigureFactory.figure()
-                .errorBarXY("S1", x1, xLow, xHigh, y1, yLow, yHigh).plotStyle("bar")
-                .pointsVisible(true);
+                    .errorBarXY("S1", x1, xLow, xHigh, y1, yLow, yHigh).plotStyle("bar").pointsVisible(true);
         }
 
         ExamplePlotUtils.display(fig);

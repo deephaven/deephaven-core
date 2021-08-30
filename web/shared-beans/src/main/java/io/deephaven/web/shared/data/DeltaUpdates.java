@@ -39,8 +39,7 @@ public class DeltaUpdates implements Serializable {
 
         public ColumnModifications() {}
 
-        public ColumnModifications(int columnIndex, RangeSet includedModifications,
-            ColumnData columnData) {
+        public ColumnModifications(int columnIndex, RangeSet includedModifications, ColumnData columnData) {
             setColumnIndex(columnIndex);
             setRowsIncluded(includedModifications);
             setValues(columnData);
@@ -87,9 +86,8 @@ public class DeltaUpdates implements Serializable {
 
     public DeltaUpdates() {}
 
-    public DeltaUpdates(RangeSet added, RangeSet removed, ShiftedRange[] shifted,
-        RangeSet includedAdditions, ColumnAdditions[] addedColumnData,
-        ColumnModifications[] modifiedColumnData) {
+    public DeltaUpdates(RangeSet added, RangeSet removed, ShiftedRange[] shifted, RangeSet includedAdditions,
+            ColumnAdditions[] addedColumnData, ColumnModifications[] modifiedColumnData) {
         setAdded(added);
         setRemoved(removed);
         setShiftedRanges(shifted);

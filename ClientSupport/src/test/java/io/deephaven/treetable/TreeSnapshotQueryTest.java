@@ -37,8 +37,8 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     private TreeTableClientTableManager.Client mockClient;
 
     /**
-     * Since we're not using a remote client we need to provide TSQ with a way to map Table Ids to
-     * tables so we'll just assign them and pass this thing in as the ExportedObjectClient
+     * Since we're not using a remote client we need to provide TSQ with a way to map Table Ids to tables so we'll just
+     * assign them and pass this thing in as the ExportedObjectClient
      */
     private final TIntObjectMap<Table> tableIdMap = new TIntObjectHashMap<>();
     private final TObjectIntHashMap<Table> reverseTableIdMap = new TObjectIntHashMap<>();
@@ -77,9 +77,9 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
     private Map<Object, TableDetails> makeDetailsMap(Collection<TableDetails> details) {
         return details.stream()
-            .map(TableDetails::copy)
-            .collect(Collectors.toMap(TableDetails::getKey, java.util.function.Function.identity(),
-                (u, v) -> u));
+                .map(TableDetails::copy)
+                .collect(Collectors.toMap(TableDetails::getKey, java.util.function.Function.identity(),
+                        (u, v) -> u));
     }
 
     private class TTState {
@@ -98,31 +98,27 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         /** We need to do simple expansion tracking. */
         Map<Object, TableDetails> expansionMap = new HashMap<>();
 
-        EnumSet<TreeSnapshotQuery.Operation> ops =
-            EnumSet.noneOf(TreeSnapshotQuery.Operation.class);
+        EnumSet<TreeSnapshotQuery.Operation> ops = EnumSet.noneOf(TreeSnapshotQuery.Operation.class);
         Map<String, ColumnSource> constituentSources = new HashMap<>();
 
         TTState(Table theTree) {
             this.theTree = (HierarchicalTable) theTree;
-            expansionMap.put(ROOT_TABLE_KEY,
-                new TableDetails(ROOT_TABLE_KEY, Collections.emptySet()));
+            expansionMap.put(ROOT_TABLE_KEY, new TableDetails(ROOT_TABLE_KEY, Collections.emptySet()));
 
-            final TableMap sourceMap =
-                (TableMap) theTree.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
+            final TableMap sourceMap = (TableMap) theTree.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
             if (sourceMap != null) {
                 for (final Table t : sourceMap.values()) {
                     addIdForTable(t);
                 }
             }
 
-            final HierarchicalTableInfo info = (HierarchicalTableInfo) theTree
-                .getAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
+            final HierarchicalTableInfo info =
+                    (HierarchicalTableInfo) theTree.getAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
             rollup = info instanceof RollupInfo;
             this.hierarchicalColumn = info.getHierarchicalColumnName();
         }
 
-        void applyTsq(BitSet columns, long start, long end, SelectFilter[] filters,
-            List<SortDirective> sorts) {
+        void applyTsq(BitSet columns, long start, long end, SelectFilter[] filters, List<SortDirective> sorts) {
             if (filters.length > 0) {
                 ops.add(TreeSnapshotQuery.Operation.FilterChanged);
             }
@@ -131,9 +127,8 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                 ops.add(TreeSnapshotQuery.Operation.SortChanged);
             }
 
-            final TreeSnapshotQuery<?> tsq =
-                new TreeSnapshotQuery(getIdForTable(theTree), makeDetailsMap(expansionMap.values()),
-                    start, end, columns, filters, sorts, mockClient, ops);
+            final TreeSnapshotQuery<?> tsq = new TreeSnapshotQuery(getIdForTable(theTree),
+                    makeDetailsMap(expansionMap.values()), start, end, columns, filters, sorts, mockClient, ops);
 
             result = theTree.apply(tsq);
             snapshot = result.asTable(theTree);
@@ -141,21 +136,20 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
             constituentSources.clear();
             if (result.getConstituentData() != null && result.getConstituentData().length > 0) {
                 Arrays.stream(result.getConstituentData())
-                    .forEach(p -> constituentSources.put(p.getFirst(),
-                        makeConstituentColumnSource(p.getFirst(), p.getSecond())));
+                        .forEach(p -> constituentSources.put(p.getFirst(),
+                                makeConstituentColumnSource(p.getFirst(), p.getSecond())));
             }
 
-            expansionMap = result.getTableData().stream()
-                .collect(Collectors.toMap(TableDetails::getKey, Function.identity()));
+            expansionMap =
+                    result.getTableData().stream().collect(Collectors.toMap(TableDetails::getKey, Function.identity()));
             ops.clear();
         }
 
         private ColumnSource<?> makeConstituentColumnSource(String name, Object array) {
-            final ColumnDefinition<?> colDef =
-                theTree.getSourceTable().getDefinition().getColumn(name);
+            final ColumnDefinition<?> colDef = theTree.getSourceTable().getDefinition().getColumn(name);
             // noinspection unchecked
-            return ArrayBackedColumnSource.getImmutableMemoryColumnSource(array,
-                colDef.getDataType(), colDef.getComponentType());
+            return ArrayBackedColumnSource.getImmutableMemoryColumnSource(array, colDef.getDataType(),
+                    colDef.getComponentType());
         }
 
         void setCompareToTable(Table compareTo) {
@@ -164,51 +158,45 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         void addExpanded(Object parentKey, Object childKey) {
             expansionMap.get(parentKey).getChildren().add(childKey);
-            expansionMap.computeIfAbsent(childKey,
-                k -> new TableDetails(k, Collections.emptySet()));
+            expansionMap.computeIfAbsent(childKey, k -> new TableDetails(k, Collections.emptySet()));
             ops.add(TreeSnapshotQuery.Operation.Expand);
         }
 
         void updateTableIds() {
-            expansionMap =
-                expansionMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+            expansionMap = expansionMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                     td -> new TableDetails(td.getValue().getKey(), td.getValue().getChildren())));
         }
 
         TableMap getTableMap(Table table) {
             return (TableMap) (rollup ? table : forComparisons != null ? forComparisons : theTree)
-                .getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
+                    .getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
         }
     }
 
     public static class StaticHolder {
         @ReflexiveUse(referrers = "QueryLibrary")
         public static List<String> removeEmpty(String... components) {
-            return Arrays.stream(components).filter(s -> s != null && !s.isEmpty())
-                .collect(Collectors.toList());
+            return Arrays.stream(components).filter(s -> s != null && !s.isEmpty()).collect(Collectors.toList());
         }
     }
 
     private static Table getRawNyMunis() throws IOException {
         QueryLibrary.importStatic(StaticHolder.class);
 
-        final BaseTable base = (BaseTable) TableTools
-            .readCsv(TreeSnapshotQueryTest.class.getResourceAsStream("nymunis.csv"));
+        final BaseTable base =
+                (BaseTable) TableTools.readCsv(TreeSnapshotQueryTest.class.getResourceAsStream("nymunis.csv"));
         base.setRefreshing(true);
-        return base
-            .update(
-                "Path=(List<String>)removeEmpty(County_Name, City_Name, Town_Name, Village_Name)")
-            .update(
-                "Direct = Path.size() == 1 ? null : new ArrayList(Path.subList(0, Path.size() - 1))")
-            .update("boolCol=(boolean)(i%2==0)",
-                "byteCol = (byte)(i & 0xFF)",
-                "charCol=(char)(isNull(Town_Name) ? null : Town_Name.charAt(0))",
-                "doubleCol=(double)i/33.2",
-                "floatCol=(float)(i/22.1)",
-                "longCol=(long)i",
-                "shortCol=(short)i",
-                "timestamp='2018-12-10 NY'")
-            .lastBy("Path");
+        return base.update("Path=(List<String>)removeEmpty(County_Name, City_Name, Town_Name, Village_Name)")
+                .update("Direct = Path.size() == 1 ? null : new ArrayList(Path.subList(0, Path.size() - 1))")
+                .update("boolCol=(boolean)(i%2==0)",
+                        "byteCol = (byte)(i & 0xFF)",
+                        "charCol=(char)(isNull(Town_Name) ? null : Town_Name.charAt(0))",
+                        "doubleCol=(double)i/33.2",
+                        "floatCol=(float)(i/22.1)",
+                        "longCol=(long)i",
+                        "shortCol=(short)i",
+                        "timestamp='2018-12-10 NY'")
+                .lastBy("Path");
     }
 
     private static Table makeNyMunisTreeTable() throws IOException {
@@ -379,8 +367,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         testViewport(state, 0, 32, allColumns, false);
 
-        // At this point we're done expanding stuff, lets set the table IDs to test those paths in
-        // TSQ
+        // At this point we're done expanding stuff, lets set the table IDs to test those paths in TSQ
         state.updateTableIds();
 
         // Root, to first of subchild
@@ -453,10 +440,8 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         assertFalse(state.expansionMap.containsKey(foodvilleKey));
         assertFalse(state.expansionMap.containsKey(bacontownKey));
 
-        // We'll delete a child key so that a child table becomes empty. TSQ should eliminate it
-        // from the set.
-        final DynamicTable source =
-            (DynamicTable) t.getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
+        // We'll delete a child key so that a child table becomes empty. TSQ should eliminate it from the set.
+        final DynamicTable source = (DynamicTable) t.getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(467));
             source.notifyListeners(i(), i(467), i());
@@ -480,46 +465,46 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         state.addExpanded(munisKey("Fulton"), munisKey("Fulton", "Mayfield"));
 
         final Table sortThenTree = getRawNyMunis()
-            .sort("Town_Name")
-            .sortDescending("Type")
-            .treeTable("Path", "Direct");
+                .sort("Town_Name")
+                .sortDescending("Type")
+                .treeTable("Path", "Direct");
 
         state.setCompareToTable(sortThenTree);
         List<SortDirective> directives = Arrays.asList(
-            new SortDirective("Type", SortDirective.DESCENDING, false),
-            new SortDirective("Town_Name", SortDirective.ASCENDING, false));
+                new SortDirective("Type", SortDirective.DESCENDING, false),
+                new SortDirective("Town_Name", SortDirective.ASCENDING, false));
 
         testViewportAgainst(sortThenTree, state, 7, 51, allColumns, directives,
-            SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, true);
+                SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, true);
 
         final Table filterThenTree = TreeTableFilter.filterTree(makeNyMunisTreeTable(),
-            "!isNull(Website) && Website.contains(`ny`)");
+                "!isNull(Website) && Website.contains(`ny`)");
 
         state.setCompareToTable(filterThenTree);
         testViewportAgainst(filterThenTree, state, 0, 30, allColumns, Collections.emptyList(),
-            SelectFilterFactory.getExpressions("!isNull(Website) && Website.contains(`ny`)"), true);
+                SelectFilterFactory.getExpressions("!isNull(Website) && Website.contains(`ny`)"), true);
 
-        // Deliberately sorting first than filtering, it will produce the same result and is a
-        // different order than TSQ does,
+        // Deliberately sorting first than filtering, it will produce the same result and is a different order than TSQ
+        // does,
         // so validates things nicely.
         final Table filterAndSortThenTree = TreeTableFilter.filterTree(getRawNyMunis()
-            .sortDescending("County_Name", "Town_Name")
-            .treeTable("Path", "Direct"),
-            "!isNull(Website) && Website.contains(`ny`)");
+                .sortDescending("County_Name", "Town_Name")
+                .treeTable("Path", "Direct"),
+                "!isNull(Website) && Website.contains(`ny`)");
 
         state.setCompareToTable(filterAndSortThenTree);
         directives = Arrays.asList(
-            new SortDirective("County_Name", SortDirective.DESCENDING, false),
-            new SortDirective("Town_Name", SortDirective.DESCENDING, false));
+                new SortDirective("County_Name", SortDirective.DESCENDING, false),
+                new SortDirective("Town_Name", SortDirective.DESCENDING, false));
 
         testViewportAgainst(filterAndSortThenTree, state, 37, 63, allColumns, directives,
-            SelectFilterFactory.getExpressions("!isNull(Website) && Website.contains(`ny`)"), true);
+                SelectFilterFactory.getExpressions("!isNull(Website) && Website.contains(`ny`)"), true);
         state.setCompareToTable(null);
     }
 
     public void testRollupTsq() {
         final Table t = TableTools.emptyTable(100)
-            .update("I=i", "Test=i%12", "Dtest=44.6*i/2", "Bagel= i%2==0");
+                .update("I=i", "Test=i%12", "Dtest=44.6*i/2", "Bagel= i%2==0");
 
         final Table rollup = t.rollup(AggCombo(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
 
@@ -533,44 +518,37 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         state.addExpanded(nullSmartKey, true);
         testViewport(state, 0, 14, allColumns, true);
 
-        final Table filtered =
-            t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
+        final Table filtered = t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
         testViewportAgainst(filtered, state, 0, 7, allColumns, Collections.emptyList(),
-            SelectFilterFactory.getExpressions("Bagel"), true);
+                SelectFilterFactory.getExpressions("Bagel"), true);
 
         final List<SortDirective> directives = Arrays.asList(
-            new SortDirective("Test", SortDirective.DESCENDING, false),
-            new SortDirective("Bagel", SortDirective.ASCENDING, false));
+                new SortDirective("Test", SortDirective.DESCENDING, false),
+                new SortDirective("Bagel", SortDirective.ASCENDING, false));
 
         state.addExpanded(nullSmartKey, false);
-        testViewportAgainst(rollup, state, 0, 14, allColumns, directives,
-            SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
-            ct -> {
-                final Table sortTarget =
-                    ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable()
-                        : ct;
-                return sortTarget.sort("Bagel").sortDescending("Test");
-            }, true);
+        testViewportAgainst(rollup, state, 0, 14, allColumns, directives, SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
+                ct -> {
+                    final Table sortTarget =
+                            ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+                    return sortTarget.sort("Bagel").sortDescending("Test");
+                }, true);
 
-        final Table filtered2 =
-            t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
+        final Table filtered2 = t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
 
-        testViewportAgainst(filtered2, state, 0, 7, allColumns, directives,
-            SelectFilterFactory.getExpressions("Bagel"),
-            ct -> {
-                final Table sortTarget =
-                    ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable()
-                        : ct;
-                return sortTarget.sort("Bagel").sortDescending("Test");
-            }, true);
+        testViewportAgainst(filtered2, state, 0, 7, allColumns, directives, SelectFilterFactory.getExpressions("Bagel"),
+                ct -> {
+                    final Table sortTarget =
+                            ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+                    return sortTarget.sort("Bagel").sortDescending("Test");
+                }, true);
     }
 
     public void testRollupConstituentsTsq() {
         final Table t = TableTools.emptyTable(100)
-            .update("I=i", "Test=i%12", "Dtest=44.6*i/2", "Bagel= i%2==0");
+                .update("I=i", "Test=i%12", "Dtest=44.6*i/2", "Bagel= i%2==0");
 
-        final Table rollup =
-            t.rollup(AggCombo(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
+        final Table rollup = t.rollup(AggCombo(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
 
         final TTState state = new TTState(rollup);
         final BitSet allColumns = new BitSet(rollup.getColumns().length);
@@ -582,53 +560,44 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         state.addExpanded(nullSmartKey, true);
         testViewport(state, 0, 14, allColumns, true);
 
-        final Table filtered =
-            t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
+        final Table filtered = t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
         testViewportAgainst(filtered, state, 0, 7, allColumns, Collections.emptyList(),
-            SelectFilterFactory.getExpressions("Bagel"), true);
+                SelectFilterFactory.getExpressions("Bagel"), true);
 
         final List<SortDirective> directives = Arrays.asList(
-            new SortDirective("Test", SortDirective.DESCENDING, false),
-            new SortDirective("Bagel", SortDirective.ASCENDING, false));
+                new SortDirective("Test", SortDirective.DESCENDING, false),
+                new SortDirective("Bagel", SortDirective.ASCENDING, false));
 
         state.addExpanded(nullSmartKey, false);
-        testViewportAgainst(rollup, state, 0, 14, allColumns, directives,
-            SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
-            ct -> {
-                final Table sortTarget =
-                    ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable()
-                        : ct;
-                return sortTarget.sort("Bagel").sortDescending("Test");
-            }, true);
+        testViewportAgainst(rollup, state, 0, 14, allColumns, directives, SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
+                ct -> {
+                    final Table sortTarget =
+                            ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+                    return sortTarget.sort("Bagel").sortDescending("Test");
+                }, true);
 
-        testViewportAgainst(filtered, state, 0, 7, allColumns, directives,
-            SelectFilterFactory.getExpressions("Bagel"),
-            ct -> {
-                final Table sortTarget =
-                    ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable()
-                        : ct;
-                return sortTarget.sort("Bagel").sortDescending("Test");
-            }, true);
+        testViewportAgainst(filtered, state, 0, 7, allColumns, directives, SelectFilterFactory.getExpressions("Bagel"),
+                ct -> {
+                    final Table sortTarget =
+                            ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+                    return sortTarget.sort("Bagel").sortDescending("Test");
+                }, true);
 
         state.addExpanded(true, new SmartKey(true, 0));
-        testViewportAgainst(rollup, state, 0, 17, allColumns, directives,
-            SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
-            ct -> {
-                final Table sortTarget =
-                    ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable()
-                        : ct;
-                return sortTarget.sort("Bagel").sortDescending("Test");
-            }, true);
+        testViewportAgainst(rollup, state, 0, 17, allColumns, directives, SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
+                ct -> {
+                    final Table sortTarget =
+                            ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+                    return sortTarget.sort("Bagel").sortDescending("Test");
+                }, true);
 
         state.addExpanded(true, new SmartKey(true, 6));
-        testViewportAgainst(filtered, state, 0, 24, allColumns, directives,
-            SelectFilterFactory.getExpressions("Bagel"),
-            ct -> {
-                final Table sortTarget =
-                    ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable()
-                        : ct;
-                return sortTarget.sort("Bagel").sortDescending("Test");
-            }, true);
+        testViewportAgainst(filtered, state, 0, 24, allColumns, directives, SelectFilterFactory.getExpressions("Bagel"),
+                ct -> {
+                    final Table sortTarget =
+                            ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+                    return sortTarget.sort("Bagel").sortDescending("Test");
+                }, true);
     }
 
     public void testGetPrev() throws Exception {
@@ -654,13 +623,12 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
             ((DynamicTable) raw).notifyListeners(i(), i(475), i());
 
             // Fetch current data while it is concurrently updating
-            final Future<?> currentFetch =
-                pool.submit(() -> testViewport(state, 0, halfTableSize, allColumns, true));
+            final Future<?> currentFetch = pool.submit(() -> testViewport(state, 0, halfTableSize, allColumns, true));
 
             // Flush the changes
             final AtomicBoolean done = new AtomicBoolean(false);
-            final Runnable awaitFlushJob = LiveTableMonitor.DEFAULT
-                .flushAllNormalNotificationsForUnitTests(done::get, 60_000L);
+            final Runnable awaitFlushJob =
+                    LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests(done::get, 60_000L);
 
             // Fetch current data
             currentFetch.get();
@@ -681,9 +649,9 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     public void testArbitraryReparent_IDS6404() {
         // Build a simple tree based upon a directory hierarchy
         final QueryTable dataTable = TstUtils.testRefreshingTable(
-            c("ID", "Root", "0", "1", "2", "0-0", "1-0", "2-0", "0-0-0", "1-0-0", "2-0-0"),
-            c("Parent", null, "Root", "Root", "Root", "0", "1", "2", "0-0", "1-0", "2-0"),
-            c("Name", "Root", "0", "1", "2", "0-0", "1-0", "2-0", "0-0-0", "1-0-0", "2-0-0"));
+                c("ID", "Root", "0", "1", "2", "0-0", "1-0", "2-0", "0-0-0", "1-0-0", "2-0-0"),
+                c("Parent", null, "Root", "Root", "Root", "0", "1", "2", "0-0", "1-0", "2-0"),
+                c("Name", "Root", "0", "1", "2", "0-0", "1-0", "2-0", "0-0-0", "1-0-0", "2-0-0"));
 
         final Table lastBy = dataTable.lastBy("ID");
         final Table tree = lastBy.treeTable("ID", "Parent");
@@ -732,21 +700,18 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
     // region Hierarchical verification
 
-    private static void testViewport(TTState state, long start, long end, BitSet columns,
-        boolean showAfter) {
+    private static void testViewport(TTState state, long start, long end, BitSet columns, boolean showAfter) {
         testViewportAgainst(state.theTree, state, start, end, columns, Collections.emptyList(),
-            SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, showAfter);
+                SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, showAfter);
     }
 
-    private static void testViewportAgainst(Table against, TTState state, long start, long end,
-        BitSet columns, List<SortDirective> sorts, SelectFilter[] filters, boolean showAfter) {
-        testViewportAgainst(against, state, start, end, columns, sorts, filters,
-            Function.identity(), showAfter);
+    private static void testViewportAgainst(Table against, TTState state, long start, long end, BitSet columns,
+            List<SortDirective> sorts, SelectFilter[] filters, boolean showAfter) {
+        testViewportAgainst(against, state, start, end, columns, sorts, filters, Function.identity(), showAfter);
     }
 
-    private static void testViewportAgainst(Table against, TTState state, long start, long end,
-        BitSet columns, List<SortDirective> sorts, SelectFilter[] filters,
-        Function<Table, Table> childMutator, boolean showAfter) {
+    private static void testViewportAgainst(Table against, TTState state, long start, long end, BitSet columns,
+            List<SortDirective> sorts, SelectFilter[] filters, Function<Table, Table> childMutator, boolean showAfter) {
         state.applyTsq(columns, start, end, filters, sorts);
 
         if (showAfter) {
@@ -763,52 +728,44 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     }
 
     private static void checkSnapshotAgainst(TTState state, Table against, long start, long end,
-        Function<Table, Table> childMutator) {
+            Function<Table, Table> childMutator) {
         assertEquals(state.result.getSnapshotStart(), start);
         assertEquals(state.result.getSnapshotEnd(), end);
 
         final TraversalState ts = new TraversalState();
-        checkSnapshotAgainst(state, childMutator.apply(against), ROOT_TABLE_KEY, start, end, ts,
-            childMutator);
+        checkSnapshotAgainst(state, childMutator.apply(against), ROOT_TABLE_KEY, start, end, ts, childMutator);
         assertEquals(ts.traversed, state.result.getTreeSize());
         assertEquals(ts.consumed, end - start + 1);
     }
 
-    private static void checkSnapshotAgainst(TTState state, Table currentTable, Object tableKey,
-        long start, long end, TraversalState ts, Function<Table, Table> childMutator) {
+    private static void checkSnapshotAgainst(TTState state, Table currentTable, Object tableKey, long start, long end,
+            TraversalState ts, Function<Table, Table> childMutator) {
         final boolean usePrev = LogicalClock.DEFAULT.currentState() == LogicalClock.State.Updating
-            && ((NotificationStepSource) state.theTree.getSourceTable())
-                .getLastNotificationStep() != LogicalClock.DEFAULT.currentStep();
+                && ((NotificationStepSource) state.theTree.getSourceTable())
+                        .getLastNotificationStep() != LogicalClock.DEFAULT.currentStep();
 
         for (int rowNo = 0; rowNo < currentTable.size(); rowNo++) {
-            final long tableRow = usePrev ? currentTable.getIndex().getPrev(rowNo)
-                : currentTable.getIndex().get(rowNo);
+            final long tableRow = usePrev ? currentTable.getIndex().getPrev(rowNo) : currentTable.getIndex().get(rowNo);
             final ColumnSource childSource = currentTable.getColumnSource(state.hierarchicalColumn);
-            final Object childKey =
-                usePrev ? childSource.getPrev(tableRow) : childSource.get(tableRow);
+            final Object childKey = usePrev ? childSource.getPrev(tableRow) : childSource.get(tableRow);
             final TableMap childMap = state.getTableMap(currentTable);
 
             if (ts.traversed >= start && ts.traversed <= end) {
-                final Object[] record = state.snapshot.getRecord(ts.consumed,
-                    currentTable.getDefinition().getColumnNamesArray());
+                final Object[] record =
+                        state.snapshot.getRecord(ts.consumed, currentTable.getDefinition().getColumnNamesArray());
                 final Pair<String, Object>[] constituentData = state.result.getConstituentData();
-                if (constituentData != null
-                    && currentTable.hasAttribute(Table.ROLLUP_LEAF_ATTRIBUTE)) {
+                if (constituentData != null && currentTable.hasAttribute(Table.ROLLUP_LEAF_ATTRIBUTE)) {
                     for (int i = 0; i < constituentData.length; i++) {
-                        final int colIndex = currentTable.getDefinition().getColumnNames()
-                            .indexOf(constituentData[i].first);
-                        record[colIndex] =
-                            state.constituentSources.get(constituentData[i].first).get(ts.consumed);
+                        final int colIndex =
+                                currentTable.getDefinition().getColumnNames().indexOf(constituentData[i].first);
+                        record[colIndex] = state.constituentSources.get(constituentData[i].first).get(ts.consumed);
                     }
                 }
 
                 assertArrayEquals(getRecord(currentTable, tableRow, usePrev), record);
-                assertEquals(
-                    childKey != null && childMap.get(childKey) != null
-                        && !childMap.get(childKey).isEmpty(),
-                    state.snapshot.getColumnSource(CHILD_PRESENCE_COLUMN).get(ts.consumed));
-                assertEquals(tableKey,
-                    state.snapshot.getColumnSource(TABLE_KEY_COLUMN).get(ts.consumed));
+                assertEquals(childKey != null && childMap.get(childKey) != null && !childMap.get(childKey).isEmpty(),
+                        state.snapshot.getColumnSource(CHILD_PRESENCE_COLUMN).get(ts.consumed));
+                assertEquals(tableKey, state.snapshot.getColumnSource(TABLE_KEY_COLUMN).get(ts.consumed));
                 ts.consumed++;
             }
 
@@ -817,8 +774,8 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
             if (childKey != null) {
                 final TableDetails childDetails = state.expansionMap.get(childKey);
                 if (childDetails != null) {
-                    checkSnapshotAgainst(state, childMutator.apply(childMap.get(childKey)),
-                        childKey, start, end, ts, childMutator);
+                    checkSnapshotAgainst(state, childMutator.apply(childMap.get(childKey)), childKey, start, end, ts,
+                            childMutator);
                 }
             }
         }

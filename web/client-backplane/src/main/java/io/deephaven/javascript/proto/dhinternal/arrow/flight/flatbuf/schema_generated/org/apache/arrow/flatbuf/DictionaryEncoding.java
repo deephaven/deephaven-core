@@ -7,9 +7,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.DictionaryEncoding",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.DictionaryEncoding",
+        namespace = JsPackage.GLOBAL)
 public class DictionaryEncoding {
     public static native void addDictionaryKind(Builder builder, int dictionaryKind);
 
@@ -22,12 +22,12 @@ public class DictionaryEncoding {
     public static native double endDictionaryEncoding(Builder builder);
 
     public static native DictionaryEncoding getRootAsDictionaryEncoding(
-        ByteBuffer bb, DictionaryEncoding obj);
+            ByteBuffer bb, DictionaryEncoding obj);
 
     public static native DictionaryEncoding getRootAsDictionaryEncoding(ByteBuffer bb);
 
     public static native DictionaryEncoding getSizePrefixedRootAsDictionaryEncoding(
-        ByteBuffer bb, DictionaryEncoding obj);
+            ByteBuffer bb, DictionaryEncoding obj);
 
     public static native DictionaryEncoding getSizePrefixedRootAsDictionaryEncoding(ByteBuffer bb);
 

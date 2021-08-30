@@ -16,20 +16,18 @@ import java.util.*;
  */
 public class Log4jAdapter {
 
-    private static final Set<String> APPENDER_NAMES_TO_PRESERVE =
-        new HashSet<>(Arrays.asList("MAILER"));
+    private static final Set<String> APPENDER_NAMES_TO_PRESERVE = new HashSet<>(Arrays.asList("MAILER"));
 
     // ----------------------------------------------------------------
     /**
-     * Sends all Log4j style log output to the given Logger. Specifically, adds the Logger as an
-     * appender of the root logger and removes appenders that aren't in the preservation list. Any
-     * non-root loggers and their appenders are left unmolested. The goal is to redirect all default
-     * logging when it is not feasible to replace the Log4j-style logging.
+     * Sends all Log4j style log output to the given Logger. Specifically, adds the Logger as an appender of the root
+     * logger and removes appenders that aren't in the preservation list. Any non-root loggers and their appenders are
+     * left unmolested. The goal is to redirect all default logging when it is not feasible to replace the Log4j-style
+     * logging.
      */
     public static void sendLog4jToLogger(final Logger logger) {
         // noinspection unchecked
-        final Enumeration<Appender> allAppenders =
-            org.apache.log4j.Logger.getRootLogger().getAllAppenders();
+        final Enumeration<Appender> allAppenders = org.apache.log4j.Logger.getRootLogger().getAllAppenders();
         final List<Appender> appendersToRemove = new ArrayList<>();
         while (allAppenders.hasMoreElements()) {
             final Appender appender = allAppenders.nextElement();
@@ -38,9 +36,8 @@ public class Log4jAdapter {
             }
         }
         for (final Appender appender : appendersToRemove) {
-            logger.debug().append(Log4jAdapter.class.getSimpleName())
-                .append(": Removing Log4j root logger appender: ").append(appender.getName())
-                .endl();
+            logger.debug().append(Log4jAdapter.class.getSimpleName()).append(": Removing Log4j root logger appender: ")
+                    .append(appender.getName()).endl();
             org.apache.log4j.Logger.getRootLogger().removeAppender(appender);
         }
         org.apache.log4j.Logger.getRootLogger().addAppender(new AppenderSkeleton() {
@@ -58,11 +55,9 @@ public class Log4jAdapter {
 
             @Override
             protected void append(org.apache.log4j.spi.LoggingEvent event) {
-                logger
-                    .getEntry(getLogLevel(event.getLevel()), event.getTimeStamp() * 1000,
-                        null == event.getThrowableInformation() ? null
-                            : event.getThrowableInformation().getThrowable())
-                    .append(event.getRenderedMessage()).endl();
+                logger.getEntry(getLogLevel(event.getLevel()), event.getTimeStamp() * 1000,
+                        null == event.getThrowableInformation() ? null : event.getThrowableInformation().getThrowable())
+                        .append(event.getRenderedMessage()).endl();
             }
         });
     }

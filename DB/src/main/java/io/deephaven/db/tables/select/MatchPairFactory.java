@@ -18,16 +18,15 @@ import static io.deephaven.db.tables.select.SelectFactoryConstants.*;
 public class MatchPairFactory {
     private static final ExpressionParser<MatchPair> parser = new ExpressionParser<>();
     static {
-        parser.registerFactory(
-            new AbstractExpressionFactory<MatchPair>(START_PTRN + "(" + ID_PTRN + ")" + END_PTRN) {
-                @Override
-                public MatchPair getExpression(String expression, Matcher matcher, Object... args) {
-                    String columnName = matcher.group(1);
-                    return new MatchPair(columnName, columnName);
-                }
-            });
+        parser.registerFactory(new AbstractExpressionFactory<MatchPair>(START_PTRN + "(" + ID_PTRN + ")" + END_PTRN) {
+            @Override
+            public MatchPair getExpression(String expression, Matcher matcher, Object... args) {
+                String columnName = matcher.group(1);
+                return new MatchPair(columnName, columnName);
+            }
+        });
         parser.registerFactory(new AbstractExpressionFactory<MatchPair>(
-            START_PTRN + "(" + ID_PTRN + ")\\s*==?\\s*(" + ID_PTRN + ")" + END_PTRN) {
+                START_PTRN + "(" + ID_PTRN + ")\\s*==?\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public MatchPair getExpression(String expression, Matcher matcher, Object... args) {
                 return new MatchPair(matcher.group(1), matcher.group(2));

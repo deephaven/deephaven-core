@@ -7,8 +7,7 @@ import jsinterop.annotations.JsMethod;
 import javax.annotation.Nonnull;
 
 /**
- * Wrap LocalDate values for use in JS. Provides text formatting for display and access to the
- * underlying value.
+ * Wrap LocalDate values for use in JS. Provides text formatting for display and access to the underlying value.
  */
 public class LocalDateWrapper {
     private final static NumberFormat YEAR_FORMAT = NumberFormat.getFormat("0000");
@@ -62,7 +61,7 @@ public class LocalDateWrapper {
     @Override
     public String toString() {
         return YEAR_FORMAT.format(getYear())
-            + "-" + MONTH_DAY_FORMAT.format(getMonthValue())
-            + "-" + MONTH_DAY_FORMAT.format(getDayOfMonth());
+                + "-" + MONTH_DAY_FORMAT.format(getMonthValue())
+                + "-" + MONTH_DAY_FORMAT.format(getDayOfMonth());
     }
 }

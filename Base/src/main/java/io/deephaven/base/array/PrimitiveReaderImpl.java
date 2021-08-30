@@ -17,8 +17,8 @@ import io.deephaven.internals.Unsafe;
  * Wrapper for Unsafe operations, using reflection to operate on the appropriate class.
  */
 public class PrimitiveReaderImpl implements PrimitiveReader {
-    private static final Unsafe unsafe = AccessController.doPrivileged(
-        (PrivilegedAction<Unsafe>) () -> JdkInternalsLoader.getInstance().getUnsafe());
+    private static final Unsafe unsafe = AccessController
+            .doPrivileged((PrivilegedAction<Unsafe>) () -> JdkInternalsLoader.getInstance().getUnsafe());
 
     private long address;
     private long offset;
@@ -26,7 +26,7 @@ public class PrimitiveReaderImpl implements PrimitiveReader {
     private long allocated;
 
     private static final Value reallocatedSize =
-        Stats.makeItem("PrimitiveReaderImpl", "reallocatedSize", State.FACTORY).getValue();
+            Stats.makeItem("PrimitiveReaderImpl", "reallocatedSize", State.FACTORY).getValue();
 
     public PrimitiveReaderImpl(int bytes) {
         this.allocated = bytes;
@@ -35,8 +35,7 @@ public class PrimitiveReaderImpl implements PrimitiveReader {
 
         address = unsafe.allocateMemory(allocated);
         if (address == 0) {
-            throw new OutOfMemoryError(
-                "Can't allocate unsafe memory... tried to allocate=" + allocated);
+            throw new OutOfMemoryError("Can't allocate unsafe memory... tried to allocate=" + allocated);
         }
     }
 
@@ -54,8 +53,8 @@ public class PrimitiveReaderImpl implements PrimitiveReader {
             final long newSize = Math.max(offset + bytesRemaining, allocated * 2);
             final long newAddress = unsafe.reallocateMemory(address, newSize);
             if (newAddress == 0) {
-                throw new OutOfMemoryError("Not enough memore for reallocate memory! currentSize="
-                    + allocated + ", newSize=" + newSize);
+                throw new OutOfMemoryError(
+                        "Not enough memore for reallocate memory! currentSize=" + allocated + ", newSize=" + newSize);
             }
             address = newAddress;
             allocated = newSize;

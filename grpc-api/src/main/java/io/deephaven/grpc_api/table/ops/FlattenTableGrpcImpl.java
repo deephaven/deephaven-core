@@ -13,13 +13,11 @@ public class FlattenTableGrpcImpl extends GrpcTableOperation<FlattenRequest> {
 
     @Inject
     public FlattenTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getFlatten, FlattenRequest::getResultId,
-            FlattenRequest::getSourceId);
+        super(BatchTableRequest.Operation::getFlatten, FlattenRequest::getResultId, FlattenRequest::getSourceId);
     }
 
     @Override
-    public Table create(FlattenRequest request,
-        List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(FlattenRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();

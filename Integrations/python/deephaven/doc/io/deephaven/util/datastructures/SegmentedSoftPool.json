@@ -1,10 +1,10 @@
 {
  "className": "io.deephaven.util.datastructures.SegmentedSoftPool",
  "methods": {
-  "give": "Give an element to the pool. Neither the caller nor any other thread may interact with the element again until\n it has been returned by a subsequent call to take(). The element will be cleaned if a cleanup procedure\n was provided at pool construction time.\n\n:param element: (SegmentedSoftPool.ELEMENT_TYPE) - The element to give to the pool",
-  "take": "Take an element from the pool, or make a new one if the pool is exhausted and a creation procedure was supplied\n at pool construction time. The element belongs to the caller, and the caller may keep it rather than return it\n to the pool if desired.\n\n:return: (SegmentedSoftPool.ELEMENT_TYPE) An element from the pool, possibly newly-constructed"
+  "give": "Give an element to the pool. Neither the caller nor any other thread may interact with the element again until it\n has been returned by a subsequent call to take(). The element will be cleaned if a cleanup procedure was\n provided at pool construction time.\n\n:param element: (SegmentedSoftPool.ELEMENT_TYPE) - The element to give to the pool",
+  "take": "Take an element from the pool, or make a new one if the pool is exhausted and a creation procedure was supplied\n at pool construction time. The element belongs to the caller, and the caller may keep it rather than return it to\n the pool if desired.\n\n:return: (SegmentedSoftPool.ELEMENT_TYPE) An element from the pool, possibly newly-constructed"
  },
  "path": "io.deephaven.util.datastructures.SegmentedSoftPool",
- "text": "Re-usable data structure for a segmented stack of pooled elements which tries to strike a balance between\n GC-sensitivity and element reuse.\n The pool is safe for multi-threaded use, but not highly-concurrent.",
+ "text": "Re-usable data structure for a segmented stack of pooled elements which tries to strike a balance between\n GC-sensitivity and element reuse.\n \n The pool is safe for multi-threaded use, but not highly-concurrent.",
  "typeName": "class"
 }

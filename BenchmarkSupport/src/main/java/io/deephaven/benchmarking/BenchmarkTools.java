@@ -25,11 +25,11 @@ import java.util.Random;
 @ScriptApi
 public class BenchmarkTools {
 
-    private static final List<ColumnDefinition> COMMON_RESULT_COLUMNS = Arrays.asList(
-        ColumnDefinition.ofString("Benchmark"),
-        ColumnDefinition.ofString("Mode"),
-        ColumnDefinition.ofInt("Iteration"),
-        ColumnDefinition.ofString("Params"));
+    private static final List<ColumnDefinition<?>> COMMON_RESULT_COLUMNS = Arrays.asList(
+            ColumnDefinition.ofString("Benchmark"),
+            ColumnDefinition.ofString("Mode"),
+            ColumnDefinition.ofInt("Iteration"),
+            ColumnDefinition.ofString("Params"));
 
 
     /**
@@ -72,8 +72,7 @@ public class BenchmarkTools {
     }
 
     /**
-     * Create an enumerated {@link ColumnGenerator<String>}, selecting values from the enum
-     * randomly.
+     * Create an enumerated {@link ColumnGenerator<String>}, selecting values from the enum randomly.
      *
      * @param name The name of the column
      * @param nVals The number of values in the enumeration
@@ -84,21 +83,18 @@ public class BenchmarkTools {
      *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static ColumnGenerator<String> stringCol(String name, int nVals, int minLen, int maxLen,
-        long seed) {
+    public static ColumnGenerator<String> stringCol(String name, int nVals, int minLen, int maxLen, long seed) {
         return stringCol(name, nVals, minLen, maxLen, seed, EnumStringColumnGenerator.Mode.Random);
     }
 
     /**
      * <p>
-     * Create an enumerated {@link ColumnGenerator<String>} selecting values from the enum using the
-     * selected mode.
+     * Create an enumerated {@link ColumnGenerator<String>} selecting values from the enum using the selected mode.
      * </p>
      *
      * <ul>
      * <li><i>{@link EnumStringColumnGenerator.Mode#Random}</i> - Select enum values randomly</li>
-     * <li><i>{@link EnumStringColumnGenerator.Mode#Rotate}</i> - Select enum values in order, and
-     * wrap around</li>
+     * <li><i>{@link EnumStringColumnGenerator.Mode#Rotate}</i> - Select enum values in order, and wrap around</li>
      * </ul>
      *
      * @param name The name of the column
@@ -111,8 +107,8 @@ public class BenchmarkTools {
      *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static ColumnGenerator<String> stringCol(String name, int nVals, int minLen, int maxLen,
-        long seed, EnumStringColumnGenerator.Mode mode) {
+    public static ColumnGenerator<String> stringCol(String name, int nVals, int minLen, int maxLen, long seed,
+            EnumStringColumnGenerator.Mode mode) {
         return new EnumStringColumnGenerator(name, nVals, minLen, maxLen, seed, mode);
     }
 
@@ -172,8 +168,7 @@ public class BenchmarkTools {
      * @param name The name of the column
      * @param type The type of number
      * @param <T> The type of number
-     * @return a {@link ColumnGenerator<T>} for use with
-     *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
+     * @return a {@link ColumnGenerator<T>} for use with {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
     public static <T extends Number> ColumnGenerator<T> numberCol(String name, Class<T> type) {
@@ -181,54 +176,48 @@ public class BenchmarkTools {
     }
 
     /**
-     * Create a {@link ColumnGenerator<T>} that generates a random number of the desired type within
-     * a range.
+     * Create a {@link ColumnGenerator<T>} that generates a random number of the desired type within a range.
      *
      * @param name The name of the column
      * @param type The type of number
      * @param min The minimum value
      * @param max The maximum value
      * @param <T> The type of number
-     * @return a {@link ColumnGenerator<T>} for use with
-     *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
+     * @return a {@link ColumnGenerator<T>} for use with {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static <T extends Number> ColumnGenerator<T> numberCol(String name, Class<T> type,
-        double min, double max) {
+    public static <T extends Number> ColumnGenerator<T> numberCol(String name, Class<T> type, double min, double max) {
         return new RandomNumColumnGenerator<>(type, name, min, max);
     }
 
     /**
-     * Create a {@link ColumnGenerator<T>} that generates a monotonically increasing number of the
-     * desired type.
+     * Create a {@link ColumnGenerator<T>} that generates a monotonically increasing number of the desired type.
      *
      * @param name The name of the column
      * @param type The type of number
      * @param start The starting value
      * @param step The value to step by
      * @param <T> The type of number
-     * @return a {@link ColumnGenerator<T>} for use with
-     *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
+     * @return a {@link ColumnGenerator<T>} for use with {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static <T extends Number> ColumnGenerator<T> seqNumberCol(String name, Class<T> type,
-        double start, double step) {
+    public static <T extends Number> ColumnGenerator<T> seqNumberCol(String name, Class<T> type, double start,
+            double step) {
         return new SequentialNumColumnGenerator<>(type, name, start, step);
     }
 
     /**
      * <p>
-     * Create a {@link ColumnGenerator<T>} that generates a number of the desired type which steps
-     * based on the input {@link SequentialNumColumnGenerator.Mode}.
+     * Create a {@link ColumnGenerator<T>} that generates a number of the desired type which steps based on the input
+     * {@link SequentialNumColumnGenerator.Mode}.
      * </p>
      *
      * <ul>
-     * <li><i>{@link SequentialNumColumnGenerator.Mode#NoLimit}</i> - Monotonically increasing with
-     * no limit</li>
-     * <li><i>{@link SequentialNumColumnGenerator.Mode#RollAtLimit}</i> - Roll over to the start
-     * value when the limit is reached</li>
-     * <li><i>{@link SequentialNumColumnGenerator.Mode#ReverseAtLimit}</i> - Change increment
-     * direction when the limit is reached</li>
+     * <li><i>{@link SequentialNumColumnGenerator.Mode#NoLimit}</i> - Monotonically increasing with no limit</li>
+     * <li><i>{@link SequentialNumColumnGenerator.Mode#RollAtLimit}</i> - Roll over to the start value when the limit is
+     * reached</li>
+     * <li><i>{@link SequentialNumColumnGenerator.Mode#ReverseAtLimit}</i> - Change increment direction when the limit
+     * is reached</li>
      * </ul>
      *
      * @param name The name of the column
@@ -238,18 +227,16 @@ public class BenchmarkTools {
      * @param max the limit value
      * @param mode What to do when the max is reached.
      * @param <T> The type of number
-     * @return a {@link ColumnGenerator<T>} for use with
-     *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
+     * @return a {@link ColumnGenerator<T>} for use with {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static <T extends Number> ColumnGenerator<T> seqNumberCol(String name, Class<T> type,
-        double start, double step, double max, SequentialNumColumnGenerator.Mode mode) {
+    public static <T extends Number> ColumnGenerator<T> seqNumberCol(String name, Class<T> type, double start,
+            double step, double max, SequentialNumColumnGenerator.Mode mode) {
         return new SequentialNumColumnGenerator<>(type, name, start, step, max, mode);
     }
 
     /**
-     * Strip a benchmark name of the format x.y.z.a.b.c.d.BenchmarkClass.method to
-     * BenchmarkClass.method
+     * Strip a benchmark name of the format x.y.z.a.b.c.d.BenchmarkClass.method to BenchmarkClass.method
      *
      * @param benchmark The full benchmark name
      * @return The stripped version
@@ -277,8 +264,8 @@ public class BenchmarkTools {
         return DETAIL_LOG_PREFIX + benchmarkName;
     }
 
-    public static TableDefinition getLogDefinitionWithExtra(List<ColumnDefinition> columnsToAdd) {
-        final List<ColumnDefinition> columns = new ArrayList<>(COMMON_RESULT_COLUMNS);
+    public static TableDefinition getLogDefinitionWithExtra(List<ColumnDefinition<?>> columnsToAdd) {
+        final List<ColumnDefinition<?>> columns = new ArrayList<>(COMMON_RESULT_COLUMNS);
         columns.addAll(columnsToAdd);
 
         return new TableDefinition(columns);
@@ -299,8 +286,7 @@ public class BenchmarkTools {
             throw new IllegalStateException("Sparsity must be in the range of 1 through 100");
         }
 
-        return sparsity == 100 ? size
-            : (int) Math.ceil(size * SPARSITY_FUDGE_FACTOR / (sparsity / 100.0));
+        return sparsity == 100 ? size : (int) Math.ceil(size * SPARSITY_FUDGE_FACTOR / (sparsity / 100.0));
     }
 
     public static Table applySparsity(Table table, int size, int sparsity, long seed) {

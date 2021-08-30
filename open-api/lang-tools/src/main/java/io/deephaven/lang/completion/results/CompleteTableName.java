@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * A class specifically for completing table names; to be called after the completer has discovered
- * the name of the table.
+ * A class specifically for completing table names; to be called after the completer has discovered the name of the
+ * table.
  *
  */
 public class CompleteTableName extends CompletionBuilder {
@@ -19,17 +19,16 @@ public class CompleteTableName extends CompletionBuilder {
     private final ChunkerInvoke invoke;
     private final Stream<String> matches;
 
-    public CompleteTableName(ChunkerCompleter completer, ChunkerInvoke invoke,
-        Stream<String> matches) {
+    public CompleteTableName(ChunkerCompleter completer, ChunkerInvoke invoke, Stream<String> matches) {
         super(completer);
         this.invoke = invoke;
         this.matches = matches;
     }
 
     public void doCompletion(
-        Node node,
-        Set<CompletionItem.Builder> results,
-        CompletionRequest request) {
+            Node node,
+            Set<CompletionItem.Builder> results,
+            CompletionRequest request) {
         final int argInd = invoke.indexOfArgument(node);
         final String qt = getCompleter().getQuoteType(node);
         final DocumentRange.Builder range;
@@ -110,8 +109,7 @@ public class CompleteTableName extends CompletionBuilder {
             if (node != null && node.isWellFormed()) {
                 len++;
                 range.getEndBuilder().setCharacter(range.getEndBuilder().getCharacter() + 1);
-                // may need to skip this item, in case we are suggesting the exact thing which
-                // already exists.
+                // may need to skip this item, in case we are suggesting the exact thing which already exists.
                 if (name.equals(node.toSource())) {
                     // This suggestion is a duplicate; discard it.
                     return;
@@ -120,11 +118,11 @@ public class CompleteTableName extends CompletionBuilder {
             final CompletionItem.Builder result = CompletionItem.newBuilder();
             String item = b.toString();
             result.setStart(start)
-                .setLength(len)
-                .setLabel(item)
-                .getTextEditBuilder()
-                .setText(item)
-                .setRange(range);
+                    .setLength(len)
+                    .setLabel(item)
+                    .getTextEditBuilder()
+                    .setText(item)
+                    .setRange(range);
             results.add(result);
         });
     }

@@ -11,7 +11,7 @@ class PartitioningSourceFactory {
      * @return A new partitioning {@link RegionedColumnSource}
      */
     static <DATA_TYPE> RegionedColumnSource<DATA_TYPE> makePartitioningSource(
-        @NotNull final Class<DATA_TYPE> dataType) {
+            @NotNull final Class<DATA_TYPE> dataType) {
         final RegionedColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
             result = new RegionedColumnSourceObject.Partitioning<>(dataType);

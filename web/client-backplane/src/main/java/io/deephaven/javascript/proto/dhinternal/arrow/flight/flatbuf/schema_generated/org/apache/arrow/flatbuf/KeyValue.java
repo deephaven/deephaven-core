@@ -10,9 +10,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.KeyValue",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.KeyValue",
+        namespace = JsPackage.GLOBAL)
 public class KeyValue {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface KeyUnionType {
@@ -74,8 +74,7 @@ public class KeyValue {
 
     public static native void addValue(Builder builder, double valueOffset);
 
-    public static native double createKeyValue(Builder builder, double keyOffset,
-        double valueOffset);
+    public static native double createKeyValue(Builder builder, double keyOffset, double valueOffset);
 
     public static native double endKeyValue(Builder builder);
 

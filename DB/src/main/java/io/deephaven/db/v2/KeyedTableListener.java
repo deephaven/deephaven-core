@@ -5,6 +5,7 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
@@ -23,8 +24,7 @@ public class KeyedTableListener {
     };
 
     public interface KeyUpdateListener {
-        void update(KeyedTableListener keyedTableListener, SmartKey key, long index,
-            KeyEvent event);
+        void update(KeyedTableListener keyedTableListener, SmartKey key, long index, KeyEvent event);
     }
 
     private final QueryTable table;
@@ -33,15 +33,14 @@ public class KeyedTableListener {
     private final HashMap<SmartKey, CopyOnWriteArrayList<KeyUpdateListener>> keyListenerHashMap;
     private final String[] keyColumnNames;
     private final String[] allColumnNames;
-    private final Map<String, ColumnSource> parentColumnSourceMap;
+    private final Map<String, ColumnSource<?>> parentColumnSourceMap;
     private final InstrumentedListenerAdapter tableListener;
 
     private static final long NO_ENTRY = -1;
 
     // TODO: create an even more generic internals to handle multiple matches
     // TODO: Refactor with some sort of internal assistant object (unique versus generic)
-    // TODO: private HashMap<SmartKey, Index> keyToIndexObjectHashMap; // for storing multiple
-    // matches
+    // TODO: private HashMap<SmartKey, Index> keyToIndexObjectHashMap; // for storing multiple matches
 
     public KeyedTableListener(QueryTable table, String... keyColumnNames) {
         this.table = table;
@@ -58,7 +57,7 @@ public class KeyedTableListener {
         };
 
         List<String> allColumnNames = table.getDefinition().getColumnNames();
-        this.allColumnNames = allColumnNames.toArray(new String[allColumnNames.size()]);
+        this.allColumnNames = allColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         this.parentColumnSourceMap = table.getColumnSourceMap();
     }
 
@@ -70,8 +69,7 @@ public class KeyedTableListener {
         this.table.removeUpdateListener(tableListener);
     }
 
-    private void handleUpdateFromTable(final Index added, final Index removed,
-        final Index modified) {
+    private void handleUpdateFromTable(final Index added, final Index removed, final Index modified) {
         // Add all the new rows to the hashmap
         for (Index.Iterator iterator = added.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();

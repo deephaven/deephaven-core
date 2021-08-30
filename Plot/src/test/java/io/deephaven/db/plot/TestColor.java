@@ -50,8 +50,7 @@ public class TestColor extends BaseArrayTestCase {
         assertEquals(new Color(0x11223344).javaColor(), new java.awt.Color(0x11223344));
         assertEquals(new Color(0x11223344, true).javaColor(), new java.awt.Color(0x11223344, true));
         assertEquals(new Color(0.1f, 0.2f, 0.3f).javaColor(), new java.awt.Color(0.1f, 0.2f, 0.3f));
-        assertEquals(new Color(0.1f, 0.2f, 0.3f, 0.4f).javaColor(),
-            new java.awt.Color(0.1f, 0.2f, 0.3f, 0.4f));
+        assertEquals(new Color(0.1f, 0.2f, 0.3f, 0.4f).javaColor(), new java.awt.Color(0.1f, 0.2f, 0.3f, 0.4f));
     }
 
     public void testStaticHelpers() {
@@ -85,15 +84,11 @@ public class TestColor extends BaseArrayTestCase {
         assertEquals(Color.colorRGB(1, 2, 3, 4).javaColor(), new java.awt.Color(1, 2, 3, 4));
         assertEquals(Color.colorRGB(1, 2, 3, 4).javaColor(), new java.awt.Color(1, 2, 3, 4));
         assertEquals(Color.colorRGB(0x11223344).javaColor(), new java.awt.Color(0x11223344));
-        assertEquals(Color.colorRGB(0x11223344, true).javaColor(),
-            new java.awt.Color(0x11223344, true));
-        assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f).javaColor(),
-            new java.awt.Color(0.1f, 0.2f, 0.3f));
-        assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f, 0.4f).javaColor(),
-            new java.awt.Color(0.1f, 0.2f, 0.3f, 0.4f));
+        assertEquals(Color.colorRGB(0x11223344, true).javaColor(), new java.awt.Color(0x11223344, true));
+        assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f).javaColor(), new java.awt.Color(0.1f, 0.2f, 0.3f));
+        assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f, 0.4f).javaColor(), new java.awt.Color(0.1f, 0.2f, 0.3f, 0.4f));
         assertEquals(Color.colorHSL(36f, 20, 20).javaColor(), new java.awt.Color(61, 53, 41));
-        assertEquals(Color.colorHSL(36f, 20, 20, 0.5f).javaColor(),
-            new java.awt.Color(61, 53, 41, 128));
+        assertEquals(Color.colorHSL(36f, 20, 20, 0.5f).javaColor(), new java.awt.Color(61, 53, 41, 128));
 
 
         try {

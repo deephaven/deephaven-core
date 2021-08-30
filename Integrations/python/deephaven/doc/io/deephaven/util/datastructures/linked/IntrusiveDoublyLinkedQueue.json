@@ -3,7 +3,7 @@
  "methods": {
   "clear": "Remove and unlink all nodes in the queue.",
   "clearFast": "Remove all nodes in the queue, without unlinking anything. This is suitable for nodes that will be discarded.",
-  "contains": "Determine if a node is currently in the queue.  Assumes that the node's prev/next pointers are only used\n in this queue.\n\n:param node: (IntrusiveDoublyLinkedQueue.VALUE_TYPE) - The node\n:return: (boolean) Whether the node is currently in the queue",
+  "contains": "Determine if a node is currently in the queue. Assumes that the node's prev/next pointers are only used in this\n queue.\n\n:param node: (IntrusiveDoublyLinkedQueue.VALUE_TYPE) - The node\n:return: (boolean) Whether the node is currently in the queue",
   "insert": "Add a node at the the specified offset into the queue. This is necessarily an O(n) operation.\n\n:param node: (IntrusiveDoublyLinkedQueue.VALUE_TYPE) - The node to add\n:param offset: (int) - The offset (in [0, size()] to add the node at",
   "isEmpty": "Test if the queue is empty.\n\n:return: (boolean) Whether the queue is empty",
   "iterator": ":return: java.util.Iterator<IntrusiveDoublyLinkedQueue.VALUE_TYPE>",

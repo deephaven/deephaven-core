@@ -37,11 +37,10 @@ public class TestThreadSafeFixedSizePool extends TestCase {
         for (Object object : OBJECTS) {
             m_mockObjectFactory.add(object);
         }
-        Pool<Object> pool = io.deephaven.base.pool.ThreadSafeFixedSizePool.FACTORY
-            .create(OBJECTS.length, m_mockObjectFactory, m_mockClearingProcedure);
-        assertEquals(
-            "call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
-            m_mockObjectFactory.getActivityRecordAndReset());
+        Pool<Object> pool = io.deephaven.base.pool.ThreadSafeFixedSizePool.FACTORY.create(OBJECTS.length,
+                m_mockObjectFactory, m_mockClearingProcedure);
+        assertEquals("call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
+                m_mockObjectFactory.getActivityRecordAndReset());
 
         // take
         Object alphaObject = OBJECTS[0];
@@ -74,8 +73,7 @@ public class TestThreadSafeFixedSizePool extends TestCase {
         // give
         for (Object object : OBJECTS) {
             pool.give(object);
-            assertEquals("call(" + object + ")",
-                m_mockClearingProcedure.getActivityRecordAndReset());
+            assertEquals("call(" + object + ")", m_mockClearingProcedure.getActivityRecordAndReset());
             checkNoOtherActivity();
         }
 
@@ -93,11 +91,10 @@ public class TestThreadSafeFixedSizePool extends TestCase {
         for (Object object : OBJECTS) {
             m_mockObjectFactory.add(object);
         }
-        Pool<Object> pool = io.deephaven.base.pool.ThreadSafeFixedSizePool.FACTORY
-            .create(OBJECTS.length, m_mockObjectFactory, null);
-        assertEquals(
-            "call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
-            m_mockObjectFactory.getActivityRecordAndReset());
+        Pool<Object> pool = io.deephaven.base.pool.ThreadSafeFixedSizePool.FACTORY.create(OBJECTS.length,
+                m_mockObjectFactory, null);
+        assertEquals("call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
+                m_mockObjectFactory.getActivityRecordAndReset());
 
         // take
         Object alphaObject = OBJECTS[0];
@@ -122,8 +119,7 @@ public class TestThreadSafeFixedSizePool extends TestCase {
 
         // no factory
         try {
-            new io.deephaven.base.pool.ThreadSafeFixedSizePool<Object>(OBJECTS.length, null,
-                m_mockClearingProcedure);
+            new io.deephaven.base.pool.ThreadSafeFixedSizePool<Object>(OBJECTS.length, null, m_mockClearingProcedure);
             fail("Should have thrown");
         } catch (RequirementFailure requirementFailure) {
             // expected
@@ -131,8 +127,7 @@ public class TestThreadSafeFixedSizePool extends TestCase {
 
         // too small
         try {
-            new io.deephaven.base.pool.ThreadSafeFixedSizePool<Object>(6, m_mockObjectFactory,
-                m_mockClearingProcedure);
+            new io.deephaven.base.pool.ThreadSafeFixedSizePool<Object>(6, m_mockObjectFactory, m_mockClearingProcedure);
             fail("should have thrown");
         } catch (RequirementFailure requirementFailure) {
             // expected
@@ -143,13 +138,12 @@ public class TestThreadSafeFixedSizePool extends TestCase {
             m_mockObjectFactory.add(object);
         }
         new io.deephaven.base.pool.ThreadSafeFixedSizePool<Object>(7, m_mockObjectFactory, null);
-        assertEquals("call()call()call()call()call()call()call()",
-            m_mockObjectFactory.getActivityRecordAndReset());
+        assertEquals("call()call()call()call()call()call()call()", m_mockObjectFactory.getActivityRecordAndReset());
 
         // no factory
         try {
             io.deephaven.base.pool.ThreadSafeFixedSizePool.FACTORY.create(OBJECTS.length, null,
-                m_mockClearingProcedure);
+                    m_mockClearingProcedure);
             fail("should have thrown");
         } catch (RequirementFailure requirementFailure) {
             // expected
@@ -158,7 +152,7 @@ public class TestThreadSafeFixedSizePool extends TestCase {
         // too small
         try {
             io.deephaven.base.pool.ThreadSafeFixedSizePool.FACTORY.create(6, m_mockObjectFactory,
-                m_mockClearingProcedure);
+                    m_mockClearingProcedure);
             fail("should have thrown");
         } catch (RequirementFailure requirementFailure) {
             // expected
@@ -169,8 +163,7 @@ public class TestThreadSafeFixedSizePool extends TestCase {
             m_mockObjectFactory.add(object);
         }
         new ThreadSafeFixedSizePool<>(7, m_mockObjectFactory, null);
-        assertEquals("call()call()call()call()call()call()call()",
-            m_mockObjectFactory.getActivityRecordAndReset());
+        assertEquals("call()call()call()call()call()call()call()", m_mockObjectFactory.getActivityRecordAndReset());
     }
 
     // ----------------------------------------------------------------

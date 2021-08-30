@@ -15,7 +15,7 @@ import java.util.Map;
  * Adds deferred grouping support to {@link AbstractColumnSource}.
  */
 public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractColumnSource<T>
-    implements DeferredGroupingColumnSource<T> {
+        implements DeferredGroupingColumnSource<T> {
 
     private transient volatile GroupingProvider<T> groupingProvider;
 
@@ -23,7 +23,7 @@ public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractCo
         super(type, null);
     }
 
-    protected AbstractDeferredGroupingColumnSource(Class<T> type, Class componentType) {
+    protected AbstractDeferredGroupingColumnSource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
     }
 

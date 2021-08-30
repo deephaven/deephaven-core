@@ -25,8 +25,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     private final BaseAggregateColumnSource<?, DATA_TYPE> aggregateColumnSource;
 
-    UngroupedAggregateColumnSource(
-        @NotNull final BaseAggregateColumnSource<?, DATA_TYPE> aggregateColumnSource) {
+    UngroupedAggregateColumnSource(@NotNull final BaseAggregateColumnSource<?, DATA_TYPE> aggregateColumnSource) {
         super(aggregateColumnSource.aggregatedSource.getType());
         this.aggregateColumnSource = aggregateColumnSource;
     }
@@ -131,8 +130,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
         final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
         final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
         // noinspection unchecked
-        return (DATA_TYPE) aggregateColumnSource.getUngroupedPrev(groupIndexKey,
-            (int) offsetInGroup);
+        return (DATA_TYPE) aggregateColumnSource.getUngroupedPrev(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
@@ -230,25 +228,23 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
         private final FillContext aggregatedFillContext;
         private final ResettableWritableChunk<Any> destinationSlice;
 
-        private UngroupedFillContext(
-            @NotNull final BaseAggregateColumnSource<?, ?> aggregateColumnSource,
-            final int chunkCapacity,
-            final SharedContext sharedContext) {
+        private UngroupedFillContext(@NotNull final BaseAggregateColumnSource<?, ?> aggregateColumnSource,
+                final int chunkCapacity,
+                final SharedContext sharedContext) {
             final ColumnSource<Index> indexSource = aggregateColumnSource.indexSource;
             final ColumnSource<?> aggregatedSource = aggregateColumnSource.aggregatedSource;
 
             shareable = sharedContext == null ? new Shareable(false, indexSource, chunkCapacity)
-                : sharedContext.getOrCreate(new SharingKey(indexSource),
-                    () -> new Shareable(true, indexSource, chunkCapacity));
+                    : sharedContext.getOrCreate(new SharingKey(indexSource),
+                            () -> new Shareable(true, indexSource, chunkCapacity));
 
-            // NB: There's no reason to use a shared context for the values source. We'd have to
-            // reset it between each sub-fill.
+            // NB: There's no reason to use a shared context for the values source. We'd have to reset it between each
+            // sub-fill.
             aggregatedFillContext = aggregatedSource.makeFillContext(chunkCapacity);
             destinationSlice = aggregatedSource.getChunkType().makeResettableWritableChunk();
         }
 
-        private static final class SharingKey
-            extends SharedContext.ExactReferenceSharingKey<Shareable> {
+        private static final class SharingKey extends SharedContext.ExactReferenceSharingKey<Shareable> {
 
             private SharingKey(@NotNull final ColumnSource indexSource) {
                 super(indexSource);
@@ -270,8 +266,8 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
             private int currentIndexPosition;
 
             private Shareable(final boolean shared,
-                @NotNull final ColumnSource<Index> indexSource,
-                final int chunkCapacity) {
+                    @NotNull final ColumnSource<Index> indexSource,
+                    final int chunkCapacity) {
                 this.shared = shared;
 
                 indexGetContext = indexSource.makeGetContext(chunkCapacity, this);
@@ -281,9 +277,8 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                 componentKeyIndicesSlice = ResettableWritableLongChunk.makeResettableChunk();
             }
 
-            private void extractFillChunkInformation(
-                @NotNull final ColumnSource<? extends Index> indexSource, final long base,
-                final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
+            private void extractFillChunkInformation(@NotNull final ColumnSource<? extends Index> indexSource,
+                    final long base, final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
                 if (stateReusable) {
                     return;
                 }
@@ -295,14 +290,13 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                 componentKeyIndices.setSize(0);
                 orderedKeys.forAllLongs((final long keyIndex) -> {
                     final long indexKeyIndex = getGroupIndexKey(keyIndex, base);
-                    if (currentIndexPosition == -1
-                        || indexKeyIndex != indexKeyIndices.get(currentIndexPosition)) {
+                    if (currentIndexPosition == -1 || indexKeyIndex != indexKeyIndices.get(currentIndexPosition)) {
                         ++currentIndexPosition;
                         indexKeyIndices.set(currentIndexPosition, indexKeyIndex);
                         sameIndexRunLengths.set(currentIndexPosition, 1);
                     } else {
                         sameIndexRunLengths.set(currentIndexPosition,
-                            sameIndexRunLengths.get(currentIndexPosition) + 1);
+                                sameIndexRunLengths.get(currentIndexPosition) + 1);
                     }
                     final long componentKeyIndex = getOffsetInGroup(keyIndex, base);
                     componentKeyIndices.add(componentKeyIndex);
@@ -312,13 +306,11 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
                 final ObjectChunk<Index, ? extends Values> indexes;
                 try (final OrderedKeys indexOrderedKeys =
-                    OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(indexKeyIndices)) {
+                        OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(indexKeyIndices)) {
                     if (usePrev) {
-                        indexes = indexSource.getPrevChunk(indexGetContext, indexOrderedKeys)
-                            .asObjectChunk();
+                        indexes = indexSource.getPrevChunk(indexGetContext, indexOrderedKeys).asObjectChunk();
                     } else {
-                        indexes =
-                            indexSource.getChunk(indexGetContext, indexOrderedKeys).asObjectChunk();
+                        indexes = indexSource.getChunk(indexGetContext, indexOrderedKeys).asObjectChunk();
                     }
                 }
 
@@ -326,17 +318,16 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                 for (int ii = 0; ii < indexes.size(); ++ii) {
                     final Index currIndex = indexes.get(ii);
                     Assert.neqNull(currIndex, "currIndex");
-                    final boolean usePrevIndex =
-                        usePrev && !(currIndex instanceof CurrentOnlyIndex);
+                    final boolean usePrevIndex = usePrev && !(currIndex instanceof CurrentOnlyIndex);
                     final Index index = usePrevIndex ? currIndex.getPrevIndex() : currIndex;
                     try {
                         final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
 
                         final WritableLongChunk<OrderedKeyIndices> remappedComponentKeys =
-                            componentKeyIndicesSlice.resetFromTypedChunk(componentKeyIndices,
-                                componentKeyIndicesPosition, lengthFromThisIndex);
+                                componentKeyIndicesSlice.resetFromTypedChunk(componentKeyIndices,
+                                        componentKeyIndicesPosition, lengthFromThisIndex);
                         index.getKeysForPositions(new LongChunkIterator(componentKeyIndicesSlice),
-                            new LongChunkAppender(remappedComponentKeys));
+                                new LongChunkAppender(remappedComponentKeys));
 
                         componentKeyIndicesPosition += lengthFromThisIndex;
                     } finally {
@@ -368,28 +359,23 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
         }
 
         private void doFillChunk(@NotNull final ColumnSource<?> valueSource, final boolean usePrev,
-            @NotNull final WritableChunk<? super Values> destination) {
+                @NotNull final WritableChunk<? super Values> destination) {
             int componentKeyIndicesPosition = 0;
             for (int ii = 0; ii < shareable.sameIndexRunLengths.size(); ++ii) {
                 final int lengthFromThisIndex = shareable.sameIndexRunLengths.get(ii);
 
                 final WritableLongChunk<OrderedKeyIndices> remappedComponentKeys =
-                    shareable.componentKeyIndicesSlice.resetFromTypedChunk(
-                        shareable.componentKeyIndices, componentKeyIndicesPosition,
-                        lengthFromThisIndex);
+                        shareable.componentKeyIndicesSlice.resetFromTypedChunk(shareable.componentKeyIndices,
+                                componentKeyIndicesPosition, lengthFromThisIndex);
 
                 try (final OrderedKeys componentOrderedKeys =
-                    OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(remappedComponentKeys)) {
+                        OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(remappedComponentKeys)) {
                     if (usePrev) {
-                        valueSource.fillPrevChunk(aggregatedFillContext,
-                            destinationSlice.resetFromChunk(destination,
-                                componentKeyIndicesPosition, lengthFromThisIndex),
-                            componentOrderedKeys);
+                        valueSource.fillPrevChunk(aggregatedFillContext, destinationSlice.resetFromChunk(destination,
+                                componentKeyIndicesPosition, lengthFromThisIndex), componentOrderedKeys);
                     } else {
-                        valueSource.fillChunk(aggregatedFillContext,
-                            destinationSlice.resetFromChunk(destination,
-                                componentKeyIndicesPosition, lengthFromThisIndex),
-                            componentOrderedKeys);
+                        valueSource.fillChunk(aggregatedFillContext, destinationSlice.resetFromChunk(destination,
+                                componentKeyIndicesPosition, lengthFromThisIndex), componentOrderedKeys);
                     }
                 }
 
@@ -409,36 +395,31 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
     }
 
     @Override
-    public final FillContext makeFillContext(final int chunkCapacity,
-        final SharedContext sharedContext) {
+    public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new UngroupedFillContext(aggregateColumnSource, chunkCapacity, sharedContext);
     }
 
     @Override
     public final void fillChunk(@NotNull final FillContext context,
-        @NotNull final WritableChunk<? super Values> destination,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         destination.setSize(orderedKeys.intSize());
         if (destination.size() == 0) {
             return;
         }
         final UngroupedFillContext tc = (UngroupedFillContext) context;
-        tc.shareable.extractFillChunkInformation(aggregateColumnSource.indexSource, base, false,
-            orderedKeys);
+        tc.shareable.extractFillChunkInformation(aggregateColumnSource.indexSource, base, false, orderedKeys);
         tc.doFillChunk(aggregateColumnSource.aggregatedSource, false, destination);
     }
 
     @Override
     public final void fillPrevChunk(@NotNull final FillContext context,
-        @NotNull final WritableChunk<? super Values> destination,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         destination.setSize(orderedKeys.intSize());
         if (destination.size() == 0) {
             return;
         }
         final UngroupedFillContext tc = (UngroupedFillContext) context;
-        tc.shareable.extractFillChunkInformation(aggregateColumnSource.indexSource, getPrevBase(),
-            true, orderedKeys);
+        tc.shareable.extractFillChunkInformation(aggregateColumnSource.indexSource, getPrevBase(), true, orderedKeys);
         tc.doFillChunk(aggregateColumnSource.aggregatedSource, true, destination);
     }
 

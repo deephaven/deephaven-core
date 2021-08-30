@@ -4,6 +4,6 @@
   "getProblemExpression": "Get the expression that has a problem.\n\n:return: (java.lang.String) the problem expression"
  },
  "path": "io.deephaven.db.exceptions.ExpressionException",
- "text": "An unchecked exception indicating a problem with a parsed expression, for example in Table.where(String...)\n or Table.update(String...).",
+ "text": "An unchecked exception indicating a problem with a parsed expression, for example in\n Table.where(String...) or Table.update(String...).",
  "typeName": "class"
 }

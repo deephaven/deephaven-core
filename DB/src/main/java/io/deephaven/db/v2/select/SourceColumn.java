@@ -27,8 +27,8 @@ public class SourceColumn implements SelectColumn {
     private final String sourceName;
     @NotNull
     private final String destName;
-    private ColumnDefinition sourceDefinition;
-    private ColumnSource sourceColumn;
+    private ColumnDefinition<?> sourceDefinition;
+    private ColumnSource<?> sourceColumn;
 
     public SourceColumn(String columnName) {
         this(columnName, columnName);
@@ -49,8 +49,7 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index,
-        Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         this.sourceColumn = columnsOfInterest.get(sourceName);
         if (sourceColumn == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
@@ -59,7 +58,7 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap) {
+    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         sourceDefinition = columnDefinitionMap.get(sourceName);
         if (sourceDefinition == null) {
             throw new NoSuchColumnException(columnDefinitionMap.keySet(), sourceName);
@@ -68,7 +67,7 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public Class getReturnedType() {
+    public Class<?> getReturnedType() {
         // Try to be a little flexible, depending on whether initInputs or initDef was called.
         if (sourceDefinition != null) {
             return sourceDefinition.getDataType();
@@ -88,7 +87,7 @@ public class SourceColumn implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getDataView() {
+    public ColumnSource<?> getDataView() {
         if (sourceColumn == null) {
             throw Assert.statementNeverExecuted("sourceColumn is null for " + toString() + ": ");
         }
@@ -97,7 +96,7 @@ public class SourceColumn implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getLazyView() {
+    public ColumnSource<?> getLazyView() {
         return sourceColumn;
     }
 
@@ -117,11 +116,10 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public WritableSource newDestInstance(long size) {
-        Class type = sourceColumn.getType();
+    public WritableSource<?> newDestInstance(long size) {
+        Class<?> type = sourceColumn.getType();
         if (DbArrayBase.class.isAssignableFrom(type)) {
-            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type,
-                sourceColumn.getComponentType());
+            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type, sourceColumn.getComponentType());
         } else {
             return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type);
         }

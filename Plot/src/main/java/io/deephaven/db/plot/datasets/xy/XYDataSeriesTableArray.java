@@ -26,10 +26,9 @@ public class XYDataSeriesTableArray extends XYDataSeriesArray implements SeriesI
     private final String y;
 
     public XYDataSeriesTableArray(final AxesImpl axes, final int id, final Comparable name,
-        final TableHandle tableHandle, final String x, final String y) {
-        super(axes, id, name,
-            new IndexableNumericDataTable(tableHandle, x, new PlotInfo(axes, name)),
-            new IndexableNumericDataTable(tableHandle, y, new PlotInfo(axes, name)));
+            final TableHandle tableHandle, final String x, final String y) {
+        super(axes, id, name, new IndexableNumericDataTable(tableHandle, x, new PlotInfo(axes, name)),
+                new IndexableNumericDataTable(tableHandle, y, new PlotInfo(axes, name)));
 
         this.tableHandle = tableHandle;
         this.x = x;
@@ -40,9 +39,9 @@ public class XYDataSeriesTableArray extends XYDataSeriesArray implements SeriesI
     public <T extends Paint> AbstractXYDataSeries pointColorByY(Function<Double, T> colors) {
         final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
         chart().figure().registerTableFunction(tableHandle.getTable(),
-            t -> constructTableFromFunction(t, colors, Paint.class, y, colName));
+                t -> constructTableFromFunction(t, colors, Paint.class, y, colName));
         chart().figure().registerFigureFunction(
-            new FigureImplFunction(f -> f.pointColor(tableHandle.getTable(), colName), this));
+                new FigureImplFunction(f -> f.pointColor(tableHandle.getTable(), colName), this));
         return this;
     }
 
@@ -59,12 +58,12 @@ public class XYDataSeriesTableArray extends XYDataSeriesArray implements SeriesI
     }
 
     private <S, T> Table constructTableFromFunction(final Table t, final Function<S, T> function,
-        final Class resultClass, final String onColumn, final String columnName) {
+            final Class resultClass, final String onColumn, final String columnName) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         QueryScope.addParam(queryFunction, function);
         QueryLibrary.importClass(resultClass);
-        return t.update(columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction
-            + ".apply(" + onColumn + ")");
+        return t.update(
+                columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply(" + onColumn + ")");
     }
 }

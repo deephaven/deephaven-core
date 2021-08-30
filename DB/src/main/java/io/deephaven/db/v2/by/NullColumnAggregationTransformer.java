@@ -7,9 +7,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class NullColumnAggregationTransformer implements AggregationContextTransformer {
-    final private Map<String, Class> resultColumnTypes;
+    final private Map<String, Class<?>> resultColumnTypes;
 
-    NullColumnAggregationTransformer(Map<String, Class> resultColumnTypes) {
+    NullColumnAggregationTransformer(Map<String, Class<?>> resultColumnTypes) {
         this.resultColumnTypes = resultColumnTypes;
     }
 
@@ -17,9 +17,8 @@ public class NullColumnAggregationTransformer implements AggregationContextTrans
     public void resultColumnFixup(Map<String, ColumnSource<?>> resultColumns) {
         final Map<String, ColumnSource<?>> savedColumns = new LinkedHashMap<>(resultColumns);
         resultColumns.clear();
-        // noinspection unchecked
-        resultColumnTypes.forEach(
-            (key, value) -> resultColumns.put(key, NullValueColumnSource.getInstance(value, null)));
+        resultColumnTypes
+                .forEach((key, value) -> resultColumns.put(key, NullValueColumnSource.getInstance(value, null)));
         resultColumns.putAll(savedColumns);
     }
 }

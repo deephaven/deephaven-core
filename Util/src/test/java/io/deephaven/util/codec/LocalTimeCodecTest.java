@@ -31,8 +31,8 @@ public class LocalTimeCodecTest extends TestCase {
         roundTripWithOffset(args, value, value, offset);
     }
 
-    private void roundTripWithOffset(final String args, final LocalTime value,
-        final LocalTime expected, final int offset) {
+    private void roundTripWithOffset(final String args, final LocalTime value, final LocalTime expected,
+            final int offset) {
         final LocalTimeCodec codec = new LocalTimeCodec(args);
         byte[] enc = codec.encode(value);
         // if we expect to be decoding from an offset, construct the input accordingly
@@ -79,8 +79,7 @@ public class LocalTimeCodecTest extends TestCase {
         roundTrip("", (LocalTime) null);
     }
 
-    // test encoding with 7 fractional digits (nteresting because this matches SQL Server TIME
-    // precision)
+    // test encoding with 7 fractional digits (nteresting because this matches SQL Server TIME precision)
     public void test100NanosEncoding() {
         roundTrip("7", LocalTime.of(0, 0, 0, 0));
         roundTrip("7", LocalTime.of(23, 0, 0, 0));
@@ -93,8 +92,8 @@ public class LocalTimeCodecTest extends TestCase {
 
     public void testMillisEncoding() {
         roundTrip("3", LocalTime.of(0, 0, 0, 0));
-        roundTrip("3", LocalTime.of(23, 59, 59, 999_000_000)); // 999 millis is max fractional value
-                                                               // with milli precision
+        roundTrip("3", LocalTime.of(23, 59, 59, 999_000_000)); // 999 millis is max fractional value with milli
+                                                               // precision
 
         roundTrip("3", "18:36:29.123");
         roundTrip("3", "03:00:00");
@@ -103,8 +102,8 @@ public class LocalTimeCodecTest extends TestCase {
 
     public void testMicrosEncoding() {
         roundTrip("6", LocalTime.of(0, 0, 0, 0));
-        roundTrip("6", LocalTime.of(23, 59, 59, 999_999_000)); // 999 millis is max fractional value
-                                                               // with milli precision
+        roundTrip("6", LocalTime.of(23, 59, 59, 999_999_000)); // 999 millis is max fractional value with milli
+                                                               // precision
 
         roundTrip("6", "18:36:29.123456");
         roundTrip("6", "03:00:00");
@@ -113,8 +112,7 @@ public class LocalTimeCodecTest extends TestCase {
 
     public void testSecondEncoding() {
         roundTrip("0", LocalTime.of(0, 0, 0, 0));
-        roundTrip("0", LocalTime.of(23, 59, 59, 0)); // 999 millis is max fractional value with
-                                                     // milli precision
+        roundTrip("0", LocalTime.of(23, 59, 59, 0)); // 999 millis is max fractional value with milli precision
 
         roundTrip("0", "18:36:29");
         roundTrip("0", "03:00:00");
@@ -130,8 +128,7 @@ public class LocalTimeCodecTest extends TestCase {
         roundTrip("9,notnull", "03:00:00");
     }
 
-    // test encoding with 7 fractional digits (nteresting because this matches SQL Server TIME
-    // precision)
+    // test encoding with 7 fractional digits (nteresting because this matches SQL Server TIME precision)
     public void test100NanosNotNullEncoding() {
         roundTrip("7,notnull", LocalTime.of(0, 0, 0, 0));
         roundTrip("7,notnull", LocalTime.of(23, 0, 0, 0));
@@ -143,9 +140,8 @@ public class LocalTimeCodecTest extends TestCase {
 
     public void testMillisNotNullEncoding() {
         roundTrip("3,notnull", LocalTime.of(0, 0, 0, 0));
-        roundTrip("3,notnull", LocalTime.of(23, 59, 59, 999_000_000)); // 999 millis is max
-                                                                       // fractional value with
-                                                                       // milli precision
+        roundTrip("3,notnull", LocalTime.of(23, 59, 59, 999_000_000)); // 999 millis is max fractional value with milli
+                                                                       // precision
 
         roundTrip("3,notnull", "18:36:29.123");
         roundTrip("3,notnull", "03:00:00");
@@ -153,9 +149,8 @@ public class LocalTimeCodecTest extends TestCase {
 
     public void testMicrosNotNullEncoding() {
         roundTrip("6,notnull", LocalTime.of(0, 0, 0, 0));
-        roundTrip("6,notnull", LocalTime.of(23, 59, 59, 999_999_000)); // 999 millis is max
-                                                                       // fractional value with
-                                                                       // milli precision
+        roundTrip("6,notnull", LocalTime.of(23, 59, 59, 999_999_000)); // 999 millis is max fractional value with milli
+                                                                       // precision
 
         roundTrip("6,notnull", "18:36:29.123456");
         roundTrip("6,notnull", "03:00:00");
@@ -163,8 +158,7 @@ public class LocalTimeCodecTest extends TestCase {
 
     public void testSecondNotNullEncoding() {
         roundTrip("0,notnull", LocalTime.of(0, 0, 0, 0));
-        roundTrip("0,notnull", LocalTime.of(23, 59, 59, 0)); // 999 millis is max fractional value
-                                                             // with milli precision
+        roundTrip("0,notnull", LocalTime.of(23, 59, 59, 0)); // 999 millis is max fractional value with milli precision
 
         roundTrip("0,notnull", "18:36:29");
         roundTrip("0,notnull", "03:00:00");
@@ -213,8 +207,7 @@ public class LocalTimeCodecTest extends TestCase {
 
     public void testMillisEncodingWithOffset() {
         roundTripWithOffset("3", LocalTime.of(0, 0, 0, 0), 3);
-        roundTripWithOffset("3", LocalTime.of(23, 59, 59, 999_000_000), 3); // 999 millis is max
-                                                                            // fractional value with
+        roundTripWithOffset("3", LocalTime.of(23, 59, 59, 999_000_000), 3); // 999 millis is max fractional value with
                                                                             // milli precision
 
         roundTripWithOffset("3", "18:36:29.123", 3);
@@ -224,12 +217,8 @@ public class LocalTimeCodecTest extends TestCase {
 
     public void testMillisNotNullEncodingWithOffset() {
         roundTripWithOffset("3,notnull", LocalTime.of(0, 0, 0, 0), 3);
-        roundTripWithOffset("3,notnull", LocalTime.of(23, 59, 59, 999_000_000), 3); // 999 millis is
-                                                                                    // max
-                                                                                    // fractional
-                                                                                    // value with
-                                                                                    // milli
-                                                                                    // precision
+        roundTripWithOffset("3,notnull", LocalTime.of(23, 59, 59, 999_000_000), 3); // 999 millis is max fractional
+                                                                                    // value with milli precision
 
         roundTripWithOffset("3,notnull", "18:36:29.123", 3);
         roundTripWithOffset("3,notnull", "03:00:00", 3);

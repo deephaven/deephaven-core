@@ -58,7 +58,7 @@ public class Grpc {
     public static Grpc.UnaryFn unary;
 
     public static native <TRequest, TResponse, M> Client<TRequest, TResponse> client(
-        M methodDescriptor, ClientRpcOptions props);
+            M methodDescriptor, ClientRpcOptions props);
 
     public static native int httpStatusToCode(double httpStatus);
 }

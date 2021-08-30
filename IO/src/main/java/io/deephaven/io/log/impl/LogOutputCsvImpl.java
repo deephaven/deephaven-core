@@ -188,9 +188,8 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
             append(t.getClass().getName()).append(": ").append(t.getMessage());
             for (StackTraceElement e : t.getStackTrace()) {
                 nl().append("        at ")
-                    .append(e.getClassName()).append(".").append(e.getMethodName())
-                    .append("(").append(e.getFileName()).append(":").append(e.getLineNumber())
-                    .append(")");
+                        .append(e.getClassName()).append(".").append(e.getMethodName())
+                        .append("(").append(e.getFileName()).append(":").append(e.getLineNumber()).append(")");
             }
             nl();
         } while ((t = t.getCause()) != null);

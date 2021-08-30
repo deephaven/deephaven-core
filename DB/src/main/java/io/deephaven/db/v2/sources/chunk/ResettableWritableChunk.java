@@ -4,19 +4,17 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.util.pools.PoolableChunk;
 
 /**
- * {@link WritableChunk} that may have its backing storage reset to a slice of that belonging to
- * another {@link WritableChunk} or a native array.
+ * {@link WritableChunk} that may have its backing storage reset to a slice of that belonging to another
+ * {@link WritableChunk} or a native array.
  */
 public interface ResettableWritableChunk<ATTR_BASE extends Any>
-    extends ResettableChunk<ATTR_BASE>, WritableChunk, PoolableChunk {
+        extends ResettableChunk<ATTR_BASE>, WritableChunk, PoolableChunk {
 
     @Override
-    <ATTR extends ATTR_BASE> WritableChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other,
-        int offset, int capacity);
+    <ATTR extends ATTR_BASE> WritableChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity);
 
     @Override
-    <ATTR extends ATTR_BASE> WritableChunk<ATTR> resetFromArray(Object array, int offset,
-        int capacity);
+    <ATTR extends ATTR_BASE> WritableChunk<ATTR> resetFromArray(Object array, int offset, int capacity);
 
     @Override
     <ATTR extends ATTR_BASE> WritableChunk<ATTR> resetFromArray(Object array);

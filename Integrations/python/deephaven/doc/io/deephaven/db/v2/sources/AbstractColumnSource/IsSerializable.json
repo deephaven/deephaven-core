@@ -2,6 +2,6 @@
  "className": "io.deephaven.db.v2.sources.AbstractColumnSource$IsSerializable",
  "methods": {},
  "path": "io.deephaven.db.v2.sources.AbstractColumnSource.IsSerializable",
- "text": "We have a fair bit of internal state that must be serialized, but not all of our descendants in the class\n hierarchy should actually be sent over the wire.  If you are implementing a class that should allow this to be\n serialized, then you must annotate it with an IsSerializable annotation, containing a value of true.",
+ "text": "We have a fair bit of internal state that must be serialized, but not all of our descendants in the class\n hierarchy should actually be sent over the wire. If you are implementing a class that should allow this to be\n serialized, then you must annotate it with an IsSerializable annotation, containing a value of true.",
  "typeName": "class"
 }

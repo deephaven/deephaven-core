@@ -21,8 +21,8 @@ public interface OffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> {
     void clear();
 
     /**
-     * Attempt to instantiate an instance of valueType with the nullary constructor, in order to
-     * create a placeholder instance reference.
+     * Attempt to instantiate an instance of valueType with the nullary constructor, in order to create a placeholder
+     * instance reference.
      *
      * @param valueType The type of the desired placeholder
      * @return A placeholder instance reference

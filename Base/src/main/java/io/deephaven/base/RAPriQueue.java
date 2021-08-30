@@ -63,8 +63,7 @@ public class RAPriQueue<T> {
         int k = adapter.getPos(el);
         if (k <= 0) {
             if (++size == queue.length) {
-                T[] newQueue =
-                    (T[]) java.lang.reflect.Array.newInstance(elementClass, 2 * queue.length);
+                T[] newQueue = (T[]) java.lang.reflect.Array.newInstance(elementClass, 2 * queue.length);
                 System.arraycopy(queue, 0, newQueue, 0, size);
                 queue = newQueue;
             }
@@ -201,8 +200,7 @@ public class RAPriQueue<T> {
     boolean testInvariantAux(int i, String what) {
         if (i <= size) {
             if (adapter.getPos(queue[i]) != i) {
-                System.err.println(
-                    what + ": queue[" + i + "].tqPos=" + (adapter.getPos(queue[i])) + " != " + i);
+                System.err.println(what + ": queue[" + i + "].tqPos=" + (adapter.getPos(queue[i])) + " != " + i);
             }
             if (!testInvariantAux(i * 2, what)) {
                 return false;
@@ -212,8 +210,8 @@ public class RAPriQueue<T> {
             }
             if (i > 1) {
                 if (adapter.less(queue[i], queue[i / 2])) {
-                    System.err.println(what + ": child[" + i + "]=" + queue[i] + " < parent["
-                        + (i / 2) + "]=" + queue[i / 2]);
+                    System.err.println(
+                            what + ": child[" + i + "]=" + queue[i] + " < parent[" + (i / 2) + "]=" + queue[i / 2]);
                     return false;
                 }
             }
@@ -226,8 +224,7 @@ public class RAPriQueue<T> {
         if (result) {
             for (int i = size + 1; i < queue.length; ++i) {
                 if (queue[i] != null) {
-                    System.err.println(
-                        what + ": size = " + size + ", child[" + i + "]=" + queue[i] + " != null");
+                    System.err.println(what + ": size = " + size + ", child[" + i + "]=" + queue[i] + " != null");
                     result = false;
                 }
             }

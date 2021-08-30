@@ -7,7 +7,7 @@
   "release": "Release all referents previously added to this scope in its capacity as a LivenessManager, unless other\n references to this scope are retained in its capacity as a LivenessReferent.",
   "transferTo": "Transfer all retained LivenessReferents from this LivenessScope to a compatible\n LivenessManager. Transfer support compatibility is implementation defined.\n\n:param other: (io.deephaven.db.util.liveness.LivenessManager) - The other LivenessManager",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.util.liveness.LivenessScope",
  "text": "LivenessNode implementation for providing external scope to one or more LivenessReferents.",

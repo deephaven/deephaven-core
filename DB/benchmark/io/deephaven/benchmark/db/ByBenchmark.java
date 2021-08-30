@@ -62,14 +62,13 @@ public class ByBenchmark {
         switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Karl", size)
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
                 builder = BenchmarkTools.persistentTableBuilder("Karl", size);
                 if (grouped) {
-                    throw new UnsupportedOperationException(
-                        "Can not run this benchmark combination.");
+                    throw new UnsupportedOperationException("Can not run this benchmark combination.");
                 }
                 break;
 
@@ -77,14 +76,12 @@ public class ByBenchmark {
                 throw new IllegalStateException("Table type must be Historical or Intraday");
         }
 
-        builder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
+        builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey =
-            (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString", keyCount, 6, 6,
-                0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1,
-            keyCount, SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
+                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
+        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
+                SequentialNumColumnGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {
@@ -101,8 +98,7 @@ public class ByBenchmark {
                 builder.addColumn(intKey);
                 keyName = stringKey.getName() + "," + intKey.getName();
                 if (grouped) {
-                    throw new UnsupportedOperationException(
-                        "Can not run this benchmark combination.");
+                    throw new UnsupportedOperationException("Can not run this benchmark combination.");
                 }
                 break;
             default:
@@ -114,11 +110,10 @@ public class ByBenchmark {
         }
 
         final BenchmarkTable bmt = builder
-            .addColumn(BenchmarkTools.numberCol("Sentinel", long.class))
-            .build();
+                .addColumn(BenchmarkTools.numberCol("Sentinel", long.class))
+                .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         table = bmt.getTable().coalesce().dropColumns("PartCol");
 
@@ -155,34 +150,33 @@ public class ByBenchmark {
 
     @Benchmark
     public Table byStatic(@NotNull final Blackhole bh) {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> table.by(keyName.split("[, ]+")));
+        final Table result =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.by(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table byIncremental(@NotNull final Blackhole bh) {
-        final Table result =
-            IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock()
-                .computeLocked(() -> t.by(keyName.split("[, ]+"))), table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(keyName.split("[, ]+"))), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table byExternalStatic(@NotNull final Blackhole bh) {
-        final TableMap result = LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> table.byExternal(keyName.split("[, ]+")));
+        final TableMap result =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.byExternal(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table byExternalIncremental(@NotNull final Blackhole bh) {
-        final TableMap result =
-            IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock()
-                .computeLocked(() -> t.byExternal(keyName.split("[, ]+"))), table);
+        final TableMap result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.byExternal(keyName.split("[, ]+"))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }

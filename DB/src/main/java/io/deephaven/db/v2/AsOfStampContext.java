@@ -42,9 +42,8 @@ class AsOfStampContext implements Context {
 
     private final StampKernel stampKernel;
 
-    AsOfStampContext(SortingOrder order, boolean disallowExactMatch,
-        ColumnSource<?> leftStampSource, ColumnSource<?> rightStampSource,
-        ColumnSource<?> originalRightStampSource) {
+    AsOfStampContext(SortingOrder order, boolean disallowExactMatch, ColumnSource<?> leftStampSource,
+            ColumnSource<?> rightStampSource, ColumnSource<?> originalRightStampSource) {
         this.order = order;
         this.leftStampSource = leftStampSource;
         this.rightStampSource = rightStampSource;
@@ -53,12 +52,11 @@ class AsOfStampContext implements Context {
         final ChunkType rightType = rightStampSource.getChunkType();
         if (leftType != rightType) {
             throw new IllegalArgumentException(
-                "Stamp columns must have the same type, left=" + leftType + ", right=" + rightType);
+                    "Stamp columns must have the same type, left=" + leftType + ", right=" + rightType);
         }
         this.stampType = leftType;
         this.stampKernel = StampKernel.makeStampKernel(stampType, order, disallowExactMatch);
-        this.rightDupCompact =
-            DupCompactKernel.makeDupCompact(stampType, order == SortingOrder.Descending);
+        this.rightDupCompact = DupCompactKernel.makeDupCompact(stampType, order == SortingOrder.Descending);
     }
 
     private void ensureSortCapacity(int length) {
@@ -175,15 +173,14 @@ class AsOfStampContext implements Context {
     }
 
     /**
-     * Fill and and compact the values in the right index into the rightKeyIndicesChunk and
-     * rightStampChunk.
+     * Fill and and compact the values in the right index into the rightKeyIndicesChunk and rightStampChunk.
      *
      * @param rightIndex the indices of the right values to read and compact
      * @param rightKeyIndicesChunk the output chunk of rightKeyIndices
      * @param rightStampChunk the output chunk of right stamp values
      */
     void getAndCompactStamps(Index rightIndex, WritableLongChunk<KeyIndices> rightKeyIndicesChunk,
-        WritableChunk<Values> rightStampChunk) {
+            WritableChunk<Values> rightStampChunk) {
         ensureRightFillCapacity(rightIndex.intSize());
         // read the right stamp column
         rightKeyIndicesChunk.setSize(rightIndex.intSize());
@@ -203,8 +200,8 @@ class AsOfStampContext implements Context {
      * @param rightKeyIndicesChunk the right key indices (already compacted)
      * @param redirectionIndex the redirection index to update
      */
-    void processEntry(Index leftIndex, Chunk<Values> rightStampChunk,
-        LongChunk<KeyIndices> rightKeyIndicesChunk, RedirectionIndex redirectionIndex) {
+    void processEntry(Index leftIndex, Chunk<Values> rightStampChunk, LongChunk<KeyIndices> rightKeyIndicesChunk,
+            RedirectionIndex redirectionIndex) {
         ensureLeftCapacity(leftIndex.intSize());
 
         // read the left stamp column
@@ -219,10 +216,9 @@ class AsOfStampContext implements Context {
         computeRedirections(redirectionIndex, rightStampChunk, rightKeyIndicesChunk);
     }
 
-    private void computeRedirections(RedirectionIndex redirectionIndex,
-        Chunk<Values> rightStampChunk, LongChunk<KeyIndices> rightKeyIndicesChunk) {
-        stampKernel.computeRedirections(leftStampChunk, rightStampChunk, rightKeyIndicesChunk,
-            leftRedirections);
+    private void computeRedirections(RedirectionIndex redirectionIndex, Chunk<Values> rightStampChunk,
+            LongChunk<KeyIndices> rightKeyIndicesChunk) {
+        stampKernel.computeRedirections(leftStampChunk, rightStampChunk, rightKeyIndicesChunk, leftRedirections);
         for (int ii = 0; ii < leftKeyIndicesChunk.size(); ++ii) {
             final long rightKey = leftRedirections.get(ii);
             // the redirection index defaults to NULL_KEY so we do not need to put it in there

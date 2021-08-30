@@ -17,10 +17,10 @@
   "setUseOriginalScriptLoaderState": "Informs the session whether or not we should be using the original ScriptLoaderState for source commands.\n\n:param useOriginal: (boolean) - whether to use the script loader state at persistent query initialization\n:return: boolean",
   "setVariable": "Inserts a value into the script's scope.\n\n:param name: (java.lang.String) - the variable name to set\n:param value: (java.lang.Object) - the new value of the variable",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise",
-  "unwrapObject": "Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch\n them. Defaults to returning the object itself.\n\n:param object: (java.lang.Object) - the scoped object\n:return: (java.lang.Object) an obj which can be consumed by a client"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise",
+  "unwrapObject": "Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch them. Defaults to\n returning the object itself.\n\n:param object: (java.lang.Object) - the scoped object\n:return: (java.lang.Object) an obj which can be consumed by a client"
  },
  "path": "io.deephaven.db.util.PythonDeephavenSession",
- "text": "A ScriptSession that uses a JPy cpython interpreter internally.\n\n This is used for persistent queries or the DB console; Python code running remotely uses WorkerPythonEnvironment\n for it's supporting structures.",
+ "text": "A ScriptSession that uses a JPy cpython interpreter internally.\n\n This is used for persistent queries or the DB console; Python code running remotely uses WorkerPythonEnvironment for\n it's supporting structures.",
  "typeName": "class"
 }

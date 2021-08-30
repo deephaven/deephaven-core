@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.api.filter.FilterHasRaw",
+ "methods": {
+  "of": ":param filter: io.deephaven.api.filter.Filter\n:return: boolean",
+  "out": ":return: boolean",
+  "visit": "*Overload 1*  \n  :param isNull: io.deephaven.api.filter.FilterIsNull\n  \n*Overload 2*  \n  :param isNotNull: io.deephaven.api.filter.FilterIsNotNull\n  \n*Overload 3*  \n  :param condition: io.deephaven.api.filter.FilterCondition\n  \n*Overload 4*  \n  :param not: io.deephaven.api.filter.FilterNot\n  \n*Overload 5*  \n  :param ors: io.deephaven.api.filter.FilterOr\n  \n*Overload 6*  \n  :param ands: io.deephaven.api.filter.FilterAnd\n  \n*Overload 7*  \n  :param rawString: io.deephaven.api.RawString"
+ },
+ "path": "io.deephaven.api.filter.FilterHasRaw",
+ "typeName": "class"
+}

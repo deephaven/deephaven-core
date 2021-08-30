@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.unary.UnaryOutput",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.unary.UnaryOutput",
+        namespace = JsPackage.GLOBAL)
 public interface UnaryOutput<TResponse> {
     @JsOverlay
     static UnaryOutput create() {

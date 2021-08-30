@@ -24,13 +24,12 @@ public abstract class ArrowModule {
 
     @Binds
     @IntoSet
-    abstract BindableService bindBrowserFlightServiceBinding(
-        BrowserFlightServiceGrpcBinding service);
+    abstract BindableService bindBrowserFlightServiceBinding(BrowserFlightServiceGrpcBinding service);
 
     @Binds
     @Singleton
     abstract BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> bindStreamGenerator(
-        BarrageStreamGenerator.Factory factory);
+            BarrageStreamGenerator.Factory factory);
 
     @Provides
     static BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> provideListenerAdapter() {
@@ -38,7 +37,9 @@ public abstract class ArrowModule {
             @Override
             public void onNext(final BarrageStreamGenerator.View view) {
                 try {
-                    view.forEachStream(delegate::onNext);
+                    synchronized (delegate) {
+                        view.forEachStream(delegate::onNext);
+                    }
                 } catch (final IOException ioe) {
                     throw new UncheckedDeephavenException(ioe);
                 }
@@ -46,12 +47,16 @@ public abstract class ArrowModule {
 
             @Override
             public void onError(Throwable t) {
-                delegate.onError(t);
+                synchronized (delegate) {
+                    delegate.onError(t);
+                }
             }
 
             @Override
             public void onCompleted() {
-                delegate.onCompleted();
+                synchronized (delegate) {
+                    delegate.onCompleted();
+                }
             }
         };
     }

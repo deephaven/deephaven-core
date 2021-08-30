@@ -13,8 +13,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
     private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
 
-    // this assumes that the Python interpreter won't be re-initialized during a session, if this
-    // turns out to be a
+    // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
     // false assumption, then we'll need to make this initialization code 'python restart' proof.
     private static PyObject getNumbaVectorizedFuncType() {
         try {
@@ -59,7 +58,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     public String convertStringKey(PyObject key) {
         if (!key.isString()) {
             throw new IllegalArgumentException(
-                "Found non-string key! Expecting only string keys. " + key.toString());
+                    "Found non-string key! Expecting only string keys. " + key);
         }
         return key.toString();
     }
@@ -73,12 +72,11 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     /**
-     * When given a pyObject that is a callable, we stick it inside the callable wrapper, which
-     * implements a call() varargs method, so that we can call it using __call__ without all of the
-     * JPy nastiness.
+     * When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call()
+     * varargs method, so that we can call it using __call__ without all of the JPy nastiness.
      */
     public static class CallableWrapper {
-        private PyObject pyObject;
+        private final PyObject pyObject;
 
         public CallableWrapper(PyObject pyObject) {
             this.pyObject = pyObject;
@@ -94,20 +92,20 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     public static final class NumbaCallableWrapper extends CallableWrapper {
-        private List<Class> paramTypes;
-        private Class returnType;
+        private final List<Class<?>> paramTypes;
+        private final Class<?> returnType;
 
-        public NumbaCallableWrapper(PyObject pyObject, Class returnType, List<Class> paramTypes) {
+        public NumbaCallableWrapper(PyObject pyObject, Class<?> returnType, List<Class<?>> paramTypes) {
             super(pyObject);
             this.returnType = returnType;
             this.paramTypes = paramTypes;
         }
 
-        public Class getReturnType() {
+        public Class<?> getReturnType() {
             return returnType;
         }
 
-        public List<Class> getParamTypes() {
+        public List<Class<?>> getParamTypes() {
             return paramTypes;
         }
     }
@@ -117,8 +115,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         if (pyObject.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE)) {
             List<PyObject> params = pyObject.getAttribute("types").asList();
             if (params.isEmpty()) {
-                throw new IllegalArgumentException(
-                    "numba vectorized function must have an explicit signature.");
+                throw new IllegalArgumentException("numba vectorized function must have an explicit signature.");
             }
             // numba allows a vectorized function to have multiple signatures, only the first one
             // will be accepted by DH
@@ -129,9 +126,8 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         }
     }
 
-    private static final Map<Character, Class> numpyType2JavaClass =
-        new HashMap<Character, Class>();
-    {
+    private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
+    static {
         numpyType2JavaClass.put('i', int.class);
         numpyType2JavaClass.put('l', long.class);
         numpyType2JavaClass.put('h', short.class);
@@ -147,19 +143,19 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         // eg. [ll->d] defines two int64 (long) arguments and a double return type.
 
         char numpyTypeCode = numbaFuncTypes.charAt(numbaFuncTypes.length() - 1);
-        Class returnType = numpyType2JavaClass.get(numpyTypeCode);
+        Class<?> returnType = numpyType2JavaClass.get(numpyTypeCode);
         if (returnType == null) {
             throw new IllegalArgumentException(
-                "numba vectorized functions must have an integral, floating point, or boolean return type.");
+                    "numba vectorized functions must have an integral, floating point, or boolean return type.");
         }
 
-        List<Class> paramTypes = new ArrayList<>();
+        List<Class<?>> paramTypes = new ArrayList<>();
         for (char numpyTypeChar : numbaFuncTypes.toCharArray()) {
             if (numpyTypeChar != '-') {
-                Class paramType = numpyType2JavaClass.get(numpyTypeChar);
+                Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
                 if (paramType == null) {
                     throw new IllegalArgumentException(
-                        "parameters of numba vectorized functions must be of integral, floating point, or boolean type.");
+                            "parameters of numba vectorized functions must be of integral, floating point, or boolean type.");
                 }
                 paramTypes.add(numpyType2JavaClass.get(numpyTypeChar));
             } else {
@@ -168,8 +164,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         }
 
         if (paramTypes.size() == 0) {
-            throw new IllegalArgumentException(
-                "numba vectorized functions must have at least one argument.");
+            throw new IllegalArgumentException("numba vectorized functions must have at least one argument.");
         }
         return new NumbaCallableWrapper(pyObject, returnType, paramTypes);
     }

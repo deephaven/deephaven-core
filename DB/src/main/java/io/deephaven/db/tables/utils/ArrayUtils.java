@@ -189,8 +189,7 @@ public class ArrayUtils {
         } else if (c.equals(short[].class)) {
             return new ShortArrayAccessor(shortNullArray(size));
         } else {
-            return new ObjectArrayAccessor(
-                (Object[]) Array.newInstance(c.getComponentType(), size));
+            return new ObjectArrayAccessor((Object[]) Array.newInstance(c.getComponentType(), size));
         }
     }
 
@@ -377,8 +376,7 @@ public class ArrayUtils {
     public static byte[] getUnboxedByteArray(Object[] boxedArray) {
         final byte[] result = new byte[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] =
-                (boxedArray[i] != null ? (((Number) boxedArray[i]).byteValue()) : NULL_BYTE);
+            result[i] = (boxedArray[i] != null ? (((Number) boxedArray[i]).byteValue()) : NULL_BYTE);
         }
         return result;
     }
@@ -394,8 +392,7 @@ public class ArrayUtils {
     public static short[] getUnboxedShortArray(Object[] boxedArray) {
         final short[] result = new short[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] =
-                (boxedArray[i] != null ? (((Number) boxedArray[i]).shortValue()) : NULL_SHORT);
+            result[i] = (boxedArray[i] != null ? (((Number) boxedArray[i]).shortValue()) : NULL_SHORT);
         }
         return result;
     }
@@ -419,8 +416,7 @@ public class ArrayUtils {
     public static float[] getUnboxedFloatArray(Object[] boxedArray) {
         final float[] result = new float[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] =
-                (boxedArray[i] != null ? ((Number) boxedArray[i]).floatValue() : NULL_FLOAT);
+            result[i] = (boxedArray[i] != null ? ((Number) boxedArray[i]).floatValue() : NULL_FLOAT);
         }
         return result;
     }
@@ -428,8 +424,7 @@ public class ArrayUtils {
     public static double[] getUnboxedDoubleArray(Object[] boxedArray) {
         final double[] result = new double[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] =
-                (boxedArray[i] != null ? ((Number) boxedArray[i]).doubleValue() : NULL_DOUBLE);
+            result[i] = (boxedArray[i] != null ? ((Number) boxedArray[i]).doubleValue() : NULL_DOUBLE);
         }
         return result;
     }
@@ -1022,8 +1017,8 @@ public class ArrayUtils {
             if (sourceArray == null) {
                 throw new NullPointerException();
             }
-            Require.requirement(sourceArray instanceof int[], "sourceArray instanceof int[]",
-                sourceArray.getClass(), "sourceArray.getClass()");
+            Require.requirement(sourceArray instanceof int[], "sourceArray instanceof int[]", sourceArray.getClass(),
+                    "sourceArray.getClass()");
             System.arraycopy(sourceArray, 0, array, pos, length);
         }
 

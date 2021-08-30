@@ -26,12 +26,12 @@ public abstract class ColumnHeaders6<T1, T2, T3, T4, T5, T6> implements TableHea
     public abstract ColumnHeaders5<T1, T2, T3, T4, T5> others();
 
     public final <T7> ColumnHeaders7<T1, T2, T3, T4, T5, T6, T7> header(String name,
-        Class<T7> clazz) {
+            Class<T7> clazz) {
         return header(ColumnHeader.of(name, clazz));
     }
 
     public final <T7> ColumnHeaders7<T1, T2, T3, T4, T5, T6, T7> header(String name,
-        Type<T7> type) {
+            Type<T7> type) {
         return header(ColumnHeader.of(name, type));
     }
 

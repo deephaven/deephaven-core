@@ -89,7 +89,7 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<double[]>
-        implements ArrayBuilder<Double, DoubleArray, Builder> {
+            implements ArrayBuilder<Double, DoubleArray, Builder> {
 
         private Builder(int initialCapacity) {
             super(new double[initialCapacity]);

@@ -298,8 +298,7 @@ public final class EmptyContainer extends ImmutableContainer {
     }
 
     @Override
-    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues,
-        final int maxPos) {
+    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
         if (inValues.hasNext()) {
             throw new IllegalStateException();
         }

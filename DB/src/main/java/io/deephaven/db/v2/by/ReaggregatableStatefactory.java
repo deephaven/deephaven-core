@@ -4,8 +4,7 @@ public abstract class ReaggregatableStatefactory implements AggregationStateFact
     /**
      * Returns true if this state factory supports rollup.
      *
-     * If this factory does not support rollup, calling forRollup and rollupFactory produce
-     * undefined results.
+     * If this factory does not support rollup, calling forRollup and rollupFactory produce undefined results.
      *
      * @return true if forRollup() and rollupFactory() are implemented.
      */
@@ -14,14 +13,13 @@ public abstract class ReaggregatableStatefactory implements AggregationStateFact
     /**
      * Returns the lowest level state factory for rollup.
      *
-     * This may differ from the regular factory in that often the result column is insufficient to
-     * perform a rollup (for example an average needs not just the result, but the count and sum).
+     * This may differ from the regular factory in that often the result column is insufficient to perform a rollup (for
+     * example an average needs not just the result, but the count and sum).
      */
     abstract ReaggregatableStatefactory forRollup();
 
     /**
-     * Returns the factory used to reaggregate the lowest or intermediate levels into the next
-     * level.
+     * Returns the factory used to reaggregate the lowest or intermediate levels into the next level.
      *
      * For example, a count factory should return a sum factory to roll up the counts by summation.
      */

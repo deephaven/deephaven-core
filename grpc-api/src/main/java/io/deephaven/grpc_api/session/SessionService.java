@@ -8,6 +8,7 @@ import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -37,21 +38,18 @@ public class SessionService {
 
     @Inject()
     public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
-        @Named("session.tokenExpireMs") final long tokenExpireMs) {
+            @Named("session.tokenExpireMs") final long tokenExpireMs) {
         this.scheduler = scheduler;
         this.sessionFactory = sessionFactory;
         this.tokenExpireMs = tokenExpireMs;
 
         if (tokenExpireMs < MIN_COOKIE_EXPIRE_MS) {
-            throw new IllegalArgumentException(
-                "session.tokenExpireMs is set too low. It is configured to "
-                    + tokenExpireMs + "ms (minimum is " + MIN_COOKIE_EXPIRE_MS
-                    + "ms). At low levels it is difficult "
+            throw new IllegalArgumentException("session.tokenExpireMs is set too low. It is configured to "
+                    + tokenExpireMs + "ms (minimum is " + MIN_COOKIE_EXPIRE_MS + "ms). At low levels it is difficult "
                     + "to guarantee smooth operability given a distributed system and potential clock drift");
         }
 
-        // Protect ourselves from rotation spam, but be loose enough that any reasonable refresh
-        // strategy works.
+        // Protect ourselves from rotation spam, but be loose enough that any reasonable refresh strategy works.
         this.tokenRotateMs = tokenExpireMs / 5;
     }
 
@@ -68,8 +66,7 @@ public class SessionService {
     }
 
     /**
-     * If enough time has passed since the last token refresh, rotate to a new token and reset the
-     * expiration deadline.
+     * If enough time has passed since the last token refresh, rotate to a new token and reset the expiration deadline.
      *
      * @param session the session to refresh
      * @return the most recent token expiration
@@ -86,16 +83,16 @@ public class SessionService {
 
         synchronized (session) {
             expiration = session.getExpiration();
-            if (expiration != null && expiration.deadline.getMillis() - tokenExpireMs
-                + tokenRotateMs > now.getMillis()) {
+            if (expiration != null
+                    && expiration.deadline.getMillis() - tokenExpireMs + tokenRotateMs > now.getMillis()) {
                 // current token is not old enough to rotate
                 return expiration;
             }
 
             do {
                 newUUID = UuidCreator.getRandomBased();
-                expiration = new TokenExpiration(newUUID,
-                    DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs), session);
+                expiration = new TokenExpiration(newUUID, DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs),
+                        session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
             if (initialToken) {
@@ -132,20 +129,20 @@ public class SessionService {
     public SessionState getSessionForToken(final UUID token) {
         final TokenExpiration expiration = tokenToSession.get(token);
         if (expiration == null || expiration.session.isExpired()
-            || expiration.deadline.compareTo(scheduler.currentTime()) <= 0) {
+                || expiration.deadline.compareTo(scheduler.currentTime()) <= 0) {
             return null;
         }
         return expiration.session;
     }
 
     /**
-     * Lookup a session via the SessionServiceGrpcImpl.SESSION_CONTEXT_KEY. This method is only
-     * valid in the context of the original calling gRPC thread.
+     * Lookup a session via the SessionServiceGrpcImpl.SESSION_CONTEXT_KEY. This method is only valid in the context of
+     * the original calling gRPC thread.
      *
      * @return the session attached to this gRPC request
-     * @throws StatusRuntimeException if thread is not attached to a session or if the session is
-     *         expired/closed
+     * @throws StatusRuntimeException if thread is not attached to a session or if the session is expired/closed
      */
+    @NotNull
     public SessionState getCurrentSession() {
         final SessionState session = getOptionalSession();
         if (session == null) {
@@ -155,8 +152,8 @@ public class SessionService {
     }
 
     /**
-     * Lookup a session via the SessionServiceGrpcImpl.SESSION_CONTEXT_KEY. This method is only
-     * valid in the context of the original calling gRPC thread.
+     * Lookup a session via the SessionServiceGrpcImpl.SESSION_CONTEXT_KEY. This method is only valid in the context of
+     * the original calling gRPC thread.
      *
      * @return the session attached to this gRPC request; null if no session is established
      */
@@ -193,8 +190,7 @@ public class SessionService {
         public final DBDateTime deadline;
         public final SessionState session;
 
-        public TokenExpiration(final UUID cookie, final DBDateTime deadline,
-            final SessionState session) {
+        public TokenExpiration(final UUID cookie, final DBDateTime deadline, final SessionState session) {
             this.token = cookie;
             this.deadline = deadline;
             this.session = session;
@@ -219,18 +215,15 @@ public class SessionService {
                     break;
                 }
 
-                // Permanently remove the first token as it is officially expired, note that other
-                // tokens may exist for
-                // this session, so the session itself does not expire. We allow multiple tokens to
-                // co-exist to best
-                // support out of order requests and thus allow any reasonable client behavior that
-                // respects a given
+                // Permanently remove the first token as it is officially expired, note that other tokens may exist for
+                // this session, so the session itself does not expire. We allow multiple tokens to co-exist to best
+                // support out of order requests and thus allow any reasonable client behavior that respects a given
                 // token expiration time.
                 outstandingCookies.poll();
 
                 synchronized (next.session) {
                     if (next.session.getExpiration() != null
-                        && next.session.getExpiration().deadline.getMillis() <= now.getMillis()) {
+                            && next.session.getExpiration().deadline.getMillis() <= now.getMillis()) {
                         next.session.onExpired();
                     }
                 }

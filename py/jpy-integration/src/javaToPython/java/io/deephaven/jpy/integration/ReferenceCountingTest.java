@@ -49,8 +49,8 @@ public class ReferenceCountingTest extends PythonTest {
     }
 
     /*
-     * @Test public void javaOnlyObjectDoesntHavePythonReferences() { final Object obj = new
-     * Object(); checkReferenceCount(0, obj); blackhole(obj); }
+     * @Test public void javaOnlyObjectDoesntHavePythonReferences() { final Object obj = new Object();
+     * checkReferenceCount(0, obj); blackhole(obj); }
      */
 
     @Test
@@ -168,8 +168,7 @@ public class ReferenceCountingTest extends PythonTest {
 
     @Test
     public void nativePythonObjectsCanLiveInJava() {
-        // A slightly different construction, showing raw executeCode as statements instead of
-        // expressions
+        // A slightly different construction, showing raw executeCode as statements instead of expressions
         PyObject.executeCode("devin = {'was': 'here'}", PyInputMode.STATEMENT);
         final PyObject devin = PyObject.executeCode("devin", PyInputMode.EXPRESSION);
         ref.check(2, devin);
@@ -210,8 +209,8 @@ public class ReferenceCountingTest extends PythonTest {
     @Test
     public void setAttributeDelAttributeCounted() {
         try (
-            final PyObject simpleObject = SimpleObject.create(getCreateModule());
-            final PyObject someValue = builtins.dict()) {
+                final PyObject simpleObject = SimpleObject.create(getCreateModule());
+                final PyObject someValue = builtins.dict()) {
             ref.check(1, simpleObject);
             ref.check(1, someValue);
 

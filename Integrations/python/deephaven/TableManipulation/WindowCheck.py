@@ -65,9 +65,14 @@ except Exception as e:
 def addTimeWindow(table, timestampColumn, windowNanos, inWindowColumn):
     """
     Adds a Boolean column that is false when a timestamp column is older than windowNanos.
-    If the timestamp is greater than or equal to the curent time - windowNanos, then the result column is true.
-     If the timestamp is null; the InWindow value is null.
-    The resultant table ticks whenever the input table ticks, or modifies a row when it passes out of the window.
+     
+    
+     If the timestamp is greater than or equal to the curent time - windowNanos, then the result column is true. If
+     the timestamp is null; the InWindow value is null.
+     
+    
+     The resultant table ticks whenever the input table ticks, or modifies a row when it passes out of the window.
+     
     
     :param table: (io.deephaven.db.tables.Table) - the input table
     :param timestampColumn: (java.lang.String) - the timestamp column to monitor in table

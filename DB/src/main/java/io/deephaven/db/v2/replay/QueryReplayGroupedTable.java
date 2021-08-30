@@ -28,18 +28,17 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
     final Replayer replayer;
     protected PriorityQueue<IteratorsAndNextTime> allIterators = new PriorityQueue<>();
 
-    private static Map<String, ColumnSource> getResultSources(
-        Map<String, ? extends ColumnSource> input, RedirectionIndex redirectionIndex) {
-        Map<String, ColumnSource> result = new LinkedHashMap<>();
-        for (Map.Entry<String, ? extends ColumnSource> stringEntry : input.entrySet()) {
-            ColumnSource value = stringEntry.getValue();
-            result.put(stringEntry.getKey(),
-                new ReadOnlyRedirectedColumnSource<>(redirectionIndex, value));
+    private static Map<String, ColumnSource<?>> getResultSources(Map<String, ? extends ColumnSource<?>> input,
+            RedirectionIndex redirectionIndex) {
+        Map<String, ColumnSource<?>> result = new LinkedHashMap<>();
+        for (Map.Entry<String, ? extends ColumnSource<?>> stringEntry : input.entrySet()) {
+            ColumnSource<?> value = stringEntry.getValue();
+            result.put(stringEntry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, value));
         }
         return result;
     }
 
-    static class IteratorsAndNextTime implements Comparable {
+    static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
 
         private final Index.Iterator iterator;
         private final ColumnSource<DBDateTime> columnSource;
@@ -47,8 +46,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
         long lastIndex;
         public final long pos;
 
-        private IteratorsAndNextTime(Index.Iterator iterator, ColumnSource<DBDateTime> columnSource,
-            long pos) {
+        private IteratorsAndNextTime(Index.Iterator iterator, ColumnSource<DBDateTime> columnSource, long pos) {
             this.iterator = iterator;
             this.columnSource = columnSource;
             this.pos = pos;
@@ -67,29 +65,28 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
         }
 
         @Override
-        public int compareTo(Object o) {
+        public int compareTo(IteratorsAndNextTime o) {
             if (lastTime == null) {
-                return ((IteratorsAndNextTime) o).lastTime == null ? 0 : -1;
+                return o.lastTime == null ? 0 : -1;
             }
-            return lastTime.compareTo(((IteratorsAndNextTime) o).lastTime);
+            return lastTime.compareTo(o.lastTime);
         }
     }
 
-    protected QueryReplayGroupedTable(Index index, Map<String, ? extends ColumnSource> input,
-        String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex,
-        String[] groupingColumns) {
+    protected QueryReplayGroupedTable(Index index, Map<String, ? extends ColumnSource<?>> input,
+            String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
 
         super(Index.FACTORY.getIndexByValues(), getResultSources(input, redirectionIndex));
         this.redirectionIndex = redirectionIndex;
         Map<Object, Index> grouping;
 
-        final ColumnSource[] columnSources =
-            Arrays.stream(groupingColumns).map(gc -> input.get(gc)).toArray(ColumnSource[]::new);
-        final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(columnSources);
+        final ColumnSource<?>[] columnSources =
+                Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
+        final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(columnSources);
         grouping = index.getGrouping(tupleSource);
 
-        @SuppressWarnings("unchecked")
-        ColumnSource<DBDateTime> timeSource = input.get(timeColumn);
+        // noinspection unchecked
+        ColumnSource<DBDateTime> timeSource = (ColumnSource<DBDateTime>) input.get(timeColumn);
         int pos = 0;
         for (Index groupIndex : grouping.values()) {
             Index.Iterator iterator = groupIndex.iterator();

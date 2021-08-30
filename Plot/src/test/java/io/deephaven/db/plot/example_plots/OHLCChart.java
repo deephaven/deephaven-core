@@ -27,11 +27,11 @@ public class OHLCChart {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title");
+                .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-            .xLabel("X")
-            .yLabel("Y")
-            .ohlcPlot("Test", date, open, high, low, close);
+                .xLabel("X")
+                .yLabel("Y")
+                .ohlcPlot("Test", date, open, high, low, close);
 
 
         ExamplePlotUtils.display(axs);

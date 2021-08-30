@@ -26,7 +26,7 @@ public final class LogBufferAppender extends UnsynchronizedAppenderBase<ILogging
         int errors = 0;
         if (this.encoder == null) {
             addStatus(
-                new ErrorStatus("No encoder set for the appender named \"" + name + "\".", this));
+                    new ErrorStatus("No encoder set for the appender named \"" + name + "\".", this));
             errors++;
         }
 
@@ -78,7 +78,7 @@ public final class LogBufferAppender extends UnsynchronizedAppenderBase<ILogging
 
             default:
                 throw new IllegalArgumentException(
-                    "Unexpected level " + level + " " + level.toInt());
+                        "Unexpected level " + level + " " + level.toInt());
         }
     }
 }

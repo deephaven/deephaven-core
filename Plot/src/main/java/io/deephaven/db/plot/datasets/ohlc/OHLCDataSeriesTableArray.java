@@ -23,13 +23,13 @@ public class OHLCDataSeriesTableArray extends OHLCDataSeriesArray implements Tab
     private final String closeCol;
 
     public OHLCDataSeriesTableArray(final AxesImpl axes, final int id, final Comparable name,
-        @NotNull final TableHandle th, final String timeCol, final String openCol,
-        final String highCol, final String lowCol, final String closeCol) {
+            @NotNull final TableHandle th, final String timeCol, final String openCol, final String highCol,
+            final String lowCol, final String closeCol) {
         super(axes, id, name, new IndexableNumericDataTable(th, timeCol, new PlotInfo(axes, name)),
-            new IndexableNumericDataTable(th, openCol, new PlotInfo(axes, name)),
-            new IndexableNumericDataTable(th, highCol, new PlotInfo(axes, name)),
-            new IndexableNumericDataTable(th, lowCol, new PlotInfo(axes, name)),
-            new IndexableNumericDataTable(th, closeCol, new PlotInfo(axes, name)));
+                new IndexableNumericDataTable(th, openCol, new PlotInfo(axes, name)),
+                new IndexableNumericDataTable(th, highCol, new PlotInfo(axes, name)),
+                new IndexableNumericDataTable(th, lowCol, new PlotInfo(axes, name)),
+                new IndexableNumericDataTable(th, closeCol, new PlotInfo(axes, name)));
 
         ArgumentValidations.assertNotNull(timeCol, "timeCol", getPlotInfo());
         ArgumentValidations.assertNotNull(openCol, "openCol", getPlotInfo());

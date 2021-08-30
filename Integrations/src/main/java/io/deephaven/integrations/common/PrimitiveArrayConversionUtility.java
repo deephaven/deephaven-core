@@ -8,16 +8,14 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.util.QueryConstants;
 
 /**
- * General purpose helper methods for array conversion methods from specific object types to/from
- * primitive types. This is specifically intended to improve performance in integration with Python,
- * where conversion of primitive type arrays involves direct copy of a memory buffer, and is much
- * more performant than element-by-element inspection.
+ * General purpose helper methods for array conversion methods from specific object types to/from primitive types. This
+ * is specifically intended to improve performance in integration with Python, where conversion of primitive type arrays
+ * involves direct copy of a memory buffer, and is much more performant than element-by-element inspection.
  */
 public class PrimitiveArrayConversionUtility {
     /**
-     * Translates a java.lang.Boolean array to a byte array. The mapping will be performed as null
-     * -> -1, false -> 0, and true -> 1. This is the (psuedo)inverse of
-     * `translateArrayByteToBoolean`.
+     * Translates a java.lang.Boolean array to a byte array. The mapping will be performed as null -> -1, false -> 0,
+     * and true -> 1. This is the (psuedo)inverse of `translateArrayByteToBoolean`.
      *
      * @param array - the Boolean array
      * @return the byte array
@@ -32,8 +30,8 @@ public class PrimitiveArrayConversionUtility {
     }
 
     /**
-     * Translates a byte array to a Boolean array. The mapping will be performed as <0 -> null, 0 ->
-     * false, >0 -> true. This is the (psuedo)inverse of `translateArrayBooleanToByte`.
+     * Translates a byte array to a Boolean array. The mapping will be performed as <0 -> null, 0 -> false, >0 -> true.
+     * This is the (psuedo)inverse of `translateArrayBooleanToByte`.
      *
      * @param array - the byte array
      * @return the Boolean array
@@ -48,8 +46,7 @@ public class PrimitiveArrayConversionUtility {
     }
 
     /**
-     * Translates a DBDateTime array to a long array. This is the (psuedo)inverse of
-     * `translateArrayLongToDBDateTime`.
+     * Translates a DBDateTime array to a long array. This is the (psuedo)inverse of `translateArrayLongToDBDateTime`.
      *
      * @param array - the DBDateTime array
      * @return the corresponding long array
@@ -64,8 +61,7 @@ public class PrimitiveArrayConversionUtility {
     }
 
     /**
-     * Translates a long array to a DBDateTime array. This is the (psuedo)inverse of
-     * `translateArrayLongToDBDateTime`.
+     * Translates a long array to a DBDateTime array. This is the (psuedo)inverse of `translateArrayLongToDBDateTime`.
      *
      * @param array - the long array
      * @return the corresponding DBDateTime array

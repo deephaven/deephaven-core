@@ -50,7 +50,7 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                 final OrderedKeys oks = it.getNextOrderedKeysThrough(v);
                 if (oks.size() != 0) {
                     try (final WritableLongChunk<OrderedKeyRanges> chunk =
-                        WritableLongChunk.makeWritableChunk(65536 * 6)) {
+                            WritableLongChunk.makeWritableChunk(65536 * 6)) {
                         oks.fillKeyRangesChunk(chunk);
                         assertEquals(0, chunk.size() % 2);
                         int i = 0;
@@ -83,7 +83,7 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                 final OrderedKeys oks = it.getNextOrderedKeysWithLength(len);
                 if (oks.size() != 0) {
                     try (final WritableLongChunk<OrderedKeyRanges> chunk =
-                        WritableLongChunk.makeWritableChunk(2 * (int) len)) {
+                            WritableLongChunk.makeWritableChunk(2 * (int) len)) {
                         oks.fillKeyRangesChunk(chunk);
                         assertEquals(0, chunk.size() % 2);
                         int i = 0;
@@ -303,10 +303,9 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                             final OrderedKeys.Iterator it = ok.getOrderedKeysIterator();
                             final int chunkSz = 13;
                             try (final WritableLongChunk<OrderedKeyIndices> chunk =
-                                WritableLongChunk.makeWritableChunk(chunkSz)) {
+                                    WritableLongChunk.makeWritableChunk(chunkSz)) {
                                 while (it.hasMore()) {
-                                    final OrderedKeys okit =
-                                        it.getNextOrderedKeysWithLength(chunkSz);
+                                    final OrderedKeys okit = it.getNextOrderedKeysWithLength(chunkSz);
                                     chunk.setSize(chunkSz);
                                     okit.fillKeyIndicesChunk(chunk);
                                     final int sz = chunk.size();
@@ -354,16 +353,14 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                             final OrderedKeys.Iterator it = ok.getOrderedKeysIterator();
                             final int chunkSz = 13;
                             try (final WritableLongChunk<OrderedKeyRanges> chunk =
-                                WritableLongChunk.makeWritableChunk(chunkSz)) {
+                                    WritableLongChunk.makeWritableChunk(chunkSz)) {
                                 while (it.hasMore()) {
-                                    final OrderedKeys okit =
-                                        it.getNextOrderedKeysWithLength(chunkSz / 2);
+                                    final OrderedKeys okit = it.getNextOrderedKeysWithLength(chunkSz / 2);
                                     chunk.setSize(chunkSz);
                                     okit.fillKeyRangesChunk(chunk);
                                     final int sz = chunk.size();
                                     for (int i = 0; i < sz; i += 2) {
-                                        res.addRangeUnsafeNoWriteCheck(chunk.get(i),
-                                            chunk.get(i + 1));
+                                        res.addRangeUnsafeNoWriteCheck(chunk.get(i), chunk.get(i + 1));
                                     }
                                 }
                             }
@@ -420,8 +417,7 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
     @Test
     public void testInvariantRegression0() {
         final RspBitmap rb = new RspBitmap();
-        rb.addValues(175, 225, 288, 351, 429, 523, 562, 131247, 131297, 131360, 131423, 131501,
-            131595, 131634);
+        rb.addValues(175, 225, 288, 351, 429, 523, 562, 131247, 131297, 131360, 131423, 131501, 131595, 131634);
         final OrderedKeys.Iterator it = rb.getOrderedKeysIterator();
         int maxKey = BLOCK_SIZE - 1;
         while (it.hasMore()) {
@@ -506,8 +502,7 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         // Further, we need to stop in a partial range short of the full filled buf.
         rb.addRange(1, 2);
         rb.addRange(4, 5);
-        rb.addRange(7, 8); // we stop here (7 below in getOrderedKeysByRange), so that there is one
-                           // range after us.
+        rb.addRange(7, 8); // we stop here (7 below in getOrderedKeysByRange), so that there is one range after us.
         rb.addRange(10, 11);
         final OrderedKeys ok = rb.getOrderedKeysByKeyRange(1, 7);
         ok.forAllLongRanges((final long start, final long end) -> {
@@ -649,7 +644,7 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                 }
             }
             try (final OrderedKeys.Iterator okIter = rb.getOrderedKeysIterator();
-                final RspRangeIterator rit = rb.getRangeIterator()) {
+                    final RspRangeIterator rit = rb.getRangeIterator()) {
                 long prevEnd = -2;
                 long lastRelativePos = -rb.getCardinality() - 1;
                 int nrange = 0;
@@ -710,8 +705,7 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
     public void testIteratorGetNextOrderedKeysThroughRegression0() {
         RspBitmap rb = RspBitmap.makeSingleRange(10, 15);
         rb = rb.appendRange(BLOCK_SIZE + 1, BLOCK_SIZE + 10);
-        // rb has two containers, we are going to iterate to a maxKey of BLOCK_SIZE, which is not
-        // present
+        // rb has two containers, we are going to iterate to a maxKey of BLOCK_SIZE, which is not present
         // and if it was, would be at the beginning of the second container.
         try (OrderedKeys.Iterator it = rb.ixGetOrderedKeysIterator()) {
             assertTrue(it.hasMore());

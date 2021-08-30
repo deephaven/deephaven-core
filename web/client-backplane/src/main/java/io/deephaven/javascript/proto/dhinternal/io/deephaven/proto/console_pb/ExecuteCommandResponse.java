@@ -10,27 +10,91 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.ExecuteCommandResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.ExecuteCommandResponse",
+        namespace = JsPackage.GLOBAL)
 public class ExecuteCommandResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface CreatedListFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface IdFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface GetTicketUnionType {
+                    @JsOverlay
+                    static ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType.IdFieldType.GetTicketUnionType of(
+                            Object o) {
+                        return Js.cast(o);
+                    }
+
+                    @JsOverlay
+                    default String asString() {
+                        return Js.asString(this);
+                    }
+
+                    @JsOverlay
+                    default Uint8Array asUint8Array() {
+                        return Js.cast(this);
+                    }
+
+                    @JsOverlay
+                    default boolean isString() {
+                        return (Object) this instanceof String;
+                    }
+
+                    @JsOverlay
+                    default boolean isUint8Array() {
+                        return (Object) this instanceof Uint8Array;
+                    }
+                }
+
+                @JsOverlay
+                static ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType.IdFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType.IdFieldType.GetTicketUnionType getTicket();
+
+                @JsProperty
+                void setTicket(
+                        ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType.IdFieldType.GetTicketUnionType ticket);
+
+                @JsOverlay
+                default void setTicket(String ticket) {
+                    setTicket(
+                            Js.<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType.IdFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
+                }
+
+                @JsOverlay
+                default void setTicket(Uint8Array ticket) {
+                    setTicket(
+                            Js.<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType.IdFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
+                }
+            }
+
             @JsOverlay
             static ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            String getName();
+            ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType.IdFieldType getId();
+
+            @JsProperty
+            String getTitle();
 
             @JsProperty
             String getType();
 
             @JsProperty
-            void setName(String name);
+            void setId(ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType.IdFieldType id);
+
+            @JsProperty
+            void setTitle(String title);
 
             @JsProperty
             void setType(String type);
@@ -55,15 +119,15 @@ public class ExecuteCommandResponse {
 
         @JsOverlay
         default void setCreatedList(
-            ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType[] createdList) {
+                ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType[] createdList) {
             setCreatedList(
-                Js.<JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType>>uncheckedCast(
-                    createdList));
+                    Js.<JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType>>uncheckedCast(
+                            createdList));
         }
 
         @JsProperty
         void setCreatedList(
-            JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType> createdList);
+                JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType> createdList);
 
         @JsProperty
         void setErrorMessage(String errorMessage);
@@ -89,19 +153,83 @@ public class ExecuteCommandResponse {
     public interface ToObjectReturnType0 {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface CreatedListFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface IdFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface GetTicketUnionType {
+                    @JsOverlay
+                    static ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType.IdFieldType.GetTicketUnionType of(
+                            Object o) {
+                        return Js.cast(o);
+                    }
+
+                    @JsOverlay
+                    default String asString() {
+                        return Js.asString(this);
+                    }
+
+                    @JsOverlay
+                    default Uint8Array asUint8Array() {
+                        return Js.cast(this);
+                    }
+
+                    @JsOverlay
+                    default boolean isString() {
+                        return (Object) this instanceof String;
+                    }
+
+                    @JsOverlay
+                    default boolean isUint8Array() {
+                        return (Object) this instanceof Uint8Array;
+                    }
+                }
+
+                @JsOverlay
+                static ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType.IdFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType.IdFieldType.GetTicketUnionType getTicket();
+
+                @JsProperty
+                void setTicket(
+                        ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType.IdFieldType.GetTicketUnionType ticket);
+
+                @JsOverlay
+                default void setTicket(String ticket) {
+                    setTicket(
+                            Js.<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType.IdFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
+                }
+
+                @JsOverlay
+                default void setTicket(Uint8Array ticket) {
+                    setTicket(
+                            Js.<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType.IdFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
+                }
+            }
+
             @JsOverlay
             static ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            String getName();
+            ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType.IdFieldType getId();
+
+            @JsProperty
+            String getTitle();
 
             @JsProperty
             String getType();
 
             @JsProperty
-            void setName(String name);
+            void setId(ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType.IdFieldType id);
+
+            @JsProperty
+            void setTitle(String title);
 
             @JsProperty
             void setType(String type);
@@ -126,15 +254,15 @@ public class ExecuteCommandResponse {
 
         @JsOverlay
         default void setCreatedList(
-            ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType[] createdList) {
+                ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType[] createdList) {
             setCreatedList(
-                Js.<JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType>>uncheckedCast(
-                    createdList));
+                    Js.<JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType>>uncheckedCast(
+                            createdList));
         }
 
         @JsProperty
         void setCreatedList(
-            JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType> createdList);
+                JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType> createdList);
 
         @JsProperty
         void setErrorMessage(String errorMessage);
@@ -159,13 +287,12 @@ public class ExecuteCommandResponse {
     public static native ExecuteCommandResponse deserializeBinary(Uint8Array bytes);
 
     public static native ExecuteCommandResponse deserializeBinaryFromReader(
-        ExecuteCommandResponse message, Object reader);
+            ExecuteCommandResponse message, Object reader);
 
-    public static native void serializeBinaryToWriter(ExecuteCommandResponse message,
-        Object writer);
+    public static native void serializeBinaryToWriter(ExecuteCommandResponse message, Object writer);
 
     public static native ExecuteCommandResponse.ToObjectReturnType toObject(
-        boolean includeInstance, ExecuteCommandResponse msg);
+            boolean includeInstance, ExecuteCommandResponse msg);
 
     public native VariableDefinition addCreated();
 

@@ -4,6 +4,6 @@
   "main": ":param args: java.lang.String[]"
  },
  "path": "io.deephaven.libs.primitives.Replicate",
- "text": "Autogenerates primitives from template java files (e.g. CharacterPrimitives, ShortNumericPrimitives, FloatNumericPrimitives, and FlotFpPrimitives).",
+ "text": "Autogenerates primitives from template java files (e.g. CharacterPrimitives, ShortNumericPrimitives,\n FloatNumericPrimitives, and FlotFpPrimitives).",
  "typeName": "class"
 }

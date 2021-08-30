@@ -6,9 +6,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.FixedSizeList",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.FixedSizeList",
+        namespace = JsPackage.GLOBAL)
 public class FixedSizeList {
     public static native void addListSize(Builder builder, double listSize);
 
@@ -21,7 +21,7 @@ public class FixedSizeList {
     public static native FixedSizeList getRootAsFixedSizeList(ByteBuffer bb);
 
     public static native FixedSizeList getSizePrefixedRootAsFixedSizeList(
-        ByteBuffer bb, FixedSizeList obj);
+            ByteBuffer bb, FixedSizeList obj);
 
     public static native FixedSizeList getSizePrefixedRootAsFixedSizeList(ByteBuffer bb);
 

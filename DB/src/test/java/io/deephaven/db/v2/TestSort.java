@@ -24,13 +24,15 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 @Category(OutOfBandTest.class)
 public class TestSort extends BaseArrayTestCase {
 
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-        .getBooleanForClassWithDefault(TestSort.class, "CompilerTools.logEnabled", false);
+            .getBooleanForClassWithDefault(TestSort.class, "CompilerTools.logEnabled", false);
 
     private boolean lastMemoize = false;
     private boolean oldCompilerToolsLogEnabled;
@@ -57,14 +59,13 @@ public class TestSort extends BaseArrayTestCase {
         void consume(A val) throws T;
     }
 
-    private <T extends Exception> void assertException(QueryTable t,
-        ThrowingConsumer<QueryTable, T> r, String failMessage, Class<T> excType) {
+    private <T extends Exception> void assertException(QueryTable t, ThrowingConsumer<QueryTable, T> r,
+            String failMessage, Class<T> excType) {
         try {
             r.consume(t);
             fail(failMessage);
         } catch (Exception e) {
-            assertTrue(e.getClass().toString() + " is not a " + excType.toString(),
-                excType.isInstance(e));
+            assertTrue(e.getClass().toString() + " is not a " + excType.toString(), excType.isInstance(e));
         }
     }
 
@@ -98,29 +99,28 @@ public class TestSort extends BaseArrayTestCase {
         source.restrictSortTo("Column1", "Column3");
 
         assertException(source, (t) -> t.assertSortable(t.getDefinition().getColumnNamesArray()),
-            "Columns 1 and 3 should not be sortable.", NotSortableException.class);
+                "Columns 1 and 3 should not be sortable.", NotSortableException.class);
 
         source.assertSortable("Column1", "Column3");
         QueryTable temp = (QueryTable) source.sort("Column3");
 
-        assertException(temp, (t) -> t.sort("Column2"), "Column2 should not be sortable",
-            NotSortableException.class);
-        assertException(source, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sort("Column2"), "Column2 should not be sortable", NotSortableException.class);
+        assertException(source, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
         // Check where()
         temp = (QueryTable) source.where("Column2 > 24");
         temp.sort("Column3");
         temp.sort("Column1");
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
         temp.clearSortingRestrictions();
         temp.assertSortable(temp.getDefinition().getColumnNamesArray());
         temp.sort(temp.getDefinition().getColumnNamesArray());
 
         assertException(source, (t) -> t.assertSortable(t.getDefinition().getColumnNamesArray()),
-            "Columns 1 and 3 should not be sortable.", NotSortableException.class);
+                "Columns 1 and 3 should not be sortable.", NotSortableException.class);
 
         temp = (QueryTable) temp.clearSortingRestrictions();
         temp.assertSortable(temp.getDefinition().getColumnNamesArray());
@@ -136,10 +136,9 @@ public class TestSort extends BaseArrayTestCase {
         // Check Select
         QueryTable temp = (QueryTable) source.select();
         assertException(temp, (t) -> t.sort(t.getDefinition().getColumnNamesArray()),
-            "Columns 0 and 2 should not be sortable.", NotSortableException.class);
+                "Columns 0 and 2 should not be sortable.", NotSortableException.class);
 
-        testRestrictedSortingViewSelect(
-            (t, a) -> (QueryTable) (a == null || a.length <= 0 ? t.select() : t.select(a)));
+        testRestrictedSortingViewSelect((t, a) -> (QueryTable) (a == null || a.length <= 0 ? t.select() : t.select(a)));
     }
 
     public void testRestrictSortingView() {
@@ -153,46 +152,45 @@ public class TestSort extends BaseArrayTestCase {
         source.assertSortable(source.getDefinition().getColumnNamesArray());
         source.restrictSortTo("Column1", "Column3");
 
-        QueryTable temp = func.apply(source, new String[] {"Column1a=Column1", "Column0=Column3",
-                "Column2=Column2", "Column5=Column3", "Column5=Column1"});
+        QueryTable temp = func.apply(source, new String[] {"Column1a=Column1", "Column0=Column3", "Column2=Column2",
+                "Column5=Column3", "Column5=Column1"});
         temp.sort("Column1a");
         temp.sort("Column5");
         temp.sort("Column0");
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NoSuchColumnException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NoSuchColumnException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
-        temp = func.apply(source, new String[] {"Column1a=Column1", "Column3=Column3+Column1",
-                "Column2=Column2", "Column5=Column3", "Column5=Column0"});
+        temp = func.apply(source, new String[] {"Column1a=Column1", "Column3=Column3+Column1", "Column2=Column2",
+                "Column5=Column3", "Column5=Column0"});
         temp.sort("Column1a");
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column5"),
-            "Should not be able to sort by Column5", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column5"), "Should not be able to sort by Column5",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
-        temp = func.apply(source, new String[] {"Column1a=Column1", "Column3=Column3+Column1",
-                "Column2=Column2", "Column5=Column3", "Column5=Column1"});
+        temp = func.apply(source, new String[] {"Column1a=Column1", "Column3=Column3+Column1", "Column2=Column2",
+                "Column5=Column3", "Column5=Column1"});
         temp.sort("Column1a");
         temp.sort("Column5");
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
-        temp = func.apply(source,
-            new String[] {"Column1a=Column1", "Column0=Column3", "Column2=Column2",
-                    "Column5=Column3", "Column5=Column1", "Column1a=Column3+Column0"});
-        assertException(temp, (t) -> t.sortDescending("Column1a"),
-            "Should not be able to sort by Column1a", NotSortableException.class);
+        temp = func.apply(source, new String[] {"Column1a=Column1", "Column0=Column3", "Column2=Column2",
+                "Column5=Column3", "Column5=Column1", "Column1a=Column3+Column0"});
+        assertException(temp, (t) -> t.sortDescending("Column1a"), "Should not be able to sort by Column1a",
+                NotSortableException.class);
         temp.sort("Column5");
         temp.sort("Column0");
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NoSuchColumnException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NoSuchColumnException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
     }
 
     public void testRestrictedSortingUpdate() {
@@ -203,55 +201,53 @@ public class TestSort extends BaseArrayTestCase {
         testRestrictedSortingUpdateUpdateView((t, a) -> (QueryTable) t.updateView(a));
     }
 
-    private void testRestrictedSortingUpdateUpdateView(
-        BiFunction<Table, String[], QueryTable> func) {
+    private void testRestrictedSortingUpdateUpdateView(BiFunction<Table, String[], QueryTable> func) {
         final QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 
         // All columns should be sortable
         source.assertSortable(source.getDefinition().getColumnNamesArray());
         source.restrictSortTo("Column1", "Column3");
 
-        QueryTable temp = func.apply(source, new String[] {"Column1a=Column1", "Column0=Column3",
-                "Column2=Column2", "Column5=Column3", "Column5=Column1"});
+        QueryTable temp = func.apply(source, new String[] {"Column1a=Column1", "Column0=Column3", "Column2=Column2",
+                "Column5=Column3", "Column5=Column1"});
         temp.sort("Column1a");
         temp.sort("Column5");
         temp.sort("Column0");
         temp.sortDescending("Column1");
         temp.sortDescending("Column3");
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
-        temp = func.apply(source, new String[] {"Column1a=Column1", "Column3=Column3+Column1",
-                "Column2=Column2", "Column5=Column3", "Column5=Column0"});
+        temp = func.apply(source, new String[] {"Column1a=Column1", "Column3=Column3+Column1", "Column2=Column2",
+                "Column5=Column3", "Column5=Column0"});
         temp.sort("Column1a");
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column5"),
-            "Should not be able to sort by Column5", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column5"), "Should not be able to sort by Column5",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
-        temp = func.apply(source, new String[] {"Column1a=Column1", "Column3=Column3+Column1",
-                "Column2=Column2", "Column5=Column3", "Column5=Column1"});
+        temp = func.apply(source, new String[] {"Column1a=Column1", "Column3=Column3+Column1", "Column2=Column2",
+                "Column5=Column3", "Column5=Column1"});
         temp.sort("Column1a");
         temp.sort("Column5");
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
-        temp = func.apply(source,
-            new String[] {"Column1a=Column1", "Column0=Column3", "Column2=Column2",
-                    "Column5=Column3", "Column5=Column1", "Column1a=Column3+Column0"});
-        assertException(temp, (t) -> t.sortDescending("Column1a"),
-            "Should not be able to sort by Column1a", NotSortableException.class);
+        temp = func.apply(source, new String[] {"Column1a=Column1", "Column0=Column3", "Column2=Column2",
+                "Column5=Column3", "Column5=Column1", "Column1a=Column3+Column0"});
+        assertException(temp, (t) -> t.sortDescending("Column1a"), "Should not be able to sort by Column1a",
+                NotSortableException.class);
         temp.sort("Column5");
         temp.sort("Column0");
         temp.sortDescending("Column3");
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column1a"),
-            "Should not be able to sort by Column1a", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column1a"), "Should not be able to sort by Column1a",
+                NotSortableException.class);
     }
 
     public void testRestrictedSortingDropColumns() {
@@ -263,19 +259,19 @@ public class TestSort extends BaseArrayTestCase {
 
         QueryTable temp = (QueryTable) source.dropColumns("Column3");
         temp.sort("Column1");
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NoSuchColumnException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NoSuchColumnException.class);
         temp = (QueryTable) temp.update("Column3=Column0");
         temp.sort("Column1");
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NotSortableException.class);
 
         temp = (QueryTable) temp.restrictSortTo("Column3");
         temp.sort("Column3");
-        assertException(temp, (t) -> t.sortDescending("Column1"),
-            "Should not be able to sort by Column1", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column0"),
-            "Should not be able to sort by Column0", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column1"), "Should not be able to sort by Column1",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column0"), "Should not be able to sort by Column0",
+                NotSortableException.class);
     }
 
     public void testRestrictedSortingRenameColumns() {
@@ -286,28 +282,28 @@ public class TestSort extends BaseArrayTestCase {
         source.restrictSortTo("Column1", "Column3");
         source.sort("Column1");
         source.sort("Column3");
-        assertException(source, (t) -> t.sortDescending("Column0"),
-            "Should not be able to sort by Column0", NotSortableException.class);
-        assertException(source, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(source, (t) -> t.sortDescending("Column0"), "Should not be able to sort by Column0",
+                NotSortableException.class);
+        assertException(source, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
 
-        QueryTable temp = (QueryTable) source.renameColumns("Column0a=Column0", "Column1a=Column1",
-            "Column2a=Column2", "Column3a=Column3");
+        QueryTable temp = (QueryTable) source.renameColumns("Column0a=Column0", "Column1a=Column1", "Column2a=Column2",
+                "Column3a=Column3");
         temp.sort("Column1a");
         temp.sort("Column3a");
-        assertException(temp, (t) -> t.sortDescending("Column0a"),
-            "Should not be able to sort by Column0a", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2a"),
-            "Should not be able to sort by Column2a", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column0a"), "Should not be able to sort by Column0a",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2a"), "Should not be able to sort by Column2a",
+                NotSortableException.class);
 
-        assertException(temp, (t) -> t.sortDescending("Column0"),
-            "Should not be able to sort by Column0", NoSuchColumnException.class);
-        assertException(temp, (t) -> t.sortDescending("Column1"),
-            "Should not be able to sort by Column1", NoSuchColumnException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NoSuchColumnException.class);
-        assertException(temp, (t) -> t.sortDescending("Column3"),
-            "Should not be able to sort by Column3", NoSuchColumnException.class);
+        assertException(temp, (t) -> t.sortDescending("Column0"), "Should not be able to sort by Column0",
+                NoSuchColumnException.class);
+        assertException(temp, (t) -> t.sortDescending("Column1"), "Should not be able to sort by Column1",
+                NoSuchColumnException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NoSuchColumnException.class);
+        assertException(temp, (t) -> t.sortDescending("Column3"), "Should not be able to sort by Column3",
+                NoSuchColumnException.class);
 
         temp = (QueryTable) temp.clearSortingRestrictions();
         temp.sort("Column0a");
@@ -315,18 +311,18 @@ public class TestSort extends BaseArrayTestCase {
         temp.sort("Column2a");
         temp.sort("Column3a");
 
-        temp = (QueryTable) source.renameColumns("Column0=Column0", "Column1=Column1",
-            "Column2=Column2", "Column3=Column3");
+        temp = (QueryTable) source.renameColumns("Column0=Column0", "Column1=Column1", "Column2=Column2",
+                "Column3=Column3");
         temp.sort("Column1");
         temp.sort("Column3");
-        assertException(temp, (t) -> t.sortDescending("Column0"),
-            "Should not be able to sort by Column0", NotSortableException.class);
-        assertException(temp, (t) -> t.sortDescending("Column2"),
-            "Should not be able to sort by Column2", NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column0"), "Should not be able to sort by Column0",
+                NotSortableException.class);
+        assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
+                NotSortableException.class);
     }
 
     private class MultiColumnSortHelper {
-        private class Wrapper implements Comparable {
+        private class Wrapper implements Comparable<Wrapper> {
             int getSentinel() {
                 return sentinel;
             }
@@ -339,8 +335,7 @@ public class TestSort extends BaseArrayTestCase {
                 this.sign = reverse ? -1 : 1;
             }
 
-            public int compareTo(Object oo) {
-                Wrapper ww = (Wrapper) oo;
+            public int compareTo(@NotNull Wrapper ww) {
                 for (int ii = 0; ii < colsToUse; ++ii) {
                     Comparable comparable = columnData[ii][sentinel];
                     Comparable comparable1 = columnData[ii][ww.getSentinel()];
@@ -612,7 +607,7 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     private QueryTable generateSortTesterTable(int ncols, int size, DataGenerator dataGenerator) {
-        Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (int ii = 0; ii < ncols; ++ii) {
             columns.put("Column" + ii, dataGenerator.generateColumnSource(size));
         }
@@ -648,8 +643,7 @@ public class TestSort extends BaseArrayTestCase {
         sortTester(ncols, size, boxedData, source);
     }
 
-    private void sortMultiTester(int ncols, int size, boolean grouped,
-        StringGenerator dataGenerator) {
+    private void sortMultiTester(int ncols, int size, boolean grouped, StringGenerator dataGenerator) {
         System.out.println("Sorting table of size " + size + " with " + ncols + " columns.");
 
         ColumnHolder columnHolders[] = new ColumnHolder[ncols + 1];
@@ -660,8 +654,7 @@ public class TestSort extends BaseArrayTestCase {
             for (int jj = 0; jj < size; jj++) {
                 data[jj] = dataGenerator.makeEntry();
             }
-            columnHolders[ii] =
-                new ColumnHolder<>("Column" + ii, String.class, null, grouped, data);
+            columnHolders[ii] = new ColumnHolder<>("Column" + ii, String.class, null, grouped, data);
             boxedData[ii] = data;
         }
 
@@ -681,8 +674,7 @@ public class TestSort extends BaseArrayTestCase {
         sortTester(ncols, size, columnData, source, true);
     }
 
-    private void sortTester(int ncols, int size, Comparable[][] columnData, Table source,
-        boolean isRefreshing) {
+    private void sortTester(int ncols, int size, Comparable[][] columnData, Table source, boolean isRefreshing) {
         ((QueryTable) source).setRefreshing(isRefreshing);
 
         // Now sort the table by the sentinel, which should just give us a simple ordering.
@@ -727,8 +719,7 @@ public class TestSort extends BaseArrayTestCase {
             MultiColumnSortHelper multiColumnSortHelper = new MultiColumnSortHelper(columnData, ii);
             for (int jj = 0; jj < size; ++jj) {
                 assertEquals(multiColumnSortHelper.getSentinel(jj), (int) colAscending.get(jj));
-                assertEquals(multiColumnSortHelper.getReverseSentinel(jj),
-                    (int) colDescending.get(jj));
+                assertEquals(multiColumnSortHelper.getReverseSentinel(jj), (int) colDescending.get(jj));
             }
         }
     }

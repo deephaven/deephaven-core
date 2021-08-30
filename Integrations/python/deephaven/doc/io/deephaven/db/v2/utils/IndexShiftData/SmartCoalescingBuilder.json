@@ -1,11 +1,11 @@
 {
  "className": "io.deephaven.db.v2.utils.IndexShiftData$SmartCoalescingBuilder",
  "methods": {
-  "build": "Make final modifications to the IndexShiftData and return it. Invoke close() to minimize\n the lifetime of the pre-shift OrderedKeys.Iterator.\n\n:return: (io.deephaven.db.v2.utils.IndexShiftData) The built IndexShiftData",
+  "build": "Make final modifications to the IndexShiftData and return it. Invoke close() to minimize the\n lifetime of the pre-shift OrderedKeys.Iterator.\n\n:return: (io.deephaven.db.v2.utils.IndexShiftData) The built IndexShiftData",
   "nonempty": ":return: (boolean) true iff there is at least one shift appended to this builder",
   "shiftRange": "Shift a range of keys. The shift must be consistent with previously added shifts.\n\n:param beginRange: (long) - first key to shift (inclusive)\n:param endRange: (long) - last key to shift (inclusive)\n:param shiftDelta: (long) - offset to shift by; may be negative"
  },
  "path": "io.deephaven.db.v2.utils.IndexShiftData.SmartCoalescingBuilder",
- "text": "Helper utility to build instances of IndexShiftData with internally consistent data.\n No other ranges should be added to this builder after IndexShiftData.Builder.build() is invoked.\n \n Differs from IndexShiftData.Builder in that it coalesces ranges with the same delta if they have no intervening keys\n in the pre-shift keys of the input, e.g. a Table.\n\n The data should be presented to the builder in shift iterator order, meaning the first contiguous run with\n a given polarity is presented to the builder, then the next run is presented with the opposite polarity.\n When the polarity is reversed (i.e., the delta is positive); the ranges must be presented in reverse (descending)\n order within the run.  When the polarity is not reversed (i.e., the delta is negative); the ranges must be\n presented in ascending order.",
+ "text": "Helper utility to build instances of IndexShiftData with internally consistent data. No other ranges\n should be added to this builder after IndexShiftData.Builder.build() is invoked.\n \n Differs from IndexShiftData.Builder in that it coalesces ranges with the same delta if they have no intervening keys in\n the pre-shift keys of the input, e.g. a Table.\n \n\n The data should be presented to the builder in shift iterator order, meaning the first contiguous run with a\n given polarity is presented to the builder, then the next run is presented with the opposite polarity. When the\n polarity is reversed (i.e., the delta is positive); the ranges must be presented in reverse (descending) order\n within the run. When the polarity is not reversed (i.e., the delta is negative); the ranges must be presented in\n ascending order.",
  "typeName": "class"
 }

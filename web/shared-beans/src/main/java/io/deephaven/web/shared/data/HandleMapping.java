@@ -57,8 +57,8 @@ public class HandleMapping implements Serializable {
     @Override
     public String toString() {
         return "HandleMapping{" +
-            "source=" + source +
-            ", newId=" + newId +
-            '}';
+                "source=" + source +
+                ", newId=" + newId +
+                '}';
     }
 }

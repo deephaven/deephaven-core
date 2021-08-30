@@ -6,9 +6,9 @@ import io.deephaven.libs.primitives.DoubleFpPrimitives;
 /**
  * {@link XYDataSeries} based on a function.
  *
- * By default, this calculates at least 200 data points inside the plot's existing range. The number
- * of points can be increased for a finer grained plot, or decreased if less resolution is needed.
- * The points are recomputed as the {@link Chart}'s x-range changes.
+ * By default, this calculates at least 200 data points inside the plot's existing range. The number of points can be
+ * increased for a finer grained plot, or decreased if less resolution is needed. The points are recomputed as the
+ * {@link Chart}'s x-range changes.
  */
 public interface XYDataSeriesFunction extends XYDataSeries {
 
@@ -24,9 +24,8 @@ public interface XYDataSeriesFunction extends XYDataSeries {
     /**
      * Sets the data range for this series.
      *
-     * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin}
-     *         and {@code xmax} must be normal. See {@link DoubleFpPrimitives#isNormal}
-     *         {@code npoints} must non-negative
+     * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin} and {@code xmax}
+     *         must be normal. See {@link DoubleFpPrimitives#isNormal} {@code npoints} must non-negative
      * @param xmin range minimum
      * @param xmax range maximum
      * @param npoints number of data points

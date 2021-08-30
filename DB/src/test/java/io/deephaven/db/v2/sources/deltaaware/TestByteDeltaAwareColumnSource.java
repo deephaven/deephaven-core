@@ -176,7 +176,7 @@ public class TestByteDeltaAwareColumnSource {
 
         // Current...
         try (ChunkSource.GetContext context = dacs.makeGetContext(chunkSize)) {
-            ByteChunk<Values> chunk;
+            ByteChunk<? extends Values> chunk;
 
             chunk = dacs.getChunk(context, index0).asByteChunk();
             checkChunk(chunk, expectedCurrent, index0);
@@ -190,7 +190,7 @@ public class TestByteDeltaAwareColumnSource {
         }
     }
 
-    private static void checkChunk(ByteChunk<Values> values, Map<Long, Byte> expected, Index keys) {
+    private static void checkChunk(ByteChunk<? extends Values> values, Map<Long, Byte> expected, Index keys) {
         int sliceOffset = 0;
         for (final Index.Iterator it = keys.iterator(); it.hasNext(); ) {
             final long key = it.nextLong();

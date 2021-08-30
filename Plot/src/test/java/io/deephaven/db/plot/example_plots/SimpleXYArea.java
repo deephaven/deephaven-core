@@ -19,12 +19,12 @@ public class SimpleXYArea {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title");
+                .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-            .xLabel("X")
-            .yLabel("Y").plotStyle("AREA")
-            .plot("Test1", x1, y1).pointsVisible(true).linesVisible(true)
-            .plot("Test2", x2, y2);
+                .xLabel("X")
+                .yLabel("Y").plotStyle("AREA")
+                .plot("Test1", x1, y1).pointsVisible(true).linesVisible(true)
+                .plot("Test2", x2, y2);
 
         ExamplePlotUtils.display(axs);
     }

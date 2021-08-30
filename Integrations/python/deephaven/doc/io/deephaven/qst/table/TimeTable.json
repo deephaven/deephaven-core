@@ -9,6 +9,6 @@
   "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.qst.table.TimeTable",
- "text": "A time table adds rows at a fixed interval with a\n Timestamp column.",
+ "text": "A time table adds rows at a fixed interval with a Timestamp column.",
  "typeName": "class"
 }

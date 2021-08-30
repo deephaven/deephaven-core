@@ -5,14 +5,14 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.CancelCommandResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.CancelCommandResponse",
+        namespace = JsPackage.GLOBAL)
 public class CancelCommandResponse {
     public static native CancelCommandResponse deserializeBinary(Uint8Array bytes);
 
     public static native CancelCommandResponse deserializeBinaryFromReader(
-        CancelCommandResponse message, Object reader);
+            CancelCommandResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(CancelCommandResponse message, Object writer);
 

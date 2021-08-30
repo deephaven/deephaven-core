@@ -3,9 +3,9 @@ package io.deephaven.db.util;
 import java.io.PrintStream;
 
 /**
- * This class is stored in the sys.stdout and sys.stderr variables inside of a Python session, so
- * that we can intercept the Python session's output, rather than having it all go to the system
- * stdout/stderr streams, which are not accessible to the console.
+ * This class is stored in the sys.stdout and sys.stderr variables inside of a Python session, so that we can intercept
+ * the Python session's output, rather than having it all go to the system stdout/stderr streams, which are not
+ * accessible to the console.
  */
 class PythonLogAdapter {
     private final PrintStream out;
@@ -17,10 +17,9 @@ class PythonLogAdapter {
     /**
      * This method is used from Python so that we appear as a stream.
      *
-     * We don't want to write the trailing newline, as the Logger implementation will do that for
-     * us. If there is no newline; we need to remember that we added one, so that we can suppress
-     * the next empty newline. If there was a newline, we shouldn't suppress it (e.g., when printing
-     * just a blank line to the output we need to preserve it).
+     * We don't want to write the trailing newline, as the Logger implementation will do that for us. If there is no
+     * newline; we need to remember that we added one, so that we can suppress the next empty newline. If there was a
+     * newline, we shouldn't suppress it (e.g., when printing just a blank line to the output we need to preserve it).
      *
      * @param s the string to write
      * @return the number of characters written
@@ -46,11 +45,9 @@ class PythonLogAdapter {
     // https://docs.python.org/2/library/io.html#io.IOBase.close
 
     /**
-     * If we just allow python to print to it's regular STDOUT and STDERR, then it bypasses the Java
-     * System.out/err.
+     * If we just allow python to print to it's regular STDOUT and STDERR, then it bypasses the Java System.out/err.
      *
-     * We replace the stdout/stderr with a small log adapter so that console users still get their
-     * output.
+     * We replace the stdout/stderr with a small log adapter so that console users still get their output.
      *
      * @param pythonHolder the PythonHolder object which we will insert our adapters into
      */

@@ -59,16 +59,16 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 import static io.deephaven.db.v2.by.ComboAggregateFactory.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test of QueryTable functionality.
  *
- * This test used to be a catch all, but at over 7,000 lines became unwieldy. It is still somewhat
- * of a catch-all, but some specific classes of tests have been broken out.
+ * This test used to be a catch all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
+ * some specific classes of tests have been broken out.
  *
- * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest},
- * {@link QueryTableSelectUpdateTest}, {@link QueryTableFlattenTest}, and
- * {@link QueryTableSortTest}.
+ * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest}, {@link QueryTableSelectUpdateTest},
+ * {@link QueryTableFlattenTest}, and {@link QueryTableSortTest}.
  */
 @Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
@@ -109,13 +109,12 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     /**
-     * Test that the formula can see the internal variable that DBTimeUtils introduces here. (Prior
-     * to IDS-6532 this threw an exception).
+     * Test that the formula can see the internal variable that DBTimeUtils introduces here. (Prior to IDS-6532 this
+     * threw an exception).
      */
     public void testIds6532() {
         final Table empty = emptyTable(5);
-        final SelectColumn sc =
-            SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
+        final SelectColumn sc = SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
         // First time ok
         final Table t1 = empty.select(sc);
         // Second time throws exception
@@ -123,36 +122,32 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     /**
-     * Test that the formula behaves correctly when there are are two initDefs() without an
-     * intervening request to compile the formula. Prior to the second update to IDS-6532, this
-     * threw an exception, although typically only by OpenAPI code (because that code uses
-     * validateSelect() whereas other code tends not to). The issue is that this sequence of
-     * operations works:
+     * Test that the formula behaves correctly when there are are two initDefs() without an intervening request to
+     * compile the formula. Prior to the second update to IDS-6532, this threw an exception, although typically only by
+     * OpenAPI code (because that code uses validateSelect() whereas other code tends not to). The issue is that this
+     * sequence of operations works:
      *
      * initDef() get compiled formula initDef() get compiled formula
      *
-     * But (prior to this change) this sequence of operations would not work: initDef() initDef()
-     * get compiled formula
+     * But (prior to this change) this sequence of operations would not work: initDef() initDef() get compiled formula
      *
-     * The reason the second one breaks is that (prior to this change), when using certain Time
-     * literals, the second initDef() changes Formula state in such a way that a subsequent
-     * compilation would not succeed. The reason this break was not observed in practice is that
-     * most usages are like the first example: there is a compilation request interposed between
-     * initDefs() and, thanks to formula caching, the second compilation uses the cached Formula
+     * The reason the second one breaks is that (prior to this change), when using certain Time literals, the second
+     * initDef() changes Formula state in such a way that a subsequent compilation would not succeed. The reason this
+     * break was not observed in practice is that most usages are like the first example: there is a compilation request
+     * interposed between initDefs() and, thanks to formula caching, the second compilation uses the cached Formula
      * object from the first compilation and doesn't actually invoke the compiler again.
      */
     public void testIds6532_part2() {
         final Table empty = emptyTable(5);
-        final SelectColumn sc =
-            SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
+        final SelectColumn sc = SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
         empty.validateSelect(sc);
         empty.select(sc);
     }
 
     /**
-     * The formula generation code used to create internal variables called "__chunk" + columnName;
-     * it also created an internal variable called "__chunkPos". Prior to the change that fixed
-     * this, a formula compilation error can happen if the customer names their column "Pos".
+     * The formula generation code used to create internal variables called "__chunk" + columnName; it also created an
+     * internal variable called "__chunkPos". Prior to the change that fixed this, a formula compilation error can
+     * happen if the customer names their column "Pos".
      */
     public void testIds6614() {
         final Table empty = emptyTable(5);
@@ -161,13 +156,11 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     /**
-     * Confirm that the system behaves correctly with select validation and the new "flatten" code
-     * QueryTable#select(). Prior to the change that fixed this, "validateSelect" would cause the
-     * SelectColumn to get associated with one index, but then select() would want to flatten that
-     * index, so a later initDef would try to associate it with a different index, and then the
-     * assertion would fail at AbstractFormulaColumn.java:86. The simple fix is that
-     * validateSelect() should copy its select columns before using them and then throw away the
-     * copies.
+     * Confirm that the system behaves correctly with select validation and the new "flatten" code QueryTable#select().
+     * Prior to the change that fixed this, "validateSelect" would cause the SelectColumn to get associated with one
+     * index, but then select() would want to flatten that index, so a later initDef would try to associate it with a
+     * different index, and then the assertion would fail at AbstractFormulaColumn.java:86. The simple fix is that
+     * validateSelect() should copy its select columns before using them and then throw away the copies.
      */
     public void testIds6760() {
         final Table t = emptyTable(10).select("II = ii").where("II > 5");
@@ -208,10 +201,10 @@ public class QueryTableTest extends QueryTableTestBase {
         final ColumnInfo[] columnInfo;
         final int size = 50;
         final QueryTable queryTable = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                new SetGenerator<>("a", "b", "c", "d", "e"),
-                new IntGenerator(10, 100),
-                new SetGenerator<>(10.1, 20.1, 30.1)));
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
 
         final Table sortedTable = queryTable.sort("intCol");
 
@@ -233,8 +226,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.updateView("newCol=intCol / 2")
-                            .updateView("newCol2=newCol * 4");
+                        return queryTable.updateView("newCol=intCol / 2").updateView("newCol2=newCol * 4");
                     }
                 },
                 new EvalNugget() {
@@ -249,8 +241,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.view("newCol=intCol / 2")
-                            .updateView("newCol2=newCol * 4");
+                        return queryTable.view("newCol=intCol / 2").updateView("newCol2=newCol * 4");
                     }
                 },
                 new EvalNugget() {
@@ -270,8 +261,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return sortedTable.updateView("newCol=intCol / 2")
-                            .updateView("newCol2=newCol * 4");
+                        return sortedTable.updateView("newCol=intCol / 2").updateView("newCol2=newCol * 4");
                     }
                 },
                 new EvalNugget() {
@@ -286,81 +276,62 @@ public class QueryTableTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return sortedTable.view("newCol=intCol / 2")
-                            .updateView("newCol2=newCol * 4");
+                        return sortedTable.view("newCol=intCol / 2").updateView("newCol2=newCol * 4");
                     }
                 },
-                EvalNugget.from(
-                    () -> queryTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
-                    .hasUnstableColumns("newCol2"),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
+                        .hasUnstableColumns("newCol2"),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
+                        .hasUnstableColumns("newCol2"),
                 EvalNugget
-                    .from(() -> queryTable.updateView("newCol=intCol / 2",
-                        "newCol2=newCol_[i-1] * newCol"))
-                    .hasUnstableColumns("newCol2"),
-                EvalNugget
-                    .from(() -> queryTable.updateView("repeatedCol=doubleCol - 0.5",
-                        "newCol=intCol / 2", "repeatedCol=newCol_[i-1] * repeatedCol"))
-                    .hasUnstableColumns("repeatedCol"),
-                EvalNugget.from(
-                    () -> queryTable.updateView("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
-                    .hasUnstableColumns("newCol"),
+                        .from(() -> queryTable.updateView("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                                "repeatedCol=newCol_[i-1] * repeatedCol"))
+                        .hasUnstableColumns("repeatedCol"),
+                EvalNugget.from(() -> queryTable.updateView("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
+                        .hasUnstableColumns("newCol"),
                 EvalNugget.from(() -> queryTable.updateView("newCol=intCol_[i-1]"))
-                    .hasUnstableColumns("newCol"),
-                EvalNugget.from(
-                    () -> sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
-                    .hasUnstableColumns("newCol2"),
+                        .hasUnstableColumns("newCol"),
+                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
+                        .hasUnstableColumns("newCol2"),
+                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
+                        .hasUnstableColumns("newCol2"),
                 EvalNugget
-                    .from(() -> sortedTable.updateView("newCol=intCol / 2",
-                        "newCol2=newCol_[i-1] * newCol"))
-                    .hasUnstableColumns("newCol2"),
-                EvalNugget
-                    .from(() -> sortedTable.updateView("repeatedCol=doubleCol - 0.5",
-                        "newCol=intCol / 2", "repeatedCol=newCol_[i-1] * repeatedCol"))
-                    .hasUnstableColumns("repeatedCol"),
-                EvalNugget.from(
-                    () -> sortedTable.updateView("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
-                    .hasUnstableColumns("newCol"),
+                        .from(() -> sortedTable.updateView("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                                "repeatedCol=newCol_[i-1] * repeatedCol"))
+                        .hasUnstableColumns("repeatedCol"),
+                EvalNugget.from(() -> sortedTable.updateView("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
+                        .hasUnstableColumns("newCol"),
                 EvalNugget.from(() -> sortedTable.updateView("newCol=intCol_[i-1]"))
-                    .hasUnstableColumns("newCol"),
+                        .hasUnstableColumns("newCol"),
                 EvalNugget.from(() -> queryTable.view("newCol=intCol_[i-1]"))
-                    .hasUnstableColumns("newCol"),
+                        .hasUnstableColumns("newCol"),
+                EvalNugget.from(() -> queryTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
+                        .hasUnstableColumns("newCol2"),
+                EvalNugget.from(() -> queryTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
+                        .hasUnstableColumns("newCol2"),
                 EvalNugget
-                    .from(() -> queryTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
-                    .hasUnstableColumns("newCol2"),
-                EvalNugget
-                    .from(
-                        () -> queryTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
-                    .hasUnstableColumns("newCol2"),
-                EvalNugget
-                    .from(() -> queryTable.view("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-                        "repeatedCol=newCol_[i-1] * repeatedCol"))
-                    .hasUnstableColumns("repeatedCol"),
-                EvalNugget
-                    .from(() -> queryTable.view("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
-                    .hasUnstableColumns("newCol"),
+                        .from(() -> queryTable.view("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                                "repeatedCol=newCol_[i-1] * repeatedCol"))
+                        .hasUnstableColumns("repeatedCol"),
+                EvalNugget.from(() -> queryTable.view("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
+                        .hasUnstableColumns("newCol"),
                 EvalNugget.from(() -> sortedTable.view("newCol=intCol_[i-1]"))
-                    .hasUnstableColumns("newCol"),
+                        .hasUnstableColumns("newCol"),
+                EvalNugget.from(() -> sortedTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
+                        .hasUnstableColumns("newCol2"),
+                EvalNugget.from(() -> sortedTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
+                        .hasUnstableColumns("newCol2"),
                 EvalNugget
-                    .from(() -> sortedTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
-                    .hasUnstableColumns("newCol2"),
+                        .from(() -> sortedTable.view("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                                "repeatedCol=newCol_[i-1] * repeatedCol"))
+                        .hasUnstableColumns("repeatedCol"),
+                EvalNugget.from(() -> sortedTable.view("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
+                        .hasUnstableColumns("newCol"),
                 EvalNugget.from(
-                    () -> sortedTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
-                    .hasUnstableColumns("newCol2"),
-                EvalNugget
-                    .from(() -> sortedTable.view("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-                        "repeatedCol=newCol_[i-1] * repeatedCol"))
-                    .hasUnstableColumns("repeatedCol"),
-                EvalNugget
-                    .from(() -> sortedTable.view("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
-                    .hasUnstableColumns("newCol"),
-                EvalNugget
-                    .from(() -> queryTable.updateView("newCol2=intCol / 2", "newCol=newCol2",
-                        "newCol=newCol_[i-1] + 7"))
-                    .hasUnstableColumns("newCol"),
-                EvalNugget
-                    .from(
-                        () -> queryTable.updateView("newCol=intCol / 2", "newCol=newCol_[i-1] + 7"))
-                    .hasUnstableColumns("newCol"),
+                        () -> queryTable.updateView("newCol2=intCol / 2", "newCol=newCol2", "newCol=newCol_[i-1] + 7"))
+                        .hasUnstableColumns("newCol"),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol=newCol_[i-1] + 7"))
+                        .hasUnstableColumns("newCol"),
         };
 
         for (int i = 0; i < 10; i++) {
@@ -375,27 +346,18 @@ public class QueryTableTest extends QueryTableTestBase {
         QueryScope.addParam("MEF", 1.0);
         QueryScope.addParam("LnRatioStd", 1.0);
         QueryScope.addParam("VegaPer", 1.0);
-        TableTools.emptyTable(3)
-            .updateView("MinEdge = (IsIndex ? indexMinEdge : MEF * LnRatioStd) * VegaPer");
+        TableTools.emptyTable(3).updateView("MinEdge = (IsIndex ? indexMinEdge : MEF * LnRatioStd) * VegaPer");
 
-        final QueryTable table0 =
-            (QueryTable) TableTools.emptyTable(3).view("x = i*2", "y = \"\" + x");
-        assertEquals(Arrays.asList(0, 2, 4),
-            Arrays.asList(table0.getColumn("x").get(0, table0.size())));
-        assertEquals(Arrays.asList("0", "2", "4"),
-            Arrays.asList(table0.getColumn("y").get(0, table0.size())));
+        final QueryTable table0 = (QueryTable) TableTools.emptyTable(3).view("x = i*2", "y = \"\" + x");
+        assertEquals(Arrays.asList(0, 2, 4), Arrays.asList(table0.getColumn("x").get(0, table0.size())));
+        assertEquals(Arrays.asList("0", "2", "4"), Arrays.asList(table0.getColumn("y").get(0, table0.size())));
 
-        final QueryTable table =
-            (QueryTable) table0.updateView("z = x + 1", "x = z + 1", "t = x - 3");
-        assertEquals(Arrays.asList(1, 3, 5),
-            Arrays.asList(table.getColumn("z").get(0, table.size())));
-        assertEquals(Arrays.asList(2, 4, 6),
-            Arrays.asList(table.getColumn("x").get(0, table.size())));
-        assertEquals(Arrays.asList(-1, 1, 3),
-            Arrays.asList(table.getColumn("t").get(0, table.size())));
+        final QueryTable table = (QueryTable) table0.updateView("z = x + 1", "x = z + 1", "t = x - 3");
+        assertEquals(Arrays.asList(1, 3, 5), Arrays.asList(table.getColumn("z").get(0, table.size())));
+        assertEquals(Arrays.asList(2, 4, 6), Arrays.asList(table.getColumn("x").get(0, table.size())));
+        assertEquals(Arrays.asList(-1, 1, 3), Arrays.asList(table.getColumn("t").get(0, table.size())));
 
-        final QueryTable table1 =
-            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
+        final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table2 = (QueryTable) table1.updateView("z = x", "x = z + 1", "t = x - 3");
         final Listener table2Listener = new ListenerWithGlobals(table2);
         table2.listenForUpdates(table2Listener);
@@ -407,7 +369,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(5, table1.size());
         assertEquals(5, table2.size());
         assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table2,
-            table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
+                table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i(7, 9));
         assertEquals(modified, i());
         assertEquals(removed, i());
@@ -419,7 +381,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(5, table1.size());
         assertEquals(5, table2.size());
         assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table2,
-            table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
+                table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i());
         assertEquals(modified, i(7, 9));
         assertEquals(removed, i());
@@ -432,7 +394,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(2, table1.size());
         assertEquals(2, table2.size());
         assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table2,
-            table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
+                table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i());
         assertEquals(removed, i(2, 6, 7));
         assertEquals(modified, i());
@@ -446,13 +408,12 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(3, table1.size());
         assertEquals(3, table2.size());
         assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table2,
-            table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
+                table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i(2, 6));
         assertEquals(removed, i(9));
         assertEquals(modified, i(4));
 
-        final QueryTable table3 =
-            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
+        final QueryTable table3 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table4 = (QueryTable) table3.view("z = x", "x = z + 1", "t = x - 3");
         final Listener table4Listener = new ListenerWithGlobals(table4);
         table4.listenForUpdates(table4Listener);
@@ -465,7 +426,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(5, table3.size());
         assertEquals(5, table4.size());
         assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table4,
-            table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
+                table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i(7, 9));
         assertEquals(modified, i());
         assertEquals(removed, i());
@@ -479,7 +440,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(5, table3.size());
         assertEquals(5, table4.size());
         assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table4,
-            table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
+                table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i());
         assertEquals(modified, i(7, 9));
         assertEquals(removed, i());
@@ -492,7 +453,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(2, table4.size());
         assertEquals(2, table3.size());
         assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table4,
-            table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
+                table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i());
         assertEquals(removed, i(2, 6, 7));
         assertEquals(modified, i());
@@ -507,7 +468,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(3, table1.size());
         assertEquals(3, table3.size());
         assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table4,
-            table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
+                table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i(2, 6));
         assertEquals(removed, i(9));
         assertEquals(modified, i(4));
@@ -522,35 +483,31 @@ public class QueryTableTest extends QueryTableTestBase {
         assertNull(t.updateView("nullD = NULL_DOUBLE + 0").getColumn("nullD").get(0));
 
         assertEquals(
-            Arrays.asList(emptyTable(4).updateView("b1 = (i%2 = 0)?null:true")
-                .updateView("x = b1 == null?1:2").select("x").getColumn("x").get(0, 4)),
-            Arrays.asList(1, 2, 1, 2));
+                Arrays.asList(emptyTable(4).updateView("b1 = (i%2 = 0)?null:true").updateView("x = b1 == null?1:2")
+                        .select("x").getColumn("x").get(0, 4)),
+                Arrays.asList(1, 2, 1, 2));
 
         Table table = newTable(3, Arrays.asList("String", "Int"),
-            Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
+                Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
         assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumns().length);
         assertEquals(table.getColumns()[0].getName(),
-            table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumns()[0].getName());
+                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumns()[0].getName());
         assertEquals(table.getColumns()[1].getName(),
-            table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumns()[1].getName());
+                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumns()[1].getName());
 
         assertEquals(2, table.view("String", "Int").getColumns().length);
-        assertEquals(table.getColumns()[0].getName(),
-            table.view("String", "Int").getColumns()[0].getName());
-        assertEquals(table.getColumns()[1].getName(),
-            table.view("String", "Int").getColumns()[1].getName());
+        assertEquals(table.getColumns()[0].getName(), table.view("String", "Int").getColumns()[0].getName());
+        assertEquals(table.getColumns()[1].getName(), table.view("String", "Int").getColumns()[1].getName());
 
         assertEquals(2, table.view("Int", "String").getColumns().length);
-        assertEquals(table.getColumns()[0].getName(),
-            table.view("Int", "String").getColumns()[1].getName());
-        assertEquals(table.getColumns()[1].getName(),
-            table.view("Int", "String").getColumns()[0].getName());
+        assertEquals(table.getColumns()[0].getName(), table.view("Int", "String").getColumns()[1].getName());
+        assertEquals(table.getColumns()[1].getName(), table.view("Int", "String").getColumns()[0].getName());
 
         assertEquals(2, table.view("Int1=Int", "String1=String").getColumns().length);
         assertSame(table.getColumns()[0].getClass(),
-            table.view("Int1=Int", "String1=String").getColumns()[1].getClass());
+                table.view("Int1=Int", "String1=String").getColumns()[1].getClass());
         assertSame(table.getColumns()[1].getClass(),
-            table.view("Int1=Int", "String1=String").getColumns()[0].getClass());
+                table.view("Int1=Int", "String1=String").getColumns()[0].getClass());
         assertEquals("Int1", table.view("Int1=Int", "String1=String").getColumns()[0].getName());
         assertEquals("String1", table.view("Int1=Int", "String1=String").getColumns()[1].getName());
 
@@ -569,8 +526,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table source = emptyTable(5).select("dt = nanosToTime(ii)", "n = ii");
         final Table result = source.dateTimeColumnAsNanos("dt");
         assertEquals((long[]) result.getColumn(0).getDirect(), LongStream.range(0, 5).toArray());
-        final Table reflexive =
-            result.view(new ReinterpretedColumn<>("dt", long.class, "dt", DBDateTime.class));
+        final Table reflexive = result.view(new ReinterpretedColumn<>("dt", long.class, "dt", DBDateTime.class));
         assertEquals("", TableTools.diff(reflexive, source.dropColumns("n"), source.size()));
         final Table sortedSource = source.sortDescending("dt").dropColumns("dt");
         final Table sortedResult = result.sortDescending("dt").dropColumns("dt");
@@ -579,16 +535,15 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testDropColumns() {
         final List<String> colNames = Arrays.asList("String", "Int", "Double");
-        final List<ColumnSource> colSources = Arrays.asList(TableTools.objColSource("c", "e", "g"),
-            colSource(2, 4, 6), colSource(1.0, 2.0, 3.0));
+        final List<ColumnSource<?>> colSources =
+                Arrays.asList(TableTools.objColSource("c", "e", "g"), colSource(2, 4, 6), colSource(1.0, 2.0, 3.0));
         final Table table = newTable(3, colNames, colSources);
         assertEquals(3, table.dropColumns().getColumnSources().size());
-        Collection<? extends ColumnSource> columnSourcesAfterDrop = table.getColumnSources();
-        ColumnSource[] columnsAfterDrop =
-            columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
-        Collection<? extends ColumnSource> columnSources = table.dropColumns().getColumnSources();
-        ColumnSource[] columns =
-            columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        Collection<? extends ColumnSource<?>> columnSourcesAfterDrop = table.getColumnSources();
+        ColumnSource<?>[] columnsAfterDrop =
+                columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        Collection<? extends ColumnSource<?>> columnSources = table.dropColumns().getColumnSources();
+        ColumnSource<?>[] columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertSame(columns[0], columnsAfterDrop[0]);
         assertSame(columns[1], columnsAfterDrop[1]);
         assertSame(columns[2], columnsAfterDrop[2]);
@@ -598,16 +553,13 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(2, table.dropColumns("Int").getColumnSources().size());
         columnSourcesAfterDrop = table.dropColumns("Int").getColumnSources();
-        columnsAfterDrop =
-            columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        columnsAfterDrop = columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         columnSources = table.getColumnSources();
         columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertSame(columns[0], columnsAfterDrop[0]);
         assertSame(columns[2], columnsAfterDrop[1]);
-        assertSame(table.getColumnSource("String"),
-            table.dropColumns("Int").getColumnSource("String"));
-        assertSame(table.getColumnSource("Double"),
-            table.dropColumns("Int").getColumnSource("Double"));
+        assertSame(table.getColumnSource("String"), table.dropColumns("Int").getColumnSource("String"));
+        assertSame(table.getColumnSource("Double"), table.dropColumns("Int").getColumnSource("Double"));
         try {
             table.dropColumns("Int").getColumnSource("Int");
             fail("Expected exception");
@@ -615,14 +567,12 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         columnSourcesAfterDrop = table.dropColumns("String", "Int").getColumnSources();
-        columnsAfterDrop =
-            columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        columnsAfterDrop = columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         columnSources = table.getColumnSources();
         columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertEquals(1, table.dropColumns("String", "Int").getColumnSources().size());
         assertSame(columns[2], columnsAfterDrop[0]);
-        assertSame(table.getColumnSource("Double"),
-            table.dropColumns("String", "Int").getColumnSource("Double"));
+        assertSame(table.getColumnSource("Double"), table.dropColumns("String", "Int").getColumnSource("Double"));
         try {
             table.dropColumns("String", "Int").getColumnSource("String");
             fail("Expected exception");
@@ -636,13 +586,12 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(1, table.dropColumns("String").dropColumns("Int").getColumns().length);
         columnSourcesAfterDrop = table.dropColumns("String").dropColumns("Int").getColumnSources();
-        columnsAfterDrop =
-            columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        columnsAfterDrop = columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         columnSources = table.getColumnSources();
         columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertSame(columnsAfterDrop[0], columns[2]);
         assertSame(table.getColumnSource("Double"),
-            table.dropColumns("String").dropColumns("Int").getColumnSource("Double"));
+                table.dropColumns("String").dropColumns("Int").getColumnSource("Double"));
         try {
             table.dropColumns("String").dropColumns("Int").getColumnSource("String");
             fail("Expected exception");
@@ -657,56 +606,47 @@ public class QueryTableTest extends QueryTableTestBase {
         try {
             table.dropColumns(Collections.singletonList("DoesNotExist"));
         } catch (RuntimeException e) {
-            assertEquals(
-                "Unknown columns: [DoesNotExist], available columns = [String, Int, Double]",
-                e.getMessage());
+            assertEquals("Unknown columns: [DoesNotExist], available columns = [String, Int, Double]", e.getMessage());
         }
         try {
             table.dropColumns(Arrays.asList("Int", "DoesNotExist"));
         } catch (RuntimeException e) {
-            assertEquals(
-                "Unknown columns: [DoesNotExist], available columns = [String, Int, Double]",
-                e.getMessage());
+            assertEquals("Unknown columns: [DoesNotExist], available columns = [String, Int, Double]", e.getMessage());
         }
     }
 
     public void testRenameColumns() {
         final Table table = newTable(3,
-            Arrays.asList("String", "Int", "Double"),
-            Arrays.asList(TableTools.objColSource("c", "e", "g"), colSource(2, 4, 6),
-                colSource(1.0, 2.0, 3.0)));
-        assertEquals(3,
-            table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources().size());
-        final Collection<? extends ColumnSource> columnSources = table.getColumnSources();
-        final ColumnSource[] columns =
-            columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
-        final Collection<? extends ColumnSource> renamedColumnSources =
-            table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources();
-        final ColumnSource[] renamedColumns =
-            renamedColumnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+                Arrays.asList("String", "Int", "Double"),
+                Arrays.asList(TableTools.objColSource("c", "e", "g"), colSource(2, 4, 6), colSource(1.0, 2.0, 3.0)));
+        assertEquals(3, table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources().size());
+        final Collection<? extends ColumnSource<?>> columnSources = table.getColumnSources();
+        final ColumnSource<?>[] columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        final Collection<? extends ColumnSource<?>> renamedColumnSources =
+                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources();
+        final ColumnSource<?>[] renamedColumns =
+                renamedColumnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertSame(columns[0], renamedColumns[0]);
         assertSame(columns[1], renamedColumns[1]);
         assertSame(columns[2], renamedColumns[2]);
         assertSame(table.getColumnSource("String"),
-            table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("String"));
+                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("String"));
         assertSame(table.getColumnSource("Int"),
-            table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Int"));
+                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Int"));
         assertSame(table.getColumnSource("Double"),
-            table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Double"));
+                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Double"));
 
         assertEquals(3, table.renameColumns("NewInt=Int").getColumns().length);
         assertEquals(table.getColumnSources().toArray()[0],
-            table.renameColumns("NewInt=Int").getColumnSources().toArray()[0]);
-        assertTrue(Arrays.equals((int[]) table.getColumns()[1].getDirect(),
-            (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect()));
+                table.renameColumns("NewInt=Int").getColumnSources().toArray()[0]);
+        assertArrayEquals((int[]) table.getColumns()[1].getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect());
         assertEquals(table.getColumnSources().toArray()[2],
-            table.renameColumns("NewInt=Int").getColumnSources().toArray()[2]);
-        assertEquals(table.getColumnSource("String"),
-            table.renameColumns("NewInt=Int").getColumnSource("String"));
-        assertTrue(Arrays.equals((int[]) table.getColumn("Int").getDirect(),
-            (int[]) table.renameColumns("NewInt=Int").getColumn("NewInt").getDirect()));
-        assertEquals(table.getColumnSource("Double"),
-            table.renameColumns("NewInt=Int").getColumnSource("Double"));
+                table.renameColumns("NewInt=Int").getColumnSources().toArray()[2]);
+        assertEquals(table.getColumnSource("String"), table.renameColumns("NewInt=Int").getColumnSource("String"));
+        assertArrayEquals((int[]) table.getColumn("Int").getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumn("NewInt").getDirect());
+        assertEquals(table.getColumnSource("Double"), table.renameColumns("NewInt=Int").getColumnSource("Double"));
         try {
             table.renameColumns("NewInt=Int").getColumn("Int");
             fail("Expected exception");
@@ -714,19 +654,18 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         assertEquals(3, table.renameColumns("NewInt=Int", "NewString=String").getColumns().length);
-        assertTrue(Arrays.equals((String[]) table.getColumns()[0].getDirect(),
-            (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumns()[0]
-                .getDirect()));
-        assertTrue(Arrays.equals((int[]) table.getColumns()[1].getDirect(),
-            (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect()));
+        assertArrayEquals((String[]) table.getColumns()[0].getDirect(),
+                (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumns()[0].getDirect());
+        assertArrayEquals((int[]) table.getColumns()[1].getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect());
         assertEquals(table.getColumnSources().toArray()[2],
-            table.renameColumns("NewInt=Int", "NewString=String").getColumnSources().toArray()[2]);
-        assertTrue(Arrays.equals((String[]) table.getColumn("String").getDirect(), (String[]) table
-            .renameColumns("NewInt=Int", "NewString=String").getColumn("NewString").getDirect()));
-        assertTrue(Arrays.equals((int[]) table.getColumn("Int").getDirect(),
-            (int[]) table.renameColumns("NewInt=Int").getColumn("NewInt").getDirect()));
+                table.renameColumns("NewInt=Int", "NewString=String").getColumnSources().toArray()[2]);
+        assertArrayEquals((String[]) table.getColumn("String").getDirect(),
+                (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumn("NewString").getDirect());
+        assertArrayEquals((int[]) table.getColumn("Int").getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumn("NewInt").getDirect());
         assertEquals(table.getColumnSource("Double"),
-            table.renameColumns("NewInt=Int", "NewString=String").getColumnSource("Double"));
+                table.renameColumns("NewInt=Int", "NewString=String").getColumnSource("Double"));
         try {
             table.renameColumns("NewInt=Int", "NewString=String").getColumn("Int");
             fail("Expected exception");
@@ -738,21 +677,19 @@ public class QueryTableTest extends QueryTableTestBase {
         } catch (RuntimeException ignored) {
         }
 
-        assertEquals(3, table.renameColumns("NewInt=Int").renameColumns("NewString=String")
-            .getColumns().length);
-        assertTrue(Arrays.equals((String[]) table.getColumns()[0].getDirect(),
-            (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumns()[0]
-                .getDirect()));
-        assertTrue(Arrays.equals((int[]) table.getColumns()[1].getDirect(),
-            (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect()));
-        assertEquals(table.getColumnSources().toArray()[2], table.renameColumns("NewInt=Int")
-            .renameColumns("NewString=String").getColumnSources().toArray()[2]);
-        assertTrue(Arrays.equals((String[]) table.getColumn("String").getDirect(), (String[]) table
-            .renameColumns("NewInt=Int", "NewString=String").getColumn("NewString").getDirect()));
-        assertTrue(Arrays.equals((int[]) table.getColumn("Int").getDirect(),
-            (int[]) table.renameColumns("NewInt=Int").getColumn("NewInt").getDirect()));
-        assertEquals(table.getColumnSource("Double"), table.renameColumns("NewInt=Int")
-            .renameColumns("NewString=String").getColumnSource("Double"));
+        assertEquals(3, table.renameColumns("NewInt=Int").renameColumns("NewString=String").getColumns().length);
+        assertArrayEquals((String[]) table.getColumns()[0].getDirect(),
+                (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumns()[0].getDirect());
+        assertArrayEquals((int[]) table.getColumns()[1].getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect());
+        assertEquals(table.getColumnSources().toArray()[2],
+                table.renameColumns("NewInt=Int").renameColumns("NewString=String").getColumnSources().toArray()[2]);
+        assertArrayEquals((String[]) table.getColumn("String").getDirect(),
+                (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumn("NewString").getDirect());
+        assertArrayEquals((int[]) table.getColumn("Int").getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumn("NewInt").getDirect());
+        assertEquals(table.getColumnSource("Double"),
+                table.renameColumns("NewInt=Int").renameColumns("NewString=String").getColumnSource("Double"));
         try {
             table.renameColumns("NewInt=Int").renameColumns("NewString=String").getColumn("Int");
             fail("Expected exception");
@@ -771,24 +708,21 @@ public class QueryTableTest extends QueryTableTestBase {
         final int size = 100;
         final TstUtils.ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                new TstUtils.IntGenerator(10, 100),
-                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
+                        new TstUtils.IntGenerator(10, 100),
+                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
 
         final EvalNugget en[] = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.renameColumns(CollectionUtil.listFromArray())),
                 EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym")),
                 EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym", "Symbols=Sym")),
-                EvalNugget.from(() -> queryTable.renameColumns("Sym2=Sym", "intCol2=intCol",
-                    "doubleCol2=doubleCol")),
+                EvalNugget.from(() -> queryTable.renameColumns("Sym2=Sym", "intCol2=intCol", "doubleCol2=doubleCol")),
         };
 
         // Verify our assumption that columns can be renamed at most once.
-        Assert.assertTrue(
-            queryTable.renameColumns("Symbol=Sym", "Symbols=Sym").hasColumns("Symbols"));
-        Assert.assertFalse(
-            queryTable.renameColumns("Symbol=Sym", "Symbols=Sym").hasColumns("Symbol"));
+        Assert.assertTrue(queryTable.renameColumns("Symbol=Sym", "Symbols=Sym").hasColumns("Symbols"));
+        Assert.assertFalse(queryTable.renameColumns("Symbol=Sym", "Symbols=Sym").hasColumns("Symbol"));
 
         final int steps = 100;
         for (int i = 0; i < steps; i++) {
@@ -806,24 +740,22 @@ public class QueryTableTest extends QueryTableTestBase {
         final int size = 500;
 
         final ColumnInfo[] columnInfo;
-        final QueryTable table = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"S1", "S2"},
+        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"S1", "S2"},
                 new StringGenerator(),
                 new StringGenerator()));
 
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new TableComparator(table.where(filter.apply("S1.contains(`aab`)")),
-                    table.where(new StringContainsFilter("S1", "aab"))),
+                        table.where(new StringContainsFilter("S1", "aab"))),
                 new TableComparator(table.where(filter.apply("S2.contains(`m`)")),
-                    table.where(new StringContainsFilter("S2", "m"))),
+                        table.where(new StringContainsFilter("S2", "m"))),
                 new TableComparator(table.where(filter.apply("!S2.contains(`ma`)")),
-                    table.where(
-                        new StringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
+                        table.where(new StringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
                 new TableComparator(table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
-                    table.where(new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
-                        MatchFilter.MatchType.Regular, "S2", "mA"))),
+                        table.where(new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
+                                MatchFilter.MatchType.Regular, "S2", "mA"))),
                 new TableComparator(table.where(filter.apply("S2.contains(`mA`)")),
-                    table.where(new StringContainsFilter("S2", "mA"))),
+                        table.where(new StringContainsFilter("S2", "mA"))),
         };
 
         for (int i = 0; i < 500; i++) {
@@ -832,17 +764,16 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testDoubleRangeFilterSimple() {
-        final Table t = TableTools
-            .newTable(doubleCol("DV", 1.0, 2.0, -3.0, Double.NaN, QueryConstants.NULL_DOUBLE, 6.0,
-                Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 9.0))
-            .update("IV=i+1");
+        final Table t = TableTools.newTable(doubleCol("DV", 1.0, 2.0, -3.0, Double.NaN, QueryConstants.NULL_DOUBLE, 6.0,
+                Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 9.0)).update("IV=i+1");
         Table leq1 = t.where("DV <= 1.0");
         Table leq1b = t.where("DV <= 1.0 && true");
 
         assertTableEquals(leq1b, leq1);
-        assertTableEquals(TableTools.newTable(
-            doubleCol("DV", 1.0, -3.0, QueryConstants.NULL_DOUBLE, Double.NEGATIVE_INFINITY),
-            intCol("IV", 1, 3, 5, 8)), leq1);
+        assertTableEquals(
+                TableTools.newTable(doubleCol("DV", 1.0, -3.0, QueryConstants.NULL_DOUBLE, Double.NEGATIVE_INFINITY),
+                        intCol("IV", 1, 3, 5, 8)),
+                leq1);
 
         Table geq1 = t.where("DV >= 1.0");
         Table geq1b = t.where("DV >= 1.0 && true");
@@ -850,21 +781,19 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.showWithIndex(geq1b);
 
         assertTableEquals(geq1b, geq1);
-        assertTableEquals(TableTools.newTable(
-            doubleCol("DV", 1.0, 2.0, Double.NaN, 6.0, Double.POSITIVE_INFINITY, 9.0),
-            intCol("IV", 1, 2, 4, 6, 7, 9)), geq1);
+        assertTableEquals(TableTools.newTable(doubleCol("DV", 1.0, 2.0, Double.NaN, 6.0, Double.POSITIVE_INFINITY, 9.0),
+                intCol("IV", 1, 2, 4, 6, 7, 9)), geq1);
     }
 
     public void testLongRangeFilterSimple() {
-        final Table t = TableTools
-            .newTable(longCol("LV", 1, 2, -3, Long.MAX_VALUE, QueryConstants.NULL_LONG, 6))
-            .update("IV=i+1");
+        final Table t = TableTools.newTable(longCol("LV", 1, 2, -3, Long.MAX_VALUE, QueryConstants.NULL_LONG, 6))
+                .update("IV=i+1");
         Table leq1 = t.where("LV <= 1");
         Table leq1b = t.where("LV <= 1 && true");
 
         assertTableEquals(leq1b, leq1);
-        assertTableEquals(TableTools.newTable(longCol("LV", 1, -3, QueryConstants.NULL_LONG),
-            intCol("IV", 1, 3, 5)), leq1);
+        assertTableEquals(TableTools.newTable(longCol("LV", 1, -3, QueryConstants.NULL_LONG), intCol("IV", 1, 3, 5)),
+                leq1);
 
         Table geq1 = t.where("LV >= 1");
         Table geq1b = t.where("LV >= 1 && true");
@@ -872,18 +801,14 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.showWithIndex(geq1b);
 
         assertTableEquals(geq1b, geq1);
-        assertTableEquals(
-            TableTools.newTable(longCol("LV", 1, 2, Long.MAX_VALUE, 6), intCol("IV", 1, 2, 4, 6)),
-            geq1);
+        assertTableEquals(TableTools.newTable(longCol("LV", 1, 2, Long.MAX_VALUE, 6), intCol("IV", 1, 2, 4, 6)), geq1);
     }
 
     public void testComparableRangeFilterSimple() {
-        final Table t = TableTools
-            .newTable(longCol("LV", 1, 2, -3, Long.MAX_VALUE, QueryConstants.NULL_LONG, 6))
-            .update("IV=i+1", "LV=LV==null ? null : java.math.BigInteger.valueOf(LV)");
+        final Table t = TableTools.newTable(longCol("LV", 1, 2, -3, Long.MAX_VALUE, QueryConstants.NULL_LONG, 6))
+                .update("IV=i+1", "LV=LV==null ? null : java.math.BigInteger.valueOf(LV)");
         Table leq1 = t.where("LV <= 1");
-        Table leq1b =
-            t.where("io.deephaven.db.util.DhObjectComparisons.leq(LV, java.math.BigInteger.ONE)");
+        Table leq1b = t.where("io.deephaven.db.util.DhObjectComparisons.leq(LV, java.math.BigInteger.ONE)");
         Table leq1c = t.where("LV <= java.math.BigInteger.ONE");
 
         assertTableEquals(leq1b, leq1);
@@ -891,8 +816,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(TableTools.newTable(intCol("IV", 1, 3, 5)), leq1.dropColumns("LV"));
 
         Table geq1 = t.where("LV >= 1");
-        Table geq1b =
-            t.where("io.deephaven.db.util.DhObjectComparisons.geq(LV, java.math.BigInteger.ONE)");
+        Table geq1b = t.where("io.deephaven.db.util.DhObjectComparisons.geq(LV, java.math.BigInteger.ONE)");
         Table geq1c = t.where("LV >= java.math.BigInteger.ONE");
         TableTools.showWithIndex(geq1);
         TableTools.showWithIndex(geq1b);
@@ -910,34 +834,34 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"D1", "D2", "F1", "F2"},
-                new DoubleGenerator(),
-                new DoubleGenerator(0, 1000, 0.1, 0.1),
-                new FloatGenerator(),
-                new FloatGenerator(0, 1000, 0.1, 0.1)));
+                columnInfo = initColumnInfos(new String[] {"D1", "D2", "F1", "F2"},
+                        new DoubleGenerator(),
+                        new DoubleGenerator(0, 1000, 0.1, 0.1),
+                        new FloatGenerator(),
+                        new FloatGenerator(0, 1000, 0.1, 0.1)));
 
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new TableComparator(table.where(filter.apply("D1 > 500 && D1 <= 501")),
-                    table.where(new DoubleRangeFilter("D1", 500, 501, false, true))),
+                        table.where(new DoubleRangeFilter("D1", 500, 501, false, true))),
                 new TableComparator(table.where(filter.apply("D1 > 500.7 && D1 <= 500.8")),
-                    table.where(new DoubleRangeFilter("D1", 500.7, 500.8, false, true))),
+                        table.where(new DoubleRangeFilter("D1", 500.7, 500.8, false, true))),
                 new TableComparator(table.where(filter.apply("D2 >= 250.02 && D2 < 250.03")),
-                    table.where(DoubleRangeFilter.makeRange("D2", "250.02"))),
+                        table.where(DoubleRangeFilter.makeRange("D2", "250.02"))),
                 new TableComparator(table.where(filter.apply("F1 > 500 && F1 <= 501")),
-                    table.where(new FloatRangeFilter("F1", 500, 501, false, true))),
+                        table.where(new FloatRangeFilter("F1", 500, 501, false, true))),
                 new TableComparator(table.where(filter.apply("F1 > 500.7 && F1 <= 500.8")),
-                    table.where(new FloatRangeFilter("F1", 500.7f, 500.8f, false, true))),
+                        table.where(new FloatRangeFilter("F1", 500.7f, 500.8f, false, true))),
                 new TableComparator(table.where(filter.apply("F2 >= 250.02 && F2 < 250.03")),
-                    table.where(FloatRangeFilter.makeRange("F2", "250.02"))),
+                        table.where(FloatRangeFilter.makeRange("F2", "250.02"))),
 
                 new TableComparator(table.where(filter.apply("F1 <= -250.02 && F1 > -250.03")),
-                    table.where(FloatRangeFilter.makeRange("F1", "-250.02"))),
+                        table.where(FloatRangeFilter.makeRange("F1", "-250.02"))),
                 new TableComparator(table.where(filter.apply("F1 <= -37.0002 && F1 > -37.0003")),
-                    table.where(FloatRangeFilter.makeRange("F1", "-37.0002"))),
+                        table.where(FloatRangeFilter.makeRange("F1", "-37.0002"))),
                 new TableComparator(table.where(filter.apply("D1 <= -250.02 && D1 > -250.03")),
-                    table.where(DoubleRangeFilter.makeRange("D1", "-250.02"))),
+                        table.where(DoubleRangeFilter.makeRange("D1", "-250.02"))),
                 new TableComparator(table.where(filter.apply("D1 <= -37.0002 && D1 > -37.0003")),
-                    table.where(DoubleRangeFilter.makeRange("D1", "-37.0002")))
+                        table.where(DoubleRangeFilter.makeRange("D1", "-37.0002")))
         };
 
         for (int i = 0; i < 500; i++) {
@@ -956,51 +880,49 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Timestamp", "Ts2", "Sentinel"},
-                new UnsortedDateTimeGenerator(startTime, endTime),
-                new UnsortedDateTimeLongGenerator(startTime, endTime),
-                new IntGenerator(0, 1000)));
+                columnInfo = initColumnInfos(new String[] {"Timestamp", "Ts2", "Sentinel"},
+                        new UnsortedDateTimeGenerator(startTime, endTime),
+                        new UnsortedDateTimeLongGenerator(startTime, endTime),
+                        new IntGenerator(0, 1000)));
 
         final DBDateTime lower = DBTimeUtils.plus(startTime, DBTimeUtils.SECOND);
         final DBDateTime upper = DBTimeUtils.plus(startTime, DBTimeUtils.SECOND * 2);
 
         final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new TableComparator(
-                    table.where(filter.apply("Timestamp >= '" + lower.toString()
-                        + "' && Timestamp <= '" + upper.toString() + "'")),
-                    "Condition",
-                    table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, true)),
-                    "Range"),
+                        table.where(filter.apply(
+                                "Timestamp >= '" + lower.toString() + "' && Timestamp <= '" + upper.toString() + "'")),
+                        "Condition", table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, true)),
+                        "Range"),
                 new TableComparator(
-                    table.where(filter.apply("Timestamp >= '" + lower.toString()
-                        + "' && Timestamp < '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, false))),
+                        table.where(filter.apply(
+                                "Timestamp >= '" + lower.toString() + "' && Timestamp < '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, false))),
                 new TableComparator(
-                    table.where(filter.apply("Timestamp > '" + lower.toString()
-                        + "' && Timestamp <= '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, true))),
+                        table.where(filter.apply(
+                                "Timestamp > '" + lower.toString() + "' && Timestamp <= '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, true))),
                 new TableComparator(
-                    table.where(filter.apply("Timestamp > '" + lower.toString()
-                        + "' && Timestamp < '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Timestamp", lower, upper, false, false))),
+                        table.where(filter.apply(
+                                "Timestamp > '" + lower.toString() + "' && Timestamp < '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Timestamp", lower, upper, false, false))),
 
                 new TableComparator(
-                    table.where(filter.apply(
-                        "Ts2 >= '" + lower.toString() + "' && Ts2 <= '" + upper.toString() + "'")),
-                    "Condition",
-                    table.where(new DateTimeRangeFilter("Ts2", lower, upper, true, true)), "Range"),
+                        table.where(
+                                filter.apply("Ts2 >= '" + lower.toString() + "' && Ts2 <= '" + upper.toString() + "'")),
+                        "Condition", table.where(new DateTimeRangeFilter("Ts2", lower, upper, true, true)), "Range"),
                 new TableComparator(
-                    table.where(filter.apply(
-                        "Ts2 >= '" + lower.toString() + "' && Ts2 < '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Ts2", lower, upper, true, false))),
+                        table.where(
+                                filter.apply("Ts2 >= '" + lower.toString() + "' && Ts2 < '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Ts2", lower, upper, true, false))),
                 new TableComparator(
-                    table.where(filter.apply(
-                        "Ts2 > '" + lower.toString() + "' && Ts2 <= '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Ts2", lower, upper, true, true))),
+                        table.where(
+                                filter.apply("Ts2 > '" + lower.toString() + "' && Ts2 <= '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Ts2", lower, upper, true, true))),
                 new TableComparator(
-                    table.where(filter.apply(
-                        "Ts2 > '" + lower.toString() + "' && Ts2 < '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Ts2", lower, upper, false, false)))
+                        table.where(
+                                filter.apply("Ts2 > '" + lower.toString() + "' && Ts2 < '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Ts2", lower, upper, false, false)))
         };
 
         for (int i = 0; i < 500; i++) {
@@ -1019,32 +941,31 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Timestamp", "Sentinel"},
-                new UnsortedDateTimeGenerator(startTime, endTime, 0.1),
-                new IntGenerator(0, 1000)));
+                columnInfo = initColumnInfos(new String[] {"Timestamp", "Sentinel"},
+                        new UnsortedDateTimeGenerator(startTime, endTime, 0.1),
+                        new IntGenerator(0, 1000)));
 
         final DBDateTime lower = DBTimeUtils.plus(startTime, DBTimeUtils.SECOND);
         final DBDateTime upper = DBTimeUtils.plus(startTime, DBTimeUtils.SECOND * 2);
 
         final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new TableComparator(
-                    table.where(filter.apply("Timestamp >= '" + lower.toString()
-                        + "' && Timestamp <= '" + upper.toString() + "'")),
-                    "Condition",
-                    table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, true)),
-                    "Range"),
+                        table.where(filter.apply(
+                                "Timestamp >= '" + lower.toString() + "' && Timestamp <= '" + upper.toString() + "'")),
+                        "Condition", table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, true)),
+                        "Range"),
                 new TableComparator(
-                    table.where(filter.apply("Timestamp >= '" + lower.toString()
-                        + "' && Timestamp < '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, false))),
+                        table.where(filter.apply(
+                                "Timestamp >= '" + lower.toString() + "' && Timestamp < '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, false))),
                 new TableComparator(
-                    table.where(filter.apply("Timestamp > '" + lower.toString()
-                        + "' && Timestamp <= '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, true))),
+                        table.where(filter.apply(
+                                "Timestamp > '" + lower.toString() + "' && Timestamp <= '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Timestamp", lower, upper, true, true))),
                 new TableComparator(
-                    table.where(filter.apply("Timestamp > '" + lower.toString()
-                        + "' && Timestamp < '" + upper.toString() + "'")),
-                    table.where(new DateTimeRangeFilter("Timestamp", lower, upper, false, false))),
+                        table.where(filter.apply(
+                                "Timestamp > '" + lower.toString() + "' && Timestamp < '" + upper.toString() + "'")),
+                        table.where(new DateTimeRangeFilter("Timestamp", lower, upper, false, false))),
         };
 
         for (int i = 0; i < 500; i++) {
@@ -1054,8 +975,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testReverse() {
         final QueryTable table = testRefreshingTable(i(1, 2, 3),
-            c("Ticker", "AAPL", "IBM", "TSLA"),
-            c("Timestamp", 1L, 10L, 50L));
+                c("Ticker", "AAPL", "IBM", "TSLA"),
+                c("Timestamp", 1L, 10L, 50L));
 
         final Table reversed = table.reverse();
         show(reversed);
@@ -1064,7 +985,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ColumnHolder[] columnAdditions =
-                new ColumnHolder[] {c("Ticker", "SPY", "VXX"), c("Timestamp", 60L, 70L)};
+                    new ColumnHolder[] {c("Ticker", "SPY", "VXX"), c("Timestamp", 60L, 70L)};
             TstUtils.addToTable(table, i(2048, 2049), columnAdditions);
             table.notifyListeners(i(2048, 2049), i(), i());
         });
@@ -1073,37 +994,32 @@ public class QueryTableTest extends QueryTableTestBase {
 
         checkReverse(table, reversed, "Ticker");
 
-        // noinspection unchecked
-        assertEquals("TSLA",
-            reversed.getColumnSource("Ticker").getPrev(reversed.getIndex().getPrevIndex().get(0)));
+        assertEquals("TSLA", reversed.getColumnSource("Ticker").getPrev(reversed.getIndex().getPrevIndex().get(0)));
 
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
         });
 
-        // noinspection unchecked
-        assertEquals("VXX",
-            reversed.getColumnSource("Ticker").getPrev(reversed.getIndex().getPrevIndex().get(0)));
+        assertEquals("VXX", reversed.getColumnSource("Ticker").getPrev(reversed.getIndex().getPrevIndex().get(0)));
 
 
         final ColumnSource<Long> longIdentityColumnSource =
-            new AbstractColumnSource.DefaultedImmutable<Long>(long.class) {
-                @Override
-                public void startTrackingPrevValues() { /* nothing to do */ }
+                new AbstractColumnSource.DefaultedImmutable<Long>(long.class) {
+                    @Override
+                    public void startTrackingPrevValues() { /* nothing to do */ }
 
-                @Override
-                public Long get(long index) {
-                    return getLong(index);
-                }
+                    @Override
+                    public Long get(long index) {
+                        return getLong(index);
+                    }
 
-                @Override
-                public long getLong(long index) {
-                    return index;
-                }
-            };
+                    @Override
+                    public long getLong(long index) {
+                        return index;
+                    }
+                };
 
-        final QueryTable bigTable =
-            new QueryTable(i(0, (long) Integer.MAX_VALUE, (long) Integer.MAX_VALUE * 2L),
+        final QueryTable bigTable = new QueryTable(i(0, (long) Integer.MAX_VALUE, (long) Integer.MAX_VALUE * 2L),
                 Collections.singletonMap("LICS", longIdentityColumnSource));
         bigTable.setRefreshing(true);
         final Table bigReversed = bigTable.reverse();
@@ -1130,7 +1046,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testReverse2() {
         final QueryTable table = testRefreshingTable(i(1),
-            c("Timestamp", 1L));
+                c("Timestamp", 1L));
 
         final Table reversed = table.reverse();
         show(reversed);
@@ -1138,8 +1054,7 @@ public class QueryTableTest extends QueryTableTestBase {
         checkReverse(table, reversed, "Timestamp");
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ColumnHolder[] columnAdditions =
-                new ColumnHolder[] {c("Timestamp", 2048L, 2049L)};
+            final ColumnHolder[] columnAdditions = new ColumnHolder[] {c("Timestamp", 2048L, 2049L)};
             TstUtils.addToTable(table, i(2048, 2049), columnAdditions);
             table.notifyListeners(i(2048, 2049), i(), i());
         });
@@ -1238,16 +1153,15 @@ public class QueryTableTest extends QueryTableTestBase {
         final int bitSize = 1000;
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Date", "C1", "C2", "KEY"},
-                new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
-                new SetGenerator<>("a", "b"),
-                new SetGenerator<>(10, 20, 30),
-                new SortedBigIntegerGenerator(bitSize)));
+                columnInfo = initColumnInfos(new String[] {"Date", "C1", "C2", "KEY"},
+                        new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
+                        new SetGenerator<>("a", "b"),
+                        new SetGenerator<>(10, 20, 30),
+                        new SortedBigIntegerGenerator(bitSize)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> table.update("K=KEY").reverse()),
-                new TableComparator(table.update("K=KEY").reverse(),
-                    table.update("K=KEY").sortDescending("K"))
+                new TableComparator(table.update("K=KEY").reverse(), table.update("K=KEY").sortDescending("K"))
         };
 
         final int updateSize = (int) Math.ceil(Math.sqrt(size));
@@ -1257,8 +1171,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshot() {
-        final QueryTable right =
-            testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
+        final QueryTable right = testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
         final QueryTable left1 = testRefreshingTable(c("T", 1));
         final Table expected = right.naturalJoin(left1, "", "T");
         TableTools.showWithIndex(expected);
@@ -1285,8 +1198,8 @@ public class QueryTableTest extends QueryTableTestBase {
             left2.notifyListeners(i(3), i(), i());
         });
         show(snapshot, 50);
-        final Table expect2 = newTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"),
-            c("T", 5, 5, 5, 5, 5));
+        final Table expect2 =
+                newTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"), c("T", 5, 5, 5, 5, 5));
         assertTableEquals(expect2, snapshot);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1308,26 +1221,25 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotHistorical() {
-        final QueryTable right =
-            testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
+        final QueryTable right = testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
         final QueryTable left1 = testRefreshingTable(c("T", 1));
         show(left1.snapshotHistory(right));
         assertEquals("", diff(left1.snapshotHistory(right),
-            testRefreshingTable(c("T", 1, 1, 1), c("A", 3, 1, 2), c("B", "c", "a", "b")), 10));
+                testRefreshingTable(c("T", 1, 1, 1), c("A", 3, 1, 2), c("B", "c", "a", "b")), 10));
 
         final QueryTable left2 = testRefreshingTable(c("T", 1, 2));
         final Table snapshot = left2.snapshotHistory(right);
         show(snapshot);
-        assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2),
-            c("A", 3, 1, 2, 3, 1, 2), c("B", "c", "a", "b", "c", "a", "b")), 10));
+        assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2), c("A", 3, 1, 2, 3, 1, 2),
+                c("B", "c", "a", "b", "c", "a", "b")), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
             right.notifyListeners(i(20, 40), i(), i());
         });
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2),
-            c("A", 3, 1, 2, 3, 1, 2), c("B", "c", "a", "b", "c", "a", "b")), 10));
+        assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2), c("A", 3, 1, 2, 3, 1, 2),
+                c("B", "c", "a", "b", "c", "a", "b")), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(left2, i(3), c("T", 5));
@@ -1335,11 +1247,11 @@ public class QueryTableTest extends QueryTableTestBase {
         });
         show(snapshot, 50);
         assertEquals("",
-            diff(snapshot,
-                testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5),
-                    c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50),
-                    c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc")),
-                10));
+                diff(snapshot,
+                        testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5),
+                                c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50),
+                                c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc")),
+                        10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(right, i(10, 20, 30));
@@ -1348,19 +1260,17 @@ public class QueryTableTest extends QueryTableTestBase {
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5),
-            c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50),
-            c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc")), 10));
+                c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50),
+                c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc")), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(left2, i(4, 5), c("T", 7, 8));
             left2.notifyListeners(i(4, 5), i(), i());
         });
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(
-            c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
-            c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
-            c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")),
-            10));
+        assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
+                c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
+                c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index rowsToRemove = right.getIndex().clone();
@@ -1368,22 +1278,18 @@ public class QueryTableTest extends QueryTableTestBase {
             right.notifyListeners(i(), rowsToRemove, i());
         });
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(
-            c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
-            c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
-            c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")),
-            10));
+        assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
+                c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
+                c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(left2, i(6), c("T", 9));
             left2.notifyListeners(i(6), i(), i());
         });
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(
-            c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
-            c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
-            c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")),
-            10));
+        assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
+                c("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
+                c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")), 10));
 
     }
 
@@ -1394,59 +1300,43 @@ public class QueryTableTest extends QueryTableTestBase {
         QueryScope.addParam("testSnapshotDependenciesCounter", new AtomicInteger());
 
         final Table snappedFirst = left.snapshot(right);
-        final Table snappedDep =
-            snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
+        final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
         final Table snappedOfSnap = left.snapshot(snappedDep);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
         });
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(left, i(2), c("T", 2));
             left.notifyListeners(i(2), i(), i());
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // this will do the notification for left; at which point we can do the first snapshot
             boolean flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
 
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now we should flush the select
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now we should flush the second snapshot
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertFalse(flushed);
@@ -1465,18 +1355,14 @@ public class QueryTableTest extends QueryTableTestBase {
         QueryScope.addParam("testSnapshotDependenciesCounter", new AtomicInteger());
 
         final Table snappedFirst = left.snapshotIncremental(right);
-        final Table snappedDep =
-            snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
+        final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
         final Table snappedOfSnap = left.snapshotIncremental(snappedDep);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             System.out.println("Checking everything is satisfied with no updates.");
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
             System.out.println("Simple Update Cycle Complete.");
         });
 
@@ -1486,12 +1372,9 @@ public class QueryTableTest extends QueryTableTestBase {
             left.notifyListeners(i(2), i(), i());
 
             System.out.println("Checking initial satisfaction.");
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             System.out.println("Flushing first notification.");
             // this will do the notification for left
@@ -1499,25 +1382,18 @@ public class QueryTableTest extends QueryTableTestBase {
 
             System.out.println("Checking satisfaction after #1.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
-            System.out
-                .println("Flushing second notification, which should be our listener recorder");
+            System.out.println("Flushing second notification, which should be our listener recorder");
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #2.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             System.out.println("Flushing third notification, which should be our merged listener");
 
@@ -1525,42 +1401,30 @@ public class QueryTableTest extends QueryTableTestBase {
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             // this will do the merged notification; which means the snaphsot is satisfied
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now we should flush the select
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now we should flush the second snapshot recorder
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now we should flush the second snapshot merged listener
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // nothing left
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
@@ -1577,38 +1441,28 @@ public class QueryTableTest extends QueryTableTestBase {
             right.notifyListeners(i(2), i(), i());
 
             System.out.println("Checking initial satisfaction.");
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             System.out.println("Flushing first notification.");
-            // this will do the notification for right; at which point we can should get the update
-            // going through
+            // this will do the notification for right; at which point we can should get the update going through
             boolean flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #1.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             System.out.println("Flushing second notification, which should be our merged listener");
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #2.");
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // nothing left
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
@@ -1629,90 +1483,65 @@ public class QueryTableTest extends QueryTableTestBase {
             left.notifyListeners(i(3), i(), i());
 
             System.out.println("Checking initial satisfaction.");
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             System.out.println("Flushing first notification.");
             boolean flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             System.out.println("Checking satisfaction after #1.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
-            System.out.println(
-                "Flushing second notification, which should be the recorder for our second snapshot");
+            System.out.println("Flushing second notification, which should be the recorder for our second snapshot");
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #2.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             System.out.println("Flushing third notification, which should be our right recorder");
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #3.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             System.out.println("Flushing fourth notification, which should be our MergedListener");
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #4.");
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now we should flush the select
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now we should flush the second snapshot recorder
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now we should flush the second snapshot merged listener
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(
-                ((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(
-                ((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedFirst).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedDep).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) snappedOfSnap).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // nothing left
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
@@ -1725,116 +1554,91 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testWhereInDependency() {
-        final QueryTable tableToFilter =
-            testRefreshingTable(i(10, 11, 12, 13, 14, 15), c("A", 1, 2, 3, 4, 5, 6),
+        final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15), c("A", 1, 2, 3, 4, 5, 6),
                 c("B", 2, 4, 6, 8, 10, 12), c("C", 'a', 'b', 'c', 'd', 'e', 'f'));
 
-        final QueryTable setTable =
-            testRefreshingTable(i(100, 101, 102), c("A", 1, 2, 3), c("B", 2, 4, 6));
+        final QueryTable setTable = testRefreshingTable(i(100, 101, 102), c("A", 1, 2, 3), c("B", 2, 4, 6));
         final Table setTable1 = setTable.where("A > 2");
         final Table setTable2 = setTable.where("B > 6");
 
         final DynamicWhereFilter dynamicFilter1 =
-            new DynamicWhereFilter(setTable1, true, MatchPairFactory.getExpressions("A"));
+                new DynamicWhereFilter(setTable1, true, MatchPairFactory.getExpressions("A"));
         final DynamicWhereFilter dynamicFilter2 =
-            new DynamicWhereFilter(setTable2, true, MatchPairFactory.getExpressions("B"));
+                new DynamicWhereFilter(setTable2, true, MatchPairFactory.getExpressions("B"));
 
-        final SelectFilter composedFilter =
-            DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
+        final SelectFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
         final Table composed = tableToFilter.where(composedFilter);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertTrue(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
         });
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(setTable, i(103), c("A", 5), c("B", 8));
             setTable.notifyListeners(i(103), i(), i());
 
-            TestCase.assertFalse(
-                ((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
 
-            // this will do the notification for table; which should first fire the recorder for
-            // setTable1
+            // this will do the notification for table; which should first fire the recorder for setTable1
             LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
-            // this will do the notification for table; which should first fire the recorder for
-            // setTable2
+            // this will do the notification for table; which should first fire the recorder for setTable2
             LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
-            // this will do the notification for table; which should first fire the merged listener
-            // for 1
+            // this will do the notification for table; which should first fire the merged listener for 1
             boolean flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase
-                .assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(
-                ((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
 
 
             // the next notification should be the merged listener for setTable2
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase
-                .assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // the dynamicFilter1 updates
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase
-                .assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // the dynamicFilter2 updates
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase
-                .assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now that both filters are complete, we can run the composed listener
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase
-                .assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase
-                .assertTrue(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // and we are done
             flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
@@ -1843,24 +1647,23 @@ public class QueryTableTest extends QueryTableTestBase {
 
         TableTools.show(composed);
 
-        final Table expected = TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10),
-            charCol("C", 'c', 'd', 'e'));
+        final Table expected =
+                TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
 
         TestCase.assertEquals("", TableTools.diff(composed, expected, 10));
     }
 
     public void testWhereInScope() {
         final DynamicTable toBeFiltered = TstUtils.testRefreshingTable(
-            TableTools.col("Key", "A", "B", "C", "D", "E"),
-            TableTools.intCol("Value", 1, 2, 3, 4, 5));
+                TableTools.col("Key", "A", "B", "C", "D", "E"),
+                TableTools.intCol("Value", 1, 2, 3, 4, 5));
 
         // The setScope will own the set table. rc == 1
         final SafeCloseable setScope = LivenessScopeStack.open();
         final DynamicTable setTable = TstUtils.testRefreshingTable(TableTools.stringCol("Key"));
 
         // Owned by setScope, rc == 1
-        // It will also manage setTable whose rc == 3 after (1 SwapListener, one ListenerImpl from
-        // by)
+        // It will also manage setTable whose rc == 3 after (1 SwapListener, one ListenerImpl from by)
         final Table whereIn = toBeFiltered.whereIn(setTable, "Key");
 
         // Manage it rcs == (2,3)
@@ -1902,13 +1705,11 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotIncremental() {
-        QueryTable right =
-            testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
+        QueryTable right = testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
         QueryTable left = testRefreshingTable(c("T", 1));
         Table empty = left.snapshotIncremental(right);
         show(empty);
-        assertEquals("",
-            diff(empty, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
+        assertEquals("", diff(empty, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
 
         final QueryTable left2 = testRefreshingTable(c("T", 1, 2));
 
@@ -1917,8 +1718,7 @@ public class QueryTableTest extends QueryTableTestBase {
         show(snapshot);
         System.out.println("Initial prev:");
         show(prevTable(snapshot));
-        assertEquals("",
-            diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
+        assertEquals("", diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
 
         final ListenerWithGlobals listener;
         snapshot.listenForUpdates(listener = new ListenerWithGlobals(snapshot));
@@ -1929,8 +1729,7 @@ public class QueryTableTest extends QueryTableTestBase {
             right.notifyListeners(i(20, 40), i(), i());
         });
         show(snapshot, 50);
-        assertEquals("",
-            diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
+        assertEquals("", diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
         assertEquals(listener.getCount(), 0);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1938,8 +1737,9 @@ public class QueryTableTest extends QueryTableTestBase {
             left2.notifyListeners(i(3), i(), i());
         });
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(c("A", 3, 30, 1, 2, 50),
-            c("B", "c", "aa", "a", "b", "bc"), c("T", 5, 5, 5, 5, 5)), 10));
+        assertEquals("", diff(snapshot,
+                testRefreshingTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"), c("T", 5, 5, 5, 5, 5)),
+                10));
         assertEquals(listener.getCount(), 1);
         assertEquals(right.getIndex(), added);
         assertEquals(i(), modified);
@@ -1953,9 +1753,9 @@ public class QueryTableTest extends QueryTableTestBase {
         });
         showWithIndex(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(
-            c("A", 3, 30, 1, 2, 50),
-            c("B", "c", "aa", "a", "b", "bc"),
-            c("T", 5, 5, 5, 5, 5)), 10));
+                c("A", 3, 30, 1, 2, 50),
+                c("B", "c", "aa", "a", "b", "bc"),
+                c("T", 5, 5, 5, 5, 5)), 10));
         assertEquals(listener.getCount(), 0);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1967,8 +1767,8 @@ public class QueryTableTest extends QueryTableTestBase {
         System.out.println("Snapshot Table:");
         showWithIndex(snapshot, 50);
 
-        assertEquals("", diff(snapshot,
-            testRefreshingTable(c("A", 11, 50, 34), c("B", "A", "bc", "Q"), c("T", 8, 5, 8)), 10));
+        assertEquals("",
+                diff(snapshot, testRefreshingTable(c("A", 11, 50, 34), c("B", "A", "bc", "Q"), c("T", 8, 5, 8)), 10));
         assertEquals(listener.getCount(), 1);
         assertEquals(i(75), added);
         assertEquals(i(25), modified);
@@ -1994,32 +1794,30 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotIncrementalPrev() {
-        final QueryTable right =
-            testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
+        final QueryTable right = testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
         final QueryTable left = testRefreshingTable(c("T", 1, 2));
 
         final QueryTable snapshot = (QueryTable) left.snapshotIncremental(right, true);
         final TableUpdateValidator validator = TableUpdateValidator.make(snapshot);
         final QueryTable validatorTable = validator.getResultTable();
         final ShiftAwareListener validatorTableListener =
-            new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
-                @Override
-                public void onUpdate(Update upstream) {}
+                new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
+                    @Override
+                    public void onUpdate(Update upstream) {}
 
-                @Override
-                public void onFailureInternal(Throwable originalException,
-                    UpdatePerformanceTracker.Entry sourceEntry) {
-                    TestCase.fail(originalException.getMessage());
-                }
-            };
+                    @Override
+                    public void onFailureInternal(Throwable originalException,
+                            UpdatePerformanceTracker.Entry sourceEntry) {
+                        TestCase.fail(originalException.getMessage());
+                    }
+                };
         validatorTable.listenForUpdates(validatorTableListener);
 
         System.out.println("Initial table:");
         show(snapshot);
         System.out.println("Initial prev:");
         show(prevTable(snapshot));
-        final QueryTable firstResult =
-            testRefreshingTable(c("A", 3, 1, 2), c("B", "c", "a", "b"), c("T", 2, 2, 2));
+        final QueryTable firstResult = testRefreshingTable(c("A", 3, 1, 2), c("B", "c", "a", "b"), c("T", 2, 2, 2));
         assertEquals("", diff(snapshot, firstResult, 10));
         assertEquals("", diff(prevTable(snapshot), firstResult, 10));
 
@@ -2047,8 +1845,8 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         show(snapshot, 50);
-        final QueryTable secondResult = testRefreshingTable(c("A", 3, 30, 1, 2, 50),
-            c("B", "c", "aa", "a", "b", "bc"), c("T", 2, 5, 2, 2, 5));
+        final QueryTable secondResult =
+                testRefreshingTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"), c("T", 2, 5, 2, 2, 5));
         assertEquals("", diff(snapshot, secondResult, 10));
         assertEquals(listener.getCount(), 1);
         assertEquals(i(20, 40), listener.update.added);
@@ -2071,8 +1869,7 @@ public class QueryTableTest extends QueryTableTestBase {
             left.notifyListeners(i(4, 5), i(), i());
         });
 
-        final QueryTable thirdResult =
-            testRefreshingTable(c("A", 11, 50, 34), c("B", "A", "bc", "Q"), c("T", 8, 5, 8));
+        final QueryTable thirdResult = testRefreshingTable(c("A", 11, 50, 34), c("B", "A", "bc", "Q"), c("T", 8, 5, 8));
         assertEquals("", diff(snapshot, thirdResult, 10));
         assertEquals(listener.getCount(), 1);
         assertEquals(i(75), listener.update.added);
@@ -2092,7 +1889,7 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         final QueryTable fourthResult =
-            testRefreshingTable(c("A", 12, 50, 34), c("B", "R", "bc", "Q"), c("T", 9, 5, 8));
+                testRefreshingTable(c("A", 12, 50, 34), c("B", "R", "bc", "Q"), c("T", 9, 5, 8));
         assertEquals("", diff(snapshot, fourthResult, 10));
         assertEquals(listener.getCount(), 1);
         assertEquals(i(), listener.update.added);
@@ -2113,14 +1910,13 @@ public class QueryTableTest extends QueryTableTestBase {
         final int filteredSize = 500;
         final Random random = new Random(0);
 
-        final QueryTable stampTable =
-            getTable(stampSize, random, stampInfo = initColumnInfos(new String[] {"Stamp"},
+        final QueryTable stampTable = getTable(stampSize, random, stampInfo = initColumnInfos(new String[] {"Stamp"},
                 new IntGenerator(0, 100)));
         final QueryTable rightTable = getTable(stampSize, random,
-            rightInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
-                new IntGenerator(0, 100),
-                new DoubleGenerator(0, 100)));
+                rightInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
+                        new IntGenerator(0, 100),
+                        new DoubleGenerator(0, 100)));
 
         final QueryTable snapshot = (QueryTable) stampTable.snapshotIncremental(rightTable);
 
@@ -2144,32 +1940,29 @@ public class QueryTableTest extends QueryTableTestBase {
 
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                     if (printTableUpdates) {
-                        System.out.println("Step = " + fstep + ", modStamp=" + modStamp
-                            + ", modRight=" + modRight + ", modifyRightFirst=" + modifyRightFirst);
+                        System.out.println("Step = " + fstep + ", modStamp=" + modStamp + ", modRight=" + modRight
+                                + ", modifyRightFirst=" + modifyRightFirst);
                     }
 
                     if (modifyRightFirst) {
-                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable,
-                            rightInfo);
+                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable, rightInfo);
                     }
                     if (modStamp) {
                         final long lastStamp = stampTable.getIndex().lastKey();
                         final int numAdditions = 1 + random.nextInt(stampSize);
                         final Index stampsToAdd =
-                            Index.FACTORY.getIndexByRange(lastStamp + 1, lastStamp + numAdditions);
+                                Index.FACTORY.getIndexByRange(lastStamp + 1, lastStamp + numAdditions);
 
                         final ColumnHolder[] columnAdditions = new ColumnHolder[stampInfo.length];
                         for (int ii = 0; ii < columnAdditions.length; ii++) {
-                            columnAdditions[ii] =
-                                stampInfo[ii].populateMapAndC(stampsToAdd, random);
+                            columnAdditions[ii] = stampInfo[ii].populateMapAndC(stampsToAdd, random);
                         }
                         TstUtils.addToTable(stampTable, stampsToAdd, columnAdditions);
                         stampTable.notifyListeners(stampsToAdd, Index.FACTORY.getEmptyIndex(),
-                            Index.FACTORY.getEmptyIndex());
+                                Index.FACTORY.getEmptyIndex());
                     }
                     if (!modifyRightFirst && modRight) {
-                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable,
-                            rightInfo);
+                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable, rightInfo);
                     }
                 });
                 if (modStamp) {
@@ -2184,11 +1977,9 @@ public class QueryTableTest extends QueryTableTestBase {
                         System.out.println("Snapshot Modified: " + simpleListener.modified);
                         final Index coalAdded = coalescingListener.indexUpdateCoalescer.takeAdded();
                         System.out.println("Right Coalesced Added: " + coalAdded);
-                        final Index coalRemoved =
-                            coalescingListener.indexUpdateCoalescer.takeRemoved();
+                        final Index coalRemoved = coalescingListener.indexUpdateCoalescer.takeRemoved();
                         System.out.println("Right Coalesced Removed: " + coalRemoved);
-                        final Index coalModified =
-                            coalescingListener.indexUpdateCoalescer.takeModified();
+                        final Index coalModified = coalescingListener.indexUpdateCoalescer.takeModified();
                         System.out.println("Right Coalesced Modified: " + coalModified);
 
                         final Index modified = simpleListener.added.union(simpleListener.modified);
@@ -2197,8 +1988,8 @@ public class QueryTableTest extends QueryTableTestBase {
                         System.out.println("Unmodified: " + unmodified);
 
                         // verify the modified stamps
-                        final int lastStamp = stampTable.getColumnSource("Stamp")
-                            .getInt(stampTable.getIndex().lastKey());
+                        final int lastStamp =
+                                stampTable.getColumnSource("Stamp").getInt(stampTable.getIndex().lastKey());
                         @SuppressWarnings("unchecked")
                         final ColumnSource<Integer> stamps = snapshot.getColumnSource("Stamp");
                         for (final Index.Iterator it = modified.iterator(); it.hasNext();) {
@@ -2229,8 +2020,7 @@ public class QueryTableTest extends QueryTableTestBase {
                     }
 
                     // make sure everything from the right table matches the snapshot
-                    lastSnapshot =
-                        new QueryTable(snapshot.getIndex().clone(), snapshot.getColumnSourceMap());
+                    lastSnapshot = new QueryTable(snapshot.getIndex().clone(), snapshot.getColumnSourceMap());
                     lastIndex = rightTable.getIndex().clone();
                     // the coalescing listener can be reset
                     coalescingListener.reset();
@@ -2252,18 +2042,16 @@ public class QueryTableTest extends QueryTableTestBase {
         testShiftingModifications(arg -> (QueryTable) arg.select());
     }
 
-    static void testLegacyFlattenModifications(
-        io.deephaven.base.Function.Unary<QueryTable, QueryTable> function) {
+    static void testLegacyFlattenModifications(io.deephaven.base.Function.Unary<QueryTable, QueryTable> function) {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("intCol", 10, 20, 40, 60));
+                c("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.call(queryTable);
         final SimpleShiftAwareListener simpleListener = new SimpleShiftAwareListener(selected);
         selected.listenForUpdates(simpleListener);
 
         final Supplier<ShiftAwareListener.Update> newUpdate =
-            () -> new ShiftAwareListener.Update(i(), i(), i(), IndexShiftData.EMPTY,
-                ModifiedColumnSet.EMPTY);
+                () -> new ShiftAwareListener.Update(i(), i(), i(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
@@ -2275,17 +2063,12 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 1", 1, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0,
-            simpleListener.update.shifted.size());
-        Assert.assertEquals("simpleListener.update.added.size() = 1", 1,
-            simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1,
-            simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0,
-            simpleListener.update.modified.size());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed.size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified.size());
         Assert.assertEquals("simpleListener.update.added = {1}", i(1), simpleListener.update.added);
-        Assert.assertEquals("simpleListener.update.removed = {1}", i(1),
-            simpleListener.update.removed);
+        Assert.assertEquals("simpleListener.update.removed = {1}", i(1), simpleListener.update.removed);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
@@ -2296,16 +2079,11 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 2", 2, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.added.size() = 0", 0,
-            simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0,
-            simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1,
-            simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.modified = {1}", i(1),
-            simpleListener.update.modified);
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0,
-            simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed.size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified.size());
+        Assert.assertEquals("simpleListener.update.modified = {1}", i(1), simpleListener.update.modified);
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 5), c("intCol", 30, 50));
@@ -2317,23 +2095,18 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 3", 3, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0,
-            simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.added.size() = 1", 1,
-            simpleListener.update.added.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added.size());
         Assert.assertEquals("simpleListener.update.added = {3}", i(3), simpleListener.update.added);
-        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1,
-            simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.modified = {1}", i(1),
-            simpleListener.update.modified);
-        Assert.assertEquals("simpleListener.update.shifted.size() = 1", 1,
-            simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified.size());
+        Assert.assertEquals("simpleListener.update.modified = {1}", i(1), simpleListener.update.modified);
+        Assert.assertEquals("simpleListener.update.shifted.size() = 1", 1, simpleListener.update.shifted.size());
         Assert.assertEquals("simpleListener.update.shifted.getBeginRange(0) = 3", 3,
-            simpleListener.update.shifted.getBeginRange(0));
+                simpleListener.update.shifted.getBeginRange(0));
         Assert.assertEquals("simpleListener.update.shifted.getEndRange(0) = 3", 3,
-            simpleListener.update.shifted.getEndRange(0));
+                simpleListener.update.shifted.getEndRange(0));
         Assert.assertEquals("simpleListener.update.shifted.getShiftDelta(0) = 1", 1,
-            simpleListener.update.shifted.getShiftDelta(0));
+                simpleListener.update.shifted.getShiftDelta(0));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(queryTable, i(4));
@@ -2343,38 +2116,31 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 4", 4, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.added.size() = 0", 0,
-            simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1,
-            simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.removed = {2}", i(2),
-            simpleListener.update.removed);
-        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0,
-            simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.shifted.size() = 1", 1,
-            simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed.size());
+        Assert.assertEquals("simpleListener.update.removed = {2}", i(2), simpleListener.update.removed);
+        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified.size());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 1", 1, simpleListener.update.shifted.size());
         Assert.assertEquals("simpleListener.update.shifted.getBeginRange(0) = 3", 3,
-            simpleListener.update.shifted.getBeginRange(0));
+                simpleListener.update.shifted.getBeginRange(0));
         Assert.assertEquals("simpleListener.update.shifted.getEndRange(0) = 4", 4,
-            simpleListener.update.shifted.getEndRange(0));
+                simpleListener.update.shifted.getEndRange(0));
         Assert.assertEquals("simpleListener.update.shifted.getShiftDelta(0) = -1", -1,
-            simpleListener.update.shifted.getShiftDelta(0));
+                simpleListener.update.shifted.getShiftDelta(0));
 
         simpleListener.close();
     }
 
-    static void testShiftingModifications(
-        io.deephaven.base.Function.Unary<QueryTable, QueryTable> function) {
+    static void testShiftingModifications(io.deephaven.base.Function.Unary<QueryTable, QueryTable> function) {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("intCol", 10, 20, 40, 60));
+                c("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.call(queryTable);
         final SimpleShiftAwareListener simpleListener = new SimpleShiftAwareListener(selected);
         selected.listenForUpdates(simpleListener);
 
         final Supplier<ShiftAwareListener.Update> newUpdate =
-            () -> new ShiftAwareListener.Update(i(), i(), i(), IndexShiftData.EMPTY,
-                ModifiedColumnSet.EMPTY);
+                () -> new ShiftAwareListener.Update(i(), i(), i(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
@@ -2386,17 +2152,12 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 1", 1, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0,
-            simpleListener.update.shifted.size());
-        Assert.assertEquals("simpleListener.update.added.size() = 1", 1,
-            simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1,
-            simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0,
-            simpleListener.update.modified.size());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed.size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified.size());
         Assert.assertEquals("simpleListener.update.added = {3}", i(3), simpleListener.update.added);
-        Assert.assertEquals("simpleListener.update.removed = {2}", i(2),
-            simpleListener.update.removed);
+        Assert.assertEquals("simpleListener.update.removed = {2}", i(2), simpleListener.update.removed);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
@@ -2407,16 +2168,11 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 2", 2, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.added.size() = 0", 0,
-            simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0,
-            simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1,
-            simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.modified = {3}", i(3),
-            simpleListener.update.modified);
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0,
-            simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed.size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified.size());
+        Assert.assertEquals("simpleListener.update.modified = {3}", i(3), simpleListener.update.modified);
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 5), c("intCol", 30, 50));
@@ -2428,17 +2184,12 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 3", 3, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0,
-            simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.added.size() = 1", 1,
-            simpleListener.update.added.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added.size());
         Assert.assertEquals("simpleListener.update.added = {5}", i(5), simpleListener.update.added);
-        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1,
-            simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.modified = {1}", i(3),
-            simpleListener.update.modified);
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0,
-            simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified.size());
+        Assert.assertEquals("simpleListener.update.modified = {1}", i(3), simpleListener.update.modified);
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
         // Assert.assertEquals("simpleListener.update.shifted.getBeginRange(0) = 3", 3,
         // simpleListener.update.shifted.getBeginRange(0));
         // Assert.assertEquals("simpleListener.update.shifted.getEndRange(0) = 3", 3,
@@ -2454,16 +2205,11 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 4", 4, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.added.size() = 0", 0,
-            simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1,
-            simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.removed = {4}", i(4),
-            simpleListener.update.removed);
-        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0,
-            simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0,
-            simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed.size());
+        Assert.assertEquals("simpleListener.update.removed = {4}", i(4), simpleListener.update.removed);
+        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified.size());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
         // Assert.assertEquals("simpleListener.update.shifted.getBeginRange(0) = 3", 3,
         // simpleListener.update.shifted.getBeginRange(0));
         // Assert.assertEquals("simpleListener.update.shifted.getEndRange(0) = 4", 4,
@@ -2476,77 +2222,67 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testDbDateTimeColumns() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
-            c("Sym", "aa", "bc", "aa", "aa"),
-            c("Timestamp", DBTimeUtils.currentTime(), DBTimeUtils.currentTime(),
-                DBTimeUtils.currentTime(), DBTimeUtils.currentTime()));
-        assertEquals(queryTable.by("Sym").getDefinition().getColumn("Timestamp").getComponentType(),
-            DBDateTime.class);
+                c("Sym", "aa", "bc", "aa", "aa"),
+                c("Timestamp", DBTimeUtils.currentTime(), DBTimeUtils.currentTime(), DBTimeUtils.currentTime(),
+                        DBTimeUtils.currentTime()));
+        assertEquals(queryTable.by("Sym").getDefinition().getColumn("Timestamp").getComponentType(), DBDateTime.class);
         show(queryTable.update("x = Timestamp_[0]"));
-        show(
-            queryTable.update("TimeinSeconds=round((max(Timestamp_)-min(Timestamp_))/1000000000)"));
+        show(queryTable.update("TimeinSeconds=round((max(Timestamp_)-min(Timestamp_))/1000000000)"));
         show(queryTable.by("Sym").view("Sym", "x = Timestamp[0]"));
-        show(queryTable.by("Sym").view("Sym",
-            "TimeinSeconds=round((max(Timestamp)-min(Timestamp))/1000000000)"));
+        show(queryTable.by("Sym").view("Sym", "TimeinSeconds=round((max(Timestamp)-min(Timestamp))/1000000000)"));
     }
 
     public void testUngroupingAgnostic() {
         Table table = testRefreshingTable(c("X", 1, 2, 3),
-            c("Y", new String[] {"a", "b", "c"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
-                new String[] {"d", "e"}),
-            c("Z", new int[] {4, 5, 6}, new int[0], new int[] {7, 8}));
+                c("Y", new String[] {"a", "b", "c"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new String[] {"d", "e"}),
+                c("Z", new int[] {4, 5, 6}, new int[0], new int[] {7, 8}));
         Table t1 = table.ungroup("Y", "Z");
         assertEquals(5, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
         assertEquals(Arrays.asList(1, 1, 1, 3, 3), Arrays.asList(t1.getColumn("X").get(0, 5)));
-        assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-            Arrays.asList(t1.getColumn("Y").get(0, 5)));
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(t1.getColumn("Y").get(0, 5)));
         assertEquals(Arrays.asList(4, 5, 6, 7, 8), Arrays.asList(t1.getColumn("Z").get(0, 5)));
 
         t1 = table.ungroup();
         assertEquals(5, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
         assertEquals(Arrays.asList(1, 1, 1, 3, 3), Arrays.asList(t1.getColumn("X").get(0, 5)));
-        assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-            Arrays.asList(t1.getColumn("Y").get(0, 5)));
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(t1.getColumn("Y").get(0, 5)));
         assertEquals(Arrays.asList(4, 5, 6, 7, 8), Arrays.asList(t1.getColumn("Z").get(0, 5)));
 
         table = testRefreshingTable(c("X", 1, 2, 3),
-            c("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"},
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-            c("Z", new int[] {4, 5, 6}, new int[0], new int[] {7, 8}));
+                c("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                c("Z", new int[] {4, 5, 6}, new int[0], new int[] {7, 8}));
         try {
             table.ungroup();
         } catch (Exception e) {
             assertEquals(
-                "Assertion failed: asserted sizes[i] == Array.getLength(arrayColumn.get(i)), instead referenceColumn == \"Y\", name == \"Z\", row == 1.",
-                e.getMessage());
+                    "Assertion failed: asserted sizes[i] == Array.getLength(arrayColumn.get(i)), instead referenceColumn == \"Y\", name == \"Z\", row == 1.",
+                    e.getMessage());
         }
 
         try {
             table.ungroup("Y", "Z");
         } catch (Exception e) {
             assertEquals(
-                "Assertion failed: asserted sizes[i] == Array.getLength(arrayColumn.get(i)), instead referenceColumn == \"Y\", name == \"Z\", row == 1.",
-                e.getMessage());
+                    "Assertion failed: asserted sizes[i] == Array.getLength(arrayColumn.get(i)), instead referenceColumn == \"Y\", name == \"Z\", row == 1.",
+                    e.getMessage());
         }
 
         t1 = table.ungroup("Y");
         assertEquals(5, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
         assertEquals(Arrays.asList(1, 1, 1, 2, 2), Arrays.asList(t1.getColumn("X").get(0, 5)));
-        assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-            Arrays.asList(t1.getColumn("Y").get(0, 5)));
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(t1.getColumn("Y").get(0, 5)));
         show(t1);
         show(t1.ungroup("Z"));
         t1 = t1.ungroup("Z");
         assertEquals(9, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
-        assertEquals(Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1),
-            Arrays.asList(t1.getColumn("X").get(0, 9)));
+        assertEquals(Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1), Arrays.asList(t1.getColumn("X").get(0, 9)));
         assertEquals(Arrays.asList("a", "a", "a", "b", "b", "b", "c", "c", "c"),
-            Arrays.asList(t1.getColumn("Y").get(0, 9)));
-        assertEquals(Arrays.asList(4, 5, 6, 4, 5, 6, 4, 5, 6),
-            Arrays.asList(t1.getColumn("Z").get(0, 9)));
+                Arrays.asList(t1.getColumn("Y").get(0, 9)));
+        assertEquals(Arrays.asList(4, 5, 6, 4, 5, 6, 4, 5, 6), Arrays.asList(t1.getColumn("Z").get(0, 9)));
 
 
         t1 = table.ungroup("Z");
@@ -2557,32 +2293,26 @@ public class QueryTableTest extends QueryTableTestBase {
         t1 = t1.ungroup("Y");
         assertEquals(9, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
-        assertEquals(Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1),
-            Arrays.asList(t1.getColumn("X").get(0, 9)));
-        assertEquals(Arrays.asList(4, 4, 4, 5, 5, 5, 6, 6, 6),
-            Arrays.asList(t1.getColumn("Z").get(0, 9)));
+        assertEquals(Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1), Arrays.asList(t1.getColumn("X").get(0, 9)));
+        assertEquals(Arrays.asList(4, 4, 4, 5, 5, 5, 6, 6, 6), Arrays.asList(t1.getColumn("Z").get(0, 9)));
         assertEquals(Arrays.asList("a", "b", "c", "a", "b", "c", "a", "b", "c"),
-            Arrays.asList(t1.getColumn("Y").get(0, 9)));
+                Arrays.asList(t1.getColumn("Y").get(0, 9)));
     }
 
     public void testUngroupConstructSnapshotOfBoxedNull() {
-        final Table t = testRefreshingTable(i(0)).update("X = new Integer[]{null, 2, 3}",
-            "Z = new Integer[]{4, 5, null}");
+        final Table t =
+                testRefreshingTable(i(0)).update("X = new Integer[]{null, 2, 3}", "Z = new Integer[]{4, 5, null}");
         final Table ungrouped = t.ungroup();
 
-        try (final BarrageMessage snap =
-            ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable) ungrouped)) {
+        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable) ungrouped)) {
             assertEquals(snap.rowsAdded, i(0, 1, 2));
-            assertEquals(snap.addColumnData[0].data.asIntChunk().get(0),
-                io.deephaven.util.QueryConstants.NULL_INT);
-            assertEquals(snap.addColumnData[1].data.asIntChunk().get(2),
-                io.deephaven.util.QueryConstants.NULL_INT);
+            assertEquals(snap.addColumnData[0].data.asIntChunk().get(0), io.deephaven.util.QueryConstants.NULL_INT);
+            assertEquals(snap.addColumnData[1].data.asIntChunk().get(2), io.deephaven.util.QueryConstants.NULL_INT);
         }
     }
 
     public void testUngroupableColumnSources() {
-        final Table table =
-            testRefreshingTable(c("X", 1, 1, 2, 2, 3, 3, 4, 4), c("Int", 1, 2, 3, 4, 5, 6, 7, null),
+        final Table table = testRefreshingTable(c("X", 1, 1, 2, 2, 3, 3, 4, 4), c("Int", 1, 2, 3, 4, 5, 6, 7, null),
                 c("Double", 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, null, 0.45),
                 c("String", "a", "b", "c", "d", "e", "f", "g", null));
         final Table t1 = table.by("X");
@@ -2611,8 +2341,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final String diff4 = diff(t8, t7, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff4);
 
-        final Table t9 =
-            t1.update("Array=new io.deephaven.db.tables.dbarrays.DbIntArrayDirect(19, 40)");
+        final Table t9 = t1.update("Array=new io.deephaven.db.tables.dbarrays.DbIntArrayDirect(19, 40)");
         final Table t10 = t9.ungroup();
         final String diff5 = diff(t10, t6, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff5);
@@ -2624,8 +2353,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final int[] intDirect = (int[]) t2.getColumn("Int").getDirect();
         System.out.println(Arrays.toString(intDirect));
 
-        final int[] expected =
-            new int[] {1, 2, 3, 4, 5, 6, 7, io.deephaven.util.QueryConstants.NULL_INT};
+        final int[] expected = new int[] {1, 2, 3, 4, 5, 6, 7, io.deephaven.util.QueryConstants.NULL_INT};
 
         if (!Arrays.equals(expected, intDirect)) {
             System.out.println("Expected: " + Arrays.toString(expected));
@@ -2633,8 +2361,8 @@ public class QueryTableTest extends QueryTableTestBase {
             fail("Expected does not match direct value!");
         }
 
-        int[] intPrevDirect = (int[]) IndexedDataColumn
-            .makePreviousColumn(t2.getIndex(), t2.getColumnSource("Int")).getDirect();
+        int[] intPrevDirect =
+                (int[]) IndexedDataColumn.makePreviousColumn(t2.getIndex(), t2.getColumnSource("Int")).getDirect();
         if (!Arrays.equals(expected, intPrevDirect)) {
             System.out.println("Expected: " + Arrays.toString(expected));
             System.out.println("Prev: " + Arrays.toString(intPrevDirect));
@@ -2644,8 +2372,8 @@ public class QueryTableTest extends QueryTableTestBase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
         });
 
-        intPrevDirect = (int[]) IndexedDataColumn
-            .makePreviousColumn(t2.getIndex(), t2.getColumnSource("Int")).getDirect();
+        intPrevDirect =
+                (int[]) IndexedDataColumn.makePreviousColumn(t2.getIndex(), t2.getColumnSource("Int")).getDirect();
         if (!Arrays.equals(expected, intPrevDirect)) {
             System.out.println("Expected: " + Arrays.toString(expected));
             System.out.println("Prev: " + Arrays.toString(intPrevDirect));
@@ -2656,13 +2384,12 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testUngroupOverflow() {
         try (final ErrorExpectation errorExpectation = new ErrorExpectation()) {
             final QueryTable table = testRefreshingTable(i(5, 7), c("X", 1, 2),
-                c("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"}));
+                    c("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"}));
             final QueryTable t1 = (QueryTable) table.ungroup("Y");
             assertEquals(5, t1.size());
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
             assertEquals(Arrays.asList(1, 1, 1, 2, 2), Arrays.asList(t1.getColumn("X").get(0, 5)));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-                Arrays.asList(t1.getColumn("Y").get(0, 5)));
+            assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(t1.getColumn("Y").get(0, 5)));
 
             final ErrorListener errorListener = new ErrorListener(table);
             t1.listenForUpdates(errorListener);
@@ -2670,8 +2397,8 @@ public class QueryTableTest extends QueryTableTestBase {
             // This is too big, we should fail
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long bigIndex = 1L << 55;
-                addToTable(table, i(bigIndex), intCol("X", 3), new ColumnHolder<>("Y",
-                    String[].class, String.class, false, new String[] {"f"}));
+                addToTable(table, i(bigIndex), intCol("X", 3),
+                        new ColumnHolder<>("Y", String[].class, String.class, false, new String[] {"f"}));
                 table.notifyListeners(i(bigIndex), i(), i());
             });
             showWithIndex(t1);
@@ -2682,10 +2409,8 @@ public class QueryTableTest extends QueryTableTestBase {
             if (!(errorListener.originalException instanceof IllegalStateException)) {
                 fail("!(errorListener.originalException instanceof IllegalStateException)");
             }
-            if (!(errorListener.originalException.getMessage()
-                .startsWith("Key overflow detected"))) {
-                fail(
-                    "!errorListener.originalException.getMessage().startsWith(\"Key overflow detected\")");
+            if (!(errorListener.originalException.getMessage().startsWith("Key overflow detected"))) {
+                fail("!errorListener.originalException.getMessage().startsWith(\"Key overflow detected\")");
             }
         }
     }
@@ -2695,48 +2420,46 @@ public class QueryTableTest extends QueryTableTestBase {
         final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
             final QueryTable table = testRefreshingTable(i(5, 7), c("X", 1, 2),
-                c("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"}));
+                    c("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"}));
             final QueryTable t1 = (QueryTable) table.ungroup("Y");
             assertEquals(5, t1.size());
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2),
-                Ints.asList((int[]) t1.getColumn("X").getDirect()));
+            assertEquals(Arrays.asList(1, 1, 1, 2, 2), Ints.asList((int[]) t1.getColumn("X").getDirect()));
             assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-                Arrays.asList((String[]) t1.getColumn("Y").getDirect()));
+                    Arrays.asList((String[]) t1.getColumn("Y").getDirect()));
 
             final TableUpdateValidator validator = TableUpdateValidator.make(t1);
             final QueryTable validatorTable = validator.getResultTable();
             final ShiftAwareListener validatorTableListener =
-                new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
-                    @Override
-                    public void onUpdate(Update upstream) {}
+                    new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
+                        @Override
+                        public void onUpdate(Update upstream) {}
 
-                    @Override
-                    public void onFailureInternal(Throwable originalException,
-                        UpdatePerformanceTracker.Entry sourceEntry) {
-                        TestCase.fail(originalException.getMessage());
-                    }
-                };
+                        @Override
+                        public void onFailureInternal(Throwable originalException,
+                                UpdatePerformanceTracker.Entry sourceEntry) {
+                            TestCase.fail(originalException.getMessage());
+                        }
+                    };
             validatorTable.listenForUpdates(validatorTableListener);
 
             // This is too big, we should fail
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(table, i(9), c("X", 3), new ColumnHolder<>("Y", String[].class,
-                    String.class, false, new String[] {"f", "g", "h", "i", "j", "k"}));
+                addToTable(table, i(9), c("X", 3), new ColumnHolder<>("Y", String[].class, String.class, false,
+                        new String[] {"f", "g", "h", "i", "j", "k"}));
                 table.notifyListeners(i(9), i(), i());
             });
             showWithIndex(t1);
 
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
             assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3),
-                Ints.asList((int[]) (t1.getColumn("X").getDirect())));
+                    Ints.asList((int[]) (t1.getColumn("X").getDirect())));
             assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
-                Arrays.asList((String[]) t1.getColumn("Y").getDirect()));
+                    Arrays.asList((String[]) t1.getColumn("Y").getDirect()));
 
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2), Ints.asList((int[]) IndexedDataColumn
-                .makePreviousColumn(t1.getIndex(), t1.getColumnSource("X")).getDirect()));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-                Arrays.asList((String[]) IndexedDataColumn
+            assertEquals(Arrays.asList(1, 1, 1, 2, 2), Ints.asList(
+                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getIndex(), t1.getColumnSource("X")).getDirect()));
+            assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList((String[]) IndexedDataColumn
                     .makePreviousColumn(t1.getIndex(), t1.getColumnSource("Y")).getDirect()));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -2744,15 +2467,14 @@ public class QueryTableTest extends QueryTableTestBase {
 
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
             assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3),
-                Ints.asList((int[]) t1.getColumn("X").getDirect()));
+                    Ints.asList((int[]) t1.getColumn("X").getDirect()));
             assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
-                Arrays.asList((String[]) t1.getColumn("Y").getDirect()));
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3),
-                Ints.asList((int[]) IndexedDataColumn
-                    .makePreviousColumn(t1.getIndex(), t1.getColumnSource("X")).getDirect()));
+                    Arrays.asList((String[]) t1.getColumn("Y").getDirect()));
+            assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3), Ints.asList(
+                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getIndex(), t1.getColumnSource("X")).getDirect()));
             assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
-                Arrays.asList((String[]) IndexedDataColumn
-                    .makePreviousColumn(t1.getIndex(), t1.getColumnSource("Y")).getDirect()));
+                    Arrays.asList((String[]) IndexedDataColumn
+                            .makePreviousColumn(t1.getIndex(), t1.getColumnSource("Y")).getDirect()));
         } finally {
             QueryTable.setMinimumUngroupBase(minimumUngroupBase);
         }
@@ -2769,12 +2491,12 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(tableSize, random,
-            columnInfo = initColumnInfos(new String[] {"Date", "C1", "C2", "C3"},
-                new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
-                new SetGenerator<>("a", "b"),
-                new SetGenerator<>(10, 20, 30),
-                new SetGenerator<>(CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new String[] {"a", "b"},
-                    new String[] {"a", "b", "c"})));
+                columnInfo = initColumnInfos(new String[] {"Date", "C1", "C2", "C3"},
+                        new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
+                        new SetGenerator<>("a", "b"),
+                        new SetGenerator<>(10, 20, 30),
+                        new SetGenerator<>(CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new String[] {"a", "b"},
+                                new String[] {"a", "b", "c"})));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> table.by().ungroup(nullFill)),
@@ -2782,32 +2504,25 @@ public class QueryTableTest extends QueryTableTestBase {
                 new UpdateValidatorNugget(table.by("C1").ungroup(nullFill)),
                 EvalNugget.from(() -> table.by().ungroup(nullFill, "C1")),
                 EvalNugget.from(() -> table.by("C1").sort("C1").ungroup(nullFill, "C2")),
-                EvalNugget.from(() -> table.by("C1").sort("C1").ungroup(nullFill, "C2")
-                    .ungroup(nullFill, "Date")),
-                EvalNugget.from(
-                    () -> table.by("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill)),
+                EvalNugget.from(() -> table.by("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
+                EvalNugget.from(() -> table.by("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill)),
                 EvalNugget.from(() -> table.by("C1", "C2").sort("C1", "C2").ungroup(nullFill)),
-                EvalNugget.from(() -> table.by()
-                    .update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
-                    .ungroup(nullFill)),
-                EvalNugget.from(() -> table.by("C1")
-                    .update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1").ungroup(nullFill)),
-                EvalNugget.from(() -> table.by()
-                    .update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
-                    .ungroup(nullFill, "C1")),
-                EvalNugget
-                    .from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()")
-                        .sort("C1").ungroup(nullFill, "C2")),
-                EvalNugget
-                    .from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()")
-                        .sort("C1").ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
-                EvalNugget
-                    .from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()")
-                        .sort("C1").ungroup(nullFill, "C2").ungroup(nullFill)),
-                EvalNugget.from(() -> table.by("C1", "C2").update("Date=Date.toArray()")
-                    .sort("C1", "C2").ungroup(nullFill)),
-                EvalNugget.from(() -> table.by("C1")
-                    .update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1").ungroup(nullFill)),
+                EvalNugget.from(() -> table.by().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
+                        .ungroup(nullFill)),
+                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill)),
+                EvalNugget.from(() -> table.by().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
+                        .ungroup(nullFill, "C1")),
+                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill, "C2")),
+                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
+                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill, "C2").ungroup(nullFill)),
+                EvalNugget.from(
+                        () -> table.by("C1", "C2").update("Date=Date.toArray()").sort("C1", "C2").ungroup(nullFill)),
+                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill)),
                 EvalNugget.from(() -> table.view("C3").ungroup(nullFill))
         };
 
@@ -2838,14 +2553,13 @@ public class QueryTableTest extends QueryTableTestBase {
         for (int q = 0; q < 10; q++) {
             final ColumnInfo[] columnInfo;
             final QueryTable table = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol",},
-                    new SetGenerator<>("a", "b", "c", "d"),
-                    new IntGenerator(10, 100)));
+                    columnInfo = initColumnInfos(new String[] {"Sym", "intCol",},
+                            new SetGenerator<>("a", "b", "c", "d"),
+                            new IntGenerator(10, 100)));
 
-            final Table mismatch =
-                table.by("Sym").sort("Sym").update("MyBoolean=boolArray", "MyDouble=doubleArray");
+            final Table mismatch = table.by("Sym").sort("Sym").update("MyBoolean=boolArray", "MyDouble=doubleArray");
 
-            final EvalNugget en[] = new EvalNugget[] {
+            final EvalNugget[] en = new EvalNugget[] {
                     new EvalNugget() {
                         public Table e() {
                             return mismatch.ungroup(nullFill);
@@ -2862,132 +2576,118 @@ public class QueryTableTest extends QueryTableTestBase {
 
     @SuppressWarnings("RedundantCast")
     public void testUngroupJoined_IDS6311() throws IOException, ClassNotFoundException {
-        final QueryTable left = TstUtils.testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'),
-            intCol("Value", 0, 1, 2, 3));
+        final QueryTable left =
+                TstUtils.testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'), intCol("Value", 0, 1, 2, 3));
 
         final QueryTable right = TstUtils.testRefreshingTable(c("Letter", '0', 'b'),
-            byteCol("BValue", (byte) 0, (byte) 1),
-            shortCol("SValue", (short) 0, (short) 1),
-            intCol("EulavI", 0, 1),
-            longCol("LValue", 0, 1),
-            floatCol("FValue", 0.0f, 1.1f),
-            doubleCol("DValue", 0.0d, 1.1d),
-            charCol("CCol", 'a', 'b'),
-            c("BoCol", true, false),
-            c("OCol", new Pair<>(0, 1), new Pair<>(2, 3)));
+                byteCol("BValue", (byte) 0, (byte) 1),
+                shortCol("SValue", (short) 0, (short) 1),
+                intCol("EulavI", 0, 1),
+                longCol("LValue", 0, 1),
+                floatCol("FValue", 0.0f, 1.1f),
+                doubleCol("DValue", 0.0d, 1.1d),
+                charCol("CCol", 'a', 'b'),
+                c("BoCol", true, false),
+                c("OCol", new Pair<>(0, 1), new Pair<>(2, 3)));
 
         final Table leftBy = left.by("Letter");
         final Table rightBy = right.by("Letter");
 
         final Table joined = leftBy.naturalJoin(rightBy, "Letter")
-            .updateView("BValue = ((i%2) == 0) ? null : BValue");
+                .updateView("BValue = ((i%2) == 0) ? null : BValue");
 
         QueryTable expected = TstUtils.testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'),
-            c("Value", (DbIntArray) new DbIntArrayDirect(0), (DbIntArray) new DbIntArrayDirect(1),
-                (DbIntArray) new DbIntArrayDirect(2), (DbIntArray) new DbIntArrayDirect(3)),
-            c("BValue", null, (DbByteArray) new DbByteArrayDirect((byte) 1), null, null),
-            c("SValue", null, (DbShortArray) new DbShortArrayDirect((short) 1), null, null),
-            c("EulavI", null, (DbIntArray) new DbIntArrayDirect(1), null, null),
-            c("LValue", null, (DbLongArray) new DbLongArrayDirect(1), null, null),
-            c("FValue", null, (DbFloatArray) new DbFloatArrayDirect(1.1f), null, null),
-            c("DValue", null, (DbDoubleArray) new DbDoubleArrayDirect(1.1d), null, null),
-            c("CCol", null, (DbCharArray) new DbCharArrayDirect('b'), null, null),
-            c("BoCol", null, (DbArray<Boolean>) new DbArrayDirect<>(false), null, null),
-            c("OCol", null, (DbArray<Pair<Integer, Integer>>) new DbArrayDirect<>(new Pair<>(2, 3)),
-                null, null));
+                c("Value", (DbIntArray) new DbIntArrayDirect(0), (DbIntArray) new DbIntArrayDirect(1),
+                        (DbIntArray) new DbIntArrayDirect(2), (DbIntArray) new DbIntArrayDirect(3)),
+                c("BValue", null, (DbByteArray) new DbByteArrayDirect((byte) 1), null, null),
+                c("SValue", null, (DbShortArray) new DbShortArrayDirect((short) 1), null, null),
+                c("EulavI", null, (DbIntArray) new DbIntArrayDirect(1), null, null),
+                c("LValue", null, (DbLongArray) new DbLongArrayDirect(1), null, null),
+                c("FValue", null, (DbFloatArray) new DbFloatArrayDirect(1.1f), null, null),
+                c("DValue", null, (DbDoubleArray) new DbDoubleArrayDirect(1.1d), null, null),
+                c("CCol", null, (DbCharArray) new DbCharArrayDirect('b'), null, null),
+                c("BoCol", null, (DbArray<Boolean>) new DbArrayDirect<>(false), null, null),
+                c("OCol", null, (DbArray<Pair<Integer, Integer>>) new DbArrayDirect<>(new Pair<>(2, 3)), null, null));
 
         assertTableEquals(expected, joined);
 
         final Table ungrouped = joined.ungroup(true);
 
         expected = TstUtils.testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'),
-            c("Value", 0, 1, 2, 3),
-            byteCol("BValue", io.deephaven.util.QueryConstants.NULL_BYTE, (byte) 1,
-                io.deephaven.util.QueryConstants.NULL_BYTE,
-                io.deephaven.util.QueryConstants.NULL_BYTE),
-            shortCol("SValue", io.deephaven.util.QueryConstants.NULL_SHORT, (short) 1,
-                io.deephaven.util.QueryConstants.NULL_SHORT,
-                io.deephaven.util.QueryConstants.NULL_SHORT),
-            intCol("EulavI", io.deephaven.util.QueryConstants.NULL_INT, 1,
-                io.deephaven.util.QueryConstants.NULL_INT,
-                io.deephaven.util.QueryConstants.NULL_INT),
-            longCol("LValue", io.deephaven.util.QueryConstants.NULL_LONG, (long) 1,
-                io.deephaven.util.QueryConstants.NULL_LONG,
-                io.deephaven.util.QueryConstants.NULL_LONG),
-            floatCol("FValue", io.deephaven.util.QueryConstants.NULL_FLOAT, 1.1f,
-                io.deephaven.util.QueryConstants.NULL_FLOAT,
-                io.deephaven.util.QueryConstants.NULL_FLOAT),
-            doubleCol("DValue", io.deephaven.util.QueryConstants.NULL_DOUBLE, 1.1d,
-                io.deephaven.util.QueryConstants.NULL_DOUBLE,
-                io.deephaven.util.QueryConstants.NULL_DOUBLE),
-            charCol("CCol", io.deephaven.util.QueryConstants.NULL_CHAR, 'b',
-                io.deephaven.util.QueryConstants.NULL_CHAR,
-                io.deephaven.util.QueryConstants.NULL_CHAR),
-            c("BoCol", null, false, null, null),
-            c("OCol", null, new Pair<>(2, 3), null, null));
+                c("Value", 0, 1, 2, 3),
+                byteCol("BValue", io.deephaven.util.QueryConstants.NULL_BYTE, (byte) 1,
+                        io.deephaven.util.QueryConstants.NULL_BYTE, io.deephaven.util.QueryConstants.NULL_BYTE),
+                shortCol("SValue", io.deephaven.util.QueryConstants.NULL_SHORT, (short) 1,
+                        io.deephaven.util.QueryConstants.NULL_SHORT, io.deephaven.util.QueryConstants.NULL_SHORT),
+                intCol("EulavI", io.deephaven.util.QueryConstants.NULL_INT, 1,
+                        io.deephaven.util.QueryConstants.NULL_INT, io.deephaven.util.QueryConstants.NULL_INT),
+                longCol("LValue", io.deephaven.util.QueryConstants.NULL_LONG, (long) 1,
+                        io.deephaven.util.QueryConstants.NULL_LONG, io.deephaven.util.QueryConstants.NULL_LONG),
+                floatCol("FValue", io.deephaven.util.QueryConstants.NULL_FLOAT, 1.1f,
+                        io.deephaven.util.QueryConstants.NULL_FLOAT, io.deephaven.util.QueryConstants.NULL_FLOAT),
+                doubleCol("DValue", io.deephaven.util.QueryConstants.NULL_DOUBLE, 1.1d,
+                        io.deephaven.util.QueryConstants.NULL_DOUBLE, io.deephaven.util.QueryConstants.NULL_DOUBLE),
+                charCol("CCol", io.deephaven.util.QueryConstants.NULL_CHAR, 'b',
+                        io.deephaven.util.QueryConstants.NULL_CHAR, io.deephaven.util.QueryConstants.NULL_CHAR),
+                c("BoCol", null, false, null, null),
+                c("OCol", null, new Pair<>(2, 3), null, null));
 
         assertTableEquals(expected, ungrouped);
 
-        // assertTableEquals only calls get(), we need to make sure the specialized get()s also work
-        // too.
+        // assertTableEquals only calls get(), we need to make sure the specialized get()s also work too.
         final long firstKey = ungrouped.getIndex().firstKey();
         final long secondKey = ungrouped.getIndex().get(1);
 
-        assertEquals(io.deephaven.util.QueryConstants.NULL_BYTE,
-            ungrouped.getColumnSource("BValue").getByte(firstKey));
+        assertEquals(io.deephaven.util.QueryConstants.NULL_BYTE, ungrouped.getColumnSource("BValue").getByte(firstKey));
         assertEquals((byte) 1, ungrouped.getColumnSource("BValue").getByte(secondKey));
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_SHORT,
-            ungrouped.getColumnSource("SValue").getShort(firstKey));
+                ungrouped.getColumnSource("SValue").getShort(firstKey));
         assertEquals((short) 1, ungrouped.getColumnSource("SValue").getShort(secondKey));
 
-        assertEquals(io.deephaven.util.QueryConstants.NULL_INT,
-            ungrouped.getColumnSource("EulavI").getInt(firstKey));
+        assertEquals(io.deephaven.util.QueryConstants.NULL_INT, ungrouped.getColumnSource("EulavI").getInt(firstKey));
         assertEquals(1, ungrouped.getColumnSource("EulavI").getInt(secondKey));
 
-        assertEquals(io.deephaven.util.QueryConstants.NULL_LONG,
-            ungrouped.getColumnSource("LValue").getLong(firstKey));
+        assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, ungrouped.getColumnSource("LValue").getLong(firstKey));
         assertEquals(1, ungrouped.getColumnSource("LValue").getLong(secondKey));
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_FLOAT,
-            ungrouped.getColumnSource("FValue").getFloat(firstKey));
+                ungrouped.getColumnSource("FValue").getFloat(firstKey));
         assertEquals(1.1f, ungrouped.getColumnSource("FValue").getFloat(secondKey));
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE,
-            ungrouped.getColumnSource("DValue").getDouble(firstKey));
+                ungrouped.getColumnSource("DValue").getDouble(firstKey));
         assertEquals(1.1d, ungrouped.getColumnSource("DValue").getDouble(secondKey));
 
-        assertEquals(io.deephaven.util.QueryConstants.NULL_CHAR,
-            ungrouped.getColumnSource("CCol").getChar(firstKey));
+        assertEquals(io.deephaven.util.QueryConstants.NULL_CHAR, ungrouped.getColumnSource("CCol").getChar(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getChar(secondKey));
 
         // repeat with prev
         assertEquals(io.deephaven.util.QueryConstants.NULL_BYTE,
-            ungrouped.getColumnSource("BValue").getPrevByte(firstKey));
+                ungrouped.getColumnSource("BValue").getPrevByte(firstKey));
         assertEquals((byte) 1, ungrouped.getColumnSource("BValue").getPrevByte(secondKey));
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_SHORT,
-            ungrouped.getColumnSource("SValue").getPrevShort(firstKey));
+                ungrouped.getColumnSource("SValue").getPrevShort(firstKey));
         assertEquals((short) 1, ungrouped.getColumnSource("SValue").getPrevShort(secondKey));
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_INT,
-            ungrouped.getColumnSource("EulavI").getPrevInt(firstKey));
+                ungrouped.getColumnSource("EulavI").getPrevInt(firstKey));
         assertEquals(1, ungrouped.getColumnSource("EulavI").getPrevInt(secondKey));
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_LONG,
-            ungrouped.getColumnSource("LValue").getPrevLong(firstKey));
+                ungrouped.getColumnSource("LValue").getPrevLong(firstKey));
         assertEquals(1, ungrouped.getColumnSource("LValue").getPrevLong(secondKey));
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_FLOAT,
-            ungrouped.getColumnSource("FValue").getPrevFloat(firstKey));
+                ungrouped.getColumnSource("FValue").getPrevFloat(firstKey));
         assertEquals(1.1f, ungrouped.getColumnSource("FValue").getPrevFloat(secondKey));
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE,
-            ungrouped.getColumnSource("DValue").getPrevDouble(firstKey));
+                ungrouped.getColumnSource("DValue").getPrevDouble(firstKey));
         assertEquals(1.1d, ungrouped.getColumnSource("DValue").getPrevDouble(secondKey));
 
-        assertEquals(QueryConstants.NULL_CHAR,
-            ungrouped.getColumnSource("CCol").getPrevChar(firstKey));
+        assertEquals(QueryConstants.NULL_CHAR, ungrouped.getColumnSource("CCol").getPrevChar(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getPrevChar(secondKey));
 
         assertEquals(null, ungrouped.getColumnSource("CCol").getPrev(firstKey));
@@ -2995,7 +2695,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         // This tests the NPE condition in the ungrouped column sources
         final Table snappy = InitialSnapshotTable.setupInitialSnapshotTable(ungrouped,
-            ConstructSnapshot.constructInitialSnapshot(this, (QueryTable) ungrouped));
+                ConstructSnapshot.constructInitialSnapshot(this, (QueryTable) ungrouped));
         assertTableEquals(expected, snappy);
     }
 
@@ -3003,8 +2703,7 @@ public class QueryTableTest extends QueryTableTestBase {
         testMemoize(source, true, op);
     }
 
-    private void testMemoize(QueryTable source, boolean withCopy,
-        io.deephaven.base.Function.Unary<Table, Table> op) {
+    private void testMemoize(QueryTable source, boolean withCopy, io.deephaven.base.Function.Unary<Table, Table> op) {
         final Table result = op.call(source);
         final Table result2 = op.call(source);
         Assert.assertSame(result, result2);
@@ -3020,21 +2719,20 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     private void testNoMemoize(Table source, io.deephaven.base.Function.Unary<Table, Table> op1,
-        io.deephaven.base.Function.Unary<Table, Table> op2) {
+            io.deephaven.base.Function.Unary<Table, Table> op2) {
         final Table result = op1.call(source);
         final Table result2 = op2.call(source);
         Assert.assertNotSame(result, result2);
     }
 
     private void testMemoize(Table source, io.deephaven.base.Function.Unary<Table, Table> op1,
-        io.deephaven.base.Function.Unary<Table, Table> op2) {
+            io.deephaven.base.Function.Unary<Table, Table> op2) {
         final Table result = op1.call(source);
         final Table result2 = op2.call(source);
         Assert.assertSame(result, result2);
     }
 
-    private void testNoMemoize(QueryTable source,
-        io.deephaven.base.Function.Unary<Table, Table> op) {
+    private void testNoMemoize(QueryTable source, io.deephaven.base.Function.Unary<Table, Table> op) {
         final Table result = op.call(source);
         final Table result2 = op.call(source);
         Assert.assertNotSame(result, result2);
@@ -3043,8 +2741,7 @@ public class QueryTableTest extends QueryTableTestBase {
         Assert.assertNotSame(result, result3);
     }
 
-    private void testNoMemoize(QueryTable source, QueryTable copy,
-        io.deephaven.base.Function.Unary<Table, Table> op) {
+    private void testNoMemoize(QueryTable source, QueryTable copy, io.deephaven.base.Function.Unary<Table, Table> op) {
         final Table result = op.call(source);
         final Table result2 = op.call(copy);
         Assert.assertNotSame(result, result2);
@@ -3052,8 +2749,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testMemoize() {
         final Random random = new Random(0);
-        final QueryTable source = getTable(1000, random,
-            initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+        final QueryTable source = getTable(1000, random, initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                 new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
                 new IntGenerator(0, 100),
                 new DoubleGenerator(0, 100)));
@@ -3067,10 +2763,8 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.view("intCol", "doubleCol"));
             testMemoize(source, t -> t.view("doubleCol", "intCol"));
             testNoMemoize(source, t -> t.view("doubleCol", "intCol"), t -> t.view("doubleCol"));
-            testNoMemoize(source, t -> t.view("doubleCol", "intCol"),
-                t -> t.view("intCol", "doubleCol"));
-            // we are not smart enough to handle formulas, because they might have different query
-            // scopes
+            testNoMemoize(source, t -> t.view("doubleCol", "intCol"), t -> t.view("intCol", "doubleCol"));
+            // we are not smart enough to handle formulas, because they might have different query scopes
             testNoMemoize(source, t -> t.view("doubleCol=doubleCol/2.0"));
             // we don't handle renames, because the SwitchColumn is hard to get right
             testNoMemoize(source, t -> t.view("intCol2=intCol", "doubleCol"));
@@ -3087,23 +2781,19 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.where("Sym=`aa`"));
             testMemoize(source, t -> t.where("Sym in `aa`, `bb`"));
             testMemoize(source,
-                t -> t.whereOneOf(
-                    Collections
-                        .singletonList(SelectFilterFactory.getExpression("Sym in `aa`, `bb`")),
-                    Collections.singletonList(SelectFilterFactory.getExpression("intCol=7"))));
-            testMemoize(source, t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(
-                SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
-            testMemoize(source, t -> t.where(ConjunctiveFilter.makeConjunctiveFilter(
-                SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
+                    t -> t.whereOneOf(Collections.singletonList(SelectFilterFactory.getExpression("Sym in `aa`, `bb`")),
+                            Collections.singletonList(SelectFilterFactory.getExpression("intCol=7"))));
+            testMemoize(source, t -> t.where(DisjunctiveFilter
+                    .makeDisjunctiveFilter(SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
+            testMemoize(source, t -> t.where(ConjunctiveFilter
+                    .makeConjunctiveFilter(SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
             testNoMemoize(source,
-                t -> t.where(ConjunctiveFilter.makeConjunctiveFilter(
-                    SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))),
-                t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(
-                    SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
-            testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"),
-                t -> t.where("Sym not in `aa`, `bb`"));
-            testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"),
-                t -> t.where("Sym in `aa`, `cc`"));
+                    t -> t.where(ConjunctiveFilter.makeConjunctiveFilter(
+                            SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))),
+                    t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(
+                            SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
+            testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym not in `aa`, `bb`"));
+            testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym in `aa`, `cc`"));
             testNoMemoize(source, t -> t.where("Sym.startsWith(`a`)"));
 
             testMemoize(source, t -> t.countBy("Count", "Sym"));
@@ -3113,25 +2803,22 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.minBy("Sym"));
             testMemoize(source, t -> t.dropColumns("Sym"));
             testMemoize(source, t -> t.dropColumns("Sym", "intCol"));
-            testMemoize(source, t -> t.dropColumns("Sym", "intCol"),
-                t -> t.dropColumns("intCol", "Sym"));
+            testMemoize(source, t -> t.dropColumns("Sym", "intCol"), t -> t.dropColumns("intCol", "Sym"));
             testMemoize(source, t -> t.dropColumns("intCol", "Sym"));
             testNoMemoize(source, t -> t.dropColumns("Sym"), t -> t.dropColumns("intCol"));
             testMemoize(source, t -> t.maxBy("Sym"));
-            testMemoize(source,
-                t -> t.by(AggCombo(AggSum("intCol"), AggAbsSum("absInt=intCol"),
-                    AggMax("doubleCol"), AggFirst("Sym"), AggCountDistinct("UniqueCountSym=Sym"),
-                    AggDistinct("UniqueSym=Sym"))));
+            testMemoize(source, t -> t.by(AggCombo(AggSum("intCol"), AggAbsSum("absInt=intCol"), AggMax("doubleCol"),
+                    AggFirst("Sym"), AggCountDistinct("UniqueCountSym=Sym"), AggDistinct("UniqueSym=Sym"))));
             testMemoize(source, t -> t.by(AggCombo(AggCountDistinct("UniqueCountSym=Sym"))));
             testMemoize(source, t -> t.by(AggCombo(AggCountDistinct(true, "UniqueCountSym=Sym"))));
             testNoMemoize(source, t -> t.by(AggCombo(AggCountDistinct("UniqueCountSym=Sym"))),
-                t -> t.by(AggCombo(AggCountDistinct(true, "UniqueCountSym=Sym"))));
+                    t -> t.by(AggCombo(AggCountDistinct(true, "UniqueCountSym=Sym"))));
             testMemoize(source, t -> t.by(AggCombo(AggDistinct("UniqueSym=Sym"))));
             testMemoize(source, t -> t.by(AggCombo(AggDistinct(true, "UniqueSym=Sym"))));
             testNoMemoize(source, t -> t.by(AggCombo(AggCountDistinct("UniqueCountSym=Sym"))),
-                t -> t.by(AggCombo(AggDistinct("UniqueCountSym=Sym"))));
+                    t -> t.by(AggCombo(AggDistinct("UniqueCountSym=Sym"))));
             testNoMemoize(source, t -> t.by(AggCombo(AggDistinct("UniqueSym=Sym"))),
-                t -> t.by(AggCombo(AggDistinct(true, "UniqueSym=Sym"))));
+                    t -> t.by(AggCombo(AggDistinct(true, "UniqueSym=Sym"))));
             testNoMemoize(source, t -> t.countBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.avgBy("Sym"));
@@ -3148,8 +2835,7 @@ public class QueryTableTest extends QueryTableTestBase {
             });
 
             final Table withRestrictions = source.copy().restrictSortTo("intCol", "doubleCol");
-            testNoMemoize(source, (QueryTable) withRestrictions,
-                t -> t.sort("intCol", "doubleCol"));
+            testNoMemoize(source, (QueryTable) withRestrictions, t -> t.sort("intCol", "doubleCol"));
         } finally {
             QueryTable.setMemoizeResults(old);
         }
@@ -3200,8 +2886,8 @@ public class QueryTableTest extends QueryTableTestBase {
             // noinspection unchecked
             final Map<String, Index> gtr = (Map) t.getIndex().getGrouping(symbol);
             ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
-            final Table result = t.whereIn(Table.GroupStrategy.CREATE_GROUPS,
-                t.where("Truthiness=true"), "Symbol", "Timestamp");
+            final Table result =
+                    t.whereIn(Table.GroupStrategy.CREATE_GROUPS, t.where("Truthiness=true"), "Symbol", "Timestamp");
             TableTools.showWithIndex(result);
         });
     }
@@ -3210,25 +2896,24 @@ public class QueryTableTest extends QueryTableTestBase {
         final File testDirectory = Files.createTempDirectory("SymbolTableTest").toFile();
 
         final TableDefinition definition = TableDefinition.of(
-            ColumnDefinition.ofInt("Sentinel"),
-            ColumnDefinition.ofString("Symbol").withGrouping(),
-            ColumnDefinition.ofTime("Timestamp"),
-            ColumnDefinition.ofBoolean("Truthiness"));
+                ColumnDefinition.ofInt("Sentinel"),
+                ColumnDefinition.ofString("Symbol").withGrouping(),
+                ColumnDefinition.ofTime("Timestamp"),
+                ColumnDefinition.ofBoolean("Truthiness"));
 
         final String[] syms = new String[] {"Apple", "Banana", "Cantaloupe"};
         final DBDateTime baseTime = DBTimeUtils.convertDateTime("2019-04-11T09:30 NY");
-        final long dateOffset[] = new long[] {0, 5, 10, 15, 1, 6, 11, 16, 2, 7};
-        final Boolean booleans[] =
-            new Boolean[] {true, false, null, true, false, null, true, false, null, true, false};
+        final long[] dateOffset = new long[] {0, 5, 10, 15, 1, 6, 11, 16, 2, 7};
+        final Boolean[] booleans = new Boolean[] {true, false, null, true, false, null, true, false, null, true, false};
         QueryScope.addParam("syms", syms);
         QueryScope.addParam("baseTime", baseTime);
         QueryScope.addParam("dateOffset", dateOffset);
         QueryScope.addParam("booleans", booleans);
 
         final Table source = emptyTable(10)
-            .updateView("Sentinel=i", "Symbol=syms[i % syms.length]",
-                "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]")
-            .by("Symbol").ungroup();
+                .updateView("Sentinel=i", "Symbol=syms[i % syms.length]",
+                        "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]")
+                .by("Symbol").ungroup();
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
@@ -3242,10 +2927,9 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testIds7153() {
-        final QueryTable lTable = testRefreshingTable(
-            Index.FACTORY.getIndexByValues(10, 12, 14, 16), c("X", "a", "b", "c", "d"));
-        final QueryTable rTable =
-            testRefreshingTable(c("X", "a", "b", "c", "d"), c("R", 0, 1, 2, 3));
+        final QueryTable lTable =
+                testRefreshingTable(Index.FACTORY.getIndexByValues(10, 12, 14, 16), c("X", "a", "b", "c", "d"));
+        final QueryTable rTable = testRefreshingTable(c("X", "a", "b", "c", "d"), c("R", 0, 1, 2, 3));
 
         final MutableObject<QueryTable> nj = new MutableObject<>();
         final MutableObject<QueryTable> ft = new MutableObject<>();
@@ -3264,25 +2948,17 @@ public class QueryTableTest extends QueryTableTestBase {
             nj.setValue((QueryTable) lTable.naturalJoin(rTable, "X"));
 
             try {
-                // The real test happens here. Off of the ltm thread we do an operation, one that
-                // supports concurrent
-                // instantiation, such that we use prev values when applicable. Assume the parent
-                // table has not ticked
-                // this cycle: 1) if the parent table pre-existed then we want to use prev values
-                // (to handle when parent
-                // is mid-tick but unpublished) 2) if the parent table was created this cycle, then
-                // A) prev values are
-                // undefined, B) it must have been created AFTER any of its dependencies may have
-                // ticked this cycle and
+                // The real test happens here. Off of the ltm thread we do an operation, one that supports concurrent
+                // instantiation, such that we use prev values when applicable. Assume the parent table has not ticked
+                // this cycle: 1) if the parent table pre-existed then we want to use prev values (to handle when parent
+                // is mid-tick but unpublished) 2) if the parent table was created this cycle, then A) prev values are
+                // undefined, B) it must have been created AFTER any of its dependencies may have ticked this cycle and
                 // C) the table is not allowed to tick this cycle.
 
-                // The specific scenario we are trying to catch is when the parent re-uses data
-                // structures (i.e. index)
-                // from its parent, which have valid prev values, but the prev values must not be
-                // used during the first
+                // The specific scenario we are trying to catch is when the parent re-uses data structures (i.e. index)
+                // from its parent, which have valid prev values, but the prev values must not be used during the first
                 // cycle.
-                final Thread offltm =
-                    new Thread(() -> ft.setValue((QueryTable) nj.getValue().flatten()));
+                final Thread offltm = new Thread(() -> ft.setValue((QueryTable) nj.getValue().flatten()));
                 offltm.start();
                 offltm.join();
             } catch (final Exception e) {
@@ -3296,16 +2972,13 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNoCoalesceOnNotification() {
-        // SourceTable is an uncoalesced table that also has an idempotent "start" despite whether
-        // or not the coalesced
-        // table continues to be live and managed. When the source table ticks and it is currently
-        // uncoalesced, there
-        // was a regression inside of BaseTable#notifyListeners that would invoke getIndex() and
-        // cause this table to be
-        // coalesced and for the new result table to receive and propagate that update. IDS-7153
-        // made it explicitly illegal
-        // to publish an update on a table's very first cycle if it was initiated under the LTM
-        // lock. It's also not great
+        // SourceTable is an uncoalesced table that also has an idempotent "start" despite whether or not the coalesced
+        // table continues to be live and managed. When the source table ticks and it is currently uncoalesced, there
+        // was a regression inside of BaseTable#notifyListeners that would invoke getIndex() and cause this table to be
+        // coalesced and for the new result table to receive and propagate that update. IDS-7153 made it explicitly
+        // illegal
+        // to publish an update on a table's very first cycle if it was initiated under the LTM lock. It's also not
+        // great
         // to coalesce a table and immediately make it garbage.
 
         // This regression check verifies that we do not see a lastNotificationStep !=
@@ -3316,8 +2989,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final Supplier<QueryTable> supplier = () -> TstUtils.testRefreshingTable(parentIndex);
 
         final UncoalescedTable table = new UncoalescedTable(
-            supplier.get().getDefinition(),
-            "mock un-coalesced table") {
+                supplier.get().getDefinition(),
+                "mock un-coalesced table") {
 
             @Override
             protected DynamicTable doCoalesce() {
@@ -3339,8 +3012,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
             parentIndex.insert(update.added);
             table.notifyListeners(update);
-            Assert.assertEquals(LogicalClock.DEFAULT.currentStep(),
-                table.getLastNotificationStep());
+            Assert.assertEquals(LogicalClock.DEFAULT.currentStep(), table.getLastNotificationStep());
         });
     }
 
@@ -3448,8 +3120,8 @@ public class QueryTableTest extends QueryTableTestBase {
         // .view("Q=Q*i")
         // .sumBy()
         //
-        // The exception we were getting was: java.lang.IllegalArgumentException: keys argument has
-        // elements not in the index
+        // The exception we were getting was: java.lang.IllegalArgumentException: keys argument has elements not in the
+        // index
         //
         final Table t0 = newTable(byteCol("Q", (byte) 0));
         final QueryTable t1 = TstUtils.testRefreshingTable(i(), intCol("T"));

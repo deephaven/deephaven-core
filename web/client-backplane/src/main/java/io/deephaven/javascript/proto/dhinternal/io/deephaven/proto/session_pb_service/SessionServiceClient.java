@@ -2,10 +2,14 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_s
 
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.CloseSessionResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotification;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotificationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseResponse;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsOverlay;
@@ -16,9 +20,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient",
+        namespace = JsPackage.GLOBAL)
 public class SessionServiceClient {
     @JsFunction
     public interface CloseSessionCallbackFn {
@@ -48,7 +52,7 @@ public class SessionServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(SessionServiceClient.CloseSessionCallbackFn.P0Type p0, ReleaseResponse p1);
+        void onInvoke(SessionServiceClient.CloseSessionCallbackFn.P0Type p0, CloseSessionResponse p1);
     }
 
     @JsFunction
@@ -80,7 +84,7 @@ public class SessionServiceClient {
         }
 
         void onInvoke(
-            SessionServiceClient.CloseSessionMetadata_or_callbackFn.P0Type p0, ReleaseResponse p1);
+                SessionServiceClient.CloseSessionMetadata_or_callbackFn.P0Type p0, CloseSessionResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -108,6 +112,97 @@ public class SessionServiceClient {
         @JsOverlay
         default boolean isCloseSessionMetadata_or_callbackFn() {
             return (Object) this instanceof SessionServiceClient.CloseSessionMetadata_or_callbackFn;
+        }
+    }
+
+    @JsFunction
+    public interface ExportFromTicketCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static SessionServiceClient.ExportFromTicketCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(SessionServiceClient.ExportFromTicketCallbackFn.P0Type p0, ExportResponse p1);
+    }
+
+    @JsFunction
+    public interface ExportFromTicketMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static SessionServiceClient.ExportFromTicketMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                SessionServiceClient.ExportFromTicketMetadata_or_callbackFn.P0Type p0, ExportResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ExportFromTicketMetadata_or_callbackUnionType {
+        @JsOverlay
+        static SessionServiceClient.ExportFromTicketMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default SessionServiceClient.ExportFromTicketMetadata_or_callbackFn asExportFromTicketMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isExportFromTicketMetadata_or_callbackFn() {
+            return (Object) this instanceof SessionServiceClient.ExportFromTicketMetadata_or_callbackFn;
         }
     }
 
@@ -171,7 +266,7 @@ public class SessionServiceClient {
         }
 
         void onInvoke(
-            SessionServiceClient.NewSessionMetadata_or_callbackFn.P0Type p0, HandshakeResponse p1);
+                SessionServiceClient.NewSessionMetadata_or_callbackFn.P0Type p0, HandshakeResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -231,7 +326,7 @@ public class SessionServiceClient {
         }
 
         void onInvoke(
-            SessionServiceClient.RefreshSessionTokenCallbackFn.P0Type p0, HandshakeResponse p1);
+                SessionServiceClient.RefreshSessionTokenCallbackFn.P0Type p0, HandshakeResponse p1);
     }
 
     @JsFunction
@@ -263,8 +358,8 @@ public class SessionServiceClient {
         }
 
         void onInvoke(
-            SessionServiceClient.RefreshSessionTokenMetadata_or_callbackFn.P0Type p0,
-            HandshakeResponse p1);
+                SessionServiceClient.RefreshSessionTokenMetadata_or_callbackFn.P0Type p0,
+                HandshakeResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -354,8 +449,7 @@ public class SessionServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(SessionServiceClient.ReleaseMetadata_or_callbackFn.P0Type p0,
-            ReleaseResponse p1);
+        void onInvoke(SessionServiceClient.ReleaseMetadata_or_callbackFn.P0Type p0, ReleaseResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -394,214 +488,267 @@ public class SessionServiceClient {
 
     @JsOverlay
     public final UnaryResponse closeSession(
-        HandshakeRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        SessionServiceClient.CloseSessionCallbackFn callback) {
+            HandshakeRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            SessionServiceClient.CloseSessionCallbackFn callback) {
         return closeSession(
-            requestMessage,
-            Js.<SessionServiceClient.CloseSessionMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<SessionServiceClient.CloseSessionMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse closeSession(
-        HandshakeRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            HandshakeRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return closeSession(
-            requestMessage,
-            Js.<SessionServiceClient.CloseSessionMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<SessionServiceClient.CloseSessionMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse closeSession(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.CloseSessionMetadata_or_callbackFn metadata_or_callback,
-        SessionServiceClient.CloseSessionCallbackFn callback) {
+            HandshakeRequest requestMessage,
+            SessionServiceClient.CloseSessionMetadata_or_callbackFn metadata_or_callback,
+            SessionServiceClient.CloseSessionCallbackFn callback) {
         return closeSession(
-            requestMessage,
-            Js.<SessionServiceClient.CloseSessionMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<SessionServiceClient.CloseSessionMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse closeSession(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.CloseSessionMetadata_or_callbackFn metadata_or_callback) {
+            HandshakeRequest requestMessage,
+            SessionServiceClient.CloseSessionMetadata_or_callbackFn metadata_or_callback) {
         return closeSession(
-            requestMessage,
-            Js.<SessionServiceClient.CloseSessionMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<SessionServiceClient.CloseSessionMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse closeSession(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.CloseSessionMetadata_or_callbackUnionType metadata_or_callback,
-        SessionServiceClient.CloseSessionCallbackFn callback);
+            HandshakeRequest requestMessage,
+            SessionServiceClient.CloseSessionMetadata_or_callbackUnionType metadata_or_callback,
+            SessionServiceClient.CloseSessionCallbackFn callback);
 
     public native UnaryResponse closeSession(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.CloseSessionMetadata_or_callbackUnionType metadata_or_callback);
+            HandshakeRequest requestMessage,
+            SessionServiceClient.CloseSessionMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse exportFromTicket(
+            ExportRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            SessionServiceClient.ExportFromTicketCallbackFn callback) {
+        return exportFromTicket(
+                requestMessage,
+                Js.<SessionServiceClient.ExportFromTicketMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse exportFromTicket(
+            ExportRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return exportFromTicket(
+                requestMessage,
+                Js.<SessionServiceClient.ExportFromTicketMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse exportFromTicket(
+            ExportRequest requestMessage,
+            SessionServiceClient.ExportFromTicketMetadata_or_callbackFn metadata_or_callback,
+            SessionServiceClient.ExportFromTicketCallbackFn callback) {
+        return exportFromTicket(
+                requestMessage,
+                Js.<SessionServiceClient.ExportFromTicketMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse exportFromTicket(
+            ExportRequest requestMessage,
+            SessionServiceClient.ExportFromTicketMetadata_or_callbackFn metadata_or_callback) {
+        return exportFromTicket(
+                requestMessage,
+                Js.<SessionServiceClient.ExportFromTicketMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse exportFromTicket(
+            ExportRequest requestMessage,
+            SessionServiceClient.ExportFromTicketMetadata_or_callbackUnionType metadata_or_callback,
+            SessionServiceClient.ExportFromTicketCallbackFn callback);
+
+    public native UnaryResponse exportFromTicket(
+            ExportRequest requestMessage,
+            SessionServiceClient.ExportFromTicketMetadata_or_callbackUnionType metadata_or_callback);
 
     public native ResponseStream<ExportNotification> exportNotifications(
-        ExportNotificationRequest requestMessage, BrowserHeaders metadata);
+            ExportNotificationRequest requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<ExportNotification> exportNotifications(
-        ExportNotificationRequest requestMessage);
+            ExportNotificationRequest requestMessage);
 
     @JsOverlay
     public final UnaryResponse newSession(
-        HandshakeRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        SessionServiceClient.NewSessionCallbackFn callback) {
+            HandshakeRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            SessionServiceClient.NewSessionCallbackFn callback) {
         return newSession(
-            requestMessage,
-            Js.<SessionServiceClient.NewSessionMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<SessionServiceClient.NewSessionMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse newSession(
-        HandshakeRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            HandshakeRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return newSession(
-            requestMessage,
-            Js.<SessionServiceClient.NewSessionMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<SessionServiceClient.NewSessionMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse newSession(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.NewSessionMetadata_or_callbackFn metadata_or_callback,
-        SessionServiceClient.NewSessionCallbackFn callback) {
+            HandshakeRequest requestMessage,
+            SessionServiceClient.NewSessionMetadata_or_callbackFn metadata_or_callback,
+            SessionServiceClient.NewSessionCallbackFn callback) {
         return newSession(
-            requestMessage,
-            Js.<SessionServiceClient.NewSessionMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<SessionServiceClient.NewSessionMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse newSession(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.NewSessionMetadata_or_callbackFn metadata_or_callback) {
+            HandshakeRequest requestMessage,
+            SessionServiceClient.NewSessionMetadata_or_callbackFn metadata_or_callback) {
         return newSession(
-            requestMessage,
-            Js.<SessionServiceClient.NewSessionMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<SessionServiceClient.NewSessionMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse newSession(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.NewSessionMetadata_or_callbackUnionType metadata_or_callback,
-        SessionServiceClient.NewSessionCallbackFn callback);
+            HandshakeRequest requestMessage,
+            SessionServiceClient.NewSessionMetadata_or_callbackUnionType metadata_or_callback,
+            SessionServiceClient.NewSessionCallbackFn callback);
 
     public native UnaryResponse newSession(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.NewSessionMetadata_or_callbackUnionType metadata_or_callback);
+            HandshakeRequest requestMessage,
+            SessionServiceClient.NewSessionMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse refreshSessionToken(
-        HandshakeRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        SessionServiceClient.RefreshSessionTokenCallbackFn callback) {
+            HandshakeRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            SessionServiceClient.RefreshSessionTokenCallbackFn callback) {
         return refreshSessionToken(
-            requestMessage,
-            Js.<SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse refreshSessionToken(
-        HandshakeRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            HandshakeRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return refreshSessionToken(
-            requestMessage,
-            Js.<SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse refreshSessionToken(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.RefreshSessionTokenMetadata_or_callbackFn metadata_or_callback,
-        SessionServiceClient.RefreshSessionTokenCallbackFn callback) {
+            HandshakeRequest requestMessage,
+            SessionServiceClient.RefreshSessionTokenMetadata_or_callbackFn metadata_or_callback,
+            SessionServiceClient.RefreshSessionTokenCallbackFn callback) {
         return refreshSessionToken(
-            requestMessage,
-            Js.<SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse refreshSessionToken(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.RefreshSessionTokenMetadata_or_callbackFn metadata_or_callback) {
+            HandshakeRequest requestMessage,
+            SessionServiceClient.RefreshSessionTokenMetadata_or_callbackFn metadata_or_callback) {
         return refreshSessionToken(
-            requestMessage,
-            Js.<SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse refreshSessionToken(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType metadata_or_callback,
-        SessionServiceClient.RefreshSessionTokenCallbackFn callback);
+            HandshakeRequest requestMessage,
+            SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType metadata_or_callback,
+            SessionServiceClient.RefreshSessionTokenCallbackFn callback);
 
     public native UnaryResponse refreshSessionToken(
-        HandshakeRequest requestMessage,
-        SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType metadata_or_callback);
+            HandshakeRequest requestMessage,
+            SessionServiceClient.RefreshSessionTokenMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse release(
-        Ticket requestMessage,
-        BrowserHeaders metadata_or_callback,
-        SessionServiceClient.ReleaseCallbackFn callback) {
+            ReleaseRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            SessionServiceClient.ReleaseCallbackFn callback) {
         return release(
-            requestMessage,
-            Js.<SessionServiceClient.ReleaseMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
-    }
-
-    @JsOverlay
-    public final UnaryResponse release(Ticket requestMessage, BrowserHeaders metadata_or_callback) {
-        return release(
-            requestMessage,
-            Js.<SessionServiceClient.ReleaseMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<SessionServiceClient.ReleaseMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse release(
-        Ticket requestMessage,
-        SessionServiceClient.ReleaseMetadata_or_callbackFn metadata_or_callback,
-        SessionServiceClient.ReleaseCallbackFn callback) {
+            ReleaseRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return release(
-            requestMessage,
-            Js.<SessionServiceClient.ReleaseMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<SessionServiceClient.ReleaseMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse release(
-        Ticket requestMessage,
-        SessionServiceClient.ReleaseMetadata_or_callbackFn metadata_or_callback) {
+            ReleaseRequest requestMessage,
+            SessionServiceClient.ReleaseMetadata_or_callbackFn metadata_or_callback,
+            SessionServiceClient.ReleaseCallbackFn callback) {
         return release(
-            requestMessage,
-            Js.<SessionServiceClient.ReleaseMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<SessionServiceClient.ReleaseMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse release(
+            ReleaseRequest requestMessage,
+            SessionServiceClient.ReleaseMetadata_or_callbackFn metadata_or_callback) {
+        return release(
+                requestMessage,
+                Js.<SessionServiceClient.ReleaseMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse release(
-        Ticket requestMessage,
-        SessionServiceClient.ReleaseMetadata_or_callbackUnionType metadata_or_callback,
-        SessionServiceClient.ReleaseCallbackFn callback);
+            ReleaseRequest requestMessage,
+            SessionServiceClient.ReleaseMetadata_or_callbackUnionType metadata_or_callback,
+            SessionServiceClient.ReleaseCallbackFn callback);
 
     public native UnaryResponse release(
-        Ticket requestMessage,
-        SessionServiceClient.ReleaseMetadata_or_callbackUnionType metadata_or_callback);
+            ReleaseRequest requestMessage,
+            SessionServiceClient.ReleaseMetadata_or_callbackUnionType metadata_or_callback);
 }

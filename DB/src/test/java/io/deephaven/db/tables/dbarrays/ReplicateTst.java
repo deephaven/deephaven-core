@@ -10,7 +10,6 @@ import java.io.IOException;
 
 public class ReplicateTst {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayTest.class,
-            ReplicatePrimitiveCode.TEST_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayTest.class, ReplicatePrimitiveCode.TEST_SRC);
     }
 }

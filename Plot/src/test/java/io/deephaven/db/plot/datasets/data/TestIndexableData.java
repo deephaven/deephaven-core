@@ -60,19 +60,14 @@ public class TestIndexableData extends BaseArrayTestCase {
     public void testIndexableNumericData() {
         final IndexableNumericData shortData = new IndexableNumericDataArrayShort(shortArray, null);
         final IndexableNumericData intData = new IndexableNumericDataArrayInt(intArray, null);
-        final IndexableNumericData doubleData =
-            new IndexableNumericDataArrayDouble(doubleArray, null);
+        final IndexableNumericData doubleData = new IndexableNumericDataArrayDouble(doubleArray, null);
         final IndexableNumericData longData = new IndexableNumericDataArrayLong(longArray, null);
         final IndexableNumericData floatData = new IndexableNumericDataArrayFloat(floatArray, null);
-        final IndexableNumericData numberData =
-            new IndexableNumericDataArrayNumber<>(numberArray, null);
-        final IndexableNumericData listData =
-            new IndexableNumericDataListNumber<>(numberList, null);
+        final IndexableNumericData numberData = new IndexableNumericDataArrayNumber<>(numberArray, null);
+        final IndexableNumericData listData = new IndexableNumericDataListNumber<>(numberList, null);
         final IndexableNumericData dateData = new IndexableNumericDataArrayDate(dateArray, null);
-        final IndexableNumericData dateTimeData =
-            new IndexableNumericDataArrayDBDateTime(dbdateTimesArray, null);
-        checkData(shortData, intData, doubleData, longData, floatData, numberData, listData,
-            dateTimeData);
+        final IndexableNumericData dateTimeData = new IndexableNumericDataArrayDBDateTime(dbdateTimesArray, null);
+        checkData(shortData, intData, doubleData, longData, floatData, numberData, listData, dateTimeData);
         checkDateData(dateData);
     }
 
@@ -83,8 +78,7 @@ public class TestIndexableData extends BaseArrayTestCase {
         IndexableData longData = new IndexableDataDouble(longArray, false, null);
         IndexableData floatData = new IndexableDataDouble(floatArray, false, null);
         IndexableData numberData = new IndexableDataDouble(numberArray, false, null);
-        checkData(Double.NaN, true, shortData, intData, doubleData, longData, floatData,
-            numberData);
+        checkData(Double.NaN, true, shortData, intData, doubleData, longData, floatData, numberData);
 
         shortData = new IndexableDataDouble(shortArray, true, null);
         intData = new IndexableDataDouble(intArray, true, null);
@@ -102,25 +96,25 @@ public class TestIndexableData extends BaseArrayTestCase {
 
     public void testIndexableDataTable() {
         final Table t = TableTools.newTable(TableTools.shortCol("shortCol", shortArray),
-            TableTools.intCol("intCol", intArray), TableTools.doubleCol("doubleCol", doubleArray),
-            TableTools.floatCol("floatCol", floatArray), TableTools.longCol("longCol", longArray),
-            TableTools.col("numberCol", numberArray));
+                TableTools.intCol("intCol", intArray), TableTools.doubleCol("doubleCol", doubleArray),
+                TableTools.floatCol("floatCol", floatArray), TableTools.longCol("longCol", longArray),
+                TableTools.col("numberCol", numberArray));
         final BaseFigureImpl figure = new BaseFigureImpl();
 
-        final TableHandle tableHandle = new TableHandle(t, "shortCol", "intCol", "doubleCol",
-            "floatCol", "longCol", "numberCol");
+        final TableHandle tableHandle =
+                new TableHandle(t, "shortCol", "intCol", "doubleCol", "floatCol", "longCol", "numberCol");
         final ColumnHandlerFactory.ColumnHandler shortColumnHandler =
-            ColumnHandlerFactory.newNumericHandler(tableHandle, "shortCol", null);
+                ColumnHandlerFactory.newNumericHandler(tableHandle, "shortCol", null);
         final ColumnHandlerFactory.ColumnHandler intColumnHandler =
-            ColumnHandlerFactory.newNumericHandler(tableHandle, "intCol", null);
+                ColumnHandlerFactory.newNumericHandler(tableHandle, "intCol", null);
         final ColumnHandlerFactory.ColumnHandler doubleColHandler =
-            ColumnHandlerFactory.newNumericHandler(tableHandle, "doubleCol", null);
+                ColumnHandlerFactory.newNumericHandler(tableHandle, "doubleCol", null);
         final ColumnHandlerFactory.ColumnHandler floatColHandler =
-            ColumnHandlerFactory.newNumericHandler(tableHandle, "floatCol", null);
+                ColumnHandlerFactory.newNumericHandler(tableHandle, "floatCol", null);
         final ColumnHandlerFactory.ColumnHandler longColHandler =
-            ColumnHandlerFactory.newNumericHandler(tableHandle, "longCol", null);
+                ColumnHandlerFactory.newNumericHandler(tableHandle, "longCol", null);
         final ColumnHandlerFactory.ColumnHandler numberColHandler =
-            ColumnHandlerFactory.newNumericHandler(tableHandle, "numberCol", null);
+                ColumnHandlerFactory.newNumericHandler(tableHandle, "numberCol", null);
 
         final IndexableData shortData = new IndexableDataTable(shortColumnHandler, null);
         final IndexableData intData = new IndexableDataTable(intColumnHandler, null);
@@ -134,7 +128,7 @@ public class TestIndexableData extends BaseArrayTestCase {
 
     public void testIndexableDataInfinite() {
         final IndexableDataInfinite indexableDataInfinite =
-            new IndexableDataInfinite<>(new IndexableDataDouble(doubleArray, true, null));
+                new IndexableDataInfinite<>(new IndexableDataDouble(doubleArray, true, null));
         assertEquals(Integer.MAX_VALUE, indexableDataInfinite.size());
         for (int i = 1; i < doubleArray.length; i++) {
             assertEquals(doubleArray[i], indexableDataInfinite.get(i));
@@ -146,18 +140,15 @@ public class TestIndexableData extends BaseArrayTestCase {
     }
 
     public void testIndexableDataWithDefault() {
-        final IndexableDataWithDefault indexableDataWithDefault =
-            new IndexableDataWithDefault(null);
+        final IndexableDataWithDefault indexableDataWithDefault = new IndexableDataWithDefault(null);
 
-        indexableDataWithDefault.setSpecific(new IndexableDataDouble(doubleArray, false, null),
-            false);
+        indexableDataWithDefault.setSpecific(new IndexableDataDouble(doubleArray, false, null), false);
         assertEquals(doubleArray.length, indexableDataWithDefault.size());
         for (int i = 1; i < doubleArray.length; i++) {
             assertEquals(doubleArray[i], indexableDataWithDefault.get(i));
         }
 
-        indexableDataWithDefault.setSpecific(new IndexableDataDouble(doubleArray, false, null),
-            false);
+        indexableDataWithDefault.setSpecific(new IndexableDataDouble(doubleArray, false, null), false);
         assertEquals(doubleArray.length, indexableDataWithDefault.size());
     }
 
@@ -181,7 +172,7 @@ public class TestIndexableData extends BaseArrayTestCase {
 
             if (checkOutOfBounds) {
                 if (!(dataset instanceof IndexableDataDouble) ||
-                    ((IndexableDataDouble) dataset).getMapNanToNull()) {
+                        ((IndexableDataDouble) dataset).getMapNanToNull()) {
                     assertNull(dataset.get(SIZE));
                 } else {
                     assertEquals(Double.NaN, dataset.get(SIZE));

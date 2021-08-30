@@ -3,13 +3,13 @@
  "methods": {
   "addIndex": ":param key: long",
   "addRange": ":param firstKey: long\n:param lastKey: long",
-  "destroy": "Attempt to release (destructively when necessary) resources held by this object.  This may render the object\n unusable for subsequent operations.  Implementations should be sure to call super.destroy().\n This is intended to only ever be used as a side effect of decreasing the reference count to 0.",
+  "destroy": "Attempt to release (destructively when necessary) resources held by this object. This may render the object\n unusable for subsequent operations. Implementations should be sure to call super.destroy().\n \n This is intended to only ever be used as a side effect of decreasing the reference count to 0.",
   "dropReference": "Drop a previously-retained reference to this referent.",
   "getWeakReference": "Get a WeakReference to this referent. This may be cached, or newly created.\n\n:return: (java.lang.ref.WeakReference<? extends io.deephaven.db.util.liveness.LivenessReferent>) A new or cached reference to this referent",
   "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.",
   "refresh": "Refresh this LiveTable.",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.v2.LiveQueryTable",
  "typeName": "class"

@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.tables.lang.DBLanguageParser$Result",
  "methods": {
   "getConvertedExpression": ":return: java.lang.String",
-  "getType": ":return: java.lang.Class",
+  "getType": ":return: java.lang.Class<?>",
   "getVariablesUsed": ":return: java.util.HashSet<java.lang.String>"
  },
  "path": "io.deephaven.db.tables.lang.DBLanguageParser.Result",

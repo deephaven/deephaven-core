@@ -5,6 +5,6 @@
   "supportsProtocol": "Returns true if this auth context provider can authenticate using the provided protocol version.\n\n:param authProtocol: (long) - the protocol version to use (application specific)\n:return: (boolean) true iff `authProtocol` is supported"
  },
  "path": "io.deephaven.grpc_api.auth.AuthContextProvider",
- "text": "The AuthContextProvider's job is to manage all authentication and authorization responsibilities. If audit\n logging is required, an implementation of this (and its companion AuthContext) is the correct way path forward.",
+ "text": "The AuthContextProvider's job is to manage all authentication and authorization responsibilities. If audit logging is\n required, an implementation of this (and its companion AuthContext) is the correct way path forward.",
  "typeName": "interface"
 }

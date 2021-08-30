@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.DeferredGroupingColumnSource",
  "methods": {
-  "getGroupingProvider": ":return: (io.deephaven.db.v2.locations.GroupingProvider<DeferredGroupingColumnSource.DATA_TYPE>) A provider previously set by setGroupingProvider(io.deephaven.db.v2.locations.GroupingProvider)",
+  "getGroupingProvider": ":return: (io.deephaven.db.v2.locations.GroupingProvider<DeferredGroupingColumnSource.DATA_TYPE>) A provider previously set by\n         setGroupingProvider(io.deephaven.db.v2.locations.GroupingProvider)",
   "setGroupToRange": "Set the map returned by getGroupToRange().\n\n:param groupToRange: (java.util.Map<DeferredGroupingColumnSource.DATA_TYPE,io.deephaven.db.v2.utils.Index>) - The map",
   "setGroupingProvider": "Supply a provider that will lazily construct the group-to-range map.\n\n:param groupingProvider: (io.deephaven.db.v2.locations.GroupingProvider<DeferredGroupingColumnSource.DATA_TYPE>) - The provider"
  },

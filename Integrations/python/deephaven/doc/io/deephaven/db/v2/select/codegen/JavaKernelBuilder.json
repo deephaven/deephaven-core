@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.select.codegen.JavaKernelBuilder",
  "methods": {
-  "create": ":param cookedFormulaString: java.lang.String\n:param returnedType: java.lang.Class\n:param timeInstanceVariables: java.lang.String\n:param columns: java.util.Map<java.lang.String,io.deephaven.db.v2.select.codegen.RichType>\n:param arrays: java.util.Map<java.lang.String,java.lang.Class>\n:param params: java.util.Map<java.lang.String,java.lang.Class>\n:return: io.deephaven.db.v2.select.codegen.JavaKernelBuilder.Result"
+  "create": ":param cookedFormulaString: java.lang.String\n:param returnedType: java.lang.Class<?>\n:param timeInstanceVariables: java.lang.String\n:param columns: java.util.Map<java.lang.String,io.deephaven.db.v2.select.codegen.RichType>\n:param arrays: java.util.Map<java.lang.String,java.lang.Class<?>>\n:param params: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.db.v2.select.codegen.JavaKernelBuilder.Result"
  },
  "path": "io.deephaven.db.v2.select.codegen.JavaKernelBuilder",
  "typeName": "class"

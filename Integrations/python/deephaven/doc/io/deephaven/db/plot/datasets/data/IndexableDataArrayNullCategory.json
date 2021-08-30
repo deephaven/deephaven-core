@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.plot.datasets.data.IndexableDataArrayNullCategory",
+ "methods": {
+  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (IndexableDataArrayNullCategory.T) value of this dataset at index",
+  "size": "Gets the size of this dataset.\n\n:return: (int) the size of this dataset"
+ },
+ "path": "io.deephaven.db.plot.datasets.data.IndexableDataArrayNullCategory",
+ "text": "IndexableData dataset backed by an array. If the array contains a null value, return a NULL_CATEGORY.",
+ "typeName": "class"
+}

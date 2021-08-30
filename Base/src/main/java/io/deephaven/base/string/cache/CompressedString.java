@@ -61,8 +61,7 @@ public final class CompressedString extends AbstractCompressedString<CompressedS
     }
 
     @Override
-    protected final CompressedString convertValue(final byte[] data, final int offset,
-        final int length) {
+    protected final CompressedString convertValue(final byte[] data, final int offset, final int length) {
         return new CompressedString(data, offset, length);
     }
 

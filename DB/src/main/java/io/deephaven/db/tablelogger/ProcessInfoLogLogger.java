@@ -23,8 +23,7 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
     }
 
     interface ISetter extends WritableRowContainer {
-        void log(Row.Flags flags, String id, String type, String key, String value)
-            throws java.io.IOException;
+        void log(Row.Flags flags, String id, String type, String key, String value) throws java.io.IOException;
     }
 
     class DirectSetter extends BaseSetter implements ISetter {
@@ -41,8 +40,7 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
         }
 
         @Override
-        public void log(Row.Flags flags, String id, String type, String key, String value)
-            throws java.io.IOException {
+        public void log(Row.Flags flags, String id, String type, String key, String value) throws java.io.IOException {
             setRowFlags(flags);
             this.Id.set(id);
             this.Type.set(type);
@@ -61,10 +59,10 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
 
     static {
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
-            .add("Id", String.class)
-            .add("Type", String.class)
-            .add("Key", String.class)
-            .add("Value", String.class);
+                .add("Id", String.class)
+                .add("Type", String.class)
+                .add("Key", String.class)
+                .add("Value", String.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
     }
@@ -75,14 +73,13 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
         return new DirectSetter();
     }
 
-    public void log(final String id, final String type, final String key, final String value)
-        throws IOException {
+    public void log(final String id, final String type, final String key, final String value) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, id, type, key, value);
     }
 
     public void log(
-        final Row.Flags flags, final String id, final String type, final String key,
-        final String value) throws IOException {
+            final Row.Flags flags, final String id, final String type, final String key, final String value)
+            throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");
@@ -96,8 +93,7 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
         flush(setter);
     }
 
-    private static final TableDefinition TABLE_DEFINITION =
-        TableDefinition.tableDefinition(columnDbTypes, columnNames);
+    private static final TableDefinition TABLE_DEFINITION = TableDefinition.tableDefinition(columnDbTypes, columnNames);
 
     public static TableDefinition getTableDefinition() {
         return TABLE_DEFINITION;

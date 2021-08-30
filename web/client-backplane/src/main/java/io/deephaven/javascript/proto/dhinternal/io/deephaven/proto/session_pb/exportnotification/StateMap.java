@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.session_pb.ExportNotification.StateMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.session_pb.ExportNotification.StateMap",
+        namespace = JsPackage.GLOBAL)
 public interface StateMap {
     @JsOverlay
     static StateMap create() {
@@ -50,6 +50,9 @@ public interface StateMap {
     @JsProperty(name = "RELEASED")
     double getRELEASED();
 
+    @JsProperty(name = "RUNNING")
+    double getRUNNING();
+
     @JsProperty(name = "UNKNOWN")
     double getUNKNOWN();
 
@@ -85,6 +88,9 @@ public interface StateMap {
 
     @JsProperty(name = "RELEASED")
     void setRELEASED(double RELEASED);
+
+    @JsProperty(name = "RUNNING")
+    void setRUNNING(double RUNNING);
 
     @JsProperty(name = "UNKNOWN")
     void setUNKNOWN(double UNKNOWN);

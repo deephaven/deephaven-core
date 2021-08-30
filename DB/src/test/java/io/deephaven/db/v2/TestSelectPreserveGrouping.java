@@ -51,15 +51,13 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     }
 
     public void testPreserveGrouping() {
-        final Table x =
-            TstUtils.testTable(TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+        final Table x = TstUtils.testTable(TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
         assertTrue(x.getIndex().hasGrouping(x.getColumnSource("Sym")));
         assertFalse(x.getIndex().hasGrouping(x.getColumnSource("Sentinel")));
 
         QueryScope.addParam("switchColumnValue", 1);
-        final Table xs =
-            x.select("Sym", "SentinelDoubled=Sentinel*2", "Foo=switchColumnValue", "Sentinel");
+        final Table xs = x.select("Sym", "SentinelDoubled=Sentinel*2", "Foo=switchColumnValue", "Sentinel");
         assertTableEquals(x, xs.view("Sym", "Sentinel"));
 
         assertTrue(xs.getIndex().hasGrouping(xs.getColumnSource("Sym")));
@@ -72,17 +70,16 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         final File testDirectory = Files.createTempDirectory("DeferredGroupingTest").toFile();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            final ColumnHolder symHolder =
-                TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
+            final ColumnHolder symHolder = TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
             final ColumnHolder sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
 
-            final Map<String, ColumnSource> columns = new LinkedHashMap<>();
+            final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             final Index index = Index.FACTORY.getFlatIndex(6);
             columns.put("Sym", TstUtils.getTreeMapColumnSource(index, symHolder));
             columns.put("Sentinel", TstUtils.getTreeMapColumnSource(index, sentinelHolder));
             final TableDefinition definition = TableDefinition.of(
-                ColumnDefinition.ofString("Sym").withGrouping(),
-                ColumnDefinition.ofInt("Sentinel"));
+                    ColumnDefinition.ofString("Sym").withGrouping(),
+                    ColumnDefinition.ofInt("Sentinel"));
             final Table x = new QueryTable(definition, index, columns);
 
             assertTrue(x.getDefinition().getColumn("Sym").isGrouping());

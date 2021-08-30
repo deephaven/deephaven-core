@@ -28,19 +28,17 @@ public class NioUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Use reflection to change the collection implementations so iteration operations used in the
-     * selector implementation will not produce garbage.
+     * Use reflection to change the collection implementations so iteration operations used in the selector
+     * implementation will not produce garbage.
      *
      * <p>
-     * This is only applied when the system property {@code java.specification.version} is equal to
-     * "1.8".
+     * This is only applied when the system property {@code java.specification.version} is equal to "1.8".
      *
      * <P>
-     * We can do this because, by looking at the source code, we can tell that there are no
-     * simultaneous iterations so reusing one iterator is OK. Because of concurrent modification
-     * issues and thread safety issues, this is generally likely to be the case anyway. The
-     * implementation of selector is not likely to change between minor JDK revisions. A major JDK
-     * release might produce a rewrite, but in that case we can check the JDK version and apply the
+     * We can do this because, by looking at the source code, we can tell that there are no simultaneous iterations so
+     * reusing one iterator is OK. Because of concurrent modification issues and thread safety issues, this is generally
+     * likely to be the case anyway. The implementation of selector is not likely to change between minor JDK revisions.
+     * A major JDK release might produce a rewrite, but in that case we can check the JDK version and apply the
      * appropriate set of patches.
      */
     public static Selector reduceSelectorGarbage(Selector selector) {
@@ -52,10 +50,8 @@ public class NioUtil {
     }
 
     private static Selector reduceSelectorGarbageImpl(Selector selector) {
-        // This code does several things that normally would be restricted, like accessing the Sun
-        // classes
-        // and changing the accessibility of fields via reflection. We need to make sure that we can
-        // do this,
+        // This code does several things that normally would be restricted, like accessing the Sun classes
+        // and changing the accessibility of fields via reflection. We need to make sure that we can do this,
         // but client code cannot, so we need to do all of this within a 'privileged' block.
         return AccessController.doPrivileged((PrivilegedAction<Selector>) () -> {
             try {
@@ -77,17 +73,15 @@ public class NioUtil {
 
                 Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
                 selectedKeysField.setAccessible(true);
-                Field publicSelectedKeysField =
-                    selectorImplClass.getDeclaredField("publicSelectedKeys");
+                Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
                 publicSelectedKeysField.setAccessible(true);
                 Set newSelectedKeys = new LowGarbageArraySet();
                 selectedKeysField.set(selector, newSelectedKeys);
                 publicSelectedKeysField.set(selector, newSelectedKeys);
 
                 if (System.getProperty("os.name").startsWith("Windows")
-                    && System.getProperty("java.vendor").startsWith("Oracle")) {
-                    Class<?> windowsSelectorImplClass =
-                        Class.forName("sun.nio.ch.WindowsSelectorImpl");
+                        && System.getProperty("java.vendor").startsWith("Oracle")) {
+                    Class<?> windowsSelectorImplClass = Class.forName("sun.nio.ch.WindowsSelectorImpl");
                     Require.instanceOf(selector, "selector", windowsSelectorImplClass);
 
                     Field threadsField = windowsSelectorImplClass.getDeclaredField("threads");
@@ -105,8 +99,7 @@ public class NioUtil {
                     fdToKeyField.set(selector, newFdToKey);
 
                 } else if (System.getProperty("os.name").startsWith("SunOS")) {
-                    Class<?> devPollSelectorImplClass =
-                        Class.forName("sun.nio.ch.DevPollSelectorImpl");
+                    Class<?> devPollSelectorImplClass = Class.forName("sun.nio.ch.DevPollSelectorImpl");
                     Require.instanceOf(selector, "selector", devPollSelectorImplClass);
 
                     Field fdToKeyField = devPollSelectorImplClass.getDeclaredField("fdToKey");
@@ -116,8 +109,7 @@ public class NioUtil {
                 }
 
                 return selector;
-            } catch (final NoSuchFieldException | IllegalAccessException
-                | ClassNotFoundException e) {
+            } catch (final NoSuchFieldException | IllegalAccessException | ClassNotFoundException e) {
                 throw Assert.exceptionNeverCaught(e);
             }
         });

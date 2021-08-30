@@ -25,20 +25,18 @@ public class JsChart extends HasEventHandling {
     public JsChart(ChartDescriptor descriptor, JsFigure jsFigure) {
         this.descriptor = descriptor;
         // build axes first, key them in a map for easy reuse when constructing series instances
-        axes = descriptor.getAxesList().asList().stream()
-            .map((axisDescriptor) -> new JsAxis(axisDescriptor, jsFigure)).toArray(JsAxis[]::new);
+        axes = descriptor.getAxesList().asList().stream().map((axisDescriptor) -> new JsAxis(axisDescriptor, jsFigure))
+                .toArray(JsAxis[]::new);
         JsObject.freeze(axes);
         Map<String, JsAxis> indexed = new HashMap<>();
         for (int i = 0; i < axes.length; i++) {
             indexed.put(axes[i].getId(), axes[i]);
         }
         series = descriptor.getSeriesList().asList().stream()
-            .map((seriesDescriptor) -> new JsSeries(seriesDescriptor, jsFigure, indexed))
-            .toArray(JsSeries[]::new);
+                .map((seriesDescriptor) -> new JsSeries(seriesDescriptor, jsFigure, indexed)).toArray(JsSeries[]::new);
         multiSeries = descriptor.getMultiSeriesList().asList().stream()
-            .map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure,
-                indexed, this))
-            .toArray(JsMultiSeries[]::new);
+                .map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure, indexed, this))
+                .toArray(JsMultiSeries[]::new);
         JsObject.freeze(multiSeries);
     }
 

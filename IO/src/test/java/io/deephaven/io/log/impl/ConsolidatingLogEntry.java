@@ -18,8 +18,7 @@ import java.nio.ByteBuffer;
 
 // --------------------------------------------------------------------
 /**
- * A mock {@link LogEntry} for use with JMock that consolidates all the append calls into the single
- * resulting string.
+ * A mock {@link LogEntry} for use with JMock that consolidates all the append calls into the single resulting string.
  * <P>
  * Example:
  * </P>
@@ -43,8 +42,8 @@ public class ConsolidatingLogEntry extends LogOutputStringImpl implements LogEnt
 
     public interface Monitor {
         /**
-         * Indicates that {@link LogEntry#endl()} was called on the monitored {@link LogEntry} and
-         * the given message had been accumulated since the last call to endl().
+         * Indicates that {@link LogEntry#endl()} was called on the monitored {@link LogEntry} and the given message had
+         * been accumulated since the last call to endl().
          */
         void endl(String sMessage);
 

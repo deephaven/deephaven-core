@@ -19,7 +19,7 @@ public class Main {
         }
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
         System.out.printf("# Starting %s%n", Main.class.getName());
 
         // No classes should be loaded before we bootstrap additional system properties
@@ -28,11 +28,9 @@ public class Main {
         // Capture the original System.out and System.err early
         PrintStreamGlobals.init();
 
-        // Since our dagger injection happens later, we need to provider a static way to get the
-        // LogBuffer (for example,
+        // Since our dagger injection happens later, we need to provider a static way to get the LogBuffer (for example,
         // logback configuration may reference LogBufferAppender).
-        LogBufferGlobal
-            .setInstance(new LogBufferInterceptor(Integer.getInteger("logBuffer.history", 1024)));
+        LogBufferGlobal.setInstance(new LogBufferInterceptor(Integer.getInteger("logBuffer.history", 1024)));
 
         final Logger log = LoggerFactory.getLogger(Main.class);
 
@@ -40,11 +38,10 @@ public class Main {
 
         final Configuration config = Configuration.getInstance();
 
-        // Push our log to ProcessEnvironment, so that any parts of the system relying on
-        // ProcessEnvironment
+        // Push our log to ProcessEnvironment, so that any parts of the system relying on ProcessEnvironment
         // instead of LoggerFactory can get the correct logger.
-        final ProcessEnvironment processEnvironment = ProcessEnvironment
-            .basicInteractiveProcessInitialization(config, Main.class.getName(), log);
+        final ProcessEnvironment processEnvironment =
+                ProcessEnvironment.basicInteractiveProcessInitialization(config, Main.class.getName(), log);
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
 
         DeephavenApiServer.startMain(PrintStreamGlobals.getOut(), PrintStreamGlobals.getErr());

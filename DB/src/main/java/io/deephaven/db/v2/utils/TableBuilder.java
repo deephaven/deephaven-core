@@ -22,7 +22,7 @@ public class TableBuilder {
 
     /**
      * Creates a TableBuilder object based on a table Definition.
-     * 
+     *
      * @param def the definition of the table that you want to build
      */
     public TableBuilder(TableDefinition def) {
@@ -36,7 +36,7 @@ public class TableBuilder {
 
     /**
      * returns the number of rows the table has
-     * 
+     *
      * @return the size of the row List
      */
     public int rowCount() {
@@ -44,11 +44,9 @@ public class TableBuilder {
     }
 
     /**
-     * Adds a row to the table. Items will be inserted into the row the order they are put into this
-     * method
-     * 
-     * @param items The items that will appear in the row. Must be the same amount of items as
-     *        columns
+     * Adds a row to the table. Items will be inserted into the row the order they are put into this method
+     *
+     * @param items The items that will appear in the row. Must be the same amount of items as columns
      */
     public void addRow(Object... items) {
         checkRow(items);
@@ -57,22 +55,20 @@ public class TableBuilder {
 
     /**
      * Checks if a the right number of items were added and that they were the right type.
-     * 
+     *
      * @param items the item array to be checked
      */
     private void checkRow(Object[] items) {
-        List<Class> colTypes = def.getColumnTypes();
+        List<Class<?>> colTypes = def.getColumnTypes();
         if (items.length != colTypes.size()) {
             throw new IllegalArgumentException(
-                "Incorrect column count: expected " + colTypes.size() + " got " + items.length);
+                    "Incorrect column count: expected " + colTypes.size() + " got " + items.length);
         }
 
         for (int i = 0; i < colTypes.size(); i++) {
-            // noinspection unchecked
             if (items[i] != null && !TypeUtils.getUnboxedTypeIfBoxed(colTypes.get(i))
-                .isAssignableFrom(TypeUtils.getUnboxedTypeIfBoxed(items[i].getClass()))) {
-                throw new IllegalArgumentException(
-                    "Incorrect type for column " + def.getColumnNames().get(i)
+                    .isAssignableFrom(TypeUtils.getUnboxedTypeIfBoxed(items[i].getClass()))) {
+                throw new IllegalArgumentException("Incorrect type for column " + def.getColumnNames().get(i)
                         + ": expected " + colTypes.get(i).getName()
                         + " got " + items[i].getClass().getName());
             }
@@ -82,15 +78,16 @@ public class TableBuilder {
 
     /**
      * Builds the table from the TableDefinition and the rows added
-     * 
+     *
      * @return the table
      */
     public Table build() {
         Map<String, ArrayBackedColumnSource<Object>> map = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : def.getColumns()) {
+            ArrayBackedColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
+                    rows.size(), columnDefinition.getDataType());
             // noinspection unchecked
-            map.put(columnDefinition.getName(), ArrayBackedColumnSource
-                .getMemoryColumnSource(rows.size(), columnDefinition.getDataType()));
+            map.put(columnDefinition.getName(), (ArrayBackedColumnSource<Object>) cs);
         }
 
         // Re-write column oriented

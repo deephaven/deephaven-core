@@ -9,19 +9,18 @@ import java.util.Deque;
 
 /**
  * <p>
- * Support for a thread-local stack of {@link LivenessScope}s to allow the preferred programming
- * model for scoping of {@link LivenessArtifact}s.
+ * Support for a thread-local stack of {@link LivenessScope}s to allow the preferred programming model for scoping of
+ * {@link LivenessArtifact}s.
  * <p>
- * Instances expect to be used on exactly one thread, and hence do not take any measures to ensure
- * thread safety.
+ * Instances expect to be used on exactly one thread, and hence do not take any measures to ensure thread safety.
  */
 public class LivenessScopeStack {
 
     private static final ThreadLocal<LivenessScopeStack> THREAD_STACK =
-        ThreadLocal.withInitial(LivenessScopeStack::new);
+            ThreadLocal.withInitial(LivenessScopeStack::new);
 
     private static final ThreadLocal<LivenessManager> THREAD_BASE_MANAGER =
-        ThreadLocal.withInitial(PermanentLivenessManager::new);
+            ThreadLocal.withInitial(PermanentLivenessManager::new);
 
     private final Deque<LivenessScope> stack = new ArrayDeque<>();
 
@@ -51,8 +50,8 @@ public class LivenessScopeStack {
 
     /**
      * <p>
-     * Get the scope at the top of the current thread's scope stack, or the base manager if no
-     * scopes have been pushed but not popped on this thread.
+     * Get the scope at the top of the current thread's scope stack, or the base manager if no scopes have been pushed
+     * but not popped on this thread.
      * <p>
      * This method defines the manager that should be used for all new {@link LivenessArtifact}s.
      *
@@ -71,28 +70,25 @@ public class LivenessScopeStack {
      *
      * @param scope The scope
      * @param releaseOnClose Whether the scope should be released when the result is closed
-     * @return A {@link SafeCloseable} whose {@link SafeCloseable#close()} method invokes
-     *         {@link #pop(LivenessScope)} for the scope (followed by
-     *         {@link LivenessScope#release()} if releaseOnClose is true)
+     * @return A {@link SafeCloseable} whose {@link SafeCloseable#close()} method invokes {@link #pop(LivenessScope)}
+     *         for the scope (followed by {@link LivenessScope#release()} if releaseOnClose is true)
      */
     @NotNull
-    public static SafeCloseable open(@NotNull final LivenessScope scope,
-        final boolean releaseOnClose) {
+    public static SafeCloseable open(@NotNull final LivenessScope scope, final boolean releaseOnClose) {
         push(scope);
         return releaseOnClose ? new PopAndReleaseOnClose(scope) : new PopOnClose(scope);
     }
 
     /**
      * <p>
-     * Push an anonymous scope onto the scope stack, and get an {@link SafeCloseable} that pops it
-     * and then {@link LivenessScope#release()}s it.
+     * Push an anonymous scope onto the scope stack, and get an {@link SafeCloseable} that pops it and then
+     * {@link LivenessScope#release()}s it.
      * <p>
-     * This is useful enclosing a series of query engine actions whose results must be explicitly
-     * retained externally in order to preserve liveness.
+     * This is useful enclosing a series of query engine actions whose results must be explicitly retained externally in
+     * order to preserve liveness.
      *
-     * @return A {@link SafeCloseable} whose {@link SafeCloseable#close()} method invokes
-     *         {@link #pop(LivenessScope)} for the scope, followed by
-     *         {@link LivenessScope#release()}
+     * @return A {@link SafeCloseable} whose {@link SafeCloseable#close()} method invokes {@link #pop(LivenessScope)}
+     *         for the scope, followed by {@link LivenessScope#release()}
      */
     @NotNull
     public static SafeCloseable open() {
@@ -103,21 +99,19 @@ public class LivenessScopeStack {
 
     private void pushInternal(@NotNull final LivenessScope scope) {
         if (Liveness.DEBUG_MODE_ENABLED) {
-            Liveness.log.info().append("LivenessDebug: Pushing scope ")
-                .append(Utils.REFERENT_FORMATTER, scope).endl();
+            Liveness.log.info().append("LivenessDebug: Pushing scope ").append(Utils.REFERENT_FORMATTER, scope).endl();
         }
         stack.push(scope);
     }
 
     private void popInternal(@NotNull final LivenessScope scope) {
         if (Liveness.DEBUG_MODE_ENABLED) {
-            Liveness.log.info().append("LivenessDebug: Popping scope ")
-                .append(Utils.REFERENT_FORMATTER, scope).endl();
+            Liveness.log.info().append("LivenessDebug: Popping scope ").append(Utils.REFERENT_FORMATTER, scope).endl();
         }
         final LivenessScope peeked = stack.peekFirst();
         if (peeked != scope) {
-            throw new IllegalStateException("Caller requested to pop " + scope
-                + " but the top of the scope stack is " + peeked);
+            throw new IllegalStateException(
+                    "Caller requested to pop " + scope + " but the top of the scope stack is " + peeked);
         }
         stack.pop();
     }

@@ -26,11 +26,13 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
     private volatile int numPages = 0;
     private volatile long[] pageRowOffsets;
     private volatile ColumnPageReader[] columnPageReaders;
-    private volatile WeakReference<IntrusivePage<ATTR>>[] pages;
+    private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
 
-    VariablePageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader,
-        final long mask, @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
-        super(columnChunkReader, mask, toPage);
+    VariablePageSizeColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
+            @NotNull final ColumnChunkReader columnChunkReader,
+            final long mask,
+            @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+        super(pageCache, columnChunkReader, mask, toPage);
 
         final int INIT_ARRAY_SIZE = 15;
         pageRowOffsets = new long[INIT_ARRAY_SIZE + 1];
@@ -38,11 +40,11 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
         columnPageReaders = new ColumnPageReader[INIT_ARRAY_SIZE];
 
         // noinspection unchecked
-        pages = (WeakReference<IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
+        pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
     }
 
     private void extendOnePage(final int prevNumPages) {
-        IntrusivePage<ATTR> page = null;
+        PageCache.IntrusivePage<ATTR> page = null;
 
         synchronized (this) {
             int localNumPages = numPages;
@@ -50,8 +52,8 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
             // Make sure that no one has has already extended to this page yet.
             if (localNumPages == prevNumPages) {
                 Assert.assertion(columnPageReaderIterator.hasNext(),
-                    "columnPageReaderIterator.hasNext()",
-                    "Parquet num rows and page iterator don't match, not enough pages.");
+                        "columnPageReaderIterator.hasNext()",
+                        "Parquet num rows and page iterator don't match, not enough pages.");
 
                 if (columnPageReaders.length == localNumPages) {
                     int newSize = 2 * localNumPages;
@@ -64,14 +66,14 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
                 final ColumnPageReader columnPageReader = columnPageReaderIterator.next();
 
                 long numRows;
-                WeakReference<IntrusivePage<ATTR>> pageRef = getNullPage();
+                WeakReference<PageCache.IntrusivePage<ATTR>> pageRef = PageCache.getNullPage();
                 long prevRowOffset = pageRowOffsets[localNumPages];
 
                 try {
                     numRows = columnPageReader.numRows();
 
                     if (numRows < 0) {
-                        page = new IntrusivePage<>(toPage(prevRowOffset, columnPageReader));
+                        page = new PageCache.IntrusivePage<>(toPage(prevRowOffset, columnPageReader));
                         pageRef = new WeakReference<>(page);
                         numRows = page.getPage().size();
                     }
@@ -87,7 +89,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
         }
 
         if (page != null) {
-            intrusiveSoftLRU.touch(page);
+            pageCache.touch(page);
         }
     }
 
@@ -104,7 +106,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
     }
 
     private ChunkPage<ATTR> getPage(final int pageNum) {
-        IntrusivePage<ATTR> page = pages[pageNum].get();
+        PageCache.IntrusivePage<ATTR> page = pages[pageNum].get();
 
         if (page == null) {
             synchronized (columnPageReaders[pageNum]) {
@@ -113,8 +115,8 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
 
                 if (page == null) {
                     try {
-                        page = new IntrusivePage<>(
-                            toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum]));
+                        page = new PageCache.IntrusivePage<>(
+                                toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum]));
                     } catch (IOException except) {
                         throw new UncheckedIOException(except);
                     }
@@ -126,7 +128,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
             }
         }
 
-        intrusiveSoftLRU.touch(page);
+        pageCache.touch(page);
         return page.getPage();
     }
 

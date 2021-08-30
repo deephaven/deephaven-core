@@ -19,9 +19,9 @@ import java.util.Arrays;
 
 abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     /**
-     * The presence of a prevFlusher means that this ArraySource wants to track previous values. If
-     * prevFlusher is null, the ArraySource does not want (or does not yet want) to track previous
-     * values. Deserialized ArraySources never track previous values.
+     * The presence of a prevFlusher means that this ArraySource wants to track previous values. If prevFlusher is null,
+     * the ArraySource does not want (or does not yet want) to track previous values. Deserialized ArraySources never
+     * track previous values.
      */
     protected transient UpdateCommitter<ArraySourceHelper<T, UArray>> prevFlusher = null;
     private transient TIntArrayList prevAllocated = null;
@@ -30,7 +30,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         super(type);
     }
 
-    ArraySourceHelper(Class<T> type, Class componentType) {
+    ArraySourceHelper(Class<T> type, Class<?> componentType) {
         super(type, componentType);
     }
 
@@ -58,9 +58,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
 
     @Override
     public void fillPrevChunk(
-        @NotNull final ColumnSource.FillContext context,
-        @NotNull final WritableChunk<? super Attributes.Values> destination,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final ColumnSource.FillContext context,
+            @NotNull final WritableChunk<? super Attributes.Values> destination,
+            @NotNull final OrderedKeys orderedKeys) {
         if (prevFlusher == null) {
             fillChunk(context, destination, orderedKeys);
             return;
@@ -77,11 +77,10 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         CopyFromBlockFunctor lambda = (blockNo, srcOffset, length) -> {
             final long[] inUse = prevInUse[blockNo];
             if (inUse != null) {
-                effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo),
-                    getPrevBlock(blockNo), inUse, srcOffset, destOffset.intValue(), length);
+                effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo),
+                        inUse, srcOffset, destOffset.intValue(), length);
             } else {
-                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(),
-                    length);
+                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(), length);
             }
             destOffset.add(length);
         };
@@ -109,8 +108,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     }
 
     /**
-     * Get the capacity of this column source. This number is one higher than the highest key that
-     * may be accessed (read or written).
+     * Get the capacity of this column source. This number is one higher than the highest key that may be accessed (read
+     * or written).
      *
      * @return The capacity of this column source
      */
@@ -125,10 +124,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     /**
      * This method supports the 'ensureCapacity' method for all of this class' inheritors.
      */
-    final void ensureCapacity(final long capacity, UArray[] blocks, UArray[] prevBlocks,
-        boolean nullFilled) {
-        // Convert requested capacity to requestedMaxIndex and requestedNumBlocks, but leave early
-        // if the requested
+    final void ensureCapacity(final long capacity, UArray[] blocks, UArray[] prevBlocks, boolean nullFilled) {
+        // Convert requested capacity to requestedMaxIndex and requestedNumBlocks, but leave early if the requested
         // maxIndex is <= the current maxIndex.
         //
         // Rationale for this formula:
@@ -138,8 +135,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
             return;
         }
         final long requestedNumBlocksLong = (requestedMaxIndex + 1) >> LOG_BLOCK_SIZE;
-        final int requestedNumBlocks = LongSizedDataStructure
-            .intSize("ArrayBackedColumnSource block allocation", requestedNumBlocksLong);
+        final int requestedNumBlocks =
+                LongSizedDataStructure.intSize("ArrayBackedColumnSource block allocation", requestedNumBlocksLong);
 
         // If we don't have enough blocks, reallocate the array
         if (blocks.length < requestedNumBlocks) {
@@ -155,17 +152,13 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
             resetBlocks(blocks, prevBlocks);
         }
 
-        // We know how many blocks we have allocated by looking at maxIndex. This may well be less
-        // than the size of the
+        // We know how many blocks we have allocated by looking at maxIndex. This may well be less than the size of the
         // 'blocks' array because we only allocate blocks as needed.
         final int allocatedNumBlocks = (int) ((maxIndex + 1) >> LOG_BLOCK_SIZE);
 
-        // Allocate storage up to 'requestedNumBlocks' (not roundedNumBlocks). The difference is
-        // that the array size may
-        // double, but we only allocate the minimum number of blocks needed. Put another way, we
-        // only allocate blocks up
-        // to the requested capacity, not all the way up to (the capacity rounded to the next power
-        // of two).
+        // Allocate storage up to 'requestedNumBlocks' (not roundedNumBlocks). The difference is that the array size may
+        // double, but we only allocate the minimum number of blocks needed. Put another way, we only allocate blocks up
+        // to the requested capacity, not all the way up to (the capacity rounded to the next power of two).
         for (int ii = allocatedNumBlocks; ii < requestedNumBlocks; ++ii) {
             if (nullFilled) {
                 blocks[ii] = allocateNullFilledBlock(BLOCK_SIZE);
@@ -173,25 +166,23 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
                 blocks[ii] = allocateBlock(BLOCK_SIZE);
             }
         }
-        // Note: if we get this far, requestedMaxIndex > maxIndex, so this will always increase
-        // maxIndex.
+        // Note: if we get this far, requestedMaxIndex > maxIndex, so this will always increase maxIndex.
         maxIndex = requestedMaxIndex;
     }
 
     /**
-     * This method supports the 'set' method for its inheritors, doing some of the 'inUse'
-     * housekeeping that is common to all inheritors.
-     * 
-     * @return true if the inheritor should copy a value from current to prev before setting
-     *         current; false if it should just set a current value without touching prev.
+     * This method supports the 'set' method for its inheritors, doing some of the 'inUse' housekeeping that is common
+     * to all inheritors.
+     *
+     * @return true if the inheritor should copy a value from current to prev before setting current; false if it should
+     *         just set a current value without touching prev.
      */
     final boolean shouldRecordPrevious(final long key, final UArray[] prevBlocks,
-        final SoftRecycler<UArray> recycler) {
+            final SoftRecycler<UArray> recycler) {
         if (prevFlusher == null) {
             return false;
         }
-        // If we want to track previous values, we make sure we are registered with the
-        // LiveTableMonitor.
+        // If we want to track previous values, we make sure we are registered with the LiveTableMonitor.
         prevFlusher.maybeActivate();
 
         final int block = (int) (key >> LOG_BLOCK_SIZE);
@@ -231,18 +222,18 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     final void startTrackingPrev(int numBlocks) {
         if (prevFlusher != null) {
             throw new IllegalStateException("Can't call startTrackingPrevValues() twice: " +
-                this.getClass().getCanonicalName());
+                    this.getClass().getCanonicalName());
         }
         prevFlusher = new UpdateCommitter<>(this, ArraySourceHelper::commitBlocks);
         prevInUse = new long[numBlocks][];
     }
 
     /**
-     * This method supports the 'getPrev' method for its inheritors, doing some of the 'inUse'
-     * housekeeping that is common to all inheritors.
-     * 
-     * @return true if the inheritor should return a value from its "prev" data structure; false if
-     *         it should return a value from its "current" data structure.
+     * This method supports the 'getPrev' method for its inheritors, doing some of the 'inUse' housekeeping that is
+     * common to all inheritors.
+     *
+     * @return true if the inheritor should return a value from its "prev" data structure; false if it should return a
+     *         value from its "current" data structure.
      */
     final boolean shouldUsePrevious(final long index) {
         if (prevFlusher == null) {
@@ -289,9 +280,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     }
 
     @Override
-    public void fillFromChunk(@NotNull FillFromContext context,
-        @NotNull Chunk<? extends Attributes.Values> src,
-        @NotNull OrderedKeys orderedKeys) {
+    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Attributes.Values> src,
+            @NotNull OrderedKeys orderedKeys) {
         if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
             fillFromChunkByKeys(orderedKeys, src);
         } else {
@@ -299,11 +289,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         }
     }
 
-    abstract void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys,
-        Chunk<? extends Attributes.Values> src);
+    abstract void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Attributes.Values> src);
 
-    abstract void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys,
-        Chunk<? extends Attributes.Values> src);
+    abstract void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Attributes.Values> src);
 
     abstract UArray allocateNullFilledBlock(int size);
 

@@ -26,15 +26,25 @@ service ConsoleService {
 
     rpc BindTableToVariable(BindTableToVariableRequest) returns (BindTableToVariableResponse) {}
 
-    rpc OpenDocument(OpenDocumentRequest) returns (OpenDocumentResponse) {}
-    rpc ChangeDocument(ChangeDocumentRequest) returns (ChangeDocumentResponse) {}
-    rpc GetCompletionItems(GetCompletionItemsRequest) returns (GetCompletionItemsResponse) {}
-    rpc CloseDocument(CloseDocumentRequest) returns (CloseDocumentResponse) {}
+    /*
+     * Starts a stream for autocomplete on the current session. More than one console,
+     * more than one document can be edited at a time using this, and they can separately
+     * be closed as well. A given document should only be edited within one stream at a
+     * time.
+     */
+    rpc AutoCompleteStream(stream AutoCompleteRequest) returns (stream AutoCompleteResponse) {}
 
-    rpc FetchTable(FetchTableRequest) returns (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) {}
-    rpc FetchPandasTable(FetchPandasTableRequest) returns (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) {}
+    /*
+     * Half of the browser-based (browser's can't do bidirectional streams without websockets)
+     * implementation for AutoCompleteStream.
+     */
+    rpc OpenAutoCompleteStream(AutoCompleteRequest) returns (stream AutoCompleteResponse) {}
+    /*
+     * Other half of the browser-based implementation for AutoCompleteStream.
+     */
+    rpc NextAutoCompleteStream(AutoCompleteRequest) returns (BrowserNextResponse) {}
+
     rpc FetchFigure(FetchFigureRequest) returns (FetchFigureResponse) {}
-    rpc FetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
 }
 
 
@@ -51,10 +61,6 @@ message StartConsoleRequest {
 }
 message StartConsoleResponse {
     io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
-
-    // TOOD i think these are unused without an init script thingie
-    repeated string table_names = 2;
-    repeated string widget_names = 3;
 }
 
 message LogSubscriptionRequest {
@@ -82,8 +88,9 @@ message ExecuteCommandResponse {
     repeated VariableDefinition removed = 4;
 }
 message VariableDefinition {
-    string name = 1;
-    string type = 2;
+    string type = 1;
+    string title = 2;
+    io.deephaven.proto.backplane.grpc.Ticket id = 3;
 }
 message BindTableToVariableRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
@@ -102,6 +109,30 @@ message CancelCommandResponse {
 
 }
 
+message AutoCompleteRequest {
+    oneof request {
+        // Starts a document in a given console - to end, just close the stream, the server will hang up right away
+        OpenDocumentRequest open_document = 1;
+
+        // Modifies the document that autocomplete can be requested on
+        ChangeDocumentRequest change_document = 2;
+
+        // Requests that a response be sent back with completion items
+        GetCompletionItemsRequest get_completion_items = 3;
+
+        // Closes the document, indicating that it will not be referenced again
+        CloseDocumentRequest close_document = 4;
+    }
+}
+message AutoCompleteResponse {
+    oneof response {
+        GetCompletionItemsResponse completion_items = 1;
+    }
+}
+
+message BrowserNextResponse {
+}
+
 message OpenDocumentRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     TextDocumentItem text_document = 2;
@@ -112,16 +143,10 @@ message TextDocumentItem {
     int32 version = 3;
     string text = 4;
 }
-message OpenDocumentResponse {
-
-}
 
 message CloseDocumentRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
-}
-message CloseDocumentResponse {
-
 }
 
 message ChangeDocumentRequest {
@@ -147,15 +172,15 @@ message Position {
     int32 line = 1;
     int32 character = 2;
 }
-message ChangeDocumentResponse {
 
-}
 message GetCompletionItemsRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
 
     CompletionContext context = 2;
     VersionedTextDocumentIdentifier text_document = 3;
     Position position = 4;
+
+    int32 request_id = 5;
 }
 message CompletionContext {
     int32 trigger_kind = 1;
@@ -163,6 +188,9 @@ message CompletionContext {
 }
 message GetCompletionItemsResponse {
     repeated CompletionItem items = 1;
+
+    int32 request_id = 2;
+    bool success = 3;
 }
 message CompletionItem {
     int32 start = 1;
@@ -185,22 +213,8 @@ message TextEdit {
     string text = 2;
 }
 
-message FetchTableRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    io.deephaven.proto.backplane.grpc.Ticket table_id = 2;
-
-    string table_name = 3;
-}
-
-message FetchPandasTableRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    io.deephaven.proto.backplane.grpc.Ticket table_id = 2;
-}
-
 message FetchFigureRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-
-    string figure_name = 2;
+    io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
 }
 message FetchFigureResponse {
     FigureDescriptor figure_descriptor = 1;
@@ -459,12 +473,4 @@ message FigureDescriptor {
         repeated string column_types = 2;
         bool require_all_filters_to_display = 3;
     }
-}
-
-message FetchTableMapRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    reserved 2;// ticket to place the result in
-}
-message FetchTableMapResponse {
-
 }

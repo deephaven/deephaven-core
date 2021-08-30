@@ -9,9 +9,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.browserHeaders.iterateHeaders",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.browserHeaders.iterateHeaders",
+        namespace = JsPackage.GLOBAL)
 public class IterateHeaders {
     @JsFunction
     public interface IterateHeadersCallbackFn {
@@ -29,8 +29,8 @@ public class IterateHeaders {
     }
 
     public static native void iterateHeaders(
-        WindowHeaders headers, IterateHeaders.IterateHeadersCallbackFn callback);
+            WindowHeaders headers, IterateHeaders.IterateHeadersCallbackFn callback);
 
     public static native void iterateHeadersKeys(
-        WindowHeaders headers, IterateHeaders.IterateHeadersKeysCallbackFn callback);
+            WindowHeaders headers, IterateHeaders.IterateHeadersKeysCallbackFn callback);
 }

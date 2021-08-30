@@ -4,6 +4,7 @@
 
 package io.deephaven.grpc_api.example;
 
+import io.deephaven.grpc_api.console.ScopeTicketResolver;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
@@ -20,7 +21,6 @@ import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Schema;
-import org.apache.arrow.flight.impl.Flight;
 
 import java.io.Console;
 import java.util.Optional;
@@ -48,15 +48,15 @@ public class ConsoleClient {
         // Assign properties that need to be set to even turn on
         System.setProperty("Configuration.rootFile", "grpc-api.prop");
         System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override",
-            "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
+                "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
 
         final String sessionType = System.getProperty("console.sessionType", "groovy");
         log.info().append("Session type ").append(sessionType).endl();
 
         final String target = args.length == 0 ? "localhost:8080" : args[0];
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
-            .usePlaintext()
-            .build();
+                .usePlaintext()
+                .build();
 
         final Scheduler scheduler = DeephavenApiServerModule.provideScheduler(2);
         final ConsoleClient client = new ConsoleClient(scheduler, channel, sessionType);
@@ -72,18 +72,19 @@ public class ConsoleClient {
 
     private final SessionServiceGrpc.SessionServiceStub sessionService;
     private final ConsoleServiceGrpc.ConsoleServiceStub consoleServiceGrpc;
+    private final TableServiceGrpc.TableServiceStub tableServiceGrpc;
     private final String sessionType;
 
     private UUID session;
     private String sessionHeader;
     private Metadata.Key<String> sessionHeaderKey;
 
-    private ConsoleClient(final Scheduler scheduler, final ManagedChannel managedChannel,
-        String sessionType) {
+    private ConsoleClient(final Scheduler scheduler, final ManagedChannel managedChannel, String sessionType) {
         this.scheduler = scheduler;
         this.serverChannel = ClientInterceptors.intercept(managedChannel, new AuthInterceptor());
         this.sessionService = SessionServiceGrpc.newStub(serverChannel);
         this.consoleServiceGrpc = ConsoleServiceGrpc.newStub(serverChannel);
+        this.tableServiceGrpc = TableServiceGrpc.newStub(serverChannel);
         this.sessionType = sessionType;
     }
 
@@ -92,17 +93,19 @@ public class ConsoleClient {
 
         // no payload in this simple server auth
         sessionService.newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build(),
-            new ResponseBuilder<HandshakeResponse>()
-                .onError(this::onError)
-                .onComplete(this::startConsole)
-                .onNext(this::onNewHandshakeResponse)
-                .build());
+                new ResponseBuilder<HandshakeResponse>()
+                        .onError(this::onError)
+                        .onComplete(this::startConsole)
+                        .onNext(this::onNewHandshakeResponse)
+                        .build());
     }
 
     private void stop() {
         if (consoleTicket != null) {
             // clean up our console and its scope
-            sessionService.release(consoleTicket, new ResponseBuilder<ReleaseResponse>().build());
+            sessionService.release(
+                    ReleaseRequest.newBuilder().setId(consoleTicket).build(),
+                    new ResponseBuilder<ReleaseResponse>().build());
         }
 
         shutdownRequested.countDown();
@@ -117,58 +120,57 @@ public class ConsoleClient {
     private void startConsole() {
         consoleTicket = ExportTicketHelper.exportIdToTicket(nextId++);
         consoleServiceGrpc.startConsole(StartConsoleRequest.newBuilder()
-            .setResultId(consoleTicket)
-            .setSessionType(sessionType)
-            .build(),
-            new ResponseBuilder<StartConsoleResponse>()
-                .onNext(response -> scheduler.runImmediately(this::awaitCommand))
-                .build());
+                .setResultId(consoleTicket)
+                .setSessionType(sessionType)
+                .build(),
+                new ResponseBuilder<StartConsoleResponse>()
+                        .onNext(response -> scheduler.runImmediately(this::awaitCommand))
+                        .build());
         LogSubscriptionRequest request = LogSubscriptionRequest.newBuilder()
-            .addLevels("STDOUT")
-            .addLevels("STDERR")
-            .setLastSeenLogTimestamp(System.currentTimeMillis() * 1000) // don't replay any logs
-                                                                        // that came before now
-            .build();
+                .addLevels("STDOUT")
+                .addLevels("STDERR")
+                .setLastSeenLogTimestamp(System.currentTimeMillis() * 1000) // don't replay any logs that came before
+                                                                            // now
+                .build();
         consoleServiceGrpc.subscribeToLogs(request,
-            new StreamObserver<LogSubscriptionData>() {
-                private String stripLastNewline(String msg) {
-                    if (msg.endsWith("\n")) {
-                        return msg.substring(0, msg.length() - 1);
+                new StreamObserver<LogSubscriptionData>() {
+                    private String stripLastNewline(String msg) {
+                        if (msg.endsWith("\n")) {
+                            return msg.substring(0, msg.length() - 1);
+                        }
+                        return msg;
                     }
-                    return msg;
-                }
 
-                @Override
-                public void onNext(LogSubscriptionData value) {
-                    if ("STDOUT".equals(value.getLogLevel())) {
-                        RemoteStdout.log.info()
-                            .append(stripLastNewline(value.getMessage()))
-                            .endl();
-                    } else if ("STDERR".equals(value.getLogLevel())) {
-                        RemoteStderr.log.info()
-                            .append(stripLastNewline(value.getMessage()))
-                            .endl();
+                    @Override
+                    public void onNext(LogSubscriptionData value) {
+                        if ("STDOUT".equals(value.getLogLevel())) {
+                            RemoteStdout.log.info()
+                                    .append(stripLastNewline(value.getMessage()))
+                                    .endl();
+                        } else if ("STDERR".equals(value.getLogLevel())) {
+                            RemoteStderr.log.info()
+                                    .append(stripLastNewline(value.getMessage()))
+                                    .endl();
+                        }
                     }
-                }
 
-                @Override
-                public void onError(Throwable t) {
-                    log.error(t).append("onError").endl();
-                    stop();
-                }
+                    @Override
+                    public void onError(Throwable t) {
+                        log.error(t).append("onError").endl();
+                        stop();
+                    }
 
-                @Override
-                public void onCompleted() {
-                    // TODO reconnect
-                }
-            });
+                    @Override
+                    public void onCompleted() {
+                        // TODO reconnect
+                    }
+                });
     }
 
     private void awaitCommand() {
         Console console = System.console();
         if (console == null) {
-            log.error().append("Can't open a console prompt, try running this outside of gradle?")
-                .endl();
+            log.error().append("Can't open a console prompt, try running this outside of gradle?").endl();
             stop();
             return;
         }
@@ -179,47 +181,45 @@ public class ConsoleClient {
         }
         log.debug().append("client preparing to send command").endl();
         consoleServiceGrpc.executeCommand(
-            ExecuteCommandRequest.newBuilder()
-                .setConsoleId(consoleTicket)
-                .setCode(userCode)
-                .build(),
-            new ResponseBuilder<ExecuteCommandResponse>()
-                .onNext(response -> {
-                    log.debug().append("command completed successfully: ")
-                        .append(response.toString()).endl();
-                    Optional<VariableDefinition> firstTable = response.getCreatedList().stream()
-                        .filter(var -> var.getType().equals("Table")).findAny();
-                    firstTable.ifPresent(table -> {
-                        log.debug().append("A table was created: ").append(table.toString()).endl();
-                        consoleServiceGrpc.fetchTable(FetchTableRequest.newBuilder()
-                            .setConsoleId(consoleTicket)
-                            .setTableId(ExportTicketHelper.exportIdToTicket(nextId++))
-                            .setTableName(table.getName())
-                            .build(),
-                            new ResponseBuilder<ExportedTableCreationResponse>()
-                                .onNext(this::onExportedTableCreationResponse)
-                                .onError(err -> {
-                                    log.error(err).append("onError").endl();
-                                    scheduler.runImmediately(this::awaitCommand);
-                                })
-                                .onComplete(() -> {
-                                    log.debug().append("fetch complete").endl();
-                                })
-                                .build());
-                    });
-                    // otherwise go for another query
-                    if (!firstTable.isPresent()) {
-                        // let's give the just-executed command a little bit of time to print so we
-                        // reduce
-                        // the chance of clobbering our stdin prompt.
-                        scheduler.runAfterDelay(100, this::awaitCommand);
-                    }
-                })
-                .onError(err -> {
-                    log.error(err).append("onError").endl();
-                    scheduler.runImmediately(this::awaitCommand);
-                })
-                .build());
+                ExecuteCommandRequest.newBuilder()
+                        .setConsoleId(consoleTicket)
+                        .setCode(userCode)
+                        .build(),
+                new ResponseBuilder<ExecuteCommandResponse>()
+                        .onNext(response -> {
+                            log.debug().append("command completed successfully: ").append(response.toString()).endl();
+                            Optional<VariableDefinition> firstTable = response.getCreatedList().stream()
+                                    .filter(var -> var.getType().equals("Table")).findAny();
+                            firstTable.ifPresent(table -> {
+                                log.debug().append("A table was created: ").append(table.toString()).endl();
+                                tableServiceGrpc.fetchTable(FetchTableRequest.newBuilder()
+                                        .setResultId(ExportTicketHelper.exportIdToTicket(nextId++))
+                                        .setSourceId(TableReference.newBuilder()
+                                                .setTicket(ScopeTicketResolver.ticketForName(table.getTitle())))
+                                        .build(),
+                                        new ResponseBuilder<ExportedTableCreationResponse>()
+                                                .onNext(this::onExportedTableCreationResponse)
+                                                .onError(err -> {
+                                                    log.error(err).append("onError").endl();
+                                                    scheduler.runImmediately(this::awaitCommand);
+                                                })
+                                                .onComplete(() -> {
+                                                    log.debug().append("fetch complete").endl();
+                                                })
+                                                .build());
+                            });
+                            // otherwise go for another query
+                            if (!firstTable.isPresent()) {
+                                // let's give the just-executed command a little bit of time to print so we reduce
+                                // the chance of clobbering our stdin prompt.
+                                scheduler.runAfterDelay(100, this::awaitCommand);
+                            }
+                        })
+                        .onError(err -> {
+                            log.error(err).append("onError").endl();
+                            scheduler.runImmediately(this::awaitCommand);
+                        })
+                        .build());
     }
 
     private void onNewHandshakeResponse(final HandshakeResponse result) {
@@ -230,33 +230,32 @@ public class ConsoleClient {
             sessionHeaderKey = Metadata.Key.of(sessionHeader, Metadata.ASCII_STRING_MARSHALLER);
         }
         log.debug().append("Session Details: {header: '")
-            .append(this.sessionHeader).append("', token: '")
-            .append(this.session.toString()).append("}").endl();
+                .append(this.sessionHeader).append("', token: '")
+                .append(this.session.toString()).append("}").endl();
 
         // Guess a good time to do the next refresh.
         final long refreshDelayMs = Math.min(
-            scheduler.currentTime().getMillis() + result.getTokenExpirationDelayMillis() / 3,
-            result.getTokenDeadlineTimeMillis() - result.getTokenExpirationDelayMillis() / 10);
+                scheduler.currentTime().getMillis() + result.getTokenExpirationDelayMillis() / 3,
+                result.getTokenDeadlineTimeMillis() - result.getTokenExpirationDelayMillis() / 10);
 
         scheduler.runAtTime(DBTimeUtils.millisToTime(refreshDelayMs), this::refreshToken);
     }
 
     private void refreshToken() {
         sessionService.refreshSessionToken(HandshakeRequest.newBuilder()
-            .setAuthProtocol(0)
-            .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
-            new ResponseBuilder<HandshakeResponse>()
-                .onError(this::onError)
-                .onNext(this::onNewHandshakeResponse)
-                .build());
+                .setAuthProtocol(0)
+                .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
+                new ResponseBuilder<HandshakeResponse>()
+                        .onError(this::onError)
+                        .onNext(this::onNewHandshakeResponse)
+                        .build());
     }
 
     private void onExportedTableCreationResponse(final ExportedTableCreationResponse result) {
         final LogEntry entry = log.info().append("Received ExportedTableCreationResponse for {");
 
         if (result.getResultId().hasTicket()) {
-            entry.append("exportId: ")
-                .append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket()));
+            entry.append("exportId: ").append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket()));
         } else {
             entry.append("batchOffset: ").append(result.getResultId().getBatchOffset());
         }
@@ -339,10 +338,10 @@ public class ConsoleClient {
     private class AuthInterceptor implements ClientInterceptor {
         @Override
         public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-            final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
-            final Channel channel) {
+                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
+                final Channel channel) {
             return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
-                channel.newCall(methodDescriptor, callOptions)) {
+                    channel.newCall(methodDescriptor, callOptions)) {
                 @Override
                 public void start(final Listener<RespT> responseListener, final Metadata headers) {
                     if (session != null) {

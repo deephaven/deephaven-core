@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.GetCompletionItemsResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.GetCompletionItemsResponse",
+        namespace = JsPackage.GLOBAL)
 public class GetCompletionItemsResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -58,7 +58,7 @@ public class GetCompletionItemsResponse {
 
                     @JsProperty
                     void setStart(
-                        GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType.RangeFieldType.StartFieldType start);
+                            GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType.RangeFieldType.StartFieldType start);
                 }
 
                 @JsOverlay
@@ -74,7 +74,7 @@ public class GetCompletionItemsResponse {
 
                 @JsProperty
                 void setRange(
-                    GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType.RangeFieldType range);
+                        GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType.RangeFieldType range);
 
                 @JsProperty
                 void setText(String text);
@@ -132,8 +132,7 @@ public class GetCompletionItemsResponse {
 
             @JsOverlay
             default void setAdditionalTextEditsList(Object[] additionalTextEditsList) {
-                setAdditionalTextEditsList(
-                    Js.<JsArray<Object>>uncheckedCast(additionalTextEditsList));
+                setAdditionalTextEditsList(Js.<JsArray<Object>>uncheckedCast(additionalTextEditsList));
             }
 
             @JsProperty
@@ -179,7 +178,7 @@ public class GetCompletionItemsResponse {
 
             @JsProperty
             void setTextEdit(
-                GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType textEdit);
+                    GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType textEdit);
         }
 
         @JsOverlay
@@ -190,17 +189,29 @@ public class GetCompletionItemsResponse {
         @JsProperty
         JsArray<GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType> getItemsList();
 
+        @JsProperty
+        double getRequestId();
+
+        @JsProperty
+        boolean isSuccess();
+
         @JsOverlay
         default void setItemsList(
-            GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType[] itemsList) {
+                GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType[] itemsList) {
             setItemsList(
-                Js.<JsArray<GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType>>uncheckedCast(
-                    itemsList));
+                    Js.<JsArray<GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType>>uncheckedCast(
+                            itemsList));
         }
 
         @JsProperty
         void setItemsList(
-            JsArray<GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType> itemsList);
+                JsArray<GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType> itemsList);
+
+        @JsProperty
+        void setRequestId(double requestId);
+
+        @JsProperty
+        void setSuccess(boolean success);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -247,7 +258,7 @@ public class GetCompletionItemsResponse {
 
                     @JsProperty
                     void setStart(
-                        GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType.RangeFieldType.StartFieldType start);
+                            GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType.RangeFieldType.StartFieldType start);
                 }
 
                 @JsOverlay
@@ -263,7 +274,7 @@ public class GetCompletionItemsResponse {
 
                 @JsProperty
                 void setRange(
-                    GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType.RangeFieldType range);
+                        GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType.RangeFieldType range);
 
                 @JsProperty
                 void setText(String text);
@@ -321,8 +332,7 @@ public class GetCompletionItemsResponse {
 
             @JsOverlay
             default void setAdditionalTextEditsList(Object[] additionalTextEditsList) {
-                setAdditionalTextEditsList(
-                    Js.<JsArray<Object>>uncheckedCast(additionalTextEditsList));
+                setAdditionalTextEditsList(Js.<JsArray<Object>>uncheckedCast(additionalTextEditsList));
             }
 
             @JsProperty
@@ -368,7 +378,7 @@ public class GetCompletionItemsResponse {
 
             @JsProperty
             void setTextEdit(
-                GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType textEdit);
+                    GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType textEdit);
         }
 
         @JsOverlay
@@ -379,29 +389,41 @@ public class GetCompletionItemsResponse {
         @JsProperty
         JsArray<GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType> getItemsList();
 
+        @JsProperty
+        double getRequestId();
+
+        @JsProperty
+        boolean isSuccess();
+
         @JsOverlay
         default void setItemsList(
-            GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType[] itemsList) {
+                GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType[] itemsList) {
             setItemsList(
-                Js.<JsArray<GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType>>uncheckedCast(
-                    itemsList));
+                    Js.<JsArray<GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType>>uncheckedCast(
+                            itemsList));
         }
 
         @JsProperty
         void setItemsList(
-            JsArray<GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType> itemsList);
+                JsArray<GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType> itemsList);
+
+        @JsProperty
+        void setRequestId(double requestId);
+
+        @JsProperty
+        void setSuccess(boolean success);
     }
 
     public static native GetCompletionItemsResponse deserializeBinary(Uint8Array bytes);
 
     public static native GetCompletionItemsResponse deserializeBinaryFromReader(
-        GetCompletionItemsResponse message, Object reader);
+            GetCompletionItemsResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        GetCompletionItemsResponse message, Object writer);
+            GetCompletionItemsResponse message, Object writer);
 
     public static native GetCompletionItemsResponse.ToObjectReturnType toObject(
-        boolean includeInstance, GetCompletionItemsResponse msg);
+            boolean includeInstance, GetCompletionItemsResponse msg);
 
     public native CompletionItem addItems();
 
@@ -413,6 +435,10 @@ public class GetCompletionItemsResponse {
 
     public native JsArray<CompletionItem> getItemsList();
 
+    public native int getRequestId();
+
+    public native boolean getSuccess();
+
     public native Uint8Array serializeBinary();
 
     @JsOverlay
@@ -421,6 +447,10 @@ public class GetCompletionItemsResponse {
     }
 
     public native void setItemsList(JsArray<CompletionItem> value);
+
+    public native void setRequestId(int value);
+
+    public native void setSuccess(boolean value);
 
     public native GetCompletionItemsResponse.ToObjectReturnType0 toObject();
 

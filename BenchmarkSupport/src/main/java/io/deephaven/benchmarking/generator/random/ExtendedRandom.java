@@ -3,8 +3,8 @@ package io.deephaven.benchmarking.generator.random;
 import java.util.Random;
 
 /**
- * ExtendedRandom is a helper to facilitate the use of various concrete {@link Random}
- * implementations, while providing a consistent interface.
+ * ExtendedRandom is a helper to facilitate the use of various concrete {@link Random} implementations, while providing
+ * a consistent interface.
  */
 public abstract class ExtendedRandom {
     public final double nextDouble(double origin, double bound) {
@@ -25,8 +25,8 @@ public abstract class ExtendedRandom {
                 r = (r & m) + origin;
             else if (n > 0L) { // reject over-represented candidates
                 for (long u = r >>> 1; // ensure nonnegative
-                    u + m - (r = u % n) < 0L; // rejection check
-                    u = nextLong() >>> 1) // retry
+                        u + m - (r = u % n) < 0L; // rejection check
+                        u = nextLong() >>> 1) // retry
                 ;
                 r += origin;
             } else { // range not representable as long

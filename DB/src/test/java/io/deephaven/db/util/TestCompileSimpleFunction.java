@@ -11,14 +11,12 @@ import java.util.Collections;
 
 public class TestCompileSimpleFunction extends TestCase {
     public void testString() {
-        String res = DynamicCompileUtils
-            .compileSimpleFunction(String.class, "return \"Hello, world\"").get();
+        String res = DynamicCompileUtils.compileSimpleFunction(String.class, "return \"Hello, world\"").get();
         TestCase.assertEquals("Hello, world", res);
     }
 
     public void testImport() {
-        String res =
-            DynamicCompileUtils.compileSimpleFunction(String.class, "return currentDateNy()",
+        String res = DynamicCompileUtils.compileSimpleFunction(String.class, "return currentDateNy()",
                 Collections.emptyList(), Collections.singleton(DBTimeUtils.class)).get();
         TestCase.assertEquals(DBTimeUtils.currentDateNy(), res);
     }

@@ -24,8 +24,8 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
- * {@link LocalTableMap} of single-location {@link SourceTable}s keyed by {@link TableLocationKey}.
- * Refer to {@link TableLocationKey} for an explanation of partitioning.
+ * {@link LocalTableMap} of single-location {@link SourceTable}s keyed by {@link TableLocationKey}. Refer to
+ * {@link TableLocationKey} for an explanation of partitioning.
  */
 public class SourceTableMap extends LocalTableMap {
 
@@ -38,8 +38,7 @@ public class SourceTableMap extends LocalTableMap {
     private final TableLocationSubscriptionBuffer subscriptionBuffer;
     private final IntrusiveDoublyLinkedQueue<PendingLocationState> pendingLocationStates;
     private final IntrusiveDoublyLinkedQueue<PendingLocationState> readyLocationStates;
-    @SuppressWarnings("FieldCanBeLocal") // We need to hold onto this reference for reachability
-                                         // purposes.
+    @SuppressWarnings("FieldCanBeLocal") // We need to hold onto this reference for reachability purposes.
     private final LiveTable processNewLocationsLiveTable;
 
     /**
@@ -47,32 +46,30 @@ public class SourceTableMap extends LocalTableMap {
      * Construct a {@link SourceTableMap} from the supplied parameters.
      *
      * <p>
-     * Note that refreshLocations and refreshSizes are distinct because there are use cases that
-     * supply an external index and hence don't require size refreshes. Others might care for size
-     * refreshes, but only the initially-available set of locations.
+     * Note that refreshLocations and refreshSizes are distinct because there are use cases that supply an external
+     * index and hence don't require size refreshes. Others might care for size refreshes, but only the
+     * initially-available set of locations.
      *
      * @param tableDefinition The table definition
-     * @param applyTablePermissions Function to apply in order to correctly restrict the visible
-     *        result rows
+     * @param applyTablePermissions Function to apply in order to correctly restrict the visible result rows
      * @param tableLocationProvider Source for table locations
      * @param refreshLocations Whether the set of locations should be refreshed
      * @param refreshSizes Whether the locations found should be refreshed
      * @param locationKeyMatcher Function to filter desired location keys
      */
     public SourceTableMap(@NotNull final TableDefinition tableDefinition,
-        @NotNull final UnaryOperator<Table> applyTablePermissions,
-        @NotNull final TableLocationProvider tableLocationProvider,
-        final boolean refreshLocations,
-        final boolean refreshSizes,
-        @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
+            @NotNull final UnaryOperator<Table> applyTablePermissions,
+            @NotNull final TableLocationProvider tableLocationProvider,
+            final boolean refreshLocations,
+            final boolean refreshSizes,
+            @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
         super(null, Objects.requireNonNull(tableDefinition));
         this.applyTablePermissions = applyTablePermissions;
         this.tableLocationProvider = tableLocationProvider;
         this.refreshSizes = refreshSizes;
         this.locationKeyMatcher = locationKeyMatcher;
 
-        final boolean needToRefreshLocations =
-            refreshLocations && tableLocationProvider.supportsSubscriptions();
+        final boolean needToRefreshLocations = refreshLocations && tableLocationProvider.supportsSubscriptions();
 
         if (needToRefreshLocations || refreshSizes) {
             setRefreshing(true);
@@ -85,12 +82,12 @@ public class SourceTableMap extends LocalTableMap {
         if (needToRefreshLocations) {
             subscriptionBuffer = new TableLocationSubscriptionBuffer(tableLocationProvider);
             pendingLocationStates = new IntrusiveDoublyLinkedQueue<>(
-                IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
+                    IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
             readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
-                IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
+                    IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
             processNewLocationsLiveTable = new InstrumentedLiveTable(
-                SourceTableMap.class.getSimpleName() + '[' + tableLocationProvider + ']'
-                    + "-processPendingLocations") {
+                    SourceTableMap.class.getSimpleName() + '[' + tableLocationProvider + ']'
+                            + "-processPendingLocations") {
                 @Override
                 protected void instrumentedRefresh() {
                     processPendingLocations();
@@ -104,8 +101,8 @@ public class SourceTableMap extends LocalTableMap {
             readyLocationStates = null;
             processNewLocationsLiveTable = null;
             tableLocationProvider.refresh();
-            sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream()
-                .filter(locationKeyMatcher).map(tableLocationProvider::getTableLocation));
+            sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream().filter(locationKeyMatcher)
+                    .map(tableLocationProvider::getTableLocation));
         }
 
         if (isRefreshing()) {
@@ -127,46 +124,37 @@ public class SourceTableMap extends LocalTableMap {
             if (!observeCreation.getValue()) {
                 // we have a duplicate location - not allowed
                 final TableLocation previousLocation =
-                    ((PartitionAwareSourceTable) previousTable).locationProvider
-                        .getTableLocation(tl.getKey());
+                        ((PartitionAwareSourceTable) previousTable).locationProvider.getTableLocation(tl.getKey());
                 throw new TableDataException(
-                    "Data Routing Configuration error: TableDataService elements overlap at location "
-                        +
-                        tl.toGenericString() +
-                        ". Duplicate locations are " + previousLocation.toStringDetailed() + " and "
-                        + tl.toStringDetailed());
+                        "Data Routing Configuration error: TableDataService elements overlap at location " +
+                                tl.toGenericString() +
+                                ". Duplicate locations are " + previousLocation.toStringDetailed() + " and "
+                                + tl.toStringDetailed());
             }
         });
     }
 
     private Table makeTable(@NotNull final TableLocation tableLocation) {
         return applyTablePermissions.apply(new PartitionAwareSourceTable(
-            getConstituentDefinition().orElseThrow(IllegalStateException::new),
-            "SingleLocationSourceTable-" + tableLocation,
-            RegionedTableComponentFactoryImpl.INSTANCE,
-            new SingleTableLocationProvider(tableLocation),
-            refreshSizes ? refreshCombiner : null));
+                getConstituentDefinition().orElseThrow(IllegalStateException::new),
+                "SingleLocationSourceTable-" + tableLocation,
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                new SingleTableLocationProvider(tableLocation),
+                refreshSizes ? refreshCombiner : null));
     }
 
     private void processPendingLocations() {
-        // This block of code is unfortunate, because it largely duplicates the intent and effort of
-        // similar code in
-        // RegionedColumnSourceManager. I think that the RegionedColumnSourceManager could be
-        // changed to intermediate
-        // between TableLocationProvider and SourceTable or SourceTableMap, allowing for much
-        // cleaner code in all three.
-        // The RCSM could then populate STM nodes or ST regions. We could also add a "RegionManager"
-        // to
-        // RegionedColumnSources, in order to eliminate the unnecessary post-initialization array
-        // population in STM
+        // This block of code is unfortunate, because it largely duplicates the intent and effort of similar code in
+        // RegionedColumnSourceManager. I think that the RegionedColumnSourceManager could be changed to intermediate
+        // between TableLocationProvider and SourceTable or SourceTableMap, allowing for much cleaner code in all three.
+        // The RCSM could then populate STM nodes or ST regions. We could also add a "RegionManager" to
+        // RegionedColumnSources, in order to eliminate the unnecessary post-initialization array population in STM
         // ColumnSources.
-        // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking
-        // partition table
+        // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         subscriptionBuffer.processPending().stream().filter(locationKeyMatcher)
-            .map(tableLocationProvider::getTableLocation).map(PendingLocationState::new)
-            .forEach(pendingLocationStates::offer);
-        for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter
-            .hasNext();) {
+                .map(tableLocationProvider::getTableLocation).map(PendingLocationState::new)
+                .forEach(pendingLocationStates::offer);
+        for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
             final PendingLocationState pendingLocationState = iter.next();
             if (pendingLocationState.exists()) {
                 iter.remove();
@@ -177,8 +165,7 @@ public class SourceTableMap extends LocalTableMap {
         readyLocationStates.clearFast();
     }
 
-    private static class PendingLocationState
-        extends IntrusiveDoublyLinkedNode.Impl<PendingLocationState> {
+    private static class PendingLocationState extends IntrusiveDoublyLinkedNode.Impl<PendingLocationState> {
 
         private final TableLocation location;
 
@@ -190,9 +177,9 @@ public class SourceTableMap extends LocalTableMap {
         }
 
         /**
-         * Test if the pending location is ready for inclusion in the table map. This means it must
-         * have non-null, non-zero size. We expect that this means the location will be immediately
-         * included in the resulting table's {@link ColumnSourceManager}, which is a
+         * Test if the pending location is ready for inclusion in the table map. This means it must have non-null,
+         * non-zero size. We expect that this means the location will be immediately included in the resulting table's
+         * {@link ColumnSourceManager}, which is a
          * {@link io.deephaven.db.v2.sources.regioned.RegionedColumnSourceManager} in all cases.
          *
          * @return Whether this location exists for purposes of inclusion in the table map

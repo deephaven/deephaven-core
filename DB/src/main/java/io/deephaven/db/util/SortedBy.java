@@ -12,9 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 
 /**
- * SortedBy operations sort the values in each of the buckets according to a specified column. The
- * sortedFirstBy returns the row with the lowest value and sortedLastBy returns the row with the
- * greatest value.
+ * SortedBy operations sort the values in each of the buckets according to a specified column. The sortedFirstBy returns
+ * the row with the lowest value and sortedLastBy returns the row with the greatest value.
  */
 @ScriptApi
 public class SortedBy {
@@ -56,12 +55,11 @@ public class SortedBy {
      * @param sortColumnName the name of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the lowest value of the sort column for each
-     *         grouping key
+     * @return a new table containing the rows with the lowest value of the sort column for each grouping key
      */
     @NotNull
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String sortColumnName,
-        @NotNull String... groupByColumns) {
+            @NotNull String... groupByColumns) {
         return input.by(new SortedFirstBy(sortColumnName), groupByColumns);
     }
 
@@ -72,12 +70,11 @@ public class SortedBy {
      * @param sortColumnNames the names of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the lowest value of the sort columns for each
-     *         grouping key
+     * @return a new table containing the rows with the lowest value of the sort columns for each grouping key
      */
     @NotNull
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String[] sortColumnNames,
-        @NotNull String... groupByColumns) {
+            @NotNull String... groupByColumns) {
         return input.by(new SortedFirstBy(sortColumnNames), groupByColumns);
     }
 
@@ -88,14 +85,12 @@ public class SortedBy {
      * @param sortColumnName the name of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the lowest value of the sort column for each
-     *         grouping key
+     * @return a new table containing the rows with the lowest value of the sort column for each grouping key
      */
     @NotNull
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String sortColumnName,
-        @NotNull Collection<String> groupByColumns) {
-        return input.by(new SortedFirstBy(sortColumnName),
-            SelectColumnFactory.getExpressions(groupByColumns));
+            @NotNull Collection<String> groupByColumns) {
+        return input.by(new SortedFirstBy(sortColumnName), SelectColumnFactory.getExpressions(groupByColumns));
     }
 
     /**
@@ -105,15 +100,13 @@ public class SortedBy {
      * @param sortColumnNames the names of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the lowest value of the sort columns for each
-     *         grouping key
+     * @return a new table containing the rows with the lowest value of the sort columns for each grouping key
      */
     @NotNull
-    public static Table sortedFirstBy(@NotNull Table input,
-        @NotNull Collection<String> sortColumnNames, @NotNull Collection<String> groupByColumns) {
-        return input.by(
-            new SortedFirstBy(sortColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-            SelectColumnFactory.getExpressions(groupByColumns));
+    public static Table sortedFirstBy(@NotNull Table input, @NotNull Collection<String> sortColumnNames,
+            @NotNull Collection<String> groupByColumns) {
+        return input.by(new SortedFirstBy(sortColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                SelectColumnFactory.getExpressions(groupByColumns));
     }
 
     /**
@@ -123,12 +116,11 @@ public class SortedBy {
      * @param sortColumnName the name of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the lowest value of the sort column for each
-     *         grouping key
+     * @return a new table containing the rows with the lowest value of the sort column for each grouping key
      */
     @NotNull
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String sortColumnName,
-        @NotNull SelectColumn... groupByColumns) {
+            @NotNull SelectColumn... groupByColumns) {
         return input.by(new SortedFirstBy(sortColumnName), groupByColumns);
     }
 
@@ -139,12 +131,11 @@ public class SortedBy {
      * @param sortColumnNames the names of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the lowest value of the sort columns for each
-     *         grouping key
+     * @return a new table containing the rows with the lowest value of the sort columns for each grouping key
      */
     @NotNull
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String[] sortColumnNames,
-        @NotNull SelectColumn... groupByColumns) {
+            @NotNull SelectColumn... groupByColumns) {
         return input.by(new SortedFirstBy(sortColumnNames), groupByColumns);
     }
 
@@ -181,12 +172,11 @@ public class SortedBy {
      * @param sortColumnName the name of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the greatest value of the sort column for each
-     *         grouping key
+     * @return a new table containing the rows with the greatest value of the sort column for each grouping key
      */
     @NotNull
     public static Table sortedLastBy(@NotNull Table input, @NotNull String sortColumnName,
-        @NotNull String... groupByColumns) {
+            @NotNull String... groupByColumns) {
         return input.by(new SortedLastBy(sortColumnName), groupByColumns);
     }
 
@@ -197,12 +187,11 @@ public class SortedBy {
      * @param sortColumnNames the names of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the greatest value of the sort columns for each
-     *         grouping key
+     * @return a new table containing the rows with the greatest value of the sort columns for each grouping key
      */
     @NotNull
     public static Table sortedLastBy(@NotNull Table input, @NotNull String[] sortColumnNames,
-        @NotNull String... groupByColumns) {
+            @NotNull String... groupByColumns) {
         return input.by(new SortedLastBy(sortColumnNames), groupByColumns);
     }
 
@@ -213,14 +202,12 @@ public class SortedBy {
      * @param sortColumnName the name of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the greatest value of the sort column for each
-     *         grouping key
+     * @return a new table containing the rows with the greatest value of the sort column for each grouping key
      */
     @NotNull
     public static Table sortedLastBy(@NotNull Table input, @NotNull String sortColumnName,
-        @NotNull Collection<String> groupByColumns) {
-        return input.by(new SortedLastBy(sortColumnName),
-            SelectColumnFactory.getExpressions(groupByColumns));
+            @NotNull Collection<String> groupByColumns) {
+        return input.by(new SortedLastBy(sortColumnName), SelectColumnFactory.getExpressions(groupByColumns));
     }
 
     /**
@@ -230,15 +217,13 @@ public class SortedBy {
      * @param sortColumnNames the names of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the greatest value of the sort columns for each
-     *         grouping key
+     * @return a new table containing the rows with the greatest value of the sort columns for each grouping key
      */
     @NotNull
-    public static Table sortedLastBy(@NotNull Table input,
-        @NotNull Collection<String> sortColumnNames, @NotNull Collection<String> groupByColumns) {
-        return input.by(
-            new SortedLastBy(sortColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-            SelectColumnFactory.getExpressions(groupByColumns));
+    public static Table sortedLastBy(@NotNull Table input, @NotNull Collection<String> sortColumnNames,
+            @NotNull Collection<String> groupByColumns) {
+        return input.by(new SortedLastBy(sortColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                SelectColumnFactory.getExpressions(groupByColumns));
     }
 
     /**
@@ -248,12 +233,11 @@ public class SortedBy {
      * @param sortColumnName the name of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the greatest value of the sort column for each
-     *         grouping key
+     * @return a new table containing the rows with the greatest value of the sort column for each grouping key
      */
     @NotNull
     public static Table sortedLastBy(@NotNull Table input, @NotNull String sortColumnName,
-        @NotNull SelectColumn... groupByColumns) {
+            @NotNull SelectColumn... groupByColumns) {
         return input.by(new SortedLastBy(sortColumnName), groupByColumns);
     }
 
@@ -264,12 +248,11 @@ public class SortedBy {
      * @param sortColumnNames the names of the column to sort by
      * @param groupByColumns the columns to group by
      *
-     * @return a new table containing the rows with the greatest value of the sort columns for each
-     *         grouping key
+     * @return a new table containing the rows with the greatest value of the sort columns for each grouping key
      */
     @NotNull
     public static Table sortedLastBy(@NotNull Table input, @NotNull String[] sortColumnNames,
-        @NotNull SelectColumn... groupByColumns) {
+            @NotNull SelectColumn... groupByColumns) {
         return input.by(new SortedLastBy(sortColumnNames), groupByColumns);
     }
 }

@@ -26,17 +26,17 @@ public abstract class ColumnHeaders7<T1, T2, T3, T4, T5, T6, T7> implements Tabl
     public abstract ColumnHeaders6<T1, T2, T3, T4, T5, T6> others();
 
     public final <T8> ColumnHeaders8<T1, T2, T3, T4, T5, T6, T7, T8> header(String name,
-        Class<T8> clazz) {
+            Class<T8> clazz) {
         return header(ColumnHeader.of(name, clazz));
     }
 
     public final <T8> ColumnHeaders8<T1, T2, T3, T4, T5, T6, T7, T8> header(String name,
-        Type<T8> type) {
+            Type<T8> type) {
         return header(ColumnHeader.of(name, type));
     }
 
     public final <T8> ColumnHeaders8<T1, T2, T3, T4, T5, T6, T7, T8> header(
-        ColumnHeader<T8> header) {
+            ColumnHeader<T8> header) {
         return ImmutableColumnHeaders8.of(header, this);
     }
 

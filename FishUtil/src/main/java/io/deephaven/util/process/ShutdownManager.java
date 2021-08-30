@@ -15,21 +15,20 @@ public interface ShutdownManager {
     enum OrderingCategory {
 
         /**
-         * Tasks that should be kicked off before the rest. For example, disconnecting clients that
-         * may otherwise be poorly served during shutdown processing, or may cause shutdown delays
-         * by adding additional work.
+         * Tasks that should be kicked off before the rest. For example, disconnecting clients that may otherwise be
+         * poorly served during shutdown processing, or may cause shutdown delays by adding additional work.
          */
         FIRST,
 
         /**
-         * Tasks that have no particular timeliness requirement. For example, flushing persistent
-         * stores to permanent storage.
+         * Tasks that have no particular timeliness requirement. For example, flushing persistent stores to permanent
+         * storage.
          */
         MIDDLE,
 
         /**
-         * Tasks that should be dispatched after others. For example, shutting down a logger
-         * framework and flushing log data.
+         * Tasks that should be dispatched after others. For example, shutting down a logger framework and flushing log
+         * data.
          */
         LAST
     }
@@ -47,15 +46,14 @@ public interface ShutdownManager {
     }
 
     /**
-     * Add a shutdown hook to the runtime that will invoke all registered shutdown tasks, if they
-     * haven't previously been invoked.
+     * Add a shutdown hook to the runtime that will invoke all registered shutdown tasks, if they haven't previously
+     * been invoked.
      */
     void addShutdownHookToRuntime();
 
     /**
-     * Register task for shutdown invocation along with other tasks belonging to orderingCategory.
-     * Registration concurrent with invocation (that is, shutdown in progress) is not guaranteed to
-     * be effective.
+     * Register task for shutdown invocation along with other tasks belonging to orderingCategory. Registration
+     * concurrent with invocation (that is, shutdown in progress) is not guaranteed to be effective.
      *
      * @param orderingCategory
      * @param task
@@ -63,8 +61,8 @@ public interface ShutdownManager {
     void registerTask(@NotNull OrderingCategory orderingCategory, @NotNull Task task);
 
     /**
-     * Remove the most recent registration of task with orderingCategory. De-registration concurrent
-     * with invocation (that is, shutdown in progress) is not guaranteed to be effective.
+     * Remove the most recent registration of task with orderingCategory. De-registration concurrent with invocation
+     * (that is, shutdown in progress) is not guaranteed to be effective.
      *
      * @param orderingCategory
      * @param task
@@ -72,8 +70,7 @@ public interface ShutdownManager {
     void deregisterTask(@NotNull OrderingCategory orderingCategory, @NotNull Task task);
 
     /**
-     * Clear all shutdown tasks and reset internal state. Useful for unit tests, not safe for
-     * production use cases.
+     * Clear all shutdown tasks and reset internal state. Useful for unit tests, not safe for production use cases.
      */
     void reset();
 

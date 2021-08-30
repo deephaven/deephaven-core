@@ -36,9 +36,9 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
 
     private final Table source = Table.of(EmptyTable.of(INPUT_SIZE)
-        .update("Sym = Long.toString(ii % 1000) + `_Sym`")
-        .update("Price = ii / 100 - (ii % 100)")
-        .update("Size = (long) (ii / 50 - (ii % 50))"));
+            .update("Sym = Long.toString(ii % 1000) + `_Sym`")
+            .update("Price = ii / 100 - (ii % 100)")
+            .update("Size = (long) (ii / 50 - (ii % 50))"));
 
 
     @Before
@@ -55,32 +55,27 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
      * Execute a table operator.
      *
      * @param operator The operator to apply
-     * @param windowed Whether the stream table index should be a sliding window (if {@code true})
-     *        or zero-based (if {@code false})
+     * @param windowed Whether the stream table index should be a sliding window (if {@code true}) or zero-based (if
+     *        {@code false})
      * @param expectStreamResult Whether the result is expected to be a stream table
      */
-    private void doOperatorTest(@NotNull final UnaryOperator<Table> operator,
-        final boolean windowed, final boolean expectStreamResult) {
-        final QueryTable normal =
-            new QueryTable(Index.FACTORY.getEmptyIndex(), source.getColumnSourceMap());
+    private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed,
+            final boolean expectStreamResult) {
+        final QueryTable normal = new QueryTable(Index.FACTORY.getEmptyIndex(), source.getColumnSourceMap());
         normal.setRefreshing(true);
 
         final Index streamInternalIndex;
-        final Map<String, ? extends ColumnSource> streamSources;
+        final Map<String, ? extends ColumnSource<?>> streamSources;
         if (windowed) {
             streamInternalIndex = null;
             streamSources = source.getColumnSourceMap();
         } else {
             // Redirecting so we can present a zero-based Index from the stream table
             streamInternalIndex = Index.FACTORY.getEmptyIndex();
-            final RedirectionIndex streamRedirections =
-                new WrappedIndexRedirectionIndexImpl(streamInternalIndex);
-            // noinspection unchecked
-            streamSources = source.getColumnSourceMap().entrySet().stream()
-                .collect(Collectors.toMap(
+            final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalIndex);
+            streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
-                    (entry -> new ReadOnlyRedirectedColumnSource(streamRedirections,
-                        entry.getValue())),
+                    (entry -> new ReadOnlyRedirectedColumnSource<>(streamRedirections, entry.getValue())),
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }
@@ -96,8 +91,8 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
         TestCase.assertEquals(expectStreamResult, ((BaseTable) streamExpected).isStream());
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
-            LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
-            new Random().longs(0, MAX_RANDOM_ITERATION_SIZE)).iterator();
+                LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
+                new Random().longs(0, MAX_RANDOM_ITERATION_SIZE)).iterator();
 
         int step = 0;
         long usedSize = 0;
@@ -106,12 +101,12 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
             final Index normalStepInserted = refreshSize == 0
-                ? Index.CURRENT_FACTORY.getEmptyIndex()
-                : Index.CURRENT_FACTORY.getIndexByRange(usedSize, usedSize + refreshSize - 1);
-            final Index streamStepInserted = streamInternalIndex == null ? normalStepInserted
-                : refreshSize == 0
                     ? Index.CURRENT_FACTORY.getEmptyIndex()
-                    : Index.CURRENT_FACTORY.getIndexByRange(0, refreshSize - 1);
+                    : Index.CURRENT_FACTORY.getIndexByRange(usedSize, usedSize + refreshSize - 1);
+            final Index streamStepInserted = streamInternalIndex == null ? normalStepInserted
+                    : refreshSize == 0
+                            ? Index.CURRENT_FACTORY.getEmptyIndex()
+                            : Index.CURRENT_FACTORY.getIndexByRange(0, refreshSize - 1);
 
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             try {
@@ -119,9 +114,8 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (normalStepInserted.nonempty() || finalNormalLastInserted.nonempty()) {
                         normal.getIndex().update(normalStepInserted, finalNormalLastInserted);
-                        normal.notifyListeners(new Update(normalStepInserted,
-                            finalNormalLastInserted, Index.CURRENT_FACTORY.getEmptyIndex(),
-                            IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                        normal.notifyListeners(new Update(normalStepInserted, finalNormalLastInserted,
+                                Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
                 final Index finalStreamLastInserted = streamLastInserted;
@@ -133,9 +127,8 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
                         }
                         stream.getIndex().clear();
                         stream.getIndex().insert(streamStepInserted);
-                        stream.notifyListeners(new Update(streamStepInserted,
-                            finalStreamLastInserted, Index.CURRENT_FACTORY.getEmptyIndex(),
-                            IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                        stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted,
+                                Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
             } finally {
@@ -144,8 +137,8 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
             try {
                 TstUtils.assertTableEquals(expected, streamExpected);
             } catch (ComparisonFailure e) {
-                System.err.printf("FAILURE: step %d, previousUsedSize %d, refreshSize %d%n", step,
-                    usedSize, refreshSize);
+                System.err.printf("FAILURE: step %d, previousUsedSize %d, refreshSize %d%n", step, usedSize,
+                        refreshSize);
                 throw e;
             }
 

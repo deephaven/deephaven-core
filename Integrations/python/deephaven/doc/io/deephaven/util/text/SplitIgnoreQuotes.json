@@ -4,6 +4,6 @@
   "split": "Splits a String using the splitter character but ignoring it inside quotes and back ticks.\n\n:param string: (java.lang.String) - the String to split\n:param splitter: (char) - the character to split on\n:return: (java.lang.String[]) a String array of split values"
  },
  "path": "io.deephaven.util.text.SplitIgnoreQuotes",
- "text": "Splits a String on a character ignoring that character inside quotes and back ticks.\n For example splitting on a comma:\n\n 'a,b', \"c,d\", 'e', \"f\", g splits to ['a,b'] [\"c,d\"] ['e'] [\"f\"] [g]",
+ "text": "Splits a String on a character ignoring that character inside quotes and back ticks. For example splitting on a\n comma:\n\n 'a,b', \"c,d\", 'e', \"f\", g splits to ['a,b'] [\"c,d\"] ['e'] [\"f\"] [g]",
  "typeName": "class"
 }

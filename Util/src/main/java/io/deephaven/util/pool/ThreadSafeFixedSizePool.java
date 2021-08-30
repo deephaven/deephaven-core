@@ -34,10 +34,10 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
     private final Logger log;
 
     private ThreadSafeFixedSizePool(int size, @Nullable Function.Nullary<T> factory,
-        Procedure.Unary<T> clearingProcedure, Logger log, String logPfx) {
+            Procedure.Unary<T> clearingProcedure, Logger log, String logPfx) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         Require.requirement((log == null) == (logPfx == null),
-            "log and logPfx must either both be null, or both non-null");
+                "log and logPfx must either both be null, or both non-null");
         this.clearingProcedure = clearingProcedure;
         this.log = log;
         this.logPfx = logPfx;
@@ -54,8 +54,7 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
         }
     }
 
-    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory,
-        Procedure.Unary<T> clearingProcedure) {
+    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory, Procedure.Unary<T> clearingProcedure) {
         this(size, factory, clearingProcedure, null, null);
     }
 
@@ -83,9 +82,8 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
                         if (now > nextGiveLog) {
                             nextGiveLog = (now + 100000) - (now % 100000);
                             long dt = (now - t0);
-                            log.warn().append(logPfx)
-                                .append(": give() can't enqueue returned item, yield count = ")
-                                .append(yields).endl();
+                            log.warn().append(logPfx).append(": give() can't enqueue returned item, yield count = ")
+                                    .append(yields).endl();
                         }
                     }
                     Thread.yield();
@@ -98,10 +96,8 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
                 if (now > nextGiveLog) {
                     nextGiveLog = (now + 100000) - (now % 100000);
                     long dt = (now - t0);
-                    log.warn().append(logPfx).append(": give() took ").append(dt)
-                        .append(" micros, with ")
-                        .append(yields).append(" yields and ").append(spins)
-                        .append(" additional spins").endl();
+                    log.warn().append(logPfx).append(": give() took ").append(dt).append(" micros, with ")
+                            .append(yields).append(" yields and ").append(spins).append(" additional spins").endl();
                 }
             }
         }
@@ -126,9 +122,8 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
                         if (now > nextTakeLog) {
                             nextTakeLog = (now + 100000) - (now % 100000);
                             long dt = (now - t0);
-                            log.warn().append(logPfx)
-                                .append(": take() can't dequeue from pool, waiting for ")
-                                .append(dt).append(" micros, yield count = ").append(yields).endl();
+                            log.warn().append(logPfx).append(": take() can't dequeue from pool, waiting for ")
+                                    .append(dt).append(" micros, yield count = ").append(yields).endl();
                         }
                     }
                     Thread.yield();
@@ -142,10 +137,8 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
                 if (now > nextTakeLog) {
                     nextTakeLog = (now + 100000) - (now % 100000);
                     long dt = (now - t0);
-                    log.warn().append(logPfx).append(": take() took ").append(dt)
-                        .append(" micros, with ")
-                        .append(yields).append(" yields and ").append(spins)
-                        .append(" additional spins").endl();
+                    log.warn().append(logPfx).append(": take() took ").append(dt).append(" micros, with ")
+                            .append(yields).append(" yields and ").append(spins).append(" additional spins").endl();
                 }
             }
         }

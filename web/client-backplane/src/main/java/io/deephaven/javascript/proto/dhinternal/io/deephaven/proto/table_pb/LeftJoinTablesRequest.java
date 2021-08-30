@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest",
+        namespace = JsPackage.GLOBAL)
 public class LeftJoinTablesRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -43,7 +43,7 @@ public class LeftJoinTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -78,20 +78,20 @@ public class LeftJoinTablesRequest {
 
             @JsProperty
             void setTicket(
-                LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -169,7 +169,7 @@ public class LeftJoinTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -204,20 +204,20 @@ public class LeftJoinTablesRequest {
 
             @JsProperty
             void setTicket(
-                LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -270,12 +270,12 @@ public class LeftJoinTablesRequest {
     public static native LeftJoinTablesRequest deserializeBinary(Uint8Array bytes);
 
     public static native LeftJoinTablesRequest deserializeBinaryFromReader(
-        LeftJoinTablesRequest message, Object reader);
+            LeftJoinTablesRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(LeftJoinTablesRequest message, Object writer);
 
     public static native LeftJoinTablesRequest.ToObjectReturnType toObject(
-        boolean includeInstance, LeftJoinTablesRequest msg);
+            boolean includeInstance, LeftJoinTablesRequest msg);
 
     public native String addColumnsToAdd(String value, double index);
 

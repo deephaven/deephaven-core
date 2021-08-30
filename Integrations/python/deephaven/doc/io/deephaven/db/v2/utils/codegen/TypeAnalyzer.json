@@ -5,6 +5,6 @@
   "wrapWithCastIfNecessary": "A DhFormulaColumn will unbox the result of any formula that returns a boxed type (except Boolean). If the formula\n returns null, this could trigger a NullPointerException.\n\n:param formulaString: (java.lang.String) - The formula to potentially wrap with a cast function\n:return: java.lang.String"
  },
  "path": "io.deephaven.db.v2.utils.codegen.TypeAnalyzer",
- "text": "When type is either a primitive type or a boxed type, dbPrimitiveType is the type used by\n the DB to represent it -- that is, Boolean for either boolean or Boolean results, but the primitive version of\n all other primitive/boxed types. For all other types (e.g. misc Objects), dbPrimitiveType is null.",
+ "text": "When type is either a primitive type or a boxed type, dbPrimitiveType is the type used by the DB to\n represent it -- that is, Boolean for either boolean or Boolean results, but the primitive version of all other\n primitive/boxed types. For all other types (e.g. misc Objects), dbPrimitiveType is null.",
  "typeName": "class"
 }

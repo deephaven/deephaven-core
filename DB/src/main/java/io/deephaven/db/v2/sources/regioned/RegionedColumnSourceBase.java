@@ -10,27 +10,23 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Partial implementation of {@link RegionedColumnSource} for array-backed and delegating
- * implementations to extend.
+ * Partial implementation of {@link RegionedColumnSource} for array-backed and delegating implementations to extend.
  */
 abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>>
-    extends AbstractDeferredGroupingColumnSource<DATA_TYPE>
-    implements RegionedPageStore<Attributes.Values, ATTR, REGION_TYPE>,
-    RegionedColumnSource<DATA_TYPE> {
+        extends AbstractDeferredGroupingColumnSource<DATA_TYPE>
+        implements RegionedPageStore<Attributes.Values, ATTR, REGION_TYPE>, RegionedColumnSource<DATA_TYPE> {
 
     static final Parameters PARAMETERS;
     static {
-        PARAMETERS = new RegionedPageStore.Parameters(Long.MAX_VALUE, MAXIMUM_REGION_COUNT,
-            REGION_CAPACITY_IN_ELEMENTS);
-        Assert.eq(PARAMETERS.regionMask, "parameters.regionMask",
-            ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
-            "ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK");
-        Assert.eq(PARAMETERS.regionMaskNumBits, "parameters.regionMaskNumBits",
-            SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS, "SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS");
+        PARAMETERS =
+                new RegionedPageStore.Parameters(Long.MAX_VALUE, MAXIMUM_REGION_COUNT, REGION_CAPACITY_IN_ELEMENTS);
+        Assert.eq(PARAMETERS.regionMask, "parameters.regionMask", ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                "ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK");
+        Assert.eq(PARAMETERS.regionMaskNumBits, "parameters.regionMaskNumBits", SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS,
+                "SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS");
     }
 
-    RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type,
-        @Nullable final Class<?> componentType) {
+    RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type, @Nullable final Class<?> componentType) {
         super(type, componentType);
     }
 
@@ -47,9 +43,8 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Value
      * Use the more efficient fill chunk implementation, rather than the default which uses get().
      */
     @Override
-    public void fillChunk(@NotNull FillContext context,
-        @NotNull WritableChunk<? super Attributes.Values> destination,
-        @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination,
+            @NotNull OrderedKeys orderedKeys) {
         RegionedPageStore.super.fillChunk(context, destination, orderedKeys);
     }
 
@@ -58,8 +53,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Value
      */
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
-        @NotNull WritableChunk<? super Attributes.Values> destination,
-        @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
         fillChunk(context, destination, orderedKeys);
     }
 

@@ -34,17 +34,15 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final Index index = parent.getIndex();
-        final Map<String, ColumnSource> resultColumns = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
         final RedirectionIndex redirectionIndex = new WrappedIndexRedirectionIndexImpl(index);
 
         final long size = usePrev ? index.sizePrev() : index.size();
 
-        for (Map.Entry<String, ColumnSource> entry : parent.getColumnSourceMap().entrySet()) {
-            // noinspection unchecked
-            resultColumns.put(entry.getKey(),
-                new ReadOnlyRedirectedColumnSource(redirectionIndex, entry.getValue()));
+        for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
+            resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, entry.getValue()));
         }
 
         resultTable = new QueryTable(Index.FACTORY.getFlatIndex(size), resultColumns);
@@ -53,18 +51,17 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
         ShiftAwareListener resultListener = null;
         if (parent.isRefreshing()) {
-            resultListener =
-                new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
-                    @Override
-                    public void onUpdate(Update upstream) {
-                        FlattenOperation.this.onUpdate(upstream);
-                    }
-                };
+            resultListener = new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
+                @Override
+                public void onUpdate(Update upstream) {
+                    FlattenOperation.this.onUpdate(upstream);
+                }
+            };
         }
 
         prevSize = size;
         mcsTransformer = parent.newModifiedColumnSetIdentityTransformer(resultTable);
-        return new Result(resultTable, resultListener);
+        return new Result<>(resultTable, resultListener);
     }
 
     private final QueryTable parent;
@@ -78,8 +75,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private void onUpdate(final ShiftAwareListener.Update upstream) {
-        // Note: we can safely ignore shifted since shifts do not change data AND shifts are not
-        // allowed to reorder.
+        // Note: we can safely ignore shifted since shifts do not change data AND shifts are not allowed to reorder.
         final Index index = parent.getIndex();
         final long newSize = index.size();
 
@@ -113,10 +109,8 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         };
 
         // Create our range iterators and prime them.
-        final MutableObject<Index.RangeIterator> rmIt =
-            new MutableObject<>(downstream.removed.rangeIterator());
-        final MutableObject<Index.RangeIterator> addIt =
-            new MutableObject<>(downstream.added.rangeIterator());
+        final MutableObject<Index.RangeIterator> rmIt = new MutableObject<>(downstream.removed.rangeIterator());
+        final MutableObject<Index.RangeIterator> addIt = new MutableObject<>(downstream.added.rangeIterator());
         updateIt.accept(rmIt);
         updateIt.accept(addIt);
 
@@ -126,15 +120,13 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
         while (rmIt.getValue() != null || addIt.getValue() != null) {
             final long nextRm = rmIt.getValue() == null ? Index.NULL_KEY
-                : rmIt.getValue().currentRangeStart();
+                    : rmIt.getValue().currentRangeStart();
             final long nextAdd = addIt.getValue() == null ? Index.NULL_KEY
-                : addIt.getValue().currentRangeStart() - currDelta;
+                    : addIt.getValue().currentRangeStart() - currDelta;
 
             if (nextRm == nextAdd) { // note neither can be null in this case
-                final long dtRm =
-                    rmIt.getValue().currentRangeEnd() - rmIt.getValue().currentRangeStart() + 1;
-                final long dtAdd =
-                    addIt.getValue().currentRangeEnd() - addIt.getValue().currentRangeStart() + 1;
+                final long dtRm = rmIt.getValue().currentRangeEnd() - rmIt.getValue().currentRangeStart() + 1;
+                final long dtAdd = addIt.getValue().currentRangeEnd() - addIt.getValue().currentRangeStart() + 1;
 
                 // shift only if these don't cancel each other out
                 if (dtRm != dtAdd) {
@@ -145,11 +137,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
                 updateIt.accept(rmIt);
                 updateIt.accept(addIt);
-            } else if (nextAdd == Index.NULL_KEY
-                || (nextRm != Index.NULL_KEY && nextRm < nextAdd)) {
+            } else if (nextAdd == Index.NULL_KEY || (nextRm != Index.NULL_KEY && nextRm < nextAdd)) {
                 // rmIt cannot be null
-                final long dtRm =
-                    rmIt.getValue().currentRangeEnd() - rmIt.getValue().currentRangeStart() + 1;
+                final long dtRm = rmIt.getValue().currentRangeEnd() - rmIt.getValue().currentRangeStart() + 1;
 
                 outShifted.shiftRange(currMarker, nextRm - 1, currDelta);
                 currDelta -= dtRm;
@@ -157,8 +147,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
                 updateIt.accept(rmIt);
             } else {
                 // addIt cannot be null
-                final long dtAdd =
-                    addIt.getValue().currentRangeEnd() - addIt.getValue().currentRangeStart() + 1;
+                final long dtAdd = addIt.getValue().currentRangeEnd() - addIt.getValue().currentRangeStart() + 1;
 
                 outShifted.shiftRange(currMarker, nextAdd - 1, currDelta);
                 currDelta += dtAdd;

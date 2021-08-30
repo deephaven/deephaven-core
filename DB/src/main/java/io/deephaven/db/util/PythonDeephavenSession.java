@@ -30,21 +30,19 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.deephaven.db.util.PythonScopeJpyImpl.CallableWrapper;
-
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
  *
- * This is used for persistent queries or the DB console; Python code running remotely uses
- * WorkerPythonEnvironment for it's supporting structures.
+ * This is used for persistent queries or the DB console; Python code running remotely uses WorkerPythonEnvironment for
+ * it's supporting structures.
  */
 public class PythonDeephavenSession extends AbstractScriptSession implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(PythonDeephavenSession.class);
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
-        .getProperty("PythonDeephavenSession.defaultScriptPath")
-        .replace("<devroot>", Configuration.getInstance().getDevRootPath())
-        .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
+            .getProperty("PythonDeephavenSession.defaultScriptPath")
+            .replace("<devroot>", Configuration.getInstance().getDevRootPath())
+            .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
 
     public static String SCRIPT_TYPE = "Python";
 
@@ -59,19 +57,20 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * @throws IOException if an IO error occurs running initialization scripts
      */
     public PythonDeephavenSession(boolean runInitScripts) throws IOException {
-        this(runInitScripts, false);
+        this(null, runInitScripts, false);
     }
 
     /**
      * Create a Python ScriptSession.
      *
+     * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @throws IOException if an IO error occurs running initialization scripts
      */
-    public PythonDeephavenSession(boolean runInitScripts, boolean isDefaultScriptSession)
-        throws IOException {
-        super(isDefaultScriptSession);
+    public PythonDeephavenSession(final Listener listener, boolean runInitScripts, boolean isDefaultScriptSession)
+            throws IOException {
+        super(listener, isDefaultScriptSession);
 
         JpyInit.init(log);
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
@@ -88,8 +87,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
          * And now the user-defined initialization scripts, if any.
          */
         if (runInitScripts) {
-            String[] scripts = Configuration.getInstance()
-                .getProperty("PythonDeephavenSession.initScripts").split(",");
+            String[] scripts = Configuration.getInstance().getProperty("PythonDeephavenSession.initScripts").split(",");
 
             for (String script : scripts) {
                 runScript(script);
@@ -106,11 +104,11 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     /**
-     * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the
-     * scope, such as an IPython kernel session.
+     * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the scope, such as an
+     * IPython kernel session.
      */
     public PythonDeephavenSession(PythonScope<?> scope) {
-        super(false);
+        super(null, false);
 
         this.scope = scope;
         this.evaluator = null;
@@ -125,8 +123,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     /**
-     * Finds the specified script; and runs it as a file, or if it is a stream writes it to a
-     * temporary file in order to run it.
+     * Finds the specified script; and runs it as a file, or if it is a stream writes it to a temporary file in order to
+     * run it.
      * 
      * @param script the script's name
      * @throws IOException if an error occurs reading or writing the script
@@ -153,16 +151,15 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         return scope
-            .getValue(name)
-            .orElseThrow(
-                () -> new QueryScope.MissingVariableException("No global variable for: " + name));
+                .getValue(name)
+                .orElseThrow(() -> new QueryScope.MissingVariableException("No global variable for: " + name));
     }
 
     @Override
     public <T> T getVariable(String name, T defaultValue) {
         return scope
-            .<T>getValueUnchecked(name)
-            .orElse(defaultValue);
+                .<T>getValueUnchecked(name)
+                .orElse(defaultValue);
     }
 
     @Override
@@ -173,8 +170,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
                 evaluator.evalScript(command);
             });
         } catch (InterruptedException e) {
-            throw new QueryCancellationException(
-                e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
+            throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
     }
 
@@ -195,6 +191,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     public void setVariable(String name, Object value) {
+        super.setVariable(name, value);
         PyDictWrapper globals = scope.globals();
         if (value == null) {
             try {
@@ -214,7 +211,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-        ScriptPathLoaderState scriptLoaderState) {}
+            ScriptPathLoaderState scriptLoaderState) {}
 
     @Override
     public void onApplicationInitializationEnd() {}
@@ -230,8 +227,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
         return true;
     }
 
-    // TODO core#41 move this logic into the python console instance or scope like this - can go
-    // further and move isWidget too
+    // TODO core#41 move this logic into the python console instance or scope like this - can go further and move
+    // isWidget too
     @Override
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {

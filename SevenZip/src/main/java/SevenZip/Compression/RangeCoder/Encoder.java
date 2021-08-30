@@ -111,13 +111,12 @@ public class Encoder {
             int end = 1 << (kNumBits - i);
             for (int j = start; j < end; j++)
                 ProbPrices[j] = (i << kNumBitPriceShiftBits) +
-                    (((end - j) << kNumBitPriceShiftBits) >>> (kNumBits - i - 1));
+                        (((end - j) << kNumBitPriceShiftBits) >>> (kNumBits - i - 1));
         }
     }
 
     static public int GetPrice(int Prob, int symbol) {
-        return ProbPrices[(((Prob - symbol) ^ ((-symbol)))
-            & (kBitModelTotal - 1)) >>> kNumMoveReducingBits];
+        return ProbPrices[(((Prob - symbol) ^ ((-symbol))) & (kBitModelTotal - 1)) >>> kNumMoveReducingBits];
     }
 
     static public int GetPrice0(int Prob) {

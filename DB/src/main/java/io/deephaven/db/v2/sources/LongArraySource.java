@@ -30,7 +30,7 @@ public class LongArraySource extends AbstractLongArraySource<Long> {
     }
 
     @Override
-    public void copy(ColumnSource<Long> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getLong(sourceKey));
     }
 }

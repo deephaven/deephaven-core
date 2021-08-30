@@ -22,8 +22,8 @@ import org.apache.log4j.spi.LoggingEvent;
 
 // --------------------------------------------------------------------
 /**
- * Temporarily intercepts logging for a given {@link Logger} and saves all logged messages to memory
- * so that a unit test can verify the correct messages were logged.
+ * Temporarily intercepts logging for a given {@link Logger} and saves all logged messages to memory so that a unit test
+ * can verify the correct messages were logged.
  * <P>
  * Usage:
  * <LI>To start capturing (in {@link TestCase#setUp}):
@@ -126,8 +126,7 @@ public class LoggingRecorder {
 
     // ------------------------------------------------------------
     public List<LoggingEvent> getReportAndReset() {
-        LoggingEvent[] loggingEvents =
-            m_loggingEvents.toArray(new LoggingEvent[m_loggingEvents.size()]);
+        LoggingEvent[] loggingEvents = m_loggingEvents.toArray(new LoggingEvent[m_loggingEvents.size()]);
         m_loggingEvents.clear();
         return Arrays.asList(loggingEvents);
     }
@@ -162,9 +161,8 @@ public class LoggingRecorder {
             checkedMessage.checkMessage(message.getRenderedMessage());
 
             if (null != checkedMessage.getDetailFragment()) {
-                SimpleTestSupport.assertStringContains(
-                    message.getThrowableInformation().getThrowable().toString(),
-                    checkedMessage.getDetailFragment());
+                SimpleTestSupport.assertStringContains(message.getThrowableInformation().getThrowable().toString(),
+                        checkedMessage.getDetailFragment());
             }
             junit.framework.Assert.assertEquals(checkedMessage.getLevel(), message.getLevel());
         }
@@ -187,11 +185,10 @@ public class LoggingRecorder {
 
                     if (null != checkedMessage.getDetailFragment()) {
                         SimpleTestSupport.assertStringContains(
-                            message.getThrowableInformation().getThrowable().toString(),
-                            checkedMessage.getDetailFragment());
+                                message.getThrowableInformation().getThrowable().toString(),
+                                checkedMessage.getDetailFragment());
                     }
-                    junit.framework.Assert.assertEquals(checkedMessage.getLevel(),
-                        message.getLevel());
+                    junit.framework.Assert.assertEquals(checkedMessage.getLevel(), message.getLevel());
                     found = true;
                     break;
                 } catch (ComparisonFailure e) {
@@ -199,8 +196,7 @@ public class LoggingRecorder {
                 }
             }
             if (!found) {
-                junit.framework.Assert
-                    .fail("Could not find \"" + checkedMessage.getMessageFragment() + "\"");
+                junit.framework.Assert.fail("Could not find \"" + checkedMessage.getMessageFragment() + "\"");
             }
         }
     }
@@ -210,9 +206,8 @@ public class LoggingRecorder {
         for (LoggingEvent message : messages) {
             checkedMessage.checkMessage(message.getRenderedMessage());
             if (null != checkedMessage.getDetailFragment()) {
-                SimpleTestSupport.assertStringContains(
-                    message.getThrowableInformation().getThrowable().toString(),
-                    checkedMessage.getDetailFragment());
+                SimpleTestSupport.assertStringContains(message.getThrowableInformation().getThrowable().toString(),
+                        checkedMessage.getDetailFragment());
             }
             junit.framework.Assert.assertEquals(checkedMessage.getLevel(), message.getLevel());
         }
@@ -221,11 +216,11 @@ public class LoggingRecorder {
     // ------------------------------------------------------------
     private static void dumpLogMessages(List<LoggingEvent> messages) {
         for (LoggingEvent message : messages) {
-            System.err.println("Possibly unexpected log message: [" + message.getLevel() + "] "
-                + message.getRenderedMessage()
-                + (null != message.getThrowableInformation()
-                    ? " (" + message.getThrowableInformation().getThrowable().toString() + ")"
-                    : ""));
+            System.err.println(
+                    "Possibly unexpected log message: [" + message.getLevel() + "] " + message.getRenderedMessage()
+                            + (null != message.getThrowableInformation()
+                                    ? " (" + message.getThrowableInformation().getThrowable().toString() + ")"
+                                    : ""));
         }
     }
 }

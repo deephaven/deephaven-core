@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.CancelCommandRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.CancelCommandRequest",
+        namespace = JsPackage.GLOBAL)
 public class CancelCommandRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class CancelCommandRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class CancelCommandRequest {
 
             @JsProperty
             void setTicket(
-                CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -100,7 +100,7 @@ public class CancelCommandRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -135,20 +135,20 @@ public class CancelCommandRequest {
 
             @JsProperty
             void setTicket(
-                CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -173,12 +173,12 @@ public class CancelCommandRequest {
     public static native CancelCommandRequest deserializeBinary(Uint8Array bytes);
 
     public static native CancelCommandRequest deserializeBinaryFromReader(
-        CancelCommandRequest message, Object reader);
+            CancelCommandRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(CancelCommandRequest message, Object writer);
 
     public static native CancelCommandRequest.ToObjectReturnType toObject(
-        boolean includeInstance, CancelCommandRequest msg);
+            boolean includeInstance, CancelCommandRequest msg);
 
     public native void clearCommandId();
 

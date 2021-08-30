@@ -83,7 +83,7 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     }
 
     @Override
-    public final void copy(ColumnSource<Integer> sourceColumn, long sourceKey, long destKey) {
+    public final void copy(ColumnSource<? extends Integer> sourceColumn, long sourceKey, long destKey) {
         set(sourceColumn.get(sourceKey));
     }
 
@@ -93,7 +93,7 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final IntChunk chunk = src.asIntChunk();
+        final IntChunk<? extends Attributes.Values> chunk = src.asIntChunk();
         set(chunk.get(0));
     }
 
@@ -103,7 +103,7 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final IntChunk chunk = src.asIntChunk();
+        final IntChunk<? extends Attributes.Values> chunk = src.asIntChunk();
         set(chunk.get(0));
     }
 }

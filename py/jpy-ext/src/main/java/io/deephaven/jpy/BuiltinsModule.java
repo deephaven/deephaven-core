@@ -43,9 +43,8 @@ public interface BuiltinsModule extends AutoCloseable {
     PyObject dict();
 
     /**
-     * Get the length (the number of items) of an object. The argument may be a sequence (such as a
-     * string, bytes, tuple, list, or range) or a collection (such as a dictionary, set, or frozen
-     * set).
+     * Get the length (the number of items) of an object. The argument may be a sequence (such as a string, bytes,
+     * tuple, list, or range) or a collection (such as a dictionary, set, or frozen set).
      *
      * @param pyObject the python object
      * @return the length (the number of items) of an object

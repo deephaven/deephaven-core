@@ -12,7 +12,7 @@ public class AvgStateFactory extends IterativeOperatorStateFactory {
 
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
-        boolean exposeInternalColumns) {
+            boolean exposeInternalColumns) {
         return getAvgChunked(type, name, exposeInternalColumns);
     }
 

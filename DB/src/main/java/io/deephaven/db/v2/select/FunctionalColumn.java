@@ -40,42 +40,41 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @NotNull
     private final BiFunction<Long, S, D> function;
     @NotNull
-    private final Class componentType;
+    private final Class<?> componentType;
 
     private ColumnSource<S> sourceColumnSource;
 
     public FunctionalColumn(@NotNull String sourceName,
-        @NotNull Class<S> sourceDataType,
-        @NotNull String destName,
-        @NotNull Class<D> destDataType,
-        @NotNull Function<S, D> function) {
+            @NotNull Class<S> sourceDataType,
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            @NotNull Function<S, D> function) {
         this(sourceName, sourceDataType, destName, destDataType, (l, v) -> function.apply(v));
     }
 
     public FunctionalColumn(@NotNull String sourceName,
-        @NotNull Class<S> sourceDataType,
-        @NotNull String destName,
-        @NotNull Class<D> destDataType,
-        @NotNull Class componentType,
-        @NotNull Function<S, D> function) {
-        this(sourceName, sourceDataType, destName, destDataType, componentType,
-            (l, v) -> function.apply(v));
+            @NotNull Class<S> sourceDataType,
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            @NotNull Class<?> componentType,
+            @NotNull Function<S, D> function) {
+        this(sourceName, sourceDataType, destName, destDataType, componentType, (l, v) -> function.apply(v));
     }
 
     public FunctionalColumn(@NotNull String sourceName,
-        @NotNull Class<S> sourceDataType,
-        @NotNull String destName,
-        @NotNull Class<D> destDataType,
-        @NotNull BiFunction<Long, S, D> function) {
+            @NotNull Class<S> sourceDataType,
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            @NotNull BiFunction<Long, S, D> function) {
         this(sourceName, sourceDataType, destName, destDataType, Object.class, function);
     }
 
     public FunctionalColumn(@NotNull String sourceName,
-        @NotNull Class<S> sourceDataType,
-        @NotNull String destName,
-        @NotNull Class<D> destDataType,
-        @NotNull Class componentType,
-        @NotNull BiFunction<Long, S, D> function) {
+            @NotNull Class<S> sourceDataType,
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            @NotNull Class<?> componentType,
+            @NotNull BiFunction<Long, S, D> function) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
@@ -96,18 +95,15 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index,
-        Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         // noinspection unchecked
-        final ColumnSource<S> localSourceColumnSource = columnsOfInterest.get(sourceName);
+        final ColumnSource<S> localSourceColumnSource = (ColumnSource<S>) columnsOfInterest.get(sourceName);
         if (localSourceColumnSource == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
         }
-        if (!(sourceDataType.isAssignableFrom(localSourceColumnSource.getType())
-            || sourceDataType.isAssignableFrom(io.deephaven.util.type.TypeUtils
-                .getBoxedType(localSourceColumnSource.getType())))) {
-            throw new IllegalArgumentException(
-                "Source column " + sourceName + " has wrong data type "
+        if (!(sourceDataType.isAssignableFrom(localSourceColumnSource.getType()) || sourceDataType
+                .isAssignableFrom(io.deephaven.util.type.TypeUtils.getBoxedType(localSourceColumnSource.getType())))) {
+            throw new IllegalArgumentException("Source column " + sourceName + " has wrong data type "
                     + localSourceColumnSource.getType() + ", expected " + sourceDataType);
         }
         // noinspection unchecked
@@ -116,24 +112,22 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap) {
+    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         // noinspection unchecked
-        final ColumnDefinition<S> sourceColumnDefinition = columnDefinitionMap.get(sourceName);
+        final ColumnDefinition<S> sourceColumnDefinition = (ColumnDefinition<S>) columnDefinitionMap.get(sourceName);
         if (sourceColumnDefinition == null) {
             throw new NoSuchColumnException(columnDefinitionMap.keySet(), sourceName);
         }
         if (!(sourceDataType.isAssignableFrom(sourceColumnDefinition.getDataType())
-            || sourceDataType
-                .isAssignableFrom(TypeUtils.getBoxedType(sourceColumnDefinition.getDataType())))) {
-            throw new IllegalArgumentException(
-                "Source column " + sourceName + " has wrong data type "
+                || sourceDataType.isAssignableFrom(TypeUtils.getBoxedType(sourceColumnDefinition.getDataType())))) {
+            throw new IllegalArgumentException("Source column " + sourceName + " has wrong data type "
                     + sourceColumnDefinition.getDataType() + ", expected " + sourceDataType);
         }
         return getColumns();
     }
 
     @Override
-    public Class getReturnedType() {
+    public Class<?> getReturnedType() {
         return destDataType;
     }
 
@@ -149,7 +143,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getDataView() {
+    public ColumnSource<D> getDataView() {
         return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
             @Override
             public Object getPrev(long key) {
@@ -174,16 +168,16 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
             @Override
             public void fillChunk(@NotNull FillContext fillContext,
-                @NotNull final WritableChunk<? super Values> destination,
-                @NotNull final OrderedKeys orderedKeys) {
+                    @NotNull final WritableChunk<? super Values> destination,
+                    @NotNull final OrderedKeys orderedKeys) {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, orderedKeys, destination);
             }
 
             @Override
             public void fillPrevChunk(@NotNull FillContext fillContext,
-                @NotNull final WritableChunk<? super Values> destination,
-                @NotNull final OrderedKeys orderedKeys) {
+                    @NotNull final WritableChunk<? super Values> destination,
+                    @NotNull final OrderedKeys orderedKeys) {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, orderedKeys, destination);
             }
@@ -200,7 +194,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getLazyView() {
+    public ColumnSource<?> getLazyView() {
         // TODO: memoize
         return getDataView();
     }
@@ -216,7 +210,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public WritableSource newDestInstance(long size) {
+    public WritableSource<?> newDestInstance(long size) {
         throw new UnsupportedOperationException();
     }
 

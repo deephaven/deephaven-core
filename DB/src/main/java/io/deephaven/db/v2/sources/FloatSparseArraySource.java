@@ -86,7 +86,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         final int size = index.intSize();
         final float[] data = (float[])new float[size];
         // noinspection unchecked
-        final ColumnSource<Float> reinterpreted = reinterpretForSerialization();
+        final ColumnSource<Float> reinterpreted = (ColumnSource<Float>) reinterpretForSerialization();
         try (final FillContext context = reinterpreted.makeFillContext(size);
              final ResettableWritableFloatChunk<Values> destChunk = ResettableWritableFloatChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
@@ -104,7 +104,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         final float[] data = (float[])in.readObject();
         final FloatChunk<Values> srcChunk = FloatChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Float> reinterpreted = reinterpretForSerialization();
+        final WritableSource<Float> reinterpreted = (WritableSource<Float>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, index);
         }
@@ -169,7 +169,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
 
     // region copy method
     @Override
-    public void copy(ColumnSource<Float> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends Float> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.getFloat(sourceKey));
     }
     // endregion copy method
@@ -206,6 +206,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
     // endregion primitive get
 
     // region allocateNullFilledBlock
+    @SuppressWarnings("SameParameterValue")
     final float [] allocateNullFilledBlock(int size) {
         final float [] newBlock = new float[size];
         Arrays.fill(newBlock, NULL_FLOAT);
@@ -390,7 +391,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
 
     /**
     * Decides whether to record the previous value.
-    * @param key
+    * @param key the index to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -545,7 +546,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
 
     @Override
     void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
-        final WritableFloatChunk floatChunk = dest.asWritableFloatChunk();
+        final WritableFloatChunk<? super Values> floatChunk = dest.asWritableFloatChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == Index.NULL_KEY) {

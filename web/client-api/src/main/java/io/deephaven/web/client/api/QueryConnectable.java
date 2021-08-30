@@ -30,11 +30,10 @@ import java.util.function.Supplier;
 import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
 
 /**
- * JS-exposed supertype handling details about connecting to a deephaven query worker. Wraps the
- * WorkerConnection instance, which manages the connection to the API server.
+ * JS-exposed supertype handling details about connecting to a deephaven query worker. Wraps the WorkerConnection
+ * instance, which manages the connection to the API server.
  */
-public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
-    extends HasEventHandling {
+public abstract class QueryConnectable<Self extends QueryConnectable<Self>> extends HasEventHandling {
     public interface AuthTokenPromiseSupplier extends Supplier<Promise<ConnectToken>> {
         default AuthTokenPromiseSupplier withInitialToken(ConnectToken initialToken) {
             AuthTokenPromiseSupplier original = this;
@@ -55,8 +54,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
         static AuthTokenPromiseSupplier oneShot(ConnectToken initialToken) {
             // noinspection unchecked
             return ((AuthTokenPromiseSupplier) () -> (Promise) Promise
-                .reject("Only one token provided, cannot reconnect"))
-                    .withInitialToken(initialToken);
+                    .reject("Only one token provided, cannot reconnect"))
+                            .withInitialToken(initialToken);
         }
     }
 
@@ -88,9 +87,9 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
         CustomEventInit event = CustomEventInit.create();
         event.setDetail(JsPropertyMap.of(
-            "status", status.getCode(),
-            "details", status.getDetails(),
-            "metadata", status.getMetadata()));
+                "status", status.getCode(),
+                "details", status.getDetails(),
+                "metadata", status.getMetadata()));
         fireEvent(HACK_CONNECTION_FAILURE, event);
     }
 
@@ -109,8 +108,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
         }
 
         return new Promise<>((resolve, reject) -> addEventListenerOneShot(
-            EventPair.of(EVENT_CONNECT, e -> resolve.onInvoke((Void) null)),
-            EventPair.of(EVENT_DISCONNECT, e -> reject.onInvoke("Connection disconnected"))));
+                EventPair.of(EVENT_CONNECT, e -> resolve.onInvoke((Void) null)),
+                EventPair.of(EVENT_DISCONNECT, e -> reject.onInvoke("Connection disconnected"))));
     }
 
     @JsIgnore
@@ -150,7 +149,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
         LazyPromise<Ticket> promise = new LazyPromise<>();
         final ClientConfiguration config = connection.get().getConfig();
         final Ticket ticket = new Ticket();
-        ticket.setTicket(config.newTicket());
+        ticket.setTicket(config.newTicketRaw());
 
         final JsRunnable closer = () -> {
             boolean run = !cancelled.has(ticket);
@@ -164,8 +163,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
             StartConsoleRequest request = new StartConsoleRequest();
             request.setSessionType(type);
             request.setResultId(ticket);
-            connection.get().consoleServiceClient().startConsole(request,
-                connection.get().metadata(), callback::apply);
+            connection.get().consoleServiceClient().startConsole(request, connection.get().metadata(), callback::apply);
         })).then(result -> {
             promise.succeed(ticket);
             return null;
@@ -191,8 +189,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
     public Promise<JsArray<String>> getConsoleTypes() {
         Promise<GetConsoleTypesResponse> promise = Callbacks.grpcUnaryPromise(callback -> {
             GetConsoleTypesRequest request = new GetConsoleTypesRequest();
-            connection.get().consoleServiceClient().getConsoleTypes(request,
-                connection.get().metadata(), callback::apply);
+            connection.get().consoleServiceClient().getConsoleTypes(request, connection.get().metadata(),
+                    callback::apply);
         });
 
         return promise.then(result -> Promise.resolve(result.getConsoleTypesList()));
@@ -216,7 +214,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
                 fireEvent(EVENT_RECONNECT);
             } else {
                 DomGlobal.console.log(logPrefix()
-                    + "Query reconnected (to prevent this log message, handle the EVENT_RECONNECT event)");
+                        + "Query reconnected (to prevent this log message, handle the EVENT_RECONNECT event)");
             }
         }
     }
@@ -245,7 +243,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
             this.fireEvent(QueryConnectable.EVENT_DISCONNECT);
         } else {
             DomGlobal.console.log(logPrefix()
-                + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");
+                    + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");
         }
     }
 }

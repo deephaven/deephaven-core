@@ -5,8 +5,7 @@ import io.deephaven.db.util.liveness.LivenessArtifact;
 
 import java.io.Serializable;
 
-public abstract class SelectFilterLivenessArtifactImpl extends LivenessArtifact
-    implements SelectFilter, Serializable {
+public abstract class SelectFilterLivenessArtifactImpl extends LivenessArtifact implements SelectFilter, Serializable {
     private boolean isAutomatedFilter = false;
 
     @Override

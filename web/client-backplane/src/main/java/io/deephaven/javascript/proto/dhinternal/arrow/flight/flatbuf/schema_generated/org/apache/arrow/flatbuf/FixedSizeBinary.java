@@ -6,9 +6,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.FixedSizeBinary",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.FixedSizeBinary",
+        namespace = JsPackage.GLOBAL)
 public class FixedSizeBinary {
     public static native void addByteWidth(Builder builder, double byteWidth);
 
@@ -16,13 +16,12 @@ public class FixedSizeBinary {
 
     public static native double endFixedSizeBinary(Builder builder);
 
-    public static native FixedSizeBinary getRootAsFixedSizeBinary(ByteBuffer bb,
-        FixedSizeBinary obj);
+    public static native FixedSizeBinary getRootAsFixedSizeBinary(ByteBuffer bb, FixedSizeBinary obj);
 
     public static native FixedSizeBinary getRootAsFixedSizeBinary(ByteBuffer bb);
 
     public static native FixedSizeBinary getSizePrefixedRootAsFixedSizeBinary(
-        ByteBuffer bb, FixedSizeBinary obj);
+            ByteBuffer bb, FixedSizeBinary obj);
 
     public static native FixedSizeBinary getSizePrefixedRootAsFixedSizeBinary(ByteBuffer bb);
 

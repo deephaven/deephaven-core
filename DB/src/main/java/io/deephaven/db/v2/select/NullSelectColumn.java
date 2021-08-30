@@ -12,8 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A SelectColumn implementation that can be used to replace columns with
- * {@link NullValueColumnSource}s
+ * A SelectColumn implementation that can be used to replace columns with {@link NullValueColumnSource}s
  */
 public class NullSelectColumn<T> implements SelectColumn {
     private final String name;
@@ -30,18 +29,17 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(final Index index,
-        final Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(final Index index, final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         return Collections.emptyList();
     }
 
     @Override
-    public List<String> initDef(final Map<String, ColumnDefinition> columnDefinitionMap) {
+    public List<String> initDef(final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         return Collections.emptyList();
     }
 
     @Override
-    public Class getReturnedType() {
+    public Class<?> getReturnedType() {
         return nvcs.getType();
     }
 
@@ -57,13 +55,13 @@ public class NullSelectColumn<T> implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource getDataView() {
+    public ColumnSource<?> getDataView() {
         return nvcs;
     }
 
     @NotNull
     @Override
-    public ColumnSource getLazyView() {
+    public ColumnSource<?> getLazyView() {
         return nvcs;
     }
 
@@ -78,7 +76,7 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public WritableSource newDestInstance(final long size) {
+    public WritableSource<?> newDestInstance(final long size) {
         return SparseArrayColumnSource.getSparseMemoryColumnSource(size, nvcs.getType());
     }
 
@@ -94,7 +92,7 @@ public class NullSelectColumn<T> implements SelectColumn {
 
     @Override
     public SelectColumn copy() {
-        // noinspection unchecked
-        return new NullSelectColumn<>(getReturnedType(), nvcs.getComponentType(), name);
+        // noinspection unchecked,rawtypes
+        return new NullSelectColumn(getReturnedType(), nvcs.getComponentType(), name);
     }
 }

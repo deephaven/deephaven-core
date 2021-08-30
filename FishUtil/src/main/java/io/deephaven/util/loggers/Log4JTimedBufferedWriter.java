@@ -9,14 +9,13 @@ import java.util.*;
 
 public class Log4JTimedBufferedWriter extends BufferedWriter {
 
-    private static final ArrayList<Log4JTimedBufferedWriter> writers_ =
-        new ArrayList<Log4JTimedBufferedWriter>();
+    private static final ArrayList<Log4JTimedBufferedWriter> writers_ = new ArrayList<Log4JTimedBufferedWriter>();
 
     private static Thread thread_ = null;
     private static boolean isDone_ = false;
 
-    private static final int flushTime_ = 3000; // cannot be a property due to log4j would need
-                                                // configuration which needs log4j
+    private static final int flushTime_ = 3000; // cannot be a property due to log4j would need configuration which
+                                                // needs log4j
 
     public Log4JTimedBufferedWriter(Writer out) {
         super(out);

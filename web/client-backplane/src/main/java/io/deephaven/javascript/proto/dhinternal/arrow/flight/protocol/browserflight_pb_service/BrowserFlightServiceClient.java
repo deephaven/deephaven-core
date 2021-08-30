@@ -15,9 +15,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb_service.BrowserFlightServiceClient",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb_service.BrowserFlightServiceClient",
+        namespace = JsPackage.GLOBAL)
 public class BrowserFlightServiceClient {
     @JsFunction
     public interface NextDoExchangeCallbackFn {
@@ -48,7 +48,7 @@ public class BrowserFlightServiceClient {
         }
 
         void onInvoke(
-            BrowserFlightServiceClient.NextDoExchangeCallbackFn.P0Type p0, BrowserNextResponse p1);
+                BrowserFlightServiceClient.NextDoExchangeCallbackFn.P0Type p0, BrowserNextResponse p1);
     }
 
     @JsFunction
@@ -80,8 +80,8 @@ public class BrowserFlightServiceClient {
         }
 
         void onInvoke(
-            BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackFn.P0Type p0,
-            BrowserNextResponse p1);
+                BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackFn.P0Type p0,
+                BrowserNextResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -140,8 +140,7 @@ public class BrowserFlightServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(BrowserFlightServiceClient.NextDoPutCallbackFn.P0Type p0,
-            BrowserNextResponse p1);
+        void onInvoke(BrowserFlightServiceClient.NextDoPutCallbackFn.P0Type p0, BrowserNextResponse p1);
     }
 
     @JsFunction
@@ -173,8 +172,8 @@ public class BrowserFlightServiceClient {
         }
 
         void onInvoke(
-            BrowserFlightServiceClient.NextDoPutMetadata_or_callbackFn.P0Type p0,
-            BrowserNextResponse p1);
+                BrowserFlightServiceClient.NextDoPutMetadata_or_callbackFn.P0Type p0,
+                BrowserNextResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -234,7 +233,7 @@ public class BrowserFlightServiceClient {
         }
 
         void onInvoke(
-            BrowserFlightServiceClient.NextHandshakeCallbackFn.P0Type p0, BrowserNextResponse p1);
+                BrowserFlightServiceClient.NextHandshakeCallbackFn.P0Type p0, BrowserNextResponse p1);
     }
 
     @JsFunction
@@ -266,8 +265,8 @@ public class BrowserFlightServiceClient {
         }
 
         void onInvoke(
-            BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackFn.P0Type p0,
-            BrowserNextResponse p1);
+                BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackFn.P0Type p0,
+                BrowserNextResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -306,172 +305,172 @@ public class BrowserFlightServiceClient {
 
     @JsOverlay
     public final UnaryResponse nextDoExchange(
-        FlightData requestMessage,
-        BrowserHeaders metadata_or_callback,
-        BrowserFlightServiceClient.NextDoExchangeCallbackFn callback) {
+            FlightData requestMessage,
+            BrowserHeaders metadata_or_callback,
+            BrowserFlightServiceClient.NextDoExchangeCallbackFn callback) {
         return nextDoExchange(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse nextDoExchange(
-        FlightData requestMessage, BrowserHeaders metadata_or_callback) {
+            FlightData requestMessage, BrowserHeaders metadata_or_callback) {
         return nextDoExchange(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse nextDoExchange(
-        FlightData requestMessage,
-        BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackFn metadata_or_callback,
-        BrowserFlightServiceClient.NextDoExchangeCallbackFn callback) {
+            FlightData requestMessage,
+            BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackFn metadata_or_callback,
+            BrowserFlightServiceClient.NextDoExchangeCallbackFn callback) {
         return nextDoExchange(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse nextDoExchange(
-        FlightData requestMessage,
-        BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackFn metadata_or_callback) {
+            FlightData requestMessage,
+            BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackFn metadata_or_callback) {
         return nextDoExchange(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse nextDoExchange(
-        FlightData requestMessage,
-        BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType metadata_or_callback,
-        BrowserFlightServiceClient.NextDoExchangeCallbackFn callback);
+            FlightData requestMessage,
+            BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType metadata_or_callback,
+            BrowserFlightServiceClient.NextDoExchangeCallbackFn callback);
 
     public native UnaryResponse nextDoExchange(
-        FlightData requestMessage,
-        BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType metadata_or_callback);
+            FlightData requestMessage,
+            BrowserFlightServiceClient.NextDoExchangeMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse nextDoPut(
-        FlightData requestMessage,
-        BrowserHeaders metadata_or_callback,
-        BrowserFlightServiceClient.NextDoPutCallbackFn callback) {
+            FlightData requestMessage,
+            BrowserHeaders metadata_or_callback,
+            BrowserFlightServiceClient.NextDoPutCallbackFn callback) {
         return nextDoPut(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse nextDoPut(
-        FlightData requestMessage, BrowserHeaders metadata_or_callback) {
+            FlightData requestMessage, BrowserHeaders metadata_or_callback) {
         return nextDoPut(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse nextDoPut(
-        FlightData requestMessage,
-        BrowserFlightServiceClient.NextDoPutMetadata_or_callbackFn metadata_or_callback,
-        BrowserFlightServiceClient.NextDoPutCallbackFn callback) {
+            FlightData requestMessage,
+            BrowserFlightServiceClient.NextDoPutMetadata_or_callbackFn metadata_or_callback,
+            BrowserFlightServiceClient.NextDoPutCallbackFn callback) {
         return nextDoPut(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse nextDoPut(
-        FlightData requestMessage,
-        BrowserFlightServiceClient.NextDoPutMetadata_or_callbackFn metadata_or_callback) {
+            FlightData requestMessage,
+            BrowserFlightServiceClient.NextDoPutMetadata_or_callbackFn metadata_or_callback) {
         return nextDoPut(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse nextDoPut(
-        FlightData requestMessage,
-        BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType metadata_or_callback,
-        BrowserFlightServiceClient.NextDoPutCallbackFn callback);
+            FlightData requestMessage,
+            BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType metadata_or_callback,
+            BrowserFlightServiceClient.NextDoPutCallbackFn callback);
 
     public native UnaryResponse nextDoPut(
-        FlightData requestMessage,
-        BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType metadata_or_callback);
+            FlightData requestMessage,
+            BrowserFlightServiceClient.NextDoPutMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse nextHandshake(
-        HandshakeRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        BrowserFlightServiceClient.NextHandshakeCallbackFn callback) {
+            HandshakeRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            BrowserFlightServiceClient.NextHandshakeCallbackFn callback) {
         return nextHandshake(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse nextHandshake(
-        HandshakeRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            HandshakeRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return nextHandshake(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse nextHandshake(
-        HandshakeRequest requestMessage,
-        BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackFn metadata_or_callback,
-        BrowserFlightServiceClient.NextHandshakeCallbackFn callback) {
+            HandshakeRequest requestMessage,
+            BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackFn metadata_or_callback,
+            BrowserFlightServiceClient.NextHandshakeCallbackFn callback) {
         return nextHandshake(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse nextHandshake(
-        HandshakeRequest requestMessage,
-        BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackFn metadata_or_callback) {
+            HandshakeRequest requestMessage,
+            BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackFn metadata_or_callback) {
         return nextHandshake(
-            requestMessage,
-            Js.<BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse nextHandshake(
-        HandshakeRequest requestMessage,
-        BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType metadata_or_callback,
-        BrowserFlightServiceClient.NextHandshakeCallbackFn callback);
+            HandshakeRequest requestMessage,
+            BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType metadata_or_callback,
+            BrowserFlightServiceClient.NextHandshakeCallbackFn callback);
 
     public native UnaryResponse nextHandshake(
-        HandshakeRequest requestMessage,
-        BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType metadata_or_callback);
+            HandshakeRequest requestMessage,
+            BrowserFlightServiceClient.NextHandshakeMetadata_or_callbackUnionType metadata_or_callback);
 
     public native ResponseStream<FlightData> openDoExchange(
-        FlightData requestMessage, BrowserHeaders metadata);
+            FlightData requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<FlightData> openDoExchange(FlightData requestMessage);
 
     public native ResponseStream<PutResult> openDoPut(
-        FlightData requestMessage, BrowserHeaders metadata);
+            FlightData requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<PutResult> openDoPut(FlightData requestMessage);
 
     public native ResponseStream<HandshakeResponse> openHandshake(
-        HandshakeRequest requestMessage, BrowserHeaders metadata);
+            HandshakeRequest requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<HandshakeResponse> openHandshake(HandshakeRequest requestMessage);
 }

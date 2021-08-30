@@ -5,15 +5,15 @@
   "currentState": "Get the current clock state.\n\n:return: io.deephaven.db.v2.sources.LogicalClock.State",
   "currentStep": "Get the current Step of the clock.\n\n:return: long",
   "currentValue": "Get the current value of the clock.\n\n:return: long",
-  "ensureUpdateCycleCompleted": "After we complete a table refresh, we must ensure that the logical clock is idle.\n\n The only valid possibilities are (1) we have completed the cycle, in which case we return; or (2) we\n have terminated the cycle early and have the same value as at the start of our updating cycle, in which case\n we complete the cycle.\nIf our clock is any other value; then it was changed out from under us and we throw an exception.\n\n:param updatingCycleValue: (long) - the clock value at the end of startUpdateCycle()",
+  "ensureUpdateCycleCompleted": "After we complete a table refresh, we must ensure that the logical clock is idle.\n\n \n The only valid possibilities are (1) we have completed the cycle, in which case we return; or (2) we have\n terminated the cycle early and have the same value as at the start of our updating cycle, in which case we\n complete the cycle.\n \n\n If our clock is any other value; then it was changed out from under us and we throw an exception.\n \n\n:param updatingCycleValue: (long) - the clock value at the end of startUpdateCycle()",
   "getState": "Get the LogicalClock.State of the LogicalClock for a particular clock value.\n\n:param value: (long) - The clock value\n:return: (io.deephaven.db.v2.sources.LogicalClock.State) The clock state associated with the input value",
-  "getStep": "Get the clock step for the input clock value.  The step increments one time for\n each complete start - end cycle.\n\n:param value: (long) - The clock value to get the step for\n:return: (long) The clock step associated with value",
+  "getStep": "Get the clock step for the input clock value. The step increments one time for each complete\n start - end cycle.\n\n:param value: (long) - The clock value to get the step for\n:return: (long) The clock step associated with value",
   "resetForUnitTests": "Reset the clock to its initial state, in order to ensure that unit tests proceed cleanly.",
   "startUpdateCycle": "Increment the current value and set the clock state to updating.\n\n:return: long",
   "valueOf": "Returns the enum constant of this type with the specified name.\nThe string must match exactly an identifier used to declare an\nenum constant in this type.  (Extraneous whitespace characters are \nnot permitted.)\n\n:param name: (java.lang.String) - the name of the enum constant to be returned.\n:return: (io.deephaven.db.v2.sources.LogicalClock) the enum constant with the specified name",
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.db.v2.sources.LogicalClock[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.db.v2.sources.LogicalClock",
- "text": "A logical update clock that has two states, Updating and Idle.\nEach time startUpdateCycle() is called, the clock transitions to the Updating state\n and the current value is incremented by one.\nWhen completeUpdateCycle() is called, the clock transitions back to Idle.",
+ "text": "A logical update clock that has two states, Updating and Idle.\n \n\n Each time startUpdateCycle() is called, the clock transitions to the Updating state and the current\n value is incremented by one.\n \n\n When completeUpdateCycle() is called, the clock transitions back to Idle.",
  "typeName": "enum"
 }

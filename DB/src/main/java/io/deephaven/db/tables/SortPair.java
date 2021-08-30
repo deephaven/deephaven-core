@@ -18,9 +18,8 @@ public class SortPair {
 
     public static SortPair of(SortColumn sortColumn) {
         return new SortPair(
-            sortColumn.column().name(),
-            sortColumn.order() == Order.ASCENDING ? SortingOrder.Ascending
-                : SortingOrder.Descending);
+                sortColumn.column().name(),
+                sortColumn.order() == Order.ASCENDING ? SortingOrder.Ascending : SortingOrder.Descending);
     }
 
     private final String column;
@@ -43,8 +42,7 @@ public class SortPair {
      * @return an ascending SortPair array for names
      */
     public static SortPair[] ascendingPairs(String... names) {
-        return Arrays.stream(names).map(name -> new SortPair(name, SortingOrder.Ascending))
-            .toArray(SortPair[]::new);
+        return Arrays.stream(names).map(name -> new SortPair(name, SortingOrder.Ascending)).toArray(SortPair[]::new);
     }
 
 
@@ -65,8 +63,7 @@ public class SortPair {
      * @return an descending SortPair array for names
      */
     public static SortPair[] descendingPairs(String... names) {
-        return Arrays.stream(names).map(name -> new SortPair(name, SortingOrder.Descending))
-            .toArray(SortPair[]::new);
+        return Arrays.stream(names).map(name -> new SortPair(name, SortingOrder.Descending)).toArray(SortPair[]::new);
     }
 
     private SortPair(String column, SortingOrder order) {

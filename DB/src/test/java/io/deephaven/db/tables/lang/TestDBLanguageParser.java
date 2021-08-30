@@ -31,10 +31,10 @@ import static io.deephaven.db.tables.lang.DBLanguageParser.isWideningPrimitiveCo
 public class TestDBLanguageParser extends BaseArrayTestCase {
 
     private HashSet<Package> packageImports;
-    private HashSet<Class> classImports;
-    private HashSet<Class> staticImports;
-    private HashMap<String, Class> variables;
-    private HashMap<String, Class[]> variableParameterizedTypes;
+    private HashSet<Class<?>> classImports;
+    private HashSet<Class<?>> staticImports;
+    private HashMap<String, Class<?>> variables;
+    private HashMap<String, Class<?>[]> variableParameterizedTypes;
 
     @Before
     @Override
@@ -42,8 +42,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         packageImports = new HashSet<>();
         packageImports.add(Package.getPackage("java.lang"));
 
-        // Package.getPackage returns null if the class loader has yet to see a class from that
-        // package; force a load
+        // Package.getPackage returns null if the class loader has yet to see a class from that package; force a load
         Package tablePackage = Table.class.getPackage();
         Assert.equals(tablePackage.getName(), "tablePackage.getName()", "io.deephaven.db.tables");
         packageImports.add(tablePackage);
@@ -99,7 +98,6 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         variables.put("myEnumValue", DBLanguageParserDummyEnum.class);
         variables.put("myObjectDBArray", DbArray.class);
         variables.put("myIntDBArray", DbIntArray.class);
-        variables.put("myDoubleDBArray", DbDoubleArray.class);
         variables.put("myByteDBArray", DbByteArray.class);
         variables.put("myDoubleDBArray", DbDoubleArray.class);
         // noinspection deprecation
@@ -127,7 +125,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {});
 
         expression = "1*1.0";
-        resultExpression = "times(1, 1.0)";
+        resultExpression = "multiply(1, 1.0)";
         check(expression, resultExpression, double.class, new String[] {});
 
         expression = "1/1L";
@@ -135,7 +133,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {});
 
         expression = "1.0+2L+3*4";
-        resultExpression = "plus(plus(1.0, 2L), times(3, 4))";
+        resultExpression = "plus(plus(1.0, 2L), multiply(3, 4))";
         check(expression, resultExpression, double.class, new String[] {});
 
         expression = "1==1";
@@ -147,15 +145,15 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {});
 
         expression = "false | true";
-        resultExpression = "binOr(false, true)";
+        resultExpression = "binaryOr(false, true)";
         check(expression, resultExpression, Boolean.class, new String[] {});
 
         expression = "1>1+2*3/4 || true";
-        resultExpression = "greater(1, plus(1, divide(times(2, 3), 4)))||true";
+        resultExpression = "greater(1, plus(1, divide(multiply(2, 3), 4)))||true";
         check(expression, resultExpression, boolean.class, new String[] {});
 
         expression = "(1>1+2*3/4) | true";
-        resultExpression = "binOr((greater(1, plus(1, divide(times(2, 3), 4)))), true)";
+        resultExpression = "binaryOr((greater(1, plus(1, divide(multiply(2, 3), 4)))), true)";
         check(expression, resultExpression, Boolean.class, new String[] {});
 
         expression = "1+\"test\"";
@@ -314,9 +312,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     }
 
     /**
-     * The query language will automatically convert an integer literal to a long literal if the
-     * value is too big to store as an int. (Normal Java would not do this; it would just result in
-     * a compilation error.)
+     * The query language will automatically convert an integer literal to a long literal if the value is too big to
+     * store as an int. (Normal Java would not do this; it would just result in a compilation error.)
      */
     public void testAutoPromotedLiterals() throws Exception {
         String expression, resultExpression;
@@ -372,134 +369,132 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         // Test a crazy unicode character. (This is an arrow - ↳ - U+21b3)
         expression = "'\\u21b3'";
-        resultExpression = "'\u21b3'";
+        resultExpression = "'\\u21b3'";
         check(expression, resultExpression, char.class, new String[] {});
     }
 
-    public void testConvertBackticks() throws Exception {
+    public void testConvertBackticks() {
         Require.equals(
-            DBLanguageParser.convertBackticks("`hello`"),
-            "convertBackticks(\"`hello`\")",
-            "\"hello\"");
+                DBLanguageParser.convertBackticks("`hello`"),
+                "convertBackticks(\"`hello`\")",
+                "\"hello\"");
 
         Require.equals(
-            DBLanguageParser.convertBackticks("`'`"),
-            "convertBackticks(\"`'`\")",
-            "\"'\"");
+                DBLanguageParser.convertBackticks("`'`"),
+                "convertBackticks(\"`'`\")",
+                "\"'\"");
 
         Require.equals(
-            DBLanguageParser.convertBackticks("`\"`"),
-            "convertBackticks(\"`\\\"`\")",
-            "\"\\\"\"");
+                DBLanguageParser.convertBackticks("`\"`"),
+                "convertBackticks(\"`\\\"`\")",
+                "\"\\\"\"");
 
         Require.equals(
-            DBLanguageParser.convertBackticks("\"`\""),
-            "convertBackticks(\"\\\"`\\\"\")",
-            "\"`\"");
+                DBLanguageParser.convertBackticks("\"`\""),
+                "convertBackticks(\"\\\"`\\\"\")",
+                "\"`\"");
 
         Require.equals(
-            DBLanguageParser.convertBackticks("`'\\\"'`"),
-            "convertBackticks(\"`'\\\\\\\"'`\")",
-            "\"'\\\"'\"");
+                DBLanguageParser.convertBackticks("`'\\\"'`"),
+                "convertBackticks(\"`'\\\\\\\"'`\")",
+                "\"'\\\"'\"");
 
         Require.equals(
-            DBLanguageParser.convertBackticks("\"`abc`\""),
-            "convertBackticks(\"\\\"`abc`\\\"\")",
-            "\"`abc`\"");
+                DBLanguageParser.convertBackticks("\"`abc`\""),
+                "convertBackticks(\"\\\"`abc`\\\"\")",
+                "\"`abc`\"");
 
         Require.equals(
-            DBLanguageParser.convertBackticks("\"`'abc`'\""),
-            "convertBackticks(\"\\\"`'abc`'\\\"\")",
-            "\"`'abc`'\"");
+                DBLanguageParser.convertBackticks("\"`'abc`'\""),
+                "convertBackticks(\"\\\"`'abc`'\\\"\")",
+                "\"`'abc`'\"");
 
         Require.equals(
-            DBLanguageParser.convertBackticks("\"'`\""),
-            "convertBackticks(\"\\\"'`\\\"\")",
-            "\"'`\"");
+                DBLanguageParser.convertBackticks("\"'`\""),
+                "convertBackticks(\"\\\"'`\\\"\")",
+                "\"'`\"");
 
         Require.equals(
-            DBLanguageParser.convertBackticks("`abc ` + \"def\" + \"`hij`\" + '`' + `'`"),
-            "convertBackticks(\"`abc ` + \\\"def\\\" + \\\"`hij`\\\" + '`' + `'`\")",
-            "\"abc \" + \"def\" + \"`hij`\" + '`' + \"'\"");
+                DBLanguageParser.convertBackticks("`abc ` + \"def\" + \"`hij`\" + '`' + `'`"),
+                "convertBackticks(\"`abc ` + \\\"def\\\" + \\\"`hij`\\\" + '`' + `'`\")",
+                "\"abc \" + \"def\" + \"`hij`\" + '`' + \"'\"");
 
         // test each type of quote, escaped and contained within itself
         Require.equals(
-            DBLanguageParser.convertBackticks("\"\\\"\""),
-            "convertBackticks(\"\\\"\\\\\\\"\\\"\")",
-            "\"\\\"\"");
+                DBLanguageParser.convertBackticks("\"\\\"\""),
+                "convertBackticks(\"\\\"\\\\\\\"\\\"\")",
+                "\"\\\"\"");
         Require.equals(
-            DBLanguageParser.convertBackticks("`\\``"),
-            "convertBackticks(\"`\\\\``\")",
-            "\"\\`\"");
+                DBLanguageParser.convertBackticks("`\\``"),
+                "convertBackticks(\"`\\\\``\")",
+                "\"\\`\"");
         Require.equals(
-            DBLanguageParser.convertBackticks("'\\''"),
-            "convertBackticks(\"'\\\\''\")",
-            "'\\''");
+                DBLanguageParser.convertBackticks("'\\''"),
+                "convertBackticks(\"'\\\\''\")",
+                "'\\''");
 
         // test tick and double quote both escaped within a string
         Require.equals(
-            DBLanguageParser.convertBackticks("`\"\\``"),
-            "convertBackticks(\"`\\\"\\\\``\")",
-            "\"\\\"\\`\"");
+                DBLanguageParser.convertBackticks("`\"\\``"),
+                "convertBackticks(\"`\\\"\\\\``\")",
+                "\"\\\"\\`\"");
         // here ` is unescaped, since it is within "s
         Require.equals(
-            DBLanguageParser.convertBackticks("\"\\\"`\""),
-            "convertBackticks(\"\\\"\\\\\\\"`\\\"\")",
-            "\"\\\"`\"");
+                DBLanguageParser.convertBackticks("\"\\\"`\""),
+                "convertBackticks(\"\\\"\\\\\\\"`\\\"\")",
+                "\"\\\"`\"");
 
-        // confirm that standard java escaping tools are sufficient to correctly escape strings for
-        // the DBLangParser
+        // confirm that standard java escaping tools are sufficient to correctly escape strings for the DBLangParser
         Require.equals(
-            DBLanguageParser.convertBackticks("\"" + StringEscapeUtils.escapeJava("`\"'\\") + "\""),
-            "convertBackticks(escapeJava(\"`\\\"'\\\\\"))",
-            "\"`\\\"'\\\\\"");
+                DBLanguageParser.convertBackticks("\"" + StringEscapeUtils.escapeJava("`\"'\\") + "\""),
+                "convertBackticks(escapeJava(\"`\\\"'\\\\\"))",
+                "\"`\\\"'\\\\\"");
     }
 
-    public void testConvertSingleEquals() throws Exception {
+    public void testConvertSingleEquals() {
         Require.equals(
-            DBLanguageParser.convertSingleEquals("a=b"),
-            "convertSingleEquals(\"a=b\")",
-            "a==b");
+                DBLanguageParser.convertSingleEquals("a=b"),
+                "convertSingleEquals(\"a=b\")",
+                "a==b");
 
         Require.equals(
-            DBLanguageParser.convertSingleEquals("a=b=c==d=e==f"),
-            "convertSingleEquals(\"a=b=c==d=e==f\")",
-            "a==b==c==d==e==f");
+                DBLanguageParser.convertSingleEquals("a=b=c==d=e==f"),
+                "convertSingleEquals(\"a=b=c==d=e==f\")",
+                "a==b==c==d==e==f");
 
         Require.equals(
-            DBLanguageParser.convertSingleEquals("'='"),
-            "convertSingleEquals(\"'='\")",
-            "'='");
+                DBLanguageParser.convertSingleEquals("'='"),
+                "convertSingleEquals(\"'='\")",
+                "'='");
 
         Require.equals(
-            DBLanguageParser.convertSingleEquals("'='='='"),
-            "convertSingleEquals(\"'='='='\")",
-            "'='=='='");
+                DBLanguageParser.convertSingleEquals("'='='='"),
+                "convertSingleEquals(\"'='='='\")",
+                "'='=='='");
 
         Require.equals(
-            DBLanguageParser.convertSingleEquals("'='='='=='='"),
-            "convertSingleEquals(\"'='='='=='='\")",
-            "'='=='='=='='");
+                DBLanguageParser.convertSingleEquals("'='='='=='='"),
+                "convertSingleEquals(\"'='='='=='='\")",
+                "'='=='='=='='");
 
         Require.equals(
-            DBLanguageParser.convertSingleEquals("a='='=b"),
-            "convertSingleEquals(\"a='='=b\")",
-            "a=='='==b");
+                DBLanguageParser.convertSingleEquals("a='='=b"),
+                "convertSingleEquals(\"a='='=b\")",
+                "a=='='==b");
 
         Require.equals(
-            DBLanguageParser.convertSingleEquals("\"a=b\""),
-            "convertSingleEquals(\"a=b\")",
-            "\"a=b\"");
+                DBLanguageParser.convertSingleEquals("\"a=b\""),
+                "convertSingleEquals(\"a=b\")",
+                "\"a=b\"");
 
         Require.equals(
-            DBLanguageParser.convertSingleEquals("\"a=b'\"='='"),
-            "convertSingleEquals(\"\\\"a=b'\\\"='='\")",
-            "\"a=b'\"=='='");
+                DBLanguageParser.convertSingleEquals("\"a=b'\"='='"),
+                "convertSingleEquals(\"\\\"a=b'\\\"='='\")",
+                "\"a=b'\"=='='");
     }
 
     /**
-     * Test casts. See
-     * <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.5">Chapter 5,
+     * Test casts. See <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.5">Chapter 5,
      * Conversions and Contexts</a>, in the java language specification for more info.
      *
      * @see #testPrimitiveLiteralCasts()
@@ -530,8 +525,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "doubleCast(intCast(myIntObj))";
         check(expression, resultExpression, double.class, new String[] {"myIntObj"});
 
-        expression = "(double)myIntObj"; // requires separate casts for unboxing & widening (see
-                                         // notes at testBoxedToPrimitiveCasts, or JLS)
+        expression = "(double)myIntObj"; // requires separate casts for unboxing & widening (see notes at
+                                         // testBoxedToPrimitiveCasts, or JLS)
         resultExpression = "doubleCast(intCast(myIntObj))";
         check(expression, resultExpression, double.class, new String[] {"myIntObj"});
 
@@ -552,52 +547,49 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     }
 
     /**
-     * This is an older version of {@link #testPrimitiveVariableCasts()}, operating with literals
-     * instead of variables.
+     * This is an older version of {@link #testPrimitiveVariableCasts()}, operating with literals instead of variables.
      */
     public void testPrimitiveLiteralCasts() throws Exception {
         String expression, resultExpression;
 
-        Collection<Pair<String, Class>> literals = Arrays.asList(
-            new Pair<>("42", int.class),
-            new Pair<>("42L", long.class),
-            new Pair<>("42f", float.class),
-            new Pair<>("42d", double.class),
-            new Pair<>("'c'", char.class));
-        Collection<Pair<String, Class>> targetTypes = Arrays.asList(
-            new Pair<>("char", char.class),
-            new Pair<>("byte", byte.class),
-            new Pair<>("short", short.class),
-            new Pair<>("int", int.class),
-            new Pair<>("float", float.class),
-            new Pair<>("double", double.class),
-            new Pair<>("long", long.class));
+        Collection<Pair<String, Class<?>>> literals = Arrays.asList(
+                new Pair<>("42", int.class),
+                new Pair<>("42L", long.class),
+                new Pair<>("42f", float.class),
+                new Pair<>("42d", double.class),
+                new Pair<>("'c'", char.class));
+        Collection<Pair<String, Class<?>>> targetTypes = Arrays.asList(
+                new Pair<>("char", char.class),
+                new Pair<>("byte", byte.class),
+                new Pair<>("short", short.class),
+                new Pair<>("int", int.class),
+                new Pair<>("float", float.class),
+                new Pair<>("double", double.class),
+                new Pair<>("long", long.class));
 
         /*
-         * Test casting from each possible numeric literal type (and char) to each of the other
-         * numeric types (and char).
+         * Test casting from each possible numeric literal type (and char) to each of the other numeric types (and
+         * char).
          *
-         * When casting to a primitive type, we replace the cast with a function call (e.g
-         * "(int)foo" to "intCast(foo)")
+         * When casting to a primitive type, we replace the cast with a function call (e.g "(int)foo" to "intCast(foo)")
          *
-         * The exception is the identity conversion, e.g. "(int)42" or "(double)42d". Since
-         * mid-2017, there is are no intermediate functions for these redundant conversions.
+         * The exception is the identity conversion, e.g. "(int)42" or "(double)42d". Since mid-2017, there is are no
+         * intermediate functions for these redundant conversions.
          */
-        for (Pair<String, Class> literal : literals) {
-            for (Pair<String, Class> targetType : targetTypes) {
+        for (Pair<String, Class<?>> literal : literals) {
+            for (Pair<String, Class<?>> targetType : targetTypes) {
                 expression = '(' + targetType.first + ')' + literal.first; // e.g. "(int)42"
                 if (targetType.second == literal.second) {
                     resultExpression = expression;
                 } else {
-                    resultExpression = targetType.first + "Cast(" + literal.first + ')'; // e.g.
-                                                                                         // "intCast(42)"
+                    resultExpression = targetType.first + "Cast(" + literal.first + ')'; // e.g. "intCast(42)"
                 }
                 check(expression, resultExpression, targetType.second, new String[] {});
             }
         }
 
         // Test casting booleans types to numeric types (which should fail)
-        for (Pair<String, Class> targetType : targetTypes) {
+        for (Pair<String, Class<?>> targetType : targetTypes) {
             try {
                 try {
                     expression = '(' + targetType.first + ")true"; // e.g. "(int)true"
@@ -607,24 +599,21 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
                 } catch (DBLanguageParser.QueryLanguageParseException ignored) {
                 }
             } catch (Throwable ex) {
-                throw new RuntimeException(
-                    "Failed testing cast of boolean to " + targetType.second.getName(), ex);
+                throw new RuntimeException("Failed testing cast of boolean to " + targetType.second.getName(), ex);
             }
         }
 
         // Test casting numeric types to booleans (which should fail)
-        for (Pair<String, Class> literal : literals) {
+        for (Pair<String, Class<?>> literal : literals) {
             try {
                 try {
-                    resultExpression = expression = "(boolean)" + literal.first; // e.g.
-                                                                                 // "(boolean)42"
+                    resultExpression = expression = "(boolean)" + literal.first; // e.g. "(boolean)42"
                     check(expression, resultExpression, boolean.class, new String[] {});
                     fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
                 } catch (DBLanguageParser.QueryLanguageParseException ignored) {
                 }
             } catch (Throwable ex) {
-                throw new RuntimeException(
-                    "Failed testing cast of " + literal.second.getName() + " to boolean", ex);
+                throw new RuntimeException("Failed testing cast of " + literal.second.getName() + " to boolean", ex);
             }
         }
 
@@ -634,88 +623,80 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     }
 
     /**
-     * Test conversions between various primitive types. This is a newer and more complete version
-     * of {@link #testPrimitiveLiteralCasts()}. (This one handles {@code byte} and {@code short}.)
+     * Test conversions between various primitive types. This is a newer and more complete version of
+     * {@link #testPrimitiveLiteralCasts()}. (This one handles {@code byte} and {@code short}.)
      * <p>
-     * See table 5.5-A
-     * <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.5">here</a>.
+     * See table 5.5-A <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.5">here</a>.
      *
      * @see #testBoxedToPrimitiveCasts()
      */
     public void testPrimitiveVariableCasts() throws Exception {
         String expression, resultExpression;
 
-        Collection<Pair<String, Class>> numericAndCharVars = Arrays.asList(
-            new Pair<>("myByte", byte.class),
-            new Pair<>("myShort", short.class),
-            new Pair<>("myChar", char.class),
-            new Pair<>("myInt", int.class),
-            new Pair<>("myLong", long.class),
-            new Pair<>("myFloat", float.class),
-            new Pair<>("myDouble", double.class));
-        Collection<Pair<String, Class>> numericAndCharTypes = Arrays.asList(
-            new Pair<>("byte", byte.class),
-            new Pair<>("short", short.class),
-            new Pair<>("char", char.class),
-            new Pair<>("int", int.class),
-            new Pair<>("long", long.class),
-            new Pair<>("float", float.class),
-            new Pair<>("double", double.class));
+        Collection<Pair<String, Class<?>>> numericAndCharVars = Arrays.asList(
+                new Pair<>("myByte", byte.class),
+                new Pair<>("myShort", short.class),
+                new Pair<>("myChar", char.class),
+                new Pair<>("myInt", int.class),
+                new Pair<>("myLong", long.class),
+                new Pair<>("myFloat", float.class),
+                new Pair<>("myDouble", double.class));
+        Collection<Pair<String, Class<?>>> numericAndCharTypes = Arrays.asList(
+                new Pair<>("byte", byte.class),
+                new Pair<>("short", short.class),
+                new Pair<>("char", char.class),
+                new Pair<>("int", int.class),
+                new Pair<>("long", long.class),
+                new Pair<>("float", float.class),
+                new Pair<>("double", double.class));
 
         /*
-         * Test casting from each possible numeric literal type (and char) to each of the other
-         * numeric types (and char).
+         * Test casting from each possible numeric literal type (and char) to each of the other numeric types (and
+         * char).
          *
-         * When casting to a primitive type, we replace the cast with a function call (e.g
-         * "(int)foo" to "intCast(foo)")
+         * When casting to a primitive type, we replace the cast with a function call (e.g "(int)foo" to "intCast(foo)")
          *
-         * The exception is the identity conversion, e.g. "(int)myInt" or "(double)myDouble". Since
-         * mid-2017, there is are no intermediate functions for these redundant conversions.
+         * The exception is the identity conversion, e.g. "(int)myInt" or "(double)myDouble". Since mid-2017, there is
+         * are no intermediate functions for these redundant conversions.
          */
-        for (Pair<String, Class> var : numericAndCharVars) {
-            for (Pair<String, Class> targetType : numericAndCharTypes) {
+        for (Pair<String, Class<?>> var : numericAndCharVars) {
+            for (Pair<String, Class<?>> targetType : numericAndCharTypes) {
                 expression = '(' + targetType.first + ')' + var.first; // e.g. "(int)myDouble"
                 if (targetType.second == var.second) {
                     resultExpression = expression;
                 } else {
-                    resultExpression = targetType.first + "Cast(" + var.first + ')'; // e.g.
-                                                                                     // "intCast(myDouble)"
+                    resultExpression = targetType.first + "Cast(" + var.first + ')'; // e.g. "intCast(myDouble)"
                 }
                 check(expression, resultExpression, targetType.second, new String[] {var.first});
             }
         }
 
         // Test casting booleans types to numeric/char types (which should fail)
-        for (Pair<String, Class> targetType : numericAndCharTypes) {
+        for (Pair<String, Class<?>> targetType : numericAndCharTypes) {
             try {
                 try {
                     expression = '(' + targetType.first + ")myBoolean"; // e.g. "(int)myBoolean"
-                    resultExpression = targetType.first + "Cast(myBoolean)"; // e.g.
-                                                                             // "intCast(myBoolean)"
-                    check(expression, resultExpression, targetType.second,
-                        new String[] {"myBoolean"});
+                    resultExpression = targetType.first + "Cast(myBoolean)"; // e.g. "intCast(myBoolean)"
+                    check(expression, resultExpression, targetType.second, new String[] {"myBoolean"});
                     fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
                 } catch (DBLanguageParser.QueryLanguageParseException ignored) {
                 }
             } catch (Throwable ex) {
-                throw new RuntimeException(
-                    "Failed testing cast of boolean to " + targetType.second.getName(), ex);
+                throw new RuntimeException("Failed testing cast of boolean to " + targetType.second.getName(), ex);
             }
         }
 
         // Test casting numeric/char types to booleans (which should fail)
-        for (Pair<String, Class> var : numericAndCharVars) {
+        for (Pair<String, Class<?>> var : numericAndCharVars) {
             try {
                 try {
-                    resultExpression = expression = "(boolean)" + var.first; // e.g.
-                                                                             // "(boolean)myInt"
+                    resultExpression = expression = "(boolean)" + var.first; // e.g. "(boolean)myInt"
                     check(expression, resultExpression, boolean.class, new String[] {});
                     fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
                 } catch (DBLanguageParser.QueryLanguageParseException ignored) {
                 }
             } catch (Throwable ex) {
-                throw new RuntimeException(
-                    "Failed testing cast of " + var.second.getName() + " to boolean", ex);
+                throw new RuntimeException("Failed testing cast of " + var.second.getName() + " to boolean", ex);
             }
         }
 
@@ -728,57 +709,44 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     /**
      * Test conversions from boxed types to primitive types.
      * <p>
-     * When casting from boxed types to primitive types, the target type must be at least as wide as
-     * the primitive type that the source (boxed) type represents. Thus there are two kinds of
-     * conversions from boxed types to primitive types:
+     * When casting from boxed types to primitive types, the target type must be at least as wide as the primitive type
+     * that the source (boxed) type represents. Thus there are two kinds of conversions from boxed types to primitive
+     * types:
      * <p>
-     * 1. Unboxing-only conversions (e.g. Integer to int) 2. Unboxing and widening conversions (e.g.
-     * Integer to double)
+     * 1. Unboxing-only conversions (e.g. Integer to int) 2. Unboxing and widening conversions (e.g. Integer to double)
      * <p>
-     * In the latter case, the language must explicitly cast an Integer to an int *before* casting
-     * it to a double. This follow's the language specification: when permitted, a non-identity
-     * conversion from a boxed type to a primitive type consists of an unboxing conversion followed
-     * by a widening conversion.
+     * In the latter case, the language must explicitly cast an Integer to an int *before* casting it to a double. This
+     * follow's the language specification: when permitted, a non-identity conversion from a boxed type to a primitive
+     * type consists of an unboxing conversion followed by a widening conversion.
      * <p>
      * For example, this code: {@code (double) new Integer(42) } Should be parsed into:
      * {@code doubleCast(intCast(new Integer(42))) }
      * <p>
-     * Otherwise, the compiler would see {@code doubleCast()} with an {@code Integer} argument, and
-     * rightly decide that {@code doubleCast(Object)} is a better choice than
-     * {@code doubleCast(int)}. But then we wind up running: {@code (double) anObject} when
-     * 'anObject' is actually an Integer. Java then tries a narrowing conversion from {@code Object}
-     * to {@code Double}, which fails.
+     * Otherwise, the compiler would see {@code doubleCast()} with an {@code Integer} argument, and rightly decide that
+     * {@code doubleCast(Object)} is a better choice than {@code doubleCast(int)}. But then we wind up running:
+     * {@code (double) anObject} when 'anObject' is actually an Integer. Java then tries a narrowing conversion from
+     * {@code Object} to {@code Double}, which fails.
      * <p>
-     * See table 5.5-A
-     * <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.5">here</a>.
+     * See table 5.5-A <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.5">here</a>.
      *
      * @see #testPrimitiveLiteralCasts()
      * @see #testBoxedToPrimitiveCasts()
      */
-    public void testBoxedToPrimitiveCasts() throws Exception {
+    public void testBoxedToPrimitiveCasts() {
         String expression, resultExpression;
 
-        final List<Class> boxedTypes =
-            new ArrayList<>(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
-        final List<Class> primitiveTypes =
-            new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
+        final List<Class<?>> boxedTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
+        final List<Class<?>> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
         for (int i = 0; i < io.deephaven.util.type.TypeUtils.BOXED_TYPES.size(); i++) {
-            final Class boxedType = boxedTypes.get(i);
-            final String unboxedTypeName =
-                io.deephaven.util.type.TypeUtils.getUnboxedType(boxedType).getName(); // the name of
-                                                                                      // the
-                                                                                      // primitive
-                                                                                      // type that
-                                                                                      // this boxed
-                                                                                      // type
-                                                                                      // represents
+            final Class<?> boxedType = boxedTypes.get(i);
+            // the name of the primitive type that this boxed type represents
+            final String unboxedTypeName = io.deephaven.util.type.TypeUtils.getUnboxedType(boxedType).getName();
             final String boxedTypeTestVarName =
-                "my" + Character.toUpperCase(unboxedTypeName.charAt(0))
-                    + unboxedTypeName.substring(1) + "Obj";
+                    "my" + Character.toUpperCase(unboxedTypeName.charAt(0)) + unboxedTypeName.substring(1) + "Obj";
 
             for (int j = 0; j < io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES.size(); j++) {
-                final Class primitiveType = primitiveTypes.get(j);
+                final Class<?> primitiveType = primitiveTypes.get(j);
                 final String primitiveTypeName = primitiveType.getName();
 
                 expression = '(' + primitiveTypeName + ")" + boxedTypeTestVarName;
@@ -787,39 +755,34 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
                 } else if (i == j) { // Unboxing conversion only
                     resultExpression = primitiveTypeName + "Cast(" + boxedTypeTestVarName + ')';
                 } else { // i != j; Unboxing and widening conversion
-                    resultExpression = primitiveTypeName + "Cast(" + unboxedTypeName + "Cast("
-                        + boxedTypeTestVarName + "))";
+                    resultExpression =
+                            primitiveTypeName + "Cast(" + unboxedTypeName + "Cast(" + boxedTypeTestVarName + "))";
                 }
 
                 try {
                     if (j < i
-                        || (primitiveType == Character.TYPE && boxedType != Character.class)
-                        || (boxedType == Boolean.class ^ primitiveType == Boolean.TYPE)) {
+                            || (primitiveType == Character.TYPE && boxedType != Character.class)
+                            || (boxedType == Boolean.class ^ primitiveType == Boolean.TYPE)) {
                         /*
-                         * Ensure we fail on conversions that the JLS disallows. Such as: 1) Trying
-                         * to convert to a primitive type that is not sufficient to store the boxed
-                         * type's data (i.e. j < i). The JLS does not permit such a conversion. 2)
-                         * Trying to unbox anything other than a Character to a char. (However, char
-                         * can be cast to wider (int, long, float, double). 3) Casting a Boolean to
-                         * any primitive besides bool, or casting anything besides a Boolean to
-                         * bool.
+                         * Ensure we fail on conversions that the JLS disallows. Such as: 1) Trying to convert to a
+                         * primitive type that is not sufficient to store the boxed type's data (i.e. j < i). The JLS
+                         * does not permit such a conversion. 2) Trying to unbox anything other than a Character to a
+                         * char. (However, char can be cast to wider (int, long, float, double). 3) Casting a Boolean to
+                         * any primitive besides bool, or casting anything besides a Boolean to bool.
                          *
                          * Note that casting from less-specific types to any primitive is supported.
                          */
                         try {
-                            check(expression, resultExpression, primitiveType,
-                                new String[] {boxedTypeTestVarName});
-                            fail(
-                                "Should have thrown a DBLanguageParser.QueryLanguageParseException");
+                            check(expression, resultExpression, primitiveType, new String[] {boxedTypeTestVarName});
+                            fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
                         } catch (DBLanguageParser.QueryLanguageParseException ignored) {
                         }
                     } else {
-                        check(expression, resultExpression, primitiveType,
-                            new String[] {boxedTypeTestVarName});
+                        check(expression, resultExpression, primitiveType, new String[] {boxedTypeTestVarName});
                     }
                 } catch (Throwable ex) {
-                    throw new RuntimeException("Failed testing cast of " + boxedType.getName()
-                        + " to " + primitiveType.getName() + " (i=" + i + ", j=" + j + ')', ex);
+                    throw new RuntimeException("Failed testing cast of " + boxedType.getName() + " to "
+                            + primitiveType.getName() + " (i=" + i + ", j=" + j + ')', ex);
                 }
             }
         }
@@ -833,15 +796,14 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testObjectToPrimitiveOrBoxedCasts() throws Exception {
         String expression, resultExpression;
 
-        Set<Class> boxedAndPrimitiveTypes = new HashSet<>();
+        Set<Class<?>> boxedAndPrimitiveTypes = new HashSet<>();
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
-        for (Class type : boxedAndPrimitiveTypes) {
+        for (Class<?> type : boxedAndPrimitiveTypes) {
             expression = '(' + type.getSimpleName() + ")myObject";
             if (type.isPrimitive() && type != boolean.class) {
-                resultExpression =
-                    io.deephaven.util.type.TypeUtils.getUnboxedType(type) + "Cast(myObject)";
+                resultExpression = io.deephaven.util.type.TypeUtils.getUnboxedType(type) + "Cast(myObject)";
             } else {
                 resultExpression = expression;
             }
@@ -855,11 +817,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testPrimitiveAndBoxedToObjectCasts() throws Exception {
         String expression, resultExpression;
 
-        Set<Class> boxedAndPrimitiveTypes = new HashSet<>();
+        Set<Class<?>> boxedAndPrimitiveTypes = new HashSet<>();
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
-        for (Class type : boxedAndPrimitiveTypes) {
+        for (Class<?> type : boxedAndPrimitiveTypes) {
             expression = '(' + type.getSimpleName() + ")myObject";
             if (type.isPrimitive() && type != boolean.class) {
                 resultExpression = TypeUtils.getUnboxedType(type) + "Cast(myObject)";
@@ -876,7 +838,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myInt"});
 
         expression = "1*myDouble";
-        resultExpression = "times(1, myDouble)";
+        resultExpression = "multiply(1, myDouble)";
         check(expression, resultExpression, double.class, new String[] {"myDouble"});
 
         expression = "myInt/myLong";
@@ -884,7 +846,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {"myInt", "myLong"});
 
         expression = "myDouble+myLong+3*4";
-        resultExpression = "plus(plus(myDouble, myLong), times(3, 4))";
+        resultExpression = "plus(plus(myDouble, myLong), multiply(3, 4))";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myLong"});
 
         expression = "1==myInt";
@@ -892,11 +854,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myInt"});
 
         expression = "myInt>1+2*myInt/4 || myBoolean";
-        resultExpression = "greater(myInt, plus(1, divide(times(2, myInt), 4)))||myBoolean";
+        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myInt), 4)))||myBoolean";
         check(expression, resultExpression, boolean.class, new String[] {"myBoolean", "myInt"});
 
         expression = "myInt>1+2*myInt/4 | myBoolean";
-        resultExpression = "binOr(greater(myInt, plus(1, divide(times(2, myInt), 4))), myBoolean)";
+        resultExpression = "binaryOr(greater(myInt, plus(1, divide(multiply(2, myInt), 4))), myBoolean)";
         check(expression, resultExpression, Boolean.class, new String[] {"myBoolean", "myInt"});
 
         expression = "myInt+myString";
@@ -958,7 +920,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myTestClass"});
 
         expression = "myTestClass*1.0";
-        resultExpression = "times(myTestClass, 1.0)";
+        resultExpression = "multiply(myTestClass, 1.0)";
         check(expression, resultExpression, char.class, new String[] {"myTestClass"});
 
         expression = "myTestClass-'c'";
@@ -969,8 +931,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testArrayOperatorOverloading() throws Exception {
         String expression = "myIntArray+myDoubleArray";
         String resultExpression = "plusArray(myIntArray, myDoubleArray)";
-        check(expression, resultExpression, new double[0].getClass(),
-            new String[] {"myDoubleArray", "myIntArray"});
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleArray", "myIntArray"});
 
         expression = "myIntArray+1";
         resultExpression = "plusArray(myIntArray, 1)";
@@ -990,8 +951,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "myIntArray==myDoubleArray";
         resultExpression = "eqArray(myIntArray, myDoubleArray)";
-        check(expression, resultExpression, new boolean[0].getClass(),
-            new String[] {"myDoubleArray", "myIntArray"});
+        check(expression, resultExpression, new boolean[0].getClass(), new String[] {"myDoubleArray", "myIntArray"});
 
         expression = "myIntArray==1";
         resultExpression = "eqArray(myIntArray, 1)";
@@ -1003,8 +963,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "myIntArray>myDoubleArray";
         resultExpression = "greaterArray(myIntArray, myDoubleArray)";
-        check(expression, resultExpression, new boolean[0].getClass(),
-            new String[] {"myDoubleArray", "myIntArray"});
+        check(expression, resultExpression, new boolean[0].getClass(), new String[] {"myDoubleArray", "myIntArray"});
 
         expression = "myIntArray>1";
         resultExpression = "greaterArray(myIntArray, 1)";
@@ -1016,33 +975,31 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "myTestClassArray==myTestClassArray";
         resultExpression = "eqArray(myTestClassArray, myTestClassArray)";
-        check(expression, resultExpression, new boolean[0].getClass(),
-            new String[] {"myTestClassArray"});
+        check(expression, resultExpression, new boolean[0].getClass(), new String[] {"myTestClassArray"});
 
         expression = "myTestClassArray==myTestClass";
         resultExpression = "eqArray(myTestClassArray, myTestClass)";
         check(expression, resultExpression, new boolean[0].getClass(),
-            new String[] {"myTestClass", "myTestClassArray"});
+                new String[] {"myTestClass", "myTestClassArray"});
 
         expression = "myTestClass==myTestClassArray";
         resultExpression = "eqArray(myTestClass, myTestClassArray)";
         check(expression, resultExpression, new boolean[0].getClass(),
-            new String[] {"myTestClass", "myTestClassArray"});
+                new String[] {"myTestClass", "myTestClassArray"});
 
         expression = "myTestClassArray>myTestClassArray";
         resultExpression = "greaterArray(myTestClassArray, myTestClassArray)";
-        check(expression, resultExpression, new boolean[0].getClass(),
-            new String[] {"myTestClassArray"});
+        check(expression, resultExpression, new boolean[0].getClass(), new String[] {"myTestClassArray"});
 
         expression = "myTestClassArray>myTestClass";
         resultExpression = "greaterArray(myTestClassArray, myTestClass)";
         check(expression, resultExpression, new boolean[0].getClass(),
-            new String[] {"myTestClass", "myTestClassArray"});
+                new String[] {"myTestClass", "myTestClassArray"});
 
         expression = "myTestClass>myTestClassArray";
         resultExpression = "greaterArray(myTestClass, myTestClassArray)";
         check(expression, resultExpression, new boolean[0].getClass(),
-            new String[] {"myTestClass", "myTestClassArray"});
+                new String[] {"myTestClass", "myTestClassArray"});
     }
 
     public void testResolution() throws Exception {
@@ -1091,8 +1048,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {"myInt"});
 
         expression = "DBLanguageParserDummyClass.functionWithInterfacesAsArgTypes(`test`, 0)";
-        resultExpression =
-            "DBLanguageParserDummyClass.functionWithInterfacesAsArgTypes(\"test\", 0)";
+        resultExpression = "DBLanguageParserDummyClass.functionWithInterfacesAsArgTypes(\"test\", 0)";
         check(expression, resultExpression, int.class, new String[] {});
     }
 
@@ -1137,35 +1093,28 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     // }
 
     /**
-     * Test implicit argument type conversions (e.g. primitive casts and converting DbArrays to Java
-     * arrays)
+     * Test implicit argument type conversions (e.g. primitive casts and converting DbArrays to Java arrays)
      */
     public void testImplicitConversion() throws Exception {
-        String expression =
-            "testImplicitConversion1(myInt, myDouble, myLong, myInt, myDouble, myLong)";
+        String expression = "testImplicitConversion1(myInt, myDouble, myLong, myInt, myDouble, myLong)";
         String resultExpression =
-            "testImplicitConversion1(new double[] { doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
-        check(expression, resultExpression, new double[0].getClass(),
-            new String[] {"myDouble", "myInt", "myLong"});
+                "testImplicitConversion1(new double[]{ doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt", "myLong"});
 
         expression = "testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
-        resultExpression = "testVarArgs(myInt, 'a', new double[] { myDouble, 1.0, 5.0, myDouble })";
-        check(expression, resultExpression, new double[0].getClass(),
-            new String[] {"myDouble", "myInt"});
+        resultExpression = "testVarArgs(myInt, 'a', new double[]{ myDouble, 1.0, 5.0, myDouble })";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt"});
 
         expression = "testVarArgs(myInt, 'a', myDoubleArray)";
         resultExpression = "testVarArgs(myInt, 'a', myDoubleArray)";
-        check(expression, resultExpression, new double[0].getClass(),
-            new String[] {"myDoubleArray", "myInt"});
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
         expression = "testImplicitConversion1(myDoubleDBArray)";
-        resultExpression =
-            "testImplicitConversion1(ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray))";
-        check(expression, resultExpression, new double[0].getClass(),
-            new String[] {"myDoubleDBArray"});
+        resultExpression = "testImplicitConversion1(ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray))";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleDBArray"});
 
         expression = "testImplicitConversion2(myInt, myInt)";
-        resultExpression = "testImplicitConversion2(new int[] { myInt, myInt })";
+        resultExpression = "testImplicitConversion2(new int[]{ myInt, myInt })";
         check(expression, resultExpression, new int[0].getClass(), new String[] {"myInt"});
 
         expression = "testImplicitConversion3(myDBArray)";
@@ -1173,61 +1122,47 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
 
         // expression="testImplicitConversion3(myDoubleArray)"; // TODO: This test fails.
-        // resultExpression="testImplicitConversion3(myDoubleArray)"; // we should *not* convert
-        // from DbDoubleArray to Object[]!
-        // check(expression, resultExpression, new Object[0].getClass(), new
-        // String[]{"myDoubleArray"});
+        // resultExpression="testImplicitConversion3(myDoubleArray)"; // we should *not* convert from DbDoubleArray to
+        // Object[]!
+        // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myDoubleArray"});
 
         expression = "testImplicitConversion3((Object) myDoubleArray)";
-        resultExpression = "testImplicitConversion3((Object)myDoubleArray)"; // test a workaround
-                                                                             // for the above
-        check(expression, resultExpression, new Object[0].getClass(),
-            new String[] {"myDoubleArray"});
+        resultExpression = "testImplicitConversion3((Object)myDoubleArray)"; // test a workaround for the above
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
 
         expression = "testImplicitConversion3(myDoubleArray, myInt)";
         resultExpression = "testImplicitConversion3(myDoubleArray, myInt)";
-        check(expression, resultExpression, new Object[0].getClass(),
-            new String[] {"myDoubleArray", "myInt"});
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
         expression = "testImplicitConversion4(myInt, myDBArray)";
-        resultExpression =
-            "testImplicitConversion4(doubleCast(myInt), ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
-        check(expression, resultExpression, new Object[0].getClass(),
-            new String[] {"myDBArray", "myInt"});
+        resultExpression = "testImplicitConversion4(doubleCast(myInt), ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray", "myInt"});
 
         expression = "testImplicitConversion4(myInt, myDBArray, myDouble)";
         resultExpression = "testImplicitConversion4(doubleCast(myInt), myDBArray, myDouble)";
-        check(expression, resultExpression, new Object[0].getClass(),
-            new String[] {"myDBArray", "myDouble", "myInt"});
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray", "myDouble", "myInt"});
 
         expression = "testImplicitConversion4(myInt, myDouble, myDBArray)";
         resultExpression = "testImplicitConversion4(doubleCast(myInt), myDouble, myDBArray)";
-        check(expression, resultExpression, new Object[0].getClass(),
-            new String[] {"myDBArray", "myDouble", "myInt"});
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray", "myDouble", "myInt"});
 
-        // expression="testImplicitConversion5(myDBArray)"; // TODO: This test fails (declared arg
-        // type is "DbArrayBase...")
-        // resultExpression="testImplicitConversion5(myDBArray)"; // vararg of DbArrayBase -- don't
-        // convert!
+        // expression="testImplicitConversion5(myDBArray)"; // TODO: This test fails (declared arg type is
+        // "DbArrayBase...")
+        // resultExpression="testImplicitConversion5(myDBArray)"; // vararg of DbArrayBase -- don't convert!
         // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myDBArray"});
 
-        expression = "testImplicitConversion5((DbArrayBase) myDBArray)"; // Workaround for the
-                                                                         // above.
-        resultExpression = "testImplicitConversion5((DbArrayBase)myDBArray)"; // vararg of
-                                                                              // DbArrayBase --
-                                                                              // don't convert!
+        expression = "testImplicitConversion5((DbArrayBase) myDBArray)"; // Workaround for the above.
+        resultExpression = "testImplicitConversion5((DbArrayBase)myDBArray)"; // vararg of DbArrayBase -- don't convert!
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
 
         expression = "testImplicitConversion5(myDBArray, myDBArray)";
-        resultExpression = "testImplicitConversion5(myDBArray, myDBArray)"; // vararg of DbArrayBase
-                                                                            // -- don't convert!
+        resultExpression = "testImplicitConversion5(myDBArray, myDBArray)"; // vararg of DbArrayBase -- don't convert!
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
     }
 
 
     /**
-     * Test calling the default methods from {@link Object}. (In the past, these were not recognized
-     * on interfaces.)
+     * Test calling the default methods from {@link Object}. (In the past, these were not recognized on interfaces.)
      */
     public void testObjectMethods() throws Exception {
         // Call hashCode() on an Object
@@ -1274,10 +1209,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "DBLanguageParserDummyClass.StaticNestedClass.staticVar";
         check(expression, resultExpression, String.class, new String[] {});
 
-        expression =
-            "DBLanguageParserDummyClass.StaticNestedClass.staticInstanceOfStaticClass.instanceVar";
-        resultExpression =
-            "DBLanguageParserDummyClass.StaticNestedClass.staticInstanceOfStaticClass.instanceVar";
+        expression = "DBLanguageParserDummyClass.StaticNestedClass.staticInstanceOfStaticClass.instanceVar";
+        resultExpression = "DBLanguageParserDummyClass.StaticNestedClass.staticInstanceOfStaticClass.instanceVar";
         check(expression, resultExpression, String.class, new String[] {});
 
         expression = "new DBLanguageParserDummyClass.StaticNestedClass().instanceVar";
@@ -1286,8 +1219,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "myDummyClass.InnerClass";
         resultExpression = "myDummyClass.InnerClass";
-        check(expression, resultExpression, DBLanguageParserDummyClass.InnerClass.class,
-            new String[] {"myDummyClass"});
+        check(expression, resultExpression, DBLanguageParserDummyClass.InnerClass.class, new String[] {"myDummyClass"});
 
         expression = "myDummyClass.innerClassInstance.staticVar";
         resultExpression = "myDummyClass.innerClassInstance.staticVar";
@@ -1307,26 +1239,19 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "myDummyClass.innerClassInstance.innerInnerClassInstance";
         resultExpression = "myDummyClass.innerClassInstance.innerInnerClassInstance";
-        check(expression, resultExpression,
-            DBLanguageParserDummyClass.InnerClass.InnerInnerClass.class,
-            new String[] {"myDummyClass"});
+        check(expression, resultExpression, DBLanguageParserDummyClass.InnerClass.InnerInnerClass.class,
+                new String[] {"myDummyClass"});
 
-        expression =
-            "myDummyClass.innerClassInstance.innerInnerClassInstance.innerInnerInstanceVar";
-        resultExpression =
-            "myDummyClass.innerClassInstance.innerInnerClassInstance.innerInnerInstanceVar";
+        expression = "myDummyClass.innerClassInstance.innerInnerClassInstance.innerInnerInstanceVar";
+        resultExpression = "myDummyClass.innerClassInstance.innerInnerClassInstance.innerInnerInstanceVar";
         check(expression, resultExpression, String.class, new String[] {"myDummyClass"});
 
         expression = "myDummyClass.innerClass2Instance.innerClassAsInstanceOfAnotherInnerClass";
-        resultExpression =
-            "myDummyClass.innerClass2Instance.innerClassAsInstanceOfAnotherInnerClass";
-        check(expression, resultExpression, DBLanguageParserDummyClass.InnerClass.class,
-            new String[] {"myDummyClass"});
+        resultExpression = "myDummyClass.innerClass2Instance.innerClassAsInstanceOfAnotherInnerClass";
+        check(expression, resultExpression, DBLanguageParserDummyClass.InnerClass.class, new String[] {"myDummyClass"});
 
-        expression =
-            "myDummyClass.innerClass2Instance.innerClassAsInstanceOfAnotherInnerClass.instanceVar";
-        resultExpression =
-            "myDummyClass.innerClass2Instance.innerClassAsInstanceOfAnotherInnerClass.instanceVar";
+        expression = "myDummyClass.innerClass2Instance.innerClassAsInstanceOfAnotherInnerClass.instanceVar";
+        resultExpression = "myDummyClass.innerClass2Instance.innerClassAsInstanceOfAnotherInnerClass.instanceVar";
         check(expression, resultExpression, String.class, new String[] {"myDummyClass"});
 
         expression = "myDoubleArray.length";
@@ -1353,38 +1278,31 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         String expression, resultExpression;
 
         PropertySaver p = new PropertySaver();
-        p.setProperty("DBLanguageParser.verboseExceptionMessages", "false"); // Better to test with
-                                                                             // non-verbose messages
+        p.setProperty("DBLanguageParser.verboseExceptionMessages", "false"); // Better to test with non-verbose messages
         try {
             // First, test just bad field name
             try {
                 expression = "myDummyInnerClass.staticVarThatDoesNotExist";
                 resultExpression = "myDummyInnerClass.staticVarThatDoesNotExist";
-                check(expression, resultExpression, String.class,
-                    new String[] {"myDummyInnerClass"});
+                check(expression, resultExpression, String.class, new String[] {"myDummyInnerClass"});
                 fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
             } catch (DBLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : myDummyInnerClass") ||
-                    !ex.getMessage().contains("Field Name : staticVarThatDoesNotExist")) {
-                    fail("Useless exception message!\nOriginal exception:\n"
-                        + ExceptionUtils.getStackTrace(ex));
+                        !ex.getMessage().contains("Field Name : staticVarThatDoesNotExist")) {
+                    fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
                 }
             }
 
             // Then do the same thing on a class name (not a variable)
             try {
-                expression =
-                    "DBLanguageParserDummyClass.StaticNestedClass.staticVarThatDoesNotExist";
-                resultExpression =
-                    "DBLanguageParserDummyClass.StaticNestedClass.staticVarThatDoesNotExist";
+                expression = "DBLanguageParserDummyClass.StaticNestedClass.staticVarThatDoesNotExist";
+                resultExpression = "DBLanguageParserDummyClass.StaticNestedClass.staticVarThatDoesNotExist";
                 check(expression, resultExpression, String.class, new String[] {});
                 fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
             } catch (DBLanguageParser.QueryLanguageParseException ex) {
-                if (!ex.getMessage()
-                    .contains("Scope      : DBLanguageParserDummyClass.StaticNestedClass") ||
-                    !ex.getMessage().contains("Field Name : staticVarThatDoesNotExist")) {
-                    fail("Useless exception message!\nOriginal exception:\n"
-                        + ExceptionUtils.getStackTrace(ex));
+                if (!ex.getMessage().contains("Scope      : DBLanguageParserDummyClass.StaticNestedClass") ||
+                        !ex.getMessage().contains("Field Name : staticVarThatDoesNotExist")) {
+                    fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
                 }
             }
 
@@ -1392,61 +1310,52 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
             try {
                 expression = "myDummyNonExistentInnerClass.staticVar";
                 resultExpression = "myDummyNonExistentInnerClass.staticVar";
-                check(expression, resultExpression, String.class,
-                    new String[] {"myDummyInnerClass"});
+                check(expression, resultExpression, String.class, new String[] {"myDummyInnerClass"});
                 fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
             } catch (DBLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : myDummyNonExistentInnerClass") ||
-                    !ex.getMessage().contains("Field Name : staticVar")) {
-                    fail("Useless exception message!\nOriginal exception:\n"
-                        + ExceptionUtils.getStackTrace(ex));
+                        !ex.getMessage().contains("Field Name : staticVar")) {
+                    fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
                 }
             }
 
 
             try {
                 expression = "DBLanguageParserNonExistentDummyClass.StaticNestedClass.staticVar";
-                resultExpression =
-                    "DBLanguageParserNonExistentDummyClass.StaticNestedClass.staticVar";
+                resultExpression = "DBLanguageParserNonExistentDummyClass.StaticNestedClass.staticVar";
                 check(expression, resultExpression, String.class, new String[] {});
                 fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
             } catch (DBLanguageParser.QueryLanguageParseException ex) {
-                if (!ex.getMessage().contains(
-                    "Scope      : DBLanguageParserNonExistentDummyClass.StaticNestedClass") ||
-                    !ex.getMessage().contains("Field Name : staticVar")) {
-                    fail("Useless exception message!\nOriginal exception:\n"
-                        + ExceptionUtils.getStackTrace(ex));
+                if (!ex.getMessage().contains("Scope      : DBLanguageParserNonExistentDummyClass.StaticNestedClass") ||
+                        !ex.getMessage().contains("Field Name : staticVar")) {
+                    fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
                 }
             }
 
 
 
             /*
-             * Also test within a method call. This is essentially the case that prompted the fix.
-             * The actual issue with the expression is that the enclosing class name is omitted when
-             * trying to access the nested enum (NestedEnum.ONE), but the user experience was poor
-             * because the exception was very unclear.
-             * 
+             * Also test within a method call. This is essentially the case that prompted the fix. The actual issue with
+             * the expression is that the enclosing class name is omitted when trying to access the nested enum
+             * (NestedEnum.ONE), but the user experience was poor because the exception was very unclear.
+             *
              * There is a test of the proper expression in testComplexExpressions().
              */
             try {
                 expression =
-                    "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.db.tables.lang.NestedEnum.ONE,false)[0]";
+                        "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.db.tables.lang.NestedEnum.ONE,false)[0]";
                 resultExpression =
-                    "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.db.tables.lang.NestedEnum.ONE,false)[0]";
+                        "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.db.tables.lang.NestedEnum.ONE,false)[0]";
                 check(expression, resultExpression, String.class, new String[] {});
                 fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
             } catch (DBLanguageParser.QueryLanguageParseException ex) {
-                if (!ex.getMessage().contains("Scope      : io.deephaven.db.tables.lang.NestedEnum")
-                    ||
-                    !ex.getMessage().contains("Field Name : ONE")) {
-                    fail("Useless exception message!\n\nOriginal exception:\n"
-                        + ExceptionUtils.getStackTrace(ex));
+                if (!ex.getMessage().contains("Scope      : io.deephaven.db.tables.lang.NestedEnum") ||
+                        !ex.getMessage().contains("Field Name : ONE")) {
+                    fail("Useless exception message!\n\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
                 }
             }
 
-            // Ensure that when we can't resolve a field, we explicitly state the scope type. (We've
-            // struggled
+            // Ensure that when we can't resolve a field, we explicitly state the scope type. (We've struggled
             // supporting customers in the past when the scope type was unclear.)
             try {
                 expression = "myTable[myTable.length-1]";
@@ -1455,10 +1364,9 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
                 fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
             } catch (DBLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : myTable") ||
-                    !ex.getMessage().contains("Scope Type : " + Table.class.getCanonicalName()) ||
-                    !ex.getMessage().contains("Field Name : length")) {
-                    fail("Useless exception message!\n\nOriginal exception:\n"
-                        + ExceptionUtils.getStackTrace(ex));
+                        !ex.getMessage().contains("Scope Type : " + Table.class.getCanonicalName()) ||
+                        !ex.getMessage().contains("Field Name : length")) {
+                    fail("Useless exception message!\n\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
                 }
             }
 
@@ -1471,8 +1379,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testEnums() throws Exception {
         String expression = "myEnumValue";
         String resultExpression = "myEnumValue";
-        check(expression, resultExpression, DBLanguageParserDummyEnum.class,
-            new String[] {"myEnumValue"});
+        check(expression, resultExpression, DBLanguageParserDummyEnum.class, new String[] {"myEnumValue"});
 
         expression = "myEnumValue.getAttribute()";
         resultExpression = "myEnumValue.getAttribute()";
@@ -1488,39 +1395,30 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "DBLanguageParserDummyInterface.AnEnum.THING_ONE";
         resultExpression = "DBLanguageParserDummyInterface.AnEnum.THING_ONE";
-        check(expression, resultExpression, DBLanguageParserDummyInterface.AnEnum.class,
-            new String[] {});
+        check(expression, resultExpression, DBLanguageParserDummyInterface.AnEnum.class, new String[] {});
 
         expression = "io.deephaven.db.tables.lang.DBLanguageParserDummyInterface.AnEnum.THING_ONE";
-        resultExpression =
-            "io.deephaven.db.tables.lang.DBLanguageParserDummyInterface.AnEnum.THING_ONE";
-        check(expression, resultExpression, DBLanguageParserDummyInterface.AnEnum.class,
-            new String[] {});
+        resultExpression = "io.deephaven.db.tables.lang.DBLanguageParserDummyInterface.AnEnum.THING_ONE";
+        check(expression, resultExpression, DBLanguageParserDummyInterface.AnEnum.class, new String[] {});
 
-        expression =
-            "DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass.EnumInInterface.THING_ONE";
-        resultExpression =
-            "DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass.EnumInInterface.THING_ONE";
+        expression = "DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass.EnumInInterface.THING_ONE";
+        resultExpression = "DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass.EnumInInterface.THING_ONE";
         check(expression, resultExpression,
-            DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass.EnumInInterface.class,
-            new String[] {});
+                DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass.EnumInInterface.class, new String[] {});
 
-        expression =
-            "DBLanguageParserDummyClass.functionWithEnumAsArgs(DBLanguageParserDummyEnum.ONE)";
-        resultExpression =
-            "DBLanguageParserDummyClass.functionWithEnumAsArgs(DBLanguageParserDummyEnum.ONE)";
+        expression = "DBLanguageParserDummyClass.functionWithEnumAsArgs(DBLanguageParserDummyEnum.ONE)";
+        resultExpression = "DBLanguageParserDummyClass.functionWithEnumAsArgs(DBLanguageParserDummyEnum.ONE)";
         check(expression, resultExpression, int.class, new String[] {});
 
         expression =
-            "DBLanguageParserDummyClass.functionWithEnumAsArgs(DBLanguageParserDummyInterface.AnEnum.THING_ONE)";
+                "DBLanguageParserDummyClass.functionWithEnumAsArgs(DBLanguageParserDummyInterface.AnEnum.THING_ONE)";
         resultExpression =
-            "DBLanguageParserDummyClass.functionWithEnumAsArgs(DBLanguageParserDummyInterface.AnEnum.THING_ONE)";
+                "DBLanguageParserDummyClass.functionWithEnumAsArgs(DBLanguageParserDummyInterface.AnEnum.THING_ONE)";
         check(expression, resultExpression, int.class, new String[] {});
 
-        expression =
-            "DBLanguageParserDummyClass.functionWithEnumVarArgs(myEnumValue, DBLanguageParserDummyEnum.ONE)";
+        expression = "DBLanguageParserDummyClass.functionWithEnumVarArgs(myEnumValue, DBLanguageParserDummyEnum.ONE)";
         resultExpression =
-            "DBLanguageParserDummyClass.functionWithEnumVarArgs(myEnumValue, DBLanguageParserDummyEnum.ONE)";
+                "DBLanguageParserDummyClass.functionWithEnumVarArgs(myEnumValue, DBLanguageParserDummyEnum.ONE)";
         check(expression, resultExpression, int.class, new String[] {"myEnumValue"});
     }
 
@@ -1530,7 +1428,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myIntObj"});
 
         expression = "1*myDoubleObj";
-        resultExpression = "times(1, myDoubleObj.doubleValue())";
+        resultExpression = "multiply(1, myDoubleObj.doubleValue())";
         check(expression, resultExpression, double.class, new String[] {"myDoubleObj"});
 
         expression = "myInt/myLongObj";
@@ -1542,20 +1440,16 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {"myIntObj", "myLong"});
 
         expression = "myDoubleObj+myLongObj+3*4";
-        resultExpression =
-            "plus(plus(myDoubleObj.doubleValue(), myLongObj.longValue()), times(3, 4))";
-        check(expression, resultExpression, double.class,
-            new String[] {"myDoubleObj", "myLongObj"});
+        resultExpression = "plus(plus(myDoubleObj.doubleValue(), myLongObj.longValue()), multiply(3, 4))";
+        check(expression, resultExpression, double.class, new String[] {"myDoubleObj", "myLongObj"});
 
         expression = "1==myIntObj";
         resultExpression = "eq(1, myIntObj.intValue())";
         check(expression, resultExpression, boolean.class, new String[] {"myIntObj"});
 
         expression = "myInt>1+2*myIntObj/4 || myBooleanObj";
-        resultExpression =
-            "greater(myInt, plus(1, divide(times(2, myIntObj.intValue()), 4)))||myBooleanObj";
-        check(expression, resultExpression, boolean.class,
-            new String[] {"myBooleanObj", "myInt", "myIntObj"});
+        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myIntObj.intValue()), 4)))||myBooleanObj";
+        check(expression, resultExpression, boolean.class, new String[] {"myBooleanObj", "myInt", "myIntObj"});
 
         expression = "myIntObj+myString";
         resultExpression = "myIntObj+myString";
@@ -1568,18 +1462,16 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
     public void testEqualsConversion() throws Exception {
         DBLanguageParser.Result result =
-            new DBLanguageParser("1==1", null, null, staticImports, null, null).getResult();
+                new DBLanguageParser("1==1", null, null, staticImports, null, null).getResult();
         assertEquals("eq(1, 1)", result.getConvertedExpression());
 
         result = new DBLanguageParser("1=1", null, null, staticImports, null, null).getResult();
         assertEquals("eq(1, 1)", result.getConvertedExpression());
 
-        result =
-            new DBLanguageParser("`me`=`you`", null, null, staticImports, null, null).getResult();
+        result = new DBLanguageParser("`me`=`you`", null, null, staticImports, null, null).getResult();
         assertEquals("eq(\"me\", \"you\")", result.getConvertedExpression());
 
-        result = new DBLanguageParser("1=1 || 2=2 && (3=3 && 4==4)", null, null, staticImports,
-            null, null).getResult();
+        result = new DBLanguageParser("1=1 || 2=2 && (3=3 && 4==4)", null, null, staticImports, null, null).getResult();
         assertEquals("eq(1, 1)||eq(2, 2)&&(eq(3, 3)&&eq(4, 4))", result.getConvertedExpression());
 
         result = new DBLanguageParser("1<=1", null, null, staticImports, null, null).getResult();
@@ -1593,29 +1485,25 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     }
 
     /**
-     * In order to support the null values defined in {@link QueryConstants}, language parser
-     * converts the equality and relational operators into method calls.
+     * In order to support the null values defined in {@link QueryConstants}, language parser converts the equality and
+     * relational operators into method calls.
      */
     public void testComparisonConversion() throws Exception {
         String expression = "myTestClass>myIntObj";
         String resultExpression = "greater(myTestClass, myIntObj.intValue())";
-        check(expression, resultExpression, boolean.class,
-            new String[] {"myIntObj", "myTestClass"});
+        check(expression, resultExpression, boolean.class, new String[] {"myIntObj", "myTestClass"});
 
         expression = "myTestClass>=myIntObj";
         resultExpression = "greaterEquals(myTestClass, myIntObj.intValue())";
-        check(expression, resultExpression, boolean.class,
-            new String[] {"myIntObj", "myTestClass"});
+        check(expression, resultExpression, boolean.class, new String[] {"myIntObj", "myTestClass"});
 
         expression = "myTestClass<myIntObj";
         resultExpression = "less(myTestClass, myIntObj.intValue())";
-        check(expression, resultExpression, boolean.class,
-            new String[] {"myIntObj", "myTestClass"});
+        check(expression, resultExpression, boolean.class, new String[] {"myIntObj", "myTestClass"});
 
         expression = "myTestClass<=myIntObj";
         resultExpression = "lessEquals(myTestClass, myIntObj.intValue())";
-        check(expression, resultExpression, boolean.class,
-            new String[] {"myIntObj", "myTestClass"});
+        check(expression, resultExpression, boolean.class, new String[] {"myIntObj", "myTestClass"});
 
         expression = "myTestClass>myTestClass";
         resultExpression = "greater(myTestClass, myTestClass)";
@@ -1655,37 +1543,36 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "new int[4][2]";
         check(expression, resultExpression, new int[0][0].getClass(), new String[] {});
 
-        expression = "new int[] { 1, 2, 3, 4 }";
-        resultExpression = "new int[] { 1, 2, 3, 4 }";
+        expression = "new int[]{ 1, 2, 3, 4 }";
+        resultExpression = "new int[]{ 1, 2, 3, 4 }";
         check(expression, resultExpression, new int[0].getClass(), new String[] {});
 
-        expression = "new int[]{1,2,3,4}";
-        resultExpression = "new int[] { 1, 2, 3, 4 }"; // note that the parser alters spacing
+        expression = "new int[] {1,2,3,4}";
+        resultExpression = "new int[]{ 1, 2, 3, 4 }"; // note that the parser alters spacing
         check(expression, resultExpression, new int[0].getClass(), new String[] {});
 
-        expression = "new String[] { `This`, `is`, `a`, `test` }";
-        resultExpression = "new String[] { \"This\", \"is\", \"a\", \"test\" }";
+        expression = "new String[]{ `This`, `is`, `a`, `test` }";
+        resultExpression = "new String[]{ \"This\", \"is\", \"a\", \"test\" }";
         check(expression, resultExpression, new String[0].getClass(), new String[] {});
 
         expression = "new SubclassOfDBLanguageParserDummyClass[] { " +
-            "DBLanguageParserDummyClass.innerClassInstance, " +
-            "DBLanguageParserDummyClass.innerClass2Instance, " +
-            "new DBLanguageParserDummyClass.StaticNestedClass(), " +
-            "myDummyInnerClass }";
-        resultExpression = "new SubclassOfDBLanguageParserDummyClass[] { " +
-            "DBLanguageParserDummyClass.innerClassInstance, " +
-            "DBLanguageParserDummyClass.innerClass2Instance, " +
-            "new DBLanguageParserDummyClass.StaticNestedClass(), " +
-            "myDummyInnerClass }";
+                "DBLanguageParserDummyClass.innerClassInstance, " +
+                "DBLanguageParserDummyClass.innerClass2Instance, " +
+                "new DBLanguageParserDummyClass.StaticNestedClass(), " +
+                "myDummyInnerClass }";
+        resultExpression = "new SubclassOfDBLanguageParserDummyClass[]{ " +
+                "DBLanguageParserDummyClass.innerClassInstance, " +
+                "DBLanguageParserDummyClass.innerClass2Instance, " +
+                "new DBLanguageParserDummyClass.StaticNestedClass(), " +
+                "myDummyInnerClass }";
         check(expression, resultExpression,
-            new DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass[0].getClass(),
-            new String[] {"myDummyInnerClass"});
+                new DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass[0].getClass(),
+                new String[] {"myDummyInnerClass"});
     }
 
     public void testArraysAsArguments() throws Exception {
         String expression = "DBLanguageParserDummyClass.arrayAndDbArrayFunction(myIntDBArray)";
-        String resultExpression =
-            "DBLanguageParserDummyClass.arrayAndDbArrayFunction(myIntDBArray)";
+        String resultExpression = "DBLanguageParserDummyClass.arrayAndDbArrayFunction(myIntDBArray)";
         check(expression, resultExpression, long.class, new String[] {"myIntDBArray"});
 
         expression = "DBLanguageParserDummyClass.arrayAndDbArrayFunction(myIntArray)";
@@ -1694,7 +1581,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "DBLanguageParserDummyClass.arrayOnlyFunction(myIntDBArray)";
         resultExpression =
-            "DBLanguageParserDummyClass.arrayOnlyFunction(ArrayUtils.nullSafeDbArrayToArray(myIntDBArray))";
+                "DBLanguageParserDummyClass.arrayOnlyFunction(ArrayUtils.nullSafeDbArrayToArray(myIntDBArray))";
         check(expression, resultExpression, long.class, new String[] {"myIntDBArray"});
 
         expression = "DBLanguageParserDummyClass.dbArrayOnlyFunction(myIntArray)";
@@ -1717,8 +1604,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "new String(\"Hello, world!\")";
         check(expression, resultExpression, String.class, new String[] {});
 
-        expression = "new String(new char[] { 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
-        resultExpression = "new String(new char[] { 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
+        expression = "new String(new char[]{ 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
+        resultExpression = "new String(new char[]{ 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
         check(expression, resultExpression, String.class, new String[] {});
 
         expression = "new HashSet()";
@@ -1739,13 +1626,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "new DBLanguageParserDummyClass(myInt)";
         resultExpression = "new DBLanguageParserDummyClass(myInt)";
-        check(expression, resultExpression, DBLanguageParserDummyClass.class,
-            new String[] {"myInt"});
+        check(expression, resultExpression, DBLanguageParserDummyClass.class, new String[] {"myInt"});
 
         expression = "new DBLanguageParserDummyClass.StaticNestedClass()";
         resultExpression = "new DBLanguageParserDummyClass.StaticNestedClass()";
-        check(expression, resultExpression, DBLanguageParserDummyClass.StaticNestedClass.class,
-            new String[] {});
+        check(expression, resultExpression, DBLanguageParserDummyClass.StaticNestedClass.class, new String[] {});
 
         expression = "new io.deephaven.db.tables.utils.DBDateTime(123L)";
         resultExpression = "new io.deephaven.db.tables.utils.DBDateTime(123L)";
@@ -1769,8 +1654,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "genericArrayToArray(myDoubleObjArray)";
         resultExpression = "genericArrayToArray(myDoubleObjArray)";
-        check(expression, resultExpression, new Double[0].getClass(),
-            new String[] {"myDoubleObjArray"});
+        check(expression, resultExpression, new Double[0].getClass(), new String[] {"myDoubleObjArray"});
 
         expression = "genericArrayToSingle(myDoubleObjArray)";
         resultExpression = "genericArrayToSingle(myDoubleObjArray)";
@@ -1782,8 +1666,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "genericSingleToDoubleArray(myDoubleObj)";
         resultExpression = "genericSingleToDoubleArray(myDoubleObj)";
-        check(expression, resultExpression, new Double[0][0].getClass(),
-            new String[] {"myDoubleObj"});
+        check(expression, resultExpression, new Double[0][0].getClass(), new String[] {"myDoubleObj"});
 
         expression = "genericDoubleArrayToSingle(new Double[0][0])";
         resultExpression = "genericDoubleArrayToSingle(new Double[0][0])";
@@ -1800,29 +1683,23 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
     public void testDBArrayUnboxing() throws Exception {
         String expression = "genericArrayToSingle(myDBArray)";
-        String resultExpression =
-            "genericArrayToSingle(ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
+        String resultExpression = "genericArrayToSingle(ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
         check(expression, resultExpression, Double.class, new String[] {"myDBArray"});
 
         expression = "genericArraysToSingle(myDBArray, myIntegerObjArray)";
-        resultExpression =
-            "genericArraysToSingle(ArrayUtils.nullSafeDbArrayToArray(myDBArray), myIntegerObjArray)";
-        check(expression, resultExpression, Integer.class,
-            new String[] {"myDBArray", "myIntegerObjArray"});
+        resultExpression = "genericArraysToSingle(ArrayUtils.nullSafeDbArrayToArray(myDBArray), myIntegerObjArray)";
+        check(expression, resultExpression, Integer.class, new String[] {"myDBArray", "myIntegerObjArray"});
 
         expression = "genericArraysToSingle(myIntegerObjArray, myDBArray)";
-        resultExpression =
-            "genericArraysToSingle(myIntegerObjArray, ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
-        check(expression, resultExpression, Double.class,
-            new String[] {"myDBArray", "myIntegerObjArray"});
+        resultExpression = "genericArraysToSingle(myIntegerObjArray, ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
+        check(expression, resultExpression, Double.class, new String[] {"myDBArray", "myIntegerObjArray"});
 
         expression = "genericDBArray(myDBArray)";
         resultExpression = "genericDBArray(myDBArray)";
         check(expression, resultExpression, Double.class, new String[] {"myDBArray"});
 
         expression = "genericArrayToSingle(myObjectDBArray)";
-        resultExpression =
-            "genericArrayToSingle(ArrayUtils.nullSafeDbArrayToArray(myObjectDBArray))";
+        resultExpression = "genericArrayToSingle(ArrayUtils.nullSafeDbArrayToArray(myObjectDBArray))";
         check(expression, resultExpression, Object.class, new String[] {"myObjectDBArray"});
 
         expression = "intArrayToInt(myIntDBArray)";
@@ -1831,12 +1708,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "myIntDBArray==myIntDBArray";
         resultExpression =
-            "eqArray(ArrayUtils.nullSafeDbArrayToArray(myIntDBArray), ArrayUtils.nullSafeDbArrayToArray(myIntDBArray))";
+                "eqArray(ArrayUtils.nullSafeDbArrayToArray(myIntDBArray), ArrayUtils.nullSafeDbArrayToArray(myIntDBArray))";
         check(expression, resultExpression, boolean[].class, new String[] {"myIntDBArray"});
 
         expression = "booleanArrayToBoolean(myBooleanDBArray)";
-        resultExpression =
-            "booleanArrayToBoolean(ArrayUtils.nullSafeDbArrayToArray(myBooleanDBArray))";
+        resultExpression = "booleanArrayToBoolean(ArrayUtils.nullSafeDbArrayToArray(myBooleanDBArray))";
         check(expression, resultExpression, Boolean.class, new String[] {"myBooleanDBArray"});
 
         expression = "new String(myByteArray)";
@@ -1849,55 +1725,51 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     }
 
     public void testInnerClasses() throws Exception {
-        DBLanguageParser.Result result = new DBLanguageParser(
-            "io.deephaven.db.tables.lang.TestDBLanguageParser.InnerEnum.YEAH!=null", null, null,
-            staticImports, null, null).getResult();
+        DBLanguageParser.Result result =
+                new DBLanguageParser("io.deephaven.db.tables.lang.TestDBLanguageParser.InnerEnum.YEAH!=null", null,
+                        null, staticImports, null, null).getResult();
         assertEquals("!eq(io.deephaven.db.tables.lang.TestDBLanguageParser.InnerEnum.YEAH, null)",
-            result.getConvertedExpression());
+                result.getConvertedExpression());
     }
 
     public void testComplexExpressions() throws Exception {
         String expression =
-            "java.util.stream.Stream.of(new String[] { `a`, `b`, `c`, myInt > 0 ? myString=Double.toString(myDouble) ? `1` : `2` : new DBLanguageParserDummyClass().toString() }).count()";
+                "java.util.stream.Stream.of(new String[]{ `a`, `b`, `c`, myInt > 0 ? myString=Double.toString(myDouble) ? `1` : `2` : new DBLanguageParserDummyClass().toString() }).count()";
         String resultExpression =
-            "java.util.stream.Stream.of(new String[] { \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new DBLanguageParserDummyClass().toString() }).count()";
-        check(expression, resultExpression, long.class,
-            new String[] {"myDouble", "myInt", "myString"});
+                "java.util.stream.Stream.of(new String[]{ \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new DBLanguageParserDummyClass().toString() }).count()";
+        check(expression, resultExpression, long.class, new String[] {"myDouble", "myInt", "myString"});
 
         expression = "myDummyClass.innerClassInstance.staticVar == 1_000_000L" +
-            "? new int[] { java.util.stream.Stream.of(new String[] { `a`, `b`, `c`, myInt > 0 ? myString=Double.toString(myDouble) ? `1` : `2` : new DBLanguageParserDummyClass().toString() }).count() }"
-            +
-            ": myIntArray";
+                "? new int[] { java.util.stream.Stream.of(new String[] { `a`, `b`, `c`, myInt > 0 ? myString=Double.toString(myDouble) ? `1` : `2` : new DBLanguageParserDummyClass().toString() }).count() }"
+                +
+                ": myIntArray";
         resultExpression = "eq(myDummyClass.innerClassInstance.staticVar, 1_000_000L)" +
-            " ? new int[] { java.util.stream.Stream.of(new String[] { \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new DBLanguageParserDummyClass().toString() }).count() }"
-            +
-            " : myIntArray";
+                " ? new int[]{ java.util.stream.Stream.of(new String[]{ \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new DBLanguageParserDummyClass().toString() }).count() }"
+                + " : myIntArray";
         check(expression, resultExpression, int[].class,
-            new String[] {"myDouble", "myDummyClass", "myInt", "myIntArray", "myString"});
+                new String[] {"myDouble", "myDummyClass", "myInt", "myIntArray", "myString"});
 
         // This comes from a strategy query:
         expression =
-            "min( abs(ExampleQuantity), (int)round(min(ExampleQuantity2, (`String1`.equals(ExampleStr) ? max(-ExampleQuantity3,0d) : max(ExampleQuantity3,0d))/ExampleQuantity4)))";
+                "min( abs(ExampleQuantity), (int)round(min(ExampleQuantity2, (`String1`.equals(ExampleStr) ? max(-ExampleQuantity3,0d) : max(ExampleQuantity3,0d))/ExampleQuantity4)))";
         resultExpression =
-            "min(abs(ExampleQuantity), intCast(round(min(ExampleQuantity2, divide((\"String1\".equals(ExampleStr) ? max(negate(ExampleQuantity3), 0d) : max(ExampleQuantity3, 0d)), ExampleQuantity4)))))";
-        check(expression, resultExpression, int.class, new String[] {"ExampleQuantity",
-                "ExampleQuantity2", "ExampleQuantity3", "ExampleQuantity4", "ExampleStr"});
+                "min(abs(ExampleQuantity), intCast(round(min(ExampleQuantity2, divide((\"String1\".equals(ExampleStr) ? max(negate(ExampleQuantity3), 0d) : max(ExampleQuantity3, 0d)), ExampleQuantity4)))))";
+        check(expression, resultExpression, int.class, new String[] {"ExampleQuantity", "ExampleQuantity2",
+                "ExampleQuantity3", "ExampleQuantity4", "ExampleStr"});
 
         // There is a test for an erroneous version of this expression in testBadFieldAccess():
         expression =
-            "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.db.tables.lang.DBLanguageParserDummyClass.NestedEnum.ONE,false)[0]";
+                "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.db.tables.lang.DBLanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-            "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(), myDoubleDBArray.toArray(), new double[] { myDouble }, io.deephaven.db.tables.lang.DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
-        check(expression, resultExpression, double.class,
-            new String[] {"myDouble", "myDoubleDBArray"});
+                "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(), myDoubleDBArray.toArray(), new double[]{ myDouble }, io.deephaven.db.tables.lang.DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+        check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleDBArray"});
 
         // For good measure, same test as above w/ implicit array conversions:
         expression =
-            "DBLanguageParserDummyClass.interpolate(myDoubleDBArray,myDoubleDBArray,new double[]{myDouble},DBLanguageParserDummyClass.NestedEnum.ONE,false)[0]";
+                "DBLanguageParserDummyClass.interpolate(myDoubleDBArray,myDoubleDBArray,new double[]{myDouble},DBLanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-            "DBLanguageParserDummyClass.interpolate(ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), new double[] { myDouble }, DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
-        check(expression, resultExpression, double.class,
-            new String[] {"myDouble", "myDoubleDBArray"});
+                "DBLanguageParserDummyClass.interpolate(ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), new double[]{ myDouble }, DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+        check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleDBArray"});
     }
 
     public void testUnsupportedOperators() throws Exception {
@@ -1991,150 +1863,151 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testIsWideningPrimitiveConversion() {
         {
             Require.eqFalse(isWideningPrimitiveConversion(byte.class, byte.class),
-                "isWideningPrimitiveConversion(byte.class, byte.class)");
+                    "isWideningPrimitiveConversion(byte.class, byte.class)");
             Require.eqFalse(isWideningPrimitiveConversion(byte.class, char.class),
-                "isWideningPrimitiveConversion(byte.class, char.class)");
+                    "isWideningPrimitiveConversion(byte.class, char.class)");
 
             Require.eqTrue(isWideningPrimitiveConversion(byte.class, short.class),
-                "isWideningPrimitiveConversion(byte.class, short.class)");
+                    "isWideningPrimitiveConversion(byte.class, short.class)");
             Require.eqTrue(isWideningPrimitiveConversion(byte.class, int.class),
-                "isWideningPrimitiveConversion(byte.class, int.class)");
+                    "isWideningPrimitiveConversion(byte.class, int.class)");
             Require.eqTrue(isWideningPrimitiveConversion(byte.class, long.class),
-                "isWideningPrimitiveConversion(byte.class, long.class)");
+                    "isWideningPrimitiveConversion(byte.class, long.class)");
             Require.eqTrue(isWideningPrimitiveConversion(byte.class, float.class),
-                "isWideningPrimitiveConversion(byte.class, float.class)");
+                    "isWideningPrimitiveConversion(byte.class, float.class)");
             Require.eqTrue(isWideningPrimitiveConversion(byte.class, double.class),
-                "isWideningPrimitiveConversion(byte.class, double.class)");
+                    "isWideningPrimitiveConversion(byte.class, double.class)");
         }
 
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(short.class, byte.class),
-                "isWideningPrimitiveConversion(short.class, byte.class)");
+                    "isWideningPrimitiveConversion(short.class, byte.class)");
             Require.eqFalse(isWideningPrimitiveConversion(short.class, short.class),
-                "isWideningPrimitiveConversion(short.class, short.class)");
+                    "isWideningPrimitiveConversion(short.class, short.class)");
             Require.eqFalse(isWideningPrimitiveConversion(short.class, char.class),
-                "isWideningPrimitiveConversion(short.class, char.class)");
+                    "isWideningPrimitiveConversion(short.class, char.class)");
 
             Require.eqTrue(isWideningPrimitiveConversion(short.class, int.class),
-                "isWideningPrimitiveConversion(short.class, int.class)");
+                    "isWideningPrimitiveConversion(short.class, int.class)");
             Require.eqTrue(isWideningPrimitiveConversion(short.class, long.class),
-                "isWideningPrimitiveConversion(short.class, long.class)");
+                    "isWideningPrimitiveConversion(short.class, long.class)");
             Require.eqTrue(isWideningPrimitiveConversion(short.class, float.class),
-                "isWideningPrimitiveConversion(short.class, float.class)");
+                    "isWideningPrimitiveConversion(short.class, float.class)");
             Require.eqTrue(isWideningPrimitiveConversion(short.class, double.class),
-                "isWideningPrimitiveConversion(short.class, double.class)");
+                    "isWideningPrimitiveConversion(short.class, double.class)");
         }
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(char.class, byte.class),
-                "isWideningPrimitiveConversion(char.class, byte.class)");
+                    "isWideningPrimitiveConversion(char.class, byte.class)");
             Require.eqFalse(isWideningPrimitiveConversion(char.class, short.class),
-                "isWideningPrimitiveConversion(char.class, short.class)");
+                    "isWideningPrimitiveConversion(char.class, short.class)");
             Require.eqFalse(isWideningPrimitiveConversion(char.class, char.class),
-                "isWideningPrimitiveConversion(char.class, char.class)");
+                    "isWideningPrimitiveConversion(char.class, char.class)");
 
             Require.eqTrue(isWideningPrimitiveConversion(char.class, int.class),
-                "isWideningPrimitiveConversion(char.class, int.class)");
+                    "isWideningPrimitiveConversion(char.class, int.class)");
             Require.eqTrue(isWideningPrimitiveConversion(char.class, long.class),
-                "isWideningPrimitiveConversion(char.class, long.class)");
+                    "isWideningPrimitiveConversion(char.class, long.class)");
             Require.eqTrue(isWideningPrimitiveConversion(char.class, float.class),
-                "isWideningPrimitiveConversion(char.class, float.class)");
+                    "isWideningPrimitiveConversion(char.class, float.class)");
             Require.eqTrue(isWideningPrimitiveConversion(char.class, double.class),
-                "isWideningPrimitiveConversion(char.class, double.class)");
+                    "isWideningPrimitiveConversion(char.class, double.class)");
         }
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(int.class, byte.class),
-                "isWideningPrimitiveConversion(int.class, byte.class)");
+                    "isWideningPrimitiveConversion(int.class, byte.class)");
             Require.eqFalse(isWideningPrimitiveConversion(int.class, short.class),
-                "isWideningPrimitiveConversion(int.class, short.class)");
+                    "isWideningPrimitiveConversion(int.class, short.class)");
             Require.eqFalse(isWideningPrimitiveConversion(int.class, char.class),
-                "isWideningPrimitiveConversion(int.class, char.class)");
+                    "isWideningPrimitiveConversion(int.class, char.class)");
             Require.eqFalse(isWideningPrimitiveConversion(int.class, int.class),
-                "isWideningPrimitiveConversion(int.class, int.class)");
+                    "isWideningPrimitiveConversion(int.class, int.class)");
 
             Require.eqTrue(isWideningPrimitiveConversion(int.class, long.class),
-                "isWideningPrimitiveConversion(int.class, long.class)");
+                    "isWideningPrimitiveConversion(int.class, long.class)");
             Require.eqTrue(isWideningPrimitiveConversion(int.class, float.class),
-                "isWideningPrimitiveConversion(int.class, float.class)");
+                    "isWideningPrimitiveConversion(int.class, float.class)");
             Require.eqTrue(isWideningPrimitiveConversion(int.class, double.class),
-                "isWideningPrimitiveConversion(int.class, double.class)");
+                    "isWideningPrimitiveConversion(int.class, double.class)");
         }
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(long.class, byte.class),
-                "isWideningPrimitiveConversion(long.class, byte.class)");
+                    "isWideningPrimitiveConversion(long.class, byte.class)");
             Require.eqFalse(isWideningPrimitiveConversion(long.class, short.class),
-                "isWideningPrimitiveConversion(long.class, short.class)");
+                    "isWideningPrimitiveConversion(long.class, short.class)");
             Require.eqFalse(isWideningPrimitiveConversion(long.class, char.class),
-                "isWideningPrimitiveConversion(long.class, char.class)");
+                    "isWideningPrimitiveConversion(long.class, char.class)");
             Require.eqFalse(isWideningPrimitiveConversion(long.class, int.class),
-                "isWideningPrimitiveConversion(long.class, int.class)");
+                    "isWideningPrimitiveConversion(long.class, int.class)");
             Require.eqFalse(isWideningPrimitiveConversion(long.class, long.class),
-                "isWideningPrimitiveConversion(long.class, long.class)");
+                    "isWideningPrimitiveConversion(long.class, long.class)");
 
 
             Require.eqTrue(isWideningPrimitiveConversion(long.class, float.class),
-                "isWideningPrimitiveConversion(long.class, float.class)");
+                    "isWideningPrimitiveConversion(long.class, float.class)");
             Require.eqTrue(isWideningPrimitiveConversion(long.class, double.class),
-                "isWideningPrimitiveConversion(long.class, double.class)");
+                    "isWideningPrimitiveConversion(long.class, double.class)");
         }
 
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(float.class, byte.class),
-                "isWideningPrimitiveConversion(float.class, byte.class)");
+                    "isWideningPrimitiveConversion(float.class, byte.class)");
             Require.eqFalse(isWideningPrimitiveConversion(float.class, short.class),
-                "isWideningPrimitiveConversion(float.class, short.class)");
+                    "isWideningPrimitiveConversion(float.class, short.class)");
             Require.eqFalse(isWideningPrimitiveConversion(float.class, char.class),
-                "isWideningPrimitiveConversion(float.class, char.class)");
+                    "isWideningPrimitiveConversion(float.class, char.class)");
             Require.eqFalse(isWideningPrimitiveConversion(float.class, int.class),
-                "isWideningPrimitiveConversion(float.class, int.class)");
+                    "isWideningPrimitiveConversion(float.class, int.class)");
             Require.eqFalse(isWideningPrimitiveConversion(float.class, long.class),
-                "isWideningPrimitiveConversion(float.class, long.class)");
+                    "isWideningPrimitiveConversion(float.class, long.class)");
 
             Require.eqTrue(isWideningPrimitiveConversion(float.class, double.class),
-                "isWideningPrimitiveConversion(float.class, double.class)");
+                    "isWideningPrimitiveConversion(float.class, double.class)");
         }
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(double.class, byte.class),
-                "isWideningPrimitiveConversion(double.class, byte.class)");
+                    "isWideningPrimitiveConversion(double.class, byte.class)");
             Require.eqFalse(isWideningPrimitiveConversion(double.class, short.class),
-                "isWideningPrimitiveConversion(double.class, short.class)");
+                    "isWideningPrimitiveConversion(double.class, short.class)");
             Require.eqFalse(isWideningPrimitiveConversion(double.class, char.class),
-                "isWideningPrimitiveConversion(double.class, char.class)");
+                    "isWideningPrimitiveConversion(double.class, char.class)");
             Require.eqFalse(isWideningPrimitiveConversion(double.class, int.class),
-                "isWideningPrimitiveConversion(double.class, int.class)");
+                    "isWideningPrimitiveConversion(double.class, int.class)");
             Require.eqFalse(isWideningPrimitiveConversion(double.class, long.class),
-                "isWideningPrimitiveConversion(double.class, long.class)");
+                    "isWideningPrimitiveConversion(double.class, long.class)");
             Require.eqFalse(isWideningPrimitiveConversion(double.class, float.class),
-                "isWideningPrimitiveConversion(double.class, float.class)");
+                    "isWideningPrimitiveConversion(double.class, float.class)");
             Require.eqFalse(isWideningPrimitiveConversion(double.class, double.class),
-                "isWideningPrimitiveConversion(double.class, long.class)");
+                    "isWideningPrimitiveConversion(double.class, long.class)");
         }
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(boolean.class, byte.class),
-                "isWideningPrimitiveConversion(boolean.class, byte.class)");
+                    "isWideningPrimitiveConversion(boolean.class, byte.class)");
             Require.eqFalse(isWideningPrimitiveConversion(boolean.class, short.class),
-                "isWideningPrimitiveConversion(boolean.class, short.class)");
+                    "isWideningPrimitiveConversion(boolean.class, short.class)");
             Require.eqFalse(isWideningPrimitiveConversion(boolean.class, char.class),
-                "isWideningPrimitiveConversion(boolean.class, char.class)");
+                    "isWideningPrimitiveConversion(boolean.class, char.class)");
             Require.eqFalse(isWideningPrimitiveConversion(boolean.class, int.class),
-                "isWideningPrimitiveConversion(boolean.class, int.class)");
+                    "isWideningPrimitiveConversion(boolean.class, int.class)");
             Require.eqFalse(isWideningPrimitiveConversion(boolean.class, long.class),
-                "isWideningPrimitiveConversion(boolean.class, long.class)");
+                    "isWideningPrimitiveConversion(boolean.class, long.class)");
             Require.eqFalse(isWideningPrimitiveConversion(boolean.class, float.class),
-                "isWideningPrimitiveConversion(boolean.class, float.class)");
+                    "isWideningPrimitiveConversion(boolean.class, float.class)");
             Require.eqFalse(isWideningPrimitiveConversion(boolean.class, double.class),
-                "isWideningPrimitiveConversion(boolean.class, double.class)");
+                    "isWideningPrimitiveConversion(boolean.class, double.class)");
             Require.eqFalse(isWideningPrimitiveConversion(boolean.class, boolean.class),
-                "isWideningPrimitiveConversion(boolean.class, boolean.class)");
+                    "isWideningPrimitiveConversion(boolean.class, boolean.class)");
         }
     }
 
+    @SuppressWarnings("ClassGetClass") // class.getClass() is the purpose of this test
     public void testClassExpr() throws Exception {
         String expression = "Integer.class";
         String resultExpression = "Integer.class";
@@ -2146,18 +2019,15 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "DBLanguageParserDummyClass.class";
         resultExpression = "DBLanguageParserDummyClass.class";
-        check(expression, resultExpression, DBLanguageParserDummyClass.class.getClass(),
-            new String[] {});
+        check(expression, resultExpression, DBLanguageParserDummyClass.class.getClass(), new String[] {});
 
         expression = "DBLanguageParserDummyClass.InnerClass.class";
         resultExpression = "DBLanguageParserDummyClass.InnerClass.class";
-        check(expression, resultExpression, DBLanguageParserDummyClass.InnerClass.class.getClass(),
-            new String[] {});
+        check(expression, resultExpression, DBLanguageParserDummyClass.InnerClass.class.getClass(), new String[] {});
 
         expression = "DBLanguageParserDummyInterface.class";
         resultExpression = "DBLanguageParserDummyInterface.class";
-        check(expression, resultExpression, DBLanguageParserDummyInterface.class.getClass(),
-            new String[] {});
+        check(expression, resultExpression, DBLanguageParserDummyInterface.class.getClass(), new String[] {});
     }
 
     public void testInvalidExpr() throws Exception {
@@ -2187,11 +2057,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         // this was getting picked up as invalid, so we're ensuring here that it is not an error.
         expression = "23 >= plus(System.currentTimeMillis(), 12)";
-        check(expression, "greaterEquals(23, plus(System.currentTimeMillis(), 12))", boolean.class,
-            new String[0]);
+        check(expression, "greaterEquals(23, plus(System.currentTimeMillis(), 12))", boolean.class, new String[0]);
     }
 
-    private void expectFailure(String expression, Class resultType) throws Exception {
+    @SuppressWarnings("SameParameterValue")
+    private void expectFailure(String expression, Class<?> resultType) throws Exception {
         try {
             check(expression, expression, resultType, new String[0]);
             fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
@@ -2199,20 +2069,21 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         }
     }
 
-    private void check(String expression, String resultExpression, Class resultType,
-        String resultVarsUsed[]) throws Exception {
-        DBLanguageParser.Result result = new DBLanguageParser(expression, packageImports,
-            classImports, staticImports, variables, variableParameterizedTypes).getResult();
+    private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed)
+            throws Exception {
+        DBLanguageParser.Result result = new DBLanguageParser(expression, packageImports, classImports, staticImports,
+                variables, variableParameterizedTypes).getResult();
 
         assertEquals(resultType, result.getType());
         assertEquals(resultExpression, result.getConvertedExpression());
 
-        String variablesUsed[] = result.getVariablesUsed().toArray(new String[0]);
+        String[] variablesUsed = result.getVariablesUsed().toArray(new String[0]);
         Arrays.sort(variablesUsed);
 
         assertEquals(resultVarsUsed, variablesUsed);
     }
 
+    @SuppressWarnings("InnerClassMayBeStatic")
     class TestClass implements Comparable<TestClass> {
         public int compareTo(@NotNull TestClass o) {
             return 0;
@@ -2225,7 +2096,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         return -1;
     }
 
-    public static char times(TestClass testClass, double d) {
+    public static char multiply(TestClass testClass, double d) {
         return 'a';
     }
 

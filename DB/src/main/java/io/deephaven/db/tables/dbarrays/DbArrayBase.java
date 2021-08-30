@@ -16,8 +16,7 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 
-public interface DbArrayBase<DBARRAY extends DbArrayBase>
-    extends Serializable, LongSizedDataStructure {
+public interface DbArrayBase<DBARRAY extends DbArrayBase> extends Serializable, LongSizedDataStructure {
     long serialVersionUID = -2429677814745466454L;
 
     String NULL_ELEMENT_STRING = " ";
@@ -45,27 +44,24 @@ public interface DbArrayBase<DBARRAY extends DbArrayBase>
     /** Return a version of this DbArrayBase that is flattened out to only reference memory. */
     DBARRAY getDirect();
 
-    static long clampIndex(final long validFromInclusive, final long validToExclusive,
-        final long index) {
+    static long clampIndex(final long validFromInclusive, final long validToExclusive, final long index) {
         return index < validFromInclusive || index >= validToExclusive ? -1 : index;
     }
 
     static long[] mapSelectedPositionRange(@NotNull final long[] currentPositions,
-        final long selectedRangeStartInclusive, final long selectedRangeEndExclusive) {
-        Assert.leq(selectedRangeStartInclusive, "selectedRangeStartInclusive",
-            selectedRangeEndExclusive, "selectedRangeEndExclusive");
+            final long selectedRangeStartInclusive, final long selectedRangeEndExclusive) {
+        Assert.leq(selectedRangeStartInclusive, "selectedRangeStartInclusive", selectedRangeEndExclusive,
+                "selectedRangeEndExclusive");
         return LongStream.range(selectedRangeStartInclusive, selectedRangeEndExclusive)
-            .map(s -> s < 0 || s >= currentPositions.length ? -1
-                : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositionRange", s)])
-            .toArray();
+                .map(s -> s < 0 || s >= currentPositions.length ? -1
+                        : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositionRange", s)])
+                .toArray();
     }
 
     static long[] mapSelectedPositions(@NotNull final long[] currentPositions,
-        @NotNull final long[] selectedPositions) {
-        return Arrays.stream(selectedPositions)
-            .map(s -> s < 0 || s >= currentPositions.length ? -1
-                : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositions", s)])
-            .toArray();
+            @NotNull final long[] selectedPositions) {
+        return Arrays.stream(selectedPositions).map(s -> s < 0 || s >= currentPositions.length ? -1
+                : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositions", s)]).toArray();
     }
 
     static Function<Object, String> classToHelper(final Class clazz) {

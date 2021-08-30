@@ -89,7 +89,7 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<int[]>
-        implements ArrayBuilder<Integer, IntArray, Builder> {
+            implements ArrayBuilder<Integer, IntArray, Builder> {
 
         private Builder(int initialCapacity) {
             super(new int[initialCapacity]);

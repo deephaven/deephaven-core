@@ -67,8 +67,7 @@ public class CharSequenceAdapterBuilder extends CharSequenceAdapter {
      * @param length The length of the proto-String in chars.
      * @return This adapter.
      */
-    public final CharSequenceAdapterBuilder append(final String value, final int offset,
-        final int length) {
+    public final CharSequenceAdapterBuilder append(final String value, final int offset, final int length) {
         if (length > 0) {
             value.getChars(offset, offset + length, ensureSpace(length), used);
             used += length;
@@ -95,8 +94,7 @@ public class CharSequenceAdapterBuilder extends CharSequenceAdapter {
      * @param length The length of the proto-String in chars.
      * @return This adapter.
      */
-    public final CharSequenceAdapterBuilder append(final CharSequence value, final int offset,
-        final int length) {
+    public final CharSequenceAdapterBuilder append(final CharSequence value, final int offset, final int length) {
         if (length > 0) {
             ensureSpace(length);
             cachedHashCode = 0;
@@ -117,8 +115,7 @@ public class CharSequenceAdapterBuilder extends CharSequenceAdapter {
         return append(value, 0, value.length());
     }
 
-    public final CharSequenceAdapterBuilder append(final char[] value, final int offset,
-        final int length) {
+    public final CharSequenceAdapterBuilder append(final char[] value, final int offset, final int length) {
         if (length > 0) {
             System.arraycopy(value, offset, ensureSpace(length), used, length);
             used += length;
@@ -143,8 +140,7 @@ public class CharSequenceAdapterBuilder extends CharSequenceAdapter {
         return this;
     }
 
-    public final CharSequenceAdapterBuilder append(final byte[] value, final int offset,
-        final int length) {
+    public final CharSequenceAdapterBuilder append(final byte[] value, final int offset, final int length) {
         if (length > 0) {
             ensureSpace(length);
             for (int bi = offset; bi < offset + length; ++bi) {

@@ -5,6 +5,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
+import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ColumnPageReader;
 import io.deephaven.parquet.DataWithOffsets;
 import org.jetbrains.annotations.NotNull;
@@ -18,18 +19,18 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
-    implements ToPage<ATTR, DATA_TYPE[]> {
+        implements ToPage<ATTR, DATA_TYPE[]> {
 
     private final Class<DATA_TYPE> nativeType;
-    private final Dictionary<DATA_TYPE, ATTR> dictionary;
+    private final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary;
     private final Function<Object, DATA_TYPE[]> convertResultFallbackFun;
 
     ToPageWithDictionary(
-        @NotNull final Class<DATA_TYPE> nativeType,
-        @NotNull final Dictionary<DATA_TYPE, ATTR> dictionary,
-        @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
+            @NotNull final Class<DATA_TYPE> nativeType,
+            @NotNull final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary,
+            @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
         this.nativeType = nativeType;
-        this.dictionary = dictionary;
+        this.chunkDictionary = chunkDictionary;
         this.convertResultFallbackFun = convertResultFallbackFun;
     }
 
@@ -48,8 +49,8 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
     @Override
     @NotNull
     public final Object getResult(@NotNull final ColumnPageReader columnPageReader)
-        throws IOException {
-        if (columnPageReader.getDictionary() == null) {
+            throws IOException {
+        if (columnPageReader.getDictionary() == ColumnChunkReader.NULL_DICTIONARY) {
             return ToPage.super.getResult(columnPageReader);
         }
 
@@ -71,7 +72,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
         final DATA_TYPE[] to = (DATA_TYPE[]) Array.newInstance(nativeType, from.length);
 
         for (int ii = 0; ii < from.length; ++ii) {
-            to[ii] = dictionary.get(from[ii]);
+            to[ii] = chunkDictionary.get(from[ii]);
         }
 
         return to;
@@ -79,13 +80,13 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
 
     @Override
     @NotNull
-    public final ObjectChunk<DATA_TYPE, ATTR> getDictionary() {
-        return dictionary.getChunk();
+    public final ObjectChunk<DATA_TYPE, ATTR> getDictionaryChunk() {
+        return chunkDictionary.getChunk();
     }
 
     @NotNull
     public final StringSetImpl.ReversibleLookup<DATA_TYPE> getReversibleLookup() {
-        return dictionary;
+        return chunkDictionary;
     }
 
     @Override
@@ -112,7 +113,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
 
             @Override
             public Object getResult(@NotNull final ColumnPageReader columnPageReader)
-                throws IOException {
+                    throws IOException {
                 return ToPageWithDictionary.this.getResult(columnPageReader);
             }
 

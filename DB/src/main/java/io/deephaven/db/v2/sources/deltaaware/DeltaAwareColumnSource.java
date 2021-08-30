@@ -54,8 +54,7 @@ import java.util.function.LongConsumer;
 // We calculate orderedKeys - deltaRows, representing the baseline keys in the baseline space.
 // baselineKeysBs = {0, 4, 10, 14}
 //
-// We also calculate intersection(orderedKeys, deltaRows), representing the delta keys in the
-// _baseline_ space.
+// We also calculate intersection(orderedKeys, deltaRows), representing the delta keys in the _baseline_ space.
 // deltaKeysBS = {5, 9, 15}
 //
 // We translate the above using invert, representing the delta keys in the _delta_ space.
@@ -68,14 +67,10 @@ import java.util.function.LongConsumer;
 // baselineChunk = {b0, b4, b10, b14}
 // deltaChunk = {d5, d9, d15}
 //
-// To get these values back in the right spot, we analyze baselineKeysBs and deltaKeysBS. We take
-// advantage of the
-// property that these two sets do not intersect; furthermore, that their union is the original
-// index requested by
-// the caller. To do this, we simply count the number of consecutive (not necessarily adjacent)
-// baseline items not
-// interrupted by delta; and likewise the number of consecutive (not necessarily adjacent) delta
-// items not
+// To get these values back in the right spot, we analyze baselineKeysBs and deltaKeysBS. We take advantage of the
+// property that these two sets do not intersect; furthermore, that their union is the original index requested by
+// the caller. To do this, we simply count the number of consecutive (not necessarily adjacent) baseline items not
+// interrupted by delta; and likewise the number of consecutive (not necessarily adjacent) delta items not
 // interrupted by baseline. In our example:
 //
 // We need the first two items from the baseline chunk: b0, b4
@@ -84,7 +79,7 @@ import java.util.function.LongConsumer;
 // Then the final item from the delta chunk: d15
 
 public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
-    implements WritableSource<T>, WritableChunkSink<Attributes.Values> {
+        implements WritableSource<T>, WritableChunkSink<Attributes.Values> {
     /**
      * The initial size of the delta column source.
      */
@@ -92,11 +87,11 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * In its own coordinate space
      */
-    private final WritableChunkSink baseline;
+    private final WritableChunkSink<Values> baseline;
     /**
      * Also in its own coordinate space (i.e. densely packed)
      */
-    private WritableChunkSink delta;
+    private WritableChunkSink<Values> delta;
 
     @FunctionalInterface
     private interface CapacityEnsurer {
@@ -104,15 +99,13 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     /**
-     * A lambda that ensures the capacity of the baseline data structure. (We have this because the
-     * WritableChunkSink does not have an 'ensureCapacity', but the underlying data structure we use
-     * does).
+     * A lambda that ensures the capacity of the baseline data structure. (We have this because the WritableChunkSink
+     * does not have an 'ensureCapacity', but the underlying data structure we use does).
      */
     private final CapacityEnsurer baselineCapacityEnsurer;
     /**
-     * A lambda that ensures the capacity of the delta data structure. (We have this because the
-     * WritableChunkSink does not have an 'ensureCapacity', but the underlying data structure we use
-     * does).
+     * A lambda that ensures the capacity of the delta data structure. (We have this because the WritableChunkSink does
+     * not have an 'ensureCapacity', but the underlying data structure we use does).
      */
     private CapacityEnsurer deltaCapacityEnsurer;
     /**
@@ -124,20 +117,19 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      */
     private int deltaCapacity;
     /**
-     * The used delta keys (in the 'baseline' coordinate space). Null until
-     * startTrackingPrevValues() is called. This field is volatile because we want concurrent
-     * lockfree getters to see correct values from "get()" even though we might be in the middle of
-     * commitValues().
+     * The used delta keys (in the 'baseline' coordinate space). Null until startTrackingPrevValues() is called. This
+     * field is volatile because we want concurrent lockfree getters to see correct values from "get()" even though we
+     * might be in the middle of commitValues().
      */
     private volatile Index deltaRows;
     /**
-     * The maximum key inserted into deltaRows during this phase. We use this to make sure that keys
-     * are not inserted out of numerical order.
+     * The maximum key inserted into deltaRows during this phase. We use this to make sure that keys are not inserted
+     * out of numerical order.
      */
     private long maxKey;
     /**
-     * Adapter (not especially efficient) for turning single-element accesses into Chunk accesses.
-     * ThreadLocal because multiple threads might be concurrently calling various get() methods.
+     * Adapter (not especially efficient) for turning single-element accesses into Chunk accesses. ThreadLocal because
+     * multiple threads might be concurrently calling various get() methods.
      */
     private ThreadLocal<ChunkAdapter<T>> chunkAdapter;
     /**
@@ -148,7 +140,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     public DeltaAwareColumnSource(Class<T> type) {
         super(type);
         final SparseArrayColumnSource<T> sparseBaseline =
-            SparseArrayColumnSource.getSparseMemoryColumnSource(getType(), null);
+                SparseArrayColumnSource.getSparseMemoryColumnSource(getType(), null);
         baseline = sparseBaseline;
         delta = baseline;
 
@@ -159,34 +151,27 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
         deltaCapacity = 0;
         deltaRows = null;
-        chunkAdapter =
-            ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
+        chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
         updateCommitter = null;
     }
 
     // ==================================================================================================================
     // CONTEXT METHODS
     //
-    // We have lots of different ways of fetching elements, and therefore lots of different 'fetch'
-    // methods. Furthermore,
-    // because each type of 'fetch' method needs a getContext method customized to it, we would in
-    // principle need one
-    // 'getContext' method for each kind of 'fetch' method. In practice, because certain 'fetch'
-    // methods share the same
+    // We have lots of different ways of fetching elements, and therefore lots of different 'fetch' methods.
+    // Furthermore,
+    // because each type of 'fetch' method needs a getContext method customized to it, we would in principle need one
+    // 'getContext' method for each kind of 'fetch' method. In practice, because certain 'fetch' methods share the same
     // Context, we can get away with fewer.
     //
-    // Breaking it town, there are twelve kinds of 'fetching' that one might want, represented as
-    // points in this
+    // Breaking it town, there are twelve kinds of 'fetching' that one might want, represented as points in this
     // three-dimensional space:
     // 1. Will you be doing get or fill?
     // 2. Will you be accessing baseline (aka prev), delta, or current?
-    // 3. FUTURE WORK: Will you be specifying all your keys up up front and slurping them
-    // sequentially (call this
-    // "sequential access") or will you be specifying OrderedKeys at every get call (call this
-    // "random access")
+    // 3. FUTURE WORK: Will you be specifying all your keys up up front and slurping them sequentially (call this
+    // "sequential access") or will you be specifying OrderedKeys at every get call (call this "random access")
     //
-    // Because #3 is future work we only have six types of "fetch" calls we care about, denoted
-    // compactly like this:
+    // Because #3 is future work we only have six types of "fetch" calls we care about, denoted compactly like this:
     // {get, fill} x {prev, delta, current}.
     //
     // These are their names
@@ -197,8 +182,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // {get, current}: getChunk
     // {fill, current}: fillChunk
     //
-    // To reduce the number of getContext methods, we group the above into triplets so we only need
-    // to provide two
+    // To reduce the number of getContext methods, we group the above into triplets so we only need to provide two
     // GetContext methods. The groupings and their names are:
     // {get} x {baseline, delta, current}: makeGetContext(int)
     // {fill} x {baseline, delta, current: makeFillContext(int)
@@ -228,33 +212,29 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        // TODO: this can probably use the defaultChunkSource.defaultGetChunk and avoid this cast
-        // with a refactoring.
+        // TODO: this can probably use the defaultChunkSource.defaultGetChunk and avoid this cast with a refactoring.
         // noinspection unchecked
         return (Chunk<Values>) getOrFillChunk((DAContext) context, null, orderedKeys);
     }
 
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-        @NotNull OrderedKeys orderedKeys) {
+            @NotNull OrderedKeys orderedKeys) {
         // Ignore return type.
         getOrFillChunk((DAContext) context, dest, orderedKeys);
     }
 
     /**
-     * This method encapsulates some shared logic for the 'get' and 'fill' paths. If you pass in
-     * {@code dest} = null, we assume you are doing a 'get'. Otherwise (if {@code dest} is not
-     * null), we assume you are doing a 'fill'.
-     * 
+     * This method encapsulates some shared logic for the 'get' and 'fill' paths. If you pass in {@code dest} = null, we
+     * assume you are doing a 'get'. Otherwise (if {@code dest} is not null), we assume you are doing a 'fill'.
+     *
      * @param context The context.
-     * @param optionalDest Null if you are doing a get, or destination chunk if you are doing a
-     *        fill.
+     * @param optionalDest Null if you are doing a get, or destination chunk if you are doing a fill.
      * @param orderedKeys Keys to get.
      * @return The chunk if you are doing a get, or {@code dest} if you are doing a fill.
      */
-    private Chunk<? super Values> getOrFillChunk(@NotNull DAContext context,
-        WritableChunk<? super Values> optionalDest,
-        @NotNull OrderedKeys orderedKeys) {
+    private Chunk<? super Values> getOrFillChunk(@NotNull DAContext context, WritableChunk<? super Values> optionalDest,
+            @NotNull OrderedKeys orderedKeys) {
         // Do the volatile read once
         final Index dRows = deltaRows;
         // Optimization if we're not tracking prev or if there are no deltas.
@@ -263,8 +243,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         }
 
         // baselineKeysBS: (orderedKeys - deltaRows): baseline keys in the baseline coordinate space
-        // deltaKeysBS: (orderedKeys intersect deltaRows) delta keys, also in the baseline
-        // coordinate space
+        // deltaKeysBS: (orderedKeys intersect deltaRows) delta keys, also in the baseline coordinate space
         // deltaKeysDS: the above, translated to the delta coordinate space
         final Index[] splitResult = new Index[2];
         splitKeys(orderedKeys, dRows, splitResult);
@@ -283,24 +262,21 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         }
 
         // Always use "get" to pull in the baseline and delta pieces
-        final Chunk<Values> bChunk = baseline.getChunk(context.baseline.getContext, baselineKeysBS);
-        final Chunk<Values> dChunk = delta.getChunk(context.delta.getContext, deltaKeysDS);
-        // Merge them into either the user-provided chunk, or our own preallocated chunk. Note that
-        // 'destToUse' will
-        // always be non-null. This is because if we arrived here from fillChunk(), then
-        // optionalDest will be non-null.
-        // Otherwise (if we arrived here from getChunk()), then optionalDest will be null, but
-        // context.optionalChunk
+        final Chunk<? extends Values> bChunk = baseline.getChunk(context.baseline.getContext, baselineKeysBS);
+        final Chunk<? extends Values> dChunk = delta.getChunk(context.delta.getContext, deltaKeysDS);
+        // Merge them into either the user-provided chunk, or our own preallocated chunk. Note that 'destToUse' will
+        // always be non-null. This is because if we arrived here from fillChunk(), then optionalDest will be non-null.
+        // Otherwise (if we arrived here from getChunk()), then optionalDest will be null, but context.optionalChunk
         // will be non-null (having been created through makeGetContext()).
-        final WritableChunk<? super Values> destToUse =
-            optionalDest != null ? optionalDest : context.optionalChunk;
+        final WritableChunk<? super Values> destToUse = optionalDest != null ? optionalDest : context.optionalChunk;
         ChunkMerger.merge(bChunk, dChunk, baselineKeysBS, deltaKeysBS, destToUse);
         return destToUse;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static Chunk<? super Values> getOrFillSimple(ChunkSource src, GetAndFillContexts ctx,
-        WritableChunk<? super Values> optionalDest,
-        OrderedKeys orderedKeys) {
+            WritableChunk<? super Values> optionalDest,
+            OrderedKeys orderedKeys) {
         if (optionalDest == null) {
             return src.getChunk(ctx.getContext, orderedKeys);
         }
@@ -315,15 +291,14 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // ==================================================================================================================
 
     @Override
-    public Chunk<Values> getPrevChunk(@NotNull GetContext context,
-        @NotNull OrderedKeys orderedKeys) {
+    public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
         final DAContext dactx = (DAContext) context;
         return baseline.getChunk(dactx.baseline.getContext, orderedKeys);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context,
-        @NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull OrderedKeys orderedKeys) {
         final DAContext dactx = (DAContext) context;
         baseline.fillChunk(dactx.baseline.optionalFillContext, dest, orderedKeys);
     }
@@ -341,14 +316,14 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // ==================================================================================================================
 
     @Override
-    public void fillFromChunk(@NotNull FillFromContext context,
-        @NotNull Chunk<? extends Values> src, @NotNull OrderedKeys orderedKeys) {
+    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull OrderedKeys orderedKeys) {
         throw new UnsupportedOperationException("TODO(kosak)");
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context,
-        @NotNull Chunk<? extends Values> src, @NotNull LongChunk<Attributes.KeyIndices> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull LongChunk<Attributes.KeyIndices> keys) {
         throw new UnsupportedOperationException("TODO");
     }
 
@@ -509,10 +484,9 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     /**
      * @param index The key to look up.
-     * @return The index, translated into delta space, that the caller should use, or -1 if the
-     *         caller should use the original index in baseline space. Will return -1 if either
-     *         startTrackingPrevValues() has not been called yet, or if the index does not exist in
-     *         the deltaRows.
+     * @return The index, translated into delta space, that the caller should use, or -1 if the caller should use the
+     *         original index in baseline space. Will return -1 if either startTrackingPrevValues() has not been called
+     *         yet, or if the index does not exist in the deltaRows.
      */
     private long lookupIndexInDeltaSpace(final long index) {
         assertIndexValid(index);
@@ -524,14 +498,13 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     /**
      * @param index The key to look up.
-     * @return If we're not tracking previous values yet, simply return the key (note 1). Otherwise,
-     *         if the key already exists in the 'deltaRows' set, return its index. Otherwise
-     *         allocate a new element of the deltaRows set and return that index.
+     * @return If we're not tracking previous values yet, simply return the key (note 1). Otherwise, if the key already
+     *         exists in the 'deltaRows' set, return its index. Otherwise allocate a new element of the deltaRows set
+     *         and return that index.
      */
     private long lookupOrCreateIndexInDeltaSpace(final long index) {
         assertIndexValid(index);
-        // We're in that special initial state where we're not tracking previous values, so we can
-        // just write directly
+        // We're in that special initial state where we're not tracking previous values, so we can just write directly
         // to the column source.
         if (baseline == delta) {
             return index;
@@ -547,8 +520,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         }
 
         if (index < maxKey) {
-            throw new UnsupportedOperationException(
-                "New keys need to be inserted in ascending order, but " + index +
+            throw new UnsupportedOperationException("New keys need to be inserted in ascending order, but " + index +
                     "came after" + maxKey);
         }
         maxKey = index;
@@ -568,17 +540,16 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     private static void assertIndexValid(final long index) {
         if (index < 0) {
             throw new UnsupportedOperationException(
-                "DeltaAwareColumnSource does not accept negative indices: " + index);
+                    "DeltaAwareColumnSource does not accept negative indices: " + index);
         }
     }
 
     private void commitValues() {
         try (
-            final FillFromContext baselineCtx = baseline.makeFillFromContext(preferredChunkSize);
-            final WritableLongChunk<OrderedKeyRanges> orderedKeyRanges =
-                WritableLongChunk.makeWritableChunk(2);
-            final GetContext deltaCtx = delta.makeGetContext(preferredChunkSize);
-            final OrderedKeys.Iterator it = deltaRows.getOrderedKeysIterator()) {
+                final FillFromContext baselineCtx = baseline.makeFillFromContext(preferredChunkSize);
+                final WritableLongChunk<OrderedKeyRanges> orderedKeyRanges = WritableLongChunk.makeWritableChunk(2);
+                final GetContext deltaCtx = delta.makeGetContext(preferredChunkSize);
+                final OrderedKeys.Iterator it = deltaRows.getOrderedKeysIterator()) {
             long startKey = 0;
             while (it.hasMore()) {
                 final OrderedKeys baselineOk = it.getNextOrderedKeysWithLength(preferredChunkSize);
@@ -587,9 +558,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
                 orderedKeyRanges.set(1, startKey + baselineOkSize - 1);
                 orderedKeyRanges.setSize(2);
                 startKey += baselineOkSize;
-                final OrderedKeys deltaOk =
-                    OrderedKeys.wrapKeyRangesChunkAsOrderedKeys(orderedKeyRanges);
-                final Chunk<Values> data = delta.getChunk(deltaCtx, deltaOk);
+                final OrderedKeys deltaOk = OrderedKeys.wrapKeyRangesChunkAsOrderedKeys(orderedKeyRanges);
+                final Chunk<? extends Values> data = delta.getChunk(deltaCtx, deltaOk);
                 baseline.fillFromChunk(baselineCtx, data, baselineOk);
             }
         }
@@ -604,29 +574,27 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         }
         deltaCapacity = INITIAL_DELTA_CAPACITY;
         final ArrayBackedColumnSource<T> delta =
-            ArrayBackedColumnSource.getMemoryColumnSource(deltaCapacity, getType(), null);
+                ArrayBackedColumnSource.getMemoryColumnSource(deltaCapacity, getType(), null);
         this.delta = delta;
         deltaCapacityEnsurer = delta::ensureCapacity;
 
         deltaRows = Index.FACTORY.getEmptyIndex();
         maxKey = Long.MIN_VALUE;
         /*
-         * When 'delta' changes, we need a way to notify all the ChunkAdapters about its new value.
-         * We say "all the ChunkAdapters" because chunkAdapter is a ThreadLocal, so there is one
-         * lying around for each thread that has happened to have called get* or set*. The reason
-         * the ChunkAdapters need to know about this change is because they have Contexts that need
-         * to be updated. The simplest way to update them is to just throw them all away and start
-         * with a fresh ThreadLocal. This is not that big of a deal because this method is called at
-         * most twice during the lifetime of a given DeltaAwareColumnSource: once at construction
-         * and once at the time of startTrackingPrevValues().
+         * When 'delta' changes, we need a way to notify all the ChunkAdapters about its new value. We say "all the
+         * ChunkAdapters" because chunkAdapter is a ThreadLocal, so there is one lying around for each thread that has
+         * happened to have called get* or set*. The reason the ChunkAdapters need to know about this change is because
+         * they have Contexts that need to be updated. The simplest way to update them is to just throw them all away
+         * and start with a fresh ThreadLocal. This is not that big of a deal because this method is called at most
+         * twice during the lifetime of a given DeltaAwareColumnSource: once at construction and once at the time of
+         * startTrackingPrevValues().
          */
-        chunkAdapter =
-            ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
+        chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
         updateCommitter = new UpdateCommitter<>(this, DeltaAwareColumnSource::commitValues);
     }
 
     @Override
-    public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
         throw new UnsupportedOperationException();
     }
 
@@ -642,11 +610,11 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     /**
      * Partitions {@code lhs} into two indices: (lhs intersect rhs) and (lhs minus rhs).
-     * 
+     *
      * @param lhs The {@link OrderedKeys} to partition
      * @param rhs The keys which control the partition operation
-     * @param results Allocated by the caller. {@code results[0]} will be set to (lhs intersect
-     *        rhs). {@code results[1]} will be set to (lhs minus rhs).
+     * @param results Allocated by the caller. {@code results[0]} will be set to (lhs intersect rhs). {@code results[1]}
+     *        will be set to (lhs minus rhs).
      */
     private static void splitKeys(OrderedKeys lhs, Index rhs, Index[] results) {
         final Index lhsIndex = lhs.asIndex();
@@ -655,13 +623,14 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     private static class DAContext implements ChunkSource.GetContext, ChunkSource.FillContext {
-        static DAContext createForGet(ChunkType chunkType, ChunkSource baseline, ChunkSource delta,
-            int chunkCapacity) {
+        @SuppressWarnings("rawtypes")
+        static DAContext createForGet(ChunkType chunkType, ChunkSource baseline, ChunkSource delta, int chunkCapacity) {
             final GetAndFillContexts b = GetAndFillContexts.createForGet(baseline, chunkCapacity);
             final GetAndFillContexts d = GetAndFillContexts.createForGet(delta, chunkCapacity);
             return new DAContext(b, d, chunkType.makeWritableChunk(chunkCapacity));
         }
 
+        @SuppressWarnings("rawtypes")
         static DAContext createForFill(ChunkSource baseline, ChunkSource delta, int chunkCapacity) {
             final GetAndFillContexts b = GetAndFillContexts.createForFill(baseline, chunkCapacity);
             final GetAndFillContexts d = GetAndFillContexts.createForFill(delta, chunkCapacity);
@@ -675,8 +644,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
          */
         final WritableChunk<Values> optionalChunk;
 
-        private DAContext(GetAndFillContexts baseline, GetAndFillContexts delta,
-            WritableChunk<Values> optionalChunk) {
+        private DAContext(GetAndFillContexts baseline, GetAndFillContexts delta, WritableChunk<Values> optionalChunk) {
             this.baseline = baseline;
             this.delta = delta;
             this.optionalChunk = optionalChunk;
@@ -684,13 +652,15 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     private static class GetAndFillContexts {
+        @SuppressWarnings("rawtypes")
         static GetAndFillContexts createForGet(ChunkSource chunkSource, int chunkCapacity) {
             return new GetAndFillContexts(chunkSource.makeGetContext(chunkCapacity), null);
         }
 
+        @SuppressWarnings("rawtypes")
         static GetAndFillContexts createForFill(ChunkSource chunkSource, int chunkCapacity) {
             return new GetAndFillContexts(chunkSource.makeGetContext(chunkCapacity),
-                chunkSource.makeFillContext(chunkCapacity));
+                    chunkSource.makeFillContext(chunkCapacity));
         }
 
         /**
@@ -702,8 +672,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
          */
         final ChunkSource.FillContext optionalFillContext;
 
-        private GetAndFillContexts(ChunkSource.GetContext getContext,
-            ChunkSource.FillContext optionalFillContext) {
+        private GetAndFillContexts(ChunkSource.GetContext getContext, ChunkSource.FillContext optionalFillContext) {
             this.getContext = getContext;
             this.optionalFillContext = optionalFillContext;
         }

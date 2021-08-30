@@ -17,8 +17,7 @@ import static org.junit.Assert.*;
 
 public class TestSharedContext {
 
-    private static final class TestSharedContextKey
-        implements SharedContext.Key<TestResettableContext> {
+    private static final class TestSharedContextKey implements SharedContext.Key<TestResettableContext> {
     }
 
     private static final class TestResettableContext implements ResettableContext {
@@ -138,11 +137,9 @@ public class TestSharedContext {
         final String sortCol = "TS";
         final String formulaCol = "F";
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> {
-            final Table t1 =
-                t0.update(sortCol + "=i", formulaCol + "=" + cols[0] + "+" + cols[1]).reverse();
+            final Table t1 = t0.update(sortCol + "=i", formulaCol + "=" + cols[0] + "+" + cols[1]).reverse();
             final Table t1Filtered = t1.where(condition);
-            final Table t2 =
-                t1.sort(sortCol).naturalJoin(t1, sortCol, Strings.join(joinColumnsToAdd, ","));
+            final Table t2 = t1.sort(sortCol).naturalJoin(t1, sortCol, Strings.join(joinColumnsToAdd, ","));
             final Table t2Filtered = t2.where(joinedCondition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {

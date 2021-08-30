@@ -158,7 +158,7 @@ public class BinaryDecoder {
     public static native BinaryDecoder alloc();
 
     public static native BinaryDecoder alloc(
-        BinaryDecoder.AllocBytesUnionType bytes, double start, double length);
+            BinaryDecoder.AllocBytesUnionType bytes, double start, double length);
 
     public static native BinaryDecoder alloc(BinaryDecoder.AllocBytesUnionType bytes, double start);
 
@@ -248,7 +248,7 @@ public class BinaryDecoder {
     public BinaryDecoder(ArrayBuffer bytes) {}
 
     public BinaryDecoder(
-        BinaryDecoder.ConstructorBytesUnionType bytes, double start, double length) {}
+            BinaryDecoder.ConstructorBytesUnionType bytes, double start, double length) {}
 
     public BinaryDecoder(BinaryDecoder.ConstructorBytesUnionType bytes, double start) {}
 
@@ -392,7 +392,7 @@ public class BinaryDecoder {
     }
 
     public native void setBlock(
-        BinaryDecoder.SetBlockDataUnionType data, double start, double length);
+            BinaryDecoder.SetBlockDataUnionType data, double start, double length);
 
     public native void setBlock(BinaryDecoder.SetBlockDataUnionType data, double start);
 

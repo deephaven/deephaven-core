@@ -8,9 +8,9 @@ public abstract class JoinBase extends TableBase implements Join {
     @Check
     final void checkAdditions() {
         if (additions().stream().map(JoinAddition::newColumn).distinct().count() != additions()
-            .size()) {
+                .size()) {
             throw new IllegalArgumentException(
-                "Invalid join additions, must not use the same output column multiple times.");
+                    "Invalid join additions, must not use the same output column multiple times.");
         }
     }
 }

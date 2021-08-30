@@ -13,8 +13,7 @@ import java.io.Serializable;
 
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-    implements WritableSource<T>, WritableChunkSink<Attributes.Values>, ShiftData.ShiftCallback,
-    Serializable {
+        implements WritableSource<T>, WritableChunkSink<Attributes.Values>, ShiftData.ShiftCallback, Serializable {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;
@@ -35,24 +34,27 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
     @Override
     public void shift(long start, long end, long offset) {}
 
-    public static <T> SingleValueColumnSource getSingleValueColumnSource(Class<T> type) {
+    public static <T> SingleValueColumnSource<T> getSingleValueColumnSource(Class<T> type) {
+        SingleValueColumnSource<?> result;
         if (type == Byte.class || type == byte.class) {
-            return new ByteSingleValueSource();
+            result = new ByteSingleValueSource();
         } else if (type == Character.class || type == char.class) {
-            return new CharacterSingleValueSource();
+            result = new CharacterSingleValueSource();
         } else if (type == Double.class || type == double.class) {
-            return new DoubleSingleValueSource();
+            result = new DoubleSingleValueSource();
         } else if (type == Float.class || type == float.class) {
-            return new FloatSingleValueSource();
+            result = new FloatSingleValueSource();
         } else if (type == Integer.class || type == int.class) {
-            return new IntegerSingleValueSource();
+            result = new IntegerSingleValueSource();
         } else if (type == Long.class || type == long.class) {
-            return new LongSingleValueSource();
+            result = new LongSingleValueSource();
         } else if (type == Short.class || type == short.class) {
-            return new ShortSingleValueSource();
+            result = new ShortSingleValueSource();
         } else {
-            return new ObjectSingleValueSource<>(type);
+            result = new ObjectSingleValueSource<>(type);
         }
+        // noinspection unchecked
+        return (SingleValueColumnSource<T>) result;
     }
 
     @Override

@@ -11,8 +11,7 @@ class FactoryInstances {
 
     static {
         try {
-            final String implClassName =
-                Configuration.getInstance().getProperty("DbTypes.DbFile.impl");
+            final String implClassName = Configuration.getInstance().getProperty("DbTypes.DbFile.impl");
             final Class c = Class.forName(implClassName);
             final Constructor constructor = c.getConstructor();
             FILE_FACTORY = (DbFileFactory) constructor.newInstance();
@@ -29,8 +28,7 @@ class FactoryInstances {
 
     static {
         try {
-            final String implClassName =
-                Configuration.getInstance().getProperty("DbTypes.DbImage.impl");
+            final String implClassName = Configuration.getInstance().getProperty("DbTypes.DbImage.impl");
             final Class c = Class.forName(implClassName);
             final Constructor constructor = c.getConstructor();
             IMAGE_FACTORY = (DbImageFactory) constructor.newInstance();

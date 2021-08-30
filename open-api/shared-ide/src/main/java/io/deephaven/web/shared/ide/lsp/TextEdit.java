@@ -14,9 +14,9 @@ public class TextEdit implements Serializable {
     @JsIgnore
     public String toString() {
         return "TextEdit{" +
-            "range=" + range +
-            ", text='" + text + '\'' +
-            '}';
+                "range=" + range +
+                ", text='" + text + '\'' +
+                '}';
     }
 
     @Override

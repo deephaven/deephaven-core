@@ -172,8 +172,7 @@ public interface LogEntry extends LogOutput, LogSink.Element {
         }
 
         @Override
-        public <T> LogEntry append(ObjIntIntFormatter<T> objFormatter, T t, int nOffset,
-            int nLength) {
+        public <T> LogEntry append(ObjIntIntFormatter<T> objFormatter, T t, int nOffset, int nLength) {
             return this;
         }
 
@@ -203,8 +202,7 @@ public interface LogEntry extends LogOutput, LogSink.Element {
         }
 
         @Override
-        public LogEntry appendTimestampMicros(final long utcMicros,
-            final TimestampBufferMicros tb) {
+        public LogEntry appendTimestampMicros(final long utcMicros, final TimestampBufferMicros tb) {
             return this;
         }
 

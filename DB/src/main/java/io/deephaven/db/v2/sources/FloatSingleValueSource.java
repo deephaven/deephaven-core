@@ -83,7 +83,7 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     }
 
     @Override
-    public final void copy(ColumnSource<Float> sourceColumn, long sourceKey, long destKey) {
+    public final void copy(ColumnSource<? extends Float> sourceColumn, long sourceKey, long destKey) {
         set(sourceColumn.get(sourceKey));
     }
 
@@ -93,7 +93,7 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final FloatChunk chunk = src.asFloatChunk();
+        final FloatChunk<? extends Attributes.Values> chunk = src.asFloatChunk();
         set(chunk.get(0));
     }
 
@@ -103,7 +103,7 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final FloatChunk chunk = src.asFloatChunk();
+        final FloatChunk<? extends Attributes.Values> chunk = src.asFloatChunk();
         set(chunk.get(0));
     }
 }

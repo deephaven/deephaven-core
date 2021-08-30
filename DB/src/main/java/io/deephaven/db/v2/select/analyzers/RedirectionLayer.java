@@ -24,8 +24,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     private final Index freeValues = Index.CURRENT_FACTORY.getEmptyIndex();
     private long maxInnerIndex;
 
-    RedirectionLayer(SelectAndViewAnalyzer inner, Index resultIndex,
-        RedirectionIndex redirectionIndex) {
+    RedirectionLayer(SelectAndViewAnalyzer inner, Index resultIndex, RedirectionIndex redirectionIndex) {
         this.inner = inner;
         this.resultIndex = resultIndex;
         this.redirectionIndex = redirectionIndex;
@@ -33,35 +32,30 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder,
-        Set<String> remainingDepsToSatisfy) {
+    public void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
         inner.populateModifiedColumnSetRecurse(mcsBuilder, remainingDepsToSatisfy);
     }
 
     @Override
-    public Map<String, ColumnSource> getColumnSourcesRecurse(GetMode mode) {
+    public Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
         return inner.getColumnSourcesRecurse(mode);
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear,
-        UpdateHelper helper) {
+    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper) {
         inner.applyUpdate(upstream, toClear, helper);
 
-        // we need to remove the removed values from our redirection index, and add them to our free
-        // index; so that
+        // we need to remove the removed values from our redirection index, and add them to our free index; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final Index.RandomBuilder innerToFreeBuilder = Index.CURRENT_FACTORY.getRandomBuilder();
-        upstream.removed
-            .forAllLongs(key -> innerToFreeBuilder.addKey(redirectionIndex.remove(key)));
+        upstream.removed.forAllLongs(key -> innerToFreeBuilder.addKey(redirectionIndex.remove(key)));
         freeValues.insert(innerToFreeBuilder.getIndex());
 
-        // we have to shift things that have not been removed, this handles the unmodified rows; but
-        // also the
+        // we have to shift things that have not been removed, this handles the unmodified rows; but also the
         // modified rows need to have their redirections updated for subsequent modified columns
         if (upstream.shifted.nonempty()) {
             try (final Index prevIndex = resultIndex.getPrevIndex();
-                final Index prevNoRemovals = prevIndex.minus(upstream.removed)) {
+                    final Index prevNoRemovals = prevIndex.minus(upstream.removed)) {
                 final MutableObject<Index.SearchIterator> forwardIt = new MutableObject<>();
 
                 upstream.shifted.intersect(prevNoRemovals).apply((begin, end, delta) -> {
@@ -71,8 +65,8 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                         }
                         final Index.SearchIterator localForwardIt = forwardIt.getValue();
                         if (localForwardIt.advance(begin)) {
-                            for (long key = localForwardIt.currentValue(); localForwardIt
-                                .currentValue() <= end; key = localForwardIt.nextLong()) {
+                            for (long key = localForwardIt.currentValue(); localForwardIt.currentValue() <= end; key =
+                                    localForwardIt.nextLong()) {
                                 final long inner = redirectionIndex.remove(key);
                                 if (inner != Index.NULL_KEY) {
                                     redirectionIndex.put(key + delta, inner);
@@ -83,11 +77,10 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                             }
                         }
                     } else {
-                        try (final Index.SearchIterator reverseIt =
-                            prevNoRemovals.reverseIterator()) {
+                        try (final Index.SearchIterator reverseIt = prevNoRemovals.reverseIterator()) {
                             if (reverseIt.advance(end)) {
-                                for (long key = reverseIt.currentValue(); reverseIt
-                                    .currentValue() >= begin; key = reverseIt.nextLong()) {
+                                for (long key = reverseIt.currentValue(); reverseIt.currentValue() >= begin; key =
+                                        reverseIt.nextLong()) {
                                     final long inner = redirectionIndex.remove(key);
                                     if (inner != Index.NULL_KEY) {
                                         redirectionIndex.put(key + delta, inner);
@@ -108,10 +101,8 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
         }
 
         if (upstream.added.nonempty()) {
-            // added is non-empty, so can always remove at least one value from the index (which
-            // must be >= 0);
-            // if there is no freeValue, this is safe because we'll just remove something from an
-            // empty index
+            // added is non-empty, so can always remove at least one value from the index (which must be >= 0);
+            // if there is no freeValue, this is safe because we'll just remove something from an empty index
             // if there is a freeValue, we'll remove up to that
             // if there are not enough free values, we'll remove all the free values then beyond
             final MutableLong lastAllocated = new MutableLong(0);
@@ -136,8 +127,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void updateColumnDefinitionsFromTopLayer(
-        Map<String, ColumnDefinition> columnDefinitions) {
+    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions) {
         inner.updateColumnDefinitionsFromTopLayer(columnDefinitions);
     }
 

@@ -1,11 +1,11 @@
 {
  "className": "io.deephaven.db.tables.libs.QueryLibrary",
  "methods": {
-  "getClassImports": ":return: java.util.Collection<java.lang.Class>",
+  "getClassImports": ":return: java.util.Collection<java.lang.Class<?>>",
   "getImportStatement": ":return: io.deephaven.db.v2.utils.codegen.CodeGenerator",
   "getLibrary": ":return: io.deephaven.db.tables.libs.QueryLibrary",
   "getPackageImports": ":return: java.util.Collection<java.lang.Package>",
-  "getStaticImports": ":return: java.util.Collection<java.lang.Class>",
+  "getStaticImports": ":return: java.util.Collection<java.lang.Class<?>>",
   "importClass": ":param aClass: java.lang.Class",
   "importPackage": ":param aPackage: java.lang.Package",
   "importStatic": ":param aClass: java.lang.Class",

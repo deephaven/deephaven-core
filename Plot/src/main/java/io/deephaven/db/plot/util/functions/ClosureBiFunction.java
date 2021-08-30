@@ -11,8 +11,7 @@ import groovy.lang.Closure;
 /**
  * Wraps a {@link SerializableBiFunction} with the API of a function. <br/>
  */
-public class ClosureBiFunction<T, U, R> extends SerializableClosure<R>
-    implements SerializableBiFunction<T, U, R> {
+public class ClosureBiFunction<T, U, R> extends SerializableClosure<R> implements SerializableBiFunction<T, U, R> {
     private static final long serialVersionUID = 697974379939190730L;
 
     /**

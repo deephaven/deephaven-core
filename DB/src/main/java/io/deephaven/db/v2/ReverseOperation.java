@@ -22,8 +22,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     private QueryTable resultTable;
     private ModifiedColumnSet.Transformer mcsTransformer;
 
-    // minimum pivot is index container size -- this guarantees that we only generate container
-    // shifts
+    // minimum pivot is index container size -- this guarantees that we only generate container shifts
     private static final long MINIMUM_PIVOT = UnionRedirection.CHUNK_MULTIPLE;
     // since we are using highest one bit, this should be a power of two
     private static final int PIVOT_GROWTH_FACTOR = 4;
@@ -67,15 +66,14 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final Index indexToReverse = usePrev ? parent.getIndex().getPrevIndex() : parent.getIndex();
         prevPivot = pivotPoint = computePivot(indexToReverse.lastKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
-        final Map<String, ColumnSource> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource> entry : parent.getColumnSourceMap().entrySet()) {
-            // noinspection unchecked
-            resultMap.put(entry.getKey(), new ReversedColumnSource(entry.getValue(), this));
+        final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
+        for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
+            resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
 
         final Index index = transform(indexToReverse);
@@ -87,18 +85,18 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Reverse);
 
         if (!parent.isRefreshing()) {
-            return new Result(resultTable);
+            return new Result<>(resultTable);
         }
 
         final ShiftAwareListener listener =
-            new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
-                @Override
-                public void onUpdate(final Update upstream) {
-                    ReverseOperation.this.onUpdate(upstream);
-                }
-            };
+                new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
+                    @Override
+                    public void onUpdate(final Update upstream) {
+                        ReverseOperation.this.onUpdate(upstream);
+                    }
+                };
 
-        return new Result(resultTable, listener);
+        return new Result<>(resultTable, listener);
     }
 
     private void onUpdate(final ShiftAwareListener.Update upstream) {
@@ -106,18 +104,15 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         final Index parentIndex = parent.getIndex();
         Assert.eq(resultSize, "resultSize", index.size(), "index.size()");
 
-        if (parentIndex
-            .size() != (index.size() + upstream.added.size() - upstream.removed.size())) {
+        if (parentIndex.size() != (index.size() + upstream.added.size() - upstream.removed.size())) {
             QueryTable.log.error()
-                .append("Size Mismatch: Result index: ")
-                .append(index).append(" size=").append(index.size())
-                .append(", Original index: ")
-                .append(parentIndex).append(" size=").append(parentIndex.size())
-                .append(", Added: ").append(upstream.added).append(" size=")
-                .append(upstream.added.size())
-                .append(", Removed: ").append(upstream.removed).append(" size=")
-                .append(upstream.removed.size())
-                .endl();
+                    .append("Size Mismatch: Result index: ")
+                    .append(index).append(" size=").append(index.size())
+                    .append(", Original index: ")
+                    .append(parentIndex).append(" size=").append(parentIndex.size())
+                    .append(", Added: ").append(upstream.added).append(" size=").append(upstream.added.size())
+                    .append(", Removed: ").append(upstream.removed).append(" size=").append(upstream.removed.size())
+                    .endl();
             throw new IllegalStateException();
         }
 
@@ -129,8 +124,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
         // transform shifted and apply to our index
         final long newShift =
-            (parentIndex.lastKey() > pivotPoint) ? computePivot(parentIndex.lastKey()) - pivotPoint
-                : 0;
+                (parentIndex.lastKey() > pivotPoint) ? computePivot(parentIndex.lastKey()) - pivotPoint : 0;
         if (upstream.shifted.nonempty() || newShift > 0) {
             long watermarkKey = 0;
             final IndexShiftData.Builder oShiftedBuilder = new IndexShiftData.Builder();
@@ -147,16 +141,14 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
                     // Note: begin/end flip responsibilities in the transformation
                     nextShiftDelta = -upstream.shifted.getShiftDelta(idx - 1);
                     final long minStart = Math.max(-nextShiftDelta - newShift, 0);
-                    nextShiftStart =
-                        Math.max(minStart, transform(upstream.shifted.getEndRange(idx - 1)));
+                    nextShiftStart = Math.max(minStart, transform(upstream.shifted.getEndRange(idx - 1)));
                     nextShiftEnd = transform(upstream.shifted.getBeginRange(idx - 1));
                     if (nextShiftEnd < nextShiftStart) {
                         continue;
                     }
                 }
 
-                // insert range prior to here; note shift ends are inclusive so we need the -1 for
-                // endRange
+                // insert range prior to here; note shift ends are inclusive so we need the -1 for endRange
                 long innerEnd = nextShiftStart - 1 + (nextShiftDelta < 0 ? nextShiftDelta : 0);
                 oShiftedBuilder.shiftRange(watermarkKey, innerEnd, newShift);
 
@@ -185,12 +177,11 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         index.insert(downstream.added);
         downstream.modified = transform(upstream.modified);
 
-        Assert.eq(downstream.added.size(), "update.added.size()", upstream.added.size(),
-            "upstream.added.size()");
+        Assert.eq(downstream.added.size(), "update.added.size()", upstream.added.size(), "upstream.added.size()");
         Assert.eq(downstream.removed.size(), "update.removed.size()", upstream.removed.size(),
-            "upstream.removed.size()");
+                "upstream.removed.size()");
         Assert.eq(downstream.modified.size(), "update.modified.size()", upstream.modified.size(),
-            "upstream.modified.size()");
+                "upstream.modified.size()");
 
         downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
         downstream.modifiedColumnSet.clear();
@@ -200,13 +191,12 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
         if (index.size() != parentIndex.size()) {
             QueryTable.log.error()
-                .append("Size Mismatch: Result index: ").append(index)
-                .append("Original index: ").append(parentIndex)
-                .append("Upstream update: ").append(upstream)
-                .append("Downstream update: ").append(downstream)
-                .endl();
-            Assert.neq(index.size(), "index.size()", parentIndex.size(),
-                "parent.getIndex().size()");
+                    .append("Size Mismatch: Result index: ").append(index)
+                    .append("Original index: ").append(parentIndex)
+                    .append("Upstream update: ").append(upstream)
+                    .append("Downstream update: ").append(downstream)
+                    .endl();
+            Assert.neq(index.size(), "index.size()", parentIndex.size(), "parent.getIndex().size()");
         }
 
         resultTable.notifyListeners(downstream);
@@ -218,8 +208,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         if (highestOneBit > (Long.MAX_VALUE / PIVOT_GROWTH_FACTOR)) {
             return Long.MAX_VALUE;
         } else {
-            // make it big enough that we should be able to accommodate what we are adding now, plus
-            // a bit more
+            // make it big enough that we should be able to accommodate what we are adding now, plus a bit more
             return Math.max(highestOneBit * PIVOT_GROWTH_FACTOR - 1, MINIMUM_PIVOT);
         }
     }
@@ -233,7 +222,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index, or vice versa.
-     * 
+     *
      * @param indexToTransform the outer index
      * @return the corresponding inner index
      */
@@ -242,9 +231,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     /**
-     * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle,
-     * or vice versa.
-     * 
+     * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle, or vice versa.
+     *
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */
@@ -256,8 +244,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         final long pivot = usePrev ? getPivotPrev() : pivotPoint;
         final IndexBuilder reversedBuilder = Index.FACTORY.getRandomBuilder();
 
-        for (final Index.RangeIterator rangeIterator = outerIndex.rangeIterator(); rangeIterator
-            .hasNext();) {
+        for (final Index.RangeIterator rangeIterator = outerIndex.rangeIterator(); rangeIterator.hasNext();) {
             rangeIterator.next();
             final long startValue = rangeIterator.currentRangeStart();
             final long endValue = rangeIterator.currentRangeEnd();
@@ -274,7 +261,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index, or vice versa.
-     * 
+     *
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */
@@ -283,9 +270,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     /**
-     * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle,
-     * or vice versa.
-     * 
+     * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle, or vice versa.
+     *
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */

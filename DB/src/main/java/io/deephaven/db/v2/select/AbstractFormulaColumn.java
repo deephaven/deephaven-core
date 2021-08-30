@@ -28,8 +28,7 @@ import java.security.*;
 import java.util.*;
 
 /**
- * A SelectColumn that implements a formula computed from the existing columns in the table and a
- * query scope.
+ * A SelectColumn that implements a formula computed from the existing columns in the table and a query scope.
  */
 public abstract class AbstractFormulaColumn implements FormulaColumn {
     private static final Logger log = LoggerFactory.getLogger(AbstractFormulaColumn.class);
@@ -37,9 +36,8 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     private final boolean useKernelFormulas;
 
 
-    private static final boolean ALLOW_UNSAFE_REFRESHING_FORMULAS =
-        Configuration.getInstance().getBooleanForClassWithDefault(AbstractFormulaColumn.class,
-            "allowUnsafeRefreshingFormulas", false);
+    private static final boolean ALLOW_UNSAFE_REFRESHING_FORMULAS = Configuration.getInstance()
+            .getBooleanForClassWithDefault(AbstractFormulaColumn.class, "allowUnsafeRefreshingFormulas", false);
 
 
     protected String formulaString;
@@ -50,10 +48,10 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     private FormulaFactory formulaFactory;
     private Formula formula;
     protected List<String> userParams;
-    protected Param[] params;
-    protected Map<String, ? extends ColumnSource> columnSources;
+    protected Param<?>[] params;
+    protected Map<String, ? extends ColumnSource<?>> columnSources;
     private Index index;
-    protected Class returnedType;
+    protected Class<?> returnedType;
     public static final String COLUMN_SUFFIX = "_";
     protected List<String> usedColumnArrays;
     protected boolean usesI; // uses the "i" variable which is an integer position for the row
@@ -64,13 +62,12 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
      * Create a formula column for the given formula string.
      * <p>
      * The internal formula object is generated on-demand by calling out to the Java compiler.
-     * 
+     *
      * @param columnName the result column name
      * @param formulaString the formula string to be parsed by the DBLanguageParser
      * @param useKernelFormulas
      */
-    protected AbstractFormulaColumn(String columnName, String formulaString,
-        boolean useKernelFormulas) {
+    protected AbstractFormulaColumn(String columnName, String formulaString, boolean useKernelFormulas) {
         this.formulaString = Require.neqNull(formulaString, "formulaString");
         this.columnName = NameValidator.validateColumnName(columnName);
         this.useKernelFormulas = useKernelFormulas;
@@ -82,13 +79,12 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @Override
-    public Class getReturnedType() {
+    public Class<?> getReturnedType() {
         return returnedType;
     }
 
     @Override
-    public List<String> initInputs(Index index,
-        Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         if (this.index != null) {
             Assert.eq(this.index, "this.index", index, "index");
         }
@@ -101,15 +97,14 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return initDef(extractDefinitions(columnsOfInterest));
     }
 
-    protected void applyUsedVariables(Map<String, ColumnDefinition> columnDefinitionMap,
-        Set<String> variablesUsed) {
-        final Map<String, Param> possibleParams = new HashMap<>();
+    protected void applyUsedVariables(Map<String, ColumnDefinition<?>> columnDefinitionMap, Set<String> variablesUsed) {
+        final Map<String, Param<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = QueryScope.getScope();
-        for (Param param : queryScope.getParams(queryScope.getParamNames())) {
+        for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
 
-        final List<Param> paramsList = new ArrayList<>();
+        final List<Param<?>> paramsList = new ArrayList<>();
         usedColumns = new ArrayList<>();
         userParams = new ArrayList<>();
         usedColumnArrays = new ArrayList<>();
@@ -122,21 +117,22 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 usesK = true;
             } else if (columnDefinitionMap.get(variable) != null) {
                 usedColumns.add(variable);
-            } else if (variable.endsWith(COLUMN_SUFFIX) && columnDefinitionMap
-                .get(variable.substring(0, variable.length() - COLUMN_SUFFIX.length())) != null) {
-                usedColumnArrays
-                    .add(variable.substring(0, variable.length() - COLUMN_SUFFIX.length()));
-            } else if (possibleParams.containsKey(variable)) {
-                paramsList.add(possibleParams.get(variable));
-                userParams.add(variable);
+            } else {
+                String strippedColumnName =
+                        variable.substring(0, Math.max(0, variable.length() - COLUMN_SUFFIX.length()));
+                if (variable.endsWith(COLUMN_SUFFIX) && columnDefinitionMap.get(strippedColumnName) != null) {
+                    usedColumnArrays.add(strippedColumnName);
+                } else if (possibleParams.containsKey(variable)) {
+                    paramsList.add(possibleParams.get(variable));
+                    userParams.add(variable);
+                }
             }
         }
 
         params = paramsList.toArray(Param.ZERO_LENGTH_PARAM_ARRAY);
-        for (Param param : paramsList) {
+        for (Param<?> param : paramsList) {
             try {
-                // noinspection ResultOfMethodCallIgnored, we only care that we can get the value
-                // here not what it is
+                // noinspection ResultOfMethodCallIgnored, we only care that we can get the value here not what it is
                 param.getValue();
             } catch (RuntimeException e) {
                 throw new RuntimeException("Error retrieving " + param.getName(), e);
@@ -155,90 +151,84 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return usedColumnArrays;
     }
 
-    private static Map<String, ColumnDefinition> extractDefinitions(
-        Map<String, ? extends ColumnSource> columnsOfInterest) {
-        final Map<String, ColumnDefinition> result = new LinkedHashMap<>();
-        for (Map.Entry<String, ? extends ColumnSource> entry : columnsOfInterest.entrySet()) {
+    private static Map<String, ColumnDefinition<?>> extractDefinitions(
+            Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+        final Map<String, ColumnDefinition<?>> result = new LinkedHashMap<>();
+        for (Map.Entry<String, ? extends ColumnSource<?>> entry : columnsOfInterest.entrySet()) {
             final String name = entry.getKey();
             final Class<?> type = entry.getValue().getType();
-            // noinspection unchecked
-            final ColumnDefinition definition =
-                ColumnDefinition.fromGenericType(name, type, entry.getValue().getComponentType());
+            final ColumnDefinition<?> definition =
+                    ColumnDefinition.fromGenericType(name, type, entry.getValue().getComponentType());
             result.put(name, definition);
         }
         return result;
     }
 
     @Override
-    public ColumnSource updateData(WritableSource result, long destPos, long sourcePos) {
-        // noinspection unchecked
-        result.copy(getDataView(), sourcePos, destPos);
+    public ColumnSource<?> updateData(WritableSource<?> result, long destPos, long sourcePos) {
+        // noinspection unchecked,rawtypes
+        result.copy((ColumnSource) getDataView(), sourcePos, destPos);
         return result;
     }
 
     /**
-     * Creates a {@link ColumnSource} that will evaluate the result of the {@link #formula} for a
-     * given row on demand when it is accessed.
+     * Creates a {@link ColumnSource} that will evaluate the result of the {@link #formula} for a given row on demand
+     * when it is accessed.
      * <p/>
-     * The result of this is the column source produced by calling {@link Table#updateView} or
-     * {@link Table#view} on a {@link Table}.
+     * The result of this is the column source produced by calling {@link Table#updateView} or {@link Table#view} on a
+     * {@link Table}.
      */
     @NotNull
     @Override
-    public ColumnSource getDataView() {
+    public ColumnSource<?> getDataView() {
         return getViewColumnSource(false);
     }
 
     /**
-     * Creates a {@link ColumnSource} that will evaluate the result of the {@link #formula} for a
-     * given row on demand when it is accessed and cache the result
+     * Creates a {@link ColumnSource} that will evaluate the result of the {@link #formula} for a given row on demand
+     * when it is accessed and cache the result
      *
      * @return the column source produced by calling {@link Table#lazyUpdate} on a {@link Table}.
      */
     @NotNull
     @Override
-    public ColumnSource getLazyView() {
+    public ColumnSource<?> getLazyView() {
         return getViewColumnSource(true);
     }
 
     @NotNull
-    private ColumnSource getViewColumnSource(boolean lazy) {
+    private ColumnSource<?> getViewColumnSource(boolean lazy) {
         final SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
-            // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source,
-            // so explicitly create that.
-            AccessControlContext context = null;
+            // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source, so explicitly create
+            // that.
+            AccessControlContext context;
             try {
                 final URL urlSource = new URL("file:/groovy/shell");
-                final CodeSource codeSource =
-                    new CodeSource(urlSource, (java.security.cert.Certificate[]) null);
+                final CodeSource codeSource = new CodeSource(urlSource, (java.security.cert.Certificate[]) null);
                 final PermissionCollection perms = Policy.getPolicy().getPermissions(codeSource);
-                context = new AccessControlContext(
-                    new ProtectionDomain[] {new ProtectionDomain(codeSource, perms)});
+                context = new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(codeSource, perms)});
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Invalid file path in groovy url source", e);
             }
 
-            return AccessController.doPrivileged((PrivilegedAction<ColumnSource>) () -> {
+            return AccessController.doPrivileged((PrivilegedAction<ColumnSource<?>>) () -> {
                 final Formula formula = getFormula(lazy, columnSources, params);
-                // noinspection unchecked
-                return new ViewColumnSource(
-                    (returnedType == boolean.class ? Boolean.class : returnedType), formula);
+                // noinspection unchecked,rawtypes
+                return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula);
             }, context);
         } else {
             final Formula formula = getFormula(lazy, columnSources, params);
-            // noinspection unchecked
-            return new ViewColumnSource(
-                (returnedType == boolean.class ? Boolean.class : returnedType), formula);
+            // noinspection unchecked,rawtypes
+            return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula);
         }
     }
 
     private Formula getFormula(boolean initLazyMap,
-        Map<String, ? extends ColumnSource> columnsToData,
-        Param... params) {
+            Map<String, ? extends ColumnSource<?>> columnsToData,
+            Param<?>... params) {
         if (formulaFactory == null) {
-            formulaFactory =
-                useKernelFormulas ? createKernelFormulaFactory() : createFormulaFactory();
+            formulaFactory = useKernelFormulas ? createKernelFormulaFactory() : createFormulaFactory();
         }
         formula = formulaFactory.createFormula(index, initLazyMap, columnsToData, params);
         return formula;
@@ -248,33 +238,34 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         throw new UnsupportedOperationException();
     }
 
-    private static DbArrayBase makeAppropriateDbArrayWrapper(ColumnSource cs, Index index) {
-        final Class type = cs.getType();
+    @SuppressWarnings("unchecked")
+    private static DbArrayBase<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, Index index) {
+        final Class<?> type = cs.getType();
         if (type == Boolean.class) {
-            return new DbArrayColumnWrapper<Boolean>(cs, index);
+            return new DbArrayColumnWrapper<>((ColumnSource<Boolean>) cs, index);
         }
         if (type == byte.class) {
-            return new DbByteArrayColumnWrapper(cs, index);
+            return new DbByteArrayColumnWrapper((ColumnSource<Byte>) cs, index);
         }
         if (type == char.class) {
-            return new DbCharArrayColumnWrapper(cs, index);
+            return new DbCharArrayColumnWrapper((ColumnSource<Character>) cs, index);
         }
         if (type == double.class) {
-            return new DbDoubleArrayColumnWrapper(cs, index);
+            return new DbDoubleArrayColumnWrapper((ColumnSource<Double>) cs, index);
         }
         if (type == float.class) {
-            return new DbFloatArrayColumnWrapper(cs, index);
+            return new DbFloatArrayColumnWrapper((ColumnSource<Float>) cs, index);
         }
         if (type == int.class) {
-            return new DbIntArrayColumnWrapper(cs, index);
+            return new DbIntArrayColumnWrapper((ColumnSource<Integer>) cs, index);
         }
         if (type == long.class) {
-            return new DbLongArrayColumnWrapper(cs, index);
+            return new DbLongArrayColumnWrapper((ColumnSource<Long>) cs, index);
         }
         if (type == short.class) {
-            return new DbShortArrayColumnWrapper(cs, index);
+            return new DbShortArrayColumnWrapper((ColumnSource<Short>) cs, index);
         }
-        return new DbArrayColumnWrapper<Object>(cs, index);
+        return new DbArrayColumnWrapper<>((ColumnSource<Object>) cs, index);
     }
 
     private FormulaFactory createKernelFormulaFactory() {
@@ -282,20 +273,17 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         final FormulaSourceDescriptor sd = getSourceDescriptor();
 
         return (index, lazy, columnsToData, params) -> {
-            if (lazy) {
-                // Maybe warn that we ignore "lazy". By the way, "lazy" is the wrong term anyway.
-                // "lazy" doesn't mean
-                // "cached", which is how we are using it.
-            }
-            final Map<String, ColumnSource> netColumnSources = new HashMap<>();
+            // Maybe warn that we ignore "lazy". By the way, "lazy" is the wrong term anyway. "lazy" doesn't mean
+            // "cached", which is how we are using it.
+            final Map<String, ColumnSource<?>> netColumnSources = new HashMap<>();
             for (final String columnName : sd.sources) {
-                final ColumnSource columnSourceToUse = columnsToData.get(columnName);
+                final ColumnSource<?> columnSourceToUse = columnsToData.get(columnName);
                 netColumnSources.put(columnName, columnSourceToUse);
             }
 
-            final DbArrayBase[] dbArrays = new DbArrayBase[sd.arrays.length];
+            final DbArrayBase<?>[] dbArrays = new DbArrayBase[sd.arrays.length];
             for (int ii = 0; ii < sd.arrays.length; ++ii) {
-                final ColumnSource cs = columnsToData.get(sd.arrays[ii]);
+                final ColumnSource<?> cs = columnsToData.get(sd.arrays[ii]);
                 dbArrays[ii] = makeAppropriateDbArrayWrapper(cs, index);
             }
             final FormulaKernel fk = formulaKernelFactory.createInstance(dbArrays, params);
@@ -314,8 +302,8 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public MatchPair getMatchPair() {
-        throw new UnsupportedOperationException("Formula " + columnName + " =" + formulaString
-            + " cannot be interpreted as a name value pair");
+        throw new UnsupportedOperationException(
+                "Formula " + columnName + " =" + formulaString + " cannot be interpreted as a name value pair");
     }
 
     @Override
@@ -328,26 +316,25 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return formulaString;
     }
 
-    public WritableSource newDestInstance(long size) {
+    public WritableSource<?> newDestInstance(long size) {
         return SparseArrayColumnSource.getSparseMemoryColumnSource(index.size(), returnedType);
     }
 
     @Override
     public boolean disallowRefresh() {
-        return !ALLOW_UNSAFE_REFRESHING_FORMULAS && !usesI && !usesII && !usesK
-            && usedColumnArrays.isEmpty();
+        return !ALLOW_UNSAFE_REFRESHING_FORMULAS && !usesI && !usesII && !usesK && usedColumnArrays.isEmpty();
     }
 
     static class ColumnArrayParameter {
         final String name;
         final String bareName;
-        final Class dataType;
-        final Class dbArrayType;
+        final Class<?> dataType;
+        final Class<?> dbArrayType;
         final String dbArrayTypeString;
-        final ColumnSource columnSource;
+        final ColumnSource<?> columnSource;
 
-        public ColumnArrayParameter(String name, String bareName, Class dataType, Class dbArrayType,
-            String dbArrayTypeString, ColumnSource columnSource) {
+        public ColumnArrayParameter(String name, String bareName, Class<?> dataType, Class<?> dbArrayType,
+                String dbArrayTypeString, ColumnSource<?> columnSource) {
             this.name = name;
             this.bareName = bareName;
             this.dataType = dataType;
@@ -360,10 +347,10 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     static class ParamParameter {
         final int index;
         final String name;
-        final Class type;
+        final Class<?> type;
         final String typeString;
 
-        public ParamParameter(int index, String name, Class type, String typeString) {
+        public ParamParameter(int index, String name, Class<?> type, String typeString) {
             this.index = index;
             this.name = name;
             this.type = type;

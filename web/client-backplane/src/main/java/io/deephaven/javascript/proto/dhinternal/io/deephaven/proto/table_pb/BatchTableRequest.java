@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.BatchTableRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.BatchTableRequest",
+        namespace = JsPackage.GLOBAL)
 public class BatchTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -140,15 +140,15 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setAggregatesList(
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType[] aggregatesList) {
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType[] aggregatesList) {
                     setAggregatesList(
-                        Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType>>uncheckedCast(
-                            aggregatesList));
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType>>uncheckedCast(
+                                    aggregatesList));
                 }
 
                 @JsProperty
                 void setAggregatesList(
-                    JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType> aggregatesList);
+                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType> aggregatesList);
 
                 @JsProperty
                 void setForceCombo(boolean forceCombo);
@@ -271,7 +271,7 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setSourceId(
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType.SourceIdFieldType sourceId);
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType.SourceIdFieldType sourceId);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -282,7 +282,7 @@ public class BatchTableRequest {
                     public interface GetTicketUnionType {
                         @JsOverlay
                         static BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType of(
-                            Object o) {
+                                Object o) {
                             return Js.cast(o);
                         }
 
@@ -317,20 +317,20 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setTicket(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType ticket);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType ticket);
 
                     @JsOverlay
                     default void setTicket(String ticket) {
                         setTicket(
-                            Js.<BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                                ticket));
+                                Js.<BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                        ticket));
                     }
 
                     @JsOverlay
                     default void setTicket(Uint8Array ticket) {
                         setTicket(
-                            Js.<BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                                ticket));
+                                Js.<BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                        ticket));
                     }
                 }
 
@@ -347,7 +347,7 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setResultId(
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType resultId);
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType resultId);
 
                 @JsProperty
                 void setSize(String size);
@@ -399,6 +399,46 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setRightId(Object rightId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface FetchPandasTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchPandasTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface FetchTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -493,11 +533,11 @@ public class BatchTableRequest {
 
                             @JsProperty
                             void setLiteral(
-                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                             @JsProperty
                             void setReference(
-                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                         }
 
                         @JsOverlay
@@ -522,7 +562,7 @@ public class BatchTableRequest {
 
                         @JsProperty
                         void setLhs(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
 
                         @JsProperty
                         void setOperation(double operation);
@@ -728,8 +768,7 @@ public class BatchTableRequest {
 
                         @JsOverlay
                         default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                            setOptionalReferencesList(
-                                Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                            setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                         }
 
                         @JsProperty
@@ -773,43 +812,43 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setAnd(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.AndFieldType and);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.AndFieldType and);
 
                     @JsProperty
                     void setCompare(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType compare);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType compare);
 
                     @JsProperty
                     void setContains(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.ContainsFieldType contains);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.ContainsFieldType contains);
 
                     @JsProperty
                     void setInvoke(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.InvokeFieldType invoke);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.InvokeFieldType invoke);
 
                     @JsProperty
                     void setIsNull(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.IsNullFieldType isNull);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.IsNullFieldType isNull);
 
                     @JsProperty
                     void setMatches(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.MatchesFieldType matches);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.MatchesFieldType matches);
 
                     @JsProperty
                     void setNot(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.NotFieldType not);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.NotFieldType not);
 
                     @JsProperty
                     void setOr(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.OrFieldType or);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.OrFieldType or);
 
                     @JsProperty
                     void setPb_in(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
 
                     @JsProperty
                     void setSearch(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.SearchFieldType search);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType.SearchFieldType search);
                 }
 
                 @JsOverlay
@@ -828,15 +867,15 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setFiltersList(
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType[] filtersList) {
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType[] filtersList) {
                     setFiltersList(
-                        Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType>>uncheckedCast(
-                            filtersList));
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType>>uncheckedCast(
+                                    filtersList));
                 }
 
                 @JsProperty
                 void setFiltersList(
-                    JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType> filtersList);
+                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType> filtersList);
 
                 @JsProperty
                 void setResultId(Object resultId);
@@ -889,8 +928,7 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setGroupByColumnSpecsList(String[] groupByColumnSpecsList) {
-                    setGroupByColumnSpecsList(
-                        Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
+                    setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
                 }
 
                 @JsProperty
@@ -1123,7 +1161,7 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setZoomRange(
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1247,14 +1285,14 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setSortsList(
-                    JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType.SortsListFieldType> sortsList);
+                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType.SortsListFieldType> sortsList);
 
                 @JsOverlay
                 default void setSortsList(
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType.SortsListFieldType[] sortsList) {
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType.SortsListFieldType[] sortsList) {
                     setSortsList(
-                        Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType.SortsListFieldType>>uncheckedCast(
-                            sortsList));
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType.SortsListFieldType>>uncheckedCast(
+                                    sortsList));
                 }
 
                 @JsProperty
@@ -1311,8 +1349,7 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setColumnsToUngroupList(String[] columnsToUngroupList) {
-                    setColumnsToUngroupList(
-                        Js.<JsArray<String>>uncheckedCast(columnsToUngroupList));
+                    setColumnsToUngroupList(Js.<JsArray<String>>uncheckedCast(columnsToUngroupList));
                 }
 
                 @JsProperty
@@ -1411,6 +1448,12 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.ExactJoinFieldType getExactJoin();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchPandasTableFieldType getFetchPandasTable();
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchTableFieldType getFetchTable();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType getFilter();
 
             @JsProperty
@@ -1475,72 +1518,77 @@ public class BatchTableRequest {
 
             @JsProperty
             void setAsOfJoin(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AsOfJoinFieldType asOfJoin);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AsOfJoinFieldType asOfJoin);
 
             @JsProperty
             void setComboAggregate(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType comboAggregate);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType comboAggregate);
 
             @JsProperty
             void setCrossJoin(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.CrossJoinFieldType crossJoin);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.CrossJoinFieldType crossJoin);
 
             @JsProperty
             void setDropColumns(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType dropColumns);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType dropColumns);
 
             @JsProperty
             void setEmptyTable(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType emptyTable);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType emptyTable);
 
             @JsProperty
             void setExactJoin(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.ExactJoinFieldType exactJoin);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.ExactJoinFieldType exactJoin);
 
             @JsProperty
-            void setFilter(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType filter);
+            void setFetchPandasTable(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchPandasTableFieldType fetchPandasTable);
+
+            @JsProperty
+            void setFetchTable(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchTableFieldType fetchTable);
+
+            @JsProperty
+            void setFilter(BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType filter);
 
             @JsProperty
             void setFlatten(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.FlattenFieldType flatten);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FlattenFieldType flatten);
 
             @JsProperty
             void setHead(BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadFieldType head);
 
             @JsProperty
-            void setHeadBy(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadByFieldType headBy);
+            void setHeadBy(BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadByFieldType headBy);
 
             @JsProperty
             void setLazyUpdate(Object lazyUpdate);
 
             @JsProperty
             void setLeftJoin(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.LeftJoinFieldType leftJoin);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.LeftJoinFieldType leftJoin);
 
             @JsProperty
-            void setMerge(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType merge);
+            void setMerge(BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType merge);
 
             @JsProperty
             void setNaturalJoin(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.NaturalJoinFieldType naturalJoin);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.NaturalJoinFieldType naturalJoin);
 
             @JsProperty
             void setRunChartDownsample(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType runChartDownsample);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType runChartDownsample);
 
             @JsProperty
             void setSelect(Object select);
 
             @JsProperty
             void setSelectDistinct(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.SelectDistinctFieldType selectDistinct);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.SelectDistinctFieldType selectDistinct);
 
             @JsProperty
             void setSnapshot(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotFieldType snapshot);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotFieldType snapshot);
 
             @JsProperty
             void setSort(BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType sort);
@@ -1553,19 +1601,18 @@ public class BatchTableRequest {
 
             @JsProperty
             void setTimeTable(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.TimeTableFieldType timeTable);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.TimeTableFieldType timeTable);
 
             @JsProperty
             void setUngroup(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UngroupFieldType ungroup);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UngroupFieldType ungroup);
 
             @JsProperty
             void setUnstructuredFilter(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UnstructuredFilterFieldType unstructuredFilter);
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UnstructuredFilterFieldType unstructuredFilter);
 
             @JsProperty
-            void setUpdate(
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateFieldType update);
+            void setUpdate(BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateFieldType update);
 
             @JsProperty
             void setUpdateView(Object updateView);
@@ -1588,8 +1635,8 @@ public class BatchTableRequest {
         @JsOverlay
         default void setOpsList(BatchTableRequest.ToObjectReturnType.OpsListFieldType[] opsList) {
             setOpsList(
-                Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType>>uncheckedCast(
-                    opsList));
+                    Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType>>uncheckedCast(
+                            opsList));
         }
     }
 
@@ -1718,15 +1765,15 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setAggregatesList(
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType[] aggregatesList) {
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType[] aggregatesList) {
                     setAggregatesList(
-                        Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType>>uncheckedCast(
-                            aggregatesList));
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType>>uncheckedCast(
+                                    aggregatesList));
                 }
 
                 @JsProperty
                 void setAggregatesList(
-                    JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType> aggregatesList);
+                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType.AggregatesListFieldType> aggregatesList);
 
                 @JsProperty
                 void setForceCombo(boolean forceCombo);
@@ -1849,7 +1896,7 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setSourceId(
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType.SourceIdFieldType sourceId);
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType.SourceIdFieldType sourceId);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1860,7 +1907,7 @@ public class BatchTableRequest {
                     public interface GetTicketUnionType {
                         @JsOverlay
                         static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType of(
-                            Object o) {
+                                Object o) {
                             return Js.cast(o);
                         }
 
@@ -1895,20 +1942,20 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setTicket(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType ticket);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType ticket);
 
                     @JsOverlay
                     default void setTicket(String ticket) {
                         setTicket(
-                            Js.<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                                ticket));
+                                Js.<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                        ticket));
                     }
 
                     @JsOverlay
                     default void setTicket(Uint8Array ticket) {
                         setTicket(
-                            Js.<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                                ticket));
+                                Js.<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                        ticket));
                     }
                 }
 
@@ -1925,7 +1972,7 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setResultId(
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType resultId);
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType resultId);
 
                 @JsProperty
                 void setSize(String size);
@@ -1977,6 +2024,46 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setRightId(Object rightId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface FetchPandasTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchPandasTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface FetchTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2071,11 +2158,11 @@ public class BatchTableRequest {
 
                             @JsProperty
                             void setLiteral(
-                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                             @JsProperty
                             void setReference(
-                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                         }
 
                         @JsOverlay
@@ -2100,7 +2187,7 @@ public class BatchTableRequest {
 
                         @JsProperty
                         void setLhs(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
 
                         @JsProperty
                         void setOperation(double operation);
@@ -2306,8 +2393,7 @@ public class BatchTableRequest {
 
                         @JsOverlay
                         default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                            setOptionalReferencesList(
-                                Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                            setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                         }
 
                         @JsProperty
@@ -2351,43 +2437,43 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setAnd(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.AndFieldType and);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.AndFieldType and);
 
                     @JsProperty
                     void setCompare(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType compare);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.CompareFieldType compare);
 
                     @JsProperty
                     void setContains(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.ContainsFieldType contains);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.ContainsFieldType contains);
 
                     @JsProperty
                     void setInvoke(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.InvokeFieldType invoke);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.InvokeFieldType invoke);
 
                     @JsProperty
                     void setIsNull(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.IsNullFieldType isNull);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.IsNullFieldType isNull);
 
                     @JsProperty
                     void setMatches(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.MatchesFieldType matches);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.MatchesFieldType matches);
 
                     @JsProperty
                     void setNot(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.NotFieldType not);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.NotFieldType not);
 
                     @JsProperty
                     void setOr(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.OrFieldType or);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.OrFieldType or);
 
                     @JsProperty
                     void setPb_in(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
 
                     @JsProperty
                     void setSearch(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.SearchFieldType search);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType.SearchFieldType search);
                 }
 
                 @JsOverlay
@@ -2406,15 +2492,15 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setFiltersList(
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType[] filtersList) {
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType[] filtersList) {
                     setFiltersList(
-                        Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType>>uncheckedCast(
-                            filtersList));
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType>>uncheckedCast(
+                                    filtersList));
                 }
 
                 @JsProperty
                 void setFiltersList(
-                    JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType> filtersList);
+                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType.FiltersListFieldType> filtersList);
 
                 @JsProperty
                 void setResultId(Object resultId);
@@ -2467,8 +2553,7 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setGroupByColumnSpecsList(String[] groupByColumnSpecsList) {
-                    setGroupByColumnSpecsList(
-                        Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
+                    setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
                 }
 
                 @JsProperty
@@ -2701,7 +2786,7 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setZoomRange(
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2825,14 +2910,14 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setSortsList(
-                    JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType.SortsListFieldType> sortsList);
+                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType.SortsListFieldType> sortsList);
 
                 @JsOverlay
                 default void setSortsList(
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType.SortsListFieldType[] sortsList) {
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType.SortsListFieldType[] sortsList) {
                     setSortsList(
-                        Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType.SortsListFieldType>>uncheckedCast(
-                            sortsList));
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType.SortsListFieldType>>uncheckedCast(
+                                    sortsList));
                 }
 
                 @JsProperty
@@ -2889,8 +2974,7 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setColumnsToUngroupList(String[] columnsToUngroupList) {
-                    setColumnsToUngroupList(
-                        Js.<JsArray<String>>uncheckedCast(columnsToUngroupList));
+                    setColumnsToUngroupList(Js.<JsArray<String>>uncheckedCast(columnsToUngroupList));
                 }
 
                 @JsProperty
@@ -2989,6 +3073,12 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ExactJoinFieldType getExactJoin();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchPandasTableFieldType getFetchPandasTable();
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchTableFieldType getFetchTable();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType getFilter();
 
             @JsProperty
@@ -3053,72 +3143,77 @@ public class BatchTableRequest {
 
             @JsProperty
             void setAsOfJoin(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AsOfJoinFieldType asOfJoin);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AsOfJoinFieldType asOfJoin);
 
             @JsProperty
             void setComboAggregate(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType comboAggregate);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType comboAggregate);
 
             @JsProperty
             void setCrossJoin(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CrossJoinFieldType crossJoin);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CrossJoinFieldType crossJoin);
 
             @JsProperty
             void setDropColumns(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType dropColumns);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType dropColumns);
 
             @JsProperty
             void setEmptyTable(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType emptyTable);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType emptyTable);
 
             @JsProperty
             void setExactJoin(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ExactJoinFieldType exactJoin);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ExactJoinFieldType exactJoin);
 
             @JsProperty
-            void setFilter(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType filter);
+            void setFetchPandasTable(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchPandasTableFieldType fetchPandasTable);
+
+            @JsProperty
+            void setFetchTable(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchTableFieldType fetchTable);
+
+            @JsProperty
+            void setFilter(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType filter);
 
             @JsProperty
             void setFlatten(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FlattenFieldType flatten);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FlattenFieldType flatten);
 
             @JsProperty
             void setHead(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadFieldType head);
 
             @JsProperty
-            void setHeadBy(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadByFieldType headBy);
+            void setHeadBy(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadByFieldType headBy);
 
             @JsProperty
             void setLazyUpdate(Object lazyUpdate);
 
             @JsProperty
             void setLeftJoin(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.LeftJoinFieldType leftJoin);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.LeftJoinFieldType leftJoin);
 
             @JsProperty
-            void setMerge(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType merge);
+            void setMerge(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType merge);
 
             @JsProperty
             void setNaturalJoin(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.NaturalJoinFieldType naturalJoin);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.NaturalJoinFieldType naturalJoin);
 
             @JsProperty
             void setRunChartDownsample(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType runChartDownsample);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType runChartDownsample);
 
             @JsProperty
             void setSelect(Object select);
 
             @JsProperty
             void setSelectDistinct(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SelectDistinctFieldType selectDistinct);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SelectDistinctFieldType selectDistinct);
 
             @JsProperty
             void setSnapshot(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotFieldType snapshot);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotFieldType snapshot);
 
             @JsProperty
             void setSort(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType sort);
@@ -3131,19 +3226,18 @@ public class BatchTableRequest {
 
             @JsProperty
             void setTimeTable(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.TimeTableFieldType timeTable);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.TimeTableFieldType timeTable);
 
             @JsProperty
             void setUngroup(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UngroupFieldType ungroup);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UngroupFieldType ungroup);
 
             @JsProperty
             void setUnstructuredFilter(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UnstructuredFilterFieldType unstructuredFilter);
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UnstructuredFilterFieldType unstructuredFilter);
 
             @JsProperty
-            void setUpdate(
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateFieldType update);
+            void setUpdate(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateFieldType update);
 
             @JsProperty
             void setUpdateView(Object updateView);
@@ -3166,20 +3260,20 @@ public class BatchTableRequest {
         @JsOverlay
         default void setOpsList(BatchTableRequest.ToObjectReturnType0.OpsListFieldType[] opsList) {
             setOpsList(
-                Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType>>uncheckedCast(
-                    opsList));
+                    Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType>>uncheckedCast(
+                            opsList));
         }
     }
 
     public static native BatchTableRequest deserializeBinary(Uint8Array bytes);
 
     public static native BatchTableRequest deserializeBinaryFromReader(
-        BatchTableRequest message, Object reader);
+            BatchTableRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(BatchTableRequest message, Object writer);
 
     public static native BatchTableRequest.ToObjectReturnType toObject(
-        boolean includeInstance, BatchTableRequest msg);
+            boolean includeInstance, BatchTableRequest msg);
 
     public native Operation addOps();
 

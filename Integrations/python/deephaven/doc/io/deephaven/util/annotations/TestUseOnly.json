@@ -2,6 +2,6 @@
  "className": "io.deephaven.util.annotations.TestUseOnly",
  "methods": {},
  "path": "io.deephaven.util.annotations.TestUseOnly",
- "text": "Indicates that a particular method is for test purposes only and should not be used by client\n or production code.  It is subject to change/removal at any time.",
+ "text": "Indicates that a particular method is for test purposes only and should not be used by client or production code. It\n is subject to change/removal at any time.",
  "typeName": "class"
 }

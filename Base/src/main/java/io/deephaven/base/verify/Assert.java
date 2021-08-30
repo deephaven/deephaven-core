@@ -9,14 +9,12 @@ import java.util.function.Consumer;
 
 // --------------------------------------------------------------------
 /**
- * Assertion methods for simple runtime program verification. Failed assertions throw
- * {@link AssertionFailure}.
+ * Assertion methods for simple runtime program verification. Failed assertions throw {@link AssertionFailure}.
  * <p>
  * Methods:
  * <ul>
  * <li>void assertion(boolean condition, String conditionText[, String detailMessage])
- * <li>void assertion(boolean condition, String conditionText, value0, String name0, value1, String
- * name0, ... )
+ * <li>void assertion(boolean condition, String conditionText, value0, String name0, value1, String name0, ... )
  * </ul>
  * <ul>
  * <li>void statementNeverExecuted()
@@ -35,8 +33,8 @@ import java.util.function.Consumer;
  * <ul>
  * <li>void eq/neq(boolean/char/byte/short/int/long/float/double, String name0,
  * boolean/char/byte/short/int/long/float/double[, String name1])
- * <li>void lt/leq/gt/geq(char/byte/short/int/long/float/double, String name0,
- * char/byte/short/int/long/float/double[, String name1])
+ * <li>void lt/leq/gt/geq(char/byte/short/int/long/float/double, String name0, char/byte/short/int/long/float/double[,
+ * String name1])
  * </ul>
  * <ul>
  * <li>void eqFalse/neqFalse/eqTrue/neqTrue(boolean, String name)
@@ -62,8 +60,7 @@ import java.util.function.Consumer;
  * </ul>
  * <li>equals corresponds to Object.equals (preceded by necessary null checks), e.g.,
  * <ul>
- * <li>For Object a and b, Assert.equals(a, "a", b, "b") corresponds to assert (a!= null && b !=
- * null && a.equals(b))
+ * <li>For Object a and b, Assert.equals(a, "a", b, "b") corresponds to assert (a!= null && b != null && a.equals(b))
  * <li>for String s, Assert.nonempty(s, "s") corresponds to assert (s != null && s.length() != 0)
  * </ul>
  * </ul>
@@ -86,8 +83,8 @@ public final class Assert {
 
     // ----------------------------------------------------------------
     private static void fail(String conditionText) {
-        final AssertionFailure assertionFailure = new AssertionFailure(
-            ExceptionMessageUtil.failureMessage("Assertion", "asserted", conditionText, null));
+        final AssertionFailure assertionFailure =
+                new AssertionFailure(ExceptionMessageUtil.failureMessage("Assertion", "asserted", conditionText, null));
         if (onAssertionCallback != null) {
             try {
                 onAssertionCallback.accept(assertionFailure);
@@ -99,8 +96,8 @@ public final class Assert {
 
     // ----------------------------------------------------------------
     private static void fail(String conditionText, String detailMessage) {
-        final AssertionFailure assertionFailure = new AssertionFailure(ExceptionMessageUtil
-            .failureMessage("Assertion", "asserted", conditionText, detailMessage));
+        final AssertionFailure assertionFailure = new AssertionFailure(
+                ExceptionMessageUtil.failureMessage("Assertion", "asserted", conditionText, detailMessage));
         if (onAssertionCallback != null) {
             try {
                 onAssertionCallback.accept(assertionFailure);
@@ -137,65 +134,61 @@ public final class Assert {
         }
     }
 
-    public static void assertion(boolean condition, String conditionText, Object o0, String name0,
-        Object o1, String name1) {
+    public static void assertion(boolean condition, String conditionText, Object o0, String name0, Object o1,
+            String name1) {
         if (!(condition)) {
             fail(conditionText, ExceptionMessageUtil.valueAndName(o0, name0, o1, name1));
         }
     }
 
-    public static void assertion(boolean condition, String conditionText, Object o0, String name0,
-        Object o1, String name1, Object o2, String name2) {
+    public static void assertion(boolean condition, String conditionText, Object o0, String name0, Object o1,
+            String name1, Object o2, String name2) {
         if (!(condition)) {
             fail(conditionText, ExceptionMessageUtil.valueAndName(o0, name0, o1, name1, o2, name2));
         }
     }
 
-    public static void assertion(boolean condition, String conditionText, Object o0, String name0,
-        Object o1, String name1, int i2, String name2) {
+    public static void assertion(boolean condition, String conditionText, Object o0, String name0, Object o1,
+            String name1, int i2, String name2) {
         if (!(condition)) {
-            fail(conditionText,
-                ExceptionMessageUtil.concat(ExceptionMessageUtil.valueAndName(o0, name0, o1, name1),
+            fail(conditionText, ExceptionMessageUtil.concat(ExceptionMessageUtil.valueAndName(o0, name0, o1, name1),
                     ExceptionMessageUtil.valueAndName(i2, name2)));
         }
     }
 
-    public static void assertion(boolean condition, String conditionText, Object o0, String name0,
-        Object o1, String name1, Object o2, String name2, Object o3, String name3) {
+    public static void assertion(boolean condition, String conditionText, Object o0, String name0, Object o1,
+            String name1, Object o2, String name2, Object o3, String name3) {
         if (!(condition)) {
-            fail(conditionText,
-                ExceptionMessageUtil.valueAndName(o0, name0, o1, name1, o2, name2, o3, name3));
+            fail(conditionText, ExceptionMessageUtil.valueAndName(o0, name0, o1, name1, o2, name2, o3, name3));
         }
     }
 
     // ----------------------------------------------------------------
     /** assert (condition, conditionText, boolean b0, String name0, ... ) */
-    public static void assertion(boolean condition, String conditionText, boolean b0,
-        String name0) {
+    public static void assertion(boolean condition, String conditionText, boolean b0, String name0) {
         if (!(condition)) {
             fail(conditionText, ExceptionMessageUtil.valueAndName(b0, name0));
         }
     }
 
-    public static void assertion(boolean condition, String conditionText, boolean b0, String name0,
-        boolean b1, String name1) {
+    public static void assertion(boolean condition, String conditionText, boolean b0, String name0, boolean b1,
+            String name1) {
         if (!(condition)) {
             fail(conditionText, ExceptionMessageUtil.valueAndName(b0, name0, b1, name1));
         }
     }
 
-    public static void assertion(boolean condition, String conditionText, boolean b0, String name0,
-        boolean b1, String name1, boolean b2, String name2) {
+    public static void assertion(boolean condition, String conditionText, boolean b0, String name0, boolean b1,
+            String name1, boolean b2, String name2) {
         if (!(condition)) {
             fail(conditionText, ExceptionMessageUtil.valueAndName(b0, name0, b1, name1, b2, name2));
         }
     }
 
-    public static void assertion(boolean condition, String conditionText, boolean b0, String name0,
-        boolean b1, String name1, boolean b2, String name2, boolean b3, String name3) {
+    public static void assertion(boolean condition, String conditionText, boolean b0, String name0, boolean b1,
+            String name1, boolean b2, String name2, boolean b3, String name3) {
         if (!(condition)) {
-            fail(conditionText,
-                ExceptionMessageUtil.valueAndName(b0, name0, b1, name1, b2, name2, b3, name3));
+            fail(conditionText, ExceptionMessageUtil.valueAndName(b0, name0, b1, name1, b2, name2, b3, name3));
         }
     }
 
@@ -207,8 +200,7 @@ public final class Assert {
         }
     }
 
-    public static void assertion(boolean condition, String conditionText, int i0, String name0,
-        int i1, String name1) {
+    public static void assertion(boolean condition, String conditionText, int i0, String name0, int i1, String name1) {
         if (!(condition)) {
             fail(conditionText, ExceptionMessageUtil.valueAndName(i0, name0, i1, name1));
         }
@@ -239,7 +231,7 @@ public final class Assert {
     public static AssertionFailure exceptionNeverCaught(Exception e) {
         try {
             fail(e.getClass().getName() + " is never caught",
-                e.getClass().getName() + "(" + e.getMessage() + ") caught");
+                    e.getClass().getName() + "(" + e.getMessage() + ") caught");
         } catch (AssertionFailure assertionFailure) {
             assertionFailure.initCause(e);
             throw assertionFailure;
@@ -249,11 +241,9 @@ public final class Assert {
 
     // ----------------------------------------------------------------
     /** assert (tryStatementDescription succeeds, Exception e) */
-    public static AssertionFailure exceptionNeverCaught(String tryStatementDescription,
-        Exception e) {
+    public static AssertionFailure exceptionNeverCaught(String tryStatementDescription, Exception e) {
         try {
-            fail(tryStatementDescription + " succeeds",
-                e.getClass().getName() + "(" + e.getMessage() + ") caught");
+            fail(tryStatementDescription + " succeeds", e.getClass().getName() + "(" + e.getMessage() + ") caught");
         } catch (AssertionFailure assertionFailure) {
             assertionFailure.initCause(e);
             throw assertionFailure;
@@ -355,10 +345,8 @@ public final class Assert {
     /** assert (o instanceof type) */
     public static void instanceOf(Object o, String name, Class<?> type) {
         if (!type.isInstance(o)) {
-            fail(name + " instanceof " + type,
-                null == o ? ExceptionMessageUtil.valueAndName(o, name)
-                    : name + " instanceof " + o.getClass() + " ("
-                        + ExceptionMessageUtil.valueAndName(o, name) + ")");
+            fail(name + " instanceof " + type, null == o ? ExceptionMessageUtil.valueAndName(o, name)
+                    : name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
         }
     }
 
@@ -366,8 +354,8 @@ public final class Assert {
     /** assert !(o instanceof type) */
     public static void notInstanceOf(Object o, String name, Class<?> type) {
         if (type.isInstance(o)) {
-            fail("!(" + name + " instanceof " + type + ")", name + " instanceof " + o.getClass()
-                + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
+            fail("!(" + name + " instanceof " + type + ")",
+                    name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
         }
     }
 
@@ -417,8 +405,7 @@ public final class Assert {
 
     public static void eq(char c0, String name0, char c1) {
         if (!(c0 == c1)) {
-            fail(name0 + " == " + ExceptionMessageUtil.valueString(c1),
-                ExceptionMessageUtil.valueAndName(c0, name0));
+            fail(name0 + " == " + ExceptionMessageUtil.valueString(c1), ExceptionMessageUtil.valueAndName(c0, name0));
         }
     }
 
@@ -533,8 +520,7 @@ public final class Assert {
 
     public static void neq(char c0, String name0, char c1) {
         if (!(c0 != c1)) {
-            fail(name0 + " != " + ExceptionMessageUtil.valueString(c1),
-                ExceptionMessageUtil.valueAndName(c0, name0));
+            fail(name0 + " != " + ExceptionMessageUtil.valueString(c1), ExceptionMessageUtil.valueAndName(c0, name0));
         }
     }
 
@@ -635,8 +621,7 @@ public final class Assert {
 
     public static void lt(char c0, String name0, char c1) {
         if (!(c0 < c1)) {
-            fail(name0 + " < " + ExceptionMessageUtil.valueString(c1),
-                ExceptionMessageUtil.valueAndName(c0, name0));
+            fail(name0 + " < " + ExceptionMessageUtil.valueString(c1), ExceptionMessageUtil.valueAndName(c0, name0));
         }
     }
 
@@ -737,8 +722,7 @@ public final class Assert {
 
     public static void leq(char c0, String name0, char c1) {
         if (!(c0 <= c1)) {
-            fail(name0 + " <= " + ExceptionMessageUtil.valueString(c1),
-                ExceptionMessageUtil.valueAndName(c0, name0));
+            fail(name0 + " <= " + ExceptionMessageUtil.valueString(c1), ExceptionMessageUtil.valueAndName(c0, name0));
         }
     }
 
@@ -839,8 +823,7 @@ public final class Assert {
 
     public static void gt(char c0, String name0, char c1) {
         if (!(c0 > c1)) {
-            fail(name0 + " > " + ExceptionMessageUtil.valueString(c1),
-                ExceptionMessageUtil.valueAndName(c0, name0));
+            fail(name0 + " > " + ExceptionMessageUtil.valueString(c1), ExceptionMessageUtil.valueAndName(c0, name0));
         }
     }
 
@@ -941,8 +924,7 @@ public final class Assert {
 
     public static void geq(char c0, String name0, char c1) {
         if (!(c0 >= c1)) {
-            fail(name0 + " >= " + ExceptionMessageUtil.valueString(c1),
-                ExceptionMessageUtil.valueAndName(c0, name0));
+            fail(name0 + " >= " + ExceptionMessageUtil.valueString(c1), ExceptionMessageUtil.valueAndName(c0, name0));
         }
     }
 
@@ -1402,8 +1384,7 @@ public final class Assert {
     public static void eq(Object o0, String name0, Object o1) {
         // noinspection ObjectEquality
         if (!(o0 == o1)) {
-            fail(name0 + " == " + ExceptionMessageUtil.valueString(o1),
-                ExceptionMessageUtil.valueAndName(o0, name0));
+            fail(name0 + " == " + ExceptionMessageUtil.valueString(o1), ExceptionMessageUtil.valueAndName(o0, name0));
         }
     }
 
@@ -1419,8 +1400,7 @@ public final class Assert {
     public static void neq(Object o0, String name0, Object o1) {
         // noinspection ObjectEquality
         if (!(o0 != o1)) {
-            fail(name0 + " != " + ExceptionMessageUtil.valueString(o1),
-                ExceptionMessageUtil.valueAndName(o0, name0));
+            fail(name0 + " != " + ExceptionMessageUtil.valueString(o1), ExceptionMessageUtil.valueAndName(o0, name0));
         }
     }
 
@@ -1471,8 +1451,7 @@ public final class Assert {
         neqNull(o0, name0);
         neqNull(o1, name1);
         if (!(o0.equals(o1))) {
-            fail(name0 + ".equals(" + name1 + ")",
-                ExceptionMessageUtil.valueAndName(o0, name0, o1, name1));
+            fail(name0 + ".equals(" + name1 + ")", ExceptionMessageUtil.valueAndName(o0, name0, o1, name1));
         }
     }
 
@@ -1483,7 +1462,7 @@ public final class Assert {
         neqNull(o1, "o1");
         if (!(o0.equals(o1))) {
             fail(name0 + ".equals(" + ExceptionMessageUtil.valueString(o1) + ")",
-                ExceptionMessageUtil.valueAndName(o0, name0));
+                    ExceptionMessageUtil.valueAndName(o0, name0));
         }
     }
 
@@ -1491,8 +1470,7 @@ public final class Assert {
     /** assert ((o0 == null && o1 == null) || (o0 != null && o0.equals(o1))) */
     public static void nullSafeEquals(Object o0, String name0, Object o1, String name1) {
         if ((null == o0 && null != o1) || (null != o1 && !o0.equals(o1))) {
-            fail(name0 + ".equals(" + name1 + ")",
-                ExceptionMessageUtil.valueAndName(o0, name0, o1, name1));
+            fail(name0 + ".equals(" + name1 + ")", ExceptionMessageUtil.valueAndName(o0, name0, o1, name1));
         }
     }
 
@@ -1503,8 +1481,7 @@ public final class Assert {
         neqNull(o0, name0);
         neqNull(o1, name1);
         if (o0.equals(o1)) {
-            fail("!" + name0 + ".equals(" + name1 + ")",
-                ExceptionMessageUtil.valueAndName(o0, name0, o1, name1));
+            fail("!" + name0 + ".equals(" + name1 + ")", ExceptionMessageUtil.valueAndName(o0, name0, o1, name1));
         }
     }
 
@@ -1515,7 +1492,7 @@ public final class Assert {
         neqNull(o1, "o1");
         if (o0.equals(o1)) {
             fail("!" + name0 + ".equals(" + ExceptionMessageUtil.valueString(o1) + ")",
-                ExceptionMessageUtil.valueAndName(o0, name0));
+                    ExceptionMessageUtil.valueAndName(o0, name0));
         }
     }
 

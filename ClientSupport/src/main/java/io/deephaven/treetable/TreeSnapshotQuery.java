@@ -16,11 +16,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * A query that fetches a flat viewport-ready snapshot of a tree table, taking into account the set
- * of expanded rows at each level.
+ * A query that fetches a flat viewport-ready snapshot of a tree table, taking into account the set of expanded rows at
+ * each level.
  */
 public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>>
-    implements Function.Unary<TreeSnapshotResult, Table> {
+        implements Function.Unary<TreeSnapshotResult, Table> {
 
     private final CLIENT_TYPE client;
 
@@ -40,13 +40,11 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
     }
 
     /**
-     * Construct a new query that will create a flat snapshot of the tree table using a flat
-     * viewport beginning at the specified rows and columns, applying the specified sorts and
-     * filters if required to fetch tables
+     * Construct a new query that will create a flat snapshot of the tree table using a flat viewport beginning at the
+     * specified rows and columns, applying the specified sorts and filters if required to fetch tables
      *
      * @param baseId The id of the base table to be used as a key to manage this client's state.
-     * @param tablesByKey The tables within the tree for which viewports are being tracked,
-     *        separated by table key.
+     * @param tablesByKey The tables within the tree for which viewports are being tracked, separated by table key.
      * @param firstRow The first row of the flat viewport
      * @param lastRow The last row of the flat viewport
      * @param columns The columns to include in the viewport
@@ -56,13 +54,12 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
      * @param includedOps The set of operations the client has performed since the last TSQ.
      */
     public TreeSnapshotQuery(int baseId, Map<Object, TableDetails> tablesByKey,
-        long firstRow, long lastRow, BitSet columns,
-        @NotNull SelectFilter[] filters, @NotNull List<SortDirective> sorts,
-        CLIENT_TYPE client, EnumSet<Operation> includedOps) {
+            long firstRow, long lastRow, BitSet columns,
+            @NotNull SelectFilter[] filters, @NotNull List<SortDirective> sorts,
+            CLIENT_TYPE client, EnumSet<Operation> includedOps) {
         this.client = client;
         Assert.leq(firstRow, "firstRow", lastRow, "lastRow");
-        Assert.leq(lastRow - firstRow, "lastRow - firstRow", Integer.MAX_VALUE,
-            "Integer.MAX_VALUE");
+        Assert.leq(lastRow - firstRow, "lastRow - firstRow", Integer.MAX_VALUE, "Integer.MAX_VALUE");
         this.tablesByKey = tablesByKey;
 
         firstViewportRow = firstRow;
@@ -84,12 +81,10 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
         final HierarchicalTableInfo sourceInfoAttr = ((HierarchicalTable) arg).getInfo();
         if (sourceInfoAttr instanceof TreeTableInfo) {
             return new TreeTableSnapshotImpl<>(baseTableId, (HierarchicalTable) arg, tablesByKey,
-                firstViewportRow, lastViewportRow, columns, filters, directives, client,
-                includedOps).getSnapshot();
+                    firstViewportRow, lastViewportRow, columns, filters, directives, client, includedOps).getSnapshot();
         } else if (sourceInfoAttr instanceof RollupInfo) {
             return new RollupSnapshotImpl<>(baseTableId, (HierarchicalTable) arg, tablesByKey,
-                firstViewportRow, lastViewportRow, columns, filters, directives, client,
-                includedOps).getSnapshot();
+                    firstViewportRow, lastViewportRow, columns, filters, directives, client, includedOps).getSnapshot();
         }
 
         throw new IllegalStateException("Could not determine tree table type");
@@ -98,13 +93,12 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
     @Override
     public String toString() {
         return "TreeSnapshotQuery{" +
-            "firstViewportRow=" + firstViewportRow +
-            ", lastViewportRow=" + lastViewportRow +
-            ", columns=" + (columns == null ? "(null)" : FormatBitSet.formatBitSetAsString(columns))
-            +
-            ", filters=" + Arrays.toString(filters) +
-            ", directives=" + directives +
-            ", tablesByKey.size()=" + tablesByKey.size() +
-            '}';
+                "firstViewportRow=" + firstViewportRow +
+                ", lastViewportRow=" + lastViewportRow +
+                ", columns=" + (columns == null ? "(null)" : FormatBitSet.formatBitSetAsString(columns)) +
+                ", filters=" + Arrays.toString(filters) +
+                ", directives=" + directives +
+                ", tablesByKey.size()=" + tablesByKey.size() +
+                '}';
     }
 }

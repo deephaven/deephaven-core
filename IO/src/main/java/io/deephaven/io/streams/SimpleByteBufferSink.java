@@ -30,8 +30,7 @@ public class SimpleByteBufferSink implements CurrentByteBufferSink {
     public ByteBuffer acceptBuffer(ByteBuffer b, int need) {
         if (b.remaining() < need) {
             b.flip();
-            ByteBuffer b2 =
-                direct ? ByteBuffer.allocateDirect(Math.max(b.capacity() * 2, b.remaining() + need))
+            ByteBuffer b2 = direct ? ByteBuffer.allocateDirect(Math.max(b.capacity() * 2, b.remaining() + need))
                     : ByteBuffer.allocate(Math.max(b.capacity() * 2, b.remaining() + need));
             b2.put(b);
             currentBuffer = b = b2;

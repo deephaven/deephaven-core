@@ -28,7 +28,7 @@ abstract class SelectableImpl implements Selectable, Serializable {
             // To make sure that Selectable#equals() works as we would expect, we should always use
             // canonical ColumnName when applicable.
             throw new IllegalArgumentException(
-                "Should not construct SelectableImpl with expression() equal to newColumn(), use the ColumnName directly");
+                    "Should not construct SelectableImpl with expression() equal to newColumn(), use the ColumnName directly");
         }
     }
 }

@@ -4,8 +4,7 @@ import io.deephaven.db.v2.QueryTable;
 import io.deephaven.util.annotations.ScriptApi;
 
 /**
- * Tools to obtain internal, Deephaven logs as tables. These tables include query logs and
- * performance logs.
+ * Tools to obtain internal, Deephaven logs as tables. These tables include query logs and performance logs.
  */
 public class TableLoggers {
     /**
@@ -21,8 +20,8 @@ public class TableLoggers {
     }
 
     /**
-     * Return a table with query performance data. Individual sub-operations in the query are
-     * referenced in QueryOperationPerformanceLog.
+     * Return a table with query performance data. Individual sub-operations in the query are referenced in
+     * QueryOperationPerformanceLog.
      *
      * @return A table with query performance data.
      */

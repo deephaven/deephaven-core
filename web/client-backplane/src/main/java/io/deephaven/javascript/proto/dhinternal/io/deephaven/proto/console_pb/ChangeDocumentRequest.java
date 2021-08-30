@@ -2,8 +2,8 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -12,9 +12,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.ChangeDocumentRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.ChangeDocumentRequest",
+        namespace = JsPackage.GLOBAL)
 public class ChangeDocumentRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -24,7 +24,7 @@ public class ChangeDocumentRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -59,20 +59,20 @@ public class ChangeDocumentRequest {
 
             @JsProperty
             void setTicket(
-                ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -116,7 +116,7 @@ public class ChangeDocumentRequest {
 
                 @JsProperty
                 void setStart(
-                    ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType.StartFieldType start);
+                        ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType.StartFieldType start);
             }
 
             @JsOverlay
@@ -135,7 +135,7 @@ public class ChangeDocumentRequest {
 
             @JsProperty
             void setRange(
-                ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType range);
+                    ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType range);
 
             @JsProperty
             void setRangeLength(double rangeLength);
@@ -183,19 +183,19 @@ public class ChangeDocumentRequest {
 
         @JsOverlay
         default void setContentChangesList(
-            ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType[] contentChangesList) {
+                ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType[] contentChangesList) {
             setContentChangesList(
-                Js.<JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType>>uncheckedCast(
-                    contentChangesList));
+                    Js.<JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType>>uncheckedCast(
+                            contentChangesList));
         }
 
         @JsProperty
         void setContentChangesList(
-            JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType> contentChangesList);
+                JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType> contentChangesList);
 
         @JsProperty
         void setTextDocument(
-            ChangeDocumentRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
+                ChangeDocumentRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -206,7 +206,7 @@ public class ChangeDocumentRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -241,20 +241,20 @@ public class ChangeDocumentRequest {
 
             @JsProperty
             void setTicket(
-                ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -298,7 +298,7 @@ public class ChangeDocumentRequest {
 
                 @JsProperty
                 void setStart(
-                    ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType.StartFieldType start);
+                        ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType.StartFieldType start);
             }
 
             @JsOverlay
@@ -317,7 +317,7 @@ public class ChangeDocumentRequest {
 
             @JsProperty
             void setRange(
-                ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType range);
+                    ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType range);
 
             @JsProperty
             void setRangeLength(double rangeLength);
@@ -365,38 +365,38 @@ public class ChangeDocumentRequest {
 
         @JsOverlay
         default void setContentChangesList(
-            ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType[] contentChangesList) {
+                ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType[] contentChangesList) {
             setContentChangesList(
-                Js.<JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType>>uncheckedCast(
-                    contentChangesList));
+                    Js.<JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType>>uncheckedCast(
+                            contentChangesList));
         }
 
         @JsProperty
         void setContentChangesList(
-            JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType> contentChangesList);
+                JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType> contentChangesList);
 
         @JsProperty
         void setTextDocument(
-            ChangeDocumentRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
+                ChangeDocumentRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
     }
 
     public static native ChangeDocumentRequest deserializeBinary(Uint8Array bytes);
 
     public static native ChangeDocumentRequest deserializeBinaryFromReader(
-        ChangeDocumentRequest message, Object reader);
+            ChangeDocumentRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(ChangeDocumentRequest message, Object writer);
 
     public static native ChangeDocumentRequest.ToObjectReturnType toObject(
-        boolean includeInstance, ChangeDocumentRequest msg);
+            boolean includeInstance, ChangeDocumentRequest msg);
 
     public native TextDocumentContentChangeEvent addContentChanges();
 
     public native TextDocumentContentChangeEvent addContentChanges(
-        TextDocumentContentChangeEvent value, double index);
+            TextDocumentContentChangeEvent value, double index);
 
     public native TextDocumentContentChangeEvent addContentChanges(
-        TextDocumentContentChangeEvent value);
+            TextDocumentContentChangeEvent value);
 
     public native void clearConsoleId();
 

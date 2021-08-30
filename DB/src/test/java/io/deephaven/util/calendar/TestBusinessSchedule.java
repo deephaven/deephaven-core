@@ -41,20 +41,15 @@ public class TestBusinessSchedule extends BaseArrayTestCase {
         assertEquals(DBTimeUtils.HOUR, single.getLOBD());
         assertEquals(DBTimeUtils.HOUR, single.getLengthOfBusinessDay());
         assertTrue(single.isBusinessDay());
-        assertTrue(
-            single.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY")));
-        assertTrue(
-            single.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:15:00.000000000 NY")));
-        assertTrue(
-            single.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY")));
-        assertFalse(
-            single.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:10:00.000000000 NY")));
-        assertEquals(0L, single
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T01:00:00.000000000 NY")));
-        assertEquals(DBTimeUtils.MINUTE * 30, single
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(DBTimeUtils.HOUR, single
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
+        assertTrue(single.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY")));
+        assertTrue(single.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:15:00.000000000 NY")));
+        assertTrue(single.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY")));
+        assertFalse(single.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:10:00.000000000 NY")));
+        assertEquals(0L, single.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T01:00:00.000000000 NY")));
+        assertEquals(DBTimeUtils.MINUTE * 30,
+                single.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T10:30:00.000000000 NY")));
+        assertEquals(DBTimeUtils.HOUR,
+                single.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
 
 
         // multi period
@@ -67,24 +62,18 @@ public class TestBusinessSchedule extends BaseArrayTestCase {
         assertEquals(DBTimeUtils.HOUR * 6, multi.getLOBD());
         assertEquals(DBTimeUtils.HOUR * 6, multi.getLengthOfBusinessDay());
         assertTrue(multi.isBusinessDay());
-        assertTrue(
-            multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY")));
-        assertTrue(
-            multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:15:00.000000000 NY")));
-        assertTrue(
-            multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY")));
-        assertFalse(
-            multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:10:00.000000000 NY")));
-        assertTrue(
-            multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T12:10:00.000000000 NY")));
-        assertEquals(0L, multi
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T01:00:00.000000000 NY")));
-        assertEquals(DBTimeUtils.MINUTE * 30, multi
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(DBTimeUtils.HOUR * 2, multi
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(DBTimeUtils.HOUR * 2, multi
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
+        assertTrue(multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY")));
+        assertTrue(multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:15:00.000000000 NY")));
+        assertTrue(multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY")));
+        assertFalse(multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:10:00.000000000 NY")));
+        assertTrue(multi.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T12:10:00.000000000 NY")));
+        assertEquals(0L, multi.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T01:00:00.000000000 NY")));
+        assertEquals(DBTimeUtils.MINUTE * 30,
+                multi.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T10:30:00.000000000 NY")));
+        assertEquals(DBTimeUtils.HOUR * 2,
+                multi.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
+        assertEquals(DBTimeUtils.HOUR * 2,
+                multi.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
 
         final BusinessSchedule multi2 = new BusinessSchedule(period2, period1);
         assertEquals(new BusinessPeriod[] {period1, period2}, multi2.getBusinessPeriods());
@@ -95,24 +84,18 @@ public class TestBusinessSchedule extends BaseArrayTestCase {
         assertEquals(DBTimeUtils.HOUR * 6, multi2.getLOBD());
         assertEquals(DBTimeUtils.HOUR * 6, multi2.getLengthOfBusinessDay());
         assertTrue(multi2.isBusinessDay());
-        assertTrue(
-            multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY")));
-        assertTrue(
-            multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:15:00.000000000 NY")));
-        assertTrue(
-            multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY")));
-        assertFalse(
-            multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:10:00.000000000 NY")));
-        assertTrue(
-            multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T12:10:00.000000000 NY")));
-        assertEquals(0L, multi2
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T01:00:00.000000000 NY")));
-        assertEquals(DBTimeUtils.MINUTE * 30, multi2
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(DBTimeUtils.HOUR * 2, multi2
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(DBTimeUtils.HOUR * 2, multi2
-            .businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
+        assertTrue(multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY")));
+        assertTrue(multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T10:15:00.000000000 NY")));
+        assertTrue(multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY")));
+        assertFalse(multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T11:10:00.000000000 NY")));
+        assertTrue(multi2.isBusinessTime(DBTimeUtils.convertDateTime("2017-03-11T12:10:00.000000000 NY")));
+        assertEquals(0L, multi2.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T01:00:00.000000000 NY")));
+        assertEquals(DBTimeUtils.MINUTE * 30,
+                multi2.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T10:30:00.000000000 NY")));
+        assertEquals(DBTimeUtils.HOUR * 2,
+                multi2.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
+        assertEquals(DBTimeUtils.HOUR * 2,
+                multi2.businessTimeElapsed(DBTimeUtils.convertDateTime("2017-03-11T13:00:00.000000000 NY")));
 
     }
 }

@@ -1,12 +1,12 @@
 {
  "className": "io.deephaven.util.codec.ObjectCodec",
  "methods": {
-  "encode": "Encode the specified input as an array of bytes.\n Note that it is up to the implementation how to encode null inputs. The use of a zero-length byte array\n (e.g. CollectionUtil.ZERO_LENGTH_BYTE_ARRAY) is strongly encouraged.\n\n:param input: (ObjectCodec.TYPE) - The input object, possibly null\n:return: (byte[]) The output byte array",
-  "getPrecision": "If applicable, the maximum encodable precision. If precision is not applicable (i.e. for non-numeric types)\n this method should return zero.\n\n:return: (int) the numeric precision supported by this codec",
-  "getScale": "If applicable, the maximum encodable scale. If scale is not applicable (i.e. for non-numeric types)\n this method should return zero.\n\n:return: (int) the numeric scale (digits after the decimal point) supported by this codec",
+  "encode": "Encode the specified input as an array of bytes. Note that it is up to the implementation how to encode null\n inputs. The use of a zero-length byte array (e.g.\n CollectionUtil.ZERO_LENGTH_BYTE_ARRAY) is strongly encouraged.\n\n:param input: (ObjectCodec.TYPE) - The input object, possibly null\n:return: (byte[]) The output byte array",
+  "getPrecision": "If applicable, the maximum encodable precision. If precision is not applicable (i.e. for non-numeric types) this\n method should return zero.\n\n:return: (int) the numeric precision supported by this codec",
+  "getScale": "If applicable, the maximum encodable scale. If scale is not applicable (i.e. for non-numeric types) this method\n should return zero.\n\n:return: (int) the numeric scale (digits after the decimal point) supported by this codec",
   "isNullable": "Does this codec support encoding of null values?\n\n:return: (boolean) if null values are supported"
  },
  "path": "io.deephaven.util.codec.ObjectCodec",
- "text": "Codec interface for Object translation to/from byte arrays for serialization and deserialization.\n Implementations must follow several rules to enable correct usage:\n \n* They must be stateless or designed for concurrent use (e.g. by using only ThreadLocal state), as they will\n generally be cached and re-used.\n* They must not modify their inputs in any way, retain references to their inputs, or return results that retain\n references to their inputs.\n* They should provide a public constructor that takes a single String argument, in order to allow\n configuration-driven reflective instantiation.",
+ "text": "Codec interface for Object translation to/from byte arrays for serialization and deserialization.\n \n Implementations must follow several rules to enable correct usage:\n \n* They must be stateless or designed for concurrent use (e.g. by using only ThreadLocal state), as they will\n generally be cached and re-used.\n* They must not modify their inputs in any way, retain references to their inputs, or return results that retain\n references to their inputs.\n* They should provide a public constructor that takes a single String argument, in order to allow\n configuration-driven reflective instantiation.",
  "typeName": "interface"
 }

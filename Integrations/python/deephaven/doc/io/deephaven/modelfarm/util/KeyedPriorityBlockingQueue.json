@@ -1,11 +1,11 @@
 {
  "className": "io.deephaven.modelfarm.util.KeyedPriorityBlockingQueue",
  "methods": {
-  "enqueue": "Add an element to the queue.  If the element is already in the queue, the element's priority will be the higher\n of the existing element and the new element.\n\n:param element: (KeyedPriorityBlockingQueue.E) - element to enqueue.\n:param priority: (int) - priority of the element.\n:return: (boolean) true if the element was newly inserted to the queue or reinserted with a higher priority,\n otherwise false.",
+  "enqueue": "Add an element to the queue. If the element is already in the queue, the element's priority will be the higher of\n the existing element and the new element.\n\n:param element: (KeyedPriorityBlockingQueue.E) - element to enqueue.\n:param priority: (int) - priority of the element.\n:return: (boolean) true if the element was newly inserted to the queue or reinserted with a higher priority,\n         otherwise false.",
   "isEmpty": "Returns true if the queue is empty; false otherwise.\n\n:return: (boolean) true if the queue is empty; false otherwise.",
-  "take": "Retrieves and removes the head of this queue, waiting if necessary\n until an element becomes available.\n\n:return: (KeyedPriorityBlockingQueue.E) the head of this queue"
+  "take": "Retrieves and removes the head of this queue, waiting if necessary until an element becomes available.\n\n:return: (KeyedPriorityBlockingQueue.E) the head of this queue"
  },
  "path": "io.deephaven.modelfarm.util.KeyedPriorityBlockingQueue",
- "text": "A priority blocking queue that maintains one element per key.  If a later request comes in of higher priority,\n the lower priority item is replaced by the higher priority item.\n\n The element type must be usable in a hash map.",
+ "text": "A priority blocking queue that maintains one element per key. If a later request comes in of higher priority, the\n lower priority item is replaced by the higher priority item.\n\n The element type must be usable in a hash map.",
  "typeName": "class"
 }

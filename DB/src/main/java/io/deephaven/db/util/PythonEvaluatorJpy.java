@@ -9,18 +9,18 @@ import org.jpy.PyModule;
 import org.jpy.PyObject;
 
 /**
- * The sole implementation of the {@link PythonEvaluator}, using Jpy to create a cpython interpreter
- * instance inside of our JVM.
+ * The sole implementation of the {@link PythonEvaluator}, using Jpy to create a cpython interpreter instance inside of
+ * our JVM.
  *
  * Each evaluator has their own copy of the globals.
  */
 public class PythonEvaluatorJpy implements PythonEvaluator {
 
     public static PythonEvaluatorJpy withGlobalCopy() {
-        // TODO: We still have to reach into the __main__ dictionary to push classes and import the
-        // Deephaven quasi-module
-        // because after we dill the item, the undilled item has a reference to the __main__
-        // globals() and not our globals.
+        // TODO: We still have to reach into the __main__ dictionary to push classes and import the Deephaven
+        // quasi-module
+        // because after we dill the item, the undilled item has a reference to the __main__ globals() and not our
+        // globals.
 
         // we want to create a copy of globals, which is then used to execute code for this session
         return new PythonEvaluatorJpy(PyLib.getMainGlobals().asDict().copy());
@@ -42,8 +42,7 @@ public class PythonEvaluatorJpy implements PythonEvaluator {
             return;
         }
         // noinspection EmptyTryBlock
-        try (final PyObject pyObject =
-            PyModule.executeCode(s, PyInputMode.STATEMENT, globals, null)) {
+        try (final PyObject pyObject = PyModule.executeCode(s, PyInputMode.STATEMENT, globals, null)) {
 
         }
     }
@@ -62,8 +61,7 @@ public class PythonEvaluatorJpy implements PythonEvaluator {
     @Override
     public void runScript(String scriptFile) throws FileNotFoundException {
         // noinspection EmptyTryBlock
-        try (final PyObject pyObject =
-            PyModule.executeScript(scriptFile, PyInputMode.SCRIPT, globals, null)) {
+        try (final PyObject pyObject = PyModule.executeScript(scriptFile, PyInputMode.SCRIPT, globals, null)) {
 
         }
     }

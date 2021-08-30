@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.by.NonKeyColumnAggregationFactory",
  "methods": {
-  "allowKeyOnlySubstitution": "Should we allow substitution with a KeyOnlyAggregationFactory (e.g. selectDistinct) when there are only\n key columns? Instances whose operators could have side effects or are already KeyOnlyAggregationFactory\n should return false.\n\n:return: (boolean) Whether to allow a KeyOnlyAggregationFactory to be substituted for this when there are only key columns",
+  "allowKeyOnlySubstitution": "Should we allow substitution with a KeyOnlyAggregationFactory (e.g. selectDistinct) when there are only\n key columns? Instances whose operators could have side effects or are already KeyOnlyAggregationFactory\n should return false.\n\n:return: (boolean) Whether to allow a KeyOnlyAggregationFactory to be substituted for this when there are only key\n         columns",
   "makeAggregationContext": "Make an AggregationContext for this aggregation.\n\n:param table: (io.deephaven.db.tables.Table) - The source Table to aggregate\n:param groupByColumns: (java.lang.String...) - The key column names\n:return: (io.deephaven.db.v2.by.AggregationContext) A new or safely reusable AggregationContext",
   "toString": ":return: java.lang.String"
  },

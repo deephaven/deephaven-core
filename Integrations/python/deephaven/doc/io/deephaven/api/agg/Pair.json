@@ -7,6 +7,6 @@
   "parse": ":param x: java.lang.String\n:return: io.deephaven.api.agg.Pair"
  },
  "path": "io.deephaven.api.agg.Pair",
- "text": "An aggregation pair represents a input and output column for\n some aggregations. Aggregations that don't have a one-to-one input/output\n mapping will not need an agg pair.",
+ "text": "An aggregation pair represents a input and output column for some\n aggregations. Aggregations that don't have a one-to-one input/output mapping will not need an agg\n pair.",
  "typeName": "interface"
 }

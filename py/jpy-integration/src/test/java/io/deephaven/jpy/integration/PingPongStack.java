@@ -21,9 +21,8 @@ public class PingPongStack {
         if (CODE == null) {
             try {
                 CODE = new String(
-                    Files.readAllBytes(
-                        Paths.get(PingPongStack.class.getResource("pingpongstack.py").toURI())),
-                    StandardCharsets.UTF_8);
+                        Files.readAllBytes(Paths.get(PingPongStack.class.getResource("pingpongstack.py").toURI())),
+                        StandardCharsets.UTF_8);
             } catch (IOException | URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -38,15 +37,12 @@ public class PingPongStack {
         if (remaining <= 0) {
             return result;
         }
-        // note: we can't cache this module here, since we are starting and stopping python
-        // interpreter
-        // from our junit testing framework, and don't have the appropriate infra to pass down the
-        // env.
+        // note: we can't cache this module here, since we are starting and stopping python interpreter
+        // from our junit testing framework, and don't have the appropriate infra to pass down the env.
         // the same thing would likely happen from python->java, in regards to caching
         // jpy.get_type() among jvm create/destroys.
 
         PyObject module = loadCodeAsModule(CODE, "pingpongstack");
-        return module.call("ping_pong_java", result + "(java," + remaining + ")", remaining - 1)
-            .str();
+        return module.call("ping_pong_java", result + "(java," + remaining + ")", remaining - 1).str();
     }
 }

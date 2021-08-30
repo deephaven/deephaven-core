@@ -61,8 +61,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 /**
- * Deliberately much lower in scope (and running time) than BarrageMessageRoundTripTest, the only
- * purpose of this test is to verify that we can round trip
+ * Deliberately much lower in scope (and running time) than BarrageMessageRoundTripTest, the only purpose of this test
+ * is to verify that we can round trip
  */
 public class FlightMessageRoundTripTest {
     @Module
@@ -75,8 +75,7 @@ public class FlightMessageRoundTripTest {
 
         @Provides
         AbstractScriptSession createGlobalScriptSession(GlobalSessionProvider sessionProvider) {
-            final AbstractScriptSession scriptSession =
-                new NoLanguageDeephavenSession("non-script-session");
+            final AbstractScriptSession scriptSession = new NoLanguageDeephavenSession("non-script-session");
             sessionProvider.initializeGlobalScriptSession(scriptSession);
             return scriptSession;
         }
@@ -124,11 +123,11 @@ public class FlightMessageRoundTripTest {
     @Before
     public void setup() throws IOException {
         TestComponent component = DaggerFlightMessageRoundTripTest_TestComponent
-            .builder()
-            .withScheduler(new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(),
-                Executors.newScheduledThreadPool(1)))
-            .withSessionTokenExpireTmMs(60_000_000)
-            .build();
+                .builder()
+                .withScheduler(new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(),
+                        Executors.newScheduledThreadPool(1)))
+                .withSessionTokenExpireTmMs(60_000_000)
+                .build();
 
         NettyServerBuilder serverBuilder = NettyServerBuilder.forPort(0);
         component.interceptors().forEach(serverBuilder::intercept);
@@ -140,30 +139,29 @@ public class FlightMessageRoundTripTest {
         scriptSession = component.scriptSession();
 
         client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort))
-            .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
-                @Override
-                public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
-                    final UUID currSession = sessionToken;
-                    if (currSession != null) {
-                        outgoingHeaders.insert(SessionServiceGrpcImpl.DEEPHAVEN_SESSION_ID,
-                            currSession.toString());
+                .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
+                    @Override
+                    public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
+                        final UUID currSession = sessionToken;
+                        if (currSession != null) {
+                            outgoingHeaders.insert(SessionServiceGrpcImpl.DEEPHAVEN_SESSION_ID, currSession.toString());
+                        }
                     }
-                }
 
-                @Override
-                public void onHeadersReceived(CallHeaders incomingHeaders) {}
+                    @Override
+                    public void onHeadersReceived(CallHeaders incomingHeaders) {}
 
-                @Override
-                public void onCallCompleted(CallStatus status) {}
-            }).build();
+                    @Override
+                    public void onCallCompleted(CallStatus status) {}
+                }).build();
         channel = ManagedChannelBuilder.forTarget("localhost:" + actualPort)
-            .usePlaintext()
-            .build();
+                .usePlaintext()
+                .build();
         SessionServiceGrpc.SessionServiceBlockingStub sessionServiceClient =
-            SessionServiceGrpc.newBlockingStub(channel);
+                SessionServiceGrpc.newBlockingStub(channel);
 
-        HandshakeResponse response = sessionServiceClient
-            .newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build());
+        HandshakeResponse response =
+                sessionServiceClient.newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build());
         assertNotNull(response.getSessionToken());
         sessionToken = UUID.fromString(response.getSessionToken().toStringUtf8());
 
@@ -214,10 +212,9 @@ public class FlightMessageRoundTripTest {
     public void testSimpleEmptyTableDoGet() {
         Flight.Ticket simpleTableTicket = ExportTicketHelper.exportIdToArrowTicket(1);
         currentSession.newExport(simpleTableTicket)
-            .submit(() -> TableTools.emptyTable(10).update("I=i"));
+                .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
-        FlightStream stream =
-            client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()));
+        FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()));
         assertTrue(stream.next());
         VectorSchemaRoot root = stream.getRoot();
         // row count should match what we expect
@@ -258,10 +255,9 @@ public class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=(String)null"));
 
         // some nulls in columns
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? i : (int)null"));
         assertRoundTripDataEqual(
-            TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? i : (int)null"));
-        assertRoundTripDataEqual(TableTools.emptyTable(10)
-            .update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
+                TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
 
         // list columns TODO(#755): support for DBArray
         // assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").by().join(TableTools.emptyTable(5)));
@@ -274,17 +270,15 @@ public class FlightMessageRoundTripTest {
         final Table table = TableTools.emptyTable(10).update("I = i");
 
         final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
         scriptSession.setVariable(staticTableName, table);
         scriptSession.setVariable(tickingTableName, tickingTable);
 
         // test fetch info from scoped ticket
-        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(staticTableName)),
-            table);
-        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(tickingTableName)),
-            tickingTable);
+        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(staticTableName)), table);
+        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(tickingTableName)), tickingTable);
 
         // test list flights which runs through scoped tickets
         final MutableInt seenTables = new MutableInt();
@@ -307,7 +301,7 @@ public class FlightMessageRoundTripTest {
         final Table table = TableTools.emptyTable(10).update("I = i");
 
         final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
             // stuff table into the scope
@@ -315,11 +309,10 @@ public class FlightMessageRoundTripTest {
             scriptSession.setVariable(tickingTableName, tickingTable);
 
             // test fetch info from scoped ticket
-            assertSchemaMatchesTable(
-                client.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(), table);
-            assertSchemaMatchesTable(
-                client.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
-                tickingTable);
+            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
+                    table);
+            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
+                    tickingTable);
 
             // test list flights which runs through scoped tickets
             final MutableInt seenTables = new MutableInt();
@@ -342,10 +335,8 @@ public class FlightMessageRoundTripTest {
 
     @Test
     public void testExportTicketVisibility() {
-        // we have decided that if an api client creates export tickets, that they probably gain no
-        // value from
-        // seeing them via Flight's listFlights but we do want them to work with getFlightInfo (or
-        // anywhere else a
+        // we have decided that if an api client creates export tickets, that they probably gain no value from
+        // seeing them via Flight's listFlights but we do want them to work with getFlightInfo (or anywhere else a
         // flight ticket can be resolved).
         final Flight.Ticket ticket = ExportTicketHelper.exportIdToArrowTicket(1);
         final Table table = TableTools.emptyTable(10).update("I = i");
@@ -375,16 +366,15 @@ public class FlightMessageRoundTripTest {
 
     private void assertSchemaMatchesTable(Schema schema, Table table) {
         Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.getColumns().length,
-            "table.getColumns().length");
+                "table.getColumns().length");
         Assert.equals(BarrageSchemaUtil.schemaToTableDefinition(schema),
-            "BarrageSchemaUtil.schemaToTableDefinition(schema)",
-            table.getDefinition(), "table.getDefinition()");
+                "BarrageSchemaUtil.schemaToTableDefinition(schema)",
+                table.getDefinition(), "table.getDefinition()");
     }
 
     private static int nextTicket = 1;
 
-    private void assertRoundTripDataEqual(Table deephavenTable)
-        throws InterruptedException, ExecutionException {
+    private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException, ExecutionException {
         // bind the table in the session
         Flight.Ticket dhTableTicket = ExportTicketHelper.exportIdToArrowTicket(nextTicket++);
         currentSession.newExport(dhTableTicket).submit(() -> deephavenTable);
@@ -395,10 +385,8 @@ public class FlightMessageRoundTripTest {
 
         // start the DoPut and send the schema
         int flightDescriptorTicketValue = nextTicket++;
-        FlightDescriptor descriptor =
-            FlightDescriptor.path("export", flightDescriptorTicketValue + "");
-        FlightClient.ClientStreamListener putStream =
-            client.startPut(descriptor, root, new AsyncPutListener());
+        FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
+        FlightClient.ClientStreamListener putStream = client.startPut(descriptor, root, new AsyncPutListener());
 
         // send the body of the table
         while (stream.next()) {
@@ -410,12 +398,11 @@ public class FlightMessageRoundTripTest {
 
         // get the table that was uploaded, and confirm it matches what we originally sent
         CompletableFuture<Table> tableFuture = new CompletableFuture<>();
-        SessionState.ExportObject<Table> tableExport =
-            currentSession.getExport(flightDescriptorTicketValue);
+        SessionState.ExportObject<Table> tableExport = currentSession.getExport(flightDescriptorTicketValue);
         currentSession.nonExport()
-            .onError(exception -> tableFuture.cancel(true))
-            .require(tableExport)
-            .submit(() -> tableFuture.complete(tableExport.get()));
+                .onErrorHandler(exception -> tableFuture.cancel(true))
+                .require(tableExport)
+                .submit(() -> tableFuture.complete(tableExport.get()));
 
         // block until we're done, so we can get the table and see what is inside
         putStream.getResult();
@@ -425,7 +412,6 @@ public class FlightMessageRoundTripTest {
         assertEquals(deephavenTable.size(), uploadedTable.size());
         assertEquals(deephavenTable.getDefinition(), uploadedTable.getDefinition());
         assertEquals(0, (long) TableTools
-            .diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class))
-            .getSecond());
+                .diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
     }
 }

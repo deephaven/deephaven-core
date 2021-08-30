@@ -14,8 +14,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * A helper for manging a list of References. It hides the internal management of expired references
- * and provides for iteration over the valid ones
+ * A helper for manging a list of References. It hides the internal management of expired references and provides for
+ * iteration over the valid ones
  */
 public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
 
@@ -25,23 +25,20 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     /**
      * Create a SimpleReferenceManager, with {@link CopyOnWriteArrayList} as backing structure.
      *
-     * @param referenceFactory Factory to create references for added referents; should always make
-     *        a unique reference
+     * @param referenceFactory Factory to create references for added referents; should always make a unique reference
      */
     public SimpleReferenceManager(@NotNull final Function<T, R> referenceFactory) {
         this(referenceFactory, true);
     }
 
     /**
-     * Create a SimpleReferenceManager, with either {@link ArrayList} or
-     * {@link CopyOnWriteArrayList} as backing structure.
+     * Create a SimpleReferenceManager, with either {@link ArrayList} or {@link CopyOnWriteArrayList} as backing
+     * structure.
      *
-     * @param referenceFactory Factory to create references for added referents; should always make
-     *        a unique reference
+     * @param referenceFactory Factory to create references for added referents; should always make a unique reference
      * @param concurrent Use CopyOnWriteArrayList for internal storage if true, else ArrayList
      */
-    public SimpleReferenceManager(@NotNull final Function<T, R> referenceFactory,
-        final boolean concurrent) {
+    public SimpleReferenceManager(@NotNull final Function<T, R> referenceFactory, final boolean concurrent) {
         this.referenceFactory = referenceFactory;
         references = concurrent ? new CopyOnWriteArrayList<>() : new ArrayList<>();
     }
@@ -58,8 +55,8 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     }
 
     /**
-     * Remove item from the list if present according to reference equality ({@code ==}), and also
-     * any cleared references.
+     * Remove item from the list if present according to reference equality ({@code ==}), and also any cleared
+     * references.
      *
      * @param item the item to remove.
      * @return The item if it was removed, else null
@@ -78,8 +75,7 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     }
 
     /**
-     * Retrieve all encountered items that satisfy a filter, while also removing any cleared
-     * references.
+     * Retrieve all encountered items that satisfy a filter, while also removing any cleared references.
      *
      * @param filter The filter to decide if a valid item should be removed
      * @return Whether we succeeded in removing anything
@@ -107,8 +103,8 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     }
 
     /**
-     * Execute the provided procedure on each reference, item pair whose item is still reachable,
-     * while removing any cleared references.
+     * Execute the provided procedure on each reference, item pair whose item is still reachable, while removing any
+     * cleared references.
      *
      * @param consumer The function to call with each reachable pair
      */
@@ -132,14 +128,13 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     }
 
     /**
-     * Retrieve the first valid item that satisfies a filter. Remove any encountered cleared
-     * references as a side effect.
+     * Retrieve the first valid item that satisfies a filter. Remove any encountered cleared references as a side
+     * effect.
      *
      * @param filter The filter to decide if a valid item should be returned
      * @return The first valid item that passed the filter, or null if no such item exists
      */
-    @SuppressWarnings("unused") // NB: Not used, yet. Needed in order to replace some instances of
-                                // WeakReferenceManager.
+    @SuppressWarnings("unused") // NB: Not used, yet. Needed in order to replace some instances of WeakReferenceManager.
     public T getFirstItem(@NotNull final Predicate<T> filter) {
         if (references.isEmpty()) {
             return null;
@@ -163,8 +158,8 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     }
 
     /**
-     * Retrieve the first valid reference whose item satisfies a filter. Remove any encountered
-     * cleared references as a side effect.
+     * Retrieve the first valid reference whose item satisfies a filter. Remove any encountered cleared references as a
+     * side effect.
      *
      * @param filter The filter to decide if a valid item should be returned
      * @return The first valid item that passed the filter, or null if no such item exists
@@ -211,12 +206,9 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
         if (current != null) {
             return current;
         }
-        // This is very unusual, in that contains only checks the head of the deque and removes it
-        // if it matches.
-        // This is particular to the use case in question, because the deque is used as an ordered
-        // subset of an ordered
-        // data structure for removing items by identity match. Don't try to use this deque for
-        // anything else and expect
+        // This is very unusual, in that contains only checks the head of the deque and removes it if it matches.
+        // This is particular to the use case in question, because the deque is used as an ordered subset of an ordered
+        // data structure for removing items by identity match. Don't try to use this deque for anything else and expect
         // you'll like the results.
         return new ArrayDeque<R>() {
             @Override

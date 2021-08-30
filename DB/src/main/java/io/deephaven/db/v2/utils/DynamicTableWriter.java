@@ -5,6 +5,9 @@
 package io.deephaven.db.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.table.TableHeader;
+import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
@@ -19,16 +22,13 @@ import io.deephaven.db.v2.sources.SingleValueColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 /**
- * The DynamicTableWriter creates an in-memory table using ArrayBackedColumnSources of the type
- * specified in the constructor. You can retrieve the table using the {@code getTable} function.
+ * The DynamicTableWriter creates an in-memory table using ArrayBackedColumnSources of the type specified in the
+ * constructor. You can retrieve the table using the {@code getTable} function.
  * <p>
  * This class is not thread safe, you must synchronize externally.
  */
@@ -45,59 +45,66 @@ public class DynamicTableWriter implements TableWriter {
     private int lastSetterRow;
 
     /**
-     * Creates a TableWriter that produces an in-memory table using the provided column names and
-     * types.
+     * Creates a TableWriter that produces an in-memory table using the provided column names and types.
      *
-     * @param columnNames the names of the columns in the output table (and our input)
-     * @param columnTypes the types of the columns in the output table (must be compatible with the
-     *        input)
+     * @param header the names and types of the columns in the output table (and our input)
      * @param constantValues a Map of columns with constant values
      */
-    @SuppressWarnings("WeakerAccess")
-    public DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes,
-        final Map<String, Object> constantValues) {
-        final Map<String, ColumnSource> sources = new LinkedHashMap<>();
-        arrayColumnSources = new ArrayBackedColumnSource[columnTypes.length];
-        allocatedSize = 256;
-        for (int i = 0; i < columnTypes.length; i++) {
-            if (constantValues.containsKey(columnNames[i])) {
-                final SingleValueColumnSource singleValueColumnSource =
-                    SingleValueColumnSource.getSingleValueColumnSource(columnTypes[i]);
-                // noinspection unchecked
-                singleValueColumnSource.set(constantValues.get(columnNames[i]));
-                sources.put(columnNames[i], singleValueColumnSource);
-            } else {
-                arrayColumnSources[i] =
-                    ArrayBackedColumnSource.getMemoryColumnSource(allocatedSize, columnTypes[i]);
-                sources.put(columnNames[i], arrayColumnSources[i]);
-            }
-        }
-
-
-        this.table = new LiveQueryTable(Index.FACTORY.getIndexByValues(), sources);
-        LiveTableMonitor.DEFAULT.addTable(table);
-        this.columnNames = columnNames;
-        final DataColumn[] columns = table.getColumns();
-        for (int ii = 0; ii < columns.length; ii++) {
-            if (constantValues.containsKey(columnNames[ii])) {
-                continue;
-            }
-            final int index = ii;
-            factoryMap.put(columns[index].getName(),
-                (currentRow) -> createRowSetter(columns[index].getType(),
-                    arrayColumnSources[index]));
-        }
+    public DynamicTableWriter(final TableHeader header, final Map<String, Object> constantValues) {
+        this(getSources(header, constantValues, 256), constantValues, 256);
     }
 
     /**
-     * Creates a TableWriter that produces an in-memory table using the provided column names and
-     * types.
+     * Creates a TableWriter that produces an in-memory table using the provided column names and types.
+     *
+     * @param header the names and types of the columns in the output table (and our input)
+     */
+    public DynamicTableWriter(final TableHeader header) {
+        this(header, Collections.emptyMap());
+    }
+
+    // This constructor is no longer public to simplify access from python: jpy cannot resolve
+    // calls with arguments of list type when there is more than one alternative with array element type
+    // on the java side. Prefer the constructor taking qst.table.TableHeader or an array of qst.type.Type
+    // objects.
+    @SuppressWarnings("WeakerAccess")
+    DynamicTableWriter(
+            final String[] columnNames,
+            final Class<?>[] columnTypes,
+            final Map<String, Object> constantValues) {
+        this(columnNames, (int i) -> columnTypes[i], constantValues);
+    }
+
+    /**
+     * Creates a TableWriter that produces an in-memory table using the provided column names and types.
      *
      * @param columnNames the names of the columns in the output table (and our input)
-     * @param columnTypes the types of the columns in the output table (must be compatible with the
-     *        input)
+     * @param columnTypes the types of the columns in the output table (must be compatible with the input)
+     * @param constantValues a Map of columns with constant values
      */
-    public DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes) {
+    @SuppressWarnings("WeakerAccess")
+    public DynamicTableWriter(
+            final String[] columnNames,
+            final Type<?>[] columnTypes,
+            final Map<String, Object> constantValues) {
+        this(columnNames, (int i) -> columnTypes[i].clazz(), constantValues);
+    }
+
+    // This constructor is no longer public to simplify access from python: jpy cannot resolve
+    // calls with arguments of list type when there is more than one alternative with array element type
+    // on the java side. Prefer the constructor taking qst.table.TableHeader or an array of qst.type.Type
+    // objects.
+    DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes) {
+        this(columnNames, columnTypes, Collections.emptyMap());
+    }
+
+    /**
+     * Creates a TableWriter that produces an in-memory table using the provided column names and types.
+     *
+     * @param columnNames the names of the columns in the output table (and our input)
+     * @param columnTypes the types of the columns in the output table (must be compatible with the input)
+     */
+    public DynamicTableWriter(final String[] columnNames, final Type<?>[] columnTypes) {
         this(columnNames, columnTypes, Collections.emptyMap());
     }
 
@@ -122,8 +129,7 @@ public class DynamicTableWriter implements TableWriter {
     /**
      * Gets the table created by this DynamicTableWriter.
      * <p>
-     * The returned table is registered with the LiveTableMonitor, and new rows become visible
-     * within the refresh loop.
+     * The returned table is registered with the LiveTableMonitor, and new rows become visible within the refresh loop.
      *
      * @return a live table with the output of this log
      */
@@ -132,12 +138,12 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * Returns a row writer, which allocates the row. You may get setters for the row, and then call
-     * addRowToTableIndex when you are finished. Because the row is allocated when you call this
-     * function, it is possible to get several Row objects before calling addRowToTableIndex.
+     * Returns a row writer, which allocates the row. You may get setters for the row, and then call addRowToTableIndex
+     * when you are finished. Because the row is allocated when you call this function, it is possible to get several
+     * Row objects before calling addRowToTableIndex.
      * <p>
-     * This contrasts with {@code DynamicTableWriter.getSetter}, which allocates a single row; and
-     * you must call {@code DynamicTableWriter.addRowToTableIndex} before advancing to the next row.
+     * This contrasts with {@code DynamicTableWriter.getSetter}, which allocates a single row; and you must call
+     * {@code DynamicTableWriter.addRowToTableIndex} before advancing to the next row.
      *
      * @return a Row from which you can retrieve setters and call write row.
      */
@@ -147,9 +153,9 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * Returns a RowSetter for the given column. If required, a Row object is allocated. You can not
-     * mix calls with {@code getSetter} and {@code getRowWriter}. After setting each column, you
-     * must call {@code addRowToTableIndex}, before beginning to write the next row.
+     * Returns a RowSetter for the given column. If required, a Row object is allocated. You can not mix calls with
+     * {@code getSetter} and {@code getRowWriter}. After setting each column, you must call {@code addRowToTableIndex},
+     * before beginning to write the next row.
      *
      * @param name column name.
      * @return a RowSetter for the given column
@@ -171,8 +177,7 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * Writes the current row created with the {@code getSetter} call, and advances the current row
-     * by one.
+     * Writes the current row created with the {@code getSetter} call, and advances the current row by one.
      * <p>
      * The row will be made visible in the table after the LiveTableMonitor refresh cycle completes.
      */
@@ -206,17 +211,16 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * This is a convenience function so that you can log an entire row at a time using a Map. You
-     * must specify all values in the setters map (and can't have any extras). The type of the value
-     * must be castable to the type of the setter.
+     * This is a convenience function so that you can log an entire row at a time using a Map. You must specify all
+     * values in the setters map (and can't have any extras). The type of the value must be castable to the type of the
+     * setter.
      *
      * @param values a map from column name to value for the row to be logged
      */
     @SuppressWarnings("unused")
     public void logRow(Map<String, Object> values) {
         if (values.size() != factoryMap.size()) {
-            throw new RuntimeException(
-                "Incompatible logRow call: " + values.keySet() + " != " + factoryMap.keySet());
+            throw new RuntimeException("Incompatible logRow call: " + values.keySet() + " != " + factoryMap.keySet());
         }
         for (final Map.Entry<String, Object> value : values.entrySet()) {
             // noinspection unchecked
@@ -229,14 +233,13 @@ public class DynamicTableWriter implements TableWriter {
     /**
      * This is a convenience function so that you can log an entire row at a time.
      *
-     * @param values an array containing values to be logged, in order of the fields specified by
-     *        the constructor
+     * @param values an array containing values to be logged, in order of the fields specified by the constructor
      */
     @SuppressWarnings("unused")
     public void logRow(Object... values) {
         if (values.length != factoryMap.size()) {
-            throw new RuntimeException("Incompatible logRow call, values length=" + values.length
-                + " != setters=" + factoryMap.size());
+            throw new RuntimeException(
+                    "Incompatible logRow call, values length=" + values.length + " != setters=" + factoryMap.size());
         }
         for (int ii = 0; ii < values.length; ++ii) {
             // noinspection unchecked
@@ -271,6 +274,87 @@ public class DynamicTableWriter implements TableWriter {
         return columnNames;
     }
 
+    private static Map<String, ColumnSource<?>> getSources(
+            final TableHeader header,
+            final Map<String, Object> constantValues,
+            final int allocatedSize) {
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
+        final Iterator<ColumnHeader<?>> it = header.iterator();
+        while (it.hasNext()) {
+            final ColumnHeader<?> colHeader = it.next();
+            final String colName = colHeader.name();
+            final Class<?> colType = colHeader.componentType().clazz();
+            if (constantValues.containsKey(colName)) {
+                final SingleValueColumnSource singleValueColumnSource =
+                        SingleValueColumnSource.getSingleValueColumnSource(colType);
+                // noinspection unchecked
+                singleValueColumnSource.set(constantValues.get(colName));
+                sources.put(colName, singleValueColumnSource);
+            } else {
+                ColumnSource<?> source =
+                        ArrayBackedColumnSource.getMemoryColumnSource(allocatedSize, colType);
+                sources.put(colName, source);
+            }
+        }
+        return sources;
+    }
+
+    private static Map<String, ColumnSource<?>> getSources(
+            final String[] columnNames,
+            final IntFunction<Class<?>> columnTypes,
+            final Map<String, Object> constantValues,
+            final int allocatedSize) {
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
+        for (int i = 0; i < columnNames.length; i++) {
+            if (constantValues.containsKey(columnNames[i])) {
+                final SingleValueColumnSource singleValueColumnSource =
+                        SingleValueColumnSource.getSingleValueColumnSource(columnTypes.apply(i));
+                // noinspection unchecked
+                singleValueColumnSource.set(constantValues.get(columnNames[i]));
+                sources.put(columnNames[i], singleValueColumnSource);
+            } else {
+                ArrayBackedColumnSource<?> source =
+                        ArrayBackedColumnSource.getMemoryColumnSource(allocatedSize,
+                                columnTypes.apply(i));
+                sources.put(columnNames[i], source);
+            }
+        }
+        return sources;
+    }
+
+    // Convenience implementation method.
+    private DynamicTableWriter(
+            final String[] columnNames,
+            final IntFunction<Class<?>> columnTypes,
+            final Map<String, Object> constantValues) {
+        this(getSources(columnNames, columnTypes, constantValues, 256), constantValues, 256);
+    }
+
+    private DynamicTableWriter(final Map<String, ColumnSource<?>> sources, final Map<String, Object> constantValues,
+            final int allocatedSize) {
+        this.allocatedSize = 256;
+        this.table = new LiveQueryTable(Index.FACTORY.getIndexByValues(), sources);
+        final int nCols = sources.size();;
+        this.columnNames = new String[nCols];
+        this.arrayColumnSources = new ArrayBackedColumnSource[nCols];
+        int ii = 0;
+        final DataColumn[] columns = table.getColumns();
+        for (Map.Entry<String, ColumnSource<?>> entry : sources.entrySet()) {
+            columnNames[ii] = entry.getKey();
+            ColumnSource<?> source = entry.getValue();
+            if (source instanceof ArrayBackedColumnSource) {
+                arrayColumnSources[ii] = (ArrayBackedColumnSource) source;
+            }
+            if (constantValues.containsKey(columnNames[ii])) {
+                continue;
+            }
+            final int index = ii;
+            factoryMap.put(columns[index].getName(),
+                    (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
+            ++ii;
+        }
+        LiveTableMonitor.DEFAULT.addTable(table);
+    }
 
     private RowSetterImpl createRowSetter(Class type, ArrayBackedColumnSource buffer) {
         if (type == boolean.class || type == Boolean.class) {
@@ -581,7 +665,7 @@ public class DynamicTableWriter implements TableWriter {
     private class DynamicTableRow implements Row {
         private int row = lastSetterRow;
         private final Map<String, RowSetterImpl> setterMap = factoryMap.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, (e) -> (e.getValue().apply(row))));
+                .collect(Collectors.toMap(Map.Entry::getKey, (e) -> (e.getValue().apply(row))));
         private Row.Flags flags = Flags.SingleRow;
 
         @Override
@@ -589,8 +673,7 @@ public class DynamicTableWriter implements TableWriter {
             final RowSetter rowSetter = setterMap.get(name);
             if (rowSetter == null) {
                 if (table.getColumnSourceMap().containsKey(name)) {
-                    throw new RuntimeException(
-                        "Column has a constant value, can not get setter " + name);
+                    throw new RuntimeException("Column has a constant value, can not get setter " + name);
                 } else {
                     throw new RuntimeException("Unknown column name " + name);
                 }
@@ -617,14 +700,12 @@ public class DynamicTableWriter implements TableWriter {
             }
             row = lastSetterRow++;
 
-            // Before this row can be returned to a pool, it needs to ensure that the underlying
-            // sources
+            // Before this row can be returned to a pool, it needs to ensure that the underlying sources
             // are appropriately sized to avoid race conditions.
             ensureCapacity(row);
             setterMap.values().forEach((x) -> x.setRow(row));
 
-            // The row has been committed during set, we just need to insert the index into the
-            // table
+            // The row has been committed during set, we just need to insert the index into the table
             if (doFlush) {
                 DynamicTableWriter.this.addRangeToTableIndex(lastCommittedRow + 1, row);
                 lastCommittedRow = row;

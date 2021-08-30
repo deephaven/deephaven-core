@@ -5,17 +5,17 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.BindTableToVariableResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.BindTableToVariableResponse",
+        namespace = JsPackage.GLOBAL)
 public class BindTableToVariableResponse {
     public static native BindTableToVariableResponse deserializeBinary(Uint8Array bytes);
 
     public static native BindTableToVariableResponse deserializeBinaryFromReader(
-        BindTableToVariableResponse message, Object reader);
+            BindTableToVariableResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        BindTableToVariableResponse message, Object writer);
+            BindTableToVariableResponse message, Object writer);
 
     public static native Object toObject(boolean includeInstance, BindTableToVariableResponse msg);
 

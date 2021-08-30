@@ -9,8 +9,7 @@ import io.deephaven.db.plot.errors.PlotInfo;
  * @param <VALUE> class of the values
  * @param <VALUECOLUMN> class of the value column in the table. Will be converted to VALUE
  */
-public abstract class LiveAssociativeData<KEY, VALUE, VALUECOLUMN>
-    extends AssociativeData<KEY, VALUE> {
+public abstract class LiveAssociativeData<KEY, VALUE, VALUECOLUMN> extends AssociativeData<KEY, VALUE> {
     /**
      * @param plotInfo plot information
      */

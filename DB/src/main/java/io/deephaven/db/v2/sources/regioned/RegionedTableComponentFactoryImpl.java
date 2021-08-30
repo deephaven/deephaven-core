@@ -34,27 +34,23 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         typeToSupplier.put(Short.class, RegionedColumnSourceShort.AsValues::new);
         typeToSupplier.put(Boolean.class, RegionedColumnSourceBoolean::new);
         typeToSupplier.put(DBDateTime.class, RegionedColumnSourceDBDateTime::new);
-        SIMPLE_DATA_TYPE_TO_REGIONED_COLUMN_SOURCE_SUPPLIER =
-            Collections.unmodifiableMap(typeToSupplier);
+        SIMPLE_DATA_TYPE_TO_REGIONED_COLUMN_SOURCE_SUPPLIER = Collections.unmodifiableMap(typeToSupplier);
     }
 
-    public static final RegionedTableComponentFactory INSTANCE =
-        new RegionedTableComponentFactoryImpl();
+    public static final RegionedTableComponentFactory INSTANCE = new RegionedTableComponentFactoryImpl();
 
     private RegionedTableComponentFactoryImpl() {}
 
     @Override
     public ColumnSourceManager createColumnSourceManager(
-        final boolean isRefreshing,
-        @NotNull final ColumnToCodecMappings codecMappings,
-        @NotNull final ColumnDefinition<?>... columnDefinitions) {
-        return new RegionedColumnSourceManager(isRefreshing, this, codecMappings,
-            columnDefinitions);
+            final boolean isRefreshing,
+            @NotNull final ColumnToCodecMappings codecMappings,
+            @NotNull final ColumnDefinition<?>... columnDefinitions) {
+        return new RegionedColumnSourceManager(isRefreshing, this, codecMappings, columnDefinitions);
     }
 
     /**
-     * Create a new {@link RegionedColumnSource} appropriate to implement the supplied
-     * {@link ColumnDefinition}.
+     * Create a new {@link RegionedColumnSource} appropriate to implement the supplied {@link ColumnDefinition}.
      *
      * @param columnDefinition The column definition
      * @param <DATA_TYPE> The data type of the column
@@ -63,16 +59,16 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
     @SuppressWarnings("unchecked")
     @Override
     public <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(
-        @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-        @NotNull final ColumnToCodecMappings codecMappings) {
-        Class<DATA_TYPE> dataType = TypeUtils.getBoxedType(columnDefinition.getDataType());
+            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
+            @NotNull final ColumnToCodecMappings codecMappings) {
+        Class<DATA_TYPE> dataType = (Class<DATA_TYPE>) TypeUtils.getBoxedType(columnDefinition.getDataType());
 
         if (columnDefinition.isPartitioning()) {
             return PartitioningSourceFactory.makePartitioningSource(dataType);
         }
 
         final Supplier<RegionedColumnSource<?>> simpleImplementationSupplier =
-            SIMPLE_DATA_TYPE_TO_REGIONED_COLUMN_SOURCE_SUPPLIER.get(dataType);
+                SIMPLE_DATA_TYPE_TO_REGIONED_COLUMN_SOURCE_SUPPLIER.get(dataType);
         if (simpleImplementationSupplier != null) {
             return (RegionedColumnSource<DATA_TYPE>) simpleImplementationSupplier.get();
         }
@@ -81,13 +77,11 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
             if (CharSequence.class.isAssignableFrom(dataType)) {
                 return new RegionedColumnSourceWithDictionary<>(dataType, null);
             } else {
-                return new RegionedColumnSourceObject.AsValues<>(dataType,
-                    columnDefinition.getComponentType());
+                return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType());
             }
         } catch (IllegalArgumentException except) {
             throw new UnsupportedOperationException(
-                "Can't create column for " + dataType + " in column definition " + columnDefinition,
-                except);
+                    "Can't create column for " + dataType + " in column definition " + columnDefinition, except);
         }
     }
 }

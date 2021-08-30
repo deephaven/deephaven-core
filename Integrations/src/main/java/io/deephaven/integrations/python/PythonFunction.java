@@ -9,6 +9,8 @@ import org.jpy.PyObject;
 import java.util.function.Function;
 import io.deephaven.util.QueryConstants;
 
+import static io.deephaven.integrations.python.PythonUtilities.pyApplyFunc;
+
 /**
  * A {@link Function} implementation which calls a Python callable.
  * 
@@ -22,31 +24,18 @@ public class PythonFunction<T> implements Function<T, Object> {
     /**
      * Creates a {@link Function} which calls a Python function.
      *
-     * @param pyObjectIn the python object providing the function - must either be callable or have
-     *        an `apply` attribute which is callable.
-     * @param classOut the specific java class to interpret the return for the method. Note that
-     *        this is probably only really useful if `classOut` is one of String, double, float,
-     *        long, int, short, byte, or boolean. Otherwise, the return element will likely just
-     *        remain PyObject, and not be particularly usable inside Java.
+     * @param pyObjectIn the python object providing the function - must either be callable or have an `apply` attribute
+     *        which is callable.
+     * @param classOut the specific java class to interpret the return for the method. Note that this is probably only
+     *        really useful if `classOut` is one of String, double, float, long, int, short, byte, or boolean.
+     *        Otherwise, the return element will likely just remain PyObject, and not be particularly usable inside
+     *        Java.
      */
     public PythonFunction(final PyObject pyObjectIn, final Class classOut) {
-        if (pyObjectIn.hasAttribute("apply")) {
-            pyCallable = pyObjectIn.getAttribute("apply");
-            if (!pyCallable.hasAttribute("__call__")) {
-                throw new IllegalArgumentException(
-                    "The Python object provided has an apply attribute " +
-                        "which is not callable");
-            }
-        } else if (pyObjectIn.hasAttribute("__call__")) {
-            pyCallable = pyObjectIn;
-        } else {
-            throw new IllegalArgumentException(
-                "The Python object specified should either be callable, or a " +
-                    "class instance with an apply method");
-        }
 
-        // Note: Potentially important types omitted -simply because handling from python is not
-        // super clear:
+        pyCallable = pyApplyFunc(pyObjectIn);
+
+        // Note: Potentially important types omitted -simply because handling from python is not super clear:
         // Character/char, BigInteger, BigDecimal
         if (CharSequence.class.isAssignableFrom(classOut)) {
             getter = new StringValueGetter();
@@ -111,8 +100,7 @@ public class PythonFunction<T> implements Function<T, Object> {
             if (valueIn == null) {
                 return QueryConstants.NULL_FLOAT;
             }
-            return (float) valueIn.getDoubleValue(); // NB: should there be a getFloatValue() in
-                                                     // jpy?
+            return (float) valueIn.getDoubleValue(); // NB: should there be a getFloatValue() in jpy?
         }
     }
 

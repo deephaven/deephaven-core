@@ -8,14 +8,13 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Provides a set of per-type {@link ChunkPool}s. Normally accessed via a {@link ThreadLocal}, to
- * allow some threads to share a common pool and others to allocate their own.
+ * Provides a set of per-type {@link ChunkPool}s. Normally accessed via a {@link ThreadLocal}, to allow some threads to
+ * share a common pool and others to allocate their own.
  */
 public final class MultiChunkPool {
 
     private static final MultiChunkPool SHARED_POOL = new MultiChunkPool();
-    private static final ThreadLocal<MultiChunkPool> POOL_THREAD_LOCAL =
-        ThreadLocal.withInitial(() -> SHARED_POOL);
+    private static final ThreadLocal<MultiChunkPool> POOL_THREAD_LOCAL = ThreadLocal.withInitial(() -> SHARED_POOL);
 
     public static void enableDedicatedPoolForThisThread() {
         if (POOL_THREAD_LOCAL.get() == SHARED_POOL) {

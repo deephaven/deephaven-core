@@ -10,7 +10,7 @@ class QueryLibraryImportsImpl implements QueryLibraryImports {
     private final Set<Class<?>> statics;
 
     QueryLibraryImportsImpl(
-        Set<Package> packages, Set<Class<?>> classes, Set<Class<?>> statics) {
+            Set<Package> packages, Set<Class<?>> classes, Set<Class<?>> statics) {
         this.packages = Objects.requireNonNull(packages);
         this.classes = Objects.requireNonNull(classes);
         this.statics = Objects.requireNonNull(statics);
