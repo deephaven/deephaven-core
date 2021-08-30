@@ -19,7 +19,6 @@ class TableTestCase(BaseTestCase):
         table = self.session.import_table(pa_table)
         table.close()
         self.assertTrue(table.is_closed)
-        # table = self.session.import_table(pa_table)
         table = self.session.empty_table(10)
         table.close()
         self.assertTrue(table.is_closed)
@@ -207,11 +206,11 @@ class TableTestCase(BaseTestCase):
         test_table = self.session.import_table(pa_table)
         num_distinct_a = test_table.select_distinct(column_names=["a"]).size
 
-        combo_agg = ComboAggregation() \
-            .sum(column_specs=["SumC=c"]) \
-            .avg(column_specs=["AvgB = b", "AvgD = d"]) \
-            .pct(percentile=0.5, column_specs=["PctC = c"]) \
-            .weighted_avg(weight_column="d", column_specs=["WavGD = d"])
+        combo_agg = (ComboAggregation()
+            .sum(column_specs=["SumC=c"])
+            .avg(column_specs=["AvgB = b", "AvgD = d"])
+            .pct(percentile=0.5, column_specs=["PctC = c"])
+            .weighted_avg(weight_column="d", column_specs=["WavGD = d"]))
 
         result_table = test_table.combo_by(column_names=["a"], combo_aggregation=combo_agg)
         self.assertEqual(result_table.size, num_distinct_a)

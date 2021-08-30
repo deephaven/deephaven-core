@@ -35,10 +35,10 @@ class QueryTestCase(BaseTestCase):
         test_table = self.session.import_table(pa_table)
         right_table = self.session.empty_table(1000).update(["a = i"])
         query = self.session.query(test_table)
-        query.drop_columns(column_names=['c'])\
-            .where(["a > 10"])\
-            .tail(10)\
-            .join(right_table, keys=["a"])
+        (query.drop_columns(column_names=['c'])
+            .where(["a > 10"])
+            .tail(10)
+            .join(right_table, keys=["a"]))
 
         with self.assertRaises(DHError):
             query.exec()
@@ -48,10 +48,9 @@ class QueryTestCase(BaseTestCase):
         test_table = self.session.import_table(pa_table)
         right_table = self.session.empty_table(1000).update(["a = ii"])
         query = self.session.query(test_table)
-        query.drop_columns(column_names=['c'])\
-            .where(["a > 10"])\
-            .tail(10)\
-            .join(right_table, keys=["a"])
+        (query.drop_columns(column_names=['c'])
+         .where(["a > 10"]).tail(10)
+         .join(right_table, keys=["a"]))
 
         result_table = query.exec()
         self.assertTrue(result_table.size > 0)

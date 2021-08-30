@@ -46,12 +46,17 @@ class SessionServiceStub(object):
         self.CloseSession = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.SessionService/CloseSession',
                 request_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_session__pb2.ReleaseResponse.FromString,
+                response_deserializer=deephaven_dot_proto_dot_session__pb2.CloseSessionResponse.FromString,
                 )
         self.Release = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.SessionService/Release',
-                request_serializer=deephaven_dot_proto_dot_ticket__pb2.Ticket.SerializeToString,
+                request_serializer=deephaven_dot_proto_dot_session__pb2.ReleaseRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_session__pb2.ReleaseResponse.FromString,
+                )
+        self.ExportFromTicket = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket',
+                request_serializer=deephaven_dot_proto_dot_session__pb2.ExportRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_session__pb2.ExportResponse.FromString,
                 )
         self.ExportNotifications = channel.unary_stream(
                 '/io.deephaven.proto.backplane.grpc.SessionService/ExportNotifications',
@@ -107,7 +112,18 @@ class SessionServiceServicer(object):
     def Release(self, request, context):
         """
         Attempts to release an export by its ticket. Returns true if an existing export was found. It is the client's
-        responsibility to release all resources they no longer want the server to hold on to.
+        responsibility to release all resources they no longer want the server to hold on to. Proactively cancels work; do
+        not release a ticket that is needed by dependent work that has not yet finished
+        (i.e. the dependencies that are staying around should first be in EXPORTED state).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExportFromTicket(self, request, context):
+        """
+        Makes a copy from a source ticket to a client managed result ticket. The source ticket does not need to be
+        a client managed ticket.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -141,12 +157,17 @@ def add_SessionServiceServicer_to_server(servicer, server):
             'CloseSession': grpc.unary_unary_rpc_method_handler(
                     servicer.CloseSession,
                     request_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_session__pb2.ReleaseResponse.SerializeToString,
+                    response_serializer=deephaven_dot_proto_dot_session__pb2.CloseSessionResponse.SerializeToString,
             ),
             'Release': grpc.unary_unary_rpc_method_handler(
                     servicer.Release,
-                    request_deserializer=deephaven_dot_proto_dot_ticket__pb2.Ticket.FromString,
+                    request_deserializer=deephaven_dot_proto_dot_session__pb2.ReleaseRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_session__pb2.ReleaseResponse.SerializeToString,
+            ),
+            'ExportFromTicket': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExportFromTicket,
+                    request_deserializer=deephaven_dot_proto_dot_session__pb2.ExportRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_session__pb2.ExportResponse.SerializeToString,
             ),
             'ExportNotifications': grpc.unary_stream_rpc_method_handler(
                     servicer.ExportNotifications,
@@ -224,7 +245,7 @@ class SessionService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/CloseSession',
             deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
-            deephaven_dot_proto_dot_session__pb2.ReleaseResponse.FromString,
+            deephaven_dot_proto_dot_session__pb2.CloseSessionResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -240,8 +261,25 @@ class SessionService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/Release',
-            deephaven_dot_proto_dot_ticket__pb2.Ticket.SerializeToString,
+            deephaven_dot_proto_dot_session__pb2.ReleaseRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.ReleaseResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ExportFromTicket(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket',
+            deephaven_dot_proto_dot_session__pb2.ExportRequest.SerializeToString,
+            deephaven_dot_proto_dot_session__pb2.ExportResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

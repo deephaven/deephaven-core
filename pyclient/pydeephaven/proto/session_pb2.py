@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'H\001P\001',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x1d\x64\x65\x65phaven/proto/session.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\":\n\x10HandshakeRequest\x12\x15\n\rauth_protocol\x18\x01 \x01(\x11\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\x96\x01\n\x11HandshakeResponse\x12\x17\n\x0fmetadata_header\x18\x01 \x01(\x0c\x12\x15\n\rsession_token\x18\x02 \x01(\x0c\x12&\n\x1atoken_deadline_time_millis\x18\x03 \x01(\x12\x42\x02\x30\x01\x12)\n\x1dtoken_expiration_delay_millis\x18\x04 \x01(\x12\x42\x02\x30\x01\"/\n\tBasicAuth\x12\x10\n\x08username\x18\x02 \x01(\t\x12\x10\n\x08password\x18\x03 \x01(\t\"\"\n\x0fReleaseResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x1b\n\x19\x45xportNotificationRequest\"\xaa\x03\n\x12\x45xportNotification\x12\x39\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12Q\n\x0c\x65xport_state\x18\x02 \x01(\x0e\x32;.io.deephaven.proto.backplane.grpc.ExportNotification.State\x12\x0f\n\x07\x63ontext\x18\x03 \x01(\t\x12\x18\n\x10\x64\x65pendent_handle\x18\x04 \x01(\t\"\xda\x01\n\x05State\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07PENDING\x10\x01\x12\x0e\n\nPUBLISHING\x10\x02\x12\n\n\x06QUEUED\x10\x03\x12\x0c\n\x08\x45XPORTED\x10\x04\x12\x0c\n\x08RELEASED\x10\x05\x12\r\n\tCANCELLED\x10\x06\x12\n\n\x06\x46\x41ILED\x10\x07\x12\x15\n\x11\x44\x45PENDENCY_FAILED\x10\x08\x12\x1a\n\x16\x44\x45PENDENCY_NEVER_FOUND\x10\t\x12\x18\n\x14\x44\x45PENDENCY_CANCELLED\x10\n\x12\x17\n\x13\x44\x45PENDENCY_RELEASED\x10\x0b\x32\x88\x05\n\x0eSessionService\x12y\n\nNewSession\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x34.io.deephaven.proto.backplane.grpc.HandshakeResponse\"\x00\x12\x82\x01\n\x13RefreshSessionToken\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x34.io.deephaven.proto.backplane.grpc.HandshakeResponse\"\x00\x12y\n\x0c\x43loseSession\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x32.io.deephaven.proto.backplane.grpc.ReleaseResponse\"\x00\x12j\n\x07Release\x12).io.deephaven.proto.backplane.grpc.Ticket\x1a\x32.io.deephaven.proto.backplane.grpc.ReleaseResponse\"\x00\x12\x8e\x01\n\x13\x45xportNotifications\x12<.io.deephaven.proto.backplane.grpc.ExportNotificationRequest\x1a\x35.io.deephaven.proto.backplane.grpc.ExportNotification\"\x00\x30\x01\x42\x04H\x01P\x01\x62\x06proto3'
+  serialized_pb=b'\n\x1d\x64\x65\x65phaven/proto/session.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\":\n\x10HandshakeRequest\x12\x15\n\rauth_protocol\x18\x01 \x01(\x11\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\x96\x01\n\x11HandshakeResponse\x12\x17\n\x0fmetadata_header\x18\x01 \x01(\x0c\x12\x15\n\rsession_token\x18\x02 \x01(\x0c\x12&\n\x1atoken_deadline_time_millis\x18\x03 \x01(\x12\x42\x02\x30\x01\x12)\n\x1dtoken_expiration_delay_millis\x18\x04 \x01(\x12\x42\x02\x30\x01\"\x16\n\x14\x43loseSessionResponse\"G\n\x0eReleaseRequest\x12\x35\n\x02id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x11\n\x0fReleaseResponse\"\x8b\x01\n\rExportRequest\x12<\n\tsource_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x10\n\x0e\x45xportResponse\"\x1b\n\x19\x45xportNotificationRequest\"\xb7\x03\n\x12\x45xportNotification\x12\x39\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12Q\n\x0c\x65xport_state\x18\x02 \x01(\x0e\x32;.io.deephaven.proto.backplane.grpc.ExportNotification.State\x12\x0f\n\x07\x63ontext\x18\x03 \x01(\t\x12\x18\n\x10\x64\x65pendent_handle\x18\x04 \x01(\t\"\xe7\x01\n\x05State\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07PENDING\x10\x01\x12\x0e\n\nPUBLISHING\x10\x02\x12\n\n\x06QUEUED\x10\x03\x12\x0b\n\x07RUNNING\x10\x04\x12\x0c\n\x08\x45XPORTED\x10\x05\x12\x0c\n\x08RELEASED\x10\x06\x12\r\n\tCANCELLED\x10\x07\x12\n\n\x06\x46\x41ILED\x10\x08\x12\x15\n\x11\x44\x45PENDENCY_FAILED\x10\t\x12\x1a\n\x16\x44\x45PENDENCY_NEVER_FOUND\x10\n\x12\x18\n\x14\x44\x45PENDENCY_CANCELLED\x10\x0b\x12\x17\n\x13\x44\x45PENDENCY_RELEASED\x10\x0c\x32\x90\x06\n\x0eSessionService\x12y\n\nNewSession\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x34.io.deephaven.proto.backplane.grpc.HandshakeResponse\"\x00\x12\x82\x01\n\x13RefreshSessionToken\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x34.io.deephaven.proto.backplane.grpc.HandshakeResponse\"\x00\x12~\n\x0c\x43loseSession\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x37.io.deephaven.proto.backplane.grpc.CloseSessionResponse\"\x00\x12r\n\x07Release\x12\x31.io.deephaven.proto.backplane.grpc.ReleaseRequest\x1a\x32.io.deephaven.proto.backplane.grpc.ReleaseResponse\"\x00\x12y\n\x10\x45xportFromTicket\x12\x30.io.deephaven.proto.backplane.grpc.ExportRequest\x1a\x31.io.deephaven.proto.backplane.grpc.ExportResponse\"\x00\x12\x8e\x01\n\x13\x45xportNotifications\x12<.io.deephaven.proto.backplane.grpc.ExportNotificationRequest\x1a\x35.io.deephaven.proto.backplane.grpc.ExportNotification\"\x00\x30\x01\x42\x04H\x01P\x01\x62\x06proto3'
   ,
   dependencies=[deephaven_dot_proto_dot_ticket__pb2.DESCRIPTOR,])
 
@@ -59,50 +59,55 @@ _EXPORTNOTIFICATION_STATE = _descriptor.EnumDescriptor(
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='EXPORTED', index=4, number=4,
+      name='RUNNING', index=4, number=4,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='RELEASED', index=5, number=5,
+      name='EXPORTED', index=5, number=5,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='CANCELLED', index=6, number=6,
+      name='RELEASED', index=6, number=6,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='FAILED', index=7, number=7,
+      name='CANCELLED', index=7, number=7,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='DEPENDENCY_FAILED', index=8, number=8,
+      name='FAILED', index=8, number=8,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='DEPENDENCY_NEVER_FOUND', index=9, number=9,
+      name='DEPENDENCY_FAILED', index=9, number=9,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='DEPENDENCY_CANCELLED', index=10, number=10,
+      name='DEPENDENCY_NEVER_FOUND', index=10, number=10,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='DEPENDENCY_RELEASED', index=11, number=11,
+      name='DEPENDENCY_CANCELLED', index=11, number=11,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='DEPENDENCY_RELEASED', index=12, number=12,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=634,
-  serialized_end=852,
+  serialized_start=825,
+  serialized_end=1056,
 )
 _sym_db.RegisterEnumDescriptor(_EXPORTNOTIFICATION_STATE)
 
@@ -199,28 +204,14 @@ _HANDSHAKERESPONSE = _descriptor.Descriptor(
 )
 
 
-_BASICAUTH = _descriptor.Descriptor(
-  name='BasicAuth',
-  full_name='io.deephaven.proto.backplane.grpc.BasicAuth',
+_CLOSESESSIONRESPONSE = _descriptor.Descriptor(
+  name='CloseSessionResponse',
+  full_name='io.deephaven.proto.backplane.grpc.CloseSessionResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
-    _descriptor.FieldDescriptor(
-      name='username', full_name='io.deephaven.proto.backplane.grpc.BasicAuth.username', index=0,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='password', full_name='io.deephaven.proto.backplane.grpc.BasicAuth.password', index=1,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -234,22 +225,22 @@ _BASICAUTH = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=311,
-  serialized_end=358,
+  serialized_end=333,
 )
 
 
-_RELEASERESPONSE = _descriptor.Descriptor(
-  name='ReleaseResponse',
-  full_name='io.deephaven.proto.backplane.grpc.ReleaseResponse',
+_RELEASEREQUEST = _descriptor.Descriptor(
+  name='ReleaseRequest',
+  full_name='io.deephaven.proto.backplane.grpc.ReleaseRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='success', full_name='io.deephaven.proto.backplane.grpc.ReleaseResponse.success', index=0,
-      number=1, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
+      name='id', full_name='io.deephaven.proto.backplane.grpc.ReleaseRequest.id', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -265,8 +256,97 @@ _RELEASERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=360,
-  serialized_end=394,
+  serialized_start=335,
+  serialized_end=406,
+)
+
+
+_RELEASERESPONSE = _descriptor.Descriptor(
+  name='ReleaseResponse',
+  full_name='io.deephaven.proto.backplane.grpc.ReleaseResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=408,
+  serialized_end=425,
+)
+
+
+_EXPORTREQUEST = _descriptor.Descriptor(
+  name='ExportRequest',
+  full_name='io.deephaven.proto.backplane.grpc.ExportRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='source_id', full_name='io.deephaven.proto.backplane.grpc.ExportRequest.source_id', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='result_id', full_name='io.deephaven.proto.backplane.grpc.ExportRequest.result_id', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=428,
+  serialized_end=567,
+)
+
+
+_EXPORTRESPONSE = _descriptor.Descriptor(
+  name='ExportResponse',
+  full_name='io.deephaven.proto.backplane.grpc.ExportResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=569,
+  serialized_end=585,
 )
 
 
@@ -290,8 +370,8 @@ _EXPORTNOTIFICATIONREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=396,
-  serialized_end=423,
+  serialized_start=587,
+  serialized_end=614,
 )
 
 
@@ -344,17 +424,23 @@ _EXPORTNOTIFICATION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=426,
-  serialized_end=852,
+  serialized_start=617,
+  serialized_end=1056,
 )
 
+_RELEASEREQUEST.fields_by_name['id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
+_EXPORTREQUEST.fields_by_name['source_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
+_EXPORTREQUEST.fields_by_name['result_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
 _EXPORTNOTIFICATION.fields_by_name['ticket'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
 _EXPORTNOTIFICATION.fields_by_name['export_state'].enum_type = _EXPORTNOTIFICATION_STATE
 _EXPORTNOTIFICATION_STATE.containing_type = _EXPORTNOTIFICATION
 DESCRIPTOR.message_types_by_name['HandshakeRequest'] = _HANDSHAKEREQUEST
 DESCRIPTOR.message_types_by_name['HandshakeResponse'] = _HANDSHAKERESPONSE
-DESCRIPTOR.message_types_by_name['BasicAuth'] = _BASICAUTH
+DESCRIPTOR.message_types_by_name['CloseSessionResponse'] = _CLOSESESSIONRESPONSE
+DESCRIPTOR.message_types_by_name['ReleaseRequest'] = _RELEASEREQUEST
 DESCRIPTOR.message_types_by_name['ReleaseResponse'] = _RELEASERESPONSE
+DESCRIPTOR.message_types_by_name['ExportRequest'] = _EXPORTREQUEST
+DESCRIPTOR.message_types_by_name['ExportResponse'] = _EXPORTRESPONSE
 DESCRIPTOR.message_types_by_name['ExportNotificationRequest'] = _EXPORTNOTIFICATIONREQUEST
 DESCRIPTOR.message_types_by_name['ExportNotification'] = _EXPORTNOTIFICATION
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -373,12 +459,19 @@ HandshakeResponse = _reflection.GeneratedProtocolMessageType('HandshakeResponse'
   })
 _sym_db.RegisterMessage(HandshakeResponse)
 
-BasicAuth = _reflection.GeneratedProtocolMessageType('BasicAuth', (_message.Message,), {
-  'DESCRIPTOR' : _BASICAUTH,
+CloseSessionResponse = _reflection.GeneratedProtocolMessageType('CloseSessionResponse', (_message.Message,), {
+  'DESCRIPTOR' : _CLOSESESSIONRESPONSE,
   '__module__' : 'pydeephaven.proto.session_pb2'
-  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.BasicAuth)
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.CloseSessionResponse)
   })
-_sym_db.RegisterMessage(BasicAuth)
+_sym_db.RegisterMessage(CloseSessionResponse)
+
+ReleaseRequest = _reflection.GeneratedProtocolMessageType('ReleaseRequest', (_message.Message,), {
+  'DESCRIPTOR' : _RELEASEREQUEST,
+  '__module__' : 'pydeephaven.proto.session_pb2'
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ReleaseRequest)
+  })
+_sym_db.RegisterMessage(ReleaseRequest)
 
 ReleaseResponse = _reflection.GeneratedProtocolMessageType('ReleaseResponse', (_message.Message,), {
   'DESCRIPTOR' : _RELEASERESPONSE,
@@ -386,6 +479,20 @@ ReleaseResponse = _reflection.GeneratedProtocolMessageType('ReleaseResponse', (_
   # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ReleaseResponse)
   })
 _sym_db.RegisterMessage(ReleaseResponse)
+
+ExportRequest = _reflection.GeneratedProtocolMessageType('ExportRequest', (_message.Message,), {
+  'DESCRIPTOR' : _EXPORTREQUEST,
+  '__module__' : 'pydeephaven.proto.session_pb2'
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ExportRequest)
+  })
+_sym_db.RegisterMessage(ExportRequest)
+
+ExportResponse = _reflection.GeneratedProtocolMessageType('ExportResponse', (_message.Message,), {
+  'DESCRIPTOR' : _EXPORTRESPONSE,
+  '__module__' : 'pydeephaven.proto.session_pb2'
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ExportResponse)
+  })
+_sym_db.RegisterMessage(ExportResponse)
 
 ExportNotificationRequest = _reflection.GeneratedProtocolMessageType('ExportNotificationRequest', (_message.Message,), {
   'DESCRIPTOR' : _EXPORTNOTIFICATIONREQUEST,
@@ -413,8 +520,8 @@ _SESSIONSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=855,
-  serialized_end=1503,
+  serialized_start=1059,
+  serialized_end=1843,
   methods=[
   _descriptor.MethodDescriptor(
     name='NewSession',
@@ -442,7 +549,7 @@ _SESSIONSERVICE = _descriptor.ServiceDescriptor(
     index=2,
     containing_service=None,
     input_type=_HANDSHAKEREQUEST,
-    output_type=_RELEASERESPONSE,
+    output_type=_CLOSESESSIONRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),
@@ -451,15 +558,25 @@ _SESSIONSERVICE = _descriptor.ServiceDescriptor(
     full_name='io.deephaven.proto.backplane.grpc.SessionService.Release',
     index=3,
     containing_service=None,
-    input_type=deephaven_dot_proto_dot_ticket__pb2._TICKET,
+    input_type=_RELEASEREQUEST,
     output_type=_RELEASERESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='ExportFromTicket',
+    full_name='io.deephaven.proto.backplane.grpc.SessionService.ExportFromTicket',
+    index=4,
+    containing_service=None,
+    input_type=_EXPORTREQUEST,
+    output_type=_EXPORTRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),
   _descriptor.MethodDescriptor(
     name='ExportNotifications',
     full_name='io.deephaven.proto.backplane.grpc.SessionService.ExportNotifications',
-    index=4,
+    index=5,
     containing_service=None,
     input_type=_EXPORTNOTIFICATIONREQUEST,
     output_type=_EXPORTNOTIFICATION,
