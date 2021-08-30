@@ -172,14 +172,16 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         }
     }
 
-    @Override
-    public synchronized void setVariable(String name, Object value) {
-        if (changeListener != null) {
-            Changes changes = new Changes();
-            applyVariableChangeToDiff(changes, name, getVariable(name, null), value);
-            if (!changes.isEmpty()) {
-                changeListener.onScopeChanges(this, changes);
-            }
+    protected synchronized void notifyVariableChange(String name, @Nullable Object oldValue,
+            @Nullable Object newValue) {
+        if (changeListener == null) {
+            return;
+        }
+
+        Changes changes = new Changes();
+        applyVariableChangeToDiff(changes, name, oldValue, newValue);
+        if (!changes.isEmpty()) {
+            changeListener.onScopeChanges(this, changes);
         }
     }
 

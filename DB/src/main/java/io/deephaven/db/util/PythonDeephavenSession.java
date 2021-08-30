@@ -16,6 +16,7 @@ import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.jetbrains.annotations.Nullable;
 import org.jpy.KeyError;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyObject;
@@ -125,7 +126,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     /**
      * Finds the specified script; and runs it as a file, or if it is a stream writes it to a temporary file in order to
      * run it.
-     * 
+     *
      * @param script the script's name
      * @throws IOException if an error occurs reading or writing the script
      */
@@ -190,18 +191,19 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public void setVariable(String name, Object value) {
-        super.setVariable(name, value);
-        PyDictWrapper globals = scope.globals();
-        if (value == null) {
+    public void setVariable(String name, @Nullable Object newValue) {
+        final Object oldValue = getVariable(name, null);
+        final PyDictWrapper globals = scope.globals();
+        if (newValue == null) {
             try {
                 globals.delItem(name);
             } catch (KeyError key) {
                 // ignore
             }
         } else {
-            globals.setItem(name, value);
+            globals.setItem(name, newValue);
         }
+        notifyVariableChange(name, oldValue, newValue);
     }
 
     @Override
