@@ -43,7 +43,6 @@ services:
       - ./docker/core/data:/data
 
 volumes:
-    data:
     web-tmp:
     api-cache:
       
