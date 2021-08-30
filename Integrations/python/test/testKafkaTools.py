@@ -55,3 +55,16 @@ class TestTableTools(unittest.TestCase):
             key = kt.IGNORE,
             value = kt.simple('Price', dh.double))
         self.assertIsNotNone(t)
+
+        cols = t.getDefinition().getColumns()
+        self.assertEquals(4, len(cols))
+        self.assertEquals("KafkaPartition", cols[0].getName())
+        self.assertEquals(dh.int_.clazz(), cols[0].getDataType())
+        self.assertEquals("KafkaOffset", cols[1].getName())
+        self.assertEquals(dh.long_.clazz(), cols[1].getDataType())
+        self.assertEquals("KafkaTimestamp", cols[2].getName())
+        self.assertEquals(dh.datetime.clazz(), cols[2].getDataType())
+        self.assertEquals("Price", cols[3].getName())
+        self.assertEquals(dh.double.clazz(), cols[3].getDataType())
+        
+        
