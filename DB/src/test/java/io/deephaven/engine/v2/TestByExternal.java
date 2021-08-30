@@ -15,7 +15,7 @@ import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.by.SortedFirstBy;
 import io.deephaven.engine.v2.select.MatchFilter;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;

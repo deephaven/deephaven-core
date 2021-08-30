@@ -7,7 +7,6 @@ import io.deephaven.engine.structures.chunk.ObjectChunk;
 
 import io.deephaven.engine.structures.chunk.WritableObjectChunk;
 
-import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;

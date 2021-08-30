@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.v2.ModifiedColumnSet;

@@ -13,7 +13,7 @@ import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.structures.rowset.Index;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.tables.lang.DBLanguageParser;
 import io.deephaven.engine.tables.remote.AsyncMethod;

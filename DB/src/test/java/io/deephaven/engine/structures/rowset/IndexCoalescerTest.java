@@ -1,6 +1,7 @@
 package io.deephaven.engine.structures.rowset;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.util.IndexUpdateCoalescer;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -222,7 +223,7 @@ public class IndexCoalescerTest {
         up[1].modifiedColumnSet.setAll("B", "C");
 
         final Index all = i(0, 1, 2, 3, 4, 5);
-        final Index.IndexUpdateCoalescer coalescer = new Index.IndexUpdateCoalescer(all, up[0]);
+        final IndexUpdateCoalescer coalescer = new IndexUpdateCoalescer(all, up[0]);
         for (int i = 1; i < up.length; ++i) {
             coalescer.update(up[i]);
         }
@@ -251,7 +252,7 @@ public class IndexCoalescerTest {
         up[3].modifiedColumnSet.setAllDirty();
 
         final Index all = i(0, 1, 2, 3, 4, 5);
-        final Index.IndexUpdateCoalescer coalescer = new Index.IndexUpdateCoalescer(all, up[0]);
+        final IndexUpdateCoalescer coalescer = new IndexUpdateCoalescer(all, up[0]);
         for (int i = 1; i < up.length; ++i) {
             coalescer.update(up[i]);
         }
@@ -280,7 +281,7 @@ public class IndexCoalescerTest {
         up[2].shifted = newShiftDataByTriplets(1, 3, 3);
 
         final Index all = i(0, 1, 2, 3, 4, 5);
-        final Index.IndexUpdateCoalescer coalescer = new Index.IndexUpdateCoalescer(all, up[0]);
+        final IndexUpdateCoalescer coalescer = new IndexUpdateCoalescer(all, up[0]);
         for (int i = 1; i < up.length; ++i) {
             coalescer.update(up[i]);
         }
@@ -583,7 +584,7 @@ public class IndexCoalescerTest {
     }
 
     private ShiftAwareListener.Update validateFinalIndex(final Index index, final ShiftAwareListener.Update[] updates) {
-        final Index.IndexUpdateCoalescer coalescer = new Index.IndexUpdateCoalescer(index, updates[0]);
+        final IndexUpdateCoalescer coalescer = new IndexUpdateCoalescer(index, updates[0]);
         for (int i = 1; i < updates.length; ++i) {
             coalescer.update(updates[i]);
         }

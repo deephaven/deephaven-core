@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.utils.freezeby;
 
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;

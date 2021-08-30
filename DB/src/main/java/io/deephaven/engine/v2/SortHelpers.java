@@ -24,7 +24,7 @@ import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.LongSparseArraySource;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.regioned.SymbolTableSource;

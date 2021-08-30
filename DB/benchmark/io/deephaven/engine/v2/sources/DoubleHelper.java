@@ -7,8 +7,6 @@ import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableDoubleChunk;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
-import io.deephaven.engine.structures.source.ColumnSource;
-import io.deephaven.engine.structures.source.WritableSource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;

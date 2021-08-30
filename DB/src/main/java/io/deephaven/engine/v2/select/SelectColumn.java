@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.rowset.Index;
 import org.jetbrains.annotations.NotNull;
 

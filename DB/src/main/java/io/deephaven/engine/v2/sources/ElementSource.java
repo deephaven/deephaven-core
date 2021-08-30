@@ -1,4 +1,4 @@
-package io.deephaven.engine.structures.source;
+package io.deephaven.engine.v2.sources;
 
 public interface ElementSource<T> {
     T get(long index);

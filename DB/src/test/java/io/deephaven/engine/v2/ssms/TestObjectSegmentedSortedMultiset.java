@@ -11,7 +11,7 @@ import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.structures.chunk.Attributes.Values;

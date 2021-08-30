@@ -5,7 +5,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.structures.vector.DbDoubleArrayDirect;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.libs.primitives.*;
 import io.deephaven.util.QueryConstants;

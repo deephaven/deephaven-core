@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2.tuples;
 
-import io.deephaven.engine.structures.source.TupleSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;

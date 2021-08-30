@@ -11,10 +11,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.HashCodeUtil;
-import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.qst.column.header.ColumnHeader;
-import java.util.Map.Entry;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -37,7 +36,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
 
     public static TableDefinition inferFrom(Map<String, ? extends ColumnSource<?>> sources) {
         List<ColumnDefinition<?>> definitions = new ArrayList<>(sources.size());
-        for (Entry<String, ? extends ColumnSource<?>> e : sources.entrySet()) {
+        for (Map.Entry<String, ? extends ColumnSource<?>> e : sources.entrySet()) {
             final String name = e.getKey();
             final ColumnSource<?> source = e.getValue();
             final ColumnDefinition<?> inferred =

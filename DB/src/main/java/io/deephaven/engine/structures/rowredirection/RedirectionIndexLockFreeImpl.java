@@ -6,12 +6,18 @@ package io.deephaven.engine.structures.rowredirection;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.structures.chunk.ChunkSink;
+import io.deephaven.engine.structures.rowredirection.map.HashMapLockFreeK1V1;
+import io.deephaven.engine.structures.rowredirection.map.HashMapLockFreeK2V2;
+import io.deephaven.engine.structures.rowredirection.map.HashMapLockFreeK4V4;
+import io.deephaven.engine.structures.rowredirection.map.TNullableLongLongMap;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import gnu.trove.iterator.TLongLongIterator;
+import io.deephaven.engine.v2.utils.UpdateCommitter;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -248,8 +254,8 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
     }
 
     @Override
-    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull OrderedKeys orderedKeys) {
+    public void fillFromChunk(@NotNull ChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src,
+                              @NotNull OrderedKeys orderedKeys) {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }

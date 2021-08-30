@@ -26,7 +26,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.remote.InitialSnapshotTable;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.engine.v2.utils.ColumnHolder;

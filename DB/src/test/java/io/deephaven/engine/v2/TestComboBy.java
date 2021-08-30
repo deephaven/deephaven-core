@@ -20,7 +20,7 @@ import io.deephaven.engine.v2.by.AggType;
 import io.deephaven.engine.v2.by.AggregationFormulaStateFactory;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.MinMaxByStateFactoryImpl;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;

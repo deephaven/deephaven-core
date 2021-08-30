@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.structures.chunk.*;

@@ -7,7 +7,6 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.vector.DbArrayBase;
 
 import io.deephaven.engine.structures.chunk.*;

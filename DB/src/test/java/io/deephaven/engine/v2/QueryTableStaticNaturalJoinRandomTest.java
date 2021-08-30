@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.rowset.Index;
 import gnu.trove.map.TByteIntMap;
 import gnu.trove.map.TCharIntMap;

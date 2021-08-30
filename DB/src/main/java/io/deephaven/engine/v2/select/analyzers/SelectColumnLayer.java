@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.select.DbArrayChunkAdapter;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.structures.chunk.ChunkSink;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.structures.chunk.WritableChunk;

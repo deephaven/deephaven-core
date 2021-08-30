@@ -1,6 +1,7 @@
-package io.deephaven.engine.structures.source;
+package io.deephaven.engine.v2.tuples;
 
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.v2.sources.WritableSource;
 import org.jetbrains.annotations.NotNull;
 
 /**

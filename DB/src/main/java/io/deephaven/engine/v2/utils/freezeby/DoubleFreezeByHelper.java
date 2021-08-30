@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.utils.freezeby;
 
 import io.deephaven.engine.v2.sources.DoubleArraySource;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 

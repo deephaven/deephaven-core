@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.StringSetArrayWrapper;
 import io.deephaven.engine.tables.Table;

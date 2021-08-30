@@ -1,8 +1,7 @@
 package io.deephaven.engine.v2.tuples;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.structures.source.TupleSource;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.*;

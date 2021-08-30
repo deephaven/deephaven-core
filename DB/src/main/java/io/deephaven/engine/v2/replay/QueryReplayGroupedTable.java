@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
-import io.deephaven.engine.structures.source.TupleSource;
+import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowredirection.RedirectionIndex;

@@ -636,7 +636,6 @@ public class ChunkUtils {
                         throw new IllegalArgumentException("Source must not equal destination!");
                     }
                 }
-                destinations[ss].ensureCapacity(destAllKeys.lastKey() + 1);
                 sourceContexts[ss] = sources[ss].makeGetContext(minSize, sharedContext);
                 destContexts[ss] = destinations[ss].makeFillFromContext(minSize);
             }

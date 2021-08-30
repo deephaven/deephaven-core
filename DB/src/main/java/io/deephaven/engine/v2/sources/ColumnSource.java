@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.structures.source;
+package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
@@ -10,6 +10,7 @@ import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.DefaultChunkSource;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.util.Releasable;
+import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

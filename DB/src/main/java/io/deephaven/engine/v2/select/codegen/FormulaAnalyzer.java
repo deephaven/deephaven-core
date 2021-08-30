@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaCompilationException;
 import io.deephaven.engine.v2.select.formula.FormulaSourceDescriptor;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

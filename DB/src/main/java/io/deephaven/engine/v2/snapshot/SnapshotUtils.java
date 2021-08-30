@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.snapshot;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.util.chunkfillers.ChunkFiller;
 import io.deephaven.engine.structures.chunk.ChunkUtils;
 import io.deephaven.engine.structures.rowset.Index;

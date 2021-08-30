@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.structures.chunk;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.structures.chunk.ChunkUtils;

@@ -1,9 +1,8 @@
 package io.deephaven.engine.structures.chunk;
 
-import io.deephaven.engine.v2.hashing.ChunkEquals;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
+import io.deephaven.engine.v2.hashing.ChunkEquals;
 import junit.framework.TestCase;
 
 import java.util.Random;

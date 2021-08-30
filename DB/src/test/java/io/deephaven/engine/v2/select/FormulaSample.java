@@ -4,7 +4,7 @@ import java.lang.*;
 import java.util.*;
 
 import io.deephaven.engine.structures.util.LongSizedDataStructure;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.IntChunk;
 import io.deephaven.engine.structures.chunk.LongChunk;

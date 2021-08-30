@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationHandler;

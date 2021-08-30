@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.test.types.OutOfBandTest;

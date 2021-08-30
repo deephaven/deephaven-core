@@ -1,8 +1,9 @@
-package io.deephaven.engine.structures.source;
+package io.deephaven.engine.v2.tuples;
 
 import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.chunk.Attributes;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

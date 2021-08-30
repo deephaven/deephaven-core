@@ -11,7 +11,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowset.IndexBuilder;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.tables.Table;

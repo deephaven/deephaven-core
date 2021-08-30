@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.ConditionFilter;
 import io.deephaven.engine.v2.select.DisjunctiveFilter;
 import io.deephaven.engine.v2.select.DynamicWhereFilter;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.engine.structures.rowset.Index;

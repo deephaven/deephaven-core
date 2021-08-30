@@ -18,7 +18,7 @@ import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.v2.tuples.SmartKeySource;
-import io.deephaven.engine.structures.source.TupleSource;
+import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;

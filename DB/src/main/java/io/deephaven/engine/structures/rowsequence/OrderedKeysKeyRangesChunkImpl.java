@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.structures.rowsequence;
 
-import io.deephaven.engine.exceptions.SizeException;
+import io.deephaven.engine.structures.exceptions.SizeException;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;

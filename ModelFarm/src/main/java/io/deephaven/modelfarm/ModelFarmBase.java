@@ -10,6 +10,7 @@ import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.FunctionalInterfaces;
@@ -45,8 +46,8 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
 
     /**
      * An operation that uses data from Deephaven {@link io.deephaven.engine.tables.Table Tables}, using either
-     * {@link io.deephaven.engine.v2.sources.ColumnSource#getPrev} or
-     * {@link io.deephaven.engine.v2.sources.ColumnSource#get}) depending on the value of the argument to
+     * {@link ColumnSource#getPrev} or
+     * {@link ColumnSource#get}) depending on the value of the argument to
      * {@link #retrieveData}.
      */
     @FunctionalInterface
@@ -56,8 +57,8 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
          * Performs an operation using data from a query.
          *
          * @param usePrev Whether to use the previous data at a given index when retrieving data (i.e. if {@code true},
-         *        use {@link io.deephaven.engine.v2.sources.ColumnSource#getPrev} instead of
-         *        {@link io.deephaven.engine.v2.sources.ColumnSource#get}).
+         *        use {@link ColumnSource#getPrev} instead of
+         *        {@link ColumnSource#get}).
          */
         void retrieveData(boolean usePrev);
 

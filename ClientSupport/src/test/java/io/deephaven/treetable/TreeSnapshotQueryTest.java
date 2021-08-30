@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.table.sort.SortDirective;
 import io.deephaven.util.annotations.ReflexiveUse;

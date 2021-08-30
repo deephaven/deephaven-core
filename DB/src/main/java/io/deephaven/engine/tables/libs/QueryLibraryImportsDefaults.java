@@ -5,6 +5,7 @@ import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowset.IndexBuilder;
 import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.structures.util.LongSizedDataStructure;
+import io.deephaven.engine.v2.sources.ColumnSource;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -35,7 +36,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 org.joda.time.LocalTime.class,
                 io.deephaven.engine.tables.utils.DBPeriod.class,
                 io.deephaven.engine.tables.select.Param.class,
-                io.deephaven.engine.v2.sources.ColumnSource.class,
+                ColumnSource.class,
                 Index.class,
                 IndexBuilder.class,
                 Index.SequentialBuilder.class,

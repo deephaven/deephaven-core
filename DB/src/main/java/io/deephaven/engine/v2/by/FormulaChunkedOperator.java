@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.ChunkSink.FillFromContext;
-import io.deephaven.engine.structures.source.WritableSource;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.structures.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.structures.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;

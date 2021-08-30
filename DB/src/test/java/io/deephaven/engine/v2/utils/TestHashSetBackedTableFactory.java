@@ -15,7 +15,7 @@ import io.deephaven.engine.v2.EvalNugget;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.UpdateValidatorNugget;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 
 import java.util.HashSet;
 import java.util.Iterator;

@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2.tuples;
 
-import io.deephaven.engine.structures.source.TupleSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSourceCodeGenerator.ColumnSourceType;
 import org.jetbrains.annotations.NotNull;

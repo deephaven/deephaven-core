@@ -20,7 +20,7 @@ import io.deephaven.engine.v2.by.*;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.structures.chunk.util.pools.ChunkPoolReleaseTracking;

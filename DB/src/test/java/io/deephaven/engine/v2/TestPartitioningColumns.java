@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.locations.TableLocationKey;
 import io.deephaven.engine.v2.locations.impl.*;
 import io.deephaven.engine.v2.select.MatchFilter;
 import io.deephaven.engine.v2.select.SelectFilter;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.v2.sources.regioned.*;
 import io.deephaven.engine.structures.rowset.Index;

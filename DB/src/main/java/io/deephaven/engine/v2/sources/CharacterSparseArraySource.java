@@ -9,7 +9,6 @@ import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
-import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.v2.sources.sparse.CharOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.structures.rowset.Index;

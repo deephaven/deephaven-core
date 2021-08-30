@@ -1,11 +1,10 @@
 package io.deephaven.engine.v2.tuples;
 
-import io.deephaven.engine.structures.source.TupleSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link TupleSource}Factory for two {@link io.deephaven.engine.v2.sources.ColumnSource}s.
+ * {@link TupleSource}Factory for two {@link ColumnSource}s.
  */
 public interface TwoColumnTupleSourceFactory<TUPLE_TYPE, COLUMN_SOURCE_1_TYPE, COLUMN_SOURCE_2_TYPE> {
 

@@ -8,7 +8,6 @@ import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
-import io.deephaven.engine.structures.source.WritableSource;
 import org.jetbrains.annotations.NotNull;
 
 /**

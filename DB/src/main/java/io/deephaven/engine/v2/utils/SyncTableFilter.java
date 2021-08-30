@@ -20,7 +20,7 @@ import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.structures.source.TupleSource;
+import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.TObjectLongMap;

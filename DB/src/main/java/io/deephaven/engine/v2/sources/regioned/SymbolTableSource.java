@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * <p>
- * Interface for {@link io.deephaven.engine.v2.sources.ColumnSource}s that can provide a {@link Table} view of their
+ * Interface for {@link ColumnSource}s that can provide a {@link Table} view of their
  * symbol tables, providing a many:1 or 1:1 mapping of unique {@code long} identifiers to the symbol values in this
  * source.
  * <p>

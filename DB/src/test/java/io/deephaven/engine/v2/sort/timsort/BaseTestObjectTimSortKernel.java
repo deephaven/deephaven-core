@@ -12,7 +12,7 @@ import io.deephaven.engine.util.tuples.generated.ObjectLongTuple;
 import io.deephaven.engine.v2.sort.findruns.ObjectFindRunsKernel;
 import io.deephaven.engine.v2.sort.partition.ObjectPartitionKernel;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.structures.source.ColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.structures.rowset.Index;
