@@ -23,6 +23,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -226,7 +227,7 @@ public class SimpleDeephavenClient {
         sessionService.closeSession(HandshakeRequest.newBuilder()
                 .setAuthProtocol(0)
                 .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
-                new ResponseBuilder<ReleaseResponse>()
+                new ResponseBuilder<CloseSessionResponse>()
                         .onNext(r -> log.info().append("release session response ").append(r.toString()).endl())
                         .onError(e -> stop())
                         .onComplete(this::stop)

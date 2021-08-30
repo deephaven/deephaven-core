@@ -402,6 +402,46 @@ public class BatchTableRequest {
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface FetchPandasTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchPandasTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface FetchTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface FilterFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface FiltersListFieldType {
@@ -1408,6 +1448,12 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.ExactJoinFieldType getExactJoin();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchPandasTableFieldType getFetchPandasTable();
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchTableFieldType getFetchTable();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType getFilter();
 
             @JsProperty
@@ -1493,6 +1539,14 @@ public class BatchTableRequest {
             @JsProperty
             void setExactJoin(
                     BatchTableRequest.ToObjectReturnType.OpsListFieldType.ExactJoinFieldType exactJoin);
+
+            @JsProperty
+            void setFetchPandasTable(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchPandasTableFieldType fetchPandasTable);
+
+            @JsProperty
+            void setFetchTable(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FetchTableFieldType fetchTable);
 
             @JsProperty
             void setFilter(BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType filter);
@@ -1970,6 +2024,46 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setRightId(Object rightId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface FetchPandasTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchPandasTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface FetchTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2979,6 +3073,12 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ExactJoinFieldType getExactJoin();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchPandasTableFieldType getFetchPandasTable();
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchTableFieldType getFetchTable();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType getFilter();
 
             @JsProperty
@@ -3064,6 +3164,14 @@ public class BatchTableRequest {
             @JsProperty
             void setExactJoin(
                     BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ExactJoinFieldType exactJoin);
+
+            @JsProperty
+            void setFetchPandasTable(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchPandasTableFieldType fetchPandasTable);
+
+            @JsProperty
+            void setFetchTable(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FetchTableFieldType fetchTable);
 
             @JsProperty
             void setFilter(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType filter);

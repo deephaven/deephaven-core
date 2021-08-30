@@ -20,9 +20,9 @@ public class PythonConsoleSessionModule {
     }
 
     @Provides
-    PythonDeephavenSession bindPythonSession() {
+    PythonDeephavenSession bindPythonSession(final ScriptSession.Listener listener) {
         try {
-            return new PythonDeephavenSession(true, true);
+            return new PythonDeephavenSession(listener, true, true);
         } catch (IOException e) {
             // can't happen since we pass false
             throw new UncheckedIOException(e);

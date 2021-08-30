@@ -1,6 +1,7 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
+import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
@@ -337,15 +338,13 @@ public final class SessionImpl extends SessionBase {
         }
     }
 
-    private class CloseSessionHandler implements StreamObserver<ReleaseResponse> {
+    private class CloseSessionHandler implements StreamObserver<CloseSessionResponse> {
 
         private final CompletableFuture<Void> future = new CompletableFuture<>();
 
         @Override
-        public void onNext(ReleaseResponse value) {
-            if (value.getSuccess()) {
-                handler.onClosed();
-            }
+        public void onNext(CloseSessionResponse value) {
+            handler.onClosed();
         }
 
         @Override

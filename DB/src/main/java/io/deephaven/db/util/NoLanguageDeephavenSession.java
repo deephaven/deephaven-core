@@ -26,7 +26,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
     }
 
     public NoLanguageDeephavenSession(final String scriptType) {
-        super(false);
+        super(null, false);
 
         this.scriptType = scriptType;
         variables = new LinkedHashMap<>();
@@ -81,6 +81,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
 
     @Override
     public void setVariable(String name, Object value) {
+        super.setVariable(name, value);
         variables.put(name, value);
     }
 

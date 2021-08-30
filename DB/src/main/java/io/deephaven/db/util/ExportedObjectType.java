@@ -28,7 +28,6 @@ public enum ExportedObjectType {
                 }
             }
         } else if (IsWidget.isWidget(value)) {
-            @SuppressWarnings("rawtypes")
             final LiveWidget widget = IsWidget.getWidget(value);
             if (widget instanceof FigureWidgetMarker) {
                 return ExportedObjectType.Figure;
@@ -51,7 +50,7 @@ public enum ExportedObjectType {
         return this == Figure || this == OtherWidget || this == Pandas;
     }
 
-    public boolean isDisplayableInSwing() {
+    public boolean isDisplayable() {
         return this != NonDisplayable && this != TableMap;
     }
 }

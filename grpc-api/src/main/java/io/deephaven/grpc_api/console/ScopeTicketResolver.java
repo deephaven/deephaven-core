@@ -15,16 +15,19 @@ import io.deephaven.grpc_api.session.TicketResolverBase;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api.util.TicketRouterHelper;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
+@Singleton
 public class ScopeTicketResolver extends TicketResolverBase {
     private static final char TICKET_PREFIX = 's';
     private static final String FLIGHT_DESCRIPTOR_ROUTE = "scope";
@@ -52,14 +55,14 @@ public class ScopeTicketResolver extends TicketResolverBase {
             final ScriptSession gss = globalSessionProvider.getGlobalSession();
             Object scopeVar = gss.getVariable(scopeName);
             if (scopeVar == null) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
                         "Could not resolve: no variable exists with name '" + scopeName + "'");
             }
             if (scopeVar instanceof Table) {
-                return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, ticketForName(scopeName));
+                return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, flightTicketForName(scopeName));
             }
 
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve: no variable exists with name '" + scopeName + "'");
         });
 
@@ -70,8 +73,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         globalSessionProvider.getGlobalSession().getVariables().forEach((varName, varObj) -> {
             if (varObj instanceof Table) {
-                visitor.accept(
-                        TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName), ticketForName(varName)));
+                visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName),
+                        flightTicketForName(varName)));
             }
         });
     }
@@ -92,7 +95,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         final T export = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> {
             final ScriptSession gss = globalSessionProvider.getGlobalSession();
             // noinspection unchecked
-            T scopeVar = (T) gss.getVariable(scopeName);
+            T scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
             if (scopeVar == null) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "Could not resolve: no variable exists with name '" + scopeName + "'");
@@ -137,14 +140,27 @@ public class ScopeTicketResolver extends TicketResolverBase {
     }
 
     /**
-     * Convenience method to convert from a scoped variable name to Flight.ticket
+     * Convenience method to convert from a scoped variable name to Flight.Ticket
      *
      * @param name the scoped variable name to convert
      * @return the flight ticket this descriptor represents
      */
-    public static Flight.Ticket ticketForName(final String name) {
-        final byte[] ticket = (TICKET_PREFIX + '/' + name).getBytes(StandardCharsets.UTF_8);
+    public static Flight.Ticket flightTicketForName(final String name) {
+        final byte[] ticket = (TICKET_PREFIX + "/" + name).getBytes(StandardCharsets.UTF_8);
         return Flight.Ticket.newBuilder()
+                .setTicket(ByteStringAccess.wrap(ticket))
+                .build();
+    }
+
+    /**
+     * Convenience method to convert from a scoped variable name to Ticket
+     *
+     * @param name the scoped variable name to convert
+     * @return the flight ticket this descriptor represents
+     */
+    public static Ticket ticketForName(final String name) {
+        final byte[] ticket = (TICKET_PREFIX + "/" + name).getBytes(StandardCharsets.UTF_8);
+        return Ticket.newBuilder()
                 .setTicket(ByteStringAccess.wrap(ticket))
                 .build();
     }
@@ -229,8 +245,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * @param descriptor the descriptor to convert
      * @return a flight ticket that represents the descriptor
      */
-    // TODO #412 use this or remove it (above is unused too?)
     public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor) {
-        return ticketForName(nameForDescriptor(descriptor));
+        return flightTicketForName(nameForDescriptor(descriptor));
     }
 }

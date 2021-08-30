@@ -154,7 +154,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
     /**
      * Helper to convert from SubscriptionRequest to Options and from MessageView to InputStream.
-     * 
+     *
      * @param <T> Type to convert from.
      * @param <V> Type to convert to.
      */
@@ -792,13 +792,16 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     }
 
     private void schedulePropagation() {
+        // copy lastUpdateTime so we are not duped by the re-read
+        final long localLastUpdateTime = lastUpdateTime;
         final long now = scheduler.currentTime().getMillis();
-        final long msSinceLastUpdate = now - lastUpdateTime;
-        if (msSinceLastUpdate < updateIntervalMs) {
+        final long msSinceLastUpdate = now - localLastUpdateTime;
+        if (msSinceLastUpdate < localLastUpdateTime) {
             // we have updated within the period, so wait until a sufficient gap
-            final long nextRunTime = lastUpdateTime + updateIntervalMs;
+            final long nextRunTime = localLastUpdateTime + updateIntervalMs;
             if (DEBUG) {
-                log.info().append(logPrefix).append("Last Update Time: ").append(lastUpdateTime).append(" next run: ")
+                log.info().append(logPrefix).append("Last Update Time: ").append(localLastUpdateTime)
+                        .append(" next run: ")
                         .append(nextRunTime).endl();
             }
             updatePropagationJob.scheduleAt(nextRunTime);
@@ -806,7 +809,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             // we have not updated recently, so go for it right away
             if (DEBUG) {
                 log.info().append(logPrefix)
-                        .append("Scheduling update immediately, because last update was ").append(lastUpdateTime)
+                        .append("Scheduling update immediately, because last update was ").append(localLastUpdateTime)
                         .append(" and now is ").append(now).append(" msSinceLastUpdate=").append(msSinceLastUpdate)
                         .append(" interval=").append(updateIntervalMs).endl();
             }

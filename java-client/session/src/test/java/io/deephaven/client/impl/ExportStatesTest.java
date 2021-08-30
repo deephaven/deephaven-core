@@ -2,16 +2,10 @@ package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.grpc_api.util.OperationHelper;
-import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceImplBase;
-import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceImplBase;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.TableSpec;
@@ -44,10 +38,11 @@ public class ExportStatesTest {
     private final List<BatchTableRequest> batches = new ArrayList<>();
 
     SessionServiceImplBase session = new SessionServiceGrpc.SessionServiceImplBase() {
+
         @Override
-        public void release(Ticket request, StreamObserver<ReleaseResponse> responseObserver) {
-            releases.add(request);
-            responseObserver.onNext(ReleaseResponse.newBuilder().setSuccess(true).build());
+        public void release(ReleaseRequest request, StreamObserver<ReleaseResponse> responseObserver) {
+            releases.add(request.getId());
+            responseObserver.onNext(ReleaseResponse.getDefaultInstance());
             responseObserver.onCompleted();
         }
     };

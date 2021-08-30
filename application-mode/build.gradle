@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    annotationProcessor 'org.immutables:value:2.8.1'
+    compileOnly project(':util-immutables')
+
+    // we'll rely on the DB to provide the necessary groovy dependencies
+    compileOnly "org.codehaus.groovy:groovy:$GROOVY_VERSION"
+
+    api project(':proto:proto-backplane-grpc')
+
+    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core:3.19.0'
+}
+
+test {
+    useJUnitPlatform()
+}

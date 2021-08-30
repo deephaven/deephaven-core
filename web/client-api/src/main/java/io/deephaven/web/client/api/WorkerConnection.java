@@ -17,13 +17,20 @@ import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotification;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotificationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
@@ -32,6 +39,7 @@ import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
+import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.csv.CsvTypeParser;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -129,6 +137,7 @@ public class WorkerConnection {
     private SessionServiceClient sessionServiceClient;
     private TableServiceClient tableServiceClient;
     private ConsoleServiceClient consoleServiceClient;
+    private ApplicationServiceClient applicationServiceClient;
     private FlightServiceClient flightServiceClient;
     private BrowserFlightServiceClient browserFlightServiceClient;
 
@@ -150,6 +159,10 @@ public class WorkerConnection {
     private JsConsumer<LogItem> recordLog = pastLogs::add;
     private ResponseStreamWrapper<LogSubscriptionData> logStream;
 
+    private final JsSet<JsConsumer<JsVariableChanges>> fieldUpdatesCallback = new JsSet<>();
+    private Map<String, JsVariableDefinition> knownFields = new HashMap<>();
+    private ResponseStreamWrapper<FieldsChangeUpdate> fieldsChangeUpdateStream;
+
     public WorkerConnection(QueryConnectable<?> info, Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
         this.info = info;
         this.config = new ClientConfiguration();
@@ -160,6 +173,8 @@ public class WorkerConnection {
         tableServiceClient = new TableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         flightServiceClient = new FlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        applicationServiceClient =
+                new ApplicationServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         browserFlightServiceClient =
                 new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
@@ -520,88 +535,118 @@ public class WorkerConnection {
         info.failureHandled(throwable.toString());
     }
 
-    public Promise<JsTable> getTable(String tableName) {
-        return getTable(tableName, null);
-    }
-
-    public Promise<JsTable> getTable(String tableName, Ticket script) {
+    public Promise<JsTable> getTable(JsVariableDefinition varDef) {
         return whenServerReady("get a table").then(serve -> {
-            JsLog.debug("innerGetTable", tableName, " started");
+            JsLog.debug("innerGetTable", varDef.getTitle(), " started");
             return newState(info,
                     (c, cts, metadata) -> {
-                        JsLog.debug("performing fetch for ", tableName, " / ", cts,
-                                " (" + LazyString.of(cts::getHandle), ",", script, ")");
-                        assert script != null : "no global scope support at this time";
+                        JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
+                                " (" + LazyString.of(cts::getHandle), ")");
                         FetchTableRequest fetch = new FetchTableRequest();
-                        fetch.setConsoleId(script);
-                        fetch.setTableName(tableName);
-                        fetch.setTableId(cts.getHandle().makeTicket());
-                        consoleServiceClient.fetchTable(fetch, metadata, c::apply);
-                    }, "fetch table " + tableName).then(cts -> {
-                        JsLog.debug("innerGetTable", tableName, " succeeded ", cts);
+                        fetch.setSourceId(TableTicket.createTableRef(varDef));
+                        fetch.setResultId(cts.getHandle().makeTicket());
+                        tableServiceClient.fetchTable(fetch, metadata, c::apply);
+                    }, "fetch table " + varDef.getTitle()).then(cts -> {
+                        JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
                         JsTable table = new JsTable(this, cts);
                         return Promise.resolve(table);
                     });
         });
     }
 
-    public Promise<JsTable> getPandas(String name) {
-        return getPandas(name, null);
-    }
-
-    public Promise<JsTable> getPandas(String name, Ticket script) {
+    public Promise<JsTable> getPandas(JsVariableDefinition varDef) {
         return whenServerReady("get a pandas table").then(serve -> {
-            JsLog.debug("innerGetPandasTable", name, " started");
+            JsLog.debug("innerGetPandasTable", varDef.getTitle(), " started");
             return newState(info,
                     (c, cts, metadata) -> {
-                        JsLog.debug("performing fetch for ", name, " / ", cts, " (" + LazyString.of(cts::getHandle),
-                                ",", script, ")");
-                        // if (script != null) {
-                        // getServer().fetchPandasScriptTable(cts.getHandle(), script, name, c);
-                        // } else {
-                        // getServer().fetchPandasTable(cts.getHandle(), name, c);
-                        // }
+                        JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
+                                " (" + LazyString.of(cts::getHandle), ")");
                         throw new UnsupportedOperationException("getPandas");
 
-                    }, "fetch pandas table " + name).then(cts -> {
-                        JsLog.debug("innerGetPandasTable", name, " succeeded ", cts);
+                    }, "fetch pandas table " + varDef.getTitle()).then(cts -> {
+                        JsLog.debug("innerGetPandasTable", varDef.getTitle(), " succeeded ", cts);
                         JsTable table = new JsTable(this, cts);
                         return Promise.resolve(table);
                     });
         });
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Promise<Object> getObject(JsVariableDefinition definition) {
         switch (VariableType.valueOf(definition.getType())) {
             case Table:
-                return (Promise) getTable(definition.getName());
+                return (Promise) getTable(definition);
             case TreeTable:
-                return (Promise) getTreeTable(definition.getName());
+                return (Promise) getTreeTable(definition);
             case Figure:
-                return (Promise) getFigure(definition.getName());
-            case TableMap:
-                return (Promise) getTableMap(definition.getName());
+                return (Promise) getFigure(definition);
             case Pandas:
-                return (Promise) getPandas(definition.getName());
+                return (Promise) getPandas(definition);
+            // case OtherWidget:
+            // return (Promise) getWidget(definition.getName());
+            // case TableMap:
+            // return (Promise) getTableMap(definition.getName());
             default:
-                return Promise
-                        .reject(new Error("Object " + definition.getName() + " unknown type " + definition.getType()));
+                return Promise.reject(
+                        new Error("Object " + definition.getTitle() + " unknown type " + definition.getType() + "."));
         }
     }
 
-    public Promise<Object> getObject(JsVariableDefinition definition, Ticket script) {
-        switch (VariableType.valueOf(definition.getType())) {
-            case Table:
-                return (Promise) getTable(definition.getName(), script);
-            case TreeTable:
-                return (Promise) getTreeTable(definition.getName(), script);
-            case Figure:
-                return (Promise) getFigure(definition.getName(), script);
-            case Pandas:
-                return (Promise) getPandas(definition.getName(), script);
-            default:
-                return Promise.reject(new Error(
-                        "Object " + definition.getName() + " unknown type " + definition.getType() + " for script."));
+    @JsMethod
+    @SuppressWarnings("ConstantConditions")
+    public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
+        fieldUpdatesCallback.add(callback);
+        if (fieldUpdatesCallback.size == 1) {
+            fieldsChangeUpdateStream =
+                    ResponseStreamWrapper.of(applicationServiceClient.listFields(new ListFieldsRequest(), metadata));
+            fieldsChangeUpdateStream.onData(data -> {
+                final JsVariableDefinition[] created = new JsVariableDefinition[0];
+                final JsVariableDefinition[] updated = new JsVariableDefinition[0];
+                final JsVariableDefinition[] removed = new JsVariableDefinition[0];
+
+                JsArray<FieldInfo> removedFI = data.getRemovedList();
+                for (int i = 0; i < removedFI.length; ++i) {
+                    String removedId = removedFI.getAt(i).getTicket().getTicket_asB64();
+                    JsVariableDefinition result = knownFields.get(removedId);
+                    removed[removed.length] = result;
+                    knownFields.remove(removedId);
+                }
+                JsArray<FieldInfo> createdFI = data.getCreatedList();
+                for (int i = 0; i < createdFI.length; ++i) {
+                    JsVariableDefinition result = new JsVariableDefinition(createdFI.getAt(i));
+                    created[created.length] = result;
+                    knownFields.put(result.getId(), result);
+                }
+                JsArray<FieldInfo> updatedFI = data.getUpdatedList();
+                for (int i = 0; i < updatedFI.length; ++i) {
+                    JsVariableDefinition result = new JsVariableDefinition(updatedFI.getAt(i));
+                    updated[updated.length] = result;
+                    knownFields.put(result.getId(), result);
+                }
+
+                notifyFieldsChangeListeners(new JsVariableChanges(created, updated, removed));
+            });
+            fieldsChangeUpdateStream.onEnd(this::checkStatus);
+        } else {
+            final JsVariableDefinition[] empty = new JsVariableDefinition[0];
+            final JsVariableChanges update = new JsVariableChanges(knownFields.values().toArray(empty), empty, empty);
+            callback.apply(update);
+        }
+        return () -> {
+            fieldUpdatesCallback.delete(callback);
+            if (fieldUpdatesCallback.size == 0) {
+                knownFields.clear();
+                if (fieldsChangeUpdateStream != null) {
+                    fieldsChangeUpdateStream.cancel();
+                    fieldsChangeUpdateStream = null;
+                }
+            }
+        };
+    }
+
+    private void notifyFieldsChangeListeners(JsVariableChanges update) {
+        for (JsConsumer<JsVariableChanges> callback : JsItr.iterate(fieldUpdatesCallback.keys())) {
+            callback.apply(update);
         }
     }
 
@@ -637,28 +682,19 @@ public class WorkerConnection {
         tableMaps.put(handle, tableMap);
     }
 
-    public Promise<JsTreeTable> getTreeTable(String tableName) {
-        return getTreeTable(tableName, null);
-    }
-
-    public Promise<JsTreeTable> getTreeTable(String tableName, Ticket script) {
-        return getTable(tableName, script).then(t -> {
+    public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
+        return getTable(varDef).then(t -> {
             Promise<JsTreeTable> result = Promise.resolve(new JsTreeTable(t.state(), this).finishFetch());
             t.close();
             return result;
         });
     }
 
-    public Promise<JsFigure> getFigure(String figureName) {
-        return getFigure(figureName, null);
-    }
-
-    public Promise<JsFigure> getFigure(String figureName, Ticket script) {
+    public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
                     FetchFigureRequest request = new FetchFigureRequest();
-                    request.setConsoleId(script);
-                    request.setFigureName(figureName);
+                    request.setSourceId(TableTicket.createTicket(varDef));
                     consoleServiceClient().fetchFigure(request, metadata(), c::apply);
                 }).refetch());
     }
@@ -990,12 +1026,14 @@ public class WorkerConnection {
 
     /**
      * Releases the ticket, indicating no client using this session will reference it any more.
-     * 
+     *
      * @param ticket the ticket to release
      */
     public void releaseTicket(Ticket ticket) {
         // TODO verify cleanup core#223
-        sessionServiceClient.release(ticket, metadata, null);
+        ReleaseRequest releaseRequest = new ReleaseRequest();
+        releaseRequest.setId(ticket);
+        sessionServiceClient.release(releaseRequest, metadata, null);
     }
 
 
