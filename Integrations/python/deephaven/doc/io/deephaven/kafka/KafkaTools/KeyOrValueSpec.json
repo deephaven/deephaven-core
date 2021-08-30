@@ -1,8 +1,9 @@
 {
  "className": "io.deephaven.kafka.KafkaTools$KeyOrValueSpec",
  "methods": {
-  "dataFormat": ":return: io.deephaven.kafka.KafkaTools.DataFormat"
+  "dataFormat": "Data format for this Spec.\n\n:return: (io.deephaven.kafka.KafkaTools.DataFormat) Data format for this Spec"
  },
  "path": "io.deephaven.kafka.KafkaTools.KeyOrValueSpec",
+ "text": "Class to specify conversion of Kafka KEY or VALUE fields to table columns.",
  "typeName": "class"
 }

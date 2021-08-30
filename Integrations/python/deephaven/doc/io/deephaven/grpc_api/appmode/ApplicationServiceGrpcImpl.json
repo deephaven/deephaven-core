@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl",
+ "methods": {
+  "listFields": ":param request: io.deephaven.proto.backplane.grpc.ListFieldsRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.FieldsChangeUpdate>",
+  "onNewField": ":param app: io.deephaven.appmode.ApplicationState\n:param field: io.deephaven.appmode.Field<?>",
+  "onRemoveField": ":param app: io.deephaven.appmode.ApplicationState\n:param oldField: io.deephaven.appmode.Field<?>",
+  "onScopeChanges": ":param scriptSession: io.deephaven.db.util.ScriptSession\n:param changes: io.deephaven.db.util.ScriptSession.Changes"
+ },
+ "path": "io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl",
+ "typeName": "class"
+}

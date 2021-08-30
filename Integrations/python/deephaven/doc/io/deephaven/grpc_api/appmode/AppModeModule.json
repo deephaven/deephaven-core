@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.grpc_api.appmode.AppModeModule",
+ "methods": {
+  "bindApplicationServiceImpl": ":param applicationService: io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl\n:return: io.grpc.BindableService",
+  "bindApplicationStateListener": ":param applicationService: io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl\n:return: io.deephaven.appmode.ApplicationState.Listener",
+  "bindApplicationTicketResolver": ":param resolver: io.deephaven.grpc_api.appmode.ApplicationTicketResolver\n:return: io.deephaven.grpc_api.session.TicketResolver",
+  "bindScriptSessionListener": ":param applicationService: io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl\n:return: io.deephaven.db.util.ScriptSession.Listener"
+ },
+ "path": "io.deephaven.grpc_api.appmode.AppModeModule",
+ "typeName": "interface"
+}

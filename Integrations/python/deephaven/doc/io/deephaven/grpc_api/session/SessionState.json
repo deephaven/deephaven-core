@@ -16,7 +16,7 @@
   "numExportListeners": ":return: long",
   "onExpired": "Notes that this session has expired and exports should be released.",
   "removeExportListener": "Remove an on-close callback bound to the life of the session.\n\n:param observer: (io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportNotification>) - the observer to no longer be subscribed\n:return: (io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportNotification>) The item if it was removed, else null",
-  "removeOnCloseCallback": "Remove an on-close callback bound to the life of the session.\n\n:param onClose: (java.io.Closeable) - the callback to no longer invoke at end-of-life\n:return: (java.io.Closeable) The item if it was removed, else null",
+  "removeOnCloseCallback": "Remove an on-close callback bound to the life of the session.\n\n:param onClose: (java.io.Closeable) - the callback to no longer invoke at end-of-life\n:return: (boolean) true iff the callback was removed",
   "wrapAsExport": "Wrap an object in an ExportObject to make it conform to the session export API.\n\nNote: Java generics information - <T>\n\n:param export: (T) - the object to wrap\n:return: (io.deephaven.grpc_api.session.SessionState.ExportObject<T>) a sessionless export object"
  },
  "path": "io.deephaven.grpc_api.session.SessionState",
