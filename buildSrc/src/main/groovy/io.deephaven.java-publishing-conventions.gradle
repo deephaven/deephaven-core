@@ -94,7 +94,7 @@ def assertIsRelease = tasks.register('assertIsRelease') {
       throw new IllegalStateException('Release error: env CI must be true')
     }
     def actualGithubRef = System.getenv('GITHUB_REF')
-    def expectedGithubRef = "refs/heads/release/v${project.version}"
+    def expectedGithubRef = "refs/tags/v${project.version}"
     if (actualGithubRef != expectedGithubRef) {
       throw new IllegalStateException("Release error: env GITHUB_REF '${actualGithubRef}' does not match expected '${expectedGithubRef}'. Bad tag? Bump version?")
     }
