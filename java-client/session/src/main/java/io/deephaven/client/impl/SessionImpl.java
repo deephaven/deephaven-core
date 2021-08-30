@@ -50,10 +50,13 @@ import java.util.concurrent.atomic.AtomicReference;
  * {@inheritDoc}
  */
 public final class SessionImpl extends SessionBase {
+    private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);
 
     private static final int REFRESH_RETRIES = 5;
 
-    private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);
+    private static final int CONSOLE_EXPORT_ID = 127;
+
+    private static final int TABLE_EXPORT_ID_START = CONSOLE_EXPORT_ID + 1;
 
     public interface Handler {
         void onRefreshSuccess();
@@ -196,8 +199,8 @@ public final class SessionImpl extends SessionBase {
         this.executor = config.executor();
         this.sessionService = config.sessionService().withCallCredentials(credentials);
         this.consoleService = config.consoleService().withCallCredentials(credentials);
-        this.states = new ExportStates(this, sessionService,
-                config.tableService().withCallCredentials(credentials), 128);
+        this.states = new ExportStates(this, sessionService, config.tableService().withCallCredentials(credentials),
+                TABLE_EXPORT_ID_START);
         this.consoleType = config.consoleType().orElse(null);
         this.delegateToBatch = config.delegateToBatch();
         this.mixinStacktrace = config.mixinStacktrace();
@@ -213,7 +216,7 @@ public final class SessionImpl extends SessionBase {
     }
 
     private Ticket consoleId() {
-        return ExportTicketHelper.exportIdToTicket(127);
+        return ExportTicketHelper.exportIdToTicket(CONSOLE_EXPORT_ID);
     }
 
     @Override
