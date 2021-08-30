@@ -128,6 +128,12 @@ class Docker {
         String imageName;
 
         /**
+         * Tag to apply the network to the container.
+         */
+
+        String network;
+
+        /**
          * Path inside the created docker container that contains the output to be copied out as part of this task
          */
         String containerOutPath = '/out'
@@ -249,6 +255,10 @@ class Docker {
                 if (cfg.entrypoint) {
                     // if provided, set a run command that we'll use each time it starts
                     entrypoint.set(cfg.entrypoint)
+                }
+
+                if (cfg.network) {
+                    hostConfig.network.set(cfg.network)
                 }
 
                 targetImageId makeImage.get().getImageId()

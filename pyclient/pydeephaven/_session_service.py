@@ -44,6 +44,6 @@ class SessionService:
 
     def release(self, ticket):
         try:
-            self._grpc_session_stub.Release(ticket, metadata=self.session.grpc_metadata)
+            self._grpc_session_stub.Release(session_pb2.ReleaseRequest(id=ticket), metadata=self.session.grpc_metadata)
         except Exception as e:
             raise DHError("failed to release a ticket.") from e

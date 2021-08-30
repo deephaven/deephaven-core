@@ -99,6 +99,12 @@ def _custom_avroSchemaToColumnDefinitions(schema, mapping:dict = None):
     return _java_type_.avroSchemaToColumnDefinitions(schema, mapping)
 
 
+# Define all of our functionality, if currently possible
+try:
+    _defineSymbols()
+except Exception as e:
+    pass
+
 @_passThrough
 def consumeToTable(
         kafka_config:dict,
@@ -336,12 +342,6 @@ def streamTableToAppendTable(t):
     :return:  The resulting 'append' table.
     """
     return _stream_table_tools_.streamToAppendOnlyTable(t)
-    
-# Define all of our functionality, if currently possible
-try:
-    _defineSymbols()
-except Exception as e:
-    pass
 @_passThrough
 def avroSchemaToColumnDefinitions(*args):
     """
