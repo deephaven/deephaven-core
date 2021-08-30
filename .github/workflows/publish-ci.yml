@@ -2,7 +2,6 @@ name: Publish CI
 
 on:
   push:
-    branches: [ 'publish-java-client-jars' ]
     tags: [ 'v*' ]
 
 jobs:
