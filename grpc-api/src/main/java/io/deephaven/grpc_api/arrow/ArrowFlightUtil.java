@@ -395,7 +395,7 @@ public class ArrowFlightUtil {
 
             final boolean hasColumns = subscriptionRequest.columnsVector() != null;
             final BitSet columns =
-                    hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
+                    hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
 
             isViewport = subscriptionRequest.viewportVector() != null;
             final Index viewport =

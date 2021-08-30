@@ -14,8 +14,8 @@ services:
 
     expose:
       - '8080'
-#    ports:
-#      - '5005:5005'        # For remote debugging (change if using different port)
+    ports:
+      - '5005:5005'        # For remote debugging (change if using different port)
 
     # Note: using old-style volume mounts, so that the directories get created if they don't exist
     # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior

@@ -45,6 +45,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     private final String logName;
     private final int updateIntervalMs;
+    private final Export export;
     private final BarrageSubscriptionOptions options;
     private final ClientCall<Flight.FlightData, BarrageMessage> call;
 
@@ -72,6 +73,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         this.updateIntervalMs = updateIntervalMs;
         this.options = options;
         this.performRelease = performRelease;
+        this.export = export;
 
         // fetch the schema and convert to table definition
         final Schema schema = session.schema(export);
@@ -210,24 +212,28 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             optOffset = options.appendTo(metadata);
         }
 
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata,
+                export.ticket().getTicket().asReadOnlyByteBuffer());
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
         BarrageSubscriptionRequest.addColumns(metadata, colOffset);
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
         BarrageSubscriptionRequest.addSerializationOptions(metadata, optOffset);
         BarrageSubscriptionRequest.addUpdateIntervalMs(metadata, updateIntervalMs);
-        final int subscription = BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata);
+        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
+        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
 
-        final int wrapper = BarrageMessageWrapper.createBarrageMessageWrapper(
-                metadata,
+        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                wrapper,
                 BarrageUtil.FLATBUFFER_MAGIC,
                 BarrageMessageType.BarrageSubscriptionRequest,
-                subscription,
+                innerOffset,
                 0, // no ticket
                 0, // no sequence
                 false // don't half-close
-        );
-        metadata.finish(wrapper);
-        return metadata.dataBuffer();
+        ));
+        return wrapper.dataBuffer();
     }
 
     public static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(

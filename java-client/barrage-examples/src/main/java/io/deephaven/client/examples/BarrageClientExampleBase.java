@@ -50,14 +50,14 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
-        final BarrageSessionFactory deephavenClientSessionFactory =
+        final BarrageSessionFactory barrageFactory =
                 DaggerDeephavenBarrageRoot.create().factoryBuilder()
                         .managedChannel(managedChannel)
                         .scheduler(scheduler)
                         .allocator(bufferAllocator)
                         .build();
 
-        final BarrageSession deephavenSession = deephavenClientSessionFactory.newDeephavenClientSession();
+        final BarrageSession deephavenSession = barrageFactory.newBarrageSession();
 
         try {
             try {

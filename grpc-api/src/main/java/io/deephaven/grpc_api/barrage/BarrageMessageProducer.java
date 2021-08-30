@@ -451,14 +451,19 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         "asking to add a subscription for an already existing session and listener");
             }
 
-            final Subscription subscription =
-                    new Subscription(listener, options, (BitSet) columnsToSubscribe.clone(), initialViewport);
+            final BitSet cols;
+            if (columnsToSubscribe == null) {
+                cols = new BitSet(sourceColumns.length);
+                cols.set(0, sourceColumns.length);
+            } else {
+                cols = (BitSet) columnsToSubscribe.clone();
+            }
+            final Subscription subscription = new Subscription(listener, options, cols, initialViewport);
 
-            Assert.neqNull(columnsToSubscribe, "columnsToSubscribe");
             log.info().append(logPrefix)
                     .append(subscription.logPrefix)
                     .append("subbing to columns ")
-                    .append(FormatBitSet.formatBitSet(columnsToSubscribe))
+                    .append(FormatBitSet.formatBitSet(cols))
                     .endl();
 
             subscription.hasPendingUpdate = true;

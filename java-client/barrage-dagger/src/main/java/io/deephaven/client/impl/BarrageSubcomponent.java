@@ -17,9 +17,9 @@ import java.util.concurrent.ScheduledExecutorService;
 @Subcomponent(modules = {SessionImplModule.class, FlightSessionModule.class, BarrageSessionModule.class})
 public interface BarrageSubcomponent extends BarrageSessionFactory {
 
-    BarrageSession newDeephavenClientSession();
+    BarrageSession newBarrageSession();
 
-    CompletableFuture<? extends BarrageSession> newDeephavenClientSessionFuture();
+    CompletableFuture<? extends BarrageSession> newBarrageSessionFuture();
 
     @Module(subcomponents = {BarrageSubcomponent.class})
     interface DeephavenClientSubcomponentModule {

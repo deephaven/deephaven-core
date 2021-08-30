@@ -7,7 +7,7 @@ package io.deephaven.client.impl;
 import java.util.concurrent.CompletableFuture;
 
 public interface BarrageSessionFactory {
-    BarrageSession newDeephavenClientSession();
+    BarrageSession newBarrageSession();
 
-    CompletableFuture<? extends BarrageSession> newDeephavenClientSessionFuture();
+    CompletableFuture<? extends BarrageSession> newBarrageSessionFuture();
 }
