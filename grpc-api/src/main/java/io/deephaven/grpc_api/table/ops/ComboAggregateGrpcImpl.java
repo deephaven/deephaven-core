@@ -28,50 +28,62 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
 
     @Inject
     public ComboAggregateGrpcImpl() {
-        super(BatchTableRequest.Operation::getComboAggregate, ComboAggregateRequest::getResultId, ComboAggregateRequest::getSourceId);
+        super(BatchTableRequest.Operation::getComboAggregate, ComboAggregateRequest::getResultId,
+                ComboAggregateRequest::getSourceId);
     }
 
     @Override
     public void validateRequest(ComboAggregateRequest request) throws StatusRuntimeException {
         if (request.getAggregatesCount() == 0) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "ComboAggregateRequest incorrectly has zero aggregates provided");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "ComboAggregateRequest incorrectly has zero aggregates provided");
         }
         if (isSimpleAggregation(request)) {
             // this is a simple aggregation, make sure the user didn't mistakenly set extra properties
             // which would suggest they meant to set force_combo=true
             ComboAggregateRequest.Aggregate aggregate = request.getAggregates(0);
             if (aggregate.getMatchPairsCount() != 0) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "force_combo is false and only one aggregate provided, but match_pairs is specified");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "force_combo is false and only one aggregate provided, but match_pairs is specified");
             }
             if (aggregate.getPercentile() != 0) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "force_combo is false and only one aggregate provided, but percentile is specified");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "force_combo is false and only one aggregate provided, but percentile is specified");
             }
             if (aggregate.getAvgMedian()) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "force_combo is false and only one aggregate provided, but avg_median is specified");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "force_combo is false and only one aggregate provided, but avg_median is specified");
             }
-            if (aggregate.getType() != ComboAggregateRequest.AggType.COUNT && aggregate.getType() != ComboAggregateRequest.AggType.WEIGHTED_AVG) {
+            if (aggregate.getType() != ComboAggregateRequest.AggType.COUNT
+                    && aggregate.getType() != ComboAggregateRequest.AggType.WEIGHTED_AVG) {
                 if (!aggregate.getColumnName().isEmpty()) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "force_combo is false and only one aggregate provided, but column_name is specified for type other than COUNT or WEIGHTED_AVG");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "force_combo is false and only one aggregate provided, but column_name is specified for type other than COUNT or WEIGHTED_AVG");
                 }
             }
         } else {
             for (ComboAggregateRequest.Aggregate aggregate : request.getAggregatesList()) {
                 if (aggregate.getType() != ComboAggregateRequest.AggType.PERCENTILE) {
                     if (aggregate.getPercentile() != 0) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "percentile is specified for type " + aggregate.getType());
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "percentile is specified for type " + aggregate.getType());
                     }
                     if (aggregate.getAvgMedian()) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "avg_median is specified for type " + aggregate.getType());
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "avg_median is specified for type " + aggregate.getType());
                     }
                 }
                 if (aggregate.getType() == ComboAggregateRequest.AggType.COUNT) {
                     if (aggregate.getMatchPairsCount() != 0) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "match_pairs is specified for type COUNT");
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "match_pairs is specified for type COUNT");
                     }
                 }
-                if (aggregate.getType() != ComboAggregateRequest.AggType.COUNT && aggregate.getType() != ComboAggregateRequest.AggType.WEIGHTED_AVG) {
+                if (aggregate.getType() != ComboAggregateRequest.AggType.COUNT
+                        && aggregate.getType() != ComboAggregateRequest.AggType.WEIGHTED_AVG) {
                     if (!aggregate.getColumnName().isEmpty()) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "column_name is specified for type " + aggregate.getType());
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "column_name is specified for type " + aggregate.getType());
                     }
                 }
             }
@@ -79,13 +91,15 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
     }
 
     private boolean isSimpleAggregation(ComboAggregateRequest request) {
-        return !request.getForceCombo() && request.getAggregatesCount() == 1 && request.getAggregates(0).getColumnName().isEmpty()
+        return !request.getForceCombo() && request.getAggregatesCount() == 1
+                && request.getAggregates(0).getColumnName().isEmpty()
                 && request.getAggregates(0).getType() != ComboAggregateRequest.AggType.PERCENTILE
                 && request.getAggregates(0).getMatchPairsCount() == 0;
     }
 
     @Override
-    public Table create(final ComboAggregateRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final ComboAggregateRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
@@ -103,7 +117,8 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         return result;
     }
 
-    private static Table singleAggregateHelper(final Table parent, final SelectColumn[] groupByColumns, final ComboAggregateRequest.Aggregate aggregate) {
+    private static Table singleAggregateHelper(final Table parent, final SelectColumn[] groupByColumns,
+            final ComboAggregateRequest.Aggregate aggregate) {
         switch (aggregate.getType()) {
             case SUM:
                 return parent.sumBy(groupByColumns);
@@ -136,8 +151,10 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         }
     }
 
-    private static Table comboAggregateHelper(final Table parent, final SelectColumn[] groupByColumns, final List<ComboAggregateRequest.Aggregate> aggregates) {
-        final Set<String> groupByColumnSet = Arrays.stream(groupByColumns).map(SelectColumn::getName).collect(Collectors.toSet());
+    private static Table comboAggregateHelper(final Table parent, final SelectColumn[] groupByColumns,
+            final List<ComboAggregateRequest.Aggregate> aggregates) {
+        final Set<String> groupByColumnSet =
+                Arrays.stream(groupByColumns).map(SelectColumn::getName).collect(Collectors.toSet());
 
         final ComboAggregateFactory.ComboBy[] comboBy =
                 new ComboAggregateFactory.ComboBy[aggregates.size()];
@@ -150,7 +167,9 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 // if not specified, we apply the aggregate to all columns not "otherwise involved"
                 matchPairs = Arrays.stream(parent.getColumns())
                         .map(DataColumn::getName)
-                        .filter(n -> !(groupByColumnSet.contains(n) || (agg.getType() == ComboAggregateRequest.AggType.WEIGHTED_AVG && agg.getColumnName().equals(n))))
+                        .filter(n -> !(groupByColumnSet.contains(n)
+                                || (agg.getType() == ComboAggregateRequest.AggType.WEIGHTED_AVG
+                                        && agg.getColumnName().equals(n))))
                         .toArray(String[]::new);
             } else {
                 matchPairs = agg.getMatchPairsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
