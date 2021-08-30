@@ -87,10 +87,6 @@ def _custom_avroSchemaToColumnDefinitions(schema, mapping:dict = None):
     if mapping is None:
         return _java_type_.avroSchemaToColumnDefinitions(schema)
 
-    if not isinstance(mapping, dict):
-        raise ValueError(
-            "argument 'mapping' has to be of dict type, instead got " +
-            str(mapping) + " of type " + type(mapping).__name__)
     field_names = jpy.array('java.lang.String', mapping.keys())
     column_names = jpy.array('java.lang.String', mapping.values())
     mapping = _java_type_.fieldNameMappingFromParallelArrays(field_names, column_names)
@@ -140,12 +136,8 @@ def consumeToTable(
     :param table_type: A string specifying the resulting table type: one of 'stream' (default), 'append',
        'stream_map' or 'append_map'.
     :return: A Deephaven live table that will update based on Kafma messages consumed for the given topic.
-    :raises: ValueError if arguments provided can't be processed.
+    :raises: ValueError or TypeError if arguments provided can't be processed.
     """
-
-    if not isinstance(kafka_config, dict):
-        raise ValueError(
-            "argument 'kafka_config' has to be of type dict, instead got " + str(kafka_config))
 
     if not _isStr(topic):
         raise ValueError("argument 'topic' has to be of str type, instead got " + topic)
@@ -158,11 +150,12 @@ def consumeToTable(
         except Exception as e:
             raise ValueError(
                 "when not one of the predefined constants, keyword argument 'partitions' has to " +
-                "represent a sequence of integer partition values >= 0"
+                "represent a sequence of integer partition with values >= 0, instead got " +
+                str(partitions) + " of type " + type(partitions).__name__
             ) from e
         partitions = _java_type_.partitionFilterFromArray(jarr)
     elif not isinstance(partitions, jpy.JType):
-        raise ValueError(
+        raise TypeError(
             "argument 'partitions' has to be of str or sequence type, " +
             "or a predefined compatible constant, instead got partitions " +
             str(partitions) + " of type " + type(partitions).__name__)
@@ -182,9 +175,9 @@ def consumeToTable(
                 "instead got offsets=" + str(offsets)
             ) from e
     elif not isinstance(offsets, jpy.JType):
-        raise ValueError(
+        raise TypeError(
             "value " + str(offsets) + " of type " + type(offsets).__name__ +
-            "  not recognized for argument 'offsets'; only str, dict or predefined constants allowed")
+            "  not recognized for argument 'offsets'; only str, dict like, or predefined constants allowed")
 
     if key is None:
         key = FROM_PROPERTIES
@@ -192,10 +185,10 @@ def consumeToTable(
         value = FROM_PROPERTIES
     if key is IGNORE and value is IGNORE:
         raise ValueError(
-            "at least one argument for 'key' or 'value' must be different from the default IGNORE")
+            "at least one argument for 'key' or 'value' must be different from IGNORE")
 
     if not _isStr(table_type):
-        raise ValueError(
+        raise TypeError(
             "argument 'table_type' expected to be of type str, instead got " +
             str(table_type) + " of type " + type(table_type).__name__)
     table_type_enum = _java_type_.friendlyNameToTableType(table_type)
@@ -218,35 +211,27 @@ def avro(schema, schema_version:str = None, mapping:dict = None, mapping_only:di
        definition.
     :param schema_version:   If a string schema name is provided, the version to fetch from schema
        service; if not specified, a default of 'latest' is assumed.
-    :param mapping: A string to string mapping from Avro field name to Deephaven table column name;
-       the fields mentioned in the mapping will have their column names defined by it; any other
+    :param mapping: A dict representing a string to string mapping from Avro field name to Deephaven table
+       column name; the fields mentioned in the mapping will have their column names defined by it; any other
        fields not mentioned in the mapping with use the same Avro field name for Deephaven table column
        name.  Note that only one parameter between mapping and mapping_only can be provided.
-    :param mapping_only: A string to string mapping from Avro field name to Deephaven table column name;
-       the fields mentioned in the mapping will have their column names defined by it; any other
-       fields not mentioned in the mapping will be ignored and will not be present in the resulting table.
-       Note that only one parameter between mapping and mapping_only can be provided.
+    :param mapping_only: A dict representing a string to string mapping from Avro field name to Deephaven
+       table column name;  the fields mentioned in the mapping will have their column names defined by it;
+       any other fields not mentioned in the mapping will be ignored and will not be present in the resulting
+       table.  Note that only one parameter between mapping and mapping_only can be provided.
     :return:  A Kafka Key or Value spec object to use in a call to consumeToTable.
-    :raises:  ValueError if arguments provided can't be processed.
+    :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
     if mapping is not None and mapping_only is not None:
-        raise ValueError(
+        raise Exception(
             "only one argument between 'mapping' and " +
             "'mapping_only' expected, instead got both")
     if mapping is not None:
         have_mapping = True
-        if not instanceof(mapping, dict):
-            raise ValueError(
-                "'mapping' argument is expected to be of dict type, " +
-                "instead got " + str(mapping) + " of type " + type(mapping).__name__)
         # when providing 'mapping_only', fields names not given are mapped as identity
         mapping = _dictToFun(mapping, default_value=IDENTITY)
     elif mapping_only is not None:
         have_mapping = True
-        if not instanceof(mapping, dict):
-            raise ValueError(
-                "'mapping_only' argument is expected to be of dict type, " +
-                "instead found " + str(mapping_only) + " of type " + type(mapping_only).__name__)
         # when providing 'mapping_only', fields not given are ignored.
         mapping = _dictToFun(mapping, default_value=None)
     else:
@@ -256,16 +241,16 @@ def avro(schema, schema_version:str = None, mapping:dict = None, mapping_only:di
         if schema_version is None:
             schema_version = "latest"
         elif not _isStr(schema_version):
-            raise ValueError(
+            raise TypeError(
                 "argument 'schema_version' should be of str type, instead got " +
                 str(schema_version) + " of type " + type(schema_version).__name__)
     elif instanceof(schema, _avro_schema_jtype_):
         have_actual_schema = True
         if schema_version is not None:
-            raise ValueError(
+            raise Exception(
                 "argument 'schema_version' is only expected if schema is of str type")
     else:
-        raise ValueError(
+        raise TypeError(
             "'schema' argument expected to be of either " +
             "str type or avro schema type, instead got " + str(schema))
 
@@ -293,20 +278,20 @@ def json(col_defs, mapping:dict = None):
        argument.  If not present or None, a 1:1 mapping between JSON fields and Deephaven
        table column names is assumed.
     :return:  A Kafka Key or Value spec object to use in a call to consumeToTable.
-    :raises:  ValueError if arguments provided can't be processed.
+    :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
     if not isinstance(col_defs, collections.Sequence) or _isStr(col_defs):
-        raise ValueError(
+        raise TypeError(
             "'col_defs' argument needs to be a sequence of tuples, instead got " +
             str(col_defs) + " of type " + type(col_defs).__name__)
     try:
         col_defs = dh._colDefs(col_defs)
     except Exception as e:
-        raise ValueError("could not create column definitions from " + str(col_defs)) from e
+        raise Exception("could not create column definitions from " + str(col_defs)) from e
     if mapping is None:
         return _java_type_.jsonSpec(col_defs)
     if not isinstance(mapping, dict):
-        raise ValueError(
+        raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(mapping) + " of type " + type(mapping).__name__)
     mapping = _dictToMap(mapping)
@@ -321,10 +306,10 @@ def simple(column_name:str, data_type:dh.DataType = None):
     :param column_name:  A string specifying the Deephaven column name to use.
     :param data_type:  A Deephaven type specifying the column data type to use.
     :return:  A Kafka Key or Value spec object to use in a call to consumeToTable.
-    :raises:  ValueError if arguments provided can't be processed.
+    :raises:  TypeError if arguments provided can't be processed.
     """
     if not _isStr(column_name):
-        raise ValueError(
+        raise TypeError(
             "'column_name' argument needs to be of str type, instead got " + str(column_name))
     if data_type is None:
         return _java_type_.simpleSpec(column_name)
