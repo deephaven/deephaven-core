@@ -2,6 +2,7 @@
  "className": "io.deephaven.grpc_api.runner.DeephavenApiServer$ServerComponent$Builder",
  "methods": {
   "build": ":return: io.deephaven.grpc_api.runner.DeephavenApiServer.ServerComponent",
+  "withAppMode": ":param appMode: io.deephaven.grpc_api.appmode.AppMode\n:return: io.deephaven.grpc_api.runner.DeephavenApiServer.ServerComponent.Builder",
   "withErr": ":param err: java.io.PrintStream\n:return: io.deephaven.grpc_api.runner.DeephavenApiServer.ServerComponent.Builder",
   "withOut": ":param out: java.io.PrintStream\n:return: io.deephaven.grpc_api.runner.DeephavenApiServer.ServerComponent.Builder",
   "withPort": ":param port: int\n:return: io.deephaven.grpc_api.runner.DeephavenApiServer.ServerComponent.Builder",

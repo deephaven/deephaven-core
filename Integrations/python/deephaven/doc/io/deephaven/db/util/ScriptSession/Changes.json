@@ -1,6 +1,8 @@
 {
  "className": "io.deephaven.db.util.ScriptSession$Changes",
- "methods": {},
+ "methods": {
+  "isEmpty": ":return: boolean"
+ },
  "path": "io.deephaven.db.util.ScriptSession.Changes",
  "typeName": "class"
 }

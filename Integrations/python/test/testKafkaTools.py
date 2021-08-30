@@ -67,4 +67,5 @@ class TestTableTools(unittest.TestCase):
         self.assertEquals("Price", cols[3].getName())
         self.assertEquals(dh.double.clazz(), cols[3].getDataType())
         
-        
+        del t
+
