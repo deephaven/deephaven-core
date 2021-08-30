@@ -20,7 +20,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.live.WaitNotification;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessManager;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;

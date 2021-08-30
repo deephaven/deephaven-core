@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.engine.v2.sources.Releasable;
+import io.deephaven.engine.structures.util.Releasable;
 import io.deephaven.engine.v2.sources.RowIdSource;
 import io.deephaven.engine.structures.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.structures.chunk.Attributes.Values;

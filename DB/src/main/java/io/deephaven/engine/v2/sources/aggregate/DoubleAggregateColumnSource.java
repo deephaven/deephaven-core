@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources.aggregate;
 
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
+import io.deephaven.engine.structures.vector.DbDoubleArray;
 import io.deephaven.engine.v2.dbarrays.DbDoubleArrayColumnWrapper;
 import io.deephaven.engine.v2.dbarrays.DbPrevDoubleArrayColumnWrapper;
 import io.deephaven.engine.v2.sources.ColumnSource;

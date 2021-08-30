@@ -23,7 +23,7 @@ import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.DeephavenException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jpy.PyObject;

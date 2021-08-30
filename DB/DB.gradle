@@ -56,6 +56,8 @@ dependencies {
             project(':Container'),
             project(':table-api'),
             project(':qst'),
+            project(':table-api'),
+            project(':engine-structures'),
             "org.flywaydb:flyway-core:5.2.4",
             'com.github.f4b6a3:uuid-creator:3.6.0'
 
@@ -212,8 +214,8 @@ createTestExecTask('replicateColumnSourceFillBenchmark', 'io.deephaven.engine.v2
 createMainExecTask('replicateSetInclusionKernel', 'io.deephaven.engine.v2.select.setinclusion.ReplicateSetInclusionKernel')
 createMainExecTask('replicateRegions', 'io.deephaven.engine.v2.sources.regioned.ReplicateRegionsAndRegionedSources')
 createMainExecTask('replicateToPage', 'io.deephaven.engine.v2.locations.parquet.topage.ReplicateToPage')
-createMainExecTask('replicateDbArrays', 'io.deephaven.engine.tables.dbarrays.ReplicateDbArrays')
-createMainExecTask('replicateDbArrayColumnWrappers', 'io.deephaven.engine.v2.dbarrays.ReplicateDbArrayColumnWrappers')
+createMainExecTask('replicateDbArrays', 'io.deephaven.engine.tables.vector.ReplicateDbArrays')
+createMainExecTask('replicateDbArrayColumnWrappers', 'io.deephaven.engine.v2.vector.ReplicateDbArrayColumnWrappers')
 createMainExecTask('replicateCopyKernel', 'io.deephaven.engine.v2.utils.copy.ReplicateCopyKernel')
 createMainExecTask('replicateUnboxerKernel', 'io.deephaven.engine.v2.utils.unboxer.ReplicateUnboxerKernel')
 createMainExecTask('replicateOperators', 'io.deephaven.engine.v2.by.ReplicateOperators')

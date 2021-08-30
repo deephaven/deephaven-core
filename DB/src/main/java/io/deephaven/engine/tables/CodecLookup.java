@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.ColumnToCodecMappings;
@@ -34,7 +34,7 @@ public class CodecLookup {
      *
      * @param dataType The data type to check
      * @param componentType The component type to check, for array and
-     *        {@link io.deephaven.engine.tables.dbarrays.DbArrayBase} types
+     *        {@link io.deephaven.engine.structures.vector.DbArrayBase} types
      * @return Whether a codec is required
      */
     public static boolean codecRequired(@NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {

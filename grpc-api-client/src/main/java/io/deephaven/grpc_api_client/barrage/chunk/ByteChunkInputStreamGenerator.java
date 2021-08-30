@@ -12,7 +12,7 @@ import io.deephaven.engine.structures.chunk.ByteChunk;
 import io.deephaven.util.QueryConstants;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.WritableByteChunk;

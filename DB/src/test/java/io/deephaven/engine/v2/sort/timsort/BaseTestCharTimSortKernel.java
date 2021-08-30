@@ -6,7 +6,7 @@ import io.deephaven.engine.util.tuples.generated.CharLongTuple;
 import io.deephaven.engine.v2.sort.findruns.CharFindRunsKernel;
 import io.deephaven.engine.v2.sort.partition.CharPartitionKernel;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.structures.rowset.Index;

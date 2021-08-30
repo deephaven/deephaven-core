@@ -14,7 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * The primitive array types under the package {@code io.deephaven.engine.tables.dbarrays}.
+ * The primitive array types under the package {@code io.deephaven.engine.tables.vector}.
  *
  * @param <T> the array type representing {@code this}
  * @param <ComponentType> the component type
@@ -24,14 +24,14 @@ import java.lang.reflect.Method;
 public abstract class DbPrimitiveArrayType<T, ComponentType>
         extends ArrayTypeBase<T, ComponentType> {
 
-    private static final String DB_BOOLEAN_ARRAY = "io.deephaven.engine.tables.dbarrays.DbBooleanArray";
-    private static final String DB_BYTE_ARRAY = "io.deephaven.engine.tables.dbarrays.DbByteArray";
-    private static final String DB_CHAR_ARRAY = "io.deephaven.engine.tables.dbarrays.DbCharArray";
-    private static final String DB_SHORT_ARRAY = "io.deephaven.engine.tables.dbarrays.DbShortArray";
-    private static final String DB_INT_ARRAY = "io.deephaven.engine.tables.dbarrays.DbIntArray";
-    private static final String DB_LONG_ARRAY = "io.deephaven.engine.tables.dbarrays.DbLongArray";
-    private static final String DB_FLOAT_ARRAY = "io.deephaven.engine.tables.dbarrays.DbFloatArray";
-    private static final String DB_DOUBLE_ARRAY = "io.deephaven.engine.tables.dbarrays.DbDoubleArray";
+    private static final String DB_BOOLEAN_ARRAY = "io.deephaven.engine.tables.vector.DbBooleanArray";
+    private static final String DB_BYTE_ARRAY = "io.deephaven.engine.tables.vector.DbByteArray";
+    private static final String DB_CHAR_ARRAY = "io.deephaven.engine.tables.vector.DbCharArray";
+    private static final String DB_SHORT_ARRAY = "io.deephaven.engine.tables.vector.DbShortArray";
+    private static final String DB_INT_ARRAY = "io.deephaven.engine.tables.vector.DbIntArray";
+    private static final String DB_LONG_ARRAY = "io.deephaven.engine.tables.vector.DbLongArray";
+    private static final String DB_FLOAT_ARRAY = "io.deephaven.engine.tables.vector.DbFloatArray";
+    private static final String DB_DOUBLE_ARRAY = "io.deephaven.engine.tables.vector.DbDoubleArray";
     private static final Set<String> VALID_CLASSES =
             Stream.of(DB_BOOLEAN_ARRAY, DB_BYTE_ARRAY, DB_CHAR_ARRAY, DB_SHORT_ARRAY, DB_INT_ARRAY,
                     DB_LONG_ARRAY, DB_FLOAT_ARRAY, DB_DOUBLE_ARRAY).collect(Collectors.toSet());

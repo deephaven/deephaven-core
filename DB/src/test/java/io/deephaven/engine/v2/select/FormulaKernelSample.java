@@ -14,12 +14,12 @@ import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.*;
 public class FormulaKernelSample implements io.deephaven.engine.v2.select.formula.FormulaKernel {
     public static final io.deephaven.engine.v2.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernelSample::new;
 
-    private final io.deephaven.engine.tables.dbarrays.DbLongArray II_;
+    private final io.deephaven.engine.structures.vector.DbLongArray II_;
     private final java.lang.Integer q;
 
-    public FormulaKernelSample(io.deephaven.engine.tables.dbarrays.DbArrayBase[] __dbArrays,
-            io.deephaven.engine.tables.select.Param[] __params) {
-        II_ = (io.deephaven.engine.tables.dbarrays.DbLongArray)__dbArrays[0];
+    public FormulaKernelSample(io.deephaven.engine.structures.vector.DbArrayBase[] __dbArrays,
+                               io.deephaven.engine.tables.select.Param[] __params) {
+        II_ = (io.deephaven.engine.structures.vector.DbLongArray)__dbArrays[0];
         q = (java.lang.Integer)__params[0].getValue();
     }
 

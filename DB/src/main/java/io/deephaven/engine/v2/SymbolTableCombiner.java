@@ -17,7 +17,6 @@ import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.*;
 
 // mixin rehash
 import java.util.Arrays;

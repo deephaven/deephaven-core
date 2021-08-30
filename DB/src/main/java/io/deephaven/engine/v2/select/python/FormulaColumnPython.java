@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.python;
 
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.v2.select.AbstractFormulaColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
@@ -13,8 +13,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import io.deephaven.datastructures.util.CollectionUtil;
 
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 

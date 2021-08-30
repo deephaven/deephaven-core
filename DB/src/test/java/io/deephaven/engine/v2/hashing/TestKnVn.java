@@ -1,6 +1,9 @@
 package io.deephaven.engine.v2.hashing;
 
 import gnu.trove.map.TLongLongMap;
+import io.deephaven.engine.structures.rowredirection.map.HashMapLockFreeK1V1;
+import io.deephaven.engine.structures.rowredirection.map.HashMapLockFreeK2V2;
+import io.deephaven.engine.structures.rowredirection.map.HashMapLockFreeK4V4;
 import junit.framework.TestCase;
 import org.junit.Assume;
 import org.junit.Test;

@@ -18,8 +18,8 @@ public class FilterKernelArraySample implements io.deephaven.engine.v2.select.Co
 
 
     // Array Column Variables
-    private final io.deephaven.engine.tables.dbarrays.DbDoubleArray v2_;
-    private final io.deephaven.engine.tables.dbarrays.DbShortArray v1_;
+    private final io.deephaven.engine.structures.vector.DbDoubleArray v2_;
+    private final io.deephaven.engine.structures.vector.DbShortArray v1_;
 
 
     public FilterKernelArraySample(Table table, Index fullSet, Param... params) {

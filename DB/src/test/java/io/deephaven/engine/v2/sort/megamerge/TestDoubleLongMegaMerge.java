@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.DoubleArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.structures.chunk.ChunkUtils;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import junit.framework.TestCase;
 import org.junit.Test;

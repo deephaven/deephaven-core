@@ -3,15 +3,13 @@ package io.deephaven.engine.v2;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.structures.chunk.*;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
-import io.deephaven.engine.structures.chunk.Chunk;
-import io.deephaven.engine.structures.chunk.ChunkSource;
-import io.deephaven.engine.structures.chunk.SharedContext;
-import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.util.SafeCloseableArray;
@@ -282,11 +280,11 @@ public class SparseSelect {
     private static void doCopySingle(Index addedAndModified, ColumnSource<?>[] inputSources,
             WritableSource<?>[] outputSources, boolean[] toCopy) {
         final ChunkSource.GetContext[] gcs = new ChunkSource.GetContext[inputSources.length];
-        final WritableChunkSink.FillFromContext[] ffcs = new WritableChunkSink.FillFromContext[inputSources.length];
+        final ChunkSink.FillFromContext[] ffcs = new ChunkSink.FillFromContext[inputSources.length];
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(gcs);
-                final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(ffcs);
-                final OrderedKeys.Iterator okit = addedAndModified.getOrderedKeysIterator();
-                final SharedContext sharedContext = SharedContext.makeSharedContext()) {
+             final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(ffcs);
+             final OrderedKeys.Iterator okit = addedAndModified.getOrderedKeysIterator();
+             final SharedContext sharedContext = SharedContext.makeSharedContext()) {
             for (int cc = 0; cc < inputSources.length; cc++) {
                 if (toCopy == null || toCopy[cc]) {
                     gcs[cc] = inputSources[cc].makeGetContext(SPARSE_SELECT_CHUNK_SIZE, sharedContext);
@@ -332,7 +330,7 @@ public class SparseSelect {
     private static void doCopySource(Index addedAndModified, WritableSource<?> outputSource,
             ColumnSource<?> inputSource) {
         try (final OrderedKeys.Iterator okit = addedAndModified.getOrderedKeysIterator();
-                final WritableChunkSink.FillFromContext ffc =
+                final ChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
                 final ChunkSource.GetContext gc = inputSource.makeGetContext(SPARSE_SELECT_CHUNK_SIZE)) {
             while (okit.hasMore()) {
@@ -349,14 +347,14 @@ public class SparseSelect {
         // noinspection unchecked
         final WritableChunk<Values>[] values = new WritableChunk[outputSources.length];
         final ChunkSource.FillContext[] fcs = new ChunkSource.FillContext[outputSources.length];
-        final WritableChunkSink.FillFromContext[] ffcs = new WritableChunkSink.FillFromContext[outputSources.length];
+        final ChunkSink.FillFromContext[] ffcs = new ChunkSink.FillFromContext[outputSources.length];
 
         try (final SafeCloseableArray<WritableChunk<Values>> ignored = new SafeCloseableArray<>(values);
-                final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(fcs);
-                final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored3 = new SafeCloseableArray<>(ffcs);
-                final SharedContext sharedContext = SharedContext.makeSharedContext();
-                final OrderedKeys.Iterator preIt = shifts.first.getOrderedKeysIterator();
-                final OrderedKeys.Iterator postIt = shifts.second.getOrderedKeysIterator()) {
+             final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(fcs);
+             final SafeCloseableArray<ChunkSink.FillFromContext> ignored3 = new SafeCloseableArray<>(ffcs);
+             final SharedContext sharedContext = SharedContext.makeSharedContext();
+             final OrderedKeys.Iterator preIt = shifts.first.getOrderedKeysIterator();
+             final OrderedKeys.Iterator postIt = shifts.second.getOrderedKeysIterator()) {
 
             for (int cc = 0; cc < outputSources.length; cc++) {
                 if (toShift == null || toShift[cc]) {
@@ -405,7 +403,7 @@ public class SparseSelect {
     private static void doShiftSource(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource<?> outputSource) {
         try (final OrderedKeys.Iterator preIt = shifts.first.getOrderedKeysIterator();
                 final OrderedKeys.Iterator postIt = shifts.second.getOrderedKeysIterator();
-                final WritableChunkSink.FillFromContext ffc =
+                final ChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
                 final ChunkSource.FillContext fc = outputSource.makeFillContext(SPARSE_SELECT_CHUNK_SIZE);
                 final WritableChunk<Values> values =

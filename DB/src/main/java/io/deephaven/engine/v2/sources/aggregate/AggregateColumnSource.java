@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.UngroupableColumnSource;

@@ -4,6 +4,7 @@ import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowset.IndexBuilder;
 import io.deephaven.engine.structures.util.ArrayUtils;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -38,7 +39,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 Index.class,
                 IndexBuilder.class,
                 Index.SequentialBuilder.class,
-                io.deephaven.engine.util.LongSizedDataStructure.class,
+                LongSizedDataStructure.class,
                 java.util.concurrent.ConcurrentHashMap.class,
                 io.deephaven.engine.structures.chunk.Attributes.class,
                 io.deephaven.engine.structures.chunk.Chunk.class,

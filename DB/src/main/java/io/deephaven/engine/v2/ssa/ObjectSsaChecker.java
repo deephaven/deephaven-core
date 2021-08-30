@@ -13,7 +13,7 @@ import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.ObjectChunk;
 import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.structures.chunk.ChunkUtils;
 
 public class ObjectSsaChecker implements SsaChecker {
     static ObjectSsaChecker INSTANCE = new ObjectSsaChecker();

@@ -1,16 +1,18 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.structures.chunk.ChunkUtils;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -69,11 +71,13 @@ public class StreamTableTools {
                         if (usePrev) {
                             try (final Index useIndex = baseStreamTable.getIndex().getPrevIndex()) {
                                 index = Index.FACTORY.getFlatIndex(useIndex.size());
-                                ChunkUtils.copyData(sourceColumns, useIndex, destColumns, index, usePrev);
+                                Arrays.stream(destColumns).forEach(ws -> ws.ensureCapacity(index.size()));
+                                ChunkUtils.copyData(sourceColumns, useIndex, destColumns, index, true);
                             }
                         } else {
                             index = Index.FACTORY.getFlatIndex(baseStreamTable.getIndex().size());
-                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, index, usePrev);
+                            Arrays.stream(destColumns).forEach(ws -> ws.ensureCapacity(index.size()));
+                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, index, false);
                         }
 
                         final QueryTable result = new QueryTable(index, columns);

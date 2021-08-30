@@ -3,6 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.structures.chunk.*;
@@ -498,7 +499,7 @@ public class TestDoubleArraySource {
         try (Index srcKeys = Index.FACTORY.getIndexByRange(rangeStart, rangeEnd)) {
             try (Index destKeys = Index.FACTORY.getIndexByRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
-                    try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
+                    try (ChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
                         if (chunk.isAlias(peekedBlock)) {
                             // If the ArraySource gives out aliases of its blocks, then it should throw when we try to

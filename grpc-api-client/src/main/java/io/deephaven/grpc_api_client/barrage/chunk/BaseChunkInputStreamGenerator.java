@@ -5,7 +5,7 @@
 package io.deephaven.grpc_api_client.barrage.chunk;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.util.pools.PoolableChunk;

@@ -5,7 +5,7 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 
 import static io.deephaven.libs.primitives.Casting.*;
 import static io.deephaven.util.QueryConstants.*;

@@ -4,13 +4,13 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.structures.vector.DbArrayDirect;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbLongArray;
-import io.deephaven.engine.tables.dbarrays.DbLongArrayDirect;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbLongArray;
+import io.deephaven.engine.structures.vector.DbLongArrayDirect;
 import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.util.DhLongComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;

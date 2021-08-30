@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.codegen;
 
 import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;

@@ -1,6 +1,6 @@
 package io.deephaven.engine.tables.remote.preview;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.structures.chunk.ChunkType;
 
 /**

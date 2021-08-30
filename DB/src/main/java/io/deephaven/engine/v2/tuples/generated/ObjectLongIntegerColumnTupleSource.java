@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.tuples.generated;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.util.tuples.generated.ObjectLongIntTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.IntChunk;
@@ -13,7 +13,7 @@ import io.deephaven.engine.structures.chunk.WritableChunk;
 import io.deephaven.engine.structures.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.tuples.AbstractTupleSource;
 import io.deephaven.engine.v2.tuples.ThreeColumnTupleSourceFactory;
-import io.deephaven.engine.v2.tuples.TupleSource;
+import io.deephaven.engine.structures.source.TupleSource;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 

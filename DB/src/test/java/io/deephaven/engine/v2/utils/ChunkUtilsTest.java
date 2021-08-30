@@ -5,7 +5,8 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.exceptions.SizeException;
+import io.deephaven.engine.structures.chunk.ChunkUtils;
+import io.deephaven.engine.structures.exceptions.SizeException;
 import io.deephaven.engine.structures.chunk.Attributes.Any;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;

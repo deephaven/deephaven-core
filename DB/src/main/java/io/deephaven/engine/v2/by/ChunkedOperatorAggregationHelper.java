@@ -9,6 +9,7 @@ import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
@@ -1581,8 +1582,8 @@ public class ChunkedOperatorAggregationHelper {
         }
         final int chunkSize = chunkSize(copyValues.size());
         final ColumnSource.GetContext[] getContext = new ColumnSource.GetContext[keyColumnsRaw.length];
-        final WritableChunkSink.FillFromContext[] fillFromContexts =
-                new WritableChunkSink.FillFromContext[keyColumnsRaw.length];
+        final ChunkSink.FillFromContext[] fillFromContexts =
+                new ChunkSink.FillFromContext[keyColumnsRaw.length];
         try (final OrderedKeys.Iterator okit = copyValues.getOrderedKeysIterator();
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
                 final SafeCloseableArray ignored = new SafeCloseableArray<>(getContext);

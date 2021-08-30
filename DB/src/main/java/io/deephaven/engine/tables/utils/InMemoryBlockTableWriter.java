@@ -7,7 +7,7 @@ package io.deephaven.engine.tables.utils;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.v2.InMemoryTable;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 

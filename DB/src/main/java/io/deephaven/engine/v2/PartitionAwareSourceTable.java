@@ -18,7 +18,7 @@ import io.deephaven.engine.v2.locations.TableLocationProvider;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.source.WritableSource;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -8,15 +8,15 @@ import io.deephaven.base.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.chunk.ChunkSink;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.v2.hashing.HashMapK4V4;
+import io.deephaven.engine.structures.rowredirection.map.HashMapK4V4;
 import io.deephaven.engine.v2.sort.LongSortKernel;
-import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.LongChunk;
@@ -606,7 +606,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         private final ExposedTLongArrayList values;
         private final WritableLongChunk valuesChunk;
         private final WritableLongChunk<OrderedKeyIndices> keysChunk;
-        private final WritableChunkSink.FillFromContext fillFromContext;
+        private final ChunkSink.FillFromContext fillFromContext;
         private final LongSortKernel sortKernel;
 
         SortMappingAggregator() {

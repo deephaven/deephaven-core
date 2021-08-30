@@ -26,7 +26,7 @@ public class ColumnHolder<T> {
      * 
      * @param name column name
      * @param dataType column data type
-     * @param componentType column component type (for array or {@link io.deephaven.engine.tables.dbarrays.DbArray>}
+     * @param componentType column component type (for array or {@link io.deephaven.engine.structures.vector.DbArray>}
      *        data types)
      * @param data column data
      */
@@ -119,7 +119,7 @@ public class ColumnHolder<T> {
      * @param name column name
      * @param grouped true if the column is grouped; false otherwise
      * @param dataType column data type
-     * @param componentType column component type (for array or {@link io.deephaven.engine.tables.dbarrays.DbArray>}
+     * @param componentType column component type (for array or {@link io.deephaven.engine.structures.vector.DbArray>}
      *        data types)
      * @param data column data
      */

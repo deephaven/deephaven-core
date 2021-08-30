@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 

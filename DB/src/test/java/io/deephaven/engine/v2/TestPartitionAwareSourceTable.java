@@ -15,7 +15,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.structures.chunk.Attributes.Values;

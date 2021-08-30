@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.tuples;
 
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.structures.source.TupleSource;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.*;
@@ -90,7 +92,7 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
 
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final SmartKey smartKey, final int elementIndex,
-            @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+                                                   @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         // noinspection unchecked
         writableSource.set(destinationIndexKey, (ELEMENT_TYPE) smartKey.get(elementIndex));
     }
@@ -218,10 +220,5 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
     @Override
     public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new FillContext(chunkCapacity, columnSources);
-    }
-
-    @Override
-    public final ChunkSource<Values> getPrevSource() {
-        return new PrevColumnSource<>(this);
     }
 }

@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.StringSetArrayWrapper;
 import io.deephaven.engine.tables.Table;
@@ -18,7 +19,6 @@ import io.deephaven.engine.v2.locations.local.DeephavenNestedPartitionLayout;
 import io.deephaven.engine.v2.parquet.ParquetInstructions;
 import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * High-level unit tests for {@link RegionedColumnSource} implementations of
- * {@link io.deephaven.engine.v2.sources.ColumnSource#fillChunk(ColumnSource.FillContext, WritableChunk, OrderedKeys)}.
+ * {@link ColumnSource#fillChunk(ColumnSource.FillContext, WritableChunk, OrderedKeys)}.
  */
 @Category(OutOfBandTest.class)
 public class TestChunkedRegionedOperations {

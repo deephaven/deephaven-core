@@ -5,8 +5,8 @@ package io.deephaven.engine.v2.ssms;
 
 import gnu.trove.set.hash.THashSet;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbArrayDirect;
 
 import java.util.Objects;
 

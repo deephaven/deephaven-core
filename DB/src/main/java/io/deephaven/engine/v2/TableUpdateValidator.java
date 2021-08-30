@@ -3,13 +3,13 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
+import io.deephaven.engine.structures.chunk.ChunkSink;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.structures.chunk.ChunkUtils;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
@@ -312,7 +312,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         ColumnSource.FillContext sourceFillContext;
         WritableObjectChunk<Object, Attributes.Values> sourceFillChunk;
         ColumnSource.GetContext expectedGetContext;
-        WritableChunkSink.FillFromContext expectedFillFromContext;
+        ChunkSink.FillFromContext expectedFillFromContext;
         WritableBooleanChunk equalValuesDest;
 
         private ColumnInfo(DynamicTable tableToValidate, String columnName) {
@@ -355,7 +355,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             return expectedGetContext;
         }
 
-        private WritableChunkSink.FillFromContext expectedFillFromContext() {
+        private ChunkSink.FillFromContext expectedFillFromContext() {
             if (expectedFillFromContext == null) {
                 expectedFillFromContext = expectedSource.makeFillFromContext(CHUNK_SIZE);
             }

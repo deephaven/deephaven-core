@@ -7,6 +7,7 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.util.BooleanUtils;
 
 import static io.deephaven.engine.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;

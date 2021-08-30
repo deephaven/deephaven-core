@@ -2,9 +2,9 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbDoubleArray;
+import io.deephaven.engine.structures.vector.DbIntArray;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.structures.util.ArrayUtils;

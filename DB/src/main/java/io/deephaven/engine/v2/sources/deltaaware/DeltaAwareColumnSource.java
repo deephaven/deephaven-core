@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.OrderedKeyRanges;
@@ -79,7 +80,7 @@ import org.jetbrains.annotations.NotNull;
 // Then the final item from the delta chunk: d15
 
 public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableSource<T>, WritableChunkSink<Attributes.Values> {
+        implements WritableSource<T>, ChunkSink<Values> {
     /**
      * The initial size of the delta column source.
      */
@@ -87,11 +88,11 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * In its own coordinate space
      */
-    private final WritableChunkSink<Values> baseline;
+    private final ChunkSink<Values> baseline;
     /**
      * Also in its own coordinate space (i.e. densely packed)
      */
-    private WritableChunkSink<Values> delta;
+    private ChunkSink<Values> delta;
 
     @FunctionalInterface
     private interface CapacityEnsurer {
@@ -99,12 +100,12 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     /**
-     * A lambda that ensures the capacity of the baseline data structure. (We have this because the WritableChunkSink
+     * A lambda that ensures the capacity of the baseline data structure. (We have this because the ChunkSink
      * does not have an 'ensureCapacity', but the underlying data structure we use does).
      */
     private final CapacityEnsurer baselineCapacityEnsurer;
     /**
-     * A lambda that ensures the capacity of the delta data structure. (We have this because the WritableChunkSink does
+     * A lambda that ensures the capacity of the delta data structure. (We have this because the ChunkSink does
      * not have an 'ensureCapacity', but the underlying data structure we use does).
      */
     private CapacityEnsurer deltaCapacityEnsurer;

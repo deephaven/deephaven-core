@@ -2,10 +2,10 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
-import io.deephaven.engine.tables.dbarrays.DbByteArrayDirect;
-import io.deephaven.engine.tables.dbarrays.DbIntArrayDirect;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbArrayDirect;
+import io.deephaven.engine.structures.vector.DbByteArrayDirect;
+import io.deephaven.engine.structures.vector.DbIntArrayDirect;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.structures.util.ArrayUtils;

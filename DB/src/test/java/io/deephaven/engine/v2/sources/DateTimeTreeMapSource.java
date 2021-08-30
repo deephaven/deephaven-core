@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.util.QueryConstants;

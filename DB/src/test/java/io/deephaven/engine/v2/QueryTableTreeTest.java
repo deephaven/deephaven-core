@@ -19,7 +19,7 @@ import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.SortedFirstBy;
 import io.deephaven.engine.v2.by.SortedLastBy;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.v2.sources.PrevColumnSource;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.test.types.OutOfBandTest;

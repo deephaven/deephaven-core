@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.engine.structures.rowset.Index;
 import org.junit.After;

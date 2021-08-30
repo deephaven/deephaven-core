@@ -16,6 +16,7 @@ import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.LiveTableRegistrar;
 import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.util.IndexUpdateCoalescer;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
@@ -23,8 +24,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.chunk.ChunkSink;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.Chunk;
 import io.deephaven.engine.structures.chunk.ChunkType;
@@ -206,8 +207,8 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         enqueueError(t);
     }
 
-    private Index.IndexUpdateCoalescer processUpdate(final BarrageMessage update,
-            final Index.IndexUpdateCoalescer coalescer) {
+    private IndexUpdateCoalescer processUpdate(final BarrageMessage update,
+                                               final IndexUpdateCoalescer coalescer) {
         if (REPLICATED_TABLE_DEBUG) {
             saveForDebugging(update);
 
@@ -266,7 +267,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             }
 
             if (update.rowsIncluded.nonempty()) {
-                try (final WritableChunkSink.FillFromContext redirContext =
+                try (final ChunkSink.FillFromContext redirContext =
                         redirectionIndex.makeFillFromContext(update.rowsIncluded.intSize());
                         final Index destinationIndex = getFreeRows(update.rowsIncluded.size())) {
                     // Update redirection mapping:
@@ -279,7 +280,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                             final Chunk<? extends Attributes.Values> data = update.addColumnData[ii].data;
                             Assert.eq(data.size(), "delta.includedAdditions.size()", destinationIndex.size(),
                                     "destinationIndex.size()");
-                            try (final WritableChunkSink.FillFromContext ctxt =
+                            try (final ChunkSink.FillFromContext ctxt =
                                     destSources[ii].makeFillFromContext(destinationIndex.intSize())) {
                                 destSources[ii].fillFromChunk(ctxt, data, destinationIndex);
                             }
@@ -306,7 +307,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                         Assert.notEquals(keys.get(i), "keys[i]", Index.NULL_KEY, "Index.NULL_KEY");
                     }
 
-                    try (final WritableChunkSink.FillFromContext ctxt =
+                    try (final ChunkSink.FillFromContext ctxt =
                             destSources[ii].makeFillFromContext(keys.size())) {
                         destSources[ii].fillFromChunkUnordered(ctxt, column.data, keys);
                     }
@@ -330,7 +331,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
             final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update(
                     update.rowsAdded.clone(), update.rowsRemoved.clone(), totalMods, update.shifted, modifiedColumnSet);
-            return (coalescer == null) ? new Index.IndexUpdateCoalescer(currRowsFromPrev, downstream)
+            return (coalescer == null) ? new IndexUpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
         }
     }
@@ -435,7 +436,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             Assert.eqZero(pendingUpdates.size(), "pendingUpdates.size()");
         }
 
-        Index.IndexUpdateCoalescer coalescer = null;
+        IndexUpdateCoalescer coalescer = null;
         for (final BarrageMessage update : localPendingUpdates) {
             coalescer = processUpdate(update, coalescer);
             update.close();

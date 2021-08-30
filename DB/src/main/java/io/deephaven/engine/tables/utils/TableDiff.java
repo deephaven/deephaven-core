@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.*;
-import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.structures.chunk.ChunkUtils;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableList;

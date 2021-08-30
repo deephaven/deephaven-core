@@ -258,15 +258,15 @@ class TestTableDataframeConversion(unittest.TestCase):
         dataFrame = tableToDataFrame(arrayTable, convertNulls='PASS', categoricals=None)
 
         for colName, arrayType in [
-            ('MyString', 'io.deephaven.engine.tables.dbarrays.DbArray'),
-            ('MyChar', 'io.deephaven.engine.tables.dbarrays.DbCharArray'),
-            ('MyBoolean', 'io.deephaven.engine.tables.dbarrays.DbArray'),  # NB: DbBooleanArray is deprecated
-            ('MyByte', 'io.deephaven.engine.tables.dbarrays.DbByteArray'),
-            ('MyShort', 'io.deephaven.engine.tables.dbarrays.DbShortArray'),
-            ('MyInt', 'io.deephaven.engine.tables.dbarrays.DbIntArray'),
-            ('MyLong', 'io.deephaven.engine.tables.dbarrays.DbLongArray'),
-            ('MyFloat', 'io.deephaven.engine.tables.dbarrays.DbFloatArray'),
-            ('MyDouble', 'io.deephaven.engine.tables.dbarrays.DbDoubleArray'),
+            ('MyString', 'io.deephaven.engine.tables.vector.DbArray'),
+            ('MyChar', 'io.deephaven.engine.tables.vector.DbCharArray'),
+            ('MyBoolean', 'io.deephaven.engine.tables.vector.DbArray'),  # NB: DbBooleanArray is deprecated
+            ('MyByte', 'io.deephaven.engine.tables.vector.DbByteArray'),
+            ('MyShort', 'io.deephaven.engine.tables.vector.DbShortArray'),
+            ('MyInt', 'io.deephaven.engine.tables.vector.DbIntArray'),
+            ('MyLong', 'io.deephaven.engine.tables.vector.DbLongArray'),
+            ('MyFloat', 'io.deephaven.engine.tables.vector.DbFloatArray'),
+            ('MyDouble', 'io.deephaven.engine.tables.vector.DbDoubleArray'),
         ]:
             with self.subTest(msg="type for original column {}".format(colName)):
                 self.assertEqual(arrayTable.getColumn(colName).getType().getName(), arrayType)
@@ -299,15 +299,15 @@ class TestTableDataframeConversion(unittest.TestCase):
         # convert back
         backTable = dataFrameToTable(dataFrame, convertUnknownToString=True)
         for colName, arrayType in [
-            ('MyString', 'io.deephaven.engine.tables.dbarrays.DbArrayDirect'),
-            ('MyChar', 'io.deephaven.engine.tables.dbarrays.DbCharArrayDirect'),
-            ('MyBoolean', 'io.deephaven.engine.tables.dbarrays.DbArrayDirect'),
-            ('MyByte', 'io.deephaven.engine.tables.dbarrays.DbByteArrayDirect'),
-            ('MyShort', 'io.deephaven.engine.tables.dbarrays.DbShortArrayDirect'),
-            ('MyInt', 'io.deephaven.engine.tables.dbarrays.DbIntArrayDirect'),
-            ('MyLong', 'io.deephaven.engine.tables.dbarrays.DbLongArrayDirect'),
-            ('MyFloat', 'io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect'),
-            ('MyDouble', 'io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect'),
+            ('MyString', 'io.deephaven.engine.tables.vector.DbArrayDirect'),
+            ('MyChar', 'io.deephaven.engine.tables.vector.DbCharArrayDirect'),
+            ('MyBoolean', 'io.deephaven.engine.tables.vector.DbArrayDirect'),
+            ('MyByte', 'io.deephaven.engine.tables.vector.DbByteArrayDirect'),
+            ('MyShort', 'io.deephaven.engine.tables.vector.DbShortArrayDirect'),
+            ('MyInt', 'io.deephaven.engine.tables.vector.DbIntArrayDirect'),
+            ('MyLong', 'io.deephaven.engine.tables.vector.DbLongArrayDirect'),
+            ('MyFloat', 'io.deephaven.engine.tables.vector.DbFloatArrayDirect'),
+            ('MyDouble', 'io.deephaven.engine.tables.vector.DbDoubleArrayDirect'),
         ]:
             with self.subTest(msg="type for reverted column for {}".format(colName)):
                 self.assertEqual(backTable.getColumn(colName).getType().getName(), arrayType)
@@ -363,7 +363,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                 nparray[:] = [numpy.zeros((3, 4), dtype=dtypename) for i in range(2)]
                 df = pandas.DataFrame({'test': nparray})
                 tab = dataFrameToTable(df)
-                self.assertTrue(tab.getColumn('test').getType().getName(), 'io.deephaven.engine.tables.dbarrays.DbArrayDirect')
+                self.assertTrue(tab.getColumn('test').getType().getName(), 'io.deephaven.engine.tables.vector.DbArrayDirect')
                 self.assertEqual(tab.getColumn('test').get(0).getClass().getName(), array_type)
 
         with self.subTest(msg="nested array exception check"):

@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.dbarrays.DbArray;
+import io.deephaven.engine.structures.vector.DbArray;
 import io.deephaven.engine.tables.lang.DBLanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
@@ -305,8 +305,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     fc.replace("COLUMN_NAME", ac.bareName);
 
                     final String datp = getDbArrayType(ac.columnSource.getType()).getCanonicalName().replace(
-                            "io.deephaven.engine.tables.dbarrays",
-                            "io.deephaven.engine.v2.dbarrays");
+                            "io.deephaven.engine.tables.vector",
+                            "io.deephaven.engine.v2.vector");
                     fc.replace("DB_ARRAY_TYPE_PREFIX", datp);
                     return null;
                 },

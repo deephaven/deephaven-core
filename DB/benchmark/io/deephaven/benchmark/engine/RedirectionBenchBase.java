@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.structures.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.SharedContext;
 import io.deephaven.engine.structures.chunk.WritableChunk;

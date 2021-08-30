@@ -139,6 +139,8 @@ include(':ParquetHadoop')
 
 include(':envoy')
 
+include(':engine-structures')
+
 include(':grpc-proxy')
 
 include(':java-client-session')

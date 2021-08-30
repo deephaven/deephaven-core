@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.NoSuchColumnException;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.PrevColumnSource;
 import io.deephaven.engine.v2.sources.ViewColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.WritableChunk;

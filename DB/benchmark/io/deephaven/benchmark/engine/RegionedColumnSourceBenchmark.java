@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes.Values;
 import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.WritableChunk;

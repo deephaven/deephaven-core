@@ -13,7 +13,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
+import io.deephaven.engine.util.IndexUpdateCoalescer;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.engine.v2.BaseTable;
@@ -31,8 +32,8 @@ import io.deephaven.engine.v2.sources.FillUnordered;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.chunk.ChunkSink;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.structures.chunk.LongChunk;
@@ -605,7 +606,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         final ColumnSource<?> sourceColumn;
         final WritableSource<?> deltaColumn;
         final ColumnSource.GetContext sourceGetContext;
-        final WritableChunkSink.FillFromContext deltaFillContext;
+        final ChunkSink.FillFromContext deltaFillContext;
 
         public FillDeltaContext(final int columnIndex,
                 final ColumnSource<?> sourceColumn,
@@ -1258,8 +1259,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             }
         } else {
             // We must coalesce these updates.
-            final Index.IndexUpdateCoalescer coalescer =
-                    new Index.IndexUpdateCoalescer(propagationIndex, firstDelta.update);
+            final IndexUpdateCoalescer coalescer =
+                    new IndexUpdateCoalescer(propagationIndex, firstDelta.update);
             for (int i = startDelta + 1; i < endDelta; ++i) {
                 coalescer.update(pendingDeltas.get(i).update);
             }

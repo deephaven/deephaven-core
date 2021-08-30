@@ -6,12 +6,12 @@ import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.select.DbArrayChunkAdapter;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.chunk.ChunkSink;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.ChunkSource;
 import io.deephaven.engine.structures.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.structures.chunk.ChunkUtils;
 import io.deephaven.engine.structures.rowsequence.OrderedKeys;
 import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 
@@ -85,7 +85,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 contextSize.applyAsInt(Math.max(upstream.added.size(), upstream.modified.size()));
         final int destContextSize = contextSize.applyAsInt(Math.max(preMoveKeys.size(), chunkSourceContextSize));
 
-        try (final WritableChunkSink.FillFromContext destContext =
+        try (final ChunkSink.FillFromContext destContext =
                 needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
                 final ChunkSource.GetContext chunkSourceContext =
                         needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null) {

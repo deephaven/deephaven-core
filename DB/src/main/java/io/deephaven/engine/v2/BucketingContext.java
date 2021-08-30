@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.util.BooleanUtils;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.hashing.ToIntFunctor;
 import io.deephaven.engine.v2.hashing.ToIntegerCast;
 import io.deephaven.engine.v2.sources.ColumnSource;

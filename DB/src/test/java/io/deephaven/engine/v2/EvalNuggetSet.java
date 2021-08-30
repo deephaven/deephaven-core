@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.structures.rowset.Index;
 import org.junit.Assert;
 

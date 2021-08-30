@@ -7,6 +7,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.structures.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.structures.rowset.Index;
+import io.deephaven.engine.util.LegacyIndexUpdateCoalescer;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -265,7 +266,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
 
     protected static class CoalescingListener extends InstrumentedListenerAdapter {
         Index lastAdded, lastModified, lastRemoved;
-        Index.LegacyIndexUpdateCoalescer indexUpdateCoalescer = new Index.LegacyIndexUpdateCoalescer();
+        LegacyIndexUpdateCoalescer indexUpdateCoalescer = new LegacyIndexUpdateCoalescer();
 
         protected CoalescingListener(DynamicTable source) {
             super(source, false);

@@ -12,7 +12,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.v2.PartitionAwareSourceTable;

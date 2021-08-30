@@ -7,7 +7,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 

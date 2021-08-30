@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;

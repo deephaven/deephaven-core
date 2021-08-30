@@ -2,7 +2,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 
 import static io.deephaven.engine.v2.TstUtils.c;
 import static io.deephaven.engine.v2.TstUtils.i;

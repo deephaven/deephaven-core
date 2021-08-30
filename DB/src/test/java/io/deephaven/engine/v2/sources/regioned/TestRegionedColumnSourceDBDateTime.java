@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.DBTimeZone;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import org.junit.Test;
 

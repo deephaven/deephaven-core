@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbArrayDirect;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.ChunkType;

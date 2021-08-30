@@ -132,16 +132,16 @@ _boxedArrayTypes = {
 
 
 _javaTypeToDbarrayType = {
-    'java.lang.String': 'io.deephaven.engine.tables.dbarrays.DbArrayDirect',
-    'char': 'io.deephaven.engine.tables.dbarrays.DbCharArrayDirect',
-    'java.lang.Boolean': 'io.deephaven.engine.tables.dbarrays.DbArrayDirect',
-    'boolean': 'io.deephaven.engine.tables.dbarrays.DbArrayDirect',  # it really should be boxed...
-    'byte': 'io.deephaven.engine.tables.dbarrays.DbByteArrayDirect',
-    'short': 'io.deephaven.engine.tables.dbarrays.DbShortArrayDirect',
-    'int': 'io.deephaven.engine.tables.dbarrays.DbIntArrayDirect',
-    'long': 'io.deephaven.engine.tables.dbarrays.DbLongArrayDirect',
-    'float': 'io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect',
-    'double': 'io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect',
+    'java.lang.String': 'io.deephaven.engine.tables.vector.DbArrayDirect',
+    'char': 'io.deephaven.engine.tables.vector.DbCharArrayDirect',
+    'java.lang.Boolean': 'io.deephaven.engine.tables.vector.DbArrayDirect',
+    'boolean': 'io.deephaven.engine.tables.vector.DbArrayDirect',  # it really should be boxed...
+    'byte': 'io.deephaven.engine.tables.vector.DbByteArrayDirect',
+    'short': 'io.deephaven.engine.tables.vector.DbShortArrayDirect',
+    'int': 'io.deephaven.engine.tables.vector.DbIntArrayDirect',
+    'long': 'io.deephaven.engine.tables.vector.DbLongArrayDirect',
+    'float': 'io.deephaven.engine.tables.vector.DbFloatArrayDirect',
+    'double': 'io.deephaven.engine.tables.vector.DbDoubleArrayDirect',
 }
 
 _javaTypeToImmutableColumnSource = {
@@ -427,7 +427,7 @@ def _arrayColumnSource(array, javaTypeString):
     if javaTypeString in _javaTypeToDbarrayType:
         arrayType = _javaTypeToDbarrayType[javaTypeString]
     elif javaTypeString in jpy.dtypes:
-        arrayType = 'io.deephaven.engine.tables.dbarrays.DbArrayDirect'
+        arrayType = 'io.deephaven.engine.tables.vector.DbArrayDirect'
 
     arrayCls = jpy.get_type(arrayType)
     if javaTypeString == 'java.lang.Boolean':
@@ -891,8 +891,8 @@ class NULL_CONVERSION(object):
 def _isDbArray(obj):
     try:
         classString = obj.getClass().getName()
-        cond = classString.startswith('io.deephaven.engine.tables.dbarrays.Db') or \
-               classString.startswith('io.deephaven.engine.v2.dbarrays.Db')
+        cond = classString.startswith('io.deephaven.engine.tables.vector.Db') or \
+               classString.startswith('io.deephaven.engine.v2.vector.Db')
         return cond
     except Exception as e:
         return False

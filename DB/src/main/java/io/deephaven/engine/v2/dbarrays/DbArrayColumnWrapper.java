@@ -6,10 +6,10 @@ package io.deephaven.engine.v2.dbarrays;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayDirect;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowset.IndexBuilder;

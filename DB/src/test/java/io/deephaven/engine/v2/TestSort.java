@@ -16,7 +16,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.engine.structures.rowset.Index;
 

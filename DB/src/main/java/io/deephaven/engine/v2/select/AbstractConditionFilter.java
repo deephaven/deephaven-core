@@ -7,7 +7,7 @@ import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.dbarrays.DbArray;
+import io.deephaven.engine.structures.vector.DbArray;
 import io.deephaven.engine.tables.lang.DBLanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;

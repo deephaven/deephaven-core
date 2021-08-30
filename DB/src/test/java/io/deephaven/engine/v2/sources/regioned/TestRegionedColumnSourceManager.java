@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.structures.rowset.Index;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;

@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
+import io.deephaven.engine.structures.vector.DbArray;
 
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;

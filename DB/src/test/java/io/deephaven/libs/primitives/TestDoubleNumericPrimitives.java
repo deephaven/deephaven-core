@@ -9,7 +9,7 @@ package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.ArrayUtils;
 

@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
-import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.structures.chunk.ChunkUtils;
 import io.deephaven.engine.v2.utils.LongColumnSourceRedirectionIndex;
 
 import java.util.LinkedHashMap;

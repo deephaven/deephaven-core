@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;

@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.structures.chunk.Attributes.Values;

@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.util.DhObjectComparisons;

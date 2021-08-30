@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.snapshot;
 
+import io.deephaven.engine.util.IndexUpdateCoalescer;
 import io.deephaven.engine.v2.ListenerRecorder;
 import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.QueryTable;
@@ -21,7 +22,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final QueryTable rightTable;
     private final Map<String, ? extends ColumnSource<?>> leftColumns;
 
-    private Index.IndexUpdateCoalescer rightUpdates;
+    private IndexUpdateCoalescer rightUpdates;
     private final Index lastRightIndex;
     private boolean firstSnapshot = true;
 
@@ -44,7 +45,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     protected void process() {
         if (!firstSnapshot && rightListener.recordedVariablesAreValid()) {
             if (rightUpdates == null) {
-                rightUpdates = new Index.IndexUpdateCoalescer(rightTable.getIndex(), rightListener.getUpdate());
+                rightUpdates = new IndexUpdateCoalescer(rightTable.getIndex(), rightListener.getUpdate());
             } else {
                 rightUpdates.update(rightListener.getUpdate());
             }

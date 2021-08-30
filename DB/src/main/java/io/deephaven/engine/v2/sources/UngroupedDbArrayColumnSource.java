@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 
 public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T>
         implements MutableColumnSourceGetDefaults.ForObject<T> {

@@ -7,7 +7,7 @@ package io.deephaven.grpc_api_client.barrage.chunk;
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.structures.chunk.ObjectChunk;

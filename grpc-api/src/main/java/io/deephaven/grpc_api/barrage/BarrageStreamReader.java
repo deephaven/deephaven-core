@@ -13,7 +13,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.structures.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.engine.structures.rowset.ExternalizableIndexUtils;

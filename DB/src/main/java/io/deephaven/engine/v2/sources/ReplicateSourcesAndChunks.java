@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.util.DhObjectComparisons;
 import io.deephaven.engine.v2.sources.aggregate.CharAggregateColumnSource;
@@ -295,7 +295,6 @@ public class ReplicateSourcesAndChunks {
                         "    public final void fillWithBoxedValue(int offset, int size, Object value) {\n" +
                         "        fillWithValue(offset,size, (T)value);\n" +
                         "    }"));
-        lines = ReplicateUtilities.addImport(lines, DhObjectComparisons.class);
         lines = ReplicateUtilities.replaceRegion(lines, "sort", Arrays.asList(
                 "    @Override",
                 "    public final void sort(int start, int length) {",

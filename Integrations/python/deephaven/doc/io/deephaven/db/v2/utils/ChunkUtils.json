@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.utils.ChunkUtils",
+ "className": "io.deephaven.engine.structures.chunk.ChunkUtils",
  "methods": {
   "canCopyForward": "Determines, when copying data from the source array to the dest array, whether the copying should proceed in the\n forward or reverse direction in order to be safe. The issue is that (like memmove), care needs to be taken when\n the arrays are the same and the ranges overlap. In some cases (like when the arrays are different), either\n direction will do; in those cases we will recommend copying in the forward direction for performance reasons.\n When srcArray and destArray refer to the array, one of these five cases applies:\n\n \n\n Case 1: Source starts to the left of dest, and does not overlap. Recommend copying in forward direction.\n SSSSS\n      DDDDD\n\n Case 2: Source starts to the left of dest, and partially overlaps. MUST copy in the REVERSE direction.\n SSSSS\n    DDDDD\n\n Case 3: Source is on top of dest. Recommend copying in forward direction (really, you should do nothing).\n SSSSS\n DDDDD\n\n Case 4: Source starts to the right of dest, and partially overlaps. MUST copy in the FORWARD direction.\n   SSSSS\n DDDDD\n\n Case 5: Source starts to the right of dest, and does not overlap. Recommend copying in the forward direction.\n      SSSSS\n DDDDD\n \n\n Note that case 2 is the only case where you need to copy backwards.\n\nNote: Java generics information - <TARRAY>\n\n:param srcArray: (TARRAY) - The source array\n:param srcOffset: (int) - The starting offset in the srcArray\n:param destArray: (TARRAY) - The destination array\n:param destOffset: (int) - The starting offset in the destination array\n:param length: (int) - The number of elements that will be copied\n:return: (boolean) true if the copy should proceed in the forward direction; false if it should proceed in the reverse\n         direction",
   "checkArrayArgs": ":param arrayLength: int\n:param offset: int\n:param capacity: int",
@@ -15,6 +15,6 @@
   "fillWithNullValue": "Note: Java generics information - <T extends io.deephaven.engine.v2.sources.chunk.Attributes.Values>\n\n:param dest: io.deephaven.engine.v2.sources.WritableChunkSink<T>\n:param allKeys: io.deephaven.engine.v2.utils.OrderedKeys",
   "makeInOrderIntChunk": "Make a chunk of integers in order.\n\nNote: Java generics information - <T extends io.deephaven.engine.v2.sources.chunk.Attributes.Any>\n\n:param chunkSize: (int) - the size of the chunk to make\n:return: (io.deephaven.engine.v2.sources.chunk.WritableIntChunk<T>) a chunk of integers from 0 to chunkSize - 1"
  },
- "path": "io.deephaven.engine.v2.utils.ChunkUtils",
+ "path": "io.deephaven.engine.structures.chunk.ChunkUtils",
  "typeName": "class"
 }

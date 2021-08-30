@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbShortArray;
-import io.deephaven.engine.tables.dbarrays.DbShortArrayDirect;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbShortArray;
+import io.deephaven.engine.structures.vector.DbShortArrayDirect;
 import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.util.DhShortComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;

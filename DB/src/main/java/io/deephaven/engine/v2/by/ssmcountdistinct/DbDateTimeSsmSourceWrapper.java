@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
-import io.deephaven.engine.tables.dbarrays.DbLongArray;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbArrayDirect;
+import io.deephaven.engine.structures.vector.DbLongArray;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;

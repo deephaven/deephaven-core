@@ -7,7 +7,7 @@
 package io.deephaven.numerics.suanshu;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import com.numericalmethod.suanshu.matrix.MatrixAccessException;
 import com.numericalmethod.suanshu.matrix.doubles.Matrix;

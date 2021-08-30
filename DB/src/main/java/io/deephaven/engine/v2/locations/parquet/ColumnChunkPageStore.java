@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.locations.parquet;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.locations.parquet.topage.ToPage;
-import io.deephaven.engine.v2.sources.Releasable;
+import io.deephaven.engine.structures.util.Releasable;
 import io.deephaven.engine.structures.chunk.Attributes.Any;
 import io.deephaven.engine.structures.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.structures.chunk.Chunk;

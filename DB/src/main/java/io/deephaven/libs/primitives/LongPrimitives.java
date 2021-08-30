@@ -7,10 +7,10 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbLongArray;
-import io.deephaven.engine.tables.dbarrays.DbLongArrayDirect;
+import io.deephaven.engine.structures.vector.DbLongArray;
+import io.deephaven.engine.structures.vector.DbLongArrayDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;

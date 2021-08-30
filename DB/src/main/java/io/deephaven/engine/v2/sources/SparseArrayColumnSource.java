@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.util.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.structures.chunk.Attributes.KeyIndices;

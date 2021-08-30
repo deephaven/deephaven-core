@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbCharArray;
+import io.deephaven.engine.structures.vector.DbCharArray;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;

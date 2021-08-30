@@ -53,7 +53,7 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
                 fillValuesIn(dimension+1, ndSub, arrSub)
         else:
             # at the final dimension, and arrElement is a one dimensional array
-            if basicType.startswith('io.deephaven.engine.tables.dbarrays.Db'):
+            if basicType.startswith('io.deephaven.engine.tables.vector.Db'):
                 # convert each leaf
                 for i, leafElement in enumerate(arrElement):
                     ndElement[i] = convertJavaArray(leafElement.toArray(), convertNulls=convertNulls)
@@ -90,7 +90,7 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
             except Exception as e:
                 return 0
 
-    if basicType.startswith('io.deephaven.engine.tables.dbarrays.Db'):
+    if basicType.startswith('io.deephaven.engine.tables.vector.Db'):
         out = numpy.empty(shape, dtype=numpy.object)
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out

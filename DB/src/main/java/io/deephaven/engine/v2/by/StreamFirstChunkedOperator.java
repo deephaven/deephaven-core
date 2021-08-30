@@ -5,8 +5,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.ShiftAwareListener;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.structures.chunk.ChunkSink;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.engine.structures.chunk.Attributes.*;
 import io.deephaven.engine.structures.chunk.*;
 import io.deephaven.engine.structures.rowset.Index;
@@ -166,8 +166,8 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
             final SharedContext inputSharedContext = toClose.add(SharedContext.makeSharedContext());
             final ChunkSource.GetContext[] inputContexts =
                     toClose.addArray(new ChunkSource.GetContext[numResultColumns]);
-            final WritableChunkSink.FillFromContext[] outputContexts =
-                    toClose.addArray(new WritableChunkSink.FillFromContext[numResultColumns]);
+            final ChunkSink.FillFromContext[] outputContexts =
+                    toClose.addArray(new ChunkSink.FillFromContext[numResultColumns]);
 
             for (int ci = 0; ci < numResultColumns; ++ci) {
                 inputContexts[ci] = inputColumns[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);

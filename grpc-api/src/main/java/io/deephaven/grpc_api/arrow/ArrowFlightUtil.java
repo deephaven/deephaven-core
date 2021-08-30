@@ -17,7 +17,7 @@ import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.structures.chunk.ChunkType;

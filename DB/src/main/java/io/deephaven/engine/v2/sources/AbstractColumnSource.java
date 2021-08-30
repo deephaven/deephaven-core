@@ -5,11 +5,12 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.Pair;
+import io.deephaven.engine.structures.source.WritableSource;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.v2.select.chunkfilters.ChunkMatchFilterFactory;

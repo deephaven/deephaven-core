@@ -3,8 +3,8 @@ package io.deephaven.engine.v2.select;
 import java.lang.*;
 import java.util.*;
 
-import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.structures.chunk.Attributes;
 import io.deephaven.engine.structures.chunk.IntChunk;
 import io.deephaven.engine.structures.chunk.LongChunk;
@@ -22,16 +22,16 @@ import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.*;
 public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     public static final io.deephaven.engine.v2.select.formula.FormulaFactory __FORMULA_FACTORY = FormulaSample::new;
 
-    private final io.deephaven.engine.v2.sources.ColumnSource<java.lang.Long> II;
-    private final io.deephaven.engine.v2.sources.ColumnSource<java.lang.Integer> I;
-    private final io.deephaven.engine.tables.dbarrays.DbLongArray II_;
+    private final ColumnSource<Long> II;
+    private final ColumnSource<Integer> I;
+    private final io.deephaven.engine.structures.vector.DbLongArray II_;
     private final java.lang.Integer q;
     private final Map<Object, Object> __lazyResultCache;
 
 
     public FormulaSample(final Index index,
             final boolean __lazy,
-            final java.util.Map<String, ? extends io.deephaven.engine.v2.sources.ColumnSource> __columnsToData,
+            final java.util.Map<String, ? extends ColumnSource> __columnsToData,
             final io.deephaven.engine.tables.select.Param... __params) {
         super(index);
         II = __columnsToData.get("II");

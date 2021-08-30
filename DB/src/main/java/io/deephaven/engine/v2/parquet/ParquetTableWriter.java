@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.parquet;
 
 import io.deephaven.engine.tables.*;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.structures.vector.DbArrayBase;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.select.QueryScope;

@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.engine.structures.util.LongSizedDataStructure;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.structures.chunk.*;

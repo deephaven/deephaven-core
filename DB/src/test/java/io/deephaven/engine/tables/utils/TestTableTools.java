@@ -15,7 +15,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.structures.chunk.Attributes;

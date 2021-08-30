@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.tables.lang;
 
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
+import io.deephaven.engine.structures.vector.DbIntArray;
 
 import java.io.Serializable;
 

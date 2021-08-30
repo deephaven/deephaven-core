@@ -6,18 +6,18 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.structures.chunk.ChunkSink;
 import io.deephaven.engine.structures.rowredirection.RedirectionIndex;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.structures.rowset.ReadOnlyIndex;
 import io.deephaven.engine.structures.rowshiftdata.IndexShiftData;
 import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.v2.hashing.HashMapK4V4;
-import io.deephaven.engine.v2.hashing.HashMapLockFreeK4V4;
+import io.deephaven.engine.structures.rowredirection.map.HashMapK4V4;
+import io.deephaven.engine.structures.rowredirection.map.HashMapLockFreeK4V4;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.engine.v2.sources.SwitchColumnSource;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.structures.chunk.LongChunk;
 import io.deephaven.engine.structures.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunkcolumnsource.LongChunkColumnSource;
@@ -244,7 +244,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             // fillFromChunk may convert the provided OrderedKeys to a KeyRanges (or KeyIndices) chunk that is owned by
             // the Index and is not closed until the index is closed.
-            WritableChunkSink.FillFromContext fillFromContext =
+            ChunkSink.FillFromContext fillFromContext =
                     closer.add(sortMapping.makeFillFromContext(sortedKeys.length));
             sortMapping.fillFromChunk(fillFromContext, LongChunk.chunkWrap(sortedKeys),
                     closer.add(resultIndex.clone()));

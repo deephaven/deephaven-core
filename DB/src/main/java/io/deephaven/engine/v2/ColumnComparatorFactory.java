@@ -8,7 +8,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.util.DhFloatComparisons;
-import io.deephaven.engine.v2.sources.*;
 
 import java.util.function.Predicate;
 

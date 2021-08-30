@@ -184,7 +184,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                 final ArrayBackedColumnSource<?> arrayBackedColumnSource = (ArrayBackedColumnSource<?>) cs;
                 arrayBackedColumnSource.ensureCapacity(nextRow);
                 final ColumnSource<?> sourceColumnSource = table.getColumnSource(name);
-                try (final WritableChunkSink.FillFromContext ffc =
+                try (final ChunkSink.FillFromContext ffc =
                         arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
                         final ChunkSource.GetContext getContext =
                                 sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
@@ -223,7 +223,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
             // null out the values, so that we do not hold onto garbage forever, we keep the keys
             for (ObjectArraySource<?> objectArraySource : arrayValueSources) {
-                try (final WritableChunkSink.FillFromContext ffc =
+                try (final ChunkSink.FillFromContext ffc =
                         objectArraySource.makeFillFromContext(chunkCapacity)) {
                     final WritableObjectChunk<?, Attributes.Values> nullChunk =
                             WritableObjectChunk.makeWritableChunk(chunkCapacity);

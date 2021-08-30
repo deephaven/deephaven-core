@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
@@ -26,7 +26,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.remote.InitialSnapshotTable;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.engine.v2.utils.ColumnHolder;
@@ -2341,7 +2341,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final String diff4 = diff(t8, t7, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff4);
 
-        final Table t9 = t1.update("Array=new io.deephaven.engine.tables.dbarrays.DbIntArrayDirect(19, 40)");
+        final Table t9 = t1.update("Array=new io.deephaven.engine.tables.vector.DbIntArrayDirect(19, 40)");
         final Table t10 = t9.ungroup();
         final String diff5 = diff(t10, t6, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff5);

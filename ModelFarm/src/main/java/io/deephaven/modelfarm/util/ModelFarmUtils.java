@@ -6,7 +6,7 @@ package io.deephaven.modelfarm.util;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import io.deephaven.engine.tables.utils.DBDateTime;
 
 /**

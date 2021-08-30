@@ -10,11 +10,18 @@ sourceSets {
     }
     test {
         java {
-            srcDirs 'test'
+            srcDirs 'test', 'benchmark'
         }
     }
 }
 
 dependencies {
-}
+    compile project(':Configuration'),
+            project(':TableLogger'),
+            project(':qst'),
+            depTrove3
 
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testCompile 'junit:junit:4.13.2'
+}

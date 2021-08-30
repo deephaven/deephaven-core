@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.structures.vector.DbArray;
+import io.deephaven.engine.structures.vector.DbArrayDirect;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.by.ssmcountdistinct.CharSsmBackedSource;

@@ -16,7 +16,7 @@ import io.deephaven.engine.v2.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaCompilationException;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.structures.source.ColumnSource;
 import io.deephaven.engine.v2.sources.LongSparseArraySource;
 import io.deephaven.engine.structures.rowset.Index;
 import io.deephaven.engine.v2.utils.RuntimeMemory;

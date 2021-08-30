@@ -5,7 +5,7 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.structures.vector.*;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
