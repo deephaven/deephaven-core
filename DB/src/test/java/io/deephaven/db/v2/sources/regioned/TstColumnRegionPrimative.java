@@ -14,14 +14,16 @@ import java.util.function.Supplier;
  * Base class for testing {@link ColumnRegion} implementations.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-abstract class TstColumnRegionPrimative<REGION_TYPE extends ColumnRegion<Attributes.Values>> extends BaseArrayTestCase {
+abstract class TstColumnRegionPrimative<REGION_TYPE extends ColumnRegion<Attributes.Values>>
+    extends BaseArrayTestCase {
 
     REGION_TYPE SUT;
 
     @Test
     public abstract void testGet();
 
-    static abstract class Deferred<REGION_TYPE extends ColumnRegion<Attributes.Values>> extends TstColumnRegionPrimative<REGION_TYPE> {
+    static abstract class Deferred<REGION_TYPE extends ColumnRegion<Attributes.Values>>
+        extends TstColumnRegionPrimative<REGION_TYPE> {
 
         Supplier<REGION_TYPE> regionSupplier;
     }

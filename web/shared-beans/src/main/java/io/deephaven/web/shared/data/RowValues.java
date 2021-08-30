@@ -11,8 +11,7 @@ public class RowValues implements Serializable {
 
     private ColumnValue[] columns;
 
-    public RowValues() {
-    }
+    public RowValues() {}
 
     public RowValues(ColumnValue... values) {
         columns = values;

@@ -63,7 +63,8 @@ public class ExportTableUpdateListenerTest {
 
     @Test
     public void testLifeCycleStaticTable() {
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener =
+            new ExportedTableUpdateListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -88,7 +89,8 @@ public class ExportTableUpdateListenerTest {
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener =
+            new ExportedTableUpdateListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -103,7 +105,8 @@ public class ExportTableUpdateListenerTest {
 
     @Test
     public void testLifeCycleTickingTable() {
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener =
+            new ExportedTableUpdateListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -139,7 +142,8 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener =
+            new ExportedTableUpdateListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -165,7 +169,8 @@ public class ExportTableUpdateListenerTest {
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener =
+            new ExportedTableUpdateListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -198,7 +203,8 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener =
+            new ExportedTableUpdateListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -214,9 +220,11 @@ public class ExportTableUpdateListenerTest {
         final Ticket updateId = msg.getExportId();
         Assert.equals(updateId, "updateId", t1.getExportId(), "t1.getExportId()");
         Assert.eq(msg.getSize(), "msg.getSize()", 42);
-        Assert.eqFalse(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");
+        Assert.eqFalse(msg.getUpdateFailureMessage().isEmpty(),
+            "msg.getUpdateFailureMessage().isEmpty()");
 
-        // validate that our error is not directly embedded in the update (that would be a security concern)
+        // validate that our error is not directly embedded in the update (that would be a security
+        // concern)
         Assert.eqFalse(msg.getUpdateFailureMessage().contains("awful"), "msg.contains('awful')");
     }
 
@@ -230,7 +238,8 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener =
+            new ExportedTableUpdateListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -251,7 +260,8 @@ public class ExportTableUpdateListenerTest {
         Assert.eq(observer.countPostComplete, "observer.countPostComplete", 1);
         Assert.eqFalse(src.hasListeners(), "src.hasListeners()");
 
-        // the actual ExportedTableUpdateListener should be "live", and should no longer be listening
+        // the actual ExportedTableUpdateListener should be "live", and should no longer be
+        // listening
 
         addRowsToSource(src, 2);
         expectNoMessage();
@@ -264,7 +274,8 @@ public class ExportTableUpdateListenerTest {
         final MutableObject<SessionState.ExportObject<QueryTable>> t1 = new MutableObject<>();
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener =
+            new ExportedTableUpdateListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -275,7 +286,8 @@ public class ExportTableUpdateListenerTest {
         // export mid-tick
         liveTableMonitor.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1, src.getIndex().lastKey() + 42);
+            update.added = Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1,
+                src.getIndex().lastKey() + 42);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = IndexShiftData.EMPTY;
@@ -304,7 +316,8 @@ public class ExportTableUpdateListenerTest {
     private void addRowsToSource(final QueryTable src, final long nRows) {
         liveTableMonitor.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1, src.getIndex().lastKey() + nRows);
+            update.added = Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1,
+                src.getIndex().lastKey() + nRows);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = IndexShiftData.EMPTY;
@@ -319,12 +332,14 @@ public class ExportTableUpdateListenerTest {
             final Ticket updateId = msg.getExportId();
             Assert.equals(updateId, "updateId", exportId, "exportId");
             Assert.eq(msg.getSize(), "msg.getSize()", size);
-            Assert.eqTrue(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");
+            Assert.eqTrue(msg.getUpdateFailureMessage().isEmpty(),
+                "msg.getUpdateFailureMessage().isEmpty()");
         }
     }
 
     private void expectNoMessage() {
-        liveTableMonitor.runWithinUnitTestCycle(() -> {}); // flush our terminal notification
+        liveTableMonitor.runWithinUnitTestCycle(() -> {
+        }); // flush our terminal notification
         final ExportedTableUpdateMessage batch = observer.msgQueue.poll();
         Assert.eqNull(batch, "batch");
     }
@@ -332,11 +347,13 @@ public class ExportTableUpdateListenerTest {
     public class TestSessionState extends SessionState {
         public TestSessionState() {
             super(scheduler, AUTH_CONTEXT);
-            initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), this));
+            initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
+                DBTimeUtils.nanosToTime(Long.MAX_VALUE), this));
         }
     }
 
-    public static class QueuingResponseObserver implements StreamObserver<ExportedTableUpdateMessage> {
+    public static class QueuingResponseObserver
+        implements StreamObserver<ExportedTableUpdateMessage> {
         boolean complete = false;
         long countPostComplete = 0;
         Queue<ExportedTableUpdateMessage> msgQueue = new ArrayDeque<>();

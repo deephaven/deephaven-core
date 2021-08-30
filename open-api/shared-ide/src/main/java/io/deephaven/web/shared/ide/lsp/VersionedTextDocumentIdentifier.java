@@ -7,7 +7,8 @@ import jsinterop.base.JsPropertyMap;
 import java.io.Serializable;
 
 @JsType(namespace = "dh.lsp")
-public class VersionedTextDocumentIdentifier extends TextDocumentIdentifier implements Serializable {
+public class VersionedTextDocumentIdentifier extends TextDocumentIdentifier
+    implements Serializable {
     public int version;
 
     public VersionedTextDocumentIdentifier() {

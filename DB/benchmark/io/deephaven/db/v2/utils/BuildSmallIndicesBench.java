@@ -15,12 +15,12 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 10)
 @Measurement(iterations = 10, time = 3)
-@Fork(value=1)
+@Fork(value = 1)
 
 public class BuildSmallIndicesBench {
 
     private static final int sz = 10 * 1000 * 1000;
-    private final long[] values =  new long[sz];
+    private final long[] values = new long[sz];
 
     @Setup(Level.Trial)
     public void setup() {
@@ -33,8 +33,9 @@ public class BuildSmallIndicesBench {
     // If we create a builder that just lives through the scope of the for loop,
     // things are much faster (but less realistic for the case we are trying to simulate)
     // since the JVM can reuse the object skeleton and avoid much of the construction cost
-    // given the object doesn't scape.  We create an external array to avoid that.
+    // given the object doesn't scape. We create an external array to avoid that.
     private final RspBitmap[] rixs = new RspBitmap[sz];
+
     @Benchmark
     public void b00_buildAndPopulateRspByInsert(final Blackhole bh) {
         for (int i = 0; i < sz; ++i) {
@@ -53,6 +54,7 @@ public class BuildSmallIndicesBench {
     }
 
     private final SingleRange[] sixs = new SingleRange[sz];
+
     @Benchmark
     public void b02_buildAndPopulateSingleRangeIndex(final Blackhole bh) {
         for (int i = 0; i < sz; ++i) {
@@ -62,6 +64,7 @@ public class BuildSmallIndicesBench {
     }
 
     private final Index.SequentialBuilder[] sbs = new Index.SequentialBuilder[sz];
+
     @Benchmark
     public void b03_buildAndPopulateWithIndexBuilder(final Blackhole bh) {
         for (int i = 0; i < sz; ++i) {
@@ -72,6 +75,7 @@ public class BuildSmallIndicesBench {
     }
 
     private final long[][] ls = new long[sz][];
+
     @Benchmark
     public void b04_buildAndPopulateArray(final Blackhole bh) {
         for (int i = 0; i < sz; ++i) {

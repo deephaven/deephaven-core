@@ -18,17 +18,19 @@ import java.util.Date;
  */
 public class SerializationUtils {
 
-    public interface Writer<ITEM_TYPE> extends FunctionalInterfaces.ThrowingConsumer<ITEM_TYPE, IOException> {
+    public interface Writer<ITEM_TYPE>
+        extends FunctionalInterfaces.ThrowingConsumer<ITEM_TYPE, IOException> {
     }
 
     /**
      * Get a serializing consumer for the supplied item class and output.
      *
      * @param itemClass The item class
-     * @param out       The output
+     * @param out The output
      * @return A new serializing consumer
      */
-    public static <ITEM_TYPE> Writer<ITEM_TYPE> getWriter(@NotNull final Class<ITEM_TYPE> itemClass, @NotNull final ObjectOutput out) {
+    public static <ITEM_TYPE> Writer<ITEM_TYPE> getWriter(@NotNull final Class<ITEM_TYPE> itemClass,
+        @NotNull final ObjectOutput out) {
         if (itemClass == Byte.class) {
             return k -> out.writeByte((Byte) k);
         }
@@ -56,9 +58,9 @@ public class SerializationUtils {
         if (itemClass == String.class) {
             return k -> out.writeUTF((String) k);
         }
-         if (itemClass == DBDateTime.class) {
-             return k -> out.writeLong(((DBDateTime) k).getNanos());
-         }
+        if (itemClass == DBDateTime.class) {
+            return k -> out.writeLong(((DBDateTime) k).getNanos());
+        }
         if (itemClass == Date.class) {
             return k -> out.writeLong(((Date) k).getTime());
         }
@@ -72,18 +74,20 @@ public class SerializationUtils {
         return out::writeObject;
     }
 
-    public interface Reader<ITEM_TYPE> extends FunctionalInterfaces.ThrowingSupplier<ITEM_TYPE, Exception> {
+    public interface Reader<ITEM_TYPE>
+        extends FunctionalInterfaces.ThrowingSupplier<ITEM_TYPE, Exception> {
     }
 
     /**
      * Get a deserializing supplier for the supplied item class and input.
      *
      * @param itemClass The item class
-     * @param in        The input
+     * @param in The input
      * @return A new deserializing supplier
      */
     @SuppressWarnings("unchecked")
-    public static <ITEM_TYPE> Reader<ITEM_TYPE> getReader(@NotNull final Class<ITEM_TYPE> itemClass, @NotNull final ObjectInput in) {
+    public static <ITEM_TYPE> Reader<ITEM_TYPE> getReader(@NotNull final Class<ITEM_TYPE> itemClass,
+        @NotNull final ObjectInput in) {
         if (itemClass == Byte.class) {
             return () -> (ITEM_TYPE) Byte.valueOf(in.readByte());
         }
@@ -111,9 +115,9 @@ public class SerializationUtils {
         if (itemClass == String.class) {
             return () -> (ITEM_TYPE) in.readUTF();
         }
-         if (itemClass == DBDateTime.class) {
-             return () -> (ITEM_TYPE) new DBDateTime(in.readLong());
-         }
+        if (itemClass == DBDateTime.class) {
+            return () -> (ITEM_TYPE) new DBDateTime(in.readLong());
+        }
         if (itemClass == Date.class) {
             return () -> (ITEM_TYPE) new Date(in.readLong());
         }
@@ -122,12 +126,14 @@ public class SerializationUtils {
             try {
                 constructor = itemClass.getConstructor();
             } catch (NoSuchMethodException e) {
-                throw new UnsupportedOperationException("Can't deserialize keys of type " + itemClass
+                throw new UnsupportedOperationException(
+                    "Can't deserialize keys of type " + itemClass
                         + ", could not get no-arg constructor for StreamingExternalizable type");
             }
             final TIntObjectMap<Reader> cachedReaders = new TIntObjectHashMap<>();
             return () -> {
-                final StreamingExternalizable key = (StreamingExternalizable) constructor.newInstance();
+                final StreamingExternalizable key =
+                    (StreamingExternalizable) constructor.newInstance();
                 key.readExternalStreaming(in, cachedReaders);
                 return (ITEM_TYPE) key;
             };
@@ -137,7 +143,8 @@ public class SerializationUtils {
             try {
                 constructor = itemClass.getConstructor();
             } catch (NoSuchMethodException e) {
-                throw new UnsupportedOperationException("Can't deserialize keys of type " + itemClass
+                throw new UnsupportedOperationException(
+                    "Can't deserialize keys of type " + itemClass
                         + ", could not get no-arg constructor for Externalizable type");
             }
             return () -> {

@@ -36,11 +36,13 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
         LongChunk<OrderedKeyIndices> indices,
         Chunk... inputChunks) {
         final int size = indices.size();
-        final io.deephaven.db.v2.select.python.ArgumentsChunked arguments = io.deephaven.db.v2.select.python.ArgumentsChunked.buildArguments(inputChunks);
+        final io.deephaven.db.v2.select.python.ArgumentsChunked arguments =
+            io.deephaven.db.v2.select.python.ArgumentsChunked.buildArguments(inputChunks);
         final boolean[] results = function
             .call(boolean[].class, CALL_METHOD, arguments.getParamTypes(), arguments.getParams());
         if (size != results.length) {
-            throw new IllegalStateException("FilterKernelPythonChunkedFunction returned results are not the proper size");
+            throw new IllegalStateException(
+                "FilterKernelPythonChunkedFunction returned results are not the proper size");
         }
         context.resultChunk.setSize(0);
         for (int i = 0; i < size; ++i) {

@@ -11,20 +11,18 @@ public class ConvertInvalidInExpressionsTest extends AbstractNormalizingFilterTe
     @Test
     public void testConvertInvalidInExpressions() {
         assertUnchanged("already correct",
-                in("ColumnA", 1)
-        );
+            in("ColumnA", 1));
         assertUnchanged("already correct",
-                in("ColumnA", 1, 2)
-        );
+            in("ColumnA", 1, 2));
 
         assertFilterEquals("literals on both sides",
-                in(literal(1), literal(2)),
-                NormalizeFilterUtil.doComparison(CompareCondition.CompareOperation.EQUALS, CaseSensitivity.MATCH_CASE, literal(1), literal(2))
-        );
+            in(literal(1), literal(2)),
+            NormalizeFilterUtil.doComparison(CompareCondition.CompareOperation.EQUALS,
+                CaseSensitivity.MATCH_CASE, literal(1), literal(2)));
         assertFilterEquals("references on both sides",
-                in(reference("ColumnA"), reference("ColumnB")),
-                NormalizeFilterUtil.doComparison(CompareCondition.CompareOperation.EQUALS, CaseSensitivity.MATCH_CASE, reference("ColumnA"), reference("ColumnB"))
-        );
+            in(reference("ColumnA"), reference("ColumnB")),
+            NormalizeFilterUtil.doComparison(CompareCondition.CompareOperation.EQUALS,
+                CaseSensitivity.MATCH_CASE, reference("ColumnA"), reference("ColumnB")));
     }
 
     @Override

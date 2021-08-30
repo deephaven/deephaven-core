@@ -10,8 +10,7 @@ import io.deephaven.db.plot.datasets.xy.AbstractXYDataSeries;
 import io.deephaven.db.plot.util.ArgumentValidations;
 
 /**
- * An implementation of {@link OHLCDataSeriesInternal}.
- * This Doesn't allow for multiple series.
+ * An implementation of {@link OHLCDataSeriesInternal}. This Doesn't allow for multiple series.
  */
 public class OHLCDataSeriesArray extends AbstractXYDataSeries implements OHLCDataSeriesInternal {
 
@@ -23,11 +22,11 @@ public class OHLCDataSeriesArray extends AbstractXYDataSeries implements OHLCDat
     private final IndexableNumericData close;
 
     /**
-     * Creates an OHLCDataSeriesArray instance.
-     * This dataset is suited for open-high-low-close charts.
+     * Creates an OHLCDataSeriesArray instance. This dataset is suited for open-high-low-close
+     * charts.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code time}, {@code open},
-     *                                      {@code high}, {@code low}, {@code close} must not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code time}, {@code open}, {@code high},
+     *         {@code low}, {@code close} must not be null
      * @param axes axes on which the dataset will be plotted
      * @param id data series id
      * @param name series name
@@ -37,11 +36,17 @@ public class OHLCDataSeriesArray extends AbstractXYDataSeries implements OHLCDat
      * @param low low data
      * @param close close data
      */
-    public OHLCDataSeriesArray(final AxesImpl axes, final int id, final Comparable name, final IndexableNumericData time, final IndexableNumericData open, final IndexableNumericData high, final IndexableNumericData low, final IndexableNumericData close) {
+    public OHLCDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
+        final IndexableNumericData time, final IndexableNumericData open,
+        final IndexableNumericData high, final IndexableNumericData low,
+        final IndexableNumericData close) {
         this(axes, id, name, time, open, high, low, close, null);
     }
 
-    public OHLCDataSeriesArray(final AxesImpl axes, final int id, final Comparable name, final IndexableNumericData time, final IndexableNumericData open, final IndexableNumericData high, final IndexableNumericData low, final IndexableNumericData close, final AbstractXYDataSeries series) {
+    public OHLCDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
+        final IndexableNumericData time, final IndexableNumericData open,
+        final IndexableNumericData high, final IndexableNumericData low,
+        final IndexableNumericData close, final AbstractXYDataSeries series) {
         super(axes, id, name, series);
         ArgumentValidations.assertNotNull(time, "Time", getPlotInfo());
         ArgumentValidations.assertNotNull(open, "Open", getPlotInfo());

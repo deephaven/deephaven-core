@@ -8,7 +8,8 @@ import java.nio.ByteBuffer;
 /**
  * ObjectCodec implementation for Maps of String to Long.
  *
- * Each map is encoded as an integer length, followed by UTF-8 encoded strings for each key and the value.
+ * Each map is encoded as an integer length, followed by UTF-8 encoded strings for each key and the
+ * value.
  *
  * A null map is represented as an array of zero bytes.
  */

@@ -198,7 +198,8 @@ public class IndexShiftDataTest {
         dumbBuilder.shiftRange(4150, 4250, 10);
         final IndexShiftData disd = dumbBuilder.build();
 
-        final IndexShiftData.SmartCoalescingBuilder scb = new IndexShiftData.SmartCoalescingBuilder(index);
+        final IndexShiftData.SmartCoalescingBuilder scb =
+            new IndexShiftData.SmartCoalescingBuilder(index);
         scb.shiftRange(50, 150, -10);
         scb.shiftRange(250, 350, -10);
         scb.shiftRange(4150, 4250, 10);
@@ -227,7 +228,8 @@ public class IndexShiftDataTest {
         dumbBuilder.shiftRange(4150, 4250, 10);
         final IndexShiftData disd = dumbBuilder.build();
 
-        final IndexShiftData.SmartCoalescingBuilder scb = new IndexShiftData.SmartCoalescingBuilder(index);
+        final IndexShiftData.SmartCoalescingBuilder scb =
+            new IndexShiftData.SmartCoalescingBuilder(index);
         scb.shiftRange(50, 150, -10);
         scb.shiftRange(190, 210, -10);
         scb.shiftRange(250, 350, -10);
@@ -256,7 +258,8 @@ public class IndexShiftDataTest {
         dumbBuilder.shiftRange(1000, 4000, 10);
         final IndexShiftData disd = dumbBuilder.build();
 
-        final IndexShiftData.SmartCoalescingBuilder scb = new IndexShiftData.SmartCoalescingBuilder(index);
+        final IndexShiftData.SmartCoalescingBuilder scb =
+            new IndexShiftData.SmartCoalescingBuilder(index);
         scb.shiftRange(1000, 4000, 10);
         final IndexShiftData sisd = scb.build();
 
@@ -283,7 +286,8 @@ public class IndexShiftDataTest {
         dumbBuilder.shiftRange(4150, 4250, 10);
         final IndexShiftData disd = dumbBuilder.build();
 
-        final IndexShiftData.SmartCoalescingBuilder scb = new IndexShiftData.SmartCoalescingBuilder(index);
+        final IndexShiftData.SmartCoalescingBuilder scb =
+            new IndexShiftData.SmartCoalescingBuilder(index);
         scb.shiftRange(20, 30, 10);
         scb.shiftRange(45, 45, -1);
         scb.shiftRange(250, 350, 10);
@@ -319,7 +323,8 @@ public class IndexShiftDataTest {
         dumbBuilder.shiftRange(4300, 4301, -1);
         final IndexShiftData disd = dumbBuilder.build();
 
-        final IndexShiftData.SmartCoalescingBuilder scb = new IndexShiftData.SmartCoalescingBuilder(index);
+        final IndexShiftData.SmartCoalescingBuilder scb =
+            new IndexShiftData.SmartCoalescingBuilder(index);
         scb.shiftRange(250, 350, 10);
         scb.shiftRange(50, 150, 10);
         scb.shiftRange(30, 40, 10);
@@ -344,7 +349,8 @@ public class IndexShiftDataTest {
         dumbBuilder.shiftRange(13, 13, 3);
         final IndexShiftData disd = dumbBuilder.build();
 
-        final IndexShiftData.SmartCoalescingBuilder scb = new IndexShiftData.SmartCoalescingBuilder(index);
+        final IndexShiftData.SmartCoalescingBuilder scb =
+            new IndexShiftData.SmartCoalescingBuilder(index);
         scb.shiftRange(1, 2, 2);
         scb.shiftRange(13, 13, 3);
         scb.shiftRange(10, 12, 1);
@@ -373,7 +379,8 @@ public class IndexShiftDataTest {
         dumbBuilder.shiftRange(38, 40, -3);
         final IndexShiftData disd = dumbBuilder.build();
 
-        final IndexShiftData.SmartCoalescingBuilder scb = new IndexShiftData.SmartCoalescingBuilder(index);
+        final IndexShiftData.SmartCoalescingBuilder scb =
+            new IndexShiftData.SmartCoalescingBuilder(index);
         scb.shiftRange(16, 18, 1);
         scb.shiftRange(11, 14, 2);
         scb.shiftRange(9, 10, 1);
@@ -402,7 +409,8 @@ public class IndexShiftDataTest {
         dumbBuilder.shiftRange(20, 27, -1);
         final IndexShiftData disd = dumbBuilder.build();
 
-        final IndexShiftData.SmartCoalescingBuilder scb = new IndexShiftData.SmartCoalescingBuilder(index);
+        final IndexShiftData.SmartCoalescingBuilder scb =
+            new IndexShiftData.SmartCoalescingBuilder(index);
         scb.shiftRange(3, 7, 1);
         scb.shiftRange(13, 14, 1);
         scb.shiftRange(20, 27, -1);

@@ -19,25 +19,27 @@ import java.util.stream.Collectors;
 /**
  * Common {@link AxisTransform}s.
  */
-public enum  AxisTransforms implements AxisTransform, Serializable {
+public enum AxisTransforms implements AxisTransform, Serializable {
     /**
-     * Natural logarithm.
-     * Non-positive data values are not displayed.
+     * Natural logarithm. Non-positive data values are not displayed.
      */
-    LOG((DoubleUnaryOperator & Serializable) x->x<=0.0?Double.NaN:Math.log(x), (DoubleUnaryOperator & Serializable) Math::exp, (DoublePredicate & Serializable) x->x>0.0),
+    LOG((DoubleUnaryOperator & Serializable) x -> x <= 0.0 ? Double.NaN : Math.log(x),
+        (DoubleUnaryOperator & Serializable) Math::exp,
+        (DoublePredicate & Serializable) x -> x > 0.0),
 
     /**
-     * Square root.
-     * Negative data values are not displayed.
+     * Square root. Negative data values are not displayed.
      */
-    SQRT((DoubleUnaryOperator & Serializable) x->x<0.0?Double.NaN:Math.sqrt(x), (DoubleUnaryOperator & Serializable) x->x*x, (DoublePredicate & Serializable) x->x>=0.0)
-    ;
+    SQRT((DoubleUnaryOperator & Serializable) x -> x < 0.0 ? Double.NaN : Math.sqrt(x),
+        (DoubleUnaryOperator & Serializable) x -> x * x,
+        (DoublePredicate & Serializable) x -> x >= 0.0);
 
     private final DoubleUnaryOperator transform;
     private final DoubleUnaryOperator inverseTransform;
     private final DoublePredicate isVisible;
 
-    AxisTransforms(final DoubleUnaryOperator dataToAxis, final DoubleUnaryOperator axisToData, final DoublePredicate isVisible) {
+    AxisTransforms(final DoubleUnaryOperator dataToAxis, final DoubleUnaryOperator axisToData,
+        final DoublePredicate isVisible) {
         this.transform = dataToAxis;
         this.inverseTransform = axisToData;
         this.isVisible = isVisible;
@@ -89,12 +91,14 @@ public enum  AxisTransforms implements AxisTransform, Serializable {
             at2 = null;
         }
 
-        if(at1 != null && at2 != null){
-            log.warning("Axis transform is defined in both enum and calendar.  Returning the enum value.  name=" + name);
+        if (at1 != null && at2 != null) {
+            log.warning(
+                "Axis transform is defined in both enum and calendar.  Returning the enum value.  name="
+                    + name);
             return at1;
-        } else if(at1 != null) {
+        } else if (at1 != null) {
             return at1;
-        } else if (at2 != null){
+        } else if (at2 != null) {
             return at2;
         } else {
             throw new IllegalArgumentException("AxisTransform " + name + " is not defined");
@@ -106,14 +110,16 @@ public enum  AxisTransforms implements AxisTransform, Serializable {
      *
      * @return an array of the available axis transform names.
      */
-    public static String[] axisTransformNames(){
-        final Set<String> results = Arrays.stream(values()).map(Enum::name).collect(Collectors.toCollection(LinkedHashSet::new));
+    public static String[] axisTransformNames() {
+        final Set<String> results = Arrays.stream(values()).map(Enum::name)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
         final Set<String> calendars = new LinkedHashSet<>(Arrays.asList(Calendars.calendarNames()));
         final Set<String> conflicts = new LinkedHashSet<>(results);
         final boolean hasConflicts = conflicts.retainAll(calendars);
 
-        if(hasConflicts) {
-            log.warning("AxisTransform enum and calendar names have conflicting values: values=" + conflicts);
+        if (hasConflicts) {
+            log.warning("AxisTransform enum and calendar names have conflicting values: values="
+                + conflicts);
         }
 
         results.addAll(calendars);

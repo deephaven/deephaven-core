@@ -9,8 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.ByteBuffer;
 
 /**
-* See documentation in the interface and parent class for details.
-*/
+ * See documentation in the interface and parent class for details.
+ */
 public class ByteBufferCharSequenceAdapterImpl extends ByteOrientedCharSequenceAdapter {
 
     private ByteBuffer buffer;
@@ -33,7 +33,9 @@ public class ByteBufferCharSequenceAdapterImpl extends ByteOrientedCharSequenceA
 
     /**
      * Set the ByteBuffer backing this CharSequenceAdapter.
-     * @param buffer A ByteBuffer instance that contains a proto-String this adapter knows how to convert.
+     * 
+     * @param buffer A ByteBuffer instance that contains a proto-String this adapter knows how to
+     *        convert.
      * @param offset The index of the first char in buffer that belongs to the proto-String.
      * @param length The length of the proto-String in chars.
      * @return This CharSequenceAdapter.
@@ -62,6 +64,6 @@ public class ByteBufferCharSequenceAdapterImpl extends ByteOrientedCharSequenceA
 
     @Override
     public final char charAt(final int index) {
-        return (char)(buffer.get(offset + index) & 0xFF);
+        return (char) (buffer.get(offset + index) & 0xFF);
     }
 }

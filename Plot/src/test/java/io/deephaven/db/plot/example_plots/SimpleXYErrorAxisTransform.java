@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  *
  */
 
@@ -23,10 +23,10 @@ public class SimpleXYErrorAxisTransform {
 
 
         Figure fig = FigureFactory.figure()
-                .errorBarXY("S1", x1, xLow, xHigh, y1, yLow, yHigh)
-                .plotStyle("bar")
-                .plotOrientation("H")
-                .yLog();
+            .errorBarXY("S1", x1, xLow, xHigh, y1, yLow, yHigh)
+            .plotStyle("bar")
+            .plotOrientation("H")
+            .yLog();
 
         ExamplePlotUtils.display(fig);
     }

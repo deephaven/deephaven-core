@@ -32,9 +32,10 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
 /**
  * Manage the lifecycle of exports that are Tables.
  *
- * Initially we receive a refresh of exports from the session state. This allows us to timely notify the observer
- * of existing table sizes for both static tables and tables that won't tick frequently. When the refresh is
- * complete we are sent a notification for exportId == 0 (which is otherwise an invalid export id).
+ * Initially we receive a refresh of exports from the session state. This allows us to timely notify
+ * the observer of existing table sizes for both static tables and tables that won't tick
+ * frequently. When the refresh is complete we are sent a notification for exportId == 0 (which is
+ * otherwise an invalid export id).
  */
 public class ExportedTableUpdateListener implements StreamObserver<ExportNotification> {
 
@@ -44,15 +45,17 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
     private final String logPrefix;
     private final StreamObserver<ExportedTableUpdateMessage> responseObserver;
-    private final KeyedLongObjectHashMap<ListenerImpl> updateListenerMap = new KeyedLongObjectHashMap<>(EXPORT_KEY);
+    private final KeyedLongObjectHashMap<ListenerImpl> updateListenerMap =
+        new KeyedLongObjectHashMap<>(EXPORT_KEY);
 
     private volatile boolean isDestroyed = false;
 
     public ExportedTableUpdateListener(
-            final SessionState session,
-            final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
+        final SessionState session,
+        final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         this.session = session;
-        this.logPrefix = "ExportedTableUpdateListener(" + Integer.toHexString(System.identityHashCode(this)) + ") ";
+        this.logPrefix = "ExportedTableUpdateListener("
+            + Integer.toHexString(System.identityHashCode(this)) + ") ";
         this.responseObserver = responseObserver;
     }
 
@@ -112,14 +115,15 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     }
 
     /**
-     * Initialize the listener for a newly exported table. This method is synchronized to prevent a race from the
-     * table ticking before we append the initial refresh msg.
+     * Initialize the listener for a newly exported table. This method is synchronized to prevent a
+     * race from the table ticking before we append the initial refresh msg.
      *
      * @param ticket of the table being exported
      * @param exportId the export id of the table being exported
      * @param table the table that was just exported
      */
-    private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable table) {
+    private synchronized void onNewTableExport(final Ticket ticket, final int exportId,
+        final BaseTable table) {
         if (!table.isLive()) {
             sendUpdateMessage(ticket, table.size(), null);
             return;
@@ -147,20 +151,22 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     }
 
     /**
-     * Append an update message to the batch being built this cycle. If this is the first update on this LTM cycle
-     * then this also adds the terminal notification to flush the outstanding updates.
+     * Append an update message to the batch being built this cycle. If this is the first update on
+     * this LTM cycle then this also adds the terminal notification to flush the outstanding
+     * updates.
      *
      * @param ticket ticket of the table that has updated
-     * @param size   the current size of the table
-     * @param error  any propagated error of the table
+     * @param size the current size of the table
+     * @param error any propagated error of the table
      */
-    private synchronized void sendUpdateMessage(final Ticket ticket, final long size, final Throwable error) {
+    private synchronized void sendUpdateMessage(final Ticket ticket, final long size,
+        final Throwable error) {
         if (isDestroyed) {
             return;
         }
 
         final ExportedTableUpdateMessage.Builder update = ExportedTableUpdateMessage.newBuilder()
-                .setExportId(ticket).setSize(size);
+            .setExportId(ticket).setSize(size);
 
         if (error != null) {
             update.setUpdateFailureMessage(GrpcUtil.securelyWrapError(log, error).getMessage());
@@ -169,7 +175,8 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         try {
             responseObserver.onNext(update.build());
         } catch (final RuntimeException err) {
-            log.error().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
+            log.error().append(logPrefix).append("failed to notify listener of state change: ")
+                .append(err).endl();
             session.removeExportListener(this);
         }
     }
@@ -184,7 +191,8 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         @ReferentialIntegrity
         final ShiftAwareSwapListener swapListener;
 
-        private ListenerImpl(final BaseTable table, final int exportId, final ShiftAwareSwapListener swapListener) {
+        private ListenerImpl(final BaseTable table, final int exportId,
+            final ShiftAwareSwapListener swapListener) {
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
             this.exportId = exportId;
@@ -198,17 +206,21 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         }
 
         @Override
-        public void onFailureInternal(final Throwable error, final UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(final Throwable error,
+            final UpdatePerformanceTracker.Entry sourceEntry) {
             sendUpdateMessage(ExportTicketHelper.exportIdToTicket(exportId), table.size(), error);
         }
     }
 
-    private static final KeyedLongObjectKey<ListenerImpl> EXPORT_KEY = new KeyedLongObjectKey.BasicStrict<ListenerImpl>() {
-        @Override
-        public long getLongKey(@NotNull final ListenerImpl listener) {
-            return listener.exportId;
-        }
-    };
+    private static final KeyedLongObjectKey<ListenerImpl> EXPORT_KEY =
+        new KeyedLongObjectKey.BasicStrict<ListenerImpl>() {
+            @Override
+            public long getLongKey(@NotNull final ListenerImpl listener) {
+                return listener.exportId;
+            }
+        };
 
-    private static final NotificationStepReceiver NOOP_NOTIFICATION_STEP_RECEIVER = lastNotificationStep -> {};
+    private static final NotificationStepReceiver NOOP_NOTIFICATION_STEP_RECEIVER =
+        lastNotificationStep -> {
+        };
 }

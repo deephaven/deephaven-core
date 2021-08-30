@@ -31,8 +31,7 @@ public class JsFigureDescriptor {
     public JsArray<JsChartDescriptor> charts;
 
     @JsConstructor
-    public JsFigureDescriptor() {
-    }
+    public JsFigureDescriptor() {}
 
     @JsIgnore
     public JsFigureDescriptor(JsPropertyMap<Object> source) {
@@ -41,9 +40,9 @@ public class JsFigureDescriptor {
         JsArray<Object> charts = JsData.getRequiredProperty(source, "charts").cast();
         this.charts = Js.uncheckedCast(charts.map((chartSource, index, all) -> {
             if (chartSource instanceof JsChartDescriptor) {
-                return (JsChartDescriptor)chartSource;
+                return (JsChartDescriptor) chartSource;
             } else {
-                return new JsChartDescriptor((JsPropertyMap<Object>)chartSource);
+                return new JsChartDescriptor((JsPropertyMap<Object>) chartSource);
             }
         }));
         title = JsData.getStringProperty(source, "title");

@@ -9,11 +9,13 @@ public class TrackingLastByStateFactoryImpl extends IterativeIndexStateFactory {
         this(false, false, 0);
     }
 
-    private TrackingLastByStateFactoryImpl(boolean lowestRollup, boolean secondRollup, int rollupColumnIdentifier) {
+    private TrackingLastByStateFactoryImpl(boolean lowestRollup, boolean secondRollup,
+        int rollupColumnIdentifier) {
         super(lowestRollup, secondRollup, rollupColumnIdentifier);
     }
 
     private static final AggregationMemoKey TRACKING_LASTBY_INSTANCE = new AggregationMemoKey() {};
+
     @Override
     public AggregationMemoKey getMemoKey() {
         return TRACKING_LASTBY_INSTANCE;
@@ -27,10 +29,12 @@ public class TrackingLastByStateFactoryImpl extends IterativeIndexStateFactory {
 
     /**
      * Sort the results by the original index when aggregating on state.
-     * */
+     */
     @Override
     ReaggregatableStatefactory rollupFactory() {
-        return new SortedFirstOrLastByFactoryImpl(false, false, true, rollupColumnIdentifier, REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX);
+        return new SortedFirstOrLastByFactoryImpl(false, false, true, rollupColumnIdentifier,
+            REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier
+                + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX);
     }
 
     @Override
@@ -39,10 +43,10 @@ public class TrackingLastByStateFactoryImpl extends IterativeIndexStateFactory {
             return "TrackingLastByStateFactory";
         } else {
             return "TrackingLastByStateFactory{" +
-                    "lowestRollup=" + lowestRollup +
-                    ", secondRollup=" + secondRollup +
-                    ", rollupColumnIdentifier=" + rollupColumnIdentifier +
-                    '}';
+                "lowestRollup=" + lowestRollup +
+                ", secondRollup=" + secondRollup +
+                ", rollupColumnIdentifier=" + rollupColumnIdentifier +
+                '}';
         }
     }
 }

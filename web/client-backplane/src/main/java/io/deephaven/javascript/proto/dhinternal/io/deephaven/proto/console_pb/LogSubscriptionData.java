@@ -13,83 +13,83 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData",
     namespace = JsPackage.GLOBAL)
 public class LogSubscriptionData {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static LogSubscriptionData.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static LogSubscriptionData.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getLogLevel();
+
+        @JsProperty
+        String getMessage();
+
+        @JsProperty
+        double getMicros();
+
+        @JsProperty
+        void setLogLevel(String logLevel);
+
+        @JsProperty
+        void setMessage(String message);
+
+        @JsProperty
+        void setMicros(double micros);
     }
 
-    @JsProperty
-    String getLogLevel();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static LogSubscriptionData.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getMessage();
+        @JsProperty
+        String getLogLevel();
 
-    @JsProperty
-    double getMicros();
+        @JsProperty
+        String getMessage();
 
-    @JsProperty
-    void setLogLevel(String logLevel);
+        @JsProperty
+        double getMicros();
 
-    @JsProperty
-    void setMessage(String message);
+        @JsProperty
+        void setLogLevel(String logLevel);
 
-    @JsProperty
-    void setMicros(double micros);
-  }
+        @JsProperty
+        void setMessage(String message);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static LogSubscriptionData.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setMicros(double micros);
     }
 
-    @JsProperty
-    String getLogLevel();
+    public static native LogSubscriptionData deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getMessage();
+    public static native LogSubscriptionData deserializeBinaryFromReader(
+        LogSubscriptionData message, Object reader);
 
-    @JsProperty
-    double getMicros();
+    public static native void serializeBinaryToWriter(LogSubscriptionData message, Object writer);
 
-    @JsProperty
-    void setLogLevel(String logLevel);
+    public static native LogSubscriptionData.ToObjectReturnType toObject(
+        boolean includeInstance, LogSubscriptionData msg);
 
-    @JsProperty
-    void setMessage(String message);
+    public native String getLogLevel();
 
-    @JsProperty
-    void setMicros(double micros);
-  }
+    public native String getMessage();
 
-  public static native LogSubscriptionData deserializeBinary(Uint8Array bytes);
+    public native double getMicros();
 
-  public static native LogSubscriptionData deserializeBinaryFromReader(
-      LogSubscriptionData message, Object reader);
+    public native Uint8Array serializeBinary();
 
-  public static native void serializeBinaryToWriter(LogSubscriptionData message, Object writer);
+    public native void setLogLevel(String value);
 
-  public static native LogSubscriptionData.ToObjectReturnType toObject(
-      boolean includeInstance, LogSubscriptionData msg);
+    public native void setMessage(String value);
 
-  public native String getLogLevel();
+    public native void setMicros(double value);
 
-  public native String getMessage();
+    public native LogSubscriptionData.ToObjectReturnType0 toObject();
 
-  public native double getMicros();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setLogLevel(String value);
-
-  public native void setMessage(String value);
-
-  public native void setMicros(double value);
-
-  public native LogSubscriptionData.ToObjectReturnType0 toObject();
-
-  public native LogSubscriptionData.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native LogSubscriptionData.ToObjectReturnType0 toObject(boolean includeInstance);
 }

@@ -27,18 +27,20 @@ public class ConjunctiveFilter extends ComposedFilter {
         final List<SelectFilter> rawComponents = new ArrayList<>();
         for (int ii = 0; ii < componentFilters.length; ++ii) {
             if (componentFilters[ii] instanceof ConjunctiveFilter) {
-                rawComponents.addAll(Arrays.asList(((ConjunctiveFilter) componentFilters[ii]).getComponentFilters()));
+                rawComponents.addAll(Arrays
+                    .asList(((ConjunctiveFilter) componentFilters[ii]).getComponentFilters()));
             } else {
                 rawComponents.add(componentFilters[ii]);
             }
         }
 
-        return new ConjunctiveFilter(rawComponents.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new ConjunctiveFilter(
+            rawComponents.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
     @Override
     public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
-        Index matched = selection.clone();  // TODO(kosak): probably not needed
+        Index matched = selection.clone(); // TODO(kosak): probably not needed
 
         for (SelectFilter filter : componentFilters) {
             if (Thread.interrupted()) {
@@ -53,7 +55,8 @@ public class ConjunctiveFilter extends ComposedFilter {
 
     @Override
     public ConjunctiveFilter copy() {
-        return new ConjunctiveFilter(Arrays.stream(getComponentFilters()).map(SelectFilter::copy).toArray(SelectFilter[]::new));
+        return new ConjunctiveFilter(Arrays.stream(getComponentFilters()).map(SelectFilter::copy)
+            .toArray(SelectFilter[]::new));
     }
 
     @Override

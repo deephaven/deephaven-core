@@ -29,10 +29,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
         this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2),
-                TstUtils.c("Key1", "A", "B", "C"),
-                TstUtils.c("Key2", 1, 2, 3),
-                TstUtils.c("Data", 1.0, 2.0, 3.0)
-        );
+            TstUtils.c("Key1", "A", "B", "C"),
+            TstUtils.c("Key2", 1, 2, 3),
+            TstUtils.c("Data", 1.0, 2.0, 3.0));
         this.aKey = new SmartKey("A", 1);
         this.bKey = new SmartKey("B", 2);
         this.cKey = new SmartKey("C", 3);
@@ -64,14 +63,19 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     }
 
     public void testNoChanges() {
-        checking(new Expectations() {{
-            never(mockListener).update(with(any(KeyedTableListener.class)), with(any(SmartKey.class)), with(any(long.class)), with(any(KeyedTableListener.KeyEvent.class)));
-        }});
+        checking(new Expectations() {
+            {
+                never(mockListener).update(with(any(KeyedTableListener.class)),
+                    with(any(SmartKey.class)), with(any(long.class)),
+                    with(any(KeyedTableListener.KeyEvent.class)));
+            }
+        });
         keyedTableListener.subscribe(aKey, mockListener);
         keyedTableListener.subscribe(bKey, mockListener);
         keyedTableListener.subscribe(cKey, mockListener);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(noAdded.clone(), noRemoved.clone(), noModified.clone()));
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+            () -> table.notifyListeners(noAdded.clone(), noRemoved.clone(), noModified.clone()));
 
         keyedTableListener.unsubscribe(aKey, mockListener);
         keyedTableListener.unsubscribe(bKey, mockListener);
@@ -80,14 +84,18 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
     public void testAdd() {
         final SmartKey newKey = new SmartKey("D", 4);
-        checking(new Expectations() {{
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey), with(3L), with(KeyedTableListener.KeyEvent.ADDED));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey),
+                    with(3L), with(KeyedTableListener.KeyEvent.ADDED));
+            }
+        });
         keyedTableListener.subscribe(newKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index newAdd = TstUtils.i(3);
-            TstUtils.addToTable(table, newAdd, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4), TstUtils.c("Data", 4.0));
+            TstUtils.addToTable(table, newAdd, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4),
+                TstUtils.c("Data", 4.0));
             table.notifyListeners(newAdd, noRemoved.clone(), noModified.clone());
         });
 
@@ -99,9 +107,12 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     }
 
     public void testRemoved() {
-        checking(new Expectations() {{
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
+            }
+        });
         keyedTableListener.subscribe(cKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -118,9 +129,12 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     }
 
     public void testModify() {
-        checking(new Expectations() {{
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L), with(KeyedTableListener.KeyEvent.MODIFIED));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.MODIFIED));
+            }
+        });
 
         // Check the original value is still there
         Object[] vals = keyedTableListener.getRow(cKey);
@@ -129,7 +143,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index newModified = TstUtils.i(2);
-            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 3), TstUtils.c("Data", 6.0));
+            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 3),
+                TstUtils.c("Data", 6.0));
             table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
         });
 
@@ -143,10 +158,14 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     public void testModifyChangedKey() {
         final SmartKey newKey = new SmartKey("C", 4);
 
-        checking(new Expectations() {{
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey), with(2L), with(KeyedTableListener.KeyEvent.ADDED));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.ADDED));
+            }
+        });
 
         keyedTableListener.subscribe(cKey, mockListener);
         keyedTableListener.subscribe(newKey, mockListener);
@@ -154,7 +173,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index newModified = TstUtils.i(2);
             // Add to table on an existing index is a modify
-            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 4), TstUtils.c("Data", 6.0));
+            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 4),
+                TstUtils.c("Data", 6.0));
             table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
         });
 
@@ -174,12 +194,18 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     public void testModifyKeyMoved() {
         final SmartKey newKey = new SmartKey("D", 4);
 
-        checking(new Expectations() {{
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(bKey), with(1L), with(KeyedTableListener.KeyEvent.REMOVED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(1L), with(KeyedTableListener.KeyEvent.ADDED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey), with(2L), with(KeyedTableListener.KeyEvent.ADDED));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(bKey),
+                    with(1L), with(KeyedTableListener.KeyEvent.REMOVED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(1L), with(KeyedTableListener.KeyEvent.ADDED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.ADDED));
+            }
+        });
 
         keyedTableListener.subscribe(bKey, mockListener);
         keyedTableListener.subscribe(cKey, mockListener);
@@ -188,7 +214,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index newModified = TstUtils.i(1, 2);
             // Add to table on an existing index is a modify
-            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "D"), TstUtils.c("Key2", 3, 4), TstUtils.c("Data", 3.0, 4.0));
+            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "D"),
+                TstUtils.c("Key2", 3, 4), TstUtils.c("Data", 3.0, 4.0));
             table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
         });
 
@@ -210,18 +237,25 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
     // Swap the places of B and C keys
     public void testModifySwap() {
-        checking(new Expectations() {{
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(bKey), with(1L), with(KeyedTableListener.KeyEvent.REMOVED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(1L), with(KeyedTableListener.KeyEvent.ADDED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(bKey), with(2L), with(KeyedTableListener.KeyEvent.ADDED));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(bKey),
+                    with(1L), with(KeyedTableListener.KeyEvent.REMOVED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(1L), with(KeyedTableListener.KeyEvent.ADDED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(bKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.ADDED));
+            }
+        });
         keyedTableListener.subscribe(bKey, mockListener);
         keyedTableListener.subscribe(cKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index newModified = TstUtils.i(1, 2);
-            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "B"), TstUtils.c("Key2", 3, 2), TstUtils.c("Data", 3.0, 2.0));
+            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "B"),
+                TstUtils.c("Key2", 3, 2), TstUtils.c("Data", 3.0, 2.0));
             table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
         });
 
@@ -240,12 +274,18 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     public void testAddRemoveModify() {
         final SmartKey newKey = new SmartKey("D", 4);
 
-        checking(new Expectations() {{
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(aKey), with(0L), with(KeyedTableListener.KeyEvent.MODIFIED));
-            never(mockListener).update(with(any(KeyedTableListener.class)), with(bKey), with(1L), with(any(KeyedTableListener.KeyEvent.class)));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey), with(4L), with(KeyedTableListener.KeyEvent.ADDED));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(aKey),
+                    with(0L), with(KeyedTableListener.KeyEvent.MODIFIED));
+                never(mockListener).update(with(any(KeyedTableListener.class)), with(bKey),
+                    with(1L), with(any(KeyedTableListener.KeyEvent.class)));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey),
+                    with(4L), with(KeyedTableListener.KeyEvent.ADDED));
+            }
+        });
 
         keyedTableListener.subscribe(aKey, mockListener);
         keyedTableListener.subscribe(bKey, mockListener);
@@ -257,10 +297,12 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
             TstUtils.removeRows(table, newRemoved);
 
             final Index newModified = TstUtils.i(0);
-            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "A"), TstUtils.c("Key2", 1), TstUtils.c("Data", 1.5));
+            TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "A"), TstUtils.c("Key2", 1),
+                TstUtils.c("Data", 1.5));
 
             final Index newAdd = TstUtils.i(4);
-            TstUtils.addToTable(table, newAdd, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4), TstUtils.c("Data", 4.0));
+            TstUtils.addToTable(table, newAdd, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4),
+                TstUtils.c("Data", 4.0));
 
             table.notifyListeners(newAdd, newRemoved, newModified);
         });
@@ -290,10 +332,14 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     public void testRemoveAdd() {
         final SmartKey newKey = new SmartKey("D", 4);
 
-        checking(new Expectations() {{
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
-            oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey), with(2L), with(KeyedTableListener.KeyEvent.ADDED));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.REMOVED));
+                oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey),
+                    with(2L), with(KeyedTableListener.KeyEvent.ADDED));
+            }
+        });
 
         keyedTableListener.subscribe(cKey, mockListener);
         keyedTableListener.subscribe(newKey, mockListener);
@@ -308,7 +354,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         // Now add
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index newAdded = TstUtils.i(2);
-            TstUtils.addToTable(table, newAdded, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4), TstUtils.c("Data", 4.0));
+            TstUtils.addToTable(table, newAdded, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4),
+                TstUtils.c("Data", 4.0));
             table.notifyListeners(newAdded, noRemoved, noModified);
         });
 

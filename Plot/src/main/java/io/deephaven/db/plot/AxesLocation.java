@@ -15,7 +15,7 @@ class AxesLocation implements Serializable {
     private final ChartLocation chartLocation;
     private final int id;
 
-    AxesLocation(final AxesImpl axes){
+    AxesLocation(final AxesImpl axes) {
         this.chartLocation = new ChartLocation(axes.chart());
         this.id = axes.id();
     }
@@ -27,13 +27,17 @@ class AxesLocation implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         AxesLocation that = (AxesLocation) o;
 
-        if (id != that.id) return false;
-        return chartLocation != null ? chartLocation.equals(that.chartLocation) : that.chartLocation == null;
+        if (id != that.id)
+            return false;
+        return chartLocation != null ? chartLocation.equals(that.chartLocation)
+            : that.chartLocation == null;
     }
 
     @Override

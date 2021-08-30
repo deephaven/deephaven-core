@@ -33,95 +33,96 @@ public abstract class Formula implements ElementSource {
     public abstract Object get(long key);
 
     @Override
-    public Boolean getBoolean(long key){
-        return (Boolean)get(key);
+    public Boolean getBoolean(long key) {
+        return (Boolean) get(key);
     }
 
     @Override
-    public byte getByte(long key){
+    public byte getByte(long key) {
         final Byte aByte = (Byte) get(key);
-        return aByte == null? NULL_BYTE:aByte;
+        return aByte == null ? NULL_BYTE : aByte;
     }
 
     @Override
-    public char getChar(long key){
+    public char getChar(long key) {
         final Character character = (Character) get(key);
-        return character == null? NULL_CHAR:character;
+        return character == null ? NULL_CHAR : character;
     }
 
     @Override
-    public double getDouble(long key){
+    public double getDouble(long key) {
         final Double aDouble = (Double) get(key);
-        return aDouble==null? NULL_DOUBLE: aDouble;
+        return aDouble == null ? NULL_DOUBLE : aDouble;
     }
 
     @Override
-    public float getFloat(long key){
+    public float getFloat(long key) {
         final Float aFloat = (Float) get(key);
-        return aFloat==null? NULL_FLOAT:aFloat;
+        return aFloat == null ? NULL_FLOAT : aFloat;
     }
 
     @Override
-    public int getInt(long key){
+    public int getInt(long key) {
         final Integer integer = (Integer) get(key);
-        return integer==null? NULL_INT:integer;
+        return integer == null ? NULL_INT : integer;
     }
 
     @Override
-    public long getLong(long key){
+    public long getLong(long key) {
         final Long aLong = (Long) get(key);
-        return aLong==null? NULL_LONG:aLong;
+        return aLong == null ? NULL_LONG : aLong;
     }
 
     @Override
-    public short getShort(long key){
+    public short getShort(long key) {
         final Short aShort = (Short) get(key);
-        return aShort==null? NULL_SHORT:aShort;
+        return aShort == null ? NULL_SHORT : aShort;
     }
 
     @Override
-    public Boolean getPrevBoolean(long key){
-        return (Boolean)getPrev(key);
+    public Boolean getPrevBoolean(long key) {
+        return (Boolean) getPrev(key);
     }
 
     @Override
-    public byte getPrevByte(long key){
+    public byte getPrevByte(long key) {
         final Byte aByte = (Byte) getPrev(key);
-        return aByte == null? NULL_BYTE:aByte;
+        return aByte == null ? NULL_BYTE : aByte;
     }
 
     @Override
-    public char getPrevChar(long key){
+    public char getPrevChar(long key) {
         final Character character = (Character) getPrev(key);
-        return character == null? NULL_CHAR:character;
+        return character == null ? NULL_CHAR : character;
     }
 
     @Override
-    public double getPrevDouble(long key){
+    public double getPrevDouble(long key) {
         final Double aDouble = (Double) getPrev(key);
-        return aDouble==null? NULL_DOUBLE: aDouble;
+        return aDouble == null ? NULL_DOUBLE : aDouble;
     }
 
     @Override
-    public float getPrevFloat(long key){
+    public float getPrevFloat(long key) {
         final Float aFloat = (Float) getPrev(key);
-        return aFloat==null? NULL_FLOAT:aFloat;
+        return aFloat == null ? NULL_FLOAT : aFloat;
     }
-    public int getPrevInt(long key){
+
+    public int getPrevInt(long key) {
         final Integer integer = (Integer) getPrev(key);
-        return integer==null? NULL_INT:integer;
+        return integer == null ? NULL_INT : integer;
     }
 
     @Override
-    public long getPrevLong(long key){
+    public long getPrevLong(long key) {
         final Long aLong = (Long) getPrev(key);
-        return aLong==null? NULL_LONG:aLong;
+        return aLong == null ? NULL_LONG : aLong;
     }
 
     @Override
-    public short getPrevShort(long key){
+    public short getPrevShort(long key) {
         final Short aShort = (Short) getPrev(key);
-        return aShort==null? NULL_SHORT:aShort;
+        return aShort == null ? NULL_SHORT : aShort;
     }
 
     public interface GetContext extends Context {
@@ -133,7 +134,8 @@ public abstract class Formula implements ElementSource {
         final WritableChunk<Values> sourceChunk;
         final FillContext fillContext;
 
-        FormulaGetContext(final ChunkType chunkType, final FillContext fillContext, final int chunkCapacity) {
+        FormulaGetContext(final ChunkType chunkType, final FillContext fillContext,
+            final int chunkCapacity) {
             this.sourceChunk = chunkType.makeWritableChunk(chunkCapacity);
             this.fillContext = fillContext;
         }
@@ -151,7 +153,8 @@ public abstract class Formula implements ElementSource {
 
     public abstract FillContext makeFillContext(final int chunkCapacity);
 
-    public Chunk<Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+    public Chunk<Values> getChunk(@NotNull final GetContext context,
+        @NotNull final OrderedKeys orderedKeys) {
         final FormulaGetContext formulaGetContext = (FormulaGetContext) context;
         final WritableChunk<Values> sourceChunk = formulaGetContext.sourceChunk;
         fillChunk(formulaGetContext.fillContext, sourceChunk, orderedKeys);
@@ -160,7 +163,7 @@ public abstract class Formula implements ElementSource {
 
 
     public Chunk<Values> getPrevChunk(@NotNull final GetContext context,
-                                      @NotNull final OrderedKeys orderedKeys) {
+        @NotNull final OrderedKeys orderedKeys) {
         final FormulaGetContext formulaGetContext = (FormulaGetContext) context;
         final WritableChunk<Values> sourceChunk = formulaGetContext.sourceChunk;
         fillPrevChunk(formulaGetContext.fillContext, sourceChunk, orderedKeys);
@@ -168,12 +171,12 @@ public abstract class Formula implements ElementSource {
     }
 
     public abstract void fillChunk(@NotNull final FillContext context,
-                                   @NotNull final WritableChunk<? super Values> destination,
-                                   @NotNull final OrderedKeys orderedKeys);
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys);
 
     public abstract void fillPrevChunk(@NotNull final FillContext context,
-                                       @NotNull final WritableChunk<? super Values> destination,
-                                       @NotNull final OrderedKeys orderedKeys);
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys);
 
     protected abstract ChunkType getChunkType();
 }

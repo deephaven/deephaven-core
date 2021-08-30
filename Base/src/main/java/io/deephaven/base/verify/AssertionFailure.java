@@ -4,7 +4,7 @@
 
 package io.deephaven.base.verify;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
  * {@link RuntimeException} to be thrown on assertion failures.
  */

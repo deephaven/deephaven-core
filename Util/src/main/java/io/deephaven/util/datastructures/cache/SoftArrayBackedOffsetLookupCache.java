@@ -8,14 +8,15 @@ import java.lang.ref.SoftReference;
 import java.lang.reflect.Array;
 
 /**
- * Caching data structure for caching int (offset) to Object mappings.
- * For use when lookup is expensive but idempotent, and the range of offset indexes is relatively contiguous.
- * This is only suitable for lookup functions that return fully-initialized, immutable objects (or null).
+ * Caching data structure for caching int (offset) to Object mappings. For use when lookup is
+ * expensive but idempotent, and the range of offset indexes is relatively contiguous. This is only
+ * suitable for lookup functions that return fully-initialized, immutable objects (or null).
  * <p>
- * This implementation stores data in an array of softly-reachable arrays, to enable unused regions to be
- * reclaimed under memory pressure.
+ * This implementation stores data in an array of softly-reachable arrays, to enable unused regions
+ * to be reclaimed under memory pressure.
  */
-public class SoftArrayBackedOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> extends BaseOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> {
+public class SoftArrayBackedOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE>
+    extends BaseOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> {
 
     private static final int LOG2_BLOCK_SIZE = 12;
     private static final int BLOCK_SIZE = 1 << LOG2_BLOCK_SIZE;
@@ -35,30 +36,33 @@ public class SoftArrayBackedOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> exte
     private volatile SoftReference<VALUE_TYPE[]>[] cachedValues;
 
     /**
-     * Construct a lookup cache for the supplied arguments, using {@link OffsetLookupCache#createPlaceholder(Class)} to
-     * create a "null" placeholder value.
+     * Construct a lookup cache for the supplied arguments, using
+     * {@link OffsetLookupCache#createPlaceholder(Class)} to create a "null" placeholder value.
      *
-     * @param valueType      The value type
-     * @param lookupFunction The lookup function from index to value, must return a fully-initialized, immutable object or null
+     * @param valueType The value type
+     * @param lookupFunction The lookup function from index to value, must return a
+     *        fully-initialized, immutable object or null
      */
     public SoftArrayBackedOffsetLookupCache(@NotNull final Class<VALUE_TYPE> valueType,
-                                            @NotNull final OffsetLookup<VALUE_TYPE, EXTRA_INPUT_TYPE> lookupFunction) {
+        @NotNull final OffsetLookup<VALUE_TYPE, EXTRA_INPUT_TYPE> lookupFunction) {
         this(valueType, lookupFunction, OffsetLookupCache.createPlaceholder(valueType));
     }
 
     /**
      * Construct a lookup cache for the supplied arguments.
      *
-     * @param valueType      The value type
-     * @param lookupFunction The lookup function from index to value, must return a fully-initialized, immutable object or null
-     * @param nullValue      The "null" placeholder value, stored internally whenever lookupFunction returns null
+     * @param valueType The value type
+     * @param lookupFunction The lookup function from index to value, must return a
+     *        fully-initialized, immutable object or null
+     * @param nullValue The "null" placeholder value, stored internally whenever lookupFunction
+     *        returns null
      */
     private SoftArrayBackedOffsetLookupCache(@NotNull final Class<VALUE_TYPE> valueType,
-                                             @NotNull final OffsetLookup<VALUE_TYPE, EXTRA_INPUT_TYPE> lookupFunction,
-                                             @NotNull final VALUE_TYPE nullValue) {
+        @NotNull final OffsetLookup<VALUE_TYPE, EXTRA_INPUT_TYPE> lookupFunction,
+        @NotNull final VALUE_TYPE nullValue) {
         super(lookupFunction, nullValue, valueType);
 
-        //noinspection unchecked
+        // noinspection unchecked
         this.cachedValues = ZERO_LENGTH_SOFT_REFERENCE_ARRAY;
     }
 
@@ -73,21 +77,24 @@ public class SoftArrayBackedOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> exte
         VALUE_TYPE[] block;
         VALUE_TYPE value;
 
-        // This is only correct because we rely on lookupFunction to return fully-initialized, immutable objects (or null).
+        // This is only correct because we rely on lookupFunction to return fully-initialized,
+        // immutable objects (or null).
         if ((localCachedValues = cachedValues).length <= blockIndex
-                || (blockRef = localCachedValues[blockIndex]) == null
-                || (block = blockRef.get()) == null
-                || (value = block[subBlockIndex]) == null) {
+            || (blockRef = localCachedValues[blockIndex]) == null
+            || (block = blockRef.get()) == null
+            || (value = block[subBlockIndex]) == null) {
             synchronized (this) {
                 if ((localCachedValues = cachedValues).length <= blockIndex) {
                     // noinspection unchecked
-                    final SoftReference<VALUE_TYPE[]>[] newCachedValues = new SoftReference[1 << MathUtil.ceilLog2(blockIndex + 1)];
-                    System.arraycopy(localCachedValues, 0, newCachedValues, 0, localCachedValues.length);
+                    final SoftReference<VALUE_TYPE[]>[] newCachedValues =
+                        new SoftReference[1 << MathUtil.ceilLog2(blockIndex + 1)];
+                    System.arraycopy(localCachedValues, 0, newCachedValues, 0,
+                        localCachedValues.length);
                     cachedValues = localCachedValues = newCachedValues;
                 }
                 if ((blockRef = localCachedValues[blockIndex]) == null
-                        || (block = blockRef.get()) == null) {
-                    //noinspection unchecked
+                    || (block = blockRef.get()) == null) {
+                    // noinspection unchecked
                     block = (VALUE_TYPE[]) Array.newInstance(valueType, BLOCK_SIZE);
                     blockRef = new SoftReference<>(block);
                     localCachedValues[blockIndex] = blockRef;
@@ -105,7 +112,7 @@ public class SoftArrayBackedOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> exte
 
     @Override
     public synchronized void clear() {
-        //noinspection unchecked
+        // noinspection unchecked
         cachedValues = ZERO_LENGTH_SOFT_REFERENCE_ARRAY;
     }
 }

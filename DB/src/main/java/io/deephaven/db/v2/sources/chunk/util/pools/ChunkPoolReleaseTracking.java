@@ -28,13 +28,16 @@ public final class ChunkPoolReleaseTracking {
             return;
         }
         if (!factory.isMyType(releaseTracker.getClass())) {
-            throw new IllegalStateException("Can't enable to a different tracking type (strict versus not)");
+            throw new IllegalStateException(
+                "Can't enable to a different tracking type (strict versus not)");
         }
         if (preCheck) {
             try {
                 releaseTracker.check();
-            } catch (ReleaseTracker.LeakedException|ReleaseTracker.MissedReleaseException checkException) {
-                throw new IllegalStateException("Release tracker had errors on enable", checkException);
+            } catch (ReleaseTracker.LeakedException
+                | ReleaseTracker.MissedReleaseException checkException) {
+                throw new IllegalStateException("Release tracker had errors on enable",
+                    checkException);
             }
         }
     }
@@ -74,6 +77,5 @@ public final class ChunkPoolReleaseTracking {
         }
     }
 
-    private ChunkPoolReleaseTracking() {
-    }
+    private ChunkPoolReleaseTracking() {}
 }

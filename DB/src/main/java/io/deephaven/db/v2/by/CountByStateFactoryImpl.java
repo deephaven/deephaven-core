@@ -12,7 +12,7 @@ import java.util.Objects;
 public class CountByStateFactoryImpl extends ReaggregatableStatefactory {
     private final String countColumnName;
 
-    public CountByStateFactoryImpl(String countColumnName){
+    public CountByStateFactoryImpl(String countColumnName) {
         this.countColumnName = countColumnName;
     }
 
@@ -29,8 +29,10 @@ public class CountByStateFactoryImpl extends ReaggregatableStatefactory {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             final MemoKey memoKey = (MemoKey) o;
             return Objects.equals(countColumnName, memoKey.countColumnName);
         }

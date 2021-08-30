@@ -15,12 +15,14 @@ public class OrderedKeysKeyRangesChunkImplTest extends OrderedKeysTestBase {
 
     @Override
     protected OrderedKeys create(long... values) {
-        return OrderedKeys.takeKeyRangesChunkAndMakeOrderedKeys(ChunkUtils.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
+        return OrderedKeys.takeKeyRangesChunkAndMakeOrderedKeys(
+            ChunkUtils.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
     }
 
     @Test
     public void testGetRelativePositionForCoverage() {
-        try (final WritableLongChunk<OrderedKeyRanges> chunk = WritableLongChunk.makeWritableChunk(6)) {
+        try (final WritableLongChunk<OrderedKeyRanges> chunk =
+            WritableLongChunk.makeWritableChunk(6)) {
             chunk.setSize(0);
             chunk.add(0);
             chunk.add(3);

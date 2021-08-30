@@ -5,8 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.UnaryOperator;
 
 /**
- * Interface for immutable tuple classes that can produce a new instance of themselves with canonicalized object
- * elements.
+ * Interface for immutable tuple classes that can produce a new instance of themselves with
+ * canonicalized object elements.
  */
 public interface CanonicalizableTuple<TUPLE_TYPE> {
 

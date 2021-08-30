@@ -10,9 +10,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 /**
- * Java wrapper to deal with the distinct ResponseStream types that are emitted.
- * Provides strongly typed methods for cleaner Java consumption, that can be used to
- * represent any of the structural types that are used for grpc methods.
+ * Java wrapper to deal with the distinct ResponseStream types that are emitted. Provides strongly
+ * typed methods for cleaner Java consumption, that can be used to represent any of the structural
+ * types that are used for grpc methods.
  *
  * @param <T> payload that is emitted from the stream
  */
@@ -20,15 +20,19 @@ import jsinterop.base.Js;
 public class ResponseStreamWrapper<T> {
     public interface StreamHandler<T> {
         void onStatus(Status status);
+
         void onData(T data);
+
         void onEnd(Status end);
     }
     @JsType(isNative = true)
     public interface Status {
         @JsProperty
         double getCode();
+
         @JsProperty
         String getDetails();
+
         @JsProperty
         BrowserHeaders getMetadata();
     }
@@ -55,10 +59,12 @@ public class ResponseStreamWrapper<T> {
     public final ResponseStreamWrapper<T> onStatus(JsConsumer<Status> handler) {
         return on("status", Js.cast(handler));
     }
+
     @JsOverlay
     public final ResponseStreamWrapper<T> onData(JsConsumer<T> handler) {
         return on("data", Js.cast(handler));
     }
+
     @JsOverlay
     public final ResponseStreamWrapper<T> onEnd(JsConsumer<Status> handler) {
         return on("end", Js.cast(handler));

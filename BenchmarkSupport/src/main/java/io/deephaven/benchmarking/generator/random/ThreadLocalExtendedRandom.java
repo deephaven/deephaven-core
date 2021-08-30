@@ -12,7 +12,7 @@ public class ThreadLocalExtendedRandom extends ExtendedRandom {
         return INSTANCE;
     }
 
-    private ThreadLocalExtendedRandom() { }
+    private ThreadLocalExtendedRandom() {}
 
     @Override
     public double nextDouble() {

@@ -12,8 +12,7 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 /**
  * {@link IndexableData} dataset with {@link Integer} values.
  *
- * Dataset values equal to {@link io.deephaven.util.QueryConstants#NULL_INT}
- * are treated as null.
+ * Dataset values equal to {@link io.deephaven.util.QueryConstants#NULL_INT} are treated as null.
  */
 public class IndexableDataInteger extends IndexableData<Integer> {
     private static final long serialVersionUID = 8301093013116624033L;
@@ -22,8 +21,8 @@ public class IndexableDataInteger extends IndexableData<Integer> {
     /**
      * Creates an IndexableDataInteger instance.
      *
-     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_INT}
-     * are treated as null.
+     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_INT} are treated
+     * as null.
      *
      * @param data data
      * @param plotInfo plot information
@@ -40,5 +39,7 @@ public class IndexableDataInteger extends IndexableData<Integer> {
     }
 
     @Override
-    public Integer get(int index) { return (index >= data.length || data[index] == NULL_INT) ? null : data[index]; }
+    public Integer get(int index) {
+        return (index >= data.length || data[index] == NULL_INT) ? null : data[index];
+    }
 }

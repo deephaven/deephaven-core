@@ -26,8 +26,13 @@ public class TestJobStateTimeoutQueue extends TestCase {
      * A null Job implementation
      */
     private static class NullJob extends Job {
-        public int invoke(SelectableChannel channel, int readyOps, Procedure.Nullary handoff) throws IOException { return 0; }
+        public int invoke(SelectableChannel channel, int readyOps, Procedure.Nullary handoff)
+            throws IOException {
+            return 0;
+        }
+
         public void timedOut() {}
+
         public void cancelled() {}
     }
 
@@ -36,32 +41,62 @@ public class TestJobStateTimeoutQueue extends TestCase {
      */
     public void testTimeoutQueue() {
         JobState[] ja = new JobState[10];
-        for ( int i = 0; i < ja.length; ++i ) {
+        for (int i = 0; i < ja.length; ++i) {
             ja[i] = new JobState(new NullJob());
         }
         JobStateTimeoutQueue q = new JobStateTimeoutQueue(Logger.NULL, 10);
 
-        q.enter(ja[0], 1); assertTrue(q.testInvariant("insert 1"));
-        q.enter(ja[1], 9); assertTrue(q.testInvariant("insert 9"));
-        q.enter(ja[2], 8); assertTrue(q.testInvariant("insert 8"));
-        q.enter(ja[3], 5); assertTrue(q.testInvariant("insert 5"));
-        q.enter(ja[4], 2); assertTrue(q.testInvariant("insert 2"));
-        q.enter(ja[5], 3); assertTrue(q.testInvariant("insert 3"));
-        q.enter(ja[6], 6); assertTrue(q.testInvariant("insert 6"));
-        q.enter(ja[7], 4); assertTrue(q.testInvariant("insert 4"));
-        q.enter(ja[8], 7); assertTrue(q.testInvariant("insert 7"));
-        q.enter(ja[9], 10); assertTrue(q.testInvariant("insert 10"));
+        q.enter(ja[0], 1);
+        assertTrue(q.testInvariant("insert 1"));
+        q.enter(ja[1], 9);
+        assertTrue(q.testInvariant("insert 9"));
+        q.enter(ja[2], 8);
+        assertTrue(q.testInvariant("insert 8"));
+        q.enter(ja[3], 5);
+        assertTrue(q.testInvariant("insert 5"));
+        q.enter(ja[4], 2);
+        assertTrue(q.testInvariant("insert 2"));
+        q.enter(ja[5], 3);
+        assertTrue(q.testInvariant("insert 3"));
+        q.enter(ja[6], 6);
+        assertTrue(q.testInvariant("insert 6"));
+        q.enter(ja[7], 4);
+        assertTrue(q.testInvariant("insert 4"));
+        q.enter(ja[8], 7);
+        assertTrue(q.testInvariant("insert 7"));
+        q.enter(ja[9], 10);
+        assertTrue(q.testInvariant("insert 10"));
 
-        assertEquals(ja[0], q.top()); q.removeTop(); q.testInvariant("remove 1");
-        assertEquals(ja[4], q.top()); q.removeTop(); q.testInvariant("remove 2");
-        assertEquals(ja[5], q.top()); q.removeTop(); q.testInvariant("remove 3");
-        assertEquals(ja[7], q.top()); q.removeTop(); q.testInvariant("remove 4");
-        assertEquals(ja[3], q.top()); q.removeTop(); q.testInvariant("remove 5");
-        assertEquals(ja[6], q.top()); q.removeTop(); q.testInvariant("remove 6");
-        assertEquals(ja[8], q.top()); q.removeTop(); q.testInvariant("remove 7");
-        assertEquals(ja[2], q.top()); q.removeTop(); q.testInvariant("remove 8");
-        assertEquals(ja[1], q.top()); q.removeTop(); q.testInvariant("remove 9");
-        assertEquals(ja[9], q.top()); q.removeTop(); q.testInvariant("remove 10");
+        assertEquals(ja[0], q.top());
+        q.removeTop();
+        q.testInvariant("remove 1");
+        assertEquals(ja[4], q.top());
+        q.removeTop();
+        q.testInvariant("remove 2");
+        assertEquals(ja[5], q.top());
+        q.removeTop();
+        q.testInvariant("remove 3");
+        assertEquals(ja[7], q.top());
+        q.removeTop();
+        q.testInvariant("remove 4");
+        assertEquals(ja[3], q.top());
+        q.removeTop();
+        q.testInvariant("remove 5");
+        assertEquals(ja[6], q.top());
+        q.removeTop();
+        q.testInvariant("remove 6");
+        assertEquals(ja[8], q.top());
+        q.removeTop();
+        q.testInvariant("remove 7");
+        assertEquals(ja[2], q.top());
+        q.removeTop();
+        q.testInvariant("remove 8");
+        assertEquals(ja[1], q.top());
+        q.removeTop();
+        q.testInvariant("remove 9");
+        assertEquals(ja[9], q.top());
+        q.removeTop();
+        q.testInvariant("remove 10");
 
         assertTrue(q.testInvariant("after clone"));
     }

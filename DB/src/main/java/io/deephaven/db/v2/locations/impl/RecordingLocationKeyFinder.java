@@ -8,10 +8,11 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * {@link TableLocationKeyFinder Location finder} that will record and expose the output of another for subsequent
- * delivery to an observer.
+ * {@link TableLocationKeyFinder Location finder} that will record and expose the output of another
+ * for subsequent delivery to an observer.
  */
-public final class RecordingLocationKeyFinder<TLK extends ImmutableTableLocationKey> implements TableLocationKeyFinder<TLK>, Consumer<TLK> {
+public final class RecordingLocationKeyFinder<TLK extends ImmutableTableLocationKey>
+    implements TableLocationKeyFinder<TLK>, Consumer<TLK> {
 
     private final List<TLK> recordedKeys = new ArrayList<>();
 

@@ -28,20 +28,21 @@ public class BigIntegerCodecTest extends TestCase {
         roundTripWithOffset(args, value, value, 0);
     }
 
-    private void roundTripWithOffset(final String args, final BigInteger value, final BigInteger expected, final int offset) {
+    private void roundTripWithOffset(final String args, final BigInteger value,
+        final BigInteger expected, final int offset) {
         final BigIntegerCodec codec = new BigIntegerCodec(args);
         byte[] enc = codec.encode(value);
         // if we expect to be decoding from an offset, construct the input accordingly
-        if(offset > 0) {
-            final byte[] buffer = new byte[enc.length+offset];
+        if (offset > 0) {
+            final byte[] buffer = new byte[enc.length + offset];
             System.arraycopy(enc, 0, buffer, offset, enc.length);
             enc = buffer;
         }
         // when fixed width we expect every encoded value to be the same size
         if (args.contains("precision=")) {
-            assertEquals(codec.expectedObjectWidth(), enc.length-offset);
+            assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
-        final BigInteger v1 = codec.decode(enc, offset, enc.length-offset);
+        final BigInteger v1 = codec.decode(enc, offset, enc.length - offset);
         assertEquals(expected, v1);
     }
 
@@ -62,16 +63,16 @@ public class BigIntegerCodecTest extends TestCase {
         final BigIntegerCodec codec = new BigIntegerCodec(args);
         byte[] enc = codec.encode(null);
         // if we expect to be decoding from an offset, construct the input accordingly
-        if(offset > 0) {
-            final byte[] buffer = new byte[enc.length+offset];
+        if (offset > 0) {
+            final byte[] buffer = new byte[enc.length + offset];
             System.arraycopy(enc, 0, buffer, offset, enc.length);
             enc = buffer;
         }
         // when fixed width we expect every encoded value to be the same size
         if (args.contains("precision=")) {
-            assertEquals(codec.expectedObjectWidth(), enc.length-offset);
+            assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
-        final BigInteger v1 = codec.decode(enc, offset, enc.length-offset);
+        final BigInteger v1 = codec.decode(enc, offset, enc.length - offset);
         assertEquals(v1, null);
     }
 
@@ -135,7 +136,7 @@ public class BigIntegerCodecTest extends TestCase {
         final int maxPrec = BigIntegerCodec.MAX_FIXED_PRECISION;
 
         // should be ok, that's how many decimal digits we can store in 255 bytes
-        roundTrip( Integer.toString(maxPrec), 12345);
+        roundTrip(Integer.toString(maxPrec), 12345);
 
         // make sure we can't create with with one too many
         expectIllegalArgumentException(Integer.toString(maxPrec + 1), 1111111);
@@ -148,8 +149,10 @@ public class BigIntegerCodecTest extends TestCase {
     public void testLargeValues() {
 
         final int maxPrec = BigIntegerCodec.MAX_FIXED_PRECISION;
-        final BigInteger hugeInt = BigInteger.valueOf(10).pow(BigIntegerCodec.MAX_FIXED_PRECISION - 1);
-        final BigInteger hugeNegativeInt = BigInteger.valueOf(10).pow(BigIntegerCodec.MAX_FIXED_PRECISION - 1).negate();
+        final BigInteger hugeInt =
+            BigInteger.valueOf(10).pow(BigIntegerCodec.MAX_FIXED_PRECISION - 1);
+        final BigInteger hugeNegativeInt =
+            BigInteger.valueOf(10).pow(BigIntegerCodec.MAX_FIXED_PRECISION - 1).negate();
 
         // prove that we can encode and decode a huge integer
         roundTrip(Integer.toString(maxPrec), hugeInt);

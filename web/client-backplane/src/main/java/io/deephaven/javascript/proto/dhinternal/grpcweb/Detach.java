@@ -6,10 +6,10 @@ import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, name = "dhinternal.grpcWeb.detach", namespace = JsPackage.GLOBAL)
 public class Detach {
-  @JsFunction
-  public interface DetachCbFn {
-    void onInvoke();
-  }
+    @JsFunction
+    public interface DetachCbFn {
+        void onInvoke();
+    }
 
-  public static native void detach(Detach.DetachCbFn cb);
+    public static native void detach(Detach.DetachCbFn cb);
 }

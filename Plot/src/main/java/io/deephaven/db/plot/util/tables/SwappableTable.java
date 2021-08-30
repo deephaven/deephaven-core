@@ -43,8 +43,7 @@ public abstract class SwappableTable implements Serializable {
     public abstract void addColumn(final String column);
 
     /**
-     * Gets the signature (columns and types) of the table,
-     * \even if the data is transformed.
+     * Gets the signature (columns and types) of the table, \even if the data is transformed.
      *
      * @return table with the columns and types of the final table
      */

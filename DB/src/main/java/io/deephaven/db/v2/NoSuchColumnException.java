@@ -12,17 +12,20 @@ public class NoSuchColumnException extends IllegalArgumentException {
     /**
      * Thrown when an operation can not find a required column.
      *
-     * @param presentColumns   the column names present in the table
+     * @param presentColumns the column names present in the table
      * @param requestedColumns the request column names that were not found
      */
-    public NoSuchColumnException(Collection<String> presentColumns, Collection<String> requestedColumns) {
-        super("Unknown column names [" + StringUtils.joinStrings(requestedColumns,",") + "], available column names are [" + StringUtils.joinStrings(presentColumns,",") + "]");
+    public NoSuchColumnException(Collection<String> presentColumns,
+        Collection<String> requestedColumns) {
+        super("Unknown column names [" + StringUtils.joinStrings(requestedColumns, ",")
+            + "], available column names are [" + StringUtils.joinStrings(presentColumns, ",")
+            + "]");
     }
 
     /**
      * Thrown when an operation can not find a required column.
      *
-     * @param presentColumns  the column names present in the table
+     * @param presentColumns the column names present in the table
      * @param requestedColumn the request column name that was not found
      */
     public NoSuchColumnException(Collection<String> presentColumns, String requestedColumn) {

@@ -7,5 +7,5 @@ import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, name = "dhinternal.grpcWeb.util", namespace = JsPackage.GLOBAL)
 public class Util {
-  public static native Uint8Array frameRequest(ProtobufMessage request);
+    public static native Uint8Array frameRequest(ProtobufMessage request);
 }

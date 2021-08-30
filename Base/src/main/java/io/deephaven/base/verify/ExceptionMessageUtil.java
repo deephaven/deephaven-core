@@ -7,89 +7,90 @@ package io.deephaven.base.verify;
 /**
  * String utility methods related to assertions.
  * <UL>
- * <LI> (package) String failureMessage(String assertionType, String preamble, String message, String detailMessage)
- * <LI> (package) String valueString(Object)
- * <LI> (public) String valueAndName(value0, String name0, value1, String name1, ... )
- * <LI> (public) String concat(String valueAndName0, String valueAndName1, ... )
+ * <LI>(package) String failureMessage(String assertionType, String preamble, String message, String
+ * detailMessage)
+ * <LI>(package) String valueString(Object)
+ * <LI>(public) String valueAndName(value0, String name0, value1, String name1, ... )
+ * <LI>(public) String concat(String valueAndName0, String valueAndName1, ... )
  * </UL>
  */
 public final class ExceptionMessageUtil {
 
-    //################################################################
+    // ################################################################
     // failureMessage
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return message string for assertion failure. */
     public static String failureMessage(
         String assertionType, // e.g., "Assertion" or "Requirement"
         String assertedText, // e.g., "asserted" or "required"
         String conditionText,
         String detailMessage) {
-        String resultMessage=assertionType+" failed";
-        if (conditionText!=null && conditionText.length()>0) {
-            resultMessage+=": "+assertedText+" "+conditionText;
-            if (detailMessage!=null && detailMessage.length()>0) {
-                resultMessage+=", instead "+detailMessage;
+        String resultMessage = assertionType + " failed";
+        if (conditionText != null && conditionText.length() > 0) {
+            resultMessage += ": " + assertedText + " " + conditionText;
+            if (detailMessage != null && detailMessage.length() > 0) {
+                resultMessage += ", instead " + detailMessage;
             }
         }
-        return resultMessage+".";
+        return resultMessage + ".";
     }
 
-    //################################################################
+    // ################################################################
     // valueString
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the textual representation of an Object's value. */
     public static String valueString(Object o) {
-        if (o==null) {
+        if (o == null) {
             return "null";
         } else if (o instanceof String) {
-            return "\""+o+"\"";
+            return "\"" + o + "\"";
         } else if (o instanceof Character) {
-            //noinspection UnnecessaryUnboxing
-            return valueString(((Character)o).charValue());
+            // noinspection UnnecessaryUnboxing
+            return valueString(((Character) o).charValue());
         } else {
             return o.toString();
         }
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the quoted textual representation of char value. */
     public static String valueString(char c) {
-        return "\'"+c+"\'";
+        return "\'" + c + "\'";
     }
 
-    //----------------------------------------------------------------
-    /** Builds a string that consists of <i>count</i> copies of the
-     * character <i>c</i>.
+    // ----------------------------------------------------------------
+    /**
+     * Builds a string that consists of <i>count</i> copies of the character <i>c</i>.
+     * 
      * @param c character to use repeatedly
      * @param count number of times to repeat <i>c</i>
-     * @return new string filled with the character <i>c</i> */
+     * @return new string filled with the character <i>c</i>
+     */
     public static String fillChar(char c, int count) {
         Require.gtZero(count, "count");
-        char[] buffer=new char[count];
+        char[] buffer = new char[count];
         // note: this is faster than System.arraycopy unless count>~100
-        for (int nIndex=0; nIndex<count; nIndex++) {
-            buffer[nIndex]=c;
+        for (int nIndex = 0; nIndex < count; nIndex++) {
+            buffer[nIndex] = c;
         }
         return new String(buffer);
     }
 
-    //################################################################
+    // ################################################################
     // valueAndName
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more Objects. */
     public static String valueAndName(
-        Object o0, String name0)
-    {
-        return name0+" == "+valueString(o0);
+        Object o0, String name0) {
+        return name0 + " == " + valueString(o0);
     }
 
     public static String valueAndName(
         Object o0, String name0,
-        Object o1, String name1)
-    {
+        Object o1, String name1) {
         return concat(
             valueAndName(o0, name0),
             valueAndName(o1, name1));
@@ -98,8 +99,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         Object o0, String name0,
         Object o1, String name1,
-        Object o2, String name2)
-    {
+        Object o2, String name2) {
         return concat(
             valueAndName(o0, name0),
             valueAndName(o1, name1),
@@ -110,8 +110,7 @@ public final class ExceptionMessageUtil {
         Object o0, String name0,
         Object o1, String name1,
         Object o2, String name2,
-        Object o3, String name3)
-    {
+        Object o3, String name3) {
         return concat(
             valueAndName(o0, name0),
             valueAndName(o1, name1),
@@ -119,18 +118,16 @@ public final class ExceptionMessageUtil {
             valueAndName(o3, name3));
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more booleans. */
     public static String valueAndName(
-        boolean b0, String name0)
-    {
-        return name0+" == "+b0;
+        boolean b0, String name0) {
+        return name0 + " == " + b0;
     }
 
     public static String valueAndName(
         boolean b0, String name0,
-        boolean b1, String name1)
-    {
+        boolean b1, String name1) {
         return concat(
             valueAndName(b0, name0),
             valueAndName(b1, name1));
@@ -139,8 +136,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         boolean b0, String name0,
         boolean b1, String name1,
-        boolean b2, String name2)
-    {
+        boolean b2, String name2) {
         return concat(
             valueAndName(b0, name0),
             valueAndName(b1, name1),
@@ -151,8 +147,7 @@ public final class ExceptionMessageUtil {
         boolean b0, String name0,
         boolean b1, String name1,
         boolean b2, String name2,
-        boolean b3, String name3)
-    {
+        boolean b3, String name3) {
         return concat(
             valueAndName(b0, name0),
             valueAndName(b1, name1),
@@ -160,18 +155,16 @@ public final class ExceptionMessageUtil {
             valueAndName(b3, name3));
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more chars */
     public static String valueAndName(
-        char c0, String name0)
-    {
-        return name0+" == "+valueString(c0);
+        char c0, String name0) {
+        return name0 + " == " + valueString(c0);
     }
 
     public static String valueAndName(
         char c0, String name0,
-        char c1, String name1)
-    {
+        char c1, String name1) {
         return concat(
             valueAndName(c0, name0),
             valueAndName(c1, name1));
@@ -180,8 +173,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         char c0, String name0,
         char c1, String name1,
-        char c2, String name2)
-    {
+        char c2, String name2) {
         return concat(
             valueAndName(c0, name0),
             valueAndName(c1, name1),
@@ -192,8 +184,7 @@ public final class ExceptionMessageUtil {
         char c0, String name0,
         char c1, String name1,
         char c2, String name2,
-        char c3, String name3)
-    {
+        char c3, String name3) {
         return concat(
             valueAndName(c0, name0),
             valueAndName(c1, name1),
@@ -201,17 +192,16 @@ public final class ExceptionMessageUtil {
             valueAndName(c3, name3));
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more bytes. */
     public static String valueAndName(
         byte b0, String name0) {
-        return name0+" == "+b0;
+        return name0 + " == " + b0;
     }
 
     public static String valueAndName(
         byte b0, String name0,
-        byte b1, String name1)
-    {
+        byte b1, String name1) {
         return concat(
             valueAndName(b0, name0),
             valueAndName(b1, name1));
@@ -220,8 +210,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         byte b0, String name0,
         byte b1, String name1,
-        byte b2, String name2)
-    {
+        byte b2, String name2) {
         return concat(
             valueAndName(b0, name0),
             valueAndName(b1, name1),
@@ -232,8 +221,7 @@ public final class ExceptionMessageUtil {
         byte b0, String name0,
         byte b1, String name1,
         byte b2, String name2,
-        byte b3, String name3)
-    {
+        byte b3, String name3) {
         return concat(
             valueAndName(b0, name0),
             valueAndName(b1, name1),
@@ -241,18 +229,16 @@ public final class ExceptionMessageUtil {
             valueAndName(b3, name3));
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more shorts. */
     public static String valueAndName(
-        short s0, String name0)
-    {
-        return name0+" == "+s0;
+        short s0, String name0) {
+        return name0 + " == " + s0;
     }
 
     public static String valueAndName(
         short s0, String name0,
-        short s1, String name1)
-    {
+        short s1, String name1) {
         return concat(
             valueAndName(s0, name0),
             valueAndName(s1, name1));
@@ -261,8 +247,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         short s0, String name0,
         short s1, String name1,
-        short s2, String name2)
-    {
+        short s2, String name2) {
         return concat(
             valueAndName(s0, name0),
             valueAndName(s1, name1),
@@ -273,8 +258,7 @@ public final class ExceptionMessageUtil {
         short s0, String name0,
         short s1, String name1,
         short s2, String name2,
-        short s3, String name3)
-    {
+        short s3, String name3) {
         return concat(
             valueAndName(s0, name0),
             valueAndName(s1, name1),
@@ -282,18 +266,16 @@ public final class ExceptionMessageUtil {
             valueAndName(s3, name3));
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more ints. */
     public static String valueAndName(
-        int i0, String name0)
-    {
-        return name0+" == "+i0;
+        int i0, String name0) {
+        return name0 + " == " + i0;
     }
 
     public static String valueAndName(
         int i0, String name0,
-        int i1, String name1)
-    {
+        int i1, String name1) {
         return concat(
             valueAndName(i0, name0),
             valueAndName(i1, name1));
@@ -302,8 +284,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         int i0, String name0,
         int i1, String name1,
-        int i2, String name2)
-    {
+        int i2, String name2) {
         return concat(
             valueAndName(i0, name0),
             valueAndName(i1, name1),
@@ -314,8 +295,7 @@ public final class ExceptionMessageUtil {
         int i0, String name0,
         int i1, String name1,
         int i2, String name2,
-        int i3, String name3)
-    {
+        int i3, String name3) {
         return concat(
             valueAndName(i0, name0),
             valueAndName(i1, name1),
@@ -323,18 +303,16 @@ public final class ExceptionMessageUtil {
             valueAndName(i3, name3));
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more longs. */
     public static String valueAndName(
-        long l0, String name0)
-    {
-        return name0+" == "+l0;
+        long l0, String name0) {
+        return name0 + " == " + l0;
     }
 
     public static String valueAndName(
         long l0, String name0,
-        long l1, String name1)
-    {
+        long l1, String name1) {
         return concat(
             valueAndName(l0, name0),
             valueAndName(l1, name1));
@@ -343,8 +321,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         long l0, String name0,
         long l1, String name1,
-        long l2, String name2)
-    {
+        long l2, String name2) {
         return concat(
             valueAndName(l0, name0),
             valueAndName(l1, name1),
@@ -355,8 +332,7 @@ public final class ExceptionMessageUtil {
         long l0, String name0,
         long l1, String name1,
         long l2, String name2,
-        long l3, String name3)
-    {
+        long l3, String name3) {
         return concat(
             valueAndName(l0, name0),
             valueAndName(l1, name1),
@@ -364,18 +340,16 @@ public final class ExceptionMessageUtil {
             valueAndName(l3, name3));
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more floats. */
     public static String valueAndName(
-        float f0, String name0)
-    {
-        return name0+" == "+f0;
+        float f0, String name0) {
+        return name0 + " == " + f0;
     }
 
     public static String valueAndName(
         float f0, String name0,
-        float f1, String name1)
-    {
+        float f1, String name1) {
         return concat(
             valueAndName(f0, name0),
             valueAndName(f1, name1));
@@ -384,8 +358,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         float f0, String name0,
         float f1, String name1,
-        float f2, String name2)
-    {
+        float f2, String name2) {
         return concat(
             valueAndName(f0, name0),
             valueAndName(f1, name1),
@@ -396,8 +369,7 @@ public final class ExceptionMessageUtil {
         float f0, String name0,
         float f1, String name1,
         float f2, String name2,
-        float f3, String name3)
-    {
+        float f3, String name3) {
         return concat(
             valueAndName(f0, name0),
             valueAndName(f1, name1),
@@ -405,18 +377,16 @@ public final class ExceptionMessageUtil {
             valueAndName(f3, name3));
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the values and names of one or more doubles. */
     public static String valueAndName(
-        double d0, String name0)
-    {
-        return name0+" == "+d0;
+        double d0, String name0) {
+        return name0 + " == " + d0;
     }
 
     public static String valueAndName(
         double d0, String name0,
-        double d1, String name1)
-    {
+        double d1, String name1) {
         return concat(
             valueAndName(d0, name0),
             valueAndName(d1, name1));
@@ -425,8 +395,7 @@ public final class ExceptionMessageUtil {
     public static String valueAndName(
         double d0, String name0,
         double d1, String name1,
-        double d2, String name2)
-    {
+        double d2, String name2) {
         return concat(
             valueAndName(d0, name0),
             valueAndName(d1, name1),
@@ -437,8 +406,7 @@ public final class ExceptionMessageUtil {
         double d0, String name0,
         double d1, String name1,
         double d2, String name2,
-        double d3, String name3)
-    {
+        double d3, String name3) {
         return concat(
             valueAndName(d0, name0),
             valueAndName(d1, name1),
@@ -446,26 +414,24 @@ public final class ExceptionMessageUtil {
             valueAndName(d3, name3));
     }
 
-    //################################################################
+    // ################################################################
     // concat
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     /** Return the concatenation of a list of valueAndName strings. */
     public static String concat(
         String valueAndName0,
-        String valueAndName1)
-    {
-        return valueAndName0+", "+
+        String valueAndName1) {
+        return valueAndName0 + ", " +
             valueAndName1;
     }
 
     public static String concat(
         String valueAndName0,
         String valueAndName1,
-        String valueAndName2)
-    {
-        return valueAndName0+", "+
-            valueAndName1+", "+
+        String valueAndName2) {
+        return valueAndName0 + ", " +
+            valueAndName1 + ", " +
             valueAndName2;
     }
 
@@ -473,11 +439,10 @@ public final class ExceptionMessageUtil {
         String valueAndName0,
         String valueAndName1,
         String valueAndName2,
-        String valueAndName3)
-    {
-        return valueAndName0+", "+
-            valueAndName1+", "+
-            valueAndName2+", "+
+        String valueAndName3) {
+        return valueAndName0 + ", " +
+            valueAndName1 + ", " +
+            valueAndName2 + ", " +
             valueAndName3;
     }
 

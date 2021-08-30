@@ -9,9 +9,11 @@ import org.immutables.value.Value;
 import java.util.Optional;
 
 /**
- * <p>Representation class for per-column type information stored in key-value metadata for Deephaven-written Parquet
- * files.
- * <p>Currently only used for columns requiring non-default deserialization or type selection
+ * <p>
+ * Representation class for per-column type information stored in key-value metadata for
+ * Deephaven-written Parquet files.
+ * <p>
+ * Currently only used for columns requiring non-default deserialization or type selection
  */
 @Value.Immutable
 @BuildableStyle
@@ -34,8 +36,7 @@ public abstract class ColumnTypeInfo {
      * Values for the {@link #specialType()} field.
      */
     public enum SpecialType {
-        StringSet,
-        Vector
+        StringSet, Vector
     }
 
     /**

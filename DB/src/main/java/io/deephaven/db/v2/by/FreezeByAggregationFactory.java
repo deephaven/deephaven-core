@@ -24,11 +24,13 @@ public class FreezeByAggregationFactory implements AggregationContextFactory {
     }
 
     @Override
-    public AggregationContext makeAggregationContext(@NotNull final Table table, @NotNull final String... groupByColumns) {
+    public AggregationContext makeAggregationContext(@NotNull final Table table,
+        @NotNull final String... groupByColumns) {
         return getAllColumnOperators(table, groupByColumns);
     }
 
-    private static AggregationContext getAllColumnOperators(Table withView, String [] groupByNameArray) {
+    private static AggregationContext getAllColumnOperators(Table withView,
+        String[] groupByNameArray) {
         final Set<String> groupByNames = new HashSet<>(Arrays.asList(groupByNameArray));
         final int operatorCount = withView.getColumnSourceMap().size() - groupByNames.size() + 1;
 
@@ -47,26 +49,29 @@ public class FreezeByAggregationFactory implements AggregationContextFactory {
 
             final Class<?> type = columnSource.getType();
 
-            // For DBDateTime columns, the in-memory source uses longs internally, and all supported aggregations (i.e. min and max) work correctly against longs.
-            final ColumnSource inputSource = columnSource.getType() == DBDateTime.class ? ReinterpretUtilities.dateTimeToLongSource(columnSource) : columnSource;
+            // For DBDateTime columns, the in-memory source uses longs internally, and all supported
+            // aggregations (i.e. min and max) work correctly against longs.
+            final ColumnSource inputSource = columnSource.getType() == DBDateTime.class
+                ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
+                : columnSource;
 
-            //noinspection unchecked
+            // noinspection unchecked
             inputColumns.add(inputSource);
             inputNames.add(name);
             operators.add(new FreezeByOperator(type, name, countOperator));
         });
 
-        final String [][] inputNameArray = new String[inputNames.size() + 1][1];
+        final String[][] inputNameArray = new String[inputNames.size() + 1][1];
         inputNameArray[0] = CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
         for (int ii = 0; ii < inputNames.size(); ++ii) {
             inputNameArray[ii + 1][0] = inputNames.get(ii);
         }
 
-        //noinspection unchecked
-        return new AggregationContext(operators.toArray(IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY),
-                inputNameArray,
-                inputColumns.toArray(ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY)
-        );
+        // noinspection unchecked
+        return new AggregationContext(operators.toArray(
+            IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY),
+            inputNameArray,
+            inputColumns.toArray(ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY));
     }
 
     @Override

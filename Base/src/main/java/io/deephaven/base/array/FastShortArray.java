@@ -29,7 +29,7 @@ public class FastShortArray implements Externalizable, Copyable<FastShortArray> 
 
     public FastShortArray(short[] initValues) {
         this();
-        add(initValues,0,initValues.length);
+        add(initValues, 0, initValues.length);
     }
 
     public void add(short t) {
@@ -75,11 +75,13 @@ public class FastShortArray implements Externalizable, Copyable<FastShortArray> 
 
     public void removeThisIndex(int index) {
         if (index >= length) {
-            throw new IllegalArgumentException("you tried to remove this index: " + index + " when the array is only this long: " + length);
+            throw new IllegalArgumentException("you tried to remove this index: " + index
+                + " when the array is only this long: " + length);
         } else if (index < 0) {
-            throw new IllegalArgumentException("you tried to remove this index: " + index + " when we can only remove positive indices");
+            throw new IllegalArgumentException("you tried to remove this index: " + index
+                + " when we can only remove positive indices");
         } else {
-            //move all the items ahead one index and reduce the length
+            // move all the items ahead one index and reduce the length
             for (int i = index; i < length; i++) {
                 array[i] = array[i + 1];
             }
@@ -136,7 +138,7 @@ public class FastShortArray implements Externalizable, Copyable<FastShortArray> 
         msg.append(pre).append("<FastShortArray>\n");
         for (int i = 0; i < array.length; i++) {
             msg.append(pre).append(extra).append("<index>").append(i).append("</index><length>")
-                    .append(length).append("</length><entry>").append(array[i]).append("</entry>\n");
+                .append(length).append("</length><entry>").append(array[i]).append("</entry>\n");
         }
         msg.append(pre).append("</FastShortArray>\n");
         return msg.toString();
@@ -144,14 +146,17 @@ public class FastShortArray implements Externalizable, Copyable<FastShortArray> 
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof FastShortArray)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof FastShortArray))
+            return false;
 
         FastShortArray that = (FastShortArray) o;
 
-        if (length != that.length) return false;
+        if (length != that.length)
+            return false;
 
-       //here we only care about the items in the array before "length"
+        // here we only care about the items in the array before "length"
         for (int i = 0; i < length; i++) {
             if (this.array[i] != that.array[i]) {
                 return false;

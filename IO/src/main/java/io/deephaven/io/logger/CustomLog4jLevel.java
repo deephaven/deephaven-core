@@ -7,8 +7,9 @@ package io.deephaven.io.logger;
 import org.apache.log4j.Level;
 
 /**
- * Allows us to have an explicit priority named e-mail - this level is just logged with the priority string
- * "EMAIL", and the actual email is created by an external tool which scans the logfiles for EMAIL lines.
+ * Allows us to have an explicit priority named e-mail - this level is just logged with the priority
+ * string "EMAIL", and the actual email is created by an external tool which scans the logfiles for
+ * EMAIL lines.
  */
 public class CustomLog4jLevel extends Level {
     public static final int EMAIL_INT = 45000;

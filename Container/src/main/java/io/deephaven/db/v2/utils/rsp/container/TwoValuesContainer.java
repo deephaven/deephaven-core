@@ -472,7 +472,8 @@ public final class TwoValuesContainer extends ImmutableContainer {
         return new ForwardIter(this);
     }
 
-    public static final class ContainerShortBatchIter extends ForwardIterBase implements ContainerShortBatchIterator {
+    public static final class ContainerShortBatchIter extends ForwardIterBase
+        implements ContainerShortBatchIterator {
         public ContainerShortBatchIter(final TwoValuesContainer c, final int skip) {
             super(c, -1 + skip);
         }
@@ -507,7 +508,8 @@ public final class TwoValuesContainer extends ImmutableContainer {
         return new ContainerShortBatchIter(this, skipFromStartCount);
     }
 
-    private static final class SearchRangeIter extends ForwardIterBase implements SearchRangeIterator {
+    private static final class SearchRangeIter extends ForwardIterBase
+        implements SearchRangeIterator {
         public SearchRangeIter(final TwoValuesContainer c, final int skip) {
             super(c, -1 + skip);
         }
@@ -585,7 +587,8 @@ public final class TwoValuesContainer extends ImmutableContainer {
         // iv1 < rangeEnd.
         final boolean v1Contained = rangeStart <= iv1;
         final boolean v2Contained = iv2 < rangeEnd;
-        final int[] buf = intBuf.get(); // buf will contain consecutive pairs of [begin,end] segments.
+        final int[] buf = intBuf.get(); // buf will contain consecutive pairs of [begin,end]
+                                        // segments.
         int n = 0;
         if (v1Contained) {
             if (iv1 == rangeStart) {
@@ -799,11 +802,12 @@ public final class TwoValuesContainer extends ImmutableContainer {
             }
         }
         throw new IllegalArgumentException("pStart=" + pStart + ", pEnd=" + pEnd +
-                ", iv1=" + iv1 + ", iv2=" + iv2);
+            ", iv1=" + iv1 + ", iv2=" + iv2);
     }
 
     @Override
-    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
+    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues,
+        final int maxPos) {
         if (maxPos < 0) {
             throw new IllegalArgumentException("maxPos=" + maxPos);
         }
@@ -813,7 +817,7 @@ public final class TwoValuesContainer extends ImmutableContainer {
         int end = -1;
         boolean doThrow = false;
         boolean accept1 = false;
-        boolean accept2 = false;  // won't become true if maxPos == 0.
+        boolean accept2 = false; // won't become true if maxPos == 0.
         while (inValues.hasNext()) {
             inValues.next();
             start = inValues.start();
@@ -850,7 +854,8 @@ public final class TwoValuesContainer extends ImmutableContainer {
             break;
         }
         if (doThrow) {
-            throw new IllegalArgumentException("start=" + start + ", end=" + end + ", iv1=" + iv1 + ", iv2=" + iv2);
+            throw new IllegalArgumentException(
+                "start=" + start + ", end=" + end + ", iv1=" + iv1 + ", iv2=" + iv2);
         }
         if (accept1) {
             if (accept2) {
@@ -868,8 +873,7 @@ public final class TwoValuesContainer extends ImmutableContainer {
     }
 
     @Override
-    public void trim() {
-    }
+    public void trim() {}
 
     private Container xorImpl(final Container c) {
         return c.deepCopy().iflip(v1).iflip(v2);
@@ -966,12 +970,11 @@ public final class TwoValuesContainer extends ImmutableContainer {
         final int iv1 = v1AsInt();
         final int iv2 = v2AsInt();
         return (start <= iv1 && iv1 < end) ||
-                (start <= iv2 && iv2 < end);
+            (start <= iv2 && iv2 < end);
     }
 
     @Override
-    public void setCopyOnWrite() {
-    }
+    public void setCopyOnWrite() {}
 
     @Override
     public int bytesAllocated() {
@@ -990,7 +993,7 @@ public final class TwoValuesContainer extends ImmutableContainer {
 
     @Override
     public Container toLargeContainer() {
-        return new ArrayContainer(new short[]{v1, v2});
+        return new ArrayContainer(new short[] {v1, v2});
     }
 
     @Override

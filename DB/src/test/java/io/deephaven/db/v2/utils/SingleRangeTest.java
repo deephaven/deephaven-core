@@ -92,19 +92,19 @@ public class SingleRangeTest {
         ix.remove(9);
         assertTrue(ix.getImpl() instanceof SingleRange);
         assertEquals(10, ix.firstKey());
-        assertEquals(21 , ix.lastKey());
+        assertEquals(21, ix.lastKey());
         ix.remove(22);
         assertTrue(ix.getImpl() instanceof SingleRange);
         assertEquals(10, ix.firstKey());
-        assertEquals(21 , ix.lastKey());
+        assertEquals(21, ix.lastKey());
         ix.remove(10);
         assertTrue(ix.getImpl() instanceof SingleRange);
         assertEquals(11, ix.firstKey());
-        assertEquals(21 , ix.lastKey());
+        assertEquals(21, ix.lastKey());
         ix.remove(21);
         assertTrue(ix.getImpl() instanceof SingleRange);
         assertEquals(11, ix.firstKey());
-        assertEquals(20 , ix.lastKey());
+        assertEquals(20, ix.lastKey());
         ix.remove(12);
         assertTrue(ix.getImpl() instanceof SortedRanges);
         assertEquals(9, ix.size());
@@ -116,12 +116,12 @@ public class SingleRangeTest {
     }
 
     private static void insertResultsInSingle(
-            final long start1,
-            final long end1,
-            final long start2,
-            final long end2,
-            final long startExpected,
-            final long endExpected) {
+        final long start1,
+        final long end1,
+        final long start2,
+        final long end2,
+        final long startExpected,
+        final long endExpected) {
         final TreeIndex ix = new TreeIndex(SingleRange.make(start1, end1));
         Runnable check = () -> {
             assertTrue(ix.getImpl() instanceof SingleRange);
@@ -163,11 +163,11 @@ public class SingleRangeTest {
     }
 
     private static void removeResultsCheck(
-            final long start1,
-            final long end1,
-            final long start2,
-            final long end2,
-            final Consumer<Index> check) {
+        final long start1,
+        final long end1,
+        final long start2,
+        final long end2,
+        final Consumer<Index> check) {
         final TreeIndex ix = new TreeIndex(SingleRange.make(start1, end1));
         final TreeIndex ix2 = new TreeIndex(SingleRange.make(start2, end2));
         ix.remove(ix2);
@@ -183,10 +183,10 @@ public class SingleRangeTest {
     }
 
     private static void removeResultsCheck(
-            final long start1,
-            final long end1,
-            final long start2,
-            final long end2) {
+        final long start1,
+        final long end1,
+        final long start2,
+        final long end2) {
         final Consumer<Index> check;
         if (start1 < start2 && end2 < end1) {
             // hole.
@@ -416,12 +416,15 @@ public class SingleRangeTest {
         assertEquals(end - start + 1, ix.size());
         final Index.SearchIterator it = ix.searchIterator();
         assertTrue(it.hasNext());
-        assertEquals(-1, it.binarySearchValue((final long key, final int dir) -> (int) ((start - 1) - key), 1));
+        assertEquals(-1,
+            it.binarySearchValue((final long key, final int dir) -> (int) ((start - 1) - key), 1));
         for (long v = start; v <= end; ++v) {
             final long compValue = v;
-            assertEquals(v, it.binarySearchValue((final long key, final int dir) -> (int) ((compValue) - key), 1));
+            assertEquals(v, it.binarySearchValue(
+                (final long key, final int dir) -> (int) ((compValue) - key), 1));
         }
-        assertEquals(end, it.binarySearchValue((final long key, final int dir) -> (int) ((end + 1) - key), 1));
+        assertEquals(end,
+            it.binarySearchValue((final long key, final int dir) -> (int) ((end + 1) - key), 1));
 
     }
 
@@ -441,12 +444,14 @@ public class SingleRangeTest {
         final long end = 30;
         final long card = end - start + 1;
         final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        final long[] positions = new long[]{ 0, 1, card - 2, card - 1};
-        final long[] expected = new long[]{10, 11, 29, 30};
+        final long[] positions = new long[] {0, 1, card - 2, card - 1};
+        final long[] expected = new long[] {10, 11, 29, 30};
         final long[] result = new long[4];
-        final WritableLongChunk<OrderedKeyIndices> resultsChunk = WritableLongChunk.writableChunkWrap(result);
+        final WritableLongChunk<OrderedKeyIndices> resultsChunk =
+            WritableLongChunk.writableChunkWrap(result);
         final LongChunk<OrderedKeyIndices> positionsChunk = WritableLongChunk.chunkWrap(positions);
-        ix.getKeysForPositions(new LongChunkIterator(positionsChunk), new LongChunkAppender(resultsChunk));
+        ix.getKeysForPositions(new LongChunkIterator(positionsChunk),
+            new LongChunkAppender(resultsChunk));
         assertArrayEquals(expected, result);
     }
 

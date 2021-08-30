@@ -13,66 +13,66 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.arrow.flight.protocol.Flight_pb.ActionType",
     namespace = JsPackage.GLOBAL)
 public class ActionType {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static ActionType.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static ActionType.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getDescription();
+
+        @JsProperty
+        String getType();
+
+        @JsProperty
+        void setDescription(String description);
+
+        @JsProperty
+        void setType(String type);
     }
 
-    @JsProperty
-    String getDescription();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static ActionType.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getType();
+        @JsProperty
+        String getDescription();
 
-    @JsProperty
-    void setDescription(String description);
+        @JsProperty
+        String getType();
 
-    @JsProperty
-    void setType(String type);
-  }
+        @JsProperty
+        void setDescription(String description);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static ActionType.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setType(String type);
     }
 
-    @JsProperty
-    String getDescription();
+    public static native ActionType deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getType();
+    public static native ActionType deserializeBinaryFromReader(ActionType message, Object reader);
 
-    @JsProperty
-    void setDescription(String description);
+    public static native void serializeBinaryToWriter(ActionType message, Object writer);
 
-    @JsProperty
-    void setType(String type);
-  }
+    public static native ActionType.ToObjectReturnType toObject(
+        boolean includeInstance, ActionType msg);
 
-  public static native ActionType deserializeBinary(Uint8Array bytes);
+    public native String getDescription();
 
-  public static native ActionType deserializeBinaryFromReader(ActionType message, Object reader);
+    public native String getType();
 
-  public static native void serializeBinaryToWriter(ActionType message, Object writer);
+    public native Uint8Array serializeBinary();
 
-  public static native ActionType.ToObjectReturnType toObject(
-      boolean includeInstance, ActionType msg);
+    public native void setDescription(String value);
 
-  public native String getDescription();
+    public native void setType(String value);
 
-  public native String getType();
+    public native ActionType.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setDescription(String value);
-
-  public native void setType(String value);
-
-  public native ActionType.ToObjectReturnType0 toObject();
-
-  public native ActionType.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ActionType.ToObjectReturnType0 toObject(boolean includeInstance);
 }

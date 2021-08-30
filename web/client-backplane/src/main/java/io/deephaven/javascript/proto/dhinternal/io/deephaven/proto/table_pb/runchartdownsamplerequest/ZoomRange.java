@@ -13,74 +13,74 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest.ZoomRange",
     namespace = JsPackage.GLOBAL)
 public class ZoomRange {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static ZoomRange.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static ZoomRange.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMaxDateNanos();
+
+        @JsProperty
+        String getMinDateNanos();
+
+        @JsProperty
+        void setMaxDateNanos(String maxDateNanos);
+
+        @JsProperty
+        void setMinDateNanos(String minDateNanos);
     }
 
-    @JsProperty
-    String getMaxDateNanos();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static ZoomRange.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getMinDateNanos();
+        @JsProperty
+        String getMaxDateNanos();
 
-    @JsProperty
-    void setMaxDateNanos(String maxDateNanos);
+        @JsProperty
+        String getMinDateNanos();
 
-    @JsProperty
-    void setMinDateNanos(String minDateNanos);
-  }
+        @JsProperty
+        void setMaxDateNanos(String maxDateNanos);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static ZoomRange.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setMinDateNanos(String minDateNanos);
     }
 
-    @JsProperty
-    String getMaxDateNanos();
+    public static native ZoomRange deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getMinDateNanos();
+    public static native ZoomRange deserializeBinaryFromReader(ZoomRange message, Object reader);
 
-    @JsProperty
-    void setMaxDateNanos(String maxDateNanos);
+    public static native void serializeBinaryToWriter(ZoomRange message, Object writer);
 
-    @JsProperty
-    void setMinDateNanos(String minDateNanos);
-  }
+    public static native ZoomRange.ToObjectReturnType toObject(
+        boolean includeInstance, ZoomRange msg);
 
-  public static native ZoomRange deserializeBinary(Uint8Array bytes);
+    public native void clearMaxDateNanos();
 
-  public static native ZoomRange deserializeBinaryFromReader(ZoomRange message, Object reader);
+    public native void clearMinDateNanos();
 
-  public static native void serializeBinaryToWriter(ZoomRange message, Object writer);
+    public native String getMaxDateNanos();
 
-  public static native ZoomRange.ToObjectReturnType toObject(
-      boolean includeInstance, ZoomRange msg);
+    public native String getMinDateNanos();
 
-  public native void clearMaxDateNanos();
+    public native boolean hasMaxDateNanos();
 
-  public native void clearMinDateNanos();
+    public native boolean hasMinDateNanos();
 
-  public native String getMaxDateNanos();
+    public native Uint8Array serializeBinary();
 
-  public native String getMinDateNanos();
+    public native void setMaxDateNanos(String value);
 
-  public native boolean hasMaxDateNanos();
+    public native void setMinDateNanos(String value);
 
-  public native boolean hasMinDateNanos();
+    public native ZoomRange.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setMaxDateNanos(String value);
-
-  public native void setMinDateNanos(String value);
-
-  public native ZoomRange.ToObjectReturnType0 toObject();
-
-  public native ZoomRange.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ZoomRange.ToObjectReturnType0 toObject(boolean includeInstance);
 }

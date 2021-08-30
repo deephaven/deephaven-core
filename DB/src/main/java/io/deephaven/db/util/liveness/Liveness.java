@@ -18,15 +18,20 @@ public final class Liveness {
 
     public static final Logger log = LoggerFactory.getLogger(Liveness.class);
 
-    static final boolean REFERENCE_TRACKING_DISABLED = Configuration.getInstance().getBooleanWithDefault("Liveness.referenceTrackingDisabled", false);
+    static final boolean REFERENCE_TRACKING_DISABLED = Configuration.getInstance()
+        .getBooleanWithDefault("Liveness.referenceTrackingDisabled", false);
 
-    public static final boolean DEBUG_MODE_ENABLED = Configuration.getInstance().getBooleanWithDefault("Liveness.debugModeEnabled", false);
+    public static final boolean DEBUG_MODE_ENABLED =
+        Configuration.getInstance().getBooleanWithDefault("Liveness.debugModeEnabled", false);
 
-    private static final boolean COUNT_LOG_ENABLED = Configuration.getInstance().getBooleanWithDefault("Liveness.countLogEnabled", true);
+    private static final boolean COUNT_LOG_ENABLED =
+        Configuration.getInstance().getBooleanWithDefault("Liveness.countLogEnabled", true);
 
-    private static final boolean HEAP_DUMP_ENABLED = Configuration.getInstance().getBooleanWithDefault("Liveness.heapDump", false);
+    private static final boolean HEAP_DUMP_ENABLED =
+        Configuration.getInstance().getBooleanWithDefault("Liveness.heapDump", false);
 
-    static final boolean CLEANUP_LOG_ENABLED = Configuration.getInstance().getBooleanWithDefault("Liveness.cleanupLogEnabled", true);
+    static final boolean CLEANUP_LOG_ENABLED =
+        Configuration.getInstance().getBooleanWithDefault("Liveness.cleanupLogEnabled", true);
 
     private static final long OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS = 1000L;
 
@@ -36,10 +41,14 @@ public final class Liveness {
     private static int intervalMaxOutstandingCount = 0;
 
     /**
-     * <p>Maybe log the count of known outstanding {@link LivenessReferent}s.
-     * <p>Will not log unless such logs are enabled, at least {@value OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS}ms have
-     * elapsed, and the count has changed since the last time it was logged.
-     * <p>Note that this should be guarded by the LTM lock or similar.
+     * <p>
+     * Maybe log the count of known outstanding {@link LivenessReferent}s.
+     * <p>
+     * Will not log unless such logs are enabled, at least
+     * {@value OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS}ms have elapsed, and the count has changed
+     * since the last time it was logged.
+     * <p>
+     * Note that this should be guarded by the LTM lock or similar.
      */
     private static void maybeLogOutstandingCount() {
         if (!Liveness.COUNT_LOG_ENABLED) {
@@ -59,11 +68,12 @@ public final class Liveness {
         }
 
         Liveness.log.info().append("Liveness: Outstanding count=").append(outstandingCount)
-                .append(", intervalMin=").append(intervalMinOutstandingCount)
-                .append(", intervalMax=").append(intervalMaxOutstandingCount)
-                .endl();
+            .append(", intervalMin=").append(intervalMinOutstandingCount)
+            .append(", intervalMax=").append(intervalMaxOutstandingCount)
+            .endl();
         outstandingCountChanged = false;
-        intervalLastOutstandingCount = intervalMinOutstandingCount = intervalMaxOutstandingCount = outstandingCount;
+        intervalLastOutstandingCount =
+            intervalMinOutstandingCount = intervalMaxOutstandingCount = outstandingCount;
     }
 
     public static void scheduleCountReport(@NotNull final Scheduler scheduler) {
@@ -71,21 +81,24 @@ public final class Liveness {
             @Override
             public final void timedOut() {
                 maybeLogOutstandingCount();
-                scheduler.installJob(this, scheduler.currentTimeMillis() + OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS);
+                scheduler.installJob(this,
+                    scheduler.currentTimeMillis() + OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS);
             }
         }, 0L);
     }
 
-    private Liveness() {
-    }
+    private Liveness() {}
 
     /**
-     * <p>Determine whether a cached object should be reused, w.r.t. liveness. Null inputs are never safe for reuse.
-     * If the object is a {@link LivenessReferent} and not a non-refreshing {@link DynamicNode}, this method will
-     * return the result of trying to manage object with the top of the current thread's {@link LivenessScopeStack}.
+     * <p>
+     * Determine whether a cached object should be reused, w.r.t. liveness. Null inputs are never
+     * safe for reuse. If the object is a {@link LivenessReferent} and not a non-refreshing
+     * {@link DynamicNode}, this method will return the result of trying to manage object with the
+     * top of the current thread's {@link LivenessScopeStack}.
      *
      * @param object The object
-     * @return True if the object did not need management, or if it was successfully managed, false otherwise
+     * @return True if the object did not need management, or if it was successfully managed, false
+     *         otherwise
      */
     public static boolean verifyCachedObjectForReuse(final Object object) {
         if (object == null) {
@@ -105,7 +118,8 @@ public final class Liveness {
             return;
         }
         final String heapDumpPath = HeapDump.generateHeapDumpPath();
-        log.fatal().append("LivenessStateException, generating heap dump to").append(heapDumpPath).append(": ").append(lse).endl();
+        log.fatal().append("LivenessStateException, generating heap dump to").append(heapDumpPath)
+            .append(": ").append(lse).endl();
         try {
             HeapDump.heapDump(heapDumpPath);
         } catch (IOException ignored) {

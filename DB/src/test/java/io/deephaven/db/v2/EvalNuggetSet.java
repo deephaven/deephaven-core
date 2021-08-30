@@ -28,10 +28,10 @@ public abstract class EvalNuggetSet extends EvalNugget {
             e.printStackTrace();
         }
         Collection<? extends ColumnSource> sources = originalValue.getColumnSources();
-        //TODO create a smart key for each row and go from there
-        Map<SmartKey,Long> originalSet = new HashMap<>();
+        // TODO create a smart key for each row and go from there
+        Map<SmartKey, Long> originalSet = new HashMap<>();
         Assert.assertEquals(expected.size(), originalValue.size());
-        for (Index.Iterator iterator = originalValue.getIndex().iterator(); iterator.hasNext(); ) {
+        for (Index.Iterator iterator = originalValue.getIndex().iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             Object key[] = new Object[sources.size()];
             int i = 0;
@@ -40,10 +40,10 @@ public abstract class EvalNuggetSet extends EvalNugget {
             }
             final SmartKey k = new SmartKey(key);
 
-            Assert.assertEquals(msg + " k = " + k,originalSet.put(k,next),null);
+            Assert.assertEquals(msg + " k = " + k, originalSet.put(k, next), null);
         }
         sources = expected.getColumnSources();
-        for (Index.Iterator iterator = expected.getIndex().iterator(); iterator.hasNext(); ) {
+        for (Index.Iterator iterator = expected.getIndex().iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             Object key[] = new Object[sources.size()];
             int i = 0;

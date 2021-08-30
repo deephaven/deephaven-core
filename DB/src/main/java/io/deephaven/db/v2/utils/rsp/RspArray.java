@@ -27,117 +27,117 @@ import static io.deephaven.db.v2.utils.IndexUtilities.Comparator;
 /**
  *
  * <p>
- * A set representation for long values using Regular Space Partitioning (RSP) of the long space
- * in "blocks" of (2^16) elements.
+ * A set representation for long values using Regular Space Partitioning (RSP) of the long space in
+ * "blocks" of (2^16) elements.
  * </p>
  *
  * <p>
- * Modeled heavily after roaringbitmap.RoaringArray (keeping API method names and semantics as much as possible),
- * with modifications for:
- *</p>
+ * Modeled heavily after roaringbitmap.RoaringArray (keeping API method names and semantics as much
+ * as possible), with modifications for:
+ * </p>
  *
  * <ol>
- * <li> Full "unsigned long" 64 bit range (as opposed to 32 bit in RoaringArray).</li>
- * <li> Spans of all bits set ("AllSet") that can be arbitrarily big (ie, not constrained to 2^16 = RB Container size).</li>
+ * <li>Full "unsigned long" 64 bit range (as opposed to 32 bit in RoaringArray).</li>
+ * <li>Spans of all bits set ("AllSet") that can be arbitrarily big (ie, not constrained to 2^16 =
+ * RB Container size).</li>
  * </ol>
  *
  * <p>
  * The handling of unsigned values follows RB; ie, key values are compared/sorted as unsigned longs.
- *</p>
+ * </p>
  *
  * <p>
  * Definitions:
- *</p>
+ * </p>
  *
  * <ul>
- *   <li> A "block" is a particular interval [n*2^16, (n+1)*2^16 - 1] of the long domain.</li>
- *   <li> A "span" is a partition of the domain consisting of one or more consecutive blocks;</li>
- *        a span is a subset of the domain represented by an interval [n*2^16, (n+m)*2^16 - 1], m >= 1.
- *   <li> Full blocks are blocks whose domain are fully contained in the set, ie, the set contains every
- *        possible value in the block's interval (as a bitmap, it would be "all ones").</li>
- *   <li> Spans of full blocks are represented by a single "full blocks span" object (just a Long)
- *        which knows how many 2^16 ranges it has (it's "full blocks span len" ("flen")
- *        is the number of full blocks in the span).</li>
- *   <li> Individual blocks that are not completely full are stored in an RB Container; their "full blocks span len"
- *        is zero.</li>
- *</ul>
+ * <li>A "block" is a particular interval [n*2^16, (n+1)*2^16 - 1] of the long domain.</li>
+ * <li>A "span" is a partition of the domain consisting of one or more consecutive blocks;</li> a
+ * span is a subset of the domain represented by an interval [n*2^16, (n+m)*2^16 - 1], m >= 1.
+ * <li>Full blocks are blocks whose domain are fully contained in the set, ie, the set contains
+ * every possible value in the block's interval (as a bitmap, it would be "all ones").</li>
+ * <li>Spans of full blocks are represented by a single "full blocks span" object (just a Long)
+ * which knows how many 2^16 ranges it has (it's "full blocks span len" ("flen") is the number of
+ * full blocks in the span).</li>
+ * <li>Individual blocks that are not completely full are stored in an RB Container; their "full
+ * blocks span len" is zero.</li>
+ * </ul>
  *
  * <p>
  * Our internal representation uses two parallel arrays:
  * </p>
  *
  * <ul>
- *  <li> a <code>long[] spanInfos</code> array that contains the information for the offset to the values in the span,
- *    which we call the span's "key".  For instance, a full block span that represents all the long values
- *    in [65536, 196607] has as its key the value 65536.</li>
- *  <li> an <code>Object[] spans</code> array that contains the actual spans.  At the most basic level,
- *    a span can be either a full block span or a container of values (but there is nuance in exactly how
- *    to represent them, see below).</li>
- *</ul>
+ * <li>a <code>long[] spanInfos</code> array that contains the information for the offset to the
+ * values in the span, which we call the span's "key". For instance, a full block span that
+ * represents all the long values in [65536, 196607] has as its key the value 65536.</li>
+ * <li>an <code>Object[] spans</code> array that contains the actual spans. At the most basic level,
+ * a span can be either a full block span or a container of values (but there is nuance in exactly
+ * how to represent them, see below).</li>
+ * </ul>
  *
  * <p>
- * We use several optimizations to reduce memory utilization for sparse sets.  Details follow.
- *</p>
- *
- * <p>
- * The <code>long[] spanInfos</code> and <code>Object[] spans</code> data members of this class are used, combined,
- * to represent the offset (key) and span values in the set, against that offset.
- * The two arrays are used, together, as parallel arrays and the information for a given conceptual
- * span is contained in both of them for the same corresponding index i.
- *</p>
- *
- * <p>
- * There are two basic cases for a span: it is either a full blocks span, containing a >=1 number of full blocks,
- * or it is a container, containing individual values in the particular 2^16 block corresponding to the span's key.
+ * We use several optimizations to reduce memory utilization for sparse sets. Details follow.
  * </p>
  *
  * <p>
- * There are four ways total that these two cases can be represented between the long in the `spanInfos` array
- * and the Object in the `spans` array.  Given a span at position `i`:
+ * The <code>long[] spanInfos</code> and <code>Object[] spans</code> data members of this class are
+ * used, combined, to represent the offset (key) and span values in the set, against that offset.
+ * The two arrays are used, together, as parallel arrays and the information for a given conceptual
+ * span is contained in both of them for the same corresponding index i.
+ * </p>
+ *
+ * <p>
+ * There are two basic cases for a span: it is either a full blocks span, containing a >=1 number of
+ * full blocks, or it is a container, containing individual values in the particular 2^16 block
+ * corresponding to the span's key.
+ * </p>
+ *
+ * <p>
+ * There are four ways total that these two cases can be represented between the long in the
+ * `spanInfos` array and the Object in the `spans` array. Given a span at position `i`:
  * </p>
  *
  * <ol>
- *   <li> If the corresponding <code>Object spans[i]</code> is of type Long,
- *        then the <code>long spanInfos[i]</code> value is the key
- *        for the span (with its lower 16 bits as zero), and the Long value represents how many full blocks
- *        are present.   Example, the set [ 0, 2^50 - 1 ] is represented as spanInfo==0 and span==Long(2^34).</li>
+ * <li>If the corresponding <code>Object spans[i]</code> is of type Long, then the
+ * <code>long spanInfos[i]</code> value is the key for the span (with its lower 16 bits as zero),
+ * and the Long value represents how many full blocks are present. Example, the set [ 0, 2^50 - 1 ]
+ * is represented as spanInfo==0 and span==Long(2^34).</li>
  *
- *   <li> As an optimization to conserve memory, if the Object spans[i] is the Object reference with value
- *        <code>FULL_BLOCK_SPAN_MARKER</code> (a singleton and final marker Object defined statically in this file).
- *        then the upper 48 bits of the <code>long spanInfo[i]</code> value represent the key for the span,
- *        and the lower 16 bits of the <code>long spanInfo[i]</code> value represent the full block span length.
- *        Example, the set [ 65536, 196607 ] is represented by <code>spanInfo==65538</code> and
- *        <code>span==FULL_BLOCK_SPAN_MARKER</code>
- *        (note <code>196607 == 65536*3 - 1</code>, so the set is 2 full blocks, and
- *        <code>65538 == 65536 | 2</code>.</li>
+ * <li>As an optimization to conserve memory, if the Object spans[i] is the Object reference with
+ * value <code>FULL_BLOCK_SPAN_MARKER</code> (a singleton and final marker Object defined statically
+ * in this file). then the upper 48 bits of the <code>long spanInfo[i]</code> value represent the
+ * key for the span, and the lower 16 bits of the <code>long spanInfo[i]</code> value represent the
+ * full block span length. Example, the set [ 65536, 196607 ] is represented by
+ * <code>spanInfo==65538</code> and <code>span==FULL_BLOCK_SPAN_MARKER</code> (note
+ * <code>196607 == 65536*3 - 1</code>, so the set is 2 full blocks, and
+ * <code>65538 == 65536 | 2</code>.</li>
  *
- *  <li>  If the corresponding <code>Object spans[i]</code> is null, then the <code>long spanInfos[i]</code>
- *        represents the single
- *        value present in the span (note in this case, its upper 16 bits still corresponds to its key).
- *        Example, the set { 65537 } is represented by spanInfo==65537 and span==null.</li>
+ * <li>If the corresponding <code>Object spans[i]</code> is null, then the
+ * <code>long spanInfos[i]</code> represents the single value present in the span (note in this
+ * case, its upper 16 bits still corresponds to its key). Example, the set { 65537 } is represented
+ * by spanInfo==65537 and span==null.</li>
  *
- *  <li> If the corresponding <code>Object spans[i]</code> is of type <code>short[]</code> or of type
- *        <code>Container</code>, then it represents
- *        a container of multiple values in a single block (but not all of the possible values in the block,
- *        since in that case it would be a full block span as above).  In this case the higher 48 bits of
- *        its corresponding spanInfo represent the key for the span.  Depending on the actual type of span
- *        there are two subcases:
+ * <li>If the corresponding <code>Object spans[i]</code> is of type <code>short[]</code> or of type
+ * <code>Container</code>, then it represents a container of multiple values in a single block (but
+ * not all of the possible values in the block, since in that case it would be a full block span as
+ * above). In this case the higher 48 bits of its corresponding spanInfo represent the key for the
+ * span. Depending on the actual type of span there are two subcases:
  *
- *        <ol type="a">
- *        <li>   If <code>spans[i]</code> is of type <code>Container</code>, then the values in the roaringbitmaps container object
- *               are part of the set, considered against its key offset. The key is represented in the higher
- *               48 bits of its corresponding spaninfo.  The lower 16 bits of spanInfo are zero in this case.
- *               Example, the set [ 100,000-100,010, 100,020-100,030 ] is represented by
- *               <code>spaInfo==65536</code>, <code>span==RunContainer({34464-34474, 34484-34494})</code></li>
+ * <ol type="a">
+ * <li>If <code>spans[i]</code> is of type <code>Container</code>, then the values in the
+ * roaringbitmaps container object are part of the set, considered against its key offset. The key
+ * is represented in the higher 48 bits of its corresponding spaninfo. The lower 16 bits of spanInfo
+ * are zero in this case. Example, the set [ 100,000-100,010, 100,020-100,030 ] is represented by
+ * <code>spaInfo==65536</code>, <code>span==RunContainer({34464-34474, 34484-34494})</code></li>
  *
- *        <li>   If <code>spans[i]</code> is of type <code>short[]</code>, then an <code>ArrayContainer</code>
- *               with the <code>short[]</code> contents needs to be
- *               reconstructed.   The lower 16 bits of the spanInfo value are used to represent the other data
- *               members of ArrayContainer.  This case exists as an optimization to reduce memory utilization
- *               for sparse blocks.  For details of this reconstruction please see the code for the definition
- *               of the SpanView class below.</li>
- *        </ol>
- *   </li>
+ * <li>If <code>spans[i]</code> is of type <code>short[]</code>, then an <code>ArrayContainer</code>
+ * with the <code>short[]</code> contents needs to be reconstructed. The lower 16 bits of the
+ * spanInfo value are used to represent the other data members of ArrayContainer. This case exists
+ * as an optimization to reduce memory utilization for sparse blocks. For details of this
+ * reconstruction please see the code for the definition of the SpanView class below.</li>
+ * </ol>
+ * </li>
  * </ol>
  *
  * <p>
@@ -145,30 +145,36 @@ import static io.deephaven.db.v2.utils.IndexUtilities.Comparator;
  * </p>
  *
  * <ul>
- *   <li>  Our version of RB Container supports a "shared" boolean flag that is used to implement copy-on-write
- *         (COW) semantics and allow operation results to share containers in COW fashion.</li>
- *   <li>  We extended the Container class hierarchy to include specializations for empty, single value,
- *         single range, and two values containers.  These are immutable; empty is used only as a way to
- *         return empty results, and are never actual stored in the spans array.  For details, please
- *         see the Container class definition and derived class hierarchy.</li>
+ * <li>Our version of RB Container supports a "shared" boolean flag that is used to implement
+ * copy-on-write (COW) semantics and allow operation results to share containers in COW
+ * fashion.</li>
+ * <li>We extended the Container class hierarchy to include specializations for empty, single value,
+ * single range, and two values containers. These are immutable; empty is used only as a way to
+ * return empty results, and are never actual stored in the spans array. For details, please see the
+ * Container class definition and derived class hierarchy.</li>
  * </ul>
  */
 public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     public static final boolean debug =
-            Configuration.getInstance().getBooleanForClassWithDefault(RspArray.class, "debug", false);
+        Configuration.getInstance().getBooleanForClassWithDefault(RspArray.class, "debug", false);
 
-    private static final int doublingAllocThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
-            RspArray.class,"doublingAllocThreshold", 1024);
+    private static final int doublingAllocThreshold =
+        Configuration.getInstance().getIntegerForClassWithDefault(
+            RspArray.class, "doublingAllocThreshold", 1024);
     // minimum growth size after passing doubling alloc threshold
-    private static final int linearAllocStep = Configuration.getInstance().getIntegerForClassWithDefault(
-            RspArray.class,"linearAllocStep", 1024);
-    // after doublingAllocThreshold, growth rate is (1 + 2^-n) with minimum step size of linearAllocStep (all rounded to nearest multiple of 1024)
-    private static final int logarithmicAllocGrowthRate = Configuration.getInstance().getIntegerForClassWithDefault(
-            RspArray.class,"logarithmicAllocGrowthRate", 4);
-    // when size > accNullThreshold, the cardinality cache array is populated, otherwise is kept null.
+    private static final int linearAllocStep =
+        Configuration.getInstance().getIntegerForClassWithDefault(
+            RspArray.class, "linearAllocStep", 1024);
+    // after doublingAllocThreshold, growth rate is (1 + 2^-n) with minimum step size of
+    // linearAllocStep (all rounded to nearest multiple of 1024)
+    private static final int logarithmicAllocGrowthRate =
+        Configuration.getInstance().getIntegerForClassWithDefault(
+            RspArray.class, "logarithmicAllocGrowthRate", 4);
+    // when size > accNullThreshold, the cardinality cache array is populated, otherwise is kept
+    // null.
     static final int accNullThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
-            RspArray.class,"accNullThreshold", 8);
+        RspArray.class, "accNullThreshold", 8);
 
     static {
         Assert.assertion(0 <= logarithmicAllocGrowthRate && logarithmicAllocGrowthRate < 32,
@@ -179,15 +185,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public static final int BLOCK_SIZE = Container.MAX_RANGE;
     // BLOCK_LAST is used both as the last valid position in a block, and as a bitmask to get
     // the block offset for a long value.
-    // Note that since BLOCK_SIZE is a power of 2, BLOCK_SIZE - 1 is an all-bits-one mask for the bits
+    // Note that since BLOCK_SIZE is a power of 2, BLOCK_SIZE - 1 is an all-bits-one mask for the
+    // bits
     // below the single most significant bit in BLOCK_SIZE.
     public static final int BLOCK_LAST = (BLOCK_SIZE - 1);
     public static final int BITS_PER_BLOCK = Integer.numberOfTrailingZeros(BLOCK_SIZE);
     static {
         Assert.assertion(Integer.bitCount(BLOCK_SIZE) == 1,
-                "RspArray.BITS_PER_BLOCK should be a power of 2.");
-        Assert.assertion( (BLOCK_LAST & (BLOCK_LAST + 1)) == 0,
-                "BLOCK_LAST is not a bitmask.");
+            "RspArray.BITS_PER_BLOCK should be a power of 2.");
+        Assert.assertion((BLOCK_LAST & (BLOCK_LAST + 1)) == 0,
+            "BLOCK_LAST is not a bitmask.");
     }
 
     protected boolean shareContainers() {
@@ -195,44 +202,54 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     protected abstract T make(final RspArray src,
-                                   final int startIdx, final long startOffset,
-                                   final int endIdx, final long endOffset);
+        final int startIdx, final long startOffset,
+        final int endIdx, final long endOffset);
+
     protected abstract T make();
 
     public static long highBits(final long val) {
         return val & ~((long) BLOCK_LAST);
     }
-    public static short lowBits(final long val) { return (short) (val & BLOCK_LAST); }
-    public static int lowBitsAsInt(final long val) { return (int) (val & BLOCK_LAST); }
+
+    public static short lowBits(final long val) {
+        return (short) (val & BLOCK_LAST);
+    }
+
+    public static int lowBitsAsInt(final long val) {
+        return (int) (val & BLOCK_LAST);
+    }
 
     public static long divBlockSize(final long v) {
-        return v / BLOCK_SIZE;  // division by a constant power of two is optimized fine.
+        return v / BLOCK_SIZE; // division by a constant power of two is optimized fine.
     }
 
     public static int modBlockSize(final long v) {
-        // modulo by a constant power of two can't be optimized if the compiler can't tell if v is negative;
+        // modulo by a constant power of two can't be optimized if the compiler can't tell if v is
+        // negative;
         // we know it isn't.
         return (int) (v & (long) BLOCK_LAST);
     }
 
     /**
-     * Array of keys (in the long's higher 48 bits) and other span data (in the long's lower 16 bits)
-     * parallel to the spans array, mapping the long value in a given array position
-     * to the corresponding span in the same position.  Please see the documentation for this class
-     * for details of the different cases for the lower 16 bits, depending on the type of span.
+     * Array of keys (in the long's higher 48 bits) and other span data (in the long's lower 16
+     * bits) parallel to the spans array, mapping the long value in a given array position to the
+     * corresponding span in the same position. Please see the documentation for this class for
+     * details of the different cases for the lower 16 bits, depending on the type of span.
      *
-     * Values are kept in unsigned sorted order according to higher 16 bits to enable binary search of keys.
+     * Values are kept in unsigned sorted order according to higher 16 bits to enable binary search
+     * of keys.
      */
     protected long[] spanInfos;
 
     /**
-     * Array of Spans parallel to the spanInfos array, mapping the same index to the corresponding span for the spanInfo.
-     * Please see the documentation for this class for the different possible types allowed and their meanings.
+     * Array of Spans parallel to the spanInfos array, mapping the same index to the corresponding
+     * span for the spanInfo. Please see the documentation for this class for the different possible
+     * types allowed and their meanings.
      */
     protected Object[] spans;
 
     /**
-     * How many spans we have.  Also how many spanInfos, since they are parallel arrays.
+     * How many spans we have. Also how many spanInfos, since they are parallel arrays.
      */
     int size;
 
@@ -294,7 +311,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     public static final Object FULL_BLOCK_SPAN_MARKER = new Object() {
         public String toString() {
-            return "full block span";  // to facilitate debugger inspection.
+            return "full block span"; // to facilitate debugger inspection.
         }
     };
 
@@ -304,8 +321,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     protected static void setFullBlockSpanRaw(
-            final int i, final long[] spanInfos, final Object[] spans,
-            final long key, final long flen) {
+        final int i, final long[] spanInfos, final Object[] spans,
+        final long key, final long flen) {
         if (key < 0 || flen <= 0) {
             throw new IllegalArgumentException("i=" + i + ", key=" + key + ", flen=" + flen);
         }
@@ -326,12 +343,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     public static long getPackedInfoLowBits(final ArrayContainer ac) {
         final long sharedBit = ac.isShared() ? SPANINFO_ARRAYCONTAINER_SHARED_BITMASK : 0L;
-        final long cardinalityBits = SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK & (long) ac.getCardinality();
+        final long cardinalityBits =
+            SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK & (long) ac.getCardinality();
         return sharedBit | cardinalityBits;
     }
 
     protected static void setContainerSpanRaw(
-            final long[] spanInfos, final Object[] spans, final int i, final long key, final Container container) {
+        final long[] spanInfos, final Object[] spans, final int i, final long key,
+        final Container container) {
         if (container instanceof ArrayContainer) {
             final ArrayContainer ac = (ArrayContainer) container;
             spanInfos[i] = key | getPackedInfoLowBits(ac);
@@ -348,7 +367,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     protected void appendSharedContainer(
-            final RspArray other, final long otherSpanInfo, final Container container) {
+        final RspArray other, final long otherSpanInfo, final Container container) {
         if (size > 0) {
             tryOptimizeContainer(size - 1);
         }
@@ -358,7 +377,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     protected void appendSharedContainerMaybePacked(
-            final RspArray other, final int otherIdx, final long otherSpanInfo, final Object otherContainer) {
+        final RspArray other, final int otherIdx, final long otherSpanInfo,
+        final Object otherContainer) {
         if (size > 0) {
             tryOptimizeContainer(size - 1);
         }
@@ -368,7 +388,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     protected void setSharedContainerMaybePackedRaw(
-            final int i, final RspArray src, final int srcIdx, final long srcSpanInfo, final Object srcContainer) {
+        final int i, final RspArray src, final int srcIdx, final long srcSpanInfo,
+        final Object srcContainer) {
         if (srcContainer instanceof short[]) {
             spanInfos[i] = (src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK);
             spans[i] = srcContainer;
@@ -378,34 +399,35 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     protected void insertSharedContainer(
-            final int i, final RspArray other, final long otherSpanInfo, final Container otherContainer) {
+        final int i, final RspArray other, final long otherSpanInfo,
+        final Container otherContainer) {
         open(i);
         setSharedContainerRaw(i, other, otherSpanInfo, otherContainer);
         modifiedSpan(i);
     }
 
     protected void setSharedContainerRaw(
-            final int i, final RspArray other, final long key, final Container container) {
+        final int i, final RspArray other, final long key, final Container container) {
         setContainerSpanRaw(i, key, other.shareContainer(container));
     }
 
     protected void copyKeyAndSpanStealingContainers(
-            final int srcIdx, final long[] srcSpanInfos, final Object[] srcSpans,
-            final int dstIdx, final long[] dstSpanInfos, final Object[] dstSpans) {
+        final int srcIdx, final long[] srcSpanInfos, final Object[] srcSpans,
+        final int dstIdx, final long[] dstSpanInfos, final Object[] dstSpans) {
         dstSpanInfos[dstIdx] = srcSpanInfos[srcIdx];
         dstSpans[dstIdx] = srcSpans[srcIdx];
     }
 
     private static final long SPANINFO_ARRAYCONTAINER_SHARED_BITMASK = (1L << 15);
-    private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK = ~SPANINFO_ARRAYCONTAINER_SHARED_BITMASK & (long) BLOCK_LAST;
+    private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK =
+        ~SPANINFO_ARRAYCONTAINER_SHARED_BITMASK & (long) BLOCK_LAST;
 
     // shiftAmount is a multiple of BLOCK_SIZE.
     protected void copyKeyAndSpanMaybeSharing(
-            final long shiftAmount,
-            final RspArray src, final int srcIdx,
-            final long[] dstSpanInfos, final Object[] dstSpans, final int dstIdx,
-            final boolean tryShare
-    ) {
+        final long shiftAmount,
+        final RspArray src, final int srcIdx,
+        final long[] dstSpanInfos, final Object[] dstSpans, final int dstIdx,
+        final boolean tryShare) {
         Object span = src.spans[srcIdx];
         if (tryShare && src.shareContainers()) {
             if (span instanceof short[]) {
@@ -420,8 +442,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     protected void copyKeyAndSpanMaybeSharing(
-            final RspArray src, final int srcIdx,
-            final long[] dstSpanInfos, final Object[] dstSpans, final int dstIdx) {
+        final RspArray src, final int srcIdx,
+        final long[] dstSpanInfos, final Object[] dstSpans, final int dstIdx) {
         copyKeyAndSpanMaybeSharing(0, src, srcIdx, dstSpanInfos, dstSpans, dstIdx, true);
     }
 
@@ -430,7 +452,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         modifiedSpan(i);
     }
 
-    protected void setContainerSpan(final Container oldContainer, final int i, final long key, final Container newContainer) {
+    protected void setContainerSpan(final Container oldContainer, final int i, final long key,
+        final Container newContainer) {
         if (oldContainer != newContainer || oldContainer instanceof ArrayContainer) {
             setContainerSpanRaw(i, key, newContainer);
         }
@@ -445,10 +468,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     // that needs to do some computations on spans; to avoid keeping any live references
     // to objects it is an AutoCloseable.
     protected static final class SpanView extends ArrayContainer
-            implements AutoCloseable {
+        implements AutoCloseable {
         private final SpanViewRecycler recycler;
         // The original array and index for which we loaded; we need to keep the reference
-        // for the cases where we need to update it (eg, setting a copy on write shared flag for an ArrayContainer
+        // for the cases where we need to update it (eg, setting a copy on write shared flag for an
+        // ArrayContainer
         // stored as short[]).
         private RspArray<?> arr;
         private int arrIdx;
@@ -502,7 +526,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             init(arr, arrIdx, arr.spanInfos[arrIdx], arr.spans[arrIdx]);
         }
 
-        public void init(final RspArray<?> arr, final int arrIdx, final long spanInfo, final Object span) {
+        public void init(final RspArray<?> arr, final int arrIdx, final long spanInfo,
+            final Object span) {
             this.arr = arr;
             this.arrIdx = arrIdx;
             this.spanInfo = spanInfo;
@@ -534,24 +559,21 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     *  Cache of accumulated cardinalities.  Parallel array to keys and spans.
-     *  acc[i] == total cardinality for { span[0], span[1], ..., span[i] }.
-     *  Should be updated by clients after mutating operations by calling ensureCardinalityCache,
-     *  so that public methods on entry can assume
-     *  it is up to date, ie maxAccIdx == size - 1 is a class invariant.
-     *  Note this class own mutators do not update the cache themselves
-     *  as clients can perform a series of update operations and
-     *  only call ensureCardinalityCache at the end.
+     * Cache of accumulated cardinalities. Parallel array to keys and spans. acc[i] == total
+     * cardinality for { span[0], span[1], ..., span[i] }. Should be updated by clients after
+     * mutating operations by calling ensureCardinalityCache, so that public methods on entry can
+     * assume it is up to date, ie maxAccIdx == size - 1 is a class invariant. Note this class own
+     * mutators do not update the cache themselves as clients can perform a series of update
+     * operations and only call ensureCardinalityCache at the end.
      *
-     *  For a small number of keys, this is not created an kept null.
+     * For a small number of keys, this is not created an kept null.
      */
     long[] acc;
 
     /**
-     * If acc != null, highest index in acc that is valid, -1 if none.
-     * if acc == null:
-     *     * if cardinality fits in an int, the actual cardinality.
-     *     * if cardinality does not fit in an int, -1.
+     * If acc != null, highest index in acc that is valid, -1 if none. if acc == null: * if
+     * cardinality fits in an int, the actual cardinality. * if cardinality does not fit in an int,
+     * -1.
      */
     int cardData;
 
@@ -688,9 +710,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     // shiftAmount is a multiple of BLOCK_SIZE.
     private void copySharingSpansFrom(final RspArray other, final long shiftAmount) {
         final int newSize =
-                (other.size >= 2* INITIAL_CAPACITY && other.size < other.spanInfos.length / 2)
-                        ? other.spanInfos.length / 2
-                        : other.spanInfos.length;
+            (other.size >= 2 * INITIAL_CAPACITY && other.size < other.spanInfos.length / 2)
+                ? other.spanInfos.length / 2
+                : other.spanInfos.length;
         spanInfos = new long[newSize];
         spans = new Object[newSize];
         for (int i = 0; i < other.size; ++i) {
@@ -714,21 +736,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public RspArray(
-            final RspArray src,
-            final int startIdx, final long startOffset,
-            final int endIdx, final long endOffset) {
-        // an initial full block span that needs to be split may result in a sequence of spans as follows,
+        final RspArray src,
+        final int startIdx, final long startOffset,
+        final int endIdx, final long endOffset) {
+        // an initial full block span that needs to be split may result in a sequence of spans as
+        // follows,
         // any of which may or may not be present:
         // (a) an initial container.
         // (b) an intermediate full block span.
         // (c) an ending container (this will only exist if endIdx == startIdx).
-        // the following variables represent the computed cardinality (or full span len) of each, zero if not present.
+        // the following variables represent the computed cardinality (or full span len) of each,
+        // zero if not present.
         int startSplitInitialContainerCard = 0;
         long startSplitIntermediateFullBlockSpanLen = 0;
         long startSplitIntermediateFullBlockSpanCard = 0;
         int startSplitEndingContainerCard = 0;
         final Object firstSpan = src.spans[startIdx];
-        // If either of the spans at startIndex or endIndex are a full block span of more than one block
+        // If either of the spans at startIndex or endIndex are a full block span of more than one
+        // block
         // that needs to be broken into an RB container and the remaining full block span,
         // that would affect our resulting size.
         int sz = endIdx - startIdx + 1;
@@ -760,7 +785,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         if (containerStart == containerEndInclusive) {
                             setSingletonSpanRaw(0, startKey);
                         } else {
-                            final Container c = Container.rangeOfOnes(containerStart, containerEndInclusive + 1);
+                            final Container c =
+                                Container.rangeOfOnes(containerStart, containerEndInclusive + 1);
                             setContainerSpanRaw(0, keyForFirstBlock, c);
                         }
                     }
@@ -770,9 +796,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     return;
                 }
             } else {
-                resultingCardFromFirstSpan = flenFirstSpan*BLOCK_SIZE - startOffset;
+                resultingCardFromFirstSpan = flenFirstSpan * BLOCK_SIZE - startOffset;
             }
-            int n = 0;  // how many containers we end up with after (potentially) splitting the first.
+            int n = 0; // how many containers we end up with after (potentially) splitting the
+                       // first.
             final long startOffsetModBlockSize = RspArray.modBlockSize(startOffset);
             if (startOffsetModBlockSize == 0) {
                 startSplitInitialContainerCard = 0;
@@ -792,8 +819,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             sz += n - 1;
         }
-        boolean lastSpanIsFull = false;  // will set below to true if we find out otherwise.
-        long deltaLast = 0;  // cardinality of the span(s) resulting from the split of a last full block span.
+        boolean lastSpanIsFull = false; // will set below to true if we find out otherwise.
+        long deltaLast = 0; // cardinality of the span(s) resulting from the split of a last full
+                            // block span.
         int copyLastIdx = endIdx;
         if (endIdx > startIdx && endOffset < src.getSpanCardinalityAtIndexMaybeAcc(endIdx) - 1) {
             copyLastIdx = endIdx - 1;
@@ -819,7 +847,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         int i = 0;
         long accSum = 0;
-        int isrc;  // index in src from where to start copying spans.
+        int isrc; // index in src from where to start copying spans.
         final WorkDataHolder wd = new WorkDataHolder();
         if (firstSpanIsFull) {
             long nextKey = keyForFirstBlock;
@@ -827,7 +855,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (startSplitInitialContainerCard == 1) {
                     setSingletonSpanRaw(0, nextKey | BLOCK_LAST);
                 } else {
-                    final Container c = Container.rangeOfOnes(BLOCK_SIZE - startSplitInitialContainerCard, BLOCK_SIZE);
+                    final Container c = Container
+                        .rangeOfOnes(BLOCK_SIZE - startSplitInitialContainerCard, BLOCK_SIZE);
                     setContainerSpanRaw(0, nextKey, c);
                 }
                 nextKey = nextKey(nextKey);
@@ -865,7 +894,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (isSingletonSpan(spanSrc)) {
                     if (startOffset != 0) {
                         throw new IllegalArgumentException(
-                                "startOffset=" + startOffset + " and span at startIdx has a single element.");
+                            "startOffset=" + startOffset
+                                + " and span at startIdx has a single element.");
                     }
                     setSingletonSpanRaw(0, src.getSingletonSpanValue(startIdx));
                     accSum = 1;
@@ -873,13 +903,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 } else {
                     try (SpanView res = wd.get().borrowSpanView(src, startIdx)) {
                         final Container csrc = res.getContainer();
-                        if (endIdx <= startIdx) {  // single span.
+                        if (endIdx <= startIdx) { // single span.
                             final int card = (int) src.getSpanCardinalityAtIndexMaybeAcc(startIdx);
                             if (endOffset + 1 < card) {
                                 if (startOffset == endOffset) {
-                                    setSingletonSpanRaw(0, startIdxKey | unsignedShortToInt(csrc.select((int) startOffset)));
+                                    setSingletonSpanRaw(0, startIdxKey
+                                        | unsignedShortToInt(csrc.select((int) startOffset)));
                                 } else {
-                                    final Container c = csrc.select((int) startOffset, (int) (endOffset + 1));
+                                    final Container c =
+                                        csrc.select((int) startOffset, (int) (endOffset + 1));
                                     setContainerSpanRaw(0, startIdxKey, c);
                                 }
                                 accSum = endOffset - startOffset + 1;
@@ -895,7 +927,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         final int card = (int) src.getSpanCardinalityAtIndexMaybeAcc(startIdx);
                         final int startOffsetInt = (int) startOffset;
                         if (startOffsetInt + 1 == card) {
-                            setSingletonSpanRaw(0, startIdxKey | unsignedShortToInt(csrc.select(startOffsetInt)));
+                            setSingletonSpanRaw(0,
+                                startIdxKey | unsignedShortToInt(csrc.select(startOffsetInt)));
                         } else {
                             final Container c = csrc.select(startOffsetInt, card);
                             setContainerSpanRaw(0, startIdxKey, c);
@@ -940,11 +973,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 final long flen = RspArray.divBlockSize(deltaLast);
                 final int delta = RspArray.modBlockSize(deltaLast);
                 setFullBlockSpanRaw(i, srcKey, flen);
-                accSum += flen*BLOCK_SIZE;
+                accSum += flen * BLOCK_SIZE;
                 maybeSetAcc(i, accSum);
                 ++i;
                 if (delta > 0) {
-                    final long nextKey = srcKey + flen*BLOCK_SIZE;
+                    final long nextKey = srcKey + flen * BLOCK_SIZE;
                     if (delta == 1) {
                         setSingletonSpanRaw(i, nextKey);
                     } else {
@@ -981,8 +1014,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     maybeSetAcc(i, accSum);
                 }
             } else {
-                // Can't happen; a single element span should have been copied over in its entirety earlier.
-                throw new IllegalStateException("endIdx=" + endIdx + ", endOffset=" + endOffset + ", key=" + srcKey);
+                // Can't happen; a single element span should have been copied over in its entirety
+                // earlier.
+                throw new IllegalStateException(
+                    "endIdx=" + endIdx + ", endOffset=" + endOffset + ", key=" + srcKey);
             }
         }
         if (acc == null) {
@@ -994,6 +1029,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public int size() {
         return size;
     }
+
     public boolean isEmpty() {
         return size == 0;
     }
@@ -1056,41 +1092,44 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
          * @return the current span's span info if the current span is valid, undefined otherwise.
          */
         long spanInfo();
+
         /**
          * @return the current span if valid, undefined otherwise.
          */
         Object span();
+
         /**
-         * Advances the pointer to the next span in the linear sequence.
-         * If the span before the call was the last one, a subsequent call to hasNext will return false.
+         * Advances the pointer to the next span in the linear sequence. If the span before the call
+         * was the last one, a subsequent call to hasNext will return false.
          */
         void next();
+
         /**
-         *  This method should be called:
-         *   * After the pointer is created and before calling any other methods;
-         *     if it returns false, calling any other methods results in undefined behavior.
-         *  * Right after a call to any advance method, similar to above.
+         * This method should be called: * After the pointer is created and before calling any other
+         * methods; if it returns false, calling any other methods results in undefined behavior. *
+         * Right after a call to any advance method, similar to above.
+         * 
          * @return true if the pointer currently points to a valid span.
          */
         boolean hasNext();
 
         /**
-         * Advances the pointer forward to the next span in the sequence whose interval could have it include
-         * the key argument.
+         * Advances the pointer forward to the next span in the sequence whose interval could have
+         * it include the key argument.
          *
-         * More specifically, the current span position is effectively advanced forward as long as the provided key
-         * is bigger than the right endpoint for the current span.
+         * More specifically, the current span position is effectively advanced forward as long as
+         * the provided key is bigger than the right endpoint for the current span.
          *
          * This operation is O(log(cardinality)).
          *
-         * Note this may not move the pointer if the current span already satisfies the constraint, or it
-         * may invalidate the pointer if the key is to the right of the last valid span.
-         * Note also advance should only be called on a non-empty cursor, after having called hasNext() and next()
-         * at least once.
+         * Note this may not move the pointer if the current span already satisfies the constraint,
+         * or it may invalidate the pointer if the key is to the right of the last valid span. Note
+         * also advance should only be called on a non-empty cursor, after having called hasNext()
+         * and next() at least once.
          *
          * @param key key to search forward from the current span position.
-         * @return false if the cursor is exhausted and there was no span satisfying the restriction found,
-         *         true otherwise.
+         * @return false if the cursor is exhausted and there was no span satisfying the restriction
+         *         found, true otherwise.
          */
         boolean advance(long key);
 
@@ -1100,6 +1139,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         void release();
 
         RspArray arr();
+
         int arrIdx();
     }
 
@@ -1110,16 +1150,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         void prev();
 
         /**
-         * Advances the pointer forward to the last span in the sequence whose interval range has a value v such that
-         * comp.directionToTargetFrom(v) >= 0.
+         * Advances the pointer forward to the last span in the sequence whose interval range has a
+         * value v such that comp.directionToTargetFrom(v) >= 0.
          *
          * This operation is O(log(cardinality)).
          *
-         * This operation never invalidates a valid cursor, it may only move it forward from its current position
-         * but never exhaust it.
+         * This operation never invalidates a valid cursor, it may only move it forward from its
+         * current position but never exhaust it.
          *
-         * Note also search should only be called on a non-empty cursor, after having called hasNext() and next()
-         * at least once.
+         * Note also search should only be called on a non-empty cursor, after having called
+         * hasNext() and next() at least once.
          *
          * @param comp a Comparator used to search forward from the current span position.
          */
@@ -1136,32 +1176,47 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     static class SpanCursorForwardImpl implements SpanCursorForward {
         private RspArray ra;
         private int si;
+
         public SpanCursorForwardImpl(final RspArray ra, final int si) {
             ra.acquire();
             this.ra = ra;
             this.si = si - 1;
         }
+
         public SpanCursorForwardImpl(final RspArray ra) {
             this(ra, 0);
         }
-        @Override public SpanCursorForwardImpl copy() {
+
+        @Override
+        public SpanCursorForwardImpl copy() {
             return new SpanCursorForwardImpl(ra, si);
         }
-        @Override public long spanInfo() {
+
+        @Override
+        public long spanInfo() {
             return ra.spanInfos[si];
         }
-        @Override public Object span() {
+
+        @Override
+        public Object span() {
             return ra.spans[si];
         }
-        @Override public void prev() {
+
+        @Override
+        public void prev() {
             --si;
         }
-        @Override public boolean hasNext() {
+
+        @Override
+        public boolean hasNext() {
             return si < ra.size - 1;
         }
-        @Override public void next() {
+
+        @Override
+        public void next() {
             ++si;
         }
+
         private boolean advanceSecondHalf(int i) {
             if (i >= 0) {
                 si = i;
@@ -1170,33 +1225,44 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             si = -i - 1;
             return si < ra.size;
         }
-        @Override public boolean advance(final long key) {
+
+        @Override
+        public boolean advance(final long key) {
             final int i = ra.getSpanIndex(si, highBits(key));
             return advanceSecondHalf(i);
         }
-        @Override public void search(final Comparator comp) {
+
+        @Override
+        public void search(final Comparator comp) {
             si = ra.searchSpanIndex(si, comp);
         }
-        @Override public void release() {
+
+        @Override
+        public void release() {
             if (ra == null) {
                 return;
             }
             ra.release();
             ra = null;
         }
-        @Override public RspArray arr() {
+
+        @Override
+        public RspArray arr() {
             return ra;
         }
-        @Override public int arrIdx() {
+
+        @Override
+        public int arrIdx() {
             return si;
         }
     }
 
-    public RspRangeIterator getRangeIterator()  {
+    public RspRangeIterator getRangeIterator() {
         return new RspRangeIterator(new SpanCursorForwardImpl(this));
     }
 
-    public RspRangeBatchIterator getRangeBatchIterator(final long initialSeek, final long maxCount) {
+    public RspRangeBatchIterator getRangeBatchIterator(final long initialSeek,
+        final long maxCount) {
         return new RspRangeBatchIterator(new SpanCursorForwardImpl(this), initialSeek, maxCount);
     }
 
@@ -1207,26 +1273,37 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     private static class SpanCursorBackwardImpl implements SpanCursor {
         private RspArray ra;
         private int si;
+
         public SpanCursorBackwardImpl(final RspArray ra, int si) {
             ra.acquire();
             this.ra = ra;
             this.si = si;
         }
+
         public SpanCursorBackwardImpl(final RspArray ra) {
             this(ra, ra.size);
         }
-        @Override public long spanInfo() {
+
+        @Override
+        public long spanInfo() {
             return ra.spanInfos[si];
         }
-        @Override public Object span() {
+
+        @Override
+        public Object span() {
             return ra.spans[si];
         }
-        @Override public boolean hasNext() {
+
+        @Override
+        public boolean hasNext() {
             return si > 0;
         }
-        @Override public void next() {
+
+        @Override
+        public void next() {
             --si;
         }
+
         private boolean advanceSecondHalf(final int i) {
             if (i >= 0) {
                 si = i;
@@ -1240,21 +1317,29 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             si = 0;
             return false;
         }
-        @Override public boolean advance(final long key) {
+
+        @Override
+        public boolean advance(final long key) {
             final int i = ra.getSpanIndex(0, si, highBits(key));
             return advanceSecondHalf(i);
         }
-        @Override public void release() {
+
+        @Override
+        public void release() {
             if (ra == null) {
                 return;
             }
             ra.release();
             ra = null;
         }
-        @Override public RspArray arr() {
+
+        @Override
+        public RspArray arr() {
             return ra;
         }
-        @Override public int arrIdx() {
+
+        @Override
+        public int arrIdx() {
             return si;
         }
     }
@@ -1287,7 +1372,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             newCapacity = 2 * newCapacity;
         }
         while (newCapacity < minCapacity) {
-            final int rawStep = Math.max(linearAllocStep, newCapacity >> logarithmicAllocGrowthRate);
+            final int rawStep =
+                Math.max(linearAllocStep, newCapacity >> logarithmicAllocGrowthRate);
             newCapacity += (rawStep + 1023) & (~1023);
         }
         realloc(newCapacity);
@@ -1309,8 +1395,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * @param compactFactor if k == 0, compact if count < capacity.
-     *             k > 0, compact if (capacity - count > (capacity >> k).
+     * @param compactFactor if k == 0, compact if count < capacity. k > 0, compact if (capacity -
+     *        count > (capacity >> k).
      */
     public void tryCompactUnsafe(final int compactFactor) {
         if (compactFactor == 0) {
@@ -1366,13 +1452,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         return 0;
     }
+
     /**
-     * @return if the key is included in some existing span, returns the index of that span.
-     *         if the key is not included in any existing span, returns -(p - 1) where
-     *         p is the position a span for the key would be inserted.
+     * @return if the key is included in some existing span, returns the index of that span. if the
+     *         key is not included in any existing span, returns -(p - 1) where p is the position a
+     *         span for the key would be inserted.
      *
-     * Note that, since a span's covered interval may include multiple blocks, a key contained by a span may be different
-     * than its first key (if the span includes more than one block).
+     *         Note that, since a span's covered interval may include multiple blocks, a key
+     *         contained by a span may be different than its first key (if the span includes more
+     *         than one block).
      */
     public int getSpanIndex(final long key) {
         return getSpanIndex(0, key);
@@ -1525,7 +1613,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return true;
         }
         if (!(c instanceof ArrayContainer) &&
-                !(c instanceof BitmapContainer)) {
+            !(c instanceof BitmapContainer)) {
             return false;
         }
         final int card = c.getCardinality();
@@ -1560,6 +1648,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         return calculateCardinality();
     }
+
     void modifiedSpan(final int i) {
         if (acc != null) {
             cardData = Math.min(i - 1, cardData);
@@ -1567,6 +1656,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         cardData = -1;
     }
+
     void modifiedLastSpan() {
         if (acc != null) {
             cardData = Math.min(size - 2, cardData);
@@ -1574,6 +1664,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         cardData = -1;
     }
+
     // For tests
     long getFullBlocksCount() {
         long tflen = 0;
@@ -1584,13 +1675,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         return tflen;
     }
+
     public static long nextKey(final long key) {
         return key + BLOCK_SIZE;
     }
 
     /**
      *
-     * blockKeyEnd is exclusive.  Assumption on entry: blockKeyStart <= blockKeyEnd
+     * blockKeyEnd is exclusive. Assumption on entry: blockKeyStart <= blockKeyEnd
      *
      * @param blockKeyStart inclusive start block key (only high 48 bits set).
      * @param blockKeyEnd exclusive end block key (only high 48 bits set).
@@ -1614,28 +1706,27 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     private void checkCompact() {
         final int thresholdSize;
-        if (size < 2* INITIAL_CAPACITY || size > (thresholdSize = spans.length / 2)) {
+        if (size < 2 * INITIAL_CAPACITY || size > (thresholdSize = spans.length / 2)) {
             return;
         }
         realloc(thresholdSize);
     }
 
     /**
-     * Collapse an inner range of spans, by overwriting it with a range
-     * of spans from a certain later position till the end,
-     * and reducing size accordingly to the number of spans removed
-     * ({@code size -= isrc - idst}).
-     * The resulting array will remove all spans between the original values at
-     * {@code idst .. (isrc - 1)} inclusive.
+     * Collapse an inner range of spans, by overwriting it with a range of spans from a certain
+     * later position till the end, and reducing size accordingly to the number of spans removed
+     * ({@code size -= isrc - idst}). The resulting array will remove all spans between the original
+     * values at {@code idst .. (isrc - 1)} inclusive.
      *
      * @param idst specifies the beginning position where the source range will move.
-     * @param isrc specifies the source range to copy over as [isrc, size) (eg, from isrc inclusive till the end).
-     *             If isrc == size no actual spans are copied, resulting in a size reduction only.
+     * @param isrc specifies the source range to copy over as [isrc, size) (eg, from isrc inclusive
+     *        till the end). If isrc == size no actual spans are copied, resulting in a size
+     *        reduction only.
      */
     private void collapseRange(final int idst, final int isrc) {
         int newSize = size - (isrc - idst);
         int thresholdSize = 0;
-        if (newSize > 2* INITIAL_CAPACITY && newSize < (thresholdSize = spans.length / 2)) {
+        if (newSize > 2 * INITIAL_CAPACITY && newSize < (thresholdSize = spans.length / 2)) {
             final Object[] newSpans = new Object[thresholdSize];
             System.arraycopy(spans, 0, newSpans, 0, idst);
             System.arraycopy(spans, isrc, newSpans, idst, size - isrc);
@@ -1667,18 +1758,19 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     /**
      *
-     * @param newSpanIdx an index, as returned by getSpanAtIndex(k).  Note this can be negative, in which case this is an
-     *              insertion (existing elements pushed to the right as necessary).
+     * @param newSpanIdx an index, as returned by getSpanAtIndex(k). Note this can be negative, in
+     *        which case this is an insertion (existing elements pushed to the right as necessary).
      * @param newSpanKey the key.
      * @param newSpanFlen the number of 2^16 intervals.
      *
      * @return the (positive) index where the span was actually inserted.
      */
-    public int setOrInsertFullBlockSpanAtIndex(final int newSpanIdx, final long newSpanKey, final long newSpanFlen,
-                                               final MutableObject<SortedRanges> madeNullSpansMu) {
-        final int ii;  // set or insert position.
-        long newflen = newSpanFlen;  // may grow if we merge to our right.
-        final int idxForFirstKeyBigger;  // first index for a key bigger than newSpanKey.
+    public int setOrInsertFullBlockSpanAtIndex(final int newSpanIdx, final long newSpanKey,
+        final long newSpanFlen,
+        final MutableObject<SortedRanges> madeNullSpansMu) {
+        final int ii; // set or insert position.
+        long newflen = newSpanFlen; // may grow if we merge to our right.
+        final int idxForFirstKeyBigger; // first index for a key bigger than newSpanKey.
         if (newSpanIdx < 0) {
             ii = -(newSpanIdx + 1);
             if (ii == size) {
@@ -1690,17 +1782,19 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             ii = newSpanIdx;
             idxForFirstKeyBigger = ii + 1;
         }
-        int lastIdx = 0;  // Last position that will be "overridden" by this new span, inclusive.
+        int lastIdx = 0; // Last position that will be "overridden" by this new span, inclusive.
         if (idxForFirstKeyBigger >= size) {
             lastIdx = ii;
         } else {
-            final long newSpanLastKey = newSpanKey + (newSpanFlen - 1) * BLOCK_SIZE;  // New span's last key.
+            final long newSpanLastKey = newSpanKey + (newSpanFlen - 1) * BLOCK_SIZE; // New span's
+                                                                                     // last key.
             final int j = getSpanIndex(idxForFirstKeyBigger, newSpanLastKey);
             final int idxForLastKeyInsideNewSpan;
             if (j >= 0) {
                 idxForLastKeyInsideNewSpan = j;
             } else {
-                // One before (-j-1), which is the first position whose key is > newSpanLastKey.  Note this may be -1.
+                // One before (-j-1), which is the first position whose key is > newSpanLastKey.
+                // Note this may be -1.
                 idxForLastKeyInsideNewSpan = -j - 2;
             }
             // We may need to merge with a full block span extending to the right.
@@ -1710,9 +1804,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 final long rightSpanInfo = spanInfos[idxForFirstKeyOutsideNewSpan];
                 final long rightKey = spanInfoToKey(rightSpanInfo);
                 if (rightKey - newSpanLastKey <= BLOCK_SIZE) {
-                    final long rightLen = getFullBlockSpanLen(rightSpanInfo, spans[idxForFirstKeyOutsideNewSpan]);
+                    final long rightLen =
+                        getFullBlockSpanLen(rightSpanInfo, spans[idxForFirstKeyOutsideNewSpan]);
                     if (rightLen > 0) {
-                        final long rightSpanLastKey = getKeyForLastBlockInFullSpan(rightKey, rightLen);
+                        final long rightSpanLastKey =
+                            getKeyForLastBlockInFullSpan(rightKey, rightLen);
                         if (rightSpanLastKey > newSpanLastKey) {
                             newflen += distanceInBlocks(newSpanLastKey, rightSpanLastKey);
                             rightDone = true;
@@ -1723,9 +1819,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             if (!rightDone) {
                 if (idxForLastKeyInsideNewSpan >= 0) {
-                    // we did not merge with a full block span to the right; we may need to absorb some len.
+                    // we did not merge with a full block span to the right; we may need to absorb
+                    // some len.
                     final long spanInfo = spanInfos[idxForLastKeyInsideNewSpan];
-                    final long len = getFullBlockSpanLen(spanInfo, spans[idxForLastKeyInsideNewSpan]);
+                    final long len =
+                        getFullBlockSpanLen(spanInfo, spans[idxForLastKeyInsideNewSpan]);
                     if (len > 0) {
                         final long spanKey = spanInfoToKey(spanInfo);
                         final long spanLastKey = getKeyForLastBlockInFullSpan(spanKey, len);
@@ -1758,7 +1856,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final int leftIdx = ii - 1;
             // Note getFullBlockSpanLen(null) == 0.
             final long leftSpanInfo = spanInfos[leftIdx];
-            if (leftSpanInfo != -1) {  // it may have been marked for deletion.
+            if (leftSpanInfo != -1) { // it may have been marked for deletion.
                 final long leftSpanLen = getFullBlockSpanLen(leftSpanInfo, spans[leftIdx]);
                 if (leftSpanLen > 0) {
                     final long leftKey = spanInfoToKey(leftSpanInfo);
@@ -1804,7 +1902,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (leftSpanLen > 0) {
             final long leftKey = spanInfoToKey(leftSpanInfo);
             final long keyDistance = distanceInBlocks(leftKey, k);
-            if (leftSpanLen == keyDistance) {  // by construction leftSpanLen <= keyDistance.
+            if (leftSpanLen == keyDistance) { // by construction leftSpanLen <= keyDistance.
                 setFullBlockSpan(leftIdx, leftKey, leftSpanLen + slen);
                 return true;
             }
@@ -1829,7 +1927,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final short[] contents = (short[]) o;
             if (contents.length < 3 || contents.length > 12) {
                 final long spanInfo = spanInfos[i];
-                try (SpanView res = workDataPerThread.get().borrowSpanView(this, i, spanInfo, contents)) {
+                try (SpanView res =
+                    workDataPerThread.get().borrowSpanView(this, i, spanInfo, contents)) {
                     final Container c = res.getContainer();
                     final Container prevContainer = c.runOptimize();
                     if (prevContainer != c) {
@@ -1896,8 +1995,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * Insert a full block span at position i with key k, pushing the existing elements to the right.
-     * The caller should ensure that the key order is preserved by this operation.
+     * Insert a full block span at position i with key k, pushing the existing elements to the
+     * right. The caller should ensure that the key order is preserved by this operation.
      *
      * @param i position in which to insert
      * @param key key for the span to be inserted
@@ -1909,8 +2008,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * Insert a new singleton span at position i with key k, pushing the existing elements to the right.
-     * The caller should ensure that the key order is preserved by this operation.
+     * Insert a new singleton span at position i with key k, pushing the existing elements to the
+     * right. The caller should ensure that the key order is preserved by this operation.
      *
      * @param i position in which to insert
      * @param value the singleton value for the span to be inserted
@@ -1921,8 +2020,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * Insert a container at position i with key k, pushing the existing elements to the right.
-     * The caller should ensure that the key order is preserved by this operation.
+     * Insert a container at position i with key k, pushing the existing elements to the right. The
+     * caller should ensure that the key order is preserved by this operation.
      *
      * @param i position in which to insert
      * @param key key for the span to be inserted
@@ -1954,9 +2053,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         size += buf.size - 1;
         modifiedSpan(i);
     }
-    // Modeled after the version in RB Util class, which in turn is modeled on the Arrays.binarySearch API.
+
+    // Modeled after the version in RB Util class, which in turn is modeled on the
+    // Arrays.binarySearch API.
     // Like in them, toIndex is exclusive.
-    static int unsignedBinarySearch(final IntToLongFunction fun, final int fromIndex, final int toIndex, final long k) {
+    static int unsignedBinarySearch(final IntToLongFunction fun, final int fromIndex,
+        final int toIndex, final long k) {
         // next line accelerates the possibly common case where the value would
         // be inserted at the end
         if (toIndex > 0 && Long.compareUnsigned(fun.applyAsLong(toIndex - 1), k) < 0) {
@@ -2030,7 +2132,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return (i < 0) ? -i - 1 : i;
     }
 
-    private int getIndexForRankNoAcc(final int fromIndex, final long pos, final MutableLong prevCardMu) {
+    private int getIndexForRankNoAcc(final int fromIndex, final long pos,
+        final MutableLong prevCardMu) {
         int i = fromIndex;
         final long posp1 = pos + 1;
         long card = (prevCardMu == null) ? 0 : prevCardMu.longValue();
@@ -2086,7 +2189,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return get(rankIndex, pos - prevCard);
     }
 
-    public void getKeysForPositions(final PrimitiveIterator.OfLong inputPositions, final LongConsumer outputKeys) {
+    public void getKeysForPositions(final PrimitiveIterator.OfLong inputPositions,
+        final LongConsumer outputKeys) {
         int fromIndex = 0;
         final long cardinality = isCardinalityCached() ? getCardinality() : -1;
         final MutableLong prevCardMu = (acc == null) ? new MutableLong(0) : null;
@@ -2125,7 +2229,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, idx)) {
             if (view.isSingletonSpan()) {
                 if (offset != 0) {
-                    throw new IllegalArgumentException("Invalid offset=" + offset + " for index=" + idx);
+                    throw new IllegalArgumentException(
+                        "Invalid offset=" + offset + " for index=" + idx);
                 }
                 return view.getSingletonSpanValue();
             }
@@ -2134,10 +2239,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (flen > 0) {
                 return highBits + offset;
             }
-            //  flen == 0
+            // flen == 0
             final int sv = (int) offset;
             if (sv != offset) {
-                throw new IllegalArgumentException("Invalid offset=" + offset + " for index=" + idx);
+                throw new IllegalArgumentException(
+                    "Invalid offset=" + offset + " for index=" + idx);
             }
             final short lowBits = view.getContainer().select(sv);
             return paste(highBits, lowBits);
@@ -2152,7 +2258,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return cardinalityBeforeMaybeAcc(idx, 0, 0);
     }
 
-    final long cardinalityBeforeNoAcc(final int idx, final int knownIdx, final long knownBeforeCard) {
+    final long cardinalityBeforeNoAcc(final int idx, final int knownIdx,
+        final long knownBeforeCard) {
         int i = knownIdx;
         long card = knownBeforeCard;
         while (i < idx) {
@@ -2162,7 +2269,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return card;
     }
 
-    final long cardinalityBeforeMaybeAcc(final int idx, final int knownIdx, final long knownBeforeCard) {
+    final long cardinalityBeforeMaybeAcc(final int idx, final int knownIdx,
+        final long knownBeforeCard) {
         if (acc != null) {
             return cardinalityBeforeWithAcc(idx);
         }
@@ -2187,9 +2295,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     interface FindOutput {
         void setResult(int index, long offset);
     }
+
     // returns false if val is to the left of the first value in the span at startIdx;
-    // otherwise calls setResult on out with the appropriate position for val or the first position after it.
-    boolean findOrNext(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out) {
+    // otherwise calls setResult on out with the appropriate position for val or the first position
+    // after it.
+    boolean findOrNext(final int startIdx, final int endIdxExclusive, final long val,
+        final FindOutput out) {
         final int ki = getSpanIndex(startIdx, endIdxExclusive, highBits(val));
         if (ki < 0) {
             final int i = ~ki;
@@ -2243,8 +2354,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     // returns false if val is to the left of the first value in the span at startIdx;
-    // otherwise calls setResult on out with the appropriate position for val or the last position before it.
-    boolean findOrPrev(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out) {
+    // otherwise calls setResult on out with the appropriate position for val or the last position
+    // before it.
+    boolean findOrPrev(final int startIdx, final int endIdxExclusive, final long val,
+        final FindOutput out) {
         final int ki = getSpanIndex(startIdx, endIdxExclusive, highBits(val));
         if (ki < 0) {
             final int i = ~ki;
@@ -2294,6 +2407,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     static class BeforeCardContext {
         public int knownIdx;
         public long knownBeforeCard;
+
         public BeforeCardContext(final int knownIdx, final long knownBeforeCard) {
             this.knownIdx = knownIdx;
             this.knownBeforeCard = knownBeforeCard;
@@ -2355,7 +2469,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         // other is not empty either.
         if (isCardinalityCached() && other.isCardinalityCached() &&
-                getCardinality() > other.getCardinality()) {
+            getCardinality() > other.getCardinality()) {
             return false;
         }
         return subsetOf(this, other);
@@ -2380,7 +2494,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         }
                         final long kend1 = getKeyForLastBlockInSpan(k1, flen1);
                         final long k2 = view2.getKey();
-                        // Note getKeyForLastBlockInSpan works both for full block spans and rb containers
+                        // Note getKeyForLastBlockInSpan works both for full block spans and rb
+                        // containers
                         // (in that later case it just returns the single block key).
                         final long kend2 = getKeyForLastBlockInSpan(k2, flen2);
                         if (uLess(kend2, kend1)) {
@@ -2629,7 +2744,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         return true;
                     }
                     // Both i2 and j2, the indices to the first and last key in s1, are negative,
-                    // so those exact keys are not in r2.  However, if they are different,
+                    // so those exact keys are not in r2. However, if they are different,
                     // it means there is something in between them.
                     if (i2 != j2) {
                         return true;
@@ -2655,15 +2770,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     /**
      * OrEquals a single span into this container.
      *
-     * @param shiftAmount an amount to shift the keys in the other container; shiftAmount should be a multiple of BLOCK_SIZE.
+     * @param shiftAmount an amount to shift the keys in the other container; shiftAmount should be
+     *        a multiple of BLOCK_SIZE.
      * @param other the other RspArray to ask for container sharing
      * @param otherIdx the index into other for the span to apply or to.
      * @param startPos the first position to start looking for orKey in this container.
      * @return the index in this container to continue searches for keys after (orKey, orSpan).
      */
     private int orEqualsSpan(final long shiftAmount, final RspArray other, final int otherIdx,
-                             final int startPos, final MutableObject<SortedRanges> sortedRangesMu,
-                             final WorkData wd) {
+        final int startPos, final MutableObject<SortedRanges> sortedRangesMu,
+        final WorkData wd) {
         final Object otherSpan = other.spans[otherIdx];
         final long otherSpanInfo = other.getSpanInfo(otherIdx) + shiftAmount;
         try (SpanView otherView = wd.borrowSpanView(other, otherIdx, otherSpanInfo, otherSpan)) {
@@ -2671,8 +2787,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long otherflen = otherView.getFullBlockSpanLen();
             final int orIdx = getSpanIndex(startPos, otherKey);
             if (otherflen > 0) {
-                final int j = setOrInsertFullBlockSpanAtIndex(orIdx, otherKey, otherflen, sortedRangesMu);
-                // can't increment for return since it may have been absorbed by a longer full block span.
+                final int j =
+                    setOrInsertFullBlockSpanAtIndex(orIdx, otherKey, otherflen, sortedRangesMu);
+                // can't increment for return since it may have been absorbed by a longer full block
+                // span.
                 return j;
             }
             if (orIdx < 0) {
@@ -2737,7 +2855,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     }
                 }
                 if (orResultContainer.isAllOnes()) {
-                    final int j = setOrInsertFullBlockSpanAtIndex(orIdx, otherKey, 1, sortedRangesMu);
+                    final int j =
+                        setOrInsertFullBlockSpanAtIndex(orIdx, otherKey, 1, sortedRangesMu);
                     // can't increment since it may have been merged with another span.
                     return j;
                 }
@@ -2773,10 +2892,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         void setIntArray(final int[] arr) {
             intArray = arr;
         }
+
         SortedRangesInt getSortedRanges() {
             if (sortedRangesInt == null) {
                 sortedRangesInt = new SortedRangesInt(
-                        Math.max(16 * 4 * 1024 / Integer.BYTES, SortedRanges.INT_DENSE_MAX_CAPACITY), 0);
+                    Math.max(16 * 4 * 1024 / Integer.BYTES, SortedRanges.INT_DENSE_MAX_CAPACITY),
+                    0);
             }
             sortedRangesInt.clear();
             return sortedRangesInt;
@@ -2785,7 +2906,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         SortedRangesInt getMadeNullSortedRanges() {
             if (madeNullSortedRanges == null) {
                 madeNullSortedRanges = new SortedRangesInt(
-                        Math.max(16 * 4 * 1024 / Integer.BYTES, SortedRanges.INT_DENSE_MAX_CAPACITY), 0);
+                    Math.max(16 * 4 * 1024 / Integer.BYTES, SortedRanges.INT_DENSE_MAX_CAPACITY),
+                    0);
             }
             madeNullSortedRanges.clear();
             return madeNullSortedRanges;
@@ -2800,7 +2922,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return rspArraysBuf;
         }
 
-        public SpanView borrowSpanView(final RspArray arr, final int arrIdx, final long spanInfo, final Object span) {
+        public SpanView borrowSpanView(final RspArray arr, final int arrIdx, final long spanInfo,
+            final Object span) {
             final SpanView sv = borrowSpanView();
             sv.init(arr, arrIdx, spanInfo, span);
             return sv;
@@ -2830,10 +2953,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
     }
 
-    protected static final ThreadLocal<WorkData> workDataPerThread = ThreadLocal.withInitial(WorkData::new);
+    protected static final ThreadLocal<WorkData> workDataPerThread =
+        ThreadLocal.withInitial(WorkData::new);
 
     private static final class WorkDataHolder {
         private WorkData wd = null;
+
         public WorkData get() {
             if (wd == null) {
                 wd = workDataPerThread.get();
@@ -2843,8 +2968,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * For every element in other, add element to this RspArray.
-     * The argument won't be modified (with the possible exclusion of sharing some of its containers Copy On Write).
+     * For every element in other, add element to this RspArray. The argument won't be modified
+     * (with the possible exclusion of sharing some of its containers Copy On Write).
      *
      * @param other the RspArray to add to this.
      */
@@ -2853,9 +2978,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * For every element in other, add (element + shiftAmount) to this RspArray.
-     * Note shiftAmount is assumed to be a multiple of BLOCK_SIZE.
-     * The argument won't be modified (with the possible exclusion of sharing some of its containers Copy On Write).
+     * For every element in other, add (element + shiftAmount) to this RspArray. Note shiftAmount is
+     * assumed to be a multiple of BLOCK_SIZE. The argument won't be modified (with the possible
+     * exclusion of sharing some of its containers Copy On Write).
      *
      * @param shiftAmount the amount to add to each key in other before insertion
      * @param other the base keys to add in the (key + shiftAmount) formula for insertion.
@@ -2885,7 +3010,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         // Total number of elements stored in idxPairs array; should always be even.
         int idxPairsCount = 0;
 
-        // As we check containers in others, the indices of the ones that were taken care of by the first
+        // As we check containers in others, the indices of the ones that were taken care of by the
+        // first
         // pass, and therefore can be skipped by the second pass, are stored here.
         SortedRanges secondPassSkips = wd.getSortedRanges();
         boolean tryAddToSecondPassSkips = true;
@@ -2908,7 +3034,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             // At this point we know this container from other has a key that is not
             // in our spans array; either it is part of a full block span,
             // and can be skipped altogether, or it will be added in this
-            // first pass.  Either way, it needs to be skipped in the second pass.
+            // first pass. Either way, it needs to be skipped in the second pass.
             if (tryAddToSecondPassSkips) {
                 final SortedRanges sr = secondPassSkips.appendUnsafe(otherIdx);
                 if (sr == null) {
@@ -2934,7 +3060,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (idxPairsCount + 2 > idxPairs.length) {
                 final int[] newArr;
                 if (idxPairs.length + 3 < 1024) {
-                    newArr = new int[2*idxPairs.length + 3];
+                    newArr = new int[2 * idxPairs.length + 3];
                 } else {
                     newArr = new int[idxPairs.length + 1024];
                 }
@@ -2968,16 +3094,19 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 final int thisIdx = idxPairs[--idxPairsCount];
                 final int otherIdx = idxPairs[--idxPairsCount];
                 for (int i = lastMoveRangeIdx; i >= thisIdx; --i) {
-                    copyKeyAndSpanStealingContainers(i, spanInfos, spans, dstIdx, newSpanInfos, newSpans);
+                    copyKeyAndSpanStealingContainers(i, spanInfos, spans, dstIdx, newSpanInfos,
+                        newSpans);
                     --dstIdx;
                 }
-                copyKeyAndSpanMaybeSharing(shiftAmount, other, otherIdx, newSpanInfos, newSpans, dstIdx, true);
+                copyKeyAndSpanMaybeSharing(shiftAmount, other, otherIdx, newSpanInfos, newSpans,
+                    dstIdx, true);
                 --dstIdx;
                 lastMoveRangeIdx = thisIdx - 1;
             }
             if (!inPlace) {
                 for (int i = lastMoveRangeIdx; i >= 0; --i) {
-                    copyKeyAndSpanStealingContainers(i, spanInfos, spans, dstIdx, newSpanInfos, newSpans);
+                    copyKeyAndSpanStealingContainers(i, spanInfos, spans, dstIdx, newSpanInfos,
+                        newSpans);
                     --dstIdx;
                 }
                 spanInfos = newSpanInfos;
@@ -3015,7 +3144,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         collectRemovedIndicesIfAny(sortedRangesMu);
     }
 
-    protected void markIndexAsRemoved(final MutableObject<SortedRanges> madeNullSpansMu, final int index) {
+    protected void markIndexAsRemoved(final MutableObject<SortedRanges> madeNullSpansMu,
+        final int index) {
         spanInfos[index] = -1;
         modifiedSpan(index);
         SortedRanges madeNullSpans = madeNullSpansMu.getValue();
@@ -3026,7 +3156,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     protected void markIndexRangeAsRemoved(
-            final MutableObject<SortedRanges> madeNullSpansMu, final int iFirst, final int iLast) {
+        final MutableObject<SortedRanges> madeNullSpansMu, final int iFirst, final int iLast) {
         for (int i = iFirst; i <= iLast; ++i) {
             spanInfos[i] = -1;
         }
@@ -3056,11 +3186,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * @param startPos the first position to start looking for orKey in this container.
      * @param other RspArray for the span to remove.
      * @param otherIdx the index of the span to remove in the other RspArray.
-     * @return the index in our parallel arrays to continue searches for keys after (removeFirstKey, removeSpan).
+     * @return the index in our parallel arrays to continue searches for keys after (removeFirstKey,
+     *         removeSpan).
      */
     private int andNotEqualsSpan(final int startPos, final RspArray other, final int otherIdx,
-                                 final MutableObject<SortedRanges> madeNullSpansMu,
-                                 final WorkData wd) {
+        final MutableObject<SortedRanges> madeNullSpansMu,
+        final WorkData wd) {
         try (SpanView otherView = wd.borrowSpanView(other, otherIdx)) {
             final long removeKey = otherView.getKey();
             final long removeflen = otherView.getFullBlockSpanLen();
@@ -3097,17 +3228,20 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                             keyNotContainer = removeKey;
                         }
                         final long firstKey = getKey(i);
-                        final long endKey = firstKey + BLOCK_SIZE * (flen - 1);  // inclusive
+                        final long endKey = firstKey + BLOCK_SIZE * (flen - 1); // inclusive
                         if (uLess(firstKey, removeKey)) {
                             if (uLess(removeKey, endKey)) {
                                 final ArraysBuf buf = wd.getArraysBuf(3);
-                                buf.pushFullBlockSpan(firstKey, distanceInBlocks(firstKey, removeKey));
+                                buf.pushFullBlockSpan(firstKey,
+                                    distanceInBlocks(firstKey, removeKey));
                                 buf.pushContainer(keyNotContainer, notContainer);
-                                buf.pushFullBlockSpan(removeKey + BLOCK_SIZE, distanceInBlocks(removeKey, endKey));
+                                buf.pushFullBlockSpan(removeKey + BLOCK_SIZE,
+                                    distanceInBlocks(removeKey, endKey));
                                 replaceSpanAtIndex(i, buf);
                             } else {
                                 final ArraysBuf buf = wd.getArraysBuf(2);
-                                buf.pushFullBlockSpan(firstKey, distanceInBlocks(firstKey, removeKey));
+                                buf.pushFullBlockSpan(firstKey,
+                                    distanceInBlocks(firstKey, removeKey));
                                 buf.pushContainer(keyNotContainer, notContainer);
                                 replaceSpanAtIndex(i, buf);
                             }
@@ -3116,7 +3250,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         if (uLess(removeKey, endKey)) {
                             final ArraysBuf buf = wd.getArraysBuf(2);
                             buf.pushContainer(keyNotContainer, notContainer);
-                            buf.pushFullBlockSpan(removeKey + BLOCK_SIZE, distanceInBlocks(removeKey, endKey));
+                            buf.pushFullBlockSpan(removeKey + BLOCK_SIZE,
+                                distanceInBlocks(removeKey, endKey));
                             replaceSpanAtIndex(i, buf);
                         } else if (notContainer == null) {
                             setSingletonSpan(i, keyNotContainer);
@@ -3170,7 +3305,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     return size;
                 }
             }
-            final long removeLastKey = removeKey + BLOCK_SIZE * (removeflen - 1);  // inclusive.
+            final long removeLastKey = removeKey + BLOCK_SIZE * (removeflen - 1); // inclusive.
             final int idxEnd;
             if (removeLastKey == removeKey) {
                 idxEnd = idxBegin;
@@ -3235,7 +3370,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return;
         }
         final long keyForFirstBlock = keyForFirstBlock();
-        if (other.keyForLastBlock() < keyForFirstBlock || keyForLastBlock() < other.keyForFirstBlock()) {
+        if (other.keyForLastBlock() < keyForFirstBlock
+            || keyForLastBlock() < other.keyForFirstBlock()) {
             return;
         }
         int startPos = 0;
@@ -3326,8 +3462,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     private int andEqualsSpan(final RspArray other, final int otherIdx,
-                              final int startPos, final MutableObject<SortedRanges> madeNullSpansMu,
-                              final WorkData wd) {
+        final int startPos, final MutableObject<SortedRanges> madeNullSpansMu,
+        final WorkData wd) {
         try (SpanView otherView = wd.borrowSpanView(other, otherIdx)) {
             final long andflen = otherView.getFullBlockSpanLen();
             final long andKey = otherView.getKey();
@@ -3350,7 +3486,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     final long lastKey = getKeyForLastBlockInSpan(ourKey, flen);
                     // andIdx > 0, therefore andKey is contained in this span.
                     if (uLess(ourKey, andKey)) {
-                        // when this method is called from andEquals, given the previous pruning this
+                        // when this method is called from andEquals, given the previous pruning
+                        // this
                         // case can't be hit.
                         if (uLess(andKey, lastKey)) {
                             final ArraysBuf buf = wd.getArraysBuf(3);
@@ -3360,7 +3497,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                             } else {
                                 buf.pushSharedContainer(other, andKey, otherView.getContainer());
                             }
-                            buf.pushFullBlockSpan(nextKey(andKey), distanceInBlocks(andKey, lastKey));
+                            buf.pushFullBlockSpan(nextKey(andKey),
+                                distanceInBlocks(andKey, lastKey));
                             replaceSpanAtIndex(andIdx, buf);
                         } else {
                             final ArraysBuf buf = wd.getArraysBuf(2);
@@ -3374,7 +3512,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         }
                     } else if (uLess(andKey, lastKey)) {
                         final ArraysBuf buf = wd.getArraysBuf(2);
-                        // when this method is called from andEquals, given the previous pruning this
+                        // when this method is called from andEquals, given the previous pruning
+                        // this
                         // case can't be hit.
                         if (otherView.isSingletonSpan()) {
                             buf.pushSingletonSpan(otherView.getSingletonSpanValue());
@@ -3390,10 +3529,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     }
                     return andIdx + 1;
                 }
-                Container result = null;  // if result stays null, the result is empty and we should remove this span.
+                Container result = null; // if result stays null, the result is empty and we should
+                                         // remove this span.
                 Container ourContainer = null;
                 // Container operations may return copy on write copies in either direction;
-                // when a ContainerResource is used it can't be freed until we are certain there is no
+                // when a ContainerResource is used it can't be freed until we are certain there is
+                // no
                 // outstanding reference to a container it may be holding.
                 if (ourView.isSingletonSpan()) {
                     final long ourValue = ourView.getSingletonSpanValue();
@@ -3451,6 +3592,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             spans = new Object[capacity];
             size = 0;
         }
+
         void reset(final int minCapacity) {
             if (minCapacity > capacity()) {
                 final int capacity = Math.max(minCapacity, CAPACITY_FLOOR);
@@ -3459,12 +3601,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             size = 0;
         }
+
         int capacity() {
             if (spanInfos == null) {
                 return 0;
             }
             return spanInfos.length;
         }
+
         void swap(final long[] spanInfos, final Object[] spans) {
             if (spanInfos.length >= CAPACITY_FLOOR) {
                 this.spanInfos = spanInfos;
@@ -3474,19 +3618,23 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             this.spanInfos = null;
             this.spans = null;
         }
+
         void pushSharedContainer(final RspArray other, final long key, final Container c) {
             setContainerSpanRaw(spanInfos, spans, size, key, other.shareContainer(c));
         }
+
         void pushContainer(final long key, final Container container) {
             spanInfos[size] = key;
             spans[size] = container;
             ++size;
         }
+
         void pushSingletonSpan(final long value) {
             spanInfos[size] = value;
             spans[size] = null;
             ++size;
         }
+
         void pushFullBlockSpan(final long key, final long flen) {
             setFullBlockSpanRaw(size, spanInfos, spans, key, flen);
             ++size;
@@ -3494,8 +3642,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * Intersects this RspArray with the argument, leaving the result on this RspArray.
-     * The argument won't be modified.
+     * Intersects this RspArray with the argument, leaving the result on this RspArray. The argument
+     * won't be modified.
      *
      * @param other an RspArray.
      */
@@ -3504,9 +3652,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         // The max number of resulting spans is potentially greater than max(size, other.size):
         // think about a full block span in one array that ends up being split due to multiple
         // single block containers in the other array; eg:
-        // this:  {[key / BLOCK_SIZE, flen]} = { [0, 4], [10, 0], [11, 0] }
-        // other:                            = { [1, 0], [2, 0], [9, 7] }
-        // result:                           = { [1, 0], [2, 0], [10, 0], [11, 0] }
+        // this: {[key / BLOCK_SIZE, flen]} = { [0, 4], [10, 0], [11, 0] }
+        // other: = { [1, 0], [2, 0], [9, 7] }
+        // result: = { [1, 0], [2, 0], [10, 0], [11, 0] }
         final WorkData wd = workDataPerThread.get();
         final int maxNewCapacity = size + other.size;
         final ArraysBuf buf = wd.getArraysBuf(maxNewCapacity);
@@ -3614,7 +3762,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     // end is inclusive
-    private void appendSpanIntersectionByKeyRange(final RspArray r, final int i, final long start, final long end) {
+    private void appendSpanIntersectionByKeyRange(final RspArray r, final int i, final long start,
+        final long end) {
         final Object span = spans[i];
         final long spanInfo = spanInfos[i];
         final long flen = getFullBlockSpanLen(spanInfo, span);
@@ -3629,7 +3778,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long nextHiBits;
             if (highBits(resultStart) == resultStart) {
                 nextHiBits = resultStart;
-            } else {  // k < resultStart (unsigned comparison)
+            } else { // k < resultStart (unsigned comparison)
                 final long resultStartHiBits = highBits(resultStart);
                 if (uLess(resultEnd, resultStartHiBits + BLOCK_LAST)) {
                     final int cs = lowBitsAsInt(resultStart);
@@ -3637,7 +3786,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     if (cs == ce) {
                         r.appendSingletonSpan(resultStart);
                     } else {
-                        r.appendContainer(resultStartHiBits, Container.rangeOfOnes(cs, ce + 1 /* exclusive */));
+                        r.appendContainer(resultStartHiBits, Container.rangeOfOnes(cs, ce + 1 /*
+                                                                                               * exclusive
+                                                                                               */));
                     }
                     return;
                 }
@@ -3666,7 +3817,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     if (e == 0) {
                         r.appendSingletonSpan(keyAfterMid);
                     } else {
-                        r.appendContainer(keyAfterMid, Container.rangeOfOnes(0, e + 1 /* exclusive */));
+                        r.appendContainer(keyAfterMid, Container.rangeOfOnes(0, e + 1 /*
+                                                                                       * exclusive
+                                                                                       */));
                     }
                 }
             }
@@ -3713,7 +3866,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
     }
 
-    boolean forEachLongInSpanWithOffsetAndMaxCount(final int i, final long offset, LongAbortableConsumer lc, final long maxCount) {
+    boolean forEachLongInSpanWithOffsetAndMaxCount(final int i, final long offset,
+        LongAbortableConsumer lc, final long maxCount) {
         final MutableLong n = new MutableLong(0);
         forEachLongInSpanWithOffset(i, offset, (final long v) -> {
             if (!lc.accept(v)) {
@@ -3722,7 +3876,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             n.increment();
             return n.longValue() < maxCount;
         });
-        return n.longValue() >= maxCount;  // The only way we get to maxCount is if lc never returns false above.
+        return n.longValue() >= maxCount; // The only way we get to maxCount is if lc never returns
+                                          // false above.
     }
 
     boolean forEachLongInSpanWithOffset(final int i, final long offset, LongAbortableConsumer lc) {
@@ -3745,12 +3900,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             final Container c = view.getContainer();
             final boolean wantMore = c.forEach(
-                    (int) offset, (short v) -> lc.accept(key | unsignedShortToLong(v)));
+                (int) offset, (short v) -> lc.accept(key | unsignedShortToLong(v)));
             return wantMore;
         }
     }
 
-    boolean forEachLongInSpanWithMaxCount(final int i, LongAbortableConsumer lc, final long maxCount) {
+    boolean forEachLongInSpanWithMaxCount(final int i, LongAbortableConsumer lc,
+        final long maxCount) {
         final MutableLong n = new MutableLong(0);
         forEachLongInSpan(i, (final long v) -> {
             if (!lc.accept(v)) {
@@ -3759,7 +3915,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             n.increment();
             return n.longValue() < maxCount;
         });
-        return n.longValue() >= maxCount;  // The only way we get to maxCount is if lc never returns false above.
+        return n.longValue() >= maxCount; // The only way we get to maxCount is if lc never returns
+                                          // false above.
     }
 
     boolean forEachLongInSpan(final int i, LongAbortableConsumer lc) {
@@ -3782,7 +3939,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             final Container c = view.getContainer();
             final boolean wantMore = c.forEach(
-                    (short v) -> lc.accept(key | unsignedShortToLong(v)));
+                (short v) -> lc.accept(key | unsignedShortToLong(v)));
             return wantMore;
         }
     }
@@ -3797,15 +3954,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public boolean forEachLongRangeInSpanWithOffsetAndMaxCardinality(
-            final int i, final long offset, final long maxCardinality,
-            final LongRangeAbortableConsumer larc) {
+        final int i, final long offset, final long maxCardinality,
+        final LongRangeAbortableConsumer larc) {
         if (maxCardinality <= 0) {
             return true;
         }
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
             if (view.isSingletonSpan()) {
                 if (offset != 0) {
-                    throw new IllegalArgumentException("offset=" + offset + " and single key span.");
+                    throw new IllegalArgumentException(
+                        "offset=" + offset + " and single key span.");
                 }
                 final long v = view.getSingletonSpanValue();
                 return larc.accept(v, v);
@@ -3850,11 +4008,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
-                                             final LongRangeAbortableConsumer larc) {
+        final LongRangeAbortableConsumer larc) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
             if (view.isSingletonSpan()) {
                 if (offset != 0) {
-                    throw new IllegalArgumentException("offset=" + offset + " and single key span.");
+                    throw new IllegalArgumentException(
+                        "offset=" + offset + " and single key span.");
                 }
                 final long v = view.getSingletonSpanValue();
                 return larc.accept(v, v);
@@ -3883,7 +4042,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
     }
 
-    static LongRangeAbortableConsumer makeAdjacentRangesCollapsingWrapper(final long[] pendingRange, final LongRangeAbortableConsumer lrac) {
+    static LongRangeAbortableConsumer makeAdjacentRangesCollapsingWrapper(final long[] pendingRange,
+        final LongRangeAbortableConsumer lrac) {
         pendingRange[0] = -2;
         pendingRange[1] = -2;
         final LongRangeAbortableConsumer wrapper = (final long start, final long end) -> {
@@ -3912,7 +4072,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return forEachLongRangeInSpanWithOffset(0, 0, lrac);
         }
         final long[] pendingRange = new long[2];
-        final LongRangeAbortableConsumer wrapper = makeAdjacentRangesCollapsingWrapper(pendingRange, lrac);
+        final LongRangeAbortableConsumer wrapper =
+            makeAdjacentRangesCollapsingWrapper(pendingRange, lrac);
         for (int i = 0; i < size; ++i) {
             if (!forEachLongRangeInSpanWithOffset(i, 0, wrapper)) {
                 return false;
@@ -3938,7 +4099,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         final long endHighBits = highBits(end);
         int ikend = getSpanIndex(endHighBits);
         if (ikend < 0) {
-            // If end is not an exact match, the range cannot span beyond the previous position returned.
+            // If end is not an exact match, the range cannot span beyond the previous position
+            // returned.
             ikend = -ikend - 2;
             if (ikend < 0) {
                 return r;
@@ -4008,9 +4170,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     // rsEnd is inclusive.
     static private void setToRangeOfOnesMinusRangeForKey(
-            ArraysBuf buf,
-            final long kHigh,
-            final long rsStart, final long rsEnd) {
+        ArraysBuf buf,
+        final long kHigh,
+        final long rsStart, final long rsEnd) {
         final int crsStart = (int) (rsStart - kHigh);
         final int crsEnd = (int) (rsEnd - kHigh);
         if (crsStart > 0) {
@@ -4037,19 +4199,22 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     /**
      * requirement: (start, end) should intersect span at index i.
+     * 
      * @param i span index.
      * @param spanInfo spanInfo for span i
      * @param key block key for span i
      * @param start start of range to remove (may be outside of span)
      * @param end end of range to remove (may be outside of span)
-     * @param madeNullSpansMu where to store the indices of spans that were made null
-     *                       because they ended up empty; these should be collected later by the caller.
-     * @return if >= 0, the index of the last span where the removal effectively happened.
-     *         if < 0, ~index for the span where to continue the removals, after a span was effectively eliminated.
+     * @param madeNullSpansMu where to store the indices of spans that were made null because they
+     *        ended up empty; these should be collected later by the caller.
+     * @return if >= 0, the index of the last span where the removal effectively happened. if < 0,
+     *         ~index for the span where to continue the removals, after a span was effectively
+     *         eliminated.
      */
-    private int removeRangeInSpan(final int i, final long spanInfo, final long key, final long start, final long end,
-                                  final MutableObject<SortedRanges> madeNullSpansMu,
-                                  final WorkData wd) {
+    private int removeRangeInSpan(final int i, final long spanInfo, final long key,
+        final long start, final long end,
+        final MutableObject<SortedRanges> madeNullSpansMu,
+        final WorkData wd) {
         final Object span = spans[i];
         try (SpanView view = wd.borrowSpanView(this, i, spanInfo, span)) {
             final long flen = view.getFullBlockSpanLen();
@@ -4098,7 +4263,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return ~(i + 1);
             }
             // we have a single container from where to remove [start, end).
-            Container result = null;  // if result stays null this span should be eliminated.
+            Container result = null; // if result stays null this span should be eliminated.
             Container ourContainer = null;
             if (view.isSingletonSpan()) {
                 final long v = view.getSingletonSpanValue();
@@ -4110,7 +4275,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 final long resultEnd = uMin(key + BLOCK_LAST, end);
                 ourContainer = view.getContainer();
                 final int rStart = (int) (resultStart - key);
-                final int rEnd = (int) (resultEnd - key) + 1;  // exclusive.
+                final int rEnd = (int) (resultEnd - key) + 1; // exclusive.
                 result = ourContainer.iremove(rStart, rEnd);
                 if (result.isEmpty()) {
                     result = null;
@@ -4138,8 +4303,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     private int removeRange(final int fromIdx, final long start, final long end,
-                            final MutableObject<SortedRanges> madeNullSpansMu,
-                            final WorkData wd) {
+        final MutableObject<SortedRanges> madeNullSpansMu,
+        final WorkData wd) {
         final long startHiBits = highBits(start);
         int i = getSpanIndex(fromIdx, startHiBits);
         if (i < 0) {
@@ -4170,7 +4335,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public void removeRangesUnsafeNoWriteCheck(final Index.RangeIterator rit) {
         try {
             final WorkData wd = workDataPerThread.get();
-            final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(wd);
+            final MutableObject<SortedRanges> madeNullSpansMu =
+                getWorkSortedRangesMutableObject(wd);
             int i = 0;
             while (rit.hasNext()) {
                 rit.next();
@@ -4189,11 +4355,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     // Neither this nor other can be empty.
     // shiftAmount should be a multiple of BLOCK_SIZE.
-    boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other, final boolean acquire) {
+    boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other,
+        final boolean acquire) {
         if (RspArray.debug) {
             if (size == 0 || other.size == 0) {
                 throw new IllegalArgumentException(
-                        "Append called for empty argument: size=" + size + ", other.size=" + other.size);
+                    "Append called for empty argument: size=" + size + ", other.size="
+                        + other.size);
             }
         }
         final long otherFirstSpanInfo = other.spanInfos[0];
@@ -4202,7 +4370,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         final Object ourLastSpan = spans[size - 1];
         final long ourflen = getFullBlockSpanLen(ourLastSpanInfo, ourLastSpan);
         final long ourLastKey = spanInfoToKey(ourLastSpanInfo);
-        final long ourLastBlockKey = ourLastKey + ((ourflen == 0) ? 0 : (ourflen - 1)*BLOCK_SIZE);
+        final long ourLastBlockKey = ourLastKey + ((ourflen == 0) ? 0 : (ourflen - 1) * BLOCK_SIZE);
         if (firstOtherBlockKey <= ourLastBlockKey) {
             return false;
         }
@@ -4297,7 +4465,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     boolean validate() {
-        return validate("",false, false);
+        return validate("", false, false);
     }
 
     void validate(final String s) {
@@ -4337,9 +4505,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     return false;
                 }
                 final Object s = spans[i];
-                if (s != null && s != FULL_BLOCK_SPAN_MARKER && !(s instanceof short[]) && (sInfo & BLOCK_LAST) != 0) {
+                if (s != null && s != FULL_BLOCK_SPAN_MARKER && !(s instanceof short[])
+                    && (sInfo & BLOCK_LAST) != 0) {
                     if (doAssert) {
-                        final String m = str + ": lower 16 bits of spanInfo non-zero i=" + i + ", sInfo=" + sInfo;
+                        final String m = str + ": lower 16 bits of spanInfo non-zero i=" + i
+                            + ", sInfo=" + sInfo;
                         Assert.assertion(false, m);
                     }
                     return false;
@@ -4347,8 +4517,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (!firstTime) {
                     if (!uLess(lastSpanLastBlockKey, k)) {
                         if (doAssert) {
-                            final String m = str + ": non-increasing key found i=" + i + ", k=" + k +
-                                    ", lastSpanLastBlockKey=" + lastSpanLastBlockKey + ", size=" + size;
+                            final String m = str + ": non-increasing key found i=" + i + ", k=" + k
+                                +
+                                ", lastSpanLastBlockKey=" + lastSpanLastBlockKey + ", size=" + size;
                             Assert.assertion(false, m);
                         }
                         return false;
@@ -4358,7 +4529,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (flen > 0) {
                     if (lastSpanWasFullBlock && k - lastSpanLastBlockKey <= BLOCK_SIZE) {
                         if (doAssert) {
-                            final String m = str + ": consecutive full block spans found i=" + i + ", size=" + size;
+                            final String m = str + ": consecutive full block spans found i=" + i
+                                + ", size=" + size;
                             Assert.assertion(false, m);
                         }
                         return false;
@@ -4368,8 +4540,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     if (s != null) {
                         if (!(s instanceof Container || s instanceof short[])) {
                             if (doAssert) {
-                                final String m = str + ": can't cast s=" + s + " of class " + s.getClass().getSimpleName() +
-                                        " to Container or short[] when !(flen > 0).";
+                                final String m = str + ": can't cast s=" + s + " of class "
+                                    + s.getClass().getSimpleName() +
+                                    " to Container or short[] when !(flen > 0).";
                                 Assert.assertion(false, m);
                             }
                             return false;
@@ -4377,21 +4550,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         final Container c = view.getContainer();
                         if (c.isEmpty()) {
                             if (doAssert) {
-                                final String m = str + ": empty RB container found i=" + i + ", size=" + size;
+                                final String m =
+                                    str + ": empty RB container found i=" + i + ", size=" + size;
                                 Assert.assertion(false, m);
                             }
                             return false;
                         }
                         if (c.isAllOnes()) {
                             if (doAssert) {
-                                final String m = str + ": full RB container found i=" + i + ", size=" + size;
+                                final String m =
+                                    str + ": full RB container found i=" + i + ", size=" + size;
                                 Assert.assertion(false, m);
                             }
                             return false;
                         }
                         if (c.isSingleElement()) {
                             if (doAssert) {
-                                final String m = str + ": singleton container found i=" + i + ", type=" + c.getClass().getSimpleName();
+                                final String m = str + ": singleton container found i=" + i
+                                    + ", type=" + c.getClass().getSimpleName();
                                 Assert.assertion(false, m);
                             }
                             return false;
@@ -4406,8 +4582,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         final long dCard = acc[i] - prevCard;
                         final long c = getSpanCardinalityAtIndex(i);
                         if (dCard != c) {
-                            final String m = str + ": acc cardinality mismatch, isUnsafe=" + isUnsafe + " at i=" + i
-                                    + ", prevCard=" + prevCard + ", dCard=" + dCard + ", c=" + c + ", size=" + size;
+                            final String m = str + ": acc cardinality mismatch, isUnsafe="
+                                + isUnsafe + " at i=" + i
+                                + ", prevCard=" + prevCard + ", dCard=" + dCard + ", c=" + c
+                                + ", size=" + size;
                             Assert.assertion(false, m);
                         }
                     }
@@ -4420,7 +4598,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long cardinality = calculateCardinality();
             if (cardinality != (long) cardData) {
                 final String m = str + ": acc == null && cardData (=" + cardData +
-                        ") != cardinality (=" + cardinality + ")";
+                    ") != cardinality (=" + cardinality + ")";
                 Assert.assertion(false, m);
             }
 
@@ -4428,9 +4606,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return true;
     }
 
-    public OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive, final long length) {
+    public OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive,
+        final long length) {
         if (startPositionInclusive < 0) {
-            throw new IllegalArgumentException(("startPositionInclusive=" + startPositionInclusive + " should be >=0."));
+            throw new IllegalArgumentException(
+                ("startPositionInclusive=" + startPositionInclusive + " should be >=0."));
         }
         final long endPositionInclusive;
         if (isCardinalityCached()) {
@@ -4476,16 +4656,19 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
         }
         final long startOffset = startPositionInclusive - cardBeforeStart;
-        return new RspOrderedKeys(this, startIdx, startOffset, cardBeforeStart, endIdx, endOffset, cardBeforeEnd);
+        return new RspOrderedKeys(this, startIdx, startOffset, cardBeforeStart, endIdx, endOffset,
+            cardBeforeEnd);
     }
 
-    public OrderedKeys getOrderedKeysByKeyRange(final long startValueInclusive, final long endValueInclusive) {
+    public OrderedKeys getOrderedKeysByKeyRange(final long startValueInclusive,
+        final long endValueInclusive) {
         if (isEmpty() || endValueInclusive < startValueInclusive) {
             return OrderedKeys.EMPTY;
         }
         final long lastSpanCardinality = getSpanCardinalityAtIndexMaybeAcc(size - 1);
-        return getOrderedKeysByKeyRangeConstrainedToIndexAndOffsetRange(startValueInclusive, endValueInclusive,
-                0, 0, 0, size - 1, lastSpanCardinality - 1);
+        return getOrderedKeysByKeyRangeConstrainedToIndexAndOffsetRange(startValueInclusive,
+            endValueInclusive,
+            0, 0, 0, size - 1, lastSpanCardinality - 1);
     }
 
     public RspOrderedKeys asOrderedKeys() {
@@ -4494,15 +4677,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         final long lastSpanCard = getSpanCardinalityAtIndexMaybeAcc(size - 1);
         return new RspOrderedKeys(this,
-                0, 0, 0,
-                size - 1, lastSpanCard - 1, getCardinality() - lastSpanCard);
+            0, 0, 0,
+            size - 1, lastSpanCard - 1, getCardinality() - lastSpanCard);
     }
 
     // endIdx and endOffsetIn are inclusive.
     OrderedKeys getOrderedKeysByKeyRangeConstrainedToIndexAndOffsetRange(
-            final long startValue, final long endValue,
-            final int startIdx, final long startOffsetIn, final long cardBeforeStartIdx,
-            final int endIdx, final long endOffsetIn) {
+        final long startValue, final long endValue,
+        final int startIdx, final long startOffsetIn, final long cardBeforeStartIdx,
+        final int endIdx, final long endOffsetIn) {
         final long startKey = highBits(startValue);
         int startKeyIdx = getSpanIndex(startIdx, startKey);
         if (startKeyIdx < 0) {
@@ -4519,12 +4702,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             endKeyIdx = -endKeyIdx - 2;
         }
         final BeforeCardContext beforeCardCtx = (acc == null)
-                ? new BeforeCardContext(startIdx, cardBeforeStartIdx)
-                : null;
+            ? new BeforeCardContext(startIdx, cardBeforeStartIdx)
+            : null;
         long cardBeforeStartKeyIdx = cardinalityBeforeMaybeAcc(startKeyIdx, beforeCardCtx);
         long absoluteStartPos = findInSpan(startKeyIdx, startValue, cardBeforeStartKeyIdx);
         if (absoluteStartPos < 0) {
-            // the following result can't be outside of valid pos space or we would have returned above.
+            // the following result can't be outside of valid pos space or we would have returned
+            // above.
             absoluteStartPos = -absoluteStartPos - 1;
             if (absoluteStartPos == getCardinality()) {
                 return OrderedKeys.EMPTY;
@@ -4541,7 +4725,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (absoluteEndPos < 0) {
                     return OrderedKeys.EMPTY;
                 }
-                final long totalCardAtEndKeyIdx = cardBeforeEndKeyIdx + getSpanCardinalityAtIndexMaybeAcc(endKeyIdx);
+                final long totalCardAtEndKeyIdx =
+                    cardBeforeEndKeyIdx + getSpanCardinalityAtIndexMaybeAcc(endKeyIdx);
                 final long lastValidPos = totalCardAtEndKeyIdx - 1;
                 if (absoluteEndPos > lastValidPos) {
                     absoluteEndPos = lastValidPos;
@@ -4571,8 +4756,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             endOffsetOut = endOffsetIn;
         }
         return new RspOrderedKeys(this,
-                startKeyIdx, startOffsetOut, cardBeforeStartKeyIdx,
-                endKeyIdx, endOffsetOut, cardBeforeEndKeyIdx);
+            startKeyIdx, startOffsetOut, cardBeforeStartKeyIdx,
+            endKeyIdx, endOffsetOut, cardBeforeEndKeyIdx);
     }
 
     public OrderedKeys.Iterator getOrderedKeysIterator() {
@@ -4632,7 +4817,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 final BitmapContainer bc = (BitmapContainer) span;
                 final int containerCard = bc.getCardinality();
                 card += containerCard;
-                nRanges += Math.max(1, containerCard / 3);   // estimate.
+                nRanges += Math.max(1, containerCard / 3); // estimate.
             } else {
                 // use numberOfRanges implementation.
                 final Container c = (Container) span;
@@ -4651,7 +4836,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (isEmpty()) {
             return 0;
         }
-        return rangesCountUpperBound(0, size -1);
+        return rangesCountUpperBound(0, size - 1);
     }
 
     public long rangesCountUpperBound(final int startIdx, final int endIdx) {
@@ -4666,9 +4851,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             if (isSingletonSpan(s)) {
                 ++nRanges;
-            }
-            else if (s instanceof io.deephaven.db.v2.utils.rsp.container.RunContainer) {
-                nRanges += ((io.deephaven.db.v2.utils.rsp.container.RunContainer) s).numberOfRanges();
+            } else if (s instanceof io.deephaven.db.v2.utils.rsp.container.RunContainer) {
+                nRanges +=
+                    ((io.deephaven.db.v2.utils.rsp.container.RunContainer) s).numberOfRanges();
             } else if (s instanceof io.deephaven.db.v2.utils.rsp.container.SingleRangeContainer) {
                 nRanges += 1;
             } else if (s instanceof io.deephaven.db.v2.utils.rsp.container.TwoValuesContainer) {
@@ -4742,30 +4927,31 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public void sampleMetrics(
-            final LongConsumer rspParallelArraysSizeUsed,
-            final LongConsumer rspParallelArraysSizeUnused,
-            final LongConsumer arrayContainersBytesAllocated,
-            final LongConsumer arrayContainersBytesUnused,
-            final LongConsumer arrayContainersCardinality,
-            final LongConsumer arrayContainersCount,
-            final LongConsumer bitmapContainersBytesAllocated,
-            final LongConsumer bitmapContainersBytesUnused,
-            final LongConsumer bitmapContainersCardinality,
-            final LongConsumer bitmapContainersCount,
-            final LongConsumer runContainersBytesAllocated,
-            final LongConsumer runContainersBytesUnused,
-            final LongConsumer runContainersCardinality,
-            final LongConsumer runContainersCount,
-            final LongConsumer runContainersRunsCount,
-            final LongConsumer singleRangeContainersCount,
-            final LongConsumer singleRangeContainerCardinality,
-            final LongConsumer singletonContainersCount,
-            final LongConsumer twoValuesContainerCount
-    ) {
+        final LongConsumer rspParallelArraysSizeUsed,
+        final LongConsumer rspParallelArraysSizeUnused,
+        final LongConsumer arrayContainersBytesAllocated,
+        final LongConsumer arrayContainersBytesUnused,
+        final LongConsumer arrayContainersCardinality,
+        final LongConsumer arrayContainersCount,
+        final LongConsumer bitmapContainersBytesAllocated,
+        final LongConsumer bitmapContainersBytesUnused,
+        final LongConsumer bitmapContainersCardinality,
+        final LongConsumer bitmapContainersCount,
+        final LongConsumer runContainersBytesAllocated,
+        final LongConsumer runContainersBytesUnused,
+        final LongConsumer runContainersCardinality,
+        final LongConsumer runContainersCount,
+        final LongConsumer runContainersRunsCount,
+        final LongConsumer singleRangeContainersCount,
+        final LongConsumer singleRangeContainerCardinality,
+        final LongConsumer singletonContainersCount,
+        final LongConsumer twoValuesContainerCount) {
         rspParallelArraysSizeUsed.accept(size);
         rspParallelArraysSizeUnused.accept(spanInfos.length - size);
-        // TODO: It would be much more efficient to accumulate multiple samples (perhaps one array of them per Metric),
-        // and then provide them to the metric in one call, to prevent multiple volatile assignments.
+        // TODO: It would be much more efficient to accumulate multiple samples (perhaps one array
+        // of them per Metric),
+        // and then provide them to the metric in one call, to prevent multiple volatile
+        // assignments.
         for (int i = 0; i < size; ++i) {
             final Object o = spans[i];
             if (isSingletonSpan(o)) {
@@ -4833,7 +5019,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         } else if (card > SortedRanges.LONG_DENSE_MAX_CAPACITY) {
             return null;
         }
-        SortedRanges sr = SortedRanges.tryMakeForKnownRangeUnknownMaxCapacity(SortedRanges.LONG_DENSE_MAX_CAPACITY, first, last, true);
+        SortedRanges sr = SortedRanges.tryMakeForKnownRangeUnknownMaxCapacity(
+            SortedRanges.LONG_DENSE_MAX_CAPACITY, first, last, true);
         try (RspRangeIterator it = getRangeIterator()) {
             while (it.hasNext()) {
                 it.next();

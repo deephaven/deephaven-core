@@ -7,7 +7,7 @@ import io.deephaven.libs.primitives.DoubleFpPrimitives;
  *
  * Internal {@link XYDataSeriesFunction} methods for use inner use.
  */
-public interface XYDataSeriesFunctionInternal extends XYDataSeriesFunction{
+public interface XYDataSeriesFunctionInternal extends XYDataSeriesFunction {
 
     /**
      * Sets the data range for this series if the user did not set funcRange.
@@ -21,15 +21,16 @@ public interface XYDataSeriesFunctionInternal extends XYDataSeriesFunction{
     /**
      * Sets the data range and number of points for this series if the user did not set funcRange.
      *
-     * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax}
-     *                          {@code xmin} and {@code xmax} must be normal. See {@link DoubleFpPrimitives#isNormal}
-     *                          {@code npoints} must non-negative
+     * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin}
+     *         and {@code xmax} must be normal. See {@link DoubleFpPrimitives#isNormal}
+     *         {@code npoints} must non-negative
      * @param xmin range minimum
      * @param xmax range maximum
      * @param npoints number of data points
      * @return this data series with the new range
      */
-    XYDataSeriesFunctionInternal funcRangeInternal(final double xmin, final double xmax, final int npoints);
+    XYDataSeriesFunctionInternal funcRangeInternal(final double xmin, final double xmax,
+        final int npoints);
 
     /**
      * Sets the number of data points in this dataset if the user did not set funcNPoints.

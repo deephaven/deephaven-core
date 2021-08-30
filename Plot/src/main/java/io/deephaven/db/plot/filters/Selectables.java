@@ -14,7 +14,7 @@ import io.deephaven.db.v2.TableSupplier;
  * Method for creating {@link SelectableDataSet}s.
  */
 public class Selectables {
-    private Selectables(){}
+    private Selectables() {}
 
     /**
      * Creates a {@link SelectableDataSetOneClick} with the specified columns.
@@ -23,7 +23,7 @@ public class Selectables {
      * @param byColumns selected columns
      * @return {@link SelectableDataSetOneClick} with the specified table and columns
      */
-    public static SelectableDataSetOneClick oneClick(final Table t, final String... byColumns){
+    public static SelectableDataSetOneClick oneClick(final Table t, final String... byColumns) {
         return oneClick(t, true, byColumns);
     }
 
@@ -34,7 +34,8 @@ public class Selectables {
      * @param byColumns selected columns
      * @return {@link SelectableDataSetOneClick} with the specified table map and columns
      */
-    public static SelectableDataSetOneClick oneClick(final TableMap tMap, final Table t, final String... byColumns){
+    public static SelectableDataSetOneClick oneClick(final TableMap tMap, final Table t,
+        final String... byColumns) {
         return oneClick(tMap, t.getDefinition(), byColumns);
     }
 
@@ -45,7 +46,8 @@ public class Selectables {
      * @param byColumns selected columns
      * @return {@link SelectableDataSetOneClick} with the specified table map and columns
      */
-    public static SelectableDataSetOneClick oneClick(final TableMap tMap, final TableDefinition tableDefinition, final String... byColumns){
+    public static SelectableDataSetOneClick oneClick(final TableMap tMap,
+        final TableDefinition tableDefinition, final String... byColumns) {
         return oneClick(tMap, tableDefinition, true, byColumns);
     }
 
@@ -54,11 +56,13 @@ public class Selectables {
      *
      * @param t table
      * @param byColumns selected columns
-     * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected; true to only display data when appropriate oneclicks are selected
+     * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected;
+     *        true to only display data when appropriate oneclicks are selected
      * @return {@link SelectableDataSetOneClick} with the specified table and columns
      */
-    public static SelectableDataSetOneClick oneClick(final Table t, final boolean requireAllFiltersToDisplay, final String... byColumns){
-        if(byColumns == null || byColumns.length < 1) {
+    public static SelectableDataSetOneClick oneClick(final Table t,
+        final boolean requireAllFiltersToDisplay, final String... byColumns) {
+        if (byColumns == null || byColumns.length < 1) {
             throw new IllegalArgumentException("byColumns can not be empty");
         }
         Require.neqNull(t, "t");
@@ -72,10 +76,12 @@ public class Selectables {
      *
      * @param tMap TableMap
      * @param byColumns selected columns
-     * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected; true to only display data when appropriate oneclicks are selected
+     * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected;
+     *        true to only display data when appropriate oneclicks are selected
      * @return {@link SelectableDataSetOneClick} with the specified table map and columns
      */
-    public static SelectableDataSetOneClick oneClick(final TableMap tMap, final Table t, final boolean requireAllFiltersToDisplay, final String... byColumns){
+    public static SelectableDataSetOneClick oneClick(final TableMap tMap, final Table t,
+        final boolean requireAllFiltersToDisplay, final String... byColumns) {
         return oneClick(tMap, t.getDefinition(), requireAllFiltersToDisplay, byColumns);
     }
 
@@ -84,15 +90,19 @@ public class Selectables {
      *
      * @param tMap TableMap
      * @param byColumns selected columns
-     * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected; true to only display data when appropriate oneclicks are selected
+     * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected;
+     *        true to only display data when appropriate oneclicks are selected
      * @return {@link SelectableDataSetOneClick} with the specified table map and columns
      */
-    public static SelectableDataSetOneClick oneClick(final TableMap tMap, final TableDefinition tableDefinition, final boolean requireAllFiltersToDisplay, final String... byColumns) {
-        if(byColumns == null || byColumns.length < 1) {
+    public static SelectableDataSetOneClick oneClick(final TableMap tMap,
+        final TableDefinition tableDefinition, final boolean requireAllFiltersToDisplay,
+        final String... byColumns) {
+        if (byColumns == null || byColumns.length < 1) {
             throw new IllegalArgumentException("byColumns can not be empty");
         }
         Require.neqNull(tMap, "tMap");
         Require.neqNull(tableDefinition, "tableDefinition");
-        return new SelectableDataSetOneClick(tMap, tableDefinition, byColumns, requireAllFiltersToDisplay);
+        return new SelectableDataSetOneClick(tMap, tableDefinition, byColumns,
+            requireAllFiltersToDisplay);
     }
 }

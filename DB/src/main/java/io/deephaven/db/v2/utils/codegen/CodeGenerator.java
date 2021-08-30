@@ -27,15 +27,17 @@ public abstract class CodeGenerator {
 
     /**
      * The tail wagging the dog: the proper method signature for this method is
-     * {@code CodeGenerator samelineBlock(String prefix, Object... args)}
-     * But when I do that, IntelliJ by default litters up the code with parameter hints, which (if the programmer
-     * doesn't turn them off), makes the templated code much more unreadable. So instead we just pull out the parameter
-     * from here.
-     * @param args A prefix (of type String) like "else", followed by an arbitrary number of template lines.
+     * {@code CodeGenerator samelineBlock(String prefix, Object... args)} But when I do that,
+     * IntelliJ by default litters up the code with parameter hints, which (if the programmer
+     * doesn't turn them off), makes the templated code much more unreadable. So instead we just
+     * pull out the parameter from here.
+     * 
+     * @param args A prefix (of type String) like "else", followed by an arbitrary number of
+     *        template lines.
      * @return The new component.
      */
     public static CodeGenerator samelineBlock(Object... args) {
-        final String prefix = (String)args[0];
+        final String prefix = (String) args[0];
         return new Block(prefix, CodeGenerator.createSlice(args, 1));
     }
 
@@ -43,7 +45,7 @@ public abstract class CodeGenerator {
      * Same "tail wagging the dog" comment applies.
      */
     public static CodeGenerator optional(Object... args) {
-        final String tag = (String)args[0];
+        final String tag = (String) args[0];
         return new Optional(tag, CodeGenerator.createSlice(args, 1));
     }
 
@@ -51,13 +53,13 @@ public abstract class CodeGenerator {
      * Same "tail wagging the dog" comment applies.
      */
     public static CodeGenerator repeated(Object... args) {
-        final String tag = (String)args[0];
+        final String tag = (String) args[0];
         return new Repeated(tag, CodeGenerator.createSlice(args, 1));
     }
 
     private static CodeGenerator createSlice(final Object[] args, final int start) {
         final CodeGenerator[] items = new CodeGenerator[args.length - start];
-        for (int srcIndex = start ; srcIndex < args.length; ++srcIndex) {
+        for (int srcIndex = start; srcIndex < args.length; ++srcIndex) {
             final int destIndex = srcIndex - start;
             final Object o = args[srcIndex];
             if (o instanceof String) {
@@ -65,10 +67,11 @@ public abstract class CodeGenerator {
                 continue;
             }
             if (o instanceof CodeGenerator) {
-                items[destIndex] = (CodeGenerator)o;
+                items[destIndex] = (CodeGenerator) o;
                 continue;
             }
-            throw new UnsupportedOperationException("Value " + o + " is of unsupported type " + o.getClass().getSimpleName());
+            throw new UnsupportedOperationException(
+                "Value " + o + " is of unsupported type " + o.getClass().getSimpleName());
         }
         return new Container(items);
     }
@@ -77,7 +80,8 @@ public abstract class CodeGenerator {
         final String bracketed = "[[" + metaVariable + "]]";
         final int count = replaceBracketed(bracketed, replacement);
         if (count == 0) {
-            throw new UnsupportedOperationException("Couldn't find any instances of metavariable " + metaVariable);
+            throw new UnsupportedOperationException(
+                "Couldn't find any instances of metavariable " + metaVariable);
         }
     }
 
@@ -88,7 +92,8 @@ public abstract class CodeGenerator {
             throw new UnsupportedOperationException("Can't find optional tag: " + tag);
         }
         if (allOptionals.size() > 1) {
-            throw new UnsupportedOperationException("There are multiple instances of optional tag: " + tag);
+            throw new UnsupportedOperationException(
+                "There are multiple instances of optional tag: " + tag);
         }
         return allOptionals.get(0).activate();
     }
@@ -106,7 +111,8 @@ public abstract class CodeGenerator {
             throw new UnsupportedOperationException("Can't find repeated tag: " + tag);
         }
         if (allRepeateds.size() > 1) {
-            throw new UnsupportedOperationException("There are multiple instances of repeated tag: " + tag);
+            throw new UnsupportedOperationException(
+                "There are multiple instances of repeated tag: " + tag);
         }
         return allRepeateds.get(0).instantiateNew();
     }
@@ -114,7 +120,7 @@ public abstract class CodeGenerator {
     public final String build() {
         assertNoUnresolvedVariables();
         final StringBuilder sb = new StringBuilder();
-        final String[] separatorHolder = new String[]{""};
+        final String[] separatorHolder = new String[] {""};
         appendToBuilder(sb, "", separatorHolder);
         return sb.toString();
     }
@@ -129,19 +135,27 @@ public abstract class CodeGenerator {
         final Pattern p = Pattern.compile("\\[\\[.+?]]");
         findUnresolved(p, unresolvedVariables);
         if (unresolvedVariables.size() > 0) {
-            throw new UnsupportedOperationException("The following variables are still unresolved: " +
+            throw new UnsupportedOperationException(
+                "The following variables are still unresolved: " +
                     makeCommaSeparatedList(unresolvedVariables));
         }
     }
 
     abstract CodeGenerator cloneMe();
+
     abstract CodeGenerator freezeHelper();
+
     abstract int replaceBracketed(String bracketed, String replacement);
+
     abstract void findUnresolved(Pattern pattern, Set<String> unresolved);
+
     abstract void gatherOptionals(String tag, final List<Optional> allOptionals);
+
     abstract void gatherRepeateds(String tag, List<Repeated> allRepeateds);
+
     abstract void appendToBuilder(StringBuilder sb, String indent, String[] separatorHolder);
 }
+
 
 class Container extends CodeGenerator {
     public static final Container EMPTY = new Container(new CodeGenerator[0]);
@@ -154,7 +168,8 @@ class Container extends CodeGenerator {
 
     @Override
     Container cloneMe() {
-        return new Container(Arrays.stream(items).map(CodeGenerator::cloneMe).toArray(CodeGenerator[]::new));
+        return new Container(
+            Arrays.stream(items).map(CodeGenerator::cloneMe).toArray(CodeGenerator[]::new));
     }
 
     @Override
@@ -187,10 +202,12 @@ class Container extends CodeGenerator {
 
     @Override
     public CodeGenerator freezeHelper() {
-        final CodeGenerator[] newItems = Arrays.stream(items).map(CodeGenerator::freezeHelper).toArray(CodeGenerator[]::new);
+        final CodeGenerator[] newItems =
+            Arrays.stream(items).map(CodeGenerator::freezeHelper).toArray(CodeGenerator[]::new);
         return new Container(newItems);
     }
 }
+
 
 class Singleton extends CodeGenerator {
     private String line;
@@ -260,10 +277,11 @@ class Singleton extends CodeGenerator {
     }
 }
 
+
 final class Block extends CodeGenerator {
     /**
-     * The {@code prefix} is used for special indentation, e.g. in the "else" part of an if-else statement, or the
-     * "catch" part of a try-catch block.
+     * The {@code prefix} is used for special indentation, e.g. in the "else" part of an if-else
+     * statement, or the "catch" part of a try-catch block.
      */
     private final String prefix;
     private final CodeGenerator inner;
@@ -318,6 +336,7 @@ final class Block extends CodeGenerator {
     }
 }
 
+
 final class Indent extends CodeGenerator {
     private final CodeGenerator inner;
 
@@ -362,6 +381,7 @@ final class Indent extends CodeGenerator {
     }
 }
 
+
 final class Optional extends CodeGenerator {
     private final String tag;
     private final CodeGenerator inner;
@@ -379,7 +399,7 @@ final class Optional extends CodeGenerator {
 
     @Override
     public CodeGenerator cloneMe() {
-        return new Optional(tag, (CodeGenerator)inner.cloneMe(), active);
+        return new Optional(tag, (CodeGenerator) inner.cloneMe(), active);
     }
 
     @Override
@@ -428,6 +448,7 @@ final class Optional extends CodeGenerator {
         return active ? inner : Container.EMPTY;
     }
 }
+
 
 final class Repeated extends CodeGenerator {
     private final String tag;
@@ -500,7 +521,8 @@ final class Repeated extends CodeGenerator {
 
     @Override
     public CodeGenerator freezeHelper() {
-        final CodeGenerator[] frozen = instances.stream().map(CodeGenerator::freezeHelper).toArray(CodeGenerator[]::new);
+        final CodeGenerator[] frozen =
+            instances.stream().map(CodeGenerator::freezeHelper).toArray(CodeGenerator[]::new);
         return new Container(frozen);
     }
 

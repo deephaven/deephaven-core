@@ -59,8 +59,8 @@ public class SpecialPrimitives {
     /**
      * Returns an array of uniform random numbers.
      *
-     * @param min  minimum result.
-     * @param max  maximum result (exclusive).
+     * @param min minimum result.
+     * @param max maximum result (exclusive).
      * @param size array size to generate.
      * @return array of uniform random numbers between {@code min} and {@code max} (exclusive).
      */
@@ -88,8 +88,8 @@ public class SpecialPrimitives {
     /**
      * Returns an array of uniform random numbers.
      *
-     * @param min  minimum result.
-     * @param max  maximum result (exclusive).
+     * @param min minimum result.
+     * @param max maximum result (exclusive).
      * @param size array size to generate.
      * @return array of uniform random numbers between {@code min} and {@code max} (exclusive).
      */
@@ -117,8 +117,8 @@ public class SpecialPrimitives {
     /**
      * Returns an array of uniform random numbers.
      *
-     * @param min  minimum result.
-     * @param max  maximum result.
+     * @param min minimum result.
+     * @param max maximum result.
      * @param size array size to generate.
      * @return array of uniform random numbers between {@code min} and {@code max}.
      */
@@ -146,8 +146,8 @@ public class SpecialPrimitives {
     /**
      * Returns an array of uniform random numbers.
      *
-     * @param min  minimum result.
-     * @param max  maximum result.
+     * @param min minimum result.
+     * @param max maximum result.
      * @param size array size to generate.
      * @return array of uniform random numbers between {@code min} and {@code max}.
      */
@@ -165,7 +165,7 @@ public class SpecialPrimitives {
      * Returns a Gaussian random number.
      *
      * @param mean mean.
-     * @param std  standard deviation.
+     * @param std standard deviation.
      * @return Gaussian random number.
      */
     static public double randomGaussian(double mean, double std) {
@@ -176,7 +176,7 @@ public class SpecialPrimitives {
      * Returns an array of Gaussian random numbers.
      *
      * @param mean mean.
-     * @param std  standard deviation.
+     * @param std standard deviation.
      * @param size array size to generate.
      * @return array of Gaussian random numbers.
      */

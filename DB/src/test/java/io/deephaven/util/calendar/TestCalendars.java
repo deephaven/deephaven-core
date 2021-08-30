@@ -14,11 +14,11 @@ import java.util.Map;
 
 public class TestCalendars extends BaseArrayTestCase {
 
-    public  void testIsBusinessDay() {
+    public void testIsBusinessDay() {
         BusinessCalendar usnyse = Calendars.calendar("USNYSE");
         BusinessCalendar usny = Calendars.calendar("USNY");
 
-        //USNYSE
+        // USNYSE
         DBDateTime businessDay = DBTimeUtils.convertDateTime("2016-08-31T01:00:00.000000000 NY");
         DBDateTime halfDay = DBTimeUtils.convertDateTime("2014-07-03T01:00:00.000000000 NY");
         DBDateTime holiday = DBTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
@@ -29,7 +29,7 @@ public class TestCalendars extends BaseArrayTestCase {
         assertFalse(usnyse.isBusinessDay(holiday));
         assertFalse(usnyse.isBusinessDay(holiday2));
 
-        //USNY
+        // USNY
         businessDay = DBTimeUtils.convertDateTime("2016-08-31T01:00:00.000000000 NY");
         holiday = DBTimeUtils.convertDateTime("2005-11-24T01:00:00.000000000 NY");
         holiday2 = DBTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
@@ -42,7 +42,7 @@ public class TestCalendars extends BaseArrayTestCase {
     public void testGetDefault() {
         Configuration.getInstance().setProperty("businessCalendar.default", "USNYSE");
         BusinessCalendar calendars = Calendars.calendar();
-        //USNYSE
+        // USNYSE
         DBDateTime businessDay = DBTimeUtils.convertDateTime("2016-08-31T01:00:00.000000000 NY");
         DBDateTime halfDay = DBTimeUtils.convertDateTime("2014-07-03T01:00:00.000000000 NY");
         DBDateTime holiday = DBTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
@@ -70,7 +70,7 @@ public class TestCalendars extends BaseArrayTestCase {
     public void testMapMethods() {
         Calendars calendars = Calendars.getInstance();
 
-        final Map<String,BusinessCalendar> values = new HashMap<>(calendars);
+        final Map<String, BusinessCalendar> values = new HashMap<>(calendars);
 
         assertTrue(calendars.size() > 0);
         assertEquals(calendars.keySet().size(), calendars.size());

@@ -14,12 +14,10 @@ import java.util.Set;
 public class ClasspathScriptPathLoader implements ScriptPathLoader {
 
     @Override
-    public void lock() {
-    }
+    public void lock() {}
 
     @Override
-    public void unlock() {
-    }
+    public void unlock() {}
 
     @Override
     public Set<String> getAvailableScriptDisplayPaths() {
@@ -38,10 +36,8 @@ public class ClasspathScriptPathLoader implements ScriptPathLoader {
     }
 
     @Override
-    public void refresh() {
-    }
+    public void refresh() {}
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 }

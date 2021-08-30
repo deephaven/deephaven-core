@@ -29,48 +29,65 @@ public class DeephavenApiServer {
     public interface ServerComponent {
         @Singleton
         DeephavenApiServer getServer();
+
         @Singleton
         SessionService getSessionService();
 
         @Component.Builder
         interface Builder {
-            @BindsInstance Builder withPort(@Named("grpc.port") int port);
-            @BindsInstance Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
-            @BindsInstance Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
-            @BindsInstance Builder withOut(@Named("out") PrintStream out);
-            @BindsInstance Builder withErr(@Named("err") PrintStream err);
+            @BindsInstance
+            Builder withPort(@Named("grpc.port") int port);
+
+            @BindsInstance
+            Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
+
+            @BindsInstance
+            Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
+
+            @BindsInstance
+            Builder withOut(@Named("out") PrintStream out);
+
+            @BindsInstance
+            Builder withErr(@Named("err") PrintStream err);
+
             ServerComponent build();
         }
     }
 
-    public static void startMain(PrintStream out, PrintStream err) throws IOException, InterruptedException {
+    public static void startMain(PrintStream out, PrintStream err)
+        throws IOException, InterruptedException {
         final ServerComponent injector = DaggerDeephavenApiServer_ServerComponent
-                .builder()
-                .withPort(8080)
-                .withSchedulerPoolSize(4)
-                .withSessionTokenExpireTmMs(300000) // defaults to 5 min
-                .withOut(out)
-                .withErr(err)
-                .build();
+            .builder()
+            .withPort(8080)
+            .withSchedulerPoolSize(4)
+            .withSessionTokenExpireTmMs(300000) // defaults to 5 min
+            .withOut(out)
+            .withErr(err)
+            .build();
         final DeephavenApiServer server = injector.getServer();
         final SessionService sessionService = injector.getSessionService();
 
         // Stop accepting new gRPC requests.
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST, server.server::shutdown);
+        ProcessEnvironment.getGlobalShutdownManager()
+            .registerTask(ShutdownManager.OrderingCategory.FIRST, server.server::shutdown);
 
         // Close outstanding sessions to give any gRPCs closure.
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE, sessionService::closeAllSessions);
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(
+            ShutdownManager.OrderingCategory.MIDDLE, sessionService::closeAllSessions);
 
         // Finally wait for gRPC to exit now.
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
-            try {
-                if (!server.server.awaitTermination(10, TimeUnit.SECONDS)) {
-                    log.error().append("The gRPC server did not terminate in a reasonable amount of time. Invoking shutdownNow().").endl();
-                    server.server.shutdownNow();
+        ProcessEnvironment.getGlobalShutdownManager()
+            .registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
+                try {
+                    if (!server.server.awaitTermination(10, TimeUnit.SECONDS)) {
+                        log.error().append(
+                            "The gRPC server did not terminate in a reasonable amount of time. Invoking shutdownNow().")
+                            .endl();
+                        server.server.shutdownNow();
+                    }
+                } catch (final InterruptedException ignored) {
                 }
-            } catch (final InterruptedException ignored) {
-            }
-        });
+            });
 
         server.start();
         server.blockUntilShutdown();
@@ -85,10 +102,10 @@ public class DeephavenApiServer {
 
     @Inject
     public DeephavenApiServer(
-            final Server server,
-            final LiveTableMonitor ltm,
-            final LogInit logInit,
-            final ConsoleServiceGrpcImpl consoleService) {
+        final Server server,
+        final LiveTableMonitor ltm,
+        final LogInit logInit,
+        final ConsoleServiceGrpcImpl consoleService) {
         this.server = server;
         this.ltm = ltm;
         this.logInit = logInit;

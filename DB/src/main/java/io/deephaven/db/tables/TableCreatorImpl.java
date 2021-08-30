@@ -22,7 +22,8 @@ enum TableCreatorImpl implements TableCreator<Table> {
     INSTANCE;
 
     public static Table create(TableSpec table) {
-        return TableCreator.create(INSTANCE, TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE, table);
+        return TableCreator.create(INSTANCE, TableToOperationsImpl.INSTANCE,
+            OperationsToTableImpl.INSTANCE, table);
     }
 
     @Override
@@ -45,7 +46,8 @@ enum TableCreatorImpl implements TableCreator<Table> {
 
     @Override
     public final Table merge(Iterable<Table> tables) {
-        return TableTools.merge(StreamSupport.stream(tables.spliterator(), false).toArray(Table[]::new));
+        return TableTools
+            .merge(StreamSupport.stream(tables.spliterator(), false).toArray(Table[]::new));
     }
 
     @Override
@@ -79,18 +81,23 @@ enum TableCreatorImpl implements TableCreator<Table> {
     }
 
     @Override
-    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7, Table t8) {
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7,
+        Table t8) {
         return TableTools.merge(t1, t2, t3, t4, t5, t6, t7, t8);
     }
 
     @Override
-    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7, Table t8, Table t9) {
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7,
+        Table t8, Table t9) {
         return TableTools.merge(t1, t2, t3, t4, t5, t6, t7, t8, t9);
     }
 
     @Override
-    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7, Table t8, Table t9, Table... remaining) {
-        return TableTools.merge(Stream.concat(Stream.of(t1, t2, t3, t4, t5, t6, t7, t8, t9), Stream.of(remaining)).toArray(Table[]::new));
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7,
+        Table t8, Table t9, Table... remaining) {
+        return TableTools.merge(
+            Stream.concat(Stream.of(t1, t2, t3, t4, t5, t6, t7, t8, t9), Stream.of(remaining))
+                .toArray(Table[]::new));
     }
 
     @Override
@@ -104,7 +111,8 @@ enum TableCreatorImpl implements TableCreator<Table> {
             return provider.walk(new TimeProviderAdapter()).getOut();
         }
 
-        private static final io.deephaven.db.v2.utils.TimeProvider SYSTEM_PROVIDER = DBTimeUtils::currentTime;
+        private static final io.deephaven.db.v2.utils.TimeProvider SYSTEM_PROVIDER =
+            DBTimeUtils::currentTime;
 
         private io.deephaven.db.v2.utils.TimeProvider out;
 

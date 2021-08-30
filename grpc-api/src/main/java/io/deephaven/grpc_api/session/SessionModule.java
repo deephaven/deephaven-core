@@ -8,11 +8,16 @@ import io.grpc.ServerInterceptor;
 
 @Module
 public interface SessionModule {
-    @Binds @IntoSet
+    @Binds
+    @IntoSet
     BindableService bindSessionServiceGrpcImpl(SessionServiceGrpcImpl sessionServiceGrpc);
-    @Binds @IntoSet
-    ServerInterceptor bindSessionServiceInterceptor(SessionServiceGrpcImpl.AuthServerInterceptor sessionServiceInterceptor);
 
-    @Binds @IntoSet
+    @Binds
+    @IntoSet
+    ServerInterceptor bindSessionServiceInterceptor(
+        SessionServiceGrpcImpl.AuthServerInterceptor sessionServiceInterceptor);
+
+    @Binds
+    @IntoSet
     TicketResolver bindSessionTicketResolverServerSideExports(ExportTicketResolver resolver);
 }

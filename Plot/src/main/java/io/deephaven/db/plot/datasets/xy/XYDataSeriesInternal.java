@@ -10,12 +10,12 @@ import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.Shape;
 
 /**
- * {@link DataSeriesInternal} with two numerical components, x and y.
- * Data points are numbered and are accessed with an index.
+ * {@link DataSeriesInternal} with two numerical components, x and y. Data points are numbered and
+ * are accessed with an index.
  */
 public interface XYDataSeriesInternal extends XYDataSeries, DataSeriesInternal {
 
-    //////////////////////////  internal  //////////////////////////
+    ////////////////////////// internal //////////////////////////
 
     @Override
     XYDataSeriesInternal copy(final AxesImpl axes);

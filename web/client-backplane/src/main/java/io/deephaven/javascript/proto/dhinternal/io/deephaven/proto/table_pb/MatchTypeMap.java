@@ -12,20 +12,20 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.MatchTypeMap",
     namespace = JsPackage.GLOBAL)
 public interface MatchTypeMap {
-  @JsOverlay
-  static MatchTypeMap create() {
-    return Js.uncheckedCast(JsPropertyMap.of());
-  }
+    @JsOverlay
+    static MatchTypeMap create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+    }
 
-  @JsProperty(name = "INVERTED")
-  double getINVERTED();
+    @JsProperty(name = "INVERTED")
+    double getINVERTED();
 
-  @JsProperty(name = "REGULAR")
-  double getREGULAR();
+    @JsProperty(name = "REGULAR")
+    double getREGULAR();
 
-  @JsProperty(name = "INVERTED")
-  void setINVERTED(double INVERTED);
+    @JsProperty(name = "INVERTED")
+    void setINVERTED(double INVERTED);
 
-  @JsProperty(name = "REGULAR")
-  void setREGULAR(double REGULAR);
+    @JsProperty(name = "REGULAR")
+    void setREGULAR(double REGULAR);
 }

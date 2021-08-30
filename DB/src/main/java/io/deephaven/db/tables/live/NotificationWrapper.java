@@ -5,20 +5,22 @@ import io.deephaven.db.v2.utils.AbstractNotification;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Implementation of {@link NotificationQueue.Notification} that wraps another, in order to allow overrides.
+ * Implementation of {@link NotificationQueue.Notification} that wraps another, in order to allow
+ * overrides.
  */
 public class NotificationWrapper extends AbstractNotification {
 
     private final NotificationQueue.Notification wrapped;
 
     NotificationWrapper(@NotNull final NotificationQueue.Notification wrapped) {
-        super (wrapped.isTerminal());
+        super(wrapped.isTerminal());
         this.wrapped = wrapped;
     }
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("NotificationWrapper{").append(System.identityHashCode(this)).append("} of ").append(wrapped);
+        return logOutput.append("NotificationWrapper{").append(System.identityHashCode(this))
+            .append("} of ").append(wrapped);
     }
 
     @Override

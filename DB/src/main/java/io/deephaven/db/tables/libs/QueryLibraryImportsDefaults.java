@@ -56,8 +56,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
             io.deephaven.db.v2.sources.chunk.WritableObjectChunk.class,
             io.deephaven.db.v2.sources.chunk.Context.class,
             io.deephaven.db.v2.select.ConditionFilter.FilterKernel.class,
-            io.deephaven.db.v2.utils.OrderedKeys.class
-        ));
+            io.deephaven.db.v2.utils.OrderedKeys.class));
     }
 
     @Override
@@ -94,7 +93,6 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
             io.deephaven.db.util.DBColorUtilImpl.class,
             io.deephaven.db.tables.verify.TableAssertions.class,
             io.deephaven.util.calendar.StaticCalendarMethods.class,
-            io.deephaven.db.v2.sources.chunk.Attributes.class
-        ));
+            io.deephaven.db.v2.sources.chunk.Attributes.class));
     }
 }

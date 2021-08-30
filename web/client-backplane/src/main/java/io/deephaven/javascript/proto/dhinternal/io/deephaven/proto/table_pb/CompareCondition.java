@@ -14,259 +14,261 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.CompareCondition",
     namespace = JsPackage.GLOBAL)
 public class CompareCondition {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LhsFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface LiteralFieldType {
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface LhsFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface LiteralFieldType {
+                @JsOverlay
+                static CompareCondition.ToObjectReturnType.LhsFieldType.LiteralFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getDoubleValue();
+
+                @JsProperty
+                String getLongValue();
+
+                @JsProperty
+                String getNanoTimeValue();
+
+                @JsProperty
+                String getStringValue();
+
+                @JsProperty
+                boolean isBoolValue();
+
+                @JsProperty
+                void setBoolValue(boolean boolValue);
+
+                @JsProperty
+                void setDoubleValue(double doubleValue);
+
+                @JsProperty
+                void setLongValue(String longValue);
+
+                @JsProperty
+                void setNanoTimeValue(String nanoTimeValue);
+
+                @JsProperty
+                void setStringValue(String stringValue);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ReferenceFieldType {
+                @JsOverlay
+                static CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getColumnName();
+
+                @JsProperty
+                void setColumnName(String columnName);
+            }
+
+            @JsOverlay
+            static CompareCondition.ToObjectReturnType.LhsFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            CompareCondition.ToObjectReturnType.LhsFieldType.LiteralFieldType getLiteral();
+
+            @JsProperty
+            CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType getReference();
+
+            @JsProperty
+            void setLiteral(
+                CompareCondition.ToObjectReturnType.LhsFieldType.LiteralFieldType literal);
+
+            @JsProperty
+            void setReference(
+                CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType reference);
+        }
+
         @JsOverlay
-        static CompareCondition.ToObjectReturnType.LhsFieldType.LiteralFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
+        static CompareCondition.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        double getDoubleValue();
+        double getCaseSensitivity();
 
         @JsProperty
-        String getLongValue();
+        CompareCondition.ToObjectReturnType.LhsFieldType getLhs();
 
         @JsProperty
-        String getNanoTimeValue();
+        double getOperation();
 
         @JsProperty
-        String getStringValue();
+        Object getRhs();
 
         @JsProperty
-        boolean isBoolValue();
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setBoolValue(boolean boolValue);
+        void setLhs(CompareCondition.ToObjectReturnType.LhsFieldType lhs);
 
         @JsProperty
-        void setDoubleValue(double doubleValue);
+        void setOperation(double operation);
 
         @JsProperty
-        void setLongValue(String longValue);
-
-        @JsProperty
-        void setNanoTimeValue(String nanoTimeValue);
-
-        @JsProperty
-        void setStringValue(String stringValue);
-      }
-
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface ReferenceFieldType {
-        @JsOverlay
-        static CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        String getColumnName();
-
-        @JsProperty
-        void setColumnName(String columnName);
-      }
-
-      @JsOverlay
-      static CompareCondition.ToObjectReturnType.LhsFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      CompareCondition.ToObjectReturnType.LhsFieldType.LiteralFieldType getLiteral();
-
-      @JsProperty
-      CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType getReference();
-
-      @JsProperty
-      void setLiteral(CompareCondition.ToObjectReturnType.LhsFieldType.LiteralFieldType literal);
-
-      @JsProperty
-      void setReference(
-          CompareCondition.ToObjectReturnType.LhsFieldType.ReferenceFieldType reference);
+        void setRhs(Object rhs);
     }
 
-    @JsOverlay
-    static CompareCondition.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    double getCaseSensitivity();
-
-    @JsProperty
-    CompareCondition.ToObjectReturnType.LhsFieldType getLhs();
-
-    @JsProperty
-    double getOperation();
-
-    @JsProperty
-    Object getRhs();
-
-    @JsProperty
-    void setCaseSensitivity(double caseSensitivity);
-
-    @JsProperty
-    void setLhs(CompareCondition.ToObjectReturnType.LhsFieldType lhs);
-
-    @JsProperty
-    void setOperation(double operation);
-
-    @JsProperty
-    void setRhs(Object rhs);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LhsFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface LiteralFieldType {
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface LhsFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface LiteralFieldType {
+                @JsOverlay
+                static CompareCondition.ToObjectReturnType0.LhsFieldType.LiteralFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getDoubleValue();
+
+                @JsProperty
+                String getLongValue();
+
+                @JsProperty
+                String getNanoTimeValue();
+
+                @JsProperty
+                String getStringValue();
+
+                @JsProperty
+                boolean isBoolValue();
+
+                @JsProperty
+                void setBoolValue(boolean boolValue);
+
+                @JsProperty
+                void setDoubleValue(double doubleValue);
+
+                @JsProperty
+                void setLongValue(String longValue);
+
+                @JsProperty
+                void setNanoTimeValue(String nanoTimeValue);
+
+                @JsProperty
+                void setStringValue(String stringValue);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ReferenceFieldType {
+                @JsOverlay
+                static CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getColumnName();
+
+                @JsProperty
+                void setColumnName(String columnName);
+            }
+
+            @JsOverlay
+            static CompareCondition.ToObjectReturnType0.LhsFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            CompareCondition.ToObjectReturnType0.LhsFieldType.LiteralFieldType getLiteral();
+
+            @JsProperty
+            CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType getReference();
+
+            @JsProperty
+            void setLiteral(
+                CompareCondition.ToObjectReturnType0.LhsFieldType.LiteralFieldType literal);
+
+            @JsProperty
+            void setReference(
+                CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType reference);
+        }
+
         @JsOverlay
-        static CompareCondition.ToObjectReturnType0.LhsFieldType.LiteralFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
+        static CompareCondition.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        double getDoubleValue();
+        double getCaseSensitivity();
 
         @JsProperty
-        String getLongValue();
+        CompareCondition.ToObjectReturnType0.LhsFieldType getLhs();
 
         @JsProperty
-        String getNanoTimeValue();
+        double getOperation();
 
         @JsProperty
-        String getStringValue();
+        Object getRhs();
 
         @JsProperty
-        boolean isBoolValue();
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setBoolValue(boolean boolValue);
+        void setLhs(CompareCondition.ToObjectReturnType0.LhsFieldType lhs);
 
         @JsProperty
-        void setDoubleValue(double doubleValue);
+        void setOperation(double operation);
 
         @JsProperty
-        void setLongValue(String longValue);
-
-        @JsProperty
-        void setNanoTimeValue(String nanoTimeValue);
-
-        @JsProperty
-        void setStringValue(String stringValue);
-      }
-
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface ReferenceFieldType {
-        @JsOverlay
-        static CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        String getColumnName();
-
-        @JsProperty
-        void setColumnName(String columnName);
-      }
-
-      @JsOverlay
-      static CompareCondition.ToObjectReturnType0.LhsFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      CompareCondition.ToObjectReturnType0.LhsFieldType.LiteralFieldType getLiteral();
-
-      @JsProperty
-      CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType getReference();
-
-      @JsProperty
-      void setLiteral(CompareCondition.ToObjectReturnType0.LhsFieldType.LiteralFieldType literal);
-
-      @JsProperty
-      void setReference(
-          CompareCondition.ToObjectReturnType0.LhsFieldType.ReferenceFieldType reference);
+        void setRhs(Object rhs);
     }
 
-    @JsOverlay
-    static CompareCondition.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static CompareOperationMap CompareOperation;
 
-    @JsProperty
-    double getCaseSensitivity();
+    public static native CompareCondition deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    CompareCondition.ToObjectReturnType0.LhsFieldType getLhs();
+    public static native CompareCondition deserializeBinaryFromReader(
+        CompareCondition message, Object reader);
 
-    @JsProperty
-    double getOperation();
+    public static native void serializeBinaryToWriter(CompareCondition message, Object writer);
 
-    @JsProperty
-    Object getRhs();
+    public static native CompareCondition.ToObjectReturnType toObject(
+        boolean includeInstance, CompareCondition msg);
 
-    @JsProperty
-    void setCaseSensitivity(double caseSensitivity);
+    public native void clearLhs();
 
-    @JsProperty
-    void setLhs(CompareCondition.ToObjectReturnType0.LhsFieldType lhs);
+    public native void clearRhs();
 
-    @JsProperty
-    void setOperation(double operation);
+    public native double getCaseSensitivity();
 
-    @JsProperty
-    void setRhs(Object rhs);
-  }
+    public native Value getLhs();
 
-  public static CompareOperationMap CompareOperation;
+    public native double getOperation();
 
-  public static native CompareCondition deserializeBinary(Uint8Array bytes);
+    public native Value getRhs();
 
-  public static native CompareCondition deserializeBinaryFromReader(
-      CompareCondition message, Object reader);
+    public native boolean hasLhs();
 
-  public static native void serializeBinaryToWriter(CompareCondition message, Object writer);
+    public native boolean hasRhs();
 
-  public static native CompareCondition.ToObjectReturnType toObject(
-      boolean includeInstance, CompareCondition msg);
+    public native Uint8Array serializeBinary();
 
-  public native void clearLhs();
+    public native void setCaseSensitivity(double value);
 
-  public native void clearRhs();
+    public native void setLhs();
 
-  public native double getCaseSensitivity();
+    public native void setLhs(Value value);
 
-  public native Value getLhs();
+    public native void setOperation(double value);
 
-  public native double getOperation();
+    public native void setRhs();
 
-  public native Value getRhs();
+    public native void setRhs(Value value);
 
-  public native boolean hasLhs();
+    public native CompareCondition.ToObjectReturnType0 toObject();
 
-  public native boolean hasRhs();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setCaseSensitivity(double value);
-
-  public native void setLhs();
-
-  public native void setLhs(Value value);
-
-  public native void setOperation(double value);
-
-  public native void setRhs();
-
-  public native void setRhs(Value value);
-
-  public native CompareCondition.ToObjectReturnType0 toObject();
-
-  public native CompareCondition.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native CompareCondition.ToObjectReturnType0 toObject(boolean includeInstance);
 }

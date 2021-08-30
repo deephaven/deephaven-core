@@ -50,104 +50,94 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
         }
     }
 
-    /* TODO: Switch to this version if we ever uncomment the override for fillChunkUnordered.
-    private static final class FillContext implements RedirectionIndex.FillContext {
-
-        private final int chunkCapacity;
-        private final WritableLongChunk<KeyIndices> indexPositions;
-
-        private LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, ChunkPositions> sortKernelContext;
-        private WritableIntChunk<ChunkPositions> unorderedFillChunkPositions;
-        private WritableLongChunk<KeyIndices> unorderedFillMappedKeys;
-
-        private FillContext(final int chunkCapacity) {
-            this.chunkCapacity = chunkCapacity;
-            indexPositions = WritableLongChunk.makeWritableChunk(chunkCapacity);
-        }
-
-        private void ensureUnorderedFillFieldsInitialized() {
-            if (sortKernelContext == null) {
-                sortKernelContext = LongIntTimsortKernel.createContext(chunkCapacity);
-            }
-            if (unorderedFillChunkPositions == null) {
-                unorderedFillChunkPositions = WritableIntChunk.makeWritableChunk(chunkCapacity);
-            }
-            if (unorderedFillMappedKeys == null) {
-                unorderedFillMappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
-            }
-        }
-
-        @Override
-        public void close() {
-            indexPositions.close();
-            if (sortKernelContext != null) {
-                sortKernelContext.close();
-            }
-            if (unorderedFillChunkPositions != null) {
-                unorderedFillChunkPositions.close();
-            }
-            if (unorderedFillMappedKeys != null) {
-                unorderedFillMappedKeys.close();
-            }
-        }
-    }
-    */
+    /*
+     * TODO: Switch to this version if we ever uncomment the override for fillChunkUnordered.
+     * private static final class FillContext implements RedirectionIndex.FillContext {
+     * 
+     * private final int chunkCapacity; private final WritableLongChunk<KeyIndices> indexPositions;
+     * 
+     * private LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, ChunkPositions>
+     * sortKernelContext; private WritableIntChunk<ChunkPositions> unorderedFillChunkPositions;
+     * private WritableLongChunk<KeyIndices> unorderedFillMappedKeys;
+     * 
+     * private FillContext(final int chunkCapacity) { this.chunkCapacity = chunkCapacity;
+     * indexPositions = WritableLongChunk.makeWritableChunk(chunkCapacity); }
+     * 
+     * private void ensureUnorderedFillFieldsInitialized() { if (sortKernelContext == null) {
+     * sortKernelContext = LongIntTimsortKernel.createContext(chunkCapacity); } if
+     * (unorderedFillChunkPositions == null) { unorderedFillChunkPositions =
+     * WritableIntChunk.makeWritableChunk(chunkCapacity); } if (unorderedFillMappedKeys == null) {
+     * unorderedFillMappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity); } }
+     * 
+     * @Override public void close() { indexPositions.close(); if (sortKernelContext != null) {
+     * sortKernelContext.close(); } if (unorderedFillChunkPositions != null) {
+     * unorderedFillChunkPositions.close(); } if (unorderedFillMappedKeys != null) {
+     * unorderedFillMappedKeys.close(); } } }
+     */
 
     @Override
     public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        //NB: No need to implement sharing at this level. ReadOnlyRedirectedColumnSource uses a SharedContext to share
-        //    RedirectionIndex lookup results.
+        // NB: No need to implement sharing at this level. ReadOnlyRedirectedColumnSource uses a
+        // SharedContext to share
+        // RedirectionIndex lookup results.
         return new FillContext(chunkCapacity);
     }
 
     @Override
     public void fillChunk(@NotNull final RedirectionIndex.FillContext fillContext,
-                          @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-                          @NotNull final OrderedKeys keysToMap) {
-        final WritableLongChunk<KeyIndices> indexPositions = ((FillContext) fillContext).indexPositions;
+        @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
+        @NotNull final OrderedKeys keysToMap) {
+        final WritableLongChunk<KeyIndices> indexPositions =
+            ((FillContext) fillContext).indexPositions;
         keysToMap.fillKeyIndicesChunk(indexPositions);
-        wrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(mappedKeysOut));
+        wrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions),
+            new LongChunkAppender(mappedKeysOut));
         mappedKeysOut.setSize(keysToMap.intSize());
     }
 
     @Override
     public void fillPrevChunk(@NotNull final RedirectionIndex.FillContext fillContext,
-                              @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-                              @NotNull final OrderedKeys keysToMap) {
-        final WritableLongChunk<KeyIndices> indexPositions = ((FillContext) fillContext).indexPositions;
+        @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
+        @NotNull final OrderedKeys keysToMap) {
+        final WritableLongChunk<KeyIndices> indexPositions =
+            ((FillContext) fillContext).indexPositions;
         keysToMap.fillKeyIndicesChunk(indexPositions);
         try (final ReadOnlyIndex prevWrappedIndex = wrappedIndex.getPrevIndex()) {
-            prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(mappedKeysOut));
+            prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions),
+                new LongChunkAppender(mappedKeysOut));
         }
         mappedKeysOut.setSize(keysToMap.intSize());
     }
 
-    /* TODO: Uncomment and test this if we ever start using WrappedIndexRedirectionIndexImpl for unordered reads.
-    @Override
-    public void fillChunkUnordered(@NotNull final RedirectionIndex.FillContext fillContext,
-                                   @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-                                   @NotNull final LongChunk<KeyIndices> keysToMap) {
-        final FillContext typedFillContext = (FillContext) fillContext;
-        typedFillContext.ensureUnorderedFillFieldsInitialized();
-        final WritableLongChunk<KeyIndices> indexPositions = typedFillContext.indexPositions;
-        final LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, ChunkPositions> sortKernelContext = typedFillContext.sortKernelContext;
-        final WritableIntChunk<ChunkPositions> outputChunkPositions = typedFillContext.unorderedFillChunkPositions;
-        final WritableLongChunk<KeyIndices> orderedMappedKeys = typedFillContext.unorderedFillMappedKeys;
-        final int chunkSize = keysToMap.size();
-
-        indexPositions.copyFromTypedChunk(keysToMap, 0, 0, chunkSize);
-        indexPositions.setSize(chunkSize);
-        outputChunkPositions.setSize(chunkSize);
-        ChunkUtils.fillInOrder(outputChunkPositions);
-        LongIntTimsortKernel.sort(sortKernelContext, outputChunkPositions, indexPositions);
-
-        wrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(orderedMappedKeys));
-        orderedMappedKeys.setSize(chunkSize);
-
-        mappedKeysOut.setSize(chunkSize);
-        LongPermuteKernel.permute(orderedMappedKeys, outputChunkPositions, mappedKeysOut);
-    }
-    */
+    /*
+     * TODO: Uncomment and test this if we ever start using WrappedIndexRedirectionIndexImpl for
+     * unordered reads.
+     * 
+     * @Override public void fillChunkUnordered(@NotNull final RedirectionIndex.FillContext
+     * fillContext,
+     * 
+     * @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
+     * 
+     * @NotNull final LongChunk<KeyIndices> keysToMap) { final FillContext typedFillContext =
+     * (FillContext) fillContext; typedFillContext.ensureUnorderedFillFieldsInitialized(); final
+     * WritableLongChunk<KeyIndices> indexPositions = typedFillContext.indexPositions; final
+     * LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, ChunkPositions> sortKernelContext =
+     * typedFillContext.sortKernelContext; final WritableIntChunk<ChunkPositions>
+     * outputChunkPositions = typedFillContext.unorderedFillChunkPositions; final
+     * WritableLongChunk<KeyIndices> orderedMappedKeys = typedFillContext.unorderedFillMappedKeys;
+     * final int chunkSize = keysToMap.size();
+     * 
+     * indexPositions.copyFromTypedChunk(keysToMap, 0, 0, chunkSize);
+     * indexPositions.setSize(chunkSize); outputChunkPositions.setSize(chunkSize);
+     * ChunkUtils.fillInOrder(outputChunkPositions); LongIntTimsortKernel.sort(sortKernelContext,
+     * outputChunkPositions, indexPositions);
+     * 
+     * wrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions), new
+     * LongChunkAppender(orderedMappedKeys)); orderedMappedKeys.setSize(chunkSize);
+     * 
+     * mappedKeysOut.setSize(chunkSize); LongPermuteKernel.permute(orderedMappedKeys,
+     * outputChunkPositions, mappedKeysOut); }
+     */
 
     @Override
     public void startTrackingPrevValues() {
@@ -166,14 +156,17 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
 
         long positionStart = 0;
 
-        for (final Index.RangeIterator rangeIterator = wrappedIndex.rangeIterator(); rangeIterator.hasNext(); ) {
+        for (final Index.RangeIterator rangeIterator = wrappedIndex.rangeIterator(); rangeIterator
+            .hasNext();) {
             if (positionStart > 0) {
                 builder.append(", ");
             }
             final long rangeStart = rangeIterator.currentRangeStart();
             final long length = rangeIterator.currentRangeEnd() - rangeStart + 1;
             if (length > 1) {
-                builder.append(rangeIterator.currentRangeStart()).append("-").append(positionStart + length - 1).append(" -> ").append(rangeStart).append("-").append(rangeIterator.currentRangeEnd());
+                builder.append(rangeIterator.currentRangeStart()).append("-")
+                    .append(positionStart + length - 1).append(" -> ").append(rangeStart)
+                    .append("-").append(rangeIterator.currentRangeEnd());
             } else {
                 builder.append(positionStart).append(" -> ").append(rangeStart);
             }

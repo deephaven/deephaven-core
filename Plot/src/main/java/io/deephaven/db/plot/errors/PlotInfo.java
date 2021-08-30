@@ -11,10 +11,8 @@ import io.deephaven.db.plot.*;
 import java.io.Serializable;
 
 /**
- * Information about a plot. Has 3 pieces of information (all optional)
- * Figure title, if it has one
- * Chart title, if it has one
- * Series name
+ * Information about a plot. Has 3 pieces of information (all optional) Figure title, if it has one
+ * Chart title, if it has one Series name
  */
 public class PlotInfo implements Serializable, LogOutputAppendable {
 
@@ -24,16 +22,19 @@ public class PlotInfo implements Serializable, LogOutputAppendable {
         this(getAxesFigure(axes), getAxesChart(axes), seriesName);
     }
 
-    public PlotInfo(final BaseFigureImpl figure, final ChartImpl chart, final SeriesInternal series) {
+    public PlotInfo(final BaseFigureImpl figure, final ChartImpl chart,
+        final SeriesInternal series) {
         this(figure, chart, series == null ? null : series.name());
     }
 
-    public PlotInfo(final BaseFigureImpl figure, final ChartImpl chart, final Comparable seriesName) {
+    public PlotInfo(final BaseFigureImpl figure, final ChartImpl chart,
+        final Comparable seriesName) {
         this(figure, chart, seriesName == null ? null : seriesName.toString());
     }
 
     public PlotInfo(final BaseFigureImpl figure, final ChartImpl chart, final String seriesName) {
-        this(figure == null ? null : figure.getTitle(), chart == null ? null : chart.getTitle(), seriesName);
+        this(figure == null ? null : figure.getTitle(), chart == null ? null : chart.getTitle(),
+            seriesName);
     }
 
     public PlotInfo(final String figureName, final String chartName, final String seriesName) {
@@ -49,22 +50,23 @@ public class PlotInfo implements Serializable, LogOutputAppendable {
         return axes == null ? null : axes.chart();
     }
 
-    private String encodeInfo(final String figureName, final String chartName, final String seriesName) {
+    private String encodeInfo(final String figureName, final String chartName,
+        final String seriesName) {
         String info = "";
 
-        if(figureName != null) {
+        if (figureName != null) {
             info += "Figure: " + figureName + ".";
         }
 
-        if(chartName != null) {
-            if(figureName != null) {
+        if (chartName != null) {
+            if (figureName != null) {
                 info += " ";
             }
             info += "Chart: " + chartName + ".";
         }
 
-        if(seriesName != null) {
-            if(figureName != null || chartName != null) {
+        if (seriesName != null) {
+            if (figureName != null || chartName != null) {
                 info += " ";
             }
             info += "Series: " + seriesName + ".";

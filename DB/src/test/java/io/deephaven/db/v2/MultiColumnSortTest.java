@@ -47,8 +47,11 @@ public class MultiColumnSortTest {
     private void testMultiColumnSort(int seed, int size) {
         final Random random = new Random(seed);
 
-        final Table table = getTable(size, random, initColumnInfos(new String[]{"Sym", "intCol", "doubleCol", "floatCol", "longCol", "shortCol", "byteCol", "charCol", "boolCol", "bigI", "bigD"},
-                new TstUtils.SetGenerator<>("a", "b","c", "d", "e", "f", "g"),
+        final Table table = getTable(size, random,
+            initColumnInfos(
+                new String[] {"Sym", "intCol", "doubleCol", "floatCol", "longCol", "shortCol",
+                        "byteCol", "charCol", "boolCol", "bigI", "bigD"},
+                new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f", "g"),
                 new TstUtils.IntGenerator(10, 100),
                 new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
                 new TstUtils.FloatGenerator(100.0f, 2000.f),
@@ -57,31 +60,37 @@ public class MultiColumnSortTest {
                 new TstUtils.ByteGenerator(),
                 new TstUtils.CharGenerator('A', 'Z'),
                 new TstUtils.BooleanGenerator(),
-                new TstUtils.BigIntegerGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)),
-                new TstUtils.BigDecimalGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100))
-        ));
+                new TstUtils.BigIntegerGenerator(BigInteger.valueOf(100000),
+                    BigInteger.valueOf(100100)),
+                new TstUtils.BigDecimalGenerator(BigInteger.valueOf(100000),
+                    BigInteger.valueOf(100100))));
 
         final List<String> columnNames = new ArrayList<>(table.getColumnSourceMap().keySet());
 
         doMultiColumnTest(table, SortPair.ascending("boolCol"), SortPair.descending("Sym"));
 
         for (String outerColumn : columnNames) {
-            final SortPair outerPair = random.nextBoolean() ? SortPair.ascending(outerColumn) : SortPair.descending(outerColumn);
+            final SortPair outerPair = random.nextBoolean() ? SortPair.ascending(outerColumn)
+                : SortPair.descending(outerColumn);
             for (String innerColumn : columnNames) {
                 if (innerColumn.equals(outerColumn)) {
                     continue;
                 }
-                final SortPair innerPair = random.nextBoolean() ? SortPair.ascending(innerColumn) : SortPair.descending(innerColumn);
+                final SortPair innerPair = random.nextBoolean() ? SortPair.ascending(innerColumn)
+                    : SortPair.descending(innerColumn);
                 doMultiColumnTest(table, outerPair, innerPair);
             }
         }
 
-        // now let each type have a chance at being in the middle, but pick something else as the outer type
+        // now let each type have a chance at being in the middle, but pick something else as the
+        // outer type
         for (String middleColumn : columnNames) {
             final String outerColumn = oneOf(columnNames, middleColumn);
             final String innerColumn = oneOf(columnNames, middleColumn, outerColumn);
-            final SortPair outerPair = random.nextBoolean() ? SortPair.ascending(outerColumn) : SortPair.descending(outerColumn);
-            final SortPair innerPair = random.nextBoolean() ? SortPair.ascending(innerColumn) : SortPair.descending(innerColumn);
+            final SortPair outerPair = random.nextBoolean() ? SortPair.ascending(outerColumn)
+                : SortPair.descending(outerColumn);
+            final SortPair innerPair = random.nextBoolean() ? SortPair.ascending(innerColumn)
+                : SortPair.descending(innerColumn);
 
             doMultiColumnTest(table, outerPair, SortPair.ascending(middleColumn), innerPair);
             doMultiColumnTest(table, outerPair, SortPair.descending(middleColumn), innerPair);
@@ -95,35 +104,38 @@ public class MultiColumnSortTest {
         return copy.get(0);
     }
 
-    private void doMultiColumnTest(Table table, SortPair ... sortPairs) {
+    private void doMultiColumnTest(Table table, SortPair... sortPairs) {
         final Table sorted = table.sort(sortPairs);
 
         System.out.println("SortPairs: " + Arrays.toString(sortPairs) + ", size=" + table.size());
-//        TableTools.show(table);
-//        TableTools.show(sorted);
+        // TableTools.show(table);
+        // TableTools.show(sorted);
 
         checkSort(sorted, sortPairs);
     }
 
     private void checkSort(Table sorted, SortPair[] sortPairs) {
-        final String [] columns = Arrays.stream(sortPairs).map(SortPair::getColumn).toArray(String[]::new);
+        final String[] columns =
+            Arrays.stream(sortPairs).map(SortPair::getColumn).toArray(String[]::new);
 
-        Object [] lastRow = sorted.getRecord(0, columns);
+        Object[] lastRow = sorted.getRecord(0, columns);
 
         for (int ii = 1; ii < sorted.intSize(); ++ii) {
-            final Object [] rowData = sorted.getRecord(ii, columns);
+            final Object[] rowData = sorted.getRecord(ii, columns);
 
             for (int jj = 0; jj < rowData.length; ++jj) {
                 // make sure lastRow <= rowData
-                final Comparable last = (Comparable)lastRow[jj];
-                final Comparable current = (Comparable)rowData[jj];
+                final Comparable last = (Comparable) lastRow[jj];
+                final Comparable current = (Comparable) rowData[jj];
                 if (sortPairs[jj].getOrder() == SortingOrder.Ascending) {
                     if (!leq(last, current)) {
-                        TestCase.fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow) + " <= [" + ii + "] " + Arrays.toString(rowData));
+                        TestCase.fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow)
+                            + " <= [" + ii + "] " + Arrays.toString(rowData));
                     }
                 } else {
                     if (!geq(last, current)) {
-                        TestCase.fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow) + " >= [" + ii + "] " + Arrays.toString(rowData));
+                        TestCase.fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow)
+                            + " >= [" + ii + "] " + Arrays.toString(rowData));
                     }
                 }
                 if (!Objects.equals(last, current)) {
@@ -145,7 +157,7 @@ public class MultiColumnSortTest {
         if (current == null) {
             return false;
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return last.compareTo(current) <= 0;
     }
 
@@ -159,7 +171,7 @@ public class MultiColumnSortTest {
         if (last == null) {
             return false;
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return last.compareTo(current) >= 0;
     }
 
@@ -167,8 +179,12 @@ public class MultiColumnSortTest {
     @Test
     public void benchmarkTest() {
         {
-            final EnumStringColumnGenerator enumStringCol1 = (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
-            final EnumStringColumnGenerator enumStringCol2 = (EnumStringColumnGenerator)BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
+            final EnumStringColumnGenerator enumStringCol1 =
+                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum1", 10000, 6, 6,
+                    0xB00FB00F);
+            final EnumStringColumnGenerator enumStringCol2 =
+                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum2", 1000, 6, 6,
+                    0xF00DF00D);
 
             final BenchmarkTableBuilder builder;
             final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
@@ -178,21 +194,22 @@ public class MultiColumnSortTest {
             builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
 
             final BenchmarkTable bmTable = builder
-                    .setSeed(0xDEADBEEF)
-                    .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
-                    .addColumn(BenchmarkTools.numberCol("I1", int.class))
-                    .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
-                    .addColumn(BenchmarkTools.numberCol("L1", long.class))
-                    .addColumn(enumStringCol1)
-                    .addColumn(enumStringCol2)
-                    .build();
+                .setSeed(0xDEADBEEF)
+                .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
+                .addColumn(BenchmarkTools.numberCol("I1", int.class))
+                .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
+                .addColumn(BenchmarkTools.numberCol("L1", long.class))
+                .addColumn(enumStringCol1)
+                .addColumn(enumStringCol2)
+                .build();
 
 
             final long startGen = System.currentTimeMillis();
             System.out.println(new Date(startGen) + " Generating Table.");
             final Table table = bmTable.getTable();
             final long endGen = System.currentTimeMillis();
-            System.out.println(new Date(endGen) + " Completed generate in " + (endGen - startGen) + "ms");
+            System.out
+                .println(new Date(endGen) + " Completed generate in " + (endGen - startGen) + "ms");
 
             final long startSort = System.currentTimeMillis();
             System.out.println(new Date(startSort) + " Starting sort.");

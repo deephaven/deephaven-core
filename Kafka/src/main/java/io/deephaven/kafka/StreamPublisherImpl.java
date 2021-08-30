@@ -16,14 +16,17 @@ public class StreamPublisherImpl implements StreamPublisher {
     private IntFunction<ChunkType> chunkTypeIntFunction;
 
     /**
-     * You must set the chunk factory and consumer before allowing other threads or objects to interact with the StreamPublisherImpl.
+     * You must set the chunk factory and consumer before allowing other threads or objects to
+     * interact with the StreamPublisherImpl.
      *
-     * @param chunkFactory         a supplier of WritableChunks that is acceptable to our consumer
+     * @param chunkFactory a supplier of WritableChunks that is acceptable to our consumer
      * @param chunkTypeIntFunction a function from column index to ChunkType
      */
-    public void setChunkFactory(Supplier<WritableChunk[]> chunkFactory, IntFunction<ChunkType> chunkTypeIntFunction) {
+    public void setChunkFactory(Supplier<WritableChunk[]> chunkFactory,
+        IntFunction<ChunkType> chunkTypeIntFunction) {
         if (this.chunkFactory != null) {
-            throw new IllegalStateException("Can not reset the chunkFactory for a StreamPublisherImpl");
+            throw new IllegalStateException(
+                "Can not reset the chunkFactory for a StreamPublisherImpl");
         }
         this.chunkFactory = chunkFactory;
         this.chunkTypeIntFunction = chunkTypeIntFunction;
@@ -41,7 +44,7 @@ public class StreamPublisherImpl implements StreamPublisher {
         return chunkTypeIntFunction.apply(index);
     }
 
-    public synchronized WritableChunk [] getChunks() {
+    public synchronized WritableChunk[] getChunks() {
         if (chunks == null) {
             chunks = chunkFactory.get();
         }
@@ -58,7 +61,8 @@ public class StreamPublisherImpl implements StreamPublisher {
     }
 
     /**
-     * Run the provided Runnable under our lock, preventing flush from taking our chunks while filling them.
+     * Run the provided Runnable under our lock, preventing flush from taking our chunks while
+     * filling them.
      *
      * @param runnable the runnable to run
      */

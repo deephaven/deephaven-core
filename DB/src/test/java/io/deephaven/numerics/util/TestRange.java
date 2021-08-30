@@ -12,8 +12,8 @@ public class TestRange extends BaseArrayTestCase {
         try {
             final Range r = new Range(min, max);
             fail("Should have raised an error");
-        } catch (RequirementFailure e){
-            //pass
+        } catch (RequirementFailure e) {
+            // pass
         }
     }
 

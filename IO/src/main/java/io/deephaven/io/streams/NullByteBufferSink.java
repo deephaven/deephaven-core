@@ -11,7 +11,7 @@ public class NullByteBufferSink implements ByteBufferSink {
 
     public ByteBuffer acceptBuffer(ByteBuffer b, int need) throws IOException {
         b.clear();
-        if ( b.remaining() < need ) {
+        if (b.remaining() < need) {
             b = ByteBuffer.allocate(Math.max(b.remaining() * 2, need));
         }
         return b;

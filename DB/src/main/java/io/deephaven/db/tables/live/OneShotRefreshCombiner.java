@@ -46,6 +46,6 @@ public class OneShotRefreshCombiner implements LiveTable, LiveTableRegistrar {
 
     @Override
     public void maybeRefreshTable(@NotNull LiveTable table, boolean onlyIfHaveLock) {
-        LiveTableMonitor.DEFAULT.maybeRefreshTable(table,onlyIfHaveLock);
+        LiveTableMonitor.DEFAULT.maybeRefreshTable(table, onlyIfHaveLock);
     }
 }

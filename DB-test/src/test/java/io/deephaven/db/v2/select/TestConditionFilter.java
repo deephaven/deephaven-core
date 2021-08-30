@@ -34,15 +34,19 @@ import static io.deephaven.db.v2.select.FormulaTestUtil.*;
 import static org.jpy.PyLib.getMainGlobals;
 import static org.junit.Assert.fail;
 
-@Ignore// TODO (deephaven-core#734)
+@Ignore // TODO (deephaven-core#734)
 public class TestConditionFilter extends PythonTest {
     static {
         if (ProcessEnvironment.tryGet() == null) {
-            ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(), TestConditionFilter.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
+            ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(),
+                TestConditionFilter.class.getCanonicalName(),
+                new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
     }
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestConditionFilter.class, "CompilerTools.logEnabled", false);
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING =
+        Configuration.getInstance().getBooleanForClassWithDefault(TestConditionFilter.class,
+            "CompilerTools.logEnabled", false);
 
     private final Table testDataTable;
     private boolean compilerToolsLogEnabledInitial = false;
@@ -57,7 +61,9 @@ public class TestConditionFilter extends PythonTest {
     @Before
     public void setUp() throws Exception {
         if (ProcessEnvironment.tryGet() == null) {
-            ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(), PythonMatchFilterTest.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
+            ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(),
+                PythonMatchFilterTest.class.getCanonicalName(),
+                new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
         compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
     }
@@ -98,7 +104,8 @@ public class TestConditionFilter extends PythonTest {
     @Test
     public void testRuntimeException() {
         checkExpectingEvaluationException("((Boolean) null)", "NullPointerException");
-        checkExpectingEvaluationException("Integer.parseInt(\"this is not an integer\") != null", "NumberFormatException");
+        checkExpectingEvaluationException("Integer.parseInt(\"this is not an integer\") != null",
+            "NumberFormatException");
     }
 
     @Test
@@ -109,8 +116,10 @@ public class TestConditionFilter extends PythonTest {
 
     @Test
     public void testMiscCompilationExceptions() {
-        checkExpectingCompilationException("nonExistentVariableOrClass", "Cannot find variable or class nonExistentVariableOrClass");
-        checkExpectingCompilationException("Integer.noSuchMethod()", "Cannot find method noSuchMethod()");
+        checkExpectingCompilationException("nonExistentVariableOrClass",
+            "Cannot find variable or class nonExistentVariableOrClass");
+        checkExpectingCompilationException("Integer.noSuchMethod()",
+            "Cannot find method noSuchMethod()");
     }
 
     @Test
@@ -129,151 +138,131 @@ public class TestConditionFilter extends PythonTest {
         String expression;
         Predicate<Map<String, Object>> test;
 
-        {   // LESS THAN
+        { // LESS THAN
             expression = "myShortObj < ShortCol";
             test = (colValues) -> DBLanguageFunctionUtil.less(
-                    DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol"))
-            );
-            check(expression, test, true,false);
+                DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            check(expression, test, true, false);
 
             expression = "myIntObj < IntCol";
             test = (colValues) -> DBLanguageFunctionUtil.less(
-                    QUERYSCOPE_OBJ_BASE_VALUE,
-                    DBLanguageFunctionUtil.intCast(colValues.get("IntCol"))
-            );
+                QUERYSCOPE_OBJ_BASE_VALUE,
+                DBLanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj < LongCol";
             test = (colValues) -> DBLanguageFunctionUtil.less(
-                    DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.longCast(colValues.get("LongCol"))
-            );
+                DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj < FloatCol";
             test = (colValues) -> DBLanguageFunctionUtil.less(
-                    DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol"))
-            );
+                DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj < DoubleCol";
             test = (colValues) -> DBLanguageFunctionUtil.less(
-                    DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol"))
-            );
+                DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
-        {   // GREATER THAN
+        { // GREATER THAN
             expression = "myShortObj > ShortCol";
             test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol"))
-            );
+                DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj > IntCol";
             test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    QUERYSCOPE_OBJ_BASE_VALUE,
-                    DBLanguageFunctionUtil.intCast(colValues.get("IntCol"))
-            );
+                QUERYSCOPE_OBJ_BASE_VALUE,
+                DBLanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj > LongCol";
             test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.longCast(colValues.get("LongCol"))
-            );
+                DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj > FloatCol";
             test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol"))
-            );
+                DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj > DoubleCol";
             test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol"))
-            );
+                DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
-        {   // EQUAL
+        { // EQUAL
             expression = "myShortObj == ShortCol";
             test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol"))
-            );
+                DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj == IntCol";
             test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    QUERYSCOPE_OBJ_BASE_VALUE,
-                    DBLanguageFunctionUtil.intCast(colValues.get("IntCol"))
-            );
+                QUERYSCOPE_OBJ_BASE_VALUE,
+                DBLanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj == LongCol";
             test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.longCast(colValues.get("LongCol"))
-            );
+                DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj == FloatCol";
             test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol"))
-            );
+                DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj == DoubleCol";
             test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol"))
-            );
+                DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
-        {   // NOT EQUAL
+        { // NOT EQUAL
             expression = "myShortObj != ShortCol";
             test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol"))
-            );
+                DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj != IntCol";
             test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    QUERYSCOPE_OBJ_BASE_VALUE,
-                    DBLanguageFunctionUtil.intCast(colValues.get("IntCol"))
-            );
+                QUERYSCOPE_OBJ_BASE_VALUE,
+                DBLanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj != LongCol";
             test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.longCast(colValues.get("LongCol"))
-            );
+                DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj != FloatCol";
             test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol"))
-            );
+                DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj != DoubleCol";
             test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol"))
-            );
+                DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
     }
@@ -291,18 +280,18 @@ public class TestConditionFilter extends PythonTest {
     @Test
     public void testPython() {
         PyObject.executeCode("from numba.npyufunc import vectorize\n" +
-                "@vectorize\n" +
-                "def testf(a, b, c):\n" +
-                "    return a + b < c\n" +
-                "\n",PyInputMode.SCRIPT);
+            "@vectorize\n" +
+            "def testf(a, b, c):\n" +
+            "    return a + b < c\n" +
+            "\n", PyInputMode.SCRIPT);
 
         check("testf(IntCol,IntCol*2,IntCol+2)", m -> {
             Integer ic = (Integer) m.get("IntCol");
             if (ic == null) {
                 return true;
             }
-            return ic + ic*2 < ic + 2;
-        },true,false);
+            return ic + ic * 2 < ic + 2;
+        }, true, false);
     }
 
     @Test
@@ -311,58 +300,61 @@ public class TestConditionFilter extends PythonTest {
         check("i > 1", m -> {
             Integer i = (Integer) m.get("actualI");
             return i > 1;
-        },true,false);
+        }, true, false);
         check("i <= 1", m -> {
             Integer i = (Integer) m.get("actualI");
             return i <= 1;
-        },true,false);
+        }, true, false);
         check("k > 1", m -> {
             Long k = (Long) m.get("actualK");
             return k > 1;
-        },true,false);
+        }, true, false);
         check("k <= 1", m -> {
             Long k = (Long) m.get("actualK");
             return k <= 1;
-        },true,false);
+        }, true, false);
         check("ii > 1", m -> {
             Long ii = (Long) m.get("actualII");
             return ii > 1;
-        },true,false);
+        }, true, false);
         check("ii <= 1", m -> {
             Long ii = (Long) m.get("actualII");
             return ii <= 1;
-        },true,false);
+        }, true, false);
     }
 
 
     /**
-     * Ensure that a {@link ConditionFilter} with the given {@code expression}  {@link #testDataTable} filtered by a ConditionF
+     * Ensure that a {@link ConditionFilter} with the given {@code expression}
+     * {@link #testDataTable} filtered by a ConditionF
      *
-     * @param expression    the conditional expression to check
+     * @param expression the conditional expression to check
      * @param testPredicate the predicate over a map of column values to compare with the expression
      */
     private void check(String expression, Predicate<Map<String, Object>> testPredicate) {
         check(expression, testPredicate, false, true);
     }
 
-    private void check(String expression, Predicate<Map<String, Object>> testPredicate, boolean testPython) {
+    private void check(String expression, Predicate<Map<String, Object>> testPredicate,
+        boolean testPython) {
         check(expression, testPredicate, testPython, true);
     }
 
-    private void check(String expression, Predicate<Map<String, Object>> testPredicate, boolean testPython, boolean testNative) {
+    private void check(String expression, Predicate<Map<String, Object>> testPredicate,
+        boolean testPython, boolean testNative) {
         final Index.SequentialBuilder keepBuilder = Index.FACTORY.getSequentialBuilder();
         final Index.SequentialBuilder dropBuilder = Index.FACTORY.getSequentialBuilder();
 
-        final Map<String, ? extends ColumnSource> sourcesMap = testDataTable.updateView("actualI = i","actualII = ii","actualK = k").getColumnSourceMap();
+        final Map<String, ? extends ColumnSource> sourcesMap = testDataTable
+            .updateView("actualI = i", "actualII = ii", "actualK = k").getColumnSourceMap();
 
-        for (final Index.Iterator it = testDataTable.getIndex().iterator(); it.hasNext(); ) {
+        for (final Index.Iterator it = testDataTable.getIndex().iterator(); it.hasNext();) {
             final long idx = it.nextLong();
             final Map<String, Object> rowMap = new HashMap<>(sourcesMap.size());
             for (Map.Entry<String, ? extends ColumnSource> entry : sourcesMap.entrySet()) {
                 rowMap.put(
-                        entry.getKey(),
-                        entry.getValue().get(idx)
-                );
+                    entry.getKey(),
+                    entry.getValue().get(idx));
             }
             if (testPredicate.test(rowMap)) {
                 keepBuilder.appendKey(idx);
@@ -382,11 +374,11 @@ public class TestConditionFilter extends PythonTest {
             try {
                 if (pythonScope == null) {
                     pythonScope = new PythonDeephavenSession(new PythonScopeJpyImpl(
-                            getMainGlobals().asDict())).newQueryScope();
+                        getMainGlobals().asDict())).newQueryScope();
                     QueryScope.setScope(pythonScope);
                 }
                 for (Param param : currentScope.getParams(currentScope.getParamNames())) {
-                    pythonScope.putParam(param.getName(),param.getValue());
+                    pythonScope.putParam(param.getName(), param.getValue());
                 }
                 expression = expression.replaceAll("true", "True").replaceAll("false", "False");
                 validate(expression, keepIndex, dropIndex, FormulaParserConfiguration.Numba);
@@ -397,37 +389,53 @@ public class TestConditionFilter extends PythonTest {
 
     }
 
-    private void validate(String expression, Index keepIndex, Index dropIndex, FormulaParserConfiguration parser) {
-        final Index filteredIndex = initCheck(expression,parser);
+    private void validate(String expression, Index keepIndex, Index dropIndex,
+        FormulaParserConfiguration parser) {
+        final Index filteredIndex = initCheck(expression, parser);
 
-        Require.eq(keepIndex.size(), "keepIndex.size()", filteredIndex.size(), "filteredIndex.size()");
-        Require.eq(keepIndex.intersect(filteredIndex).size(), "keepIndex.intersect(filteredIndex).size()", filteredIndex.size(), "filteredIndex.size()");
-        Require.eqZero(dropIndex.intersect(filteredIndex).size(), "dropIndex.intersect(filteredIndex).size()");
+        Require.eq(keepIndex.size(), "keepIndex.size()", filteredIndex.size(),
+            "filteredIndex.size()");
+        Require.eq(keepIndex.intersect(filteredIndex).size(),
+            "keepIndex.intersect(filteredIndex).size()", filteredIndex.size(),
+            "filteredIndex.size()");
+        Require.eqZero(dropIndex.intersect(filteredIndex).size(),
+            "dropIndex.intersect(filteredIndex).size()");
     }
 
 
     private void checkExpectingEvaluationException(String expression, String expectedCauseMessage) {
         try {
-            initCheck(expression,FormulaParserConfiguration.Deephaven);
+            initCheck(expression, FormulaParserConfiguration.Deephaven);
             fail("Should have thrown an exception");
         } catch (FormulaEvaluationException ex) {
             if (!ex.getMessage().contains(expectedCauseMessage)
-                    && !ex.getCause().getMessage().contains(expectedCauseMessage)) // check the cause, since all exceptions during filter evaluation are caught
+                && !ex.getCause().getMessage().contains(expectedCauseMessage)) // check the cause,
+                                                                               // since all
+                                                                               // exceptions during
+                                                                               // filter evaluation
+                                                                               // are caught
             {
-                fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
+                fail("Useless exception message!\nOriginal exception:\n"
+                    + ExceptionUtils.getStackTrace(ex));
             }
         }
     }
 
-    private void checkExpectingCompilationException(String expression, String expectedCauseMessage) {
+    private void checkExpectingCompilationException(String expression,
+        String expectedCauseMessage) {
         try {
-            initCheck(expression,FormulaParserConfiguration.Deephaven);
+            initCheck(expression, FormulaParserConfiguration.Deephaven);
             fail("Should have thrown an exception");
         } catch (FormulaCompilationException ex) {
             if (!ex.getMessage().contains(expectedCauseMessage)
-                    && !ex.getCause().getMessage().contains(expectedCauseMessage)) // check the cause, since all exceptions during filter init are caught
+                && !ex.getCause().getMessage().contains(expectedCauseMessage)) // check the cause,
+                                                                               // since all
+                                                                               // exceptions during
+                                                                               // filter init are
+                                                                               // caught
             {
-                fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
+                fail("Useless exception message!\nOriginal exception:\n"
+                    + ExceptionUtils.getStackTrace(ex));
             }
         }
 
@@ -435,9 +443,11 @@ public class TestConditionFilter extends PythonTest {
 
 
     private Index initCheck(String expression, FormulaParserConfiguration parser) {
-        final SelectFilter conditionFilter = ConditionFilter.createConditionFilter(expression, parser);
+        final SelectFilter conditionFilter =
+            ConditionFilter.createConditionFilter(expression, parser);
         conditionFilter.init(testDataTable.getDefinition());
-        return conditionFilter.filter(testDataTable.getIndex().clone(), testDataTable.getIndex(), testDataTable, false);
+        return conditionFilter.filter(testDataTable.getIndex().clone(), testDataTable.getIndex(),
+            testDataTable, false);
     }
 
 }

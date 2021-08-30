@@ -9,10 +9,12 @@ import java.util.Map;
 /**
  * A do-nothing CompletionParseService, to be used only if the real completer is not available.
  */
-public class CompletionParseServiceNoOp implements CompletionParseService<ParsedResult<Object, Object, Object>, Object, RuntimeException> {
+public class CompletionParseServiceNoOp implements
+    CompletionParseService<ParsedResult<Object, Object, Object>, Object, RuntimeException> {
 
     @Override
-    public ParsedResult<Object, Object, Object> parse(final String document) throws RuntimeException {
+    public ParsedResult<Object, Object, Object> parse(final String document)
+        throws RuntimeException {
         return new ParsedResult<Object, Object, Object>() {
             private Map<String, List<Object>> map = new LinkedHashMap<>();
 

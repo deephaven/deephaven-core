@@ -13,151 +13,152 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.TextEdit",
     namespace = JsPackage.GLOBAL)
 public class TextEdit {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface RangeFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface StartFieldType {
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface RangeFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface StartFieldType {
+                @JsOverlay
+                static TextEdit.ToObjectReturnType.RangeFieldType.StartFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getCharacter();
+
+                @JsProperty
+                double getLine();
+
+                @JsProperty
+                void setCharacter(double character);
+
+                @JsProperty
+                void setLine(double line);
+            }
+
+            @JsOverlay
+            static TextEdit.ToObjectReturnType.RangeFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getEnd();
+
+            @JsProperty
+            TextEdit.ToObjectReturnType.RangeFieldType.StartFieldType getStart();
+
+            @JsProperty
+            void setEnd(Object end);
+
+            @JsProperty
+            void setStart(TextEdit.ToObjectReturnType.RangeFieldType.StartFieldType start);
+        }
+
         @JsOverlay
-        static TextEdit.ToObjectReturnType.RangeFieldType.StartFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
+        static TextEdit.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        double getCharacter();
+        TextEdit.ToObjectReturnType.RangeFieldType getRange();
 
         @JsProperty
-        double getLine();
+        String getText();
 
         @JsProperty
-        void setCharacter(double character);
+        void setRange(TextEdit.ToObjectReturnType.RangeFieldType range);
 
         @JsProperty
-        void setLine(double line);
-      }
-
-      @JsOverlay
-      static TextEdit.ToObjectReturnType.RangeFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      Object getEnd();
-
-      @JsProperty
-      TextEdit.ToObjectReturnType.RangeFieldType.StartFieldType getStart();
-
-      @JsProperty
-      void setEnd(Object end);
-
-      @JsProperty
-      void setStart(TextEdit.ToObjectReturnType.RangeFieldType.StartFieldType start);
+        void setText(String text);
     }
 
-    @JsOverlay
-    static TextEdit.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    TextEdit.ToObjectReturnType.RangeFieldType getRange();
-
-    @JsProperty
-    String getText();
-
-    @JsProperty
-    void setRange(TextEdit.ToObjectReturnType.RangeFieldType range);
-
-    @JsProperty
-    void setText(String text);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface RangeFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface StartFieldType {
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface RangeFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface StartFieldType {
+                @JsOverlay
+                static TextEdit.ToObjectReturnType0.RangeFieldType.StartFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getCharacter();
+
+                @JsProperty
+                double getLine();
+
+                @JsProperty
+                void setCharacter(double character);
+
+                @JsProperty
+                void setLine(double line);
+            }
+
+            @JsOverlay
+            static TextEdit.ToObjectReturnType0.RangeFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getEnd();
+
+            @JsProperty
+            TextEdit.ToObjectReturnType0.RangeFieldType.StartFieldType getStart();
+
+            @JsProperty
+            void setEnd(Object end);
+
+            @JsProperty
+            void setStart(TextEdit.ToObjectReturnType0.RangeFieldType.StartFieldType start);
+        }
+
         @JsOverlay
-        static TextEdit.ToObjectReturnType0.RangeFieldType.StartFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
+        static TextEdit.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        double getCharacter();
+        TextEdit.ToObjectReturnType0.RangeFieldType getRange();
 
         @JsProperty
-        double getLine();
+        String getText();
 
         @JsProperty
-        void setCharacter(double character);
+        void setRange(TextEdit.ToObjectReturnType0.RangeFieldType range);
 
         @JsProperty
-        void setLine(double line);
-      }
-
-      @JsOverlay
-      static TextEdit.ToObjectReturnType0.RangeFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      Object getEnd();
-
-      @JsProperty
-      TextEdit.ToObjectReturnType0.RangeFieldType.StartFieldType getStart();
-
-      @JsProperty
-      void setEnd(Object end);
-
-      @JsProperty
-      void setStart(TextEdit.ToObjectReturnType0.RangeFieldType.StartFieldType start);
+        void setText(String text);
     }
 
-    @JsOverlay
-    static TextEdit.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static native TextEdit deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    TextEdit.ToObjectReturnType0.RangeFieldType getRange();
+    public static native TextEdit deserializeBinaryFromReader(TextEdit message, Object reader);
 
-    @JsProperty
-    String getText();
+    public static native void serializeBinaryToWriter(TextEdit message, Object writer);
 
-    @JsProperty
-    void setRange(TextEdit.ToObjectReturnType0.RangeFieldType range);
+    public static native TextEdit.ToObjectReturnType toObject(boolean includeInstance,
+        TextEdit msg);
 
-    @JsProperty
-    void setText(String text);
-  }
+    public native void clearRange();
 
-  public static native TextEdit deserializeBinary(Uint8Array bytes);
+    public native DocumentRange getRange();
 
-  public static native TextEdit deserializeBinaryFromReader(TextEdit message, Object reader);
+    public native String getText();
 
-  public static native void serializeBinaryToWriter(TextEdit message, Object writer);
+    public native boolean hasRange();
 
-  public static native TextEdit.ToObjectReturnType toObject(boolean includeInstance, TextEdit msg);
+    public native Uint8Array serializeBinary();
 
-  public native void clearRange();
+    public native void setRange();
 
-  public native DocumentRange getRange();
+    public native void setRange(DocumentRange value);
 
-  public native String getText();
+    public native void setText(String value);
 
-  public native boolean hasRange();
+    public native TextEdit.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setRange();
-
-  public native void setRange(DocumentRange value);
-
-  public native void setText(String value);
-
-  public native TextEdit.ToObjectReturnType0 toObject();
-
-  public native TextEdit.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native TextEdit.ToObjectReturnType0 toObject(boolean includeInstance);
 }

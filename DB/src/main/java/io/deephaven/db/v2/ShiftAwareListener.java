@@ -21,8 +21,8 @@ import java.util.function.BiConsumer;
 public interface ShiftAwareListener extends ListenerBase {
 
     /**
-     * A shift aware update structure, containing the rows and columns that were added, modified, removed, and shifted
-     * on a given cycle.
+     * A shift aware update structure, containing the rows and columns that were added, modified,
+     * removed, and shifted on a given cycle.
      */
     class Update implements LogOutputAppendable {
         /**
@@ -53,16 +53,19 @@ public interface ShiftAwareListener extends ListenerBase {
         // Cached version of prevModified index.
         private volatile Index prevModified;
 
-        // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for each instance.
-        private static final AtomicIntegerFieldUpdater<Update> REFERENCE_COUNT_UPDATER = AtomicIntegerFieldUpdater.newUpdater(Update.class, "refCount");
+        // Field updater for refCount, so we can avoid creating an {@link
+        // java.util.concurrent.atomic.AtomicInteger} for each instance.
+        private static final AtomicIntegerFieldUpdater<Update> REFERENCE_COUNT_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(Update.class, "refCount");
 
         // Ensure that we clean up only after all copies of the update are released.
         private volatile int refCount = 1;
 
         public Update() {}
 
-        public Update(final Index added, final Index removed, final Index modified, final IndexShiftData shifted,
-                      final ModifiedColumnSet modifiedColumnSet) {
+        public Update(final Index added, final Index removed, final Index modified,
+            final IndexShiftData shifted,
+            final ModifiedColumnSet modifiedColumnSet) {
             this.added = added;
             this.removed = removed;
             this.modified = modified;
@@ -72,6 +75,7 @@ public interface ShiftAwareListener extends ListenerBase {
 
         /**
          * Increment the reference count on this object.
+         * 
          * @return {@code this} for convenience
          */
         public Update acquire() {
@@ -105,7 +109,8 @@ public interface ShiftAwareListener extends ListenerBase {
          * @return true if all internal state is initialized
          */
         public boolean valid() {
-            return added != null && removed != null && modified != null && shifted != null && modifiedColumnSet != null;
+            return added != null && removed != null && modified != null && shifted != null
+                && modifiedColumnSet != null;
         }
 
         /**
@@ -113,7 +118,8 @@ public interface ShiftAwareListener extends ListenerBase {
          */
         public Update copy() {
             final ModifiedColumnSet newMCS;
-            if (modifiedColumnSet == ModifiedColumnSet.ALL || modifiedColumnSet == ModifiedColumnSet.EMPTY) {
+            if (modifiedColumnSet == ModifiedColumnSet.ALL
+                || modifiedColumnSet == ModifiedColumnSet.EMPTY) {
                 newMCS = modifiedColumnSet;
             } else {
                 newMCS = new ModifiedColumnSet(modifiedColumnSet);
@@ -136,7 +142,8 @@ public interface ShiftAwareListener extends ListenerBase {
                     if (localPrevModified == null) {
                         localPrevModified = modified.clone();
                         shifted.unapply(localPrevModified);
-                        // this volatile write ensures prevModified is visible only after it is shifted
+                        // this volatile write ensures prevModified is visible only after it is
+                        // shifted
                         prevModified = localPrevModified;
                     }
                 }
@@ -145,7 +152,9 @@ public interface ShiftAwareListener extends ListenerBase {
         }
 
         /**
-         * This helper iterates through the modified index and supplies both the pre-shift and post-shift keys per row.
+         * This helper iterates through the modified index and supplies both the pre-shift and
+         * post-shift keys per row.
+         * 
          * @param consumer a consumer to feed the modified pre-shift and post-shift key values to.
          */
         public void forAllModified(final BiConsumer<Long, Long> consumer) {
@@ -158,7 +167,8 @@ public interface ShiftAwareListener extends ListenerBase {
             }
 
             if (it.hasNext() || pit.hasNext()) {
-                throw new IllegalStateException("IndexShiftData.forAllModified(modified) generated an invalid set.");
+                throw new IllegalStateException(
+                    "IndexShiftData.forAllModified(modified) generated an invalid set.");
             }
         }
 
@@ -180,7 +190,8 @@ public interface ShiftAwareListener extends ListenerBase {
             }
             shifted = null;
             modifiedColumnSet = null;
-            // This doubles as a memory barrier write prior to the read in acquire(). It must remain last.
+            // This doubles as a memory barrier write prior to the read in acquire(). It must remain
+            // last.
             prevModified = null;
         }
 
@@ -191,13 +202,14 @@ public interface ShiftAwareListener extends ListenerBase {
 
         @Override
         public LogOutput append(LogOutput logOutput) {
-             return logOutput.append('{')
-                    .append("added=").append(added)
-                    .append(", removed=").append(removed)
-                    .append(", modified=").append(modified)
-                    .append(", shifted=").append(shifted == null ? "{}" : shifted.toString())
-                    .append(", modifiedColumnSet=").append(modifiedColumnSet == null ? "{EMPTY}" : modifiedColumnSet.toString())
-                    .append("}");
+            return logOutput.append('{')
+                .append("added=").append(added)
+                .append(", removed=").append(removed)
+                .append(", modified=").append(modified)
+                .append(", shifted=").append(shifted == null ? "{}" : shifted.toString())
+                .append(", modifiedColumnSet=")
+                .append(modifiedColumnSet == null ? "{EMPTY}" : modifiedColumnSet.toString())
+                .append("}");
         }
     }
 

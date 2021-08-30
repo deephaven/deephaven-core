@@ -10,8 +10,8 @@ import java.text.NumberFormat;
 /**
  * A formatter for converting decimals into formatted strings.
  *
- * For details on the supported patterns see the javadoc for
- * <a href="https://docs.oracle.com/javase/7/docs/api/java/text/DecimalFormat.html">DecimalFormat</a>
+ * For details on the supported patterns see the javadoc for <a href=
+ * "https://docs.oracle.com/javase/7/docs/api/java/text/DecimalFormat.html">DecimalFormat</a>
  */
 public class DecimalAxisFormat implements AxisFormat {
     private String pattern;

@@ -7,30 +7,30 @@ import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, name = "dhinternal.browserHeaders.Map", namespace = JsPackage.GLOBAL)
 public interface Map<K, V> {
-  @JsFunction
-  public interface ForEachCallbackFn<K, V> {
-    void onInvoke(V p0, K p1, Map p2);
-  }
+    @JsFunction
+    public interface ForEachCallbackFn<K, V> {
+        void onInvoke(V p0, K p1, Map p2);
+    }
 
-  void clear();
+    void clear();
 
-  boolean delete(K key);
+    boolean delete(K key);
 
-  void forEach(Map.ForEachCallbackFn<? super K, ? super V> callbackfn, Object thisArg);
+    void forEach(Map.ForEachCallbackFn<? super K, ? super V> callbackfn, Object thisArg);
 
-  void forEach(Map.ForEachCallbackFn<? super K, ? super V> callbackfn);
+    void forEach(Map.ForEachCallbackFn<? super K, ? super V> callbackfn);
 
-  V get(K key);
+    V get(K key);
 
-  @JsProperty
-  double getSize();
+    @JsProperty
+    double getSize();
 
-  boolean has(K key);
+    boolean has(K key);
 
-  Map<K, V> set(K key, V value);
+    Map<K, V> set(K key, V value);
 
-  Map<K, V> set(K key);
+    Map<K, V> set(K key);
 
-  @JsProperty
-  void setSize(double size);
+    @JsProperty
+    void setSize(double size);
 }

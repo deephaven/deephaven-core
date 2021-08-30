@@ -6,7 +6,7 @@ package io.deephaven.io.streams;
 
 import java.nio.ByteBuffer;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
  * An object that can write itself to a byte buffer.
  */

@@ -17,17 +17,20 @@ public interface DeferredGroupingColumnSource<DATA_TYPE> extends ColumnSource<DA
 
     /**
      * Set the map returned by getGroupToRange().
+     * 
      * @param groupToRange The map
      */
     void setGroupToRange(@Nullable Map<DATA_TYPE, Index> groupToRange);
 
     /**
-     * @return A provider previously set by {@link DeferredGroupingColumnSource#setGroupingProvider(io.deephaven.db.v2.locations.GroupingProvider)}
+     * @return A provider previously set by
+     *         {@link DeferredGroupingColumnSource#setGroupingProvider(io.deephaven.db.v2.locations.GroupingProvider)}
      */
     GroupingProvider<DATA_TYPE> getGroupingProvider();
 
     /**
      * Supply a provider that will lazily construct the group-to-range map.
+     * 
      * @param groupingProvider The provider
      */
     void setGroupingProvider(@Nullable GroupingProvider<DATA_TYPE> groupingProvider);

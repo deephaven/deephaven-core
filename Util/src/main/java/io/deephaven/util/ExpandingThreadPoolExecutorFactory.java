@@ -15,27 +15,31 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Creates a ThreadPoolExecutor which can then be used to submit or execute tasks. This is intended for cases where a relatively small number
- * of threads can handle most circumstances, but occasional abnormal events may exceed expectations. The executor has the following characteristics:
+ * Creates a ThreadPoolExecutor which can then be used to submit or execute tasks. This is intended
+ * for cases where a relatively small number of threads can handle most circumstances, but
+ * occasional abnormal events may exceed expectations. The executor has the following
+ * characteristics:
  * <ul>
  * <li>Starting core and maximum thread pool sizes defined at creation time</li>
- * <li>If an attempted execution exceeds the maximum number of allowed executor threads, a new Thread will be created dynamically instead of generating an exception</li>
+ * <li>If an attempted execution exceeds the maximum number of allowed executor threads, a new
+ * Thread will be created dynamically instead of generating an exception</li>
  * </ul>
  * If the executor has been shut down, any excess events will be discarded.
  *
- * To create one of these executors, use {@link ExpandingThreadPoolExecutorFactory#createThreadPoolExecutor}.
+ * To create one of these executors, use
+ * {@link ExpandingThreadPoolExecutorFactory#createThreadPoolExecutor}.
  */
 public class ExpandingThreadPoolExecutorFactory {
 
     // Stop anything from creating one of these - only use the createThreadPoolExecutor method
-    private ExpandingThreadPoolExecutorFactory() {
-    }
+    private ExpandingThreadPoolExecutorFactory() {}
 
     /**
-     * Class to handle rejection events from a ThreadPoolExecutor by creating a new Thread to run the task,
-     * unless the executor has been shut down, in which case the task is discarded.
+     * Class to handle rejection events from a ThreadPoolExecutor by creating a new Thread to run
+     * the task, unless the executor has been shut down, in which case the task is discarded.
      */
-    private static class RejectedExecutionPolicy implements RejectedExecutionHandler, LogOutputAppendable {
+    private static class RejectedExecutionPolicy
+        implements RejectedExecutionHandler, LogOutputAppendable {
         final Logger log;
         final String executorName;
         final String threadName;
@@ -44,14 +48,14 @@ public class ExpandingThreadPoolExecutorFactory {
         /**
          * Creates a {@code RejectedExecutionPolicy}.
          *
-         * @param log          a Logger
+         * @param log a Logger
          * @param executorName a name to be used when logging thread startup messages
-         * @param threadName   the name prefix for new threads
+         * @param threadName the name prefix for new threads
          */
         private RejectedExecutionPolicy(final Logger log,
-                                        final String executorName,
-                                        final String threadName,
-                                        final AtomicInteger executorThreadNumber) {
+            final String executorName,
+            final String threadName,
+            final AtomicInteger executorThreadNumber) {
             this.log = log;
             this.executorName = executorName;
             this.threadName = threadName;
@@ -59,7 +63,8 @@ public class ExpandingThreadPoolExecutorFactory {
         }
 
         /**
-         * Executes task r in a new thread, unless the executor has been shut down, in which case the task is discarded.
+         * Executes task r in a new thread, unless the executor has been shut down, in which case
+         * the task is discarded.
          *
          * @param r the runnable task requested to be executed
          * @param e the executor attempting to execute this task
@@ -68,7 +73,8 @@ public class ExpandingThreadPoolExecutorFactory {
         public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
             if (!e.isShutdown()) {
                 final String newThreadName = threadName + executorThreadNumber.getAndIncrement();
-                log.warn().append("Executor has run out of threads for ").append(this).append(", creating new thread ").append(newThreadName).endl();
+                log.warn().append("Executor has run out of threads for ").append(this)
+                    .append(", creating new thread ").append(newThreadName).endl();
                 newDaemonThread(r, newThreadName).start();
             }
         }
@@ -86,28 +92,32 @@ public class ExpandingThreadPoolExecutorFactory {
     }
 
     /**
-     * Create a {@link ThreadPoolExecutor} with the characteristics defined in {@link ExpandingThreadPoolExecutorFactory}.
+     * Create a {@link ThreadPoolExecutor} with the characteristics defined in
+     * {@link ExpandingThreadPoolExecutorFactory}.
      *
-     * @param log                     a Logger to log messages
-     * @param corePoolSize            the core pool size (the executor will use this value for the initial core and maximum pool sizes)
-     * @param keepAliveMinutes        the number of minutes to keep alive core threads
-     * @param executorName            the name of the executor, used when logging dynamic thread creation
-     * @param poolThreadNamePrefix    the prefix for thread pool threads
-     * @param dynamicThreadNamePrefix the prefix for dynamic (overflow) threads created when the maximum number of pool threads is exceeded
+     * @param log a Logger to log messages
+     * @param corePoolSize the core pool size (the executor will use this value for the initial core
+     *        and maximum pool sizes)
+     * @param keepAliveMinutes the number of minutes to keep alive core threads
+     * @param executorName the name of the executor, used when logging dynamic thread creation
+     * @param poolThreadNamePrefix the prefix for thread pool threads
+     * @param dynamicThreadNamePrefix the prefix for dynamic (overflow) threads created when the
+     *        maximum number of pool threads is exceeded
      */
     public static ThreadPoolExecutor createThreadPoolExecutor(final Logger log,
-                                                              final int corePoolSize,
-                                                              final int keepAliveMinutes,
-                                                              final String executorName,
-                                                              final String poolThreadNamePrefix,
-                                                              final String dynamicThreadNamePrefix) {
+        final int corePoolSize,
+        final int keepAliveMinutes,
+        final String executorName,
+        final String poolThreadNamePrefix,
+        final String dynamicThreadNamePrefix) {
         final AtomicInteger executorThreadNumber = new AtomicInteger(1);
         return new ThreadPoolExecutor(corePoolSize,
-                corePoolSize,
-                keepAliveMinutes,
-                TimeUnit.MINUTES,
-                new SynchronousQueue<>(),
-                r -> newDaemonThread(r, poolThreadNamePrefix + executorThreadNumber.getAndIncrement()),
-                new RejectedExecutionPolicy(log, executorName, dynamicThreadNamePrefix, executorThreadNumber));
+            corePoolSize,
+            keepAliveMinutes,
+            TimeUnit.MINUTES,
+            new SynchronousQueue<>(),
+            r -> newDaemonThread(r, poolThreadNamePrefix + executorThreadNumber.getAndIncrement()),
+            new RejectedExecutionPolicy(log, executorName, dynamicThreadNamePrefix,
+                executorThreadNumber));
     }
 }

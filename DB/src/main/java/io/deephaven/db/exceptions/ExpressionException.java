@@ -1,8 +1,9 @@
 package io.deephaven.db.exceptions;
 
 /**
- * An unchecked exception indicating a problem with a parsed expression, for example in {@link io.deephaven.db.tables.Table#where(String...)}
- * or {@link io.deephaven.db.tables.Table#update(String...)}.
+ * An unchecked exception indicating a problem with a parsed expression, for example in
+ * {@link io.deephaven.db.tables.Table#where(String...)} or
+ * {@link io.deephaven.db.tables.Table#update(String...)}.
  */
 public class ExpressionException extends UncheckedTableException {
     final String problemExpression;

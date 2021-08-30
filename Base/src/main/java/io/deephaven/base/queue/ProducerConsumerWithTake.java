@@ -7,7 +7,7 @@ package io.deephaven.base.queue;
 import io.deephaven.base.UnfairSemaphore;
 import io.deephaven.base.verify.Assert;
 
-public class ProducerConsumerWithTake<T> implements ProducerConsumer<T>{
+public class ProducerConsumerWithTake<T> implements ProducerConsumer<T> {
     private final ProducerConsumer<T> producerConsumer;
     private final UnfairSemaphore semaphore;
 

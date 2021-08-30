@@ -13,9 +13,10 @@ public class DbArrayDirect<T> implements DbArray<T> {
     private final T[] data;
     private final Class<T> componentType;
 
-    public DbArrayDirect(T... data){
+    public DbArrayDirect(T... data) {
         this.data = data;
-        componentType = (Class<T>) (data == null?Object.class:data.getClass().getComponentType());
+        componentType =
+            (Class<T>) (data == null ? Object.class : data.getClass().getComponentType());
     }
 
     @Override
@@ -23,7 +24,7 @@ public class DbArrayDirect<T> implements DbArray<T> {
         if (i < 0 || i > data.length - 1) {
             return null;
         }
-        return data[(int)i];
+        return data[(int) i];
     }
 
     @Override
@@ -32,7 +33,7 @@ public class DbArrayDirect<T> implements DbArray<T> {
     }
 
     @Override
-    public DbArray<T> subArrayByPositions(long [] positions) {
+    public DbArray<T> subArrayByPositions(long[] positions) {
         return new DbSubArray<>(this, positions);
     }
 

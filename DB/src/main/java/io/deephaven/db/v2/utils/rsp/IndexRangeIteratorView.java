@@ -11,13 +11,15 @@ public class IndexRangeIteratorView implements SearchRangeIterator {
     private long itStart;
     private long itEnd;
     private int start;
-    private int end;        // Note RangeIterator uses exclusive ends.
+    private int end; // Note RangeIterator uses exclusive ends.
     private int nextStart;
-    private int nextEnd;    // Note RangeIterator uses exclusive ends.
+    private int nextEnd; // Note RangeIterator uses exclusive ends.
     private boolean nextValid;
     private boolean noMore;
     private boolean itFinished;
-    public IndexRangeIteratorView(final Index.RangeIterator it, final long offset, final long rangesEnd) {
+
+    public IndexRangeIteratorView(final Index.RangeIterator it, final long offset,
+        final long rangesEnd) {
         this.it = it;
         this.offset = offset;
         this.rangesEnd = rangesEnd;
@@ -31,10 +33,12 @@ public class IndexRangeIteratorView implements SearchRangeIterator {
         itFinished = false;
         computeNext();
     }
+
     private void setTerminated() {
         it = null;
         nextValid = false;
     }
+
     private void computeNext() {
         if (noMore || itStart >= rangesEnd) {
             setTerminated();
@@ -60,32 +64,39 @@ public class IndexRangeIteratorView implements SearchRangeIterator {
         itFinished = true;
         noMore = true;
     }
+
     @Override
     public boolean hasNext() {
         return nextValid;
     }
+
     @Override
     public int start() {
         return start;
     }
+
     @Override
     public int end() {
         return end;
     }
+
     @Override
     public void next() {
         start = nextStart;
         end = nextEnd;
         computeNext();
     }
+
     @Override
     public boolean advance(int v) {
         throw new UnsupportedOperationException("advance is not supported on RangeIteratorView");
     }
+
     @Override
     public boolean search(final ContainerUtil.TargetComparator comp) {
         throw new UnsupportedOperationException("search is not supported on RangeIteratorView");
     }
+
     public boolean underlyingIterFinished() {
         return itFinished;
     }

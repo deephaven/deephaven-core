@@ -8,4 +8,5 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.grpc.UnaryMethodDefinition",
     namespace = JsPackage.GLOBAL)
 public interface UnaryMethodDefinition<TRequest, TResponse>
-    extends io.deephaven.javascript.proto.dhinternal.grpcweb.service.UnaryMethodDefinition {}
+    extends io.deephaven.javascript.proto.dhinternal.grpcweb.service.UnaryMethodDefinition {
+}

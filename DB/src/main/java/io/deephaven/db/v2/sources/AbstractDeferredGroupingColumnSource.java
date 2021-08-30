@@ -14,7 +14,8 @@ import java.util.Map;
 /**
  * Adds deferred grouping support to {@link AbstractColumnSource}.
  */
-public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractColumnSource<T> implements DeferredGroupingColumnSource<T> {
+public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractColumnSource<T>
+    implements DeferredGroupingColumnSource<T> {
 
     private transient volatile GroupingProvider<T> groupingProvider;
 
@@ -43,7 +44,7 @@ public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractCo
 
     @Override
     public final Map<T, Index> getGroupToRange() {
-        if(groupToRange == null && groupingProvider != null) {
+        if (groupToRange == null && groupingProvider != null) {
             groupToRange = groupingProvider.getGroupToRange();
             groupingProvider = null;
         }
@@ -52,14 +53,14 @@ public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractCo
 
     @Override
     public final Map<T, Index> getGroupToRange(Index index) {
-        if(groupToRange == null && groupingProvider != null) {
+        if (groupToRange == null && groupingProvider != null) {
             Pair<Map<T, Index>, Boolean> result = groupingProvider.getGroupToRange(index);
             if (result == null) {
                 return null;
             }
             if (result.second) {
-                 groupToRange = result.first;
-                 groupingProvider = null;
+                groupToRange = result.first;
+                groupingProvider = null;
             }
             return result.first;
         }

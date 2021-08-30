@@ -27,7 +27,8 @@ public class Reader {
             this.root = (GroupConverter) schema.convertWith(new TypeConverter<Converter>() {
 
                 @Override
-                public Converter convertPrimitiveType(List<GroupType> path, PrimitiveType primitiveType) {
+                public Converter convertPrimitiveType(List<GroupType> path,
+                    PrimitiveType primitiveType) {
                     String name = primitiveType.getName();
                     return new PrimitiveConverter() {
 
@@ -68,7 +69,8 @@ public class Reader {
                 }
 
                 @Override
-                public Converter convertGroupType(List<GroupType> path, GroupType groupType, final List<Converter> converters) {
+                public Converter convertGroupType(List<GroupType> path, GroupType groupType,
+                    final List<Converter> converters) {
                     String name = groupType.getName();
                     return new GroupConverter() {
 
@@ -89,7 +91,8 @@ public class Reader {
                 }
 
                 @Override
-                public Converter convertMessageType(MessageType messageType, List<Converter> children) {
+                public Converter convertMessageType(MessageType messageType,
+                    List<Converter> children) {
                     return convertGroupType(null, messageType, children);
                 }
             });
@@ -116,13 +119,13 @@ public class Reader {
 
         @Override
         public RecordMaterializer prepareForRead(Configuration configuration, Map keyValueMetaData,
-                                                 MessageType fileSchema, ReadContext readContext) {
+            MessageType fileSchema, ReadContext readContext) {
             return new DummyRecordConverter(fileSchema);
         }
     }
 
     public static void main(String[] args) throws IOException {
-        ParquetReader pr = ParquetReader.builder(new SillyReadSupport(),new Path(args[0])).build();
+        ParquetReader pr = ParquetReader.builder(new SillyReadSupport(), new Path(args[0])).build();
         Object r = pr.read();
         pr.read();
         pr.read();

@@ -24,16 +24,18 @@ import java.util.logging.Logger;
 import static io.deephaven.db.plot.util.PlotGeneratorUtils.indent;
 
 /**
- * Create static functions that resolve against the last created instance of a plotting figure class.  This is to make a cleaner
- * plotting interface
+ * Create static functions that resolve against the last created instance of a plotting figure
+ * class. This is to make a cleaner plotting interface
  */
 public class GeneratePlottingConvenience {
     // See also GroovyStaticImportGenerator
 
-    private static final Logger log = Logger.getLogger(GeneratePlottingConvenience.class.toString());
+    private static final Logger log =
+        Logger.getLogger(GeneratePlottingConvenience.class.toString());
 
     private static final String OUTPUT_CLASS = "io.deephaven.db.plot.PlottingConvenience";
-    private static final String OUTPUT_CLASS_NAME_SHORT = OUTPUT_CLASS.substring(OUTPUT_CLASS.lastIndexOf('.') + 1);
+    private static final String OUTPUT_CLASS_NAME_SHORT =
+        OUTPUT_CLASS.substring(OUTPUT_CLASS.lastIndexOf('.') + 1);
 
 
     private final Map<JavaFunction, JavaFunction> nonstaticFunctions = new TreeMap<>();
@@ -42,7 +44,8 @@ public class GeneratePlottingConvenience {
     private final Function<JavaFunction, String> functionNamer;
 
     private GeneratePlottingConvenience(final String[] staticImports, final String[] imports,
-                                        final Collection<Predicate<JavaFunction>> skips, final Function<JavaFunction, String> functionNamer) throws ClassNotFoundException {
+        final Collection<Predicate<JavaFunction>> skips,
+        final Function<JavaFunction, String> functionNamer) throws ClassNotFoundException {
         this.skips = skips;
         this.functionNamer = functionNamer == null ? JavaFunction::getMethodName : functionNamer;
 
@@ -54,8 +57,9 @@ public class GeneratePlottingConvenience {
             log.info("Processing static class: " + c);
 
             final Method[] methods = Arrays.stream(c.getMethods()).filter(
-                    m -> m.getName().equals(methodName) && Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())
-            ).toArray(Method[]::new);
+                m -> m.getName().equals(methodName) && Modifier.isStatic(m.getModifiers())
+                    && Modifier.isPublic(m.getModifiers()))
+                .toArray(Method[]::new);
 
             for (Method m : methods) {
                 log.info("Processing static method (" + c + "): " + m);
@@ -98,20 +102,20 @@ public class GeneratePlottingConvenience {
         return skip;
     }
 
-    private void addPublicMethod(Method m, Map<JavaFunction, JavaFunction> functions, boolean ignoreSkips) {
+    private void addPublicMethod(Method m, Map<JavaFunction, JavaFunction> functions,
+        boolean ignoreSkips) {
         log.info("Processing public method: " + m);
 
         final JavaFunction f = new JavaFunction(m);
         final JavaFunction signature = new JavaFunction(
-                OUTPUT_CLASS,
-                OUTPUT_CLASS_NAME_SHORT,
-                functionNamer.apply(f),
-                f.getTypeParameters(),
-                f.getReturnType(),
-                f.getParameterTypes(),
-                f.getParameterNames(),
-                f.isVarArgs()
-        );
+            OUTPUT_CLASS,
+            OUTPUT_CLASS_NAME_SHORT,
+            functionNamer.apply(f),
+            f.getTypeParameters(),
+            f.getReturnType(),
+            f.getParameterTypes(),
+            f.getParameterNames(),
+            f.isVarArgs());
 
         boolean skip = skip(f, ignoreSkips);
 
@@ -174,10 +178,10 @@ public class GeneratePlottingConvenience {
                 result.addAll(typesToImport(a));
             }
         } else if (t instanceof TypeVariable) {
-            //type variables are generic so they don't need importing
+            // type variables are generic so they don't need importing
             return result;
         } else if (t instanceof WildcardType) {
-            //type variables are generic so they don't need importing
+            // type variables are generic so they don't need importing
             return result;
         } else if (t instanceof GenericArrayType) {
             GenericArrayType at = (GenericArrayType) t;
@@ -192,11 +196,13 @@ public class GeneratePlottingConvenience {
     private String generateCode() {
 
         String code = "/*\n" +
-                " * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending\n" +
-                " */\n\n" +
-                "/****************************************************************************************************************************\n" +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n" +
-                " ****************************************************************************************************************************/\n\n";
+            " * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending\n" +
+            " */\n\n" +
+            "/****************************************************************************************************************************\n"
+            +
+            " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n"
+            +
+            " ****************************************************************************************************************************/\n\n";
 
         code += "package io.deephaven.db.plot;\n\n";
 
@@ -248,7 +254,8 @@ public class GeneratePlottingConvenience {
         return code;
     }
 
-    private static String createFunction(final JavaFunction f, final JavaFunction signature, final boolean isStatic) {
+    private static String createFunction(final JavaFunction f, final JavaFunction signature,
+        final boolean isStatic) {
         String returnType = f.getReturnType().getTypeName().replace("$", ".");
         String s = createJavadoc(f, signature);
         s += "    public static ";
@@ -297,7 +304,8 @@ public class GeneratePlottingConvenience {
 
             if (f.isVarArgs() && i == f.getParameterTypes().length - 1) {
                 final int index = typeString.lastIndexOf("[]");
-                typeString = typeString.substring(0, index) + "..." + typeString.substring(index + 2);
+                typeString =
+                    typeString.substring(0, index) + "..." + typeString.substring(index + 2);
             }
 
             s += " " + typeString + " " + f.getParameterNames()[i];
@@ -305,14 +313,17 @@ public class GeneratePlottingConvenience {
         }
 
         s += " ) {\n";
-        s += indent(2) + (f.getReturnType().equals(void.class) ? "" : "return ") + (isStatic ? (f.getClassNameShort() + ".") : "FigureFactory.figure().") + f.getMethodName() + "(" + callArgs + " );\n";
+        s += indent(2) + (f.getReturnType().equals(void.class) ? "" : "return ")
+            + (isStatic ? (f.getClassNameShort() + ".") : "FigureFactory.figure().")
+            + f.getMethodName() + "(" + callArgs + " );\n";
         s += indent(1) + "}\n";
 
         return s;
     }
 
     private static String createJavadoc(final JavaFunction f, final JavaFunction signature) {
-        return "    /**\n    * See {@link " + f.getClassName() + "#" + signature.getMethodName() + "} \n    **/\n";
+        return "    /**\n    * See {@link " + f.getClassName() + "#" + signature.getMethodName()
+            + "} \n    **/\n";
     }
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {
@@ -370,32 +381,33 @@ public class GeneratePlottingConvenience {
         };
 
         final Set<String> keepers = new HashSet<>(Arrays.asList(
-                "newAxes",
-                "newChart",
-                "plot",
-                "plotBy",
-                "ohlcPlot",
-                "ohlcPlotBy",
-                "histPlot",
-                "catHistPlot",
-                "catPlot",
-                "catPlotBy",
-                "piePlot",
-                "errorBarXY",
-                "errorBarXYBy",
-                "errorBarX",
-                "errorBarXBy",
-                "errorBarY",
-                "errorBarYBy",
-                "catErrorBar",
-                "catErrorBarBy"
-        ));
+            "newAxes",
+            "newChart",
+            "plot",
+            "plotBy",
+            "ohlcPlot",
+            "ohlcPlotBy",
+            "histPlot",
+            "catHistPlot",
+            "catPlot",
+            "catPlotBy",
+            "piePlot",
+            "errorBarXY",
+            "errorBarXYBy",
+            "errorBarX",
+            "errorBarXBy",
+            "errorBarY",
+            "errorBarYBy",
+            "catErrorBar",
+            "catErrorBarBy"));
 
-        @SuppressWarnings("unchecked") GeneratePlottingConvenience gen = new GeneratePlottingConvenience(staticImports, imports,
-                Arrays.asList(javaFunction -> !keepers.contains(javaFunction.getMethodName())), JavaFunction::getMethodName);
+        @SuppressWarnings("unchecked")
+        GeneratePlottingConvenience gen = new GeneratePlottingConvenience(staticImports, imports,
+            Arrays.asList(javaFunction -> !keepers.contains(javaFunction.getMethodName())),
+            JavaFunction::getMethodName);
 
         final String code = gen.generateCode()
-                .replace("io.deephaven.db.plot.FigureImpl", "io.deephaven.db.plot.Figure");
+            .replace("io.deephaven.db.plot.FigureImpl", "io.deephaven.db.plot.Figure");
         log.info("\n\n**************************************\n\n");
         log.info(code);
 
@@ -404,7 +416,8 @@ public class GeneratePlottingConvenience {
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
             if (!code.equals(oldCode)) {
-                throw new RuntimeException("Change in generated code.  Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n");
+                throw new RuntimeException(
+                    "Change in generated code.  Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n");
             }
         } else {
 

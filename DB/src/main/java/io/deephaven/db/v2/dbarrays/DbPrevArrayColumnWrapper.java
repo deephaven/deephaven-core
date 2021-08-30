@@ -27,17 +27,20 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index) {
+    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource,
+        @NotNull final Index index) {
         this(columnSource, index, 0, 0);
     }
 
-    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index,
-                                    final long startPadding, final long endPadding) {
-     this(columnSource, index, startPadding, endPadding, false);
+    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource,
+        @NotNull final Index index,
+        final long startPadding, final long endPadding) {
+        this(columnSource, index, startPadding, endPadding, false);
     }
 
-    private DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index,
-                                     final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
+    private DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource,
+        @NotNull final Index index,
+        final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
         Assert.neqNull(index, "index");
         this.columnSource = columnSource;
         this.index = alreadyPrevIndex ? index : index.getPrevIndex();
@@ -47,9 +50,9 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
     @Override
     public T get(long i) {
-        i-= startPadding;
+        i -= startPadding;
 
-        if (i<0 || i>index.size()-1) {
+        if (i < 0 || i > index.size() - 1) {
             return null;
         }
         return columnSource.getPrev(index.get(i));
@@ -57,20 +60,24 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
     @Override
     public DbArray<T> subArray(long fromIndexInclusive, long toIndexExclusive) {
-        fromIndexInclusive -=startPadding;
-        toIndexExclusive -=startPadding;
+        fromIndexInclusive -= startPadding;
+        toIndexExclusive -= startPadding;
 
         final long realFrom = ClampUtil.clampLong(0, index.size(), fromIndexInclusive);
         final long realTo = ClampUtil.clampLong(0, index.size(), toIndexExclusive);
 
-        long newStartPadding= toIndexExclusive <0 ? toIndexExclusive - fromIndexInclusive : Math.max(0, -fromIndexInclusive);
-        long newEndPadding= fromIndexInclusive >= index.size() ? toIndexExclusive - fromIndexInclusive : (int) Math.max(0, toIndexExclusive - index.size());
+        long newStartPadding = toIndexExclusive < 0 ? toIndexExclusive - fromIndexInclusive
+            : Math.max(0, -fromIndexInclusive);
+        long newEndPadding =
+            fromIndexInclusive >= index.size() ? toIndexExclusive - fromIndexInclusive
+                : (int) Math.max(0, toIndexExclusive - index.size());
 
-        return new DbPrevArrayColumnWrapper<>(columnSource, index.subindexByPos(realFrom, realTo), newStartPadding, newEndPadding, true);
+        return new DbPrevArrayColumnWrapper<>(columnSource, index.subindexByPos(realFrom, realTo),
+            newStartPadding, newEndPadding, true);
     }
 
     @Override
-    public DbArray<T> subArrayByPositions(long [] positions) {
+    public DbArray<T> subArrayByPositions(long[] positions) {
         IndexBuilder builder = Index.FACTORY.getRandomBuilder();
 
         for (long position : positions) {
@@ -86,18 +93,19 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
     @Override
     public T[] toArray() {
-        return toArray(false,Integer.MAX_VALUE);
+        return toArray(false, Integer.MAX_VALUE);
     }
 
-    public T[] toArray(boolean shouldBeNullIfOutofBounds,int maxSize) {
-        if (shouldBeNullIfOutofBounds && (startPadding>0 || endPadding>0)){
+    public T[] toArray(boolean shouldBeNullIfOutofBounds, int maxSize) {
+        if (shouldBeNullIfOutofBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
         }
 
-        long sz=Math.min(size(),maxSize);
+        long sz = Math.min(size(), maxSize);
 
         @SuppressWarnings("unchecked")
-        T result[] = (T[])Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), LongSizedDataStructure.intSize("toArray", sz));
+        T result[] = (T[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()),
+            LongSizedDataStructure.intSize("toArray", sz));
         for (int i = 0; i < sz; i++) {
             result[i] = get(i);
         }

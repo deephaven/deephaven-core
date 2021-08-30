@@ -11,11 +11,11 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
- * Formatting methods from DBColorUtil. Exists so that we can statically import the DBColorUtil methods
- * without importing the color fields.
- * TODO: remove once {@link DBColorUtil} field and {@link Color} field conflicts are resolved.
- * TODO: This class won't be necessary once we can import DBColorUtil as static again.
- * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
+ * Formatting methods from DBColorUtil. Exists so that we can statically import the DBColorUtil
+ * methods without importing the color fields. TODO: remove once {@link DBColorUtil} field and
+ * {@link Color} field conflicts are resolved. TODO: This class won't be necessary once we can
+ * import DBColorUtil as static again. TODO (deephaven/deephaven-core/issues/175): Move this to a
+ * new module and package
  */
 public class DBColorUtilImpl {
     public static final long COLOR_SET_BIT = 0x01;
@@ -26,8 +26,8 @@ public class DBColorUtilImpl {
 
 
     /**
-     * Creates a table format encoding with background color equal to the input RGB
-     * and unformatted foreground.
+     * Creates a table format encoding with background color equal to the input RGB and unformatted
+     * foreground.
      *
      * @param r red component
      * @param g green component
@@ -36,14 +36,14 @@ public class DBColorUtilImpl {
      */
     private static long background(long r, long g, long b) {
         return (COLOR_SET_BIT << 56) |
-                (r << 48) |
-                (g << 40) |
-                (b << 32);
+            (r << 48) |
+            (g << 40) |
+            (b << 32);
     }
 
     /**
-     * Creates a table format encoding with specified background color
-     * and an unformatted foreground.
+     * Creates a table format encoding with specified background color and an unformatted
+     * foreground.
      *
      * @param color color encoding
      * @return table format encoding with specified background color and unformatted foreground
@@ -53,8 +53,8 @@ public class DBColorUtilImpl {
     }
 
     /**
-     * Creates a table format encoding with specified background color
-     * and an unformatted foreground.
+     * Creates a table format encoding with specified background color and an unformatted
+     * foreground.
      *
      * @param color color represented by a {@link Color}
      * @return table format encoding with specified background color and unformatted foreground
@@ -64,8 +64,8 @@ public class DBColorUtilImpl {
     }
 
     /**
-     * Creates a table format encoding with specified background color
-     * and an unformatted foreground.
+     * Creates a table format encoding with specified background color and an unformatted
+     * foreground.
      *
      * @param color the hex representation or the case-insensitive color name
      * @return table format encoding with specified background color and unformatted foreground
@@ -107,8 +107,8 @@ public class DBColorUtilImpl {
     /**
      * Convenience method for {@link #background(Color)}.
      * <p>
-     * This variant takes the input color as a {@link String}.
-     * This may be the hex representation or the case-insensitive color name.
+     * This variant takes the input color as a {@link String}. This may be the hex representation or
+     * the case-insensitive color name.
      * </p>
      */
     public static long bg(String color) {
@@ -169,8 +169,8 @@ public class DBColorUtilImpl {
     /**
      * Convenience method for {@link #backgroundOverride(Color)}.
      * <p>
-     * This variant takes the input color as a {@link String}.
-     * This may be the hex representation or the case-insensitive color name.
+     * This variant takes the input color as a {@link String}. This may be the hex representation or
+     * the case-insensitive color name.
      * </p>
      */
     public static long bgo(String color) {
@@ -182,8 +182,8 @@ public class DBColorUtilImpl {
 
 
     /**
-     * Creates a table format encoding with foreground color equal to the input RGB
-     * and unformatted background.
+     * Creates a table format encoding with foreground color equal to the input RGB and unformatted
+     * background.
      *
      * @param r red component
      * @param g green component
@@ -192,15 +192,14 @@ public class DBColorUtilImpl {
      */
     private static long foreground(long r, long g, long b) {
         return (COLOR_SET_BIT << 24) |
-                (r << 16) |
-                (g << 8) |
-                (b) |
-                FOREGROUND_SET_BIT << 24;
+            (r << 16) |
+            (g << 8) |
+            (b) |
+            FOREGROUND_SET_BIT << 24;
     }
 
     /**
-     * Creates a table format encoding with specified foreground color
-     * and unformatted background.
+     * Creates a table format encoding with specified foreground color and unformatted background.
      *
      * @param color color encoding
      * @return table format encoding with specified foreground color and unformatted background
@@ -220,8 +219,7 @@ public class DBColorUtilImpl {
     }
 
     /**
-     * Creates a table format encoding with specified foreground color
-     * and unformatted background.
+     * Creates a table format encoding with specified foreground color and unformatted background.
      *
      * @param color color represented by a {@link Color}
      * @return table format encoding with specified foreground color and unformatted background
@@ -231,8 +229,7 @@ public class DBColorUtilImpl {
     }
 
     /**
-     * Creates a table format encoding with specified foreground color
-     * and unformatted background.
+     * Creates a table format encoding with specified foreground color and unformatted background.
      *
      * @param color the hex representation or the case-insensitive color name
      * @return table format encoding with specified foreground color and unformatted background
@@ -244,11 +241,9 @@ public class DBColorUtilImpl {
     /**
      * Convenience method for {@link #foreground(Color)}.
      * <p>
-     * This variant takes the input color encoded as a long.
-     * The resultant encoding is an unformatted background
-     * and a foreground the same color as the background color of the input,
-     * e.g. fg(bgfg(YELLOW, RED)) will result in a yellow foreground
-     * with no background formatting.
+     * This variant takes the input color encoded as a long. The resultant encoding is an
+     * unformatted background and a foreground the same color as the background color of the input,
+     * e.g. fg(bgfg(YELLOW, RED)) will result in a yellow foreground with no background formatting.
      * </p>
      */
     public static long fg(long color) {
@@ -268,8 +263,8 @@ public class DBColorUtilImpl {
     /**
      * Convenience method for {@link #foreground(Color)}.
      * <p>
-     * This variant takes the input color as a {@link String}.
-     * This may be the hex representation or the case-insensitive color name.
+     * This variant takes the input color as a {@link String}. This may be the hex representation or
+     * the case-insensitive color name.
      * </p>
      */
     public static long fg(String color) {
@@ -340,15 +335,16 @@ public class DBColorUtilImpl {
     /**
      * Convenience method for {@link #foregroundOverride(Color)}.
      * <p>
-     * This variant takes the input color as a {@link String}.
-     * This may be the hex representation or the case-insensitive color name.
+     * This variant takes the input color as a {@link String}. This may be the hex representation or
+     * the case-insensitive color name.
      * </p>
      */
     public static long fgo(String color) {
         return foregroundOverride(color);
     }
 
-    ////////////////////////////////////// BackgroundForeground methods //////////////////////////////////////
+    ////////////////////////////////////// BackgroundForeground methods
+    ////////////////////////////////////// //////////////////////////////////////
 
 
     /**
@@ -362,7 +358,8 @@ public class DBColorUtilImpl {
      * @param fgb blue component of the foreground color
      * @return table format encoding with specified foreground and background colors
      */
-    private static long backgroundForeground(long bgr, long bgg, long bgb, long fgr, long fgg, long fgb) {
+    private static long backgroundForeground(long bgr, long bgg, long bgb, long fgr, long fgg,
+        long fgb) {
         return background(bgr, bgg, bgb) | foreground(fgr, fgg, fgb);
     }
 
@@ -391,10 +388,10 @@ public class DBColorUtilImpl {
     /**
      * Creates a table format encoding with specified foreground and background colors.
      *
-     * @param bg background color represented by a {@link String}.
-     *           This may be the hex representation or the case-insensitive color name
-     * @param fg foreground color represented by a {@link String}.
-     *           This may be the hex representation or the case-insensitive color name
+     * @param bg background color represented by a {@link String}. This may be the hex
+     *        representation or the case-insensitive color name
+     * @param fg foreground color represented by a {@link String}. This may be the hex
+     *        representation or the case-insensitive color name
      * @return table format encoding with specified foreground and background colors
      */
     public static long backgroundForeground(String bg, String fg) {
@@ -434,8 +431,8 @@ public class DBColorUtilImpl {
     /**
      * Convenience method for {@link #backgroundForeground(Color, Color)}.
      * <p>
-     * This variant takes the input colors as {@link String}s.
-     * This may be the hex representation or the case-insensitive color name.
+     * This variant takes the input colors as {@link String}s. This may be the hex representation or
+     * the case-insensitive color name.
      * </p>
      */
     public static long bgfg(String bg, String fg) {
@@ -443,12 +440,13 @@ public class DBColorUtilImpl {
     }
 
 
-    ////////////////////////////////////// BackgroundForegroundAuto methods //////////////////////////////////////
+    ////////////////////////////////////// BackgroundForegroundAuto methods
+    ////////////////////////////////////// //////////////////////////////////////
 
 
     /**
-     * Creates a table format encoding with specified background color
-     * and automatically chosen contrasting foreground color.
+     * Creates a table format encoding with specified background color and automatically chosen
+     * contrasting foreground color.
      *
      * @param bgr red component of the background color
      * @param bgg green component of the background color
@@ -462,8 +460,8 @@ public class DBColorUtilImpl {
     }
 
     /**
-     * Creates a table format encoding with specified background color
-     * and automatically chosen contrasting foreground color.
+     * Creates a table format encoding with specified background color and automatically chosen
+     * contrasting foreground color.
      *
      * @param color background color
      * @return table format encoding with background color and auto-generated foreground color
@@ -475,8 +473,8 @@ public class DBColorUtilImpl {
     }
 
     /**
-     * Creates a table format encoding with specified background color
-     * and automatically chosen contrasting foreground color.
+     * Creates a table format encoding with specified background color and automatically chosen
+     * contrasting foreground color.
      *
      * @param color background color represented by a {@link Color}
      * @return table format encoding with background color and auto-generated foreground color
@@ -486,11 +484,11 @@ public class DBColorUtilImpl {
     }
 
     /**
-     * Creates a table format encoding with specified background color
-     * and automatically chosen contrasting foreground color.
+     * Creates a table format encoding with specified background color and automatically chosen
+     * contrasting foreground color.
      *
-     * @param color background color represented by a {@link String}.
-     *           This may be the hex representation or the case-insensitive color name
+     * @param color background color represented by a {@link String}. This may be the hex
+     *        representation or the case-insensitive color name
      * @return table format encoding with background color and auto-generated foreground color
      */
     public static long backgroundForegroundAuto(String color) {
@@ -532,8 +530,8 @@ public class DBColorUtilImpl {
      * Convenience method for {@link #backgroundForegroundAuto(Color)}
      *
      * <p>
-     * This variant takes the input color as a {@link String}.
-     * This may be the hex representation or the case-insensitive color name.
+     * This variant takes the input color as a {@link String}. This may be the hex representation or
+     * the case-insensitive color name.
      * </p>
      */
     public static long bgfga(String color) {
@@ -545,8 +543,8 @@ public class DBColorUtilImpl {
 
 
     /**
-     * Creates a table format encoding for the heat map at {@code value}.
-     * A contrasting foreground color is automatically chosen.
+     * Creates a table format encoding for the heat map at {@code value}. A contrasting foreground
+     * color is automatically chosen.
      *
      * @param value determines the color used by its location in the heat map's range
      * @param min minimum value of the heat map range
@@ -554,33 +552,32 @@ public class DBColorUtilImpl {
      * @param bg1 background color at or below the minimum value of the heat map. Encoded as a long
      * @param bg2 background color at or above the maximum value of the heat map. Encoded as a long
      * @return table format encoding with background color and auto-generated foreground color
-     *                  determined by a heat map
+     *         determined by a heat map
      */
-    public static long heatmap(double value, double min, double max, long bg1, long bg2){
-        if (value<=min){
+    public static long heatmap(double value, double min, double max, long bg1, long bg2) {
+        if (value <= min) {
             return bg1;
-        }
-        else if (value>=max){
+        } else if (value >= max) {
             return bg2;
-        }
-        else{
-            double pert = (value-min)/(max-min);
+        } else {
+            double pert = (value - min) / (max - min);
 
-            long r1=(bg1 >> 48) & 0xFF;
-            long g1=(bg1 >> 40) & 0xFF;
-            long b1=(bg1 >> 32) & 0xFF;
+            long r1 = (bg1 >> 48) & 0xFF;
+            long g1 = (bg1 >> 40) & 0xFF;
+            long b1 = (bg1 >> 32) & 0xFF;
 
-            long r2=(bg2 >> 48) & 0xFF;
-            long g2=(bg2 >> 40) & 0xFF;
-            long b2=(bg2 >> 32) & 0xFF;
+            long r2 = (bg2 >> 48) & 0xFF;
+            long g2 = (bg2 >> 40) & 0xFF;
+            long b2 = (bg2 >> 32) & 0xFF;
 
-            return bgfga((long)(r1+pert*(r2-r1)), (long)(g1+pert*(g2-g1)), (long)(b1+pert*(b2-b1)));
+            return bgfga((long) (r1 + pert * (r2 - r1)), (long) (g1 + pert * (g2 - g1)),
+                (long) (b1 + pert * (b2 - b1)));
         }
     }
 
     /**
-     * Creates a table format encoding for the heat map at {@code value}.
-     * A contrasting foreground color is automatically chosen.
+     * Creates a table format encoding for the heat map at {@code value}. A contrasting foreground
+     * color is automatically chosen.
      *
      * @param value determines the color used by its location in the heat map's range
      * @param min minimum value of the heat map range
@@ -588,15 +585,15 @@ public class DBColorUtilImpl {
      * @param bg1 background color at or below the minimum value of the heat map.
      * @param bg2 background color at or above the maximum value of the heat map.
      * @return table format encoding with background color and auto-generated foreground color
-     *                  determined by a heat map
+     *         determined by a heat map
      */
-    public static long heatmap(double value, double min, double max, Color bg1, Color bg2){
+    public static long heatmap(double value, double min, double max, Color bg1, Color bg2) {
         return heatmap(value, min, max, toLong(bg1), toLong(bg2));
     }
 
     /**
-     * Creates a table format encoding for the heat map at {@code value}.
-     * A contrasting foreground color is automatically chosen.
+     * Creates a table format encoding for the heat map at {@code value}. A contrasting foreground
+     * color is automatically chosen.
      *
      * @param value determines the color used by its location in the heat map's range
      * @param min minimum value of the heat map range
@@ -604,23 +601,24 @@ public class DBColorUtilImpl {
      * @param bg1 background color at or below the minimum value of the heat map.
      * @param bg2 background color at or above the maximum value of the heat map.
      * @return table format encoding with background color and auto-generated foreground color
-     *                  determined by a heat map
+     *         determined by a heat map
      */
-    public static long heatmap(double value, double min, double max, String bg1, String bg2){
+    public static long heatmap(double value, double min, double max, String bg1, String bg2) {
         return heatmap(value, min, max, toLong(bg1), toLong(bg2));
     }
 
 
-    ////////////////////////////////////// heatmapForeground methods //////////////////////////////////////
+    ////////////////////////////////////// heatmapForeground methods
+    ////////////////////////////////////// //////////////////////////////////////
 
 
     /**
-     * Creates a table format encoding for the heat map at {@code value} with specified foreground color
-     * and unformatted background.
+     * Creates a table format encoding for the heat map at {@code value} with specified foreground
+     * color and unformatted background.
      * <p>
-     * Note that fg1 and fg2 must be encoded as foreground colors for this to work
-     * as expected.
-     *</p>
+     * Note that fg1 and fg2 must be encoded as foreground colors for this to work as expected.
+     * </p>
+     * 
      * @param value determines the color used by its location in the heat map's range
      * @param min minimum value of the heat map range.
      * @param max maximum value of the heat map range.
@@ -628,31 +626,31 @@ public class DBColorUtilImpl {
      * @param fg2 foreground color at or above the maximum value of the heat map. Encoded as a long
      * @return table format encoding with foreground color determined by a heat map
      */
-    private static long heatmapForeground(double value, double min, double max, long fg1, long fg2){
-        if (value<=min){
+    private static long heatmapForeground(double value, double min, double max, long fg1,
+        long fg2) {
+        if (value <= min) {
             return fg1;
-        }
-        else if (value>=max){
+        } else if (value >= max) {
             return fg2;
-        }
-        else{
-            double pert = (value-min)/(max-min);
+        } else {
+            double pert = (value - min) / (max - min);
 
-            long r1=(fg1 >> 16) & 0xFF;
-            long g1=(fg1 >> 8) & 0xFF;
-            long b1=(fg1) & 0xFF;
+            long r1 = (fg1 >> 16) & 0xFF;
+            long g1 = (fg1 >> 8) & 0xFF;
+            long b1 = (fg1) & 0xFF;
 
-            long r2=(fg2 >> 16) & 0xFF;
-            long g2=(fg2 >> 8) & 0xFF;
-            long b2=(fg2) & 0xFF;
+            long r2 = (fg2 >> 16) & 0xFF;
+            long g2 = (fg2 >> 8) & 0xFF;
+            long b2 = (fg2) & 0xFF;
 
-            return fg((long)(r1+pert*(r2-r1)), (long)(g1+pert*(g2-g1)), (long)(b1+pert*(b2-b1)));
+            return fg((long) (r1 + pert * (r2 - r1)), (long) (g1 + pert * (g2 - g1)),
+                (long) (b1 + pert * (b2 - b1)));
         }
     }
 
     /**
-     * Creates a table format encoding for the heat map at {@code value} with specified foreground color
-     * and unformatted background.
+     * Creates a table format encoding for the heat map at {@code value} with specified foreground
+     * color and unformatted background.
      *
      * @param value determines the color used by its location in the heat map's range
      * @param min minimum value of the heat map range.
@@ -661,13 +659,14 @@ public class DBColorUtilImpl {
      * @param fg2 foreground color at or above the maximum value of the heat map
      * @return table format encoding with foreground color determined by a heat map
      */
-    public static long heatmapForeground(double value, double min, double max, Color fg1, Color fg2) {
+    public static long heatmapForeground(double value, double min, double max, Color fg1,
+        Color fg2) {
         return heatmapForeground(value, min, max, fg(fg1), fg(fg2));
     }
 
     /**
-     * Creates a table format encoding for the heat map at {@code value} with specified foreground color
-     * and unformatted background.
+     * Creates a table format encoding for the heat map at {@code value} with specified foreground
+     * color and unformatted background.
      *
      * @param value determines the color used by its location in the heat map's range
      * @param min minimum value of the heat map range.
@@ -676,18 +675,19 @@ public class DBColorUtilImpl {
      * @param fg2 foreground color at or above the maximum value of the heat map
      * @return table format encoding with foreground color determined by a heat map
      */
-    public static long heatmapForeground(double value, double min, double max, String fg1, String fg2) {
+    public static long heatmapForeground(double value, double min, double max, String fg1,
+        String fg2) {
         return heatmapForeground(value, min, max, fg(fg1), fg(fg2));
     }
 
     /**
      * Convenience method for {@link #heatmapForeground(double, double, double, Color, Color)}
      * <p>
-     * This variant takes the input colors encoded as a longs. These colors must be
-     * formatted as a foreground (i.e. through fg() call) for this to work as expected.
+     * This variant takes the input colors encoded as a longs. These colors must be formatted as a
+     * foreground (i.e. through fg() call) for this to work as expected.
      * </p>
      */
-    public static long heatmapFg(double value, double min, double max, long fg1, long fg2){
+    public static long heatmapFg(double value, double min, double max, long fg1, long fg2) {
         return heatmapForeground(value, min, max, fg1, fg2);
     }
 
@@ -704,8 +704,8 @@ public class DBColorUtilImpl {
     /**
      * See {@link #heatmapFg(double, double, double, long, long)}
      * <p>
-     * This variant takes the input colors as {@link String}s.
-     * This may be the hex representation or the case-insensitive color name.
+     * This variant takes the input colors as {@link String}s. This may be the hex representation or
+     * the case-insensitive color name.
      * <p>
      */
     public static long heatmapFg(double value, double min, double max, String fg1, String fg2) {
@@ -713,7 +713,7 @@ public class DBColorUtilImpl {
     }
 
 
-    //////////////////////////////////////  Converters  //////////////////////////////////////
+    ////////////////////////////////////// Converters //////////////////////////////////////
 
 
     /**
@@ -733,7 +733,9 @@ public class DBColorUtilImpl {
      * @return formatting long of the input color
      */
     public static long toLong(final Color color) {
-        return color == null || color == Color.NO_FORMATTING ? 0 : backgroundForegroundAuto(color.javaColor().getRed(), color.javaColor().getGreen(), color.javaColor().getBlue());
+        return color == null || color == Color.NO_FORMATTING ? 0
+            : backgroundForegroundAuto(color.javaColor().getRed(), color.javaColor().getGreen(),
+                color.javaColor().getBlue());
     }
 
     /**
@@ -744,7 +746,9 @@ public class DBColorUtilImpl {
      * @throws IllegalArgumentException If {@code color} is invalid
      */
     public static long toLong(final String color) {
-        return color == null || color.toUpperCase().equals(Colors.NO_FORMATTING.name().toUpperCase()) ? 0 : toLong(Color.color(color));
+        return color == null
+            || color.toUpperCase().equals(Colors.NO_FORMATTING.name().toUpperCase()) ? 0
+                : toLong(Color.color(color));
     }
 
     /**
@@ -753,6 +757,7 @@ public class DBColorUtilImpl {
      * <p>
      * This method has been deprecated. The new method is {@link #toLong(String)}
      * <p>
+     * 
      * @param colorName The name of the color to retrieve.
      * @return The {@code long} value for the given color
      * @throws IllegalArgumentException If {@code colorName} is invalid
@@ -763,7 +768,7 @@ public class DBColorUtilImpl {
     }
 
 
-    //////////////////////////////////////  Internal  //////////////////////////////////////
+    ////////////////////////////////////// Internal //////////////////////////////////////
 
 
     private static long yiq(long r, long g, long b) {
@@ -801,13 +806,13 @@ public class DBColorUtilImpl {
                 }
             }
 
-            float hue=(float)(count*(1 + Math.sqrt(5))/2);
+            float hue = (float) (count * (1 + Math.sqrt(5)) / 2);
 
-            int rgb=java.awt.Color.HSBtoRGB(hue, .68f, .68f);
+            int rgb = java.awt.Color.HSBtoRGB(hue, .68f, .68f);
 
-            long r=(rgb >> 16) & 0xFF;
-            long g=(rgb >> 8) & 0xFF;
-            long b=(rgb) & 0xFF;
+            long r = (rgb >> 16) & 0xFF;
+            long g = (rgb >> 8) & 0xFF;
+            long b = (rgb) & 0xFF;
 
             return bgfga(r, g, b);
         }

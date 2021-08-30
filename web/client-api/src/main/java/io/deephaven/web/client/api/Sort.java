@@ -7,10 +7,11 @@ import jsinterop.annotations.JsProperty;
 public class Sort {
     @JsProperty(namespace = "dh.Sort")
     public static final String ASCENDING = "ASC",
-            DESCENDING = "DESC",
-            REVERSE = "REVERSE";
+        DESCENDING = "DESC",
+        REVERSE = "REVERSE";
 
-    private static final Column REVERSE_COLUMN = new Column(-1, -1, null, null, "", "__REVERSE_COLUMN", false, null, null);
+    private static final Column REVERSE_COLUMN =
+        new Column(-1, -1, null, null, "", "__REVERSE_COLUMN", false, null, null);
 
     private final Column column;
     private String direction;
@@ -48,6 +49,7 @@ public class Sort {
         sort.direction = ASCENDING;
         return sort;
     }
+
     @JsMethod
     public Sort desc() {
         Sort sort = new Sort(column);
@@ -55,6 +57,7 @@ public class Sort {
         sort.direction = DESCENDING;
         return sort;
     }
+
     @JsMethod
     public Sort abs() {
         Sort sort = new Sort(column);
@@ -65,7 +68,8 @@ public class Sort {
 
     public SortDescriptor makeDescriptor() {
         if (direction == null) {
-            throw new IllegalStateException("Cannot perform a sort without a direction, please call desc() or asc()");
+            throw new IllegalStateException(
+                "Cannot perform a sort without a direction, please call desc() or asc()");
         }
         SortDescriptor descriptor = new SortDescriptor();
         descriptor.setIsAbsolute(isAbs());

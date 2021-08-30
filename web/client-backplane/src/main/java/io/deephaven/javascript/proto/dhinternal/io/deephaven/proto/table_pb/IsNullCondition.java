@@ -13,85 +13,85 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.IsNullCondition",
     namespace = JsPackage.GLOBAL)
 public class IsNullCondition {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ReferenceFieldType {
-      @JsOverlay
-      static IsNullCondition.ToObjectReturnType.ReferenceFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ReferenceFieldType {
+            @JsOverlay
+            static IsNullCondition.ToObjectReturnType.ReferenceFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
 
-      @JsProperty
-      String getColumnName();
+            @JsProperty
+            String getColumnName();
 
-      @JsProperty
-      void setColumnName(String columnName);
+            @JsProperty
+            void setColumnName(String columnName);
+        }
+
+        @JsOverlay
+        static IsNullCondition.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        IsNullCondition.ToObjectReturnType.ReferenceFieldType getReference();
+
+        @JsProperty
+        void setReference(IsNullCondition.ToObjectReturnType.ReferenceFieldType reference);
     }
 
-    @JsOverlay
-    static IsNullCondition.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    IsNullCondition.ToObjectReturnType.ReferenceFieldType getReference();
-
-    @JsProperty
-    void setReference(IsNullCondition.ToObjectReturnType.ReferenceFieldType reference);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ReferenceFieldType {
-      @JsOverlay
-      static IsNullCondition.ToObjectReturnType0.ReferenceFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ReferenceFieldType {
+            @JsOverlay
+            static IsNullCondition.ToObjectReturnType0.ReferenceFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
 
-      @JsProperty
-      String getColumnName();
+            @JsProperty
+            String getColumnName();
 
-      @JsProperty
-      void setColumnName(String columnName);
+            @JsProperty
+            void setColumnName(String columnName);
+        }
+
+        @JsOverlay
+        static IsNullCondition.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        IsNullCondition.ToObjectReturnType0.ReferenceFieldType getReference();
+
+        @JsProperty
+        void setReference(IsNullCondition.ToObjectReturnType0.ReferenceFieldType reference);
     }
 
-    @JsOverlay
-    static IsNullCondition.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static native IsNullCondition deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    IsNullCondition.ToObjectReturnType0.ReferenceFieldType getReference();
+    public static native IsNullCondition deserializeBinaryFromReader(
+        IsNullCondition message, Object reader);
 
-    @JsProperty
-    void setReference(IsNullCondition.ToObjectReturnType0.ReferenceFieldType reference);
-  }
+    public static native void serializeBinaryToWriter(IsNullCondition message, Object writer);
 
-  public static native IsNullCondition deserializeBinary(Uint8Array bytes);
+    public static native IsNullCondition.ToObjectReturnType toObject(
+        boolean includeInstance, IsNullCondition msg);
 
-  public static native IsNullCondition deserializeBinaryFromReader(
-      IsNullCondition message, Object reader);
+    public native void clearReference();
 
-  public static native void serializeBinaryToWriter(IsNullCondition message, Object writer);
+    public native Reference getReference();
 
-  public static native IsNullCondition.ToObjectReturnType toObject(
-      boolean includeInstance, IsNullCondition msg);
+    public native boolean hasReference();
 
-  public native void clearReference();
+    public native Uint8Array serializeBinary();
 
-  public native Reference getReference();
+    public native void setReference();
 
-  public native boolean hasReference();
+    public native void setReference(Reference value);
 
-  public native Uint8Array serializeBinary();
+    public native IsNullCondition.ToObjectReturnType0 toObject();
 
-  public native void setReference();
-
-  public native void setReference(Reference value);
-
-  public native IsNullCondition.ToObjectReturnType0 toObject();
-
-  public native IsNullCondition.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native IsNullCondition.ToObjectReturnType0 toObject(boolean includeInstance);
 }

@@ -12,7 +12,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user scripts.
+ * ScriptSession implementation that simply allows variables to be exported. This is not intended
+ * for use in user scripts.
  */
 public class NoLanguageDeephavenSession extends AbstractScriptSession implements ScriptSession {
     private static final String SCRIPT_TYPE = "NoLanguage";
@@ -48,8 +49,8 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
     @Override
     public <T> T getVariable(String name, T defaultValue) {
         try {
-            //noinspection unchecked
-            return (T)getVariable(name);
+            // noinspection unchecked
+            return (T) getVariable(name);
         } catch (QueryScope.MissingVariableException e) {
             return defaultValue;
         }
@@ -89,25 +90,27 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
     }
 
     @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader, ScriptPathLoaderState scriptLoaderState) {
-    }
+    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
+        ScriptPathLoaderState scriptLoaderState) {}
 
     @Override
-    public void onApplicationInitializationEnd() {
-    }
+    public void onApplicationInitializationEnd() {}
 
     @Override
     public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
-        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
+        throw new UnsupportedOperationException(
+            SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
     }
 
     @Override
     public void clearScriptPathLoader() {
-        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
+        throw new UnsupportedOperationException(
+            SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
     }
 
     @Override
     public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
+        throw new UnsupportedOperationException(
+            SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
     }
 }

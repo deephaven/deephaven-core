@@ -8,4 +8,5 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.grpc.ServiceDefinition",
     namespace = JsPackage.GLOBAL)
 public interface ServiceDefinition
-    extends io.deephaven.javascript.proto.dhinternal.grpcweb.service.ServiceDefinition {}
+    extends io.deephaven.javascript.proto.dhinternal.grpcweb.service.ServiceDefinition {
+}

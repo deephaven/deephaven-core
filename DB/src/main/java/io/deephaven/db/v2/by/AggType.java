@@ -1,7 +1,8 @@
 package io.deephaven.db.v2.by;
 
 /**
- * Enumeration representing valid aggregation types for {@link ComboAggregateFactory} or {@link io.deephaven.db.v2.TotalsTableBuilder}.
+ * Enumeration representing valid aggregation types for {@link ComboAggregateFactory} or
+ * {@link io.deephaven.db.v2.TotalsTableBuilder}.
  */
 public enum AggType {
     /** Return the number of rows in each group. */
@@ -30,7 +31,10 @@ public enum AggType {
     CountDistinct,
     /** Collect the distinct items from the column */
     Distinct,
-    /** Display the singular value from the column if it is unique, or a default value if none are present, or it is not unique */
+    /**
+     * Display the singular value from the column if it is unique, or a default value if none are
+     * present, or it is not unique
+     */
     Unique,
     /** Only valid in a TotalsTableBuilder to indicate we should not perform any aggregation. */
     Skip

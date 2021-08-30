@@ -20,8 +20,8 @@ public class XYStackedBar {
         final Number[] y3 = {2.3, 1.0, 3.4, 2.3};
 
         Figure axs = plot("Test1", x1, y1)
-                .plot("Test2", x2, y2)
-                .plot("Test3", x3, y3).plotStyle("stacked_bar");
+            .plot("Test2", x2, y2)
+            .plot("Test3", x3, y3).plotStyle("stacked_bar");
 
         ExamplePlotUtils.display(axs);
     }

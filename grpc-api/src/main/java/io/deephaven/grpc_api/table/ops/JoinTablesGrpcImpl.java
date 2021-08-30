@@ -27,7 +27,8 @@ import java.util.function.Function;
 public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     @FunctionalInterface
     protected interface RealTableOperation<T> {
-        Table apply(Table lhs, Table rhs, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, T request);
+        Table apply(Table lhs, Table rhs, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            T request);
     }
 
     private final Function<T, List<String>> getColMatchList;
@@ -36,13 +37,13 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     private final RealTableOperation<T> realTableOperation;
 
     protected JoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor,
-                                 final Function<BatchTableRequest.Operation, T> getRequest,
-                                 final Function<T, Ticket> getTicket,
-                                 final MultiDependencyFunction<T> getDependencies,
-                                 final Function<T, List<String>> getColMatchList,
-                                 final Function<T, List<String>> getColAddList,
-                                 final RealTableOperation<T> realTableOperation) {
-            super(getRequest, getTicket, getDependencies);
+        final Function<BatchTableRequest.Operation, T> getRequest,
+        final Function<T, Ticket> getTicket,
+        final MultiDependencyFunction<T> getDependencies,
+        final Function<T, List<String>> getColMatchList,
+        final Function<T, List<String>> getColAddList,
+        final RealTableOperation<T> realTableOperation) {
+        super(getRequest, getTicket, getDependencies);
         this.liveTableMonitor = liveTableMonitor;
         this.getColMatchList = getColMatchList;
         this.getColAddList = getColAddList;
@@ -55,12 +56,14 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             MatchPairFactory.getExpressions(getColMatchList.apply(request));
             MatchPairFactory.getExpressions(getColAddList.apply(request));
         } catch (final ExpressionException err) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                err.getMessage() + ": " + err.getProblemExpression());
         }
     }
 
     @Override
-    public Table create(final T request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final T request,
+        final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 2);
 
         final MatchPair[] columnsToMatch;
@@ -70,7 +73,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             columnsToMatch = MatchPairFactory.getExpressions(getColMatchList.apply(request));
             columnsToAdd = MatchPairFactory.getExpressions(getColAddList.apply(request));
         } catch (final ExpressionException err) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                err.getMessage() + ": " + err.getProblemExpression());
         }
 
         final Table lhs = sourceTables.get(0).get();
@@ -81,7 +85,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             result = realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request);
         } else {
             result = liveTableMonitor.sharedLock().computeLocked(
-                    () -> realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request));
+                () -> realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request));
         }
         return result;
     }
@@ -90,28 +94,33 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     public static class AsOfJoinTablesGrpcImpl extends JoinTablesGrpcImpl<AsOfJoinTablesRequest> {
 
         private static final MultiDependencyFunction<AsOfJoinTablesRequest> EXTRACT_DEPS =
-                (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
+            (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
         protected AsOfJoinTablesGrpcImpl(LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getAsOfJoin, AsOfJoinTablesRequest::getResultId, EXTRACT_DEPS,
-                    AsOfJoinTablesRequest::getColumnsToMatchList, AsOfJoinTablesRequest::getColumnsToAddList,
-                    AsOfJoinTablesGrpcImpl::doJoin);
+            super(liveTableMonitor, BatchTableRequest.Operation::getAsOfJoin,
+                AsOfJoinTablesRequest::getResultId, EXTRACT_DEPS,
+                AsOfJoinTablesRequest::getColumnsToMatchList,
+                AsOfJoinTablesRequest::getColumnsToAddList,
+                AsOfJoinTablesGrpcImpl::doJoin);
         }
 
         @Override
-        public void validateRequest(final AsOfJoinTablesRequest request) throws StatusRuntimeException {
+        public void validateRequest(final AsOfJoinTablesRequest request)
+            throws StatusRuntimeException {
             super.validateRequest(request);
 
             if (request.getAsOfMatchRule() == AsOfJoinTablesRequest.MatchRule.UNRECOGNIZED) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized as-of match rule");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Unrecognized as-of match rule");
             }
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                     final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                     final AsOfJoinTablesRequest request) {
-            Table.AsOfMatchRule matchRule = Table.AsOfMatchRule.valueOf(request.getAsOfMatchRule().name());
+            final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+            final AsOfJoinTablesRequest request) {
+            Table.AsOfMatchRule matchRule =
+                Table.AsOfMatchRule.valueOf(request.getAsOfMatchRule().name());
             switch (matchRule) {
                 case LESS_THAN:
                 case LESS_THAN_EQUAL:
@@ -129,21 +138,24 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     public static class CrossJoinTablesGrpcImpl extends JoinTablesGrpcImpl<CrossJoinTablesRequest> {
 
         private static final MultiDependencyFunction<CrossJoinTablesRequest> EXTRACT_DEPS =
-                (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
+            (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
         public CrossJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getCrossJoin, CrossJoinTablesRequest::getResultId, EXTRACT_DEPS,
-                    CrossJoinTablesRequest::getColumnsToMatchList, CrossJoinTablesRequest::getColumnsToAddList,
-                    CrossJoinTablesGrpcImpl::doJoin);
+            super(liveTableMonitor, BatchTableRequest.Operation::getCrossJoin,
+                CrossJoinTablesRequest::getResultId, EXTRACT_DEPS,
+                CrossJoinTablesRequest::getColumnsToMatchList,
+                CrossJoinTablesRequest::getColumnsToAddList,
+                CrossJoinTablesGrpcImpl::doJoin);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                                   final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                                   final CrossJoinTablesRequest request) {
+            final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+            final CrossJoinTablesRequest request) {
             int reserveBits = request.getReserveBits();
             if (reserveBits <= 0) {
-                return lhs.join(rhs, columnsToMatch, columnsToAdd); // use the default number of reserve_bits
+                return lhs.join(rhs, columnsToMatch, columnsToAdd); // use the default number of
+                                                                    // reserve_bits
             } else {
                 return lhs.join(rhs, columnsToMatch, columnsToAdd, reserveBits);
             }
@@ -154,18 +166,20 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     public static class ExactJoinTablesGrpcImpl extends JoinTablesGrpcImpl<ExactJoinTablesRequest> {
 
         private static final MultiDependencyFunction<ExactJoinTablesRequest> EXTRACT_DEPS =
-                (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
+            (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
         public ExactJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getExactJoin, ExactJoinTablesRequest::getResultId, EXTRACT_DEPS,
-                    ExactJoinTablesRequest::getColumnsToMatchList, ExactJoinTablesRequest::getColumnsToAddList,
-                    ExactJoinTablesGrpcImpl::doJoin);
+            super(liveTableMonitor, BatchTableRequest.Operation::getExactJoin,
+                ExactJoinTablesRequest::getResultId, EXTRACT_DEPS,
+                ExactJoinTablesRequest::getColumnsToMatchList,
+                ExactJoinTablesRequest::getColumnsToAddList,
+                ExactJoinTablesGrpcImpl::doJoin);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                                   final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                                   final ExactJoinTablesRequest request) {
+            final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+            final ExactJoinTablesRequest request) {
             return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
         }
     }
@@ -174,38 +188,43 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     public static class LeftJoinTablesGrpcImpl extends JoinTablesGrpcImpl<LeftJoinTablesRequest> {
 
         private static final MultiDependencyFunction<LeftJoinTablesRequest> EXTRACT_DEPS =
-                (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
+            (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
         public LeftJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getLeftJoin, LeftJoinTablesRequest::getResultId, EXTRACT_DEPS,
-                    LeftJoinTablesRequest::getColumnsToMatchList, LeftJoinTablesRequest::getColumnsToAddList,
-                    LeftJoinTablesGrpcImpl::doJoin);
+            super(liveTableMonitor, BatchTableRequest.Operation::getLeftJoin,
+                LeftJoinTablesRequest::getResultId, EXTRACT_DEPS,
+                LeftJoinTablesRequest::getColumnsToMatchList,
+                LeftJoinTablesRequest::getColumnsToAddList,
+                LeftJoinTablesGrpcImpl::doJoin);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                                   final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                                   final LeftJoinTablesRequest request) {
+            final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+            final LeftJoinTablesRequest request) {
             return lhs.leftJoin(rhs, columnsToMatch, columnsToAdd);
         }
     }
 
     @Singleton
-    public static class NaturalJoinTablesGrpcImpl extends JoinTablesGrpcImpl<NaturalJoinTablesRequest> {
+    public static class NaturalJoinTablesGrpcImpl
+        extends JoinTablesGrpcImpl<NaturalJoinTablesRequest> {
 
         private static final MultiDependencyFunction<NaturalJoinTablesRequest> EXTRACT_DEPS =
-                (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
+            (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
         public NaturalJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getNaturalJoin, NaturalJoinTablesRequest::getResultId, EXTRACT_DEPS,
-                    NaturalJoinTablesRequest::getColumnsToMatchList, NaturalJoinTablesRequest::getColumnsToAddList,
-                    NaturalJoinTablesGrpcImpl::doJoin);
+            super(liveTableMonitor, BatchTableRequest.Operation::getNaturalJoin,
+                NaturalJoinTablesRequest::getResultId, EXTRACT_DEPS,
+                NaturalJoinTablesRequest::getColumnsToMatchList,
+                NaturalJoinTablesRequest::getColumnsToAddList,
+                NaturalJoinTablesGrpcImpl::doJoin);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                                   final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                                   final NaturalJoinTablesRequest request) {
+            final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+            final NaturalJoinTablesRequest request) {
             return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
         }
     }

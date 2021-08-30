@@ -9,7 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * {@link TableKey} implementation for standalone tables that are created without a {@link TableDataService}.
+ * {@link TableKey} implementation for standalone tables that are created without a
+ * {@link TableDataService}.
  */
 @Immutable
 public final class StandaloneTableKey implements ImmutableTableKey {
@@ -22,8 +23,7 @@ public final class StandaloneTableKey implements ImmutableTableKey {
         return INSTANCE;
     }
 
-    private StandaloneTableKey() {
-    }
+    private StandaloneTableKey() {}
 
     @Override
     public String getImplementationName() {

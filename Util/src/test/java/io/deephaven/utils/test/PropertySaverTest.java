@@ -18,12 +18,13 @@ public class PropertySaverTest {
 
     // Add this to IntelliJ Unit Test Run Configuration to mimic gradle test
     //
-    // -ea -DConfiguration.rootFile=dh-tests.prop -Dworkspace=./tmp/workspace -Ddevroot=. -Dlog4j.configuration=log4j.teamcity.xml
+    // -ea -DConfiguration.rootFile=dh-tests.prop -Dworkspace=./tmp/workspace -Ddevroot=.
+    // -Dlog4j.configuration=log4j.teamcity.xml
     // -ea is for JVM to honor assertions
     //
     // CommandLine:
-    //  ./gradlew :Util:test --tests io.deephaven.utils.test.PropertySaverTest
-    //  open Util/build/reports/tests/test/index.html
+    // ./gradlew :Util:test --tests io.deephaven.utils.test.PropertySaverTest
+    // open Util/build/reports/tests/test/index.html
 
     private final Logger log = new StreamLoggerImpl(System.out, LogLevel.DEBUG);
 
@@ -36,14 +37,18 @@ public class PropertySaverTest {
 
         final PropertySaver propertySaver = new PropertySaver();
         try {
-            final String someProperty = configuration.getProperties().stringPropertyNames().iterator().next();
+            final String someProperty =
+                configuration.getProperties().stringPropertyNames().iterator().next();
             log.info().append("Remove someProperty: " + someProperty).endl();
             propertySaver.remove(someProperty);
-            log.info().append("configuration currentSize: " + configuration.getProperties().size()).endl();
-            Assert.assertEquals(configuration.getProperties().size(), initialSize -1);
+            log.info().append("configuration currentSize: " + configuration.getProperties().size())
+                .endl();
+            Assert.assertEquals(configuration.getProperties().size(), initialSize - 1);
         } finally {
             propertySaver.restore();
-            log.info().append("configuration restored size: " + configuration.getProperties().size()).endl();
+            log.info()
+                .append("configuration restored size: " + configuration.getProperties().size())
+                .endl();
             Assert.assertEquals(initialSize, configuration.getProperties().size());
         }
     }
@@ -59,11 +64,14 @@ public class PropertySaverTest {
         try {
             Set<String> props = configuration.getProperties().stringPropertyNames();
             props.forEach((k) -> propertySaver.remove(k));
-            log.info().append("configuration currentSize: " + configuration.getProperties().size()).endl();
+            log.info().append("configuration currentSize: " + configuration.getProperties().size())
+                .endl();
             Assert.assertEquals(configuration.getProperties().size(), 0);
         } finally {
             propertySaver.restore();
-            log.info().append("configuration restored size: " + configuration.getProperties().size()).endl();
+            log.info()
+                .append("configuration restored size: " + configuration.getProperties().size())
+                .endl();
             Assert.assertEquals(initialSize, configuration.getProperties().size());
         }
     }
@@ -87,11 +95,14 @@ public class PropertySaverTest {
             }
             log.info().append("Remove random (non-existing) Property: " + randomProperty).endl();
             propertySaver.remove(randomProperty);
-            log.info().append("configuration currentSize: " + configuration.getProperties().size()).endl();
+            log.info().append("configuration currentSize: " + configuration.getProperties().size())
+                .endl();
             Assert.assertEquals(configuration.getProperties().size(), initialSize);
         } finally {
             propertySaver.restore();
-            log.info().append("configuration restored size: " + configuration.getProperties().size()).endl();
+            log.info()
+                .append("configuration restored size: " + configuration.getProperties().size())
+                .endl();
             Assert.assertEquals(initialSize, configuration.getProperties().size());
         }
     }

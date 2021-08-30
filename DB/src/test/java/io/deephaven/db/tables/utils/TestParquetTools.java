@@ -43,7 +43,8 @@ import static org.junit.Assert.assertEquals;
  * Tests for {@link ParquetTools}.
  */
 public class TestParquetTools {
-    private final static String testRoot = Configuration.getInstance().getWorkspacePath() + File.separator + "TestParquetTools";
+    private final static String testRoot =
+        Configuration.getInstance().getWorkspacePath() + File.separator + "TestParquetTools";
     private final static File testRootFile = new File(testRoot);
 
     private static Table table1;
@@ -53,23 +54,25 @@ public class TestParquetTools {
     @BeforeClass
     public static void setUpFirst() {
         table1 = new InMemoryTable(
-                new String[]{"StringKeys", "GroupedInts"},
-                new Object[]{
-                        new String[]{"key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"},
-                        new int[]{1, 1, 2, 2, 2, 3, 3, 3, 3}
-                });
+            new String[] {"StringKeys", "GroupedInts"},
+            new Object[] {
+                    new String[] {"key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2",
+                            "key2"},
+                    new int[] {1, 1, 2, 2, 2, 3, 3, 3, 3}
+            });
         emptyTable = new InMemoryTable(
-                new String[]{"Column1", "Column2"},
-                new Object[]{
-                        new String[]{},
-                        new byte[]{}
-                });
-        brokenTable = (Table) Proxy.newProxyInstance(Table.class.getClassLoader(), new Class[]{Table.class}, new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                throw new UnsupportedOperationException("This table is broken!");
-            }
-        });
+            new String[] {"Column1", "Column2"},
+            new Object[] {
+                    new String[] {},
+                    new byte[] {}
+            });
+        brokenTable = (Table) Proxy.newProxyInstance(Table.class.getClassLoader(),
+            new Class[] {Table.class}, new InvocationHandler() {
+                @Override
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    throw new UnsupportedOperationException("This table is broken!");
+                }
+            });
     }
 
     @Before
@@ -139,7 +142,8 @@ public class TestParquetTools {
         QueryLibrary.importClass(TestEnum.class);
         QueryLibrary.importClass(StringSetWrapper.class);
         QueryLibrary.importStatic(this.getClass());
-        Table test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=newSet(" +
+        Table test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]",
+            "enumSet=newSet(" +
                 "toS(enumC_[(i + 9) % 10])," +
                 "toS(enumC_[i])," +
                 "toS(enumC_[(i+1)% 10]))");
@@ -148,22 +152,27 @@ public class TestParquetTools {
         Table test2 = ParquetTools.readTable(path);
         assertEquals(10, test2.size());
         assertEquals(2, test2.getColumns().length);
-        assertEquals(Arrays.asList(toString((Enum[]) test.getColumn("enumC").get(0, 10))), Arrays.asList(toString((Enum[]) test2.getColumn("enumC").get(0, 10))));
+        assertEquals(Arrays.asList(toString((Enum[]) test.getColumn("enumC").get(0, 10))),
+            Arrays.asList(toString((Enum[]) test2.getColumn("enumC").get(0, 10))));
         StringSet[] objects = (StringSet[]) test.getColumn("enumSet").get(0, 10);
         StringSet[] objects1 = (StringSet[]) test2.getColumn("enumSet").get(0, 10);
         for (int i = 0; i < objects1.length; i++) {
-            assertEquals(new HashSet(Arrays.asList(objects[i].values())), new HashSet(Arrays.asList(objects1[i].values())));
+            assertEquals(new HashSet(Arrays.asList(objects[i].values())),
+                new HashSet(Arrays.asList(objects1[i].values())));
         }
         test2.close();
 
-        test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=EnumSet.of((TestEnum)enumC_[(i + 9) % 10],(TestEnum)enumC_[i],(TestEnum)enumC_[(i+1)% 10])");
+        test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]",
+            "enumSet=EnumSet.of((TestEnum)enumC_[(i + 9) % 10],(TestEnum)enumC_[i],(TestEnum)enumC_[(i+1)% 10])");
         path = testRoot + File.separator + "Table3.parquet";
         ParquetTools.writeTable(test, path);
         test2 = ParquetTools.readTable(path);
         assertEquals(10, test2.size());
         assertEquals(2, test2.getColumns().length);
-        assertEquals(Arrays.asList(test.getColumn("enumC").get(0, 10)), Arrays.asList(test2.getColumn("enumC").get(0, 10)));
-        assertEquals(Arrays.asList(test.getColumn("enumSet").get(0, 10)), Arrays.asList(test2.getColumn("enumSet").get(0, 10)));
+        assertEquals(Arrays.asList(test.getColumn("enumC").get(0, 10)),
+            Arrays.asList(test2.getColumn("enumC").get(0, 10)));
+        assertEquals(Arrays.asList(test.getColumn("enumSet").get(0, 10)),
+            Arrays.asList(test2.getColumn("enumSet").get(0, 10)));
         test2.close();
 
         test = TableTools.newTable(TableDefinition.of(
@@ -197,7 +206,8 @@ public class TestParquetTools {
         } catch (TableDataException expected) {
         }
         try {
-            ParquetTools.writeTables(new Table[]{source}, source.getDefinition(), new File[]{dest});
+            ParquetTools.writeTables(new Table[] {source}, source.getDefinition(),
+                new File[] {dest});
             TestCase.fail("Expected exception");
         } catch (TableDataException expected) {
         }
@@ -205,21 +215,22 @@ public class TestParquetTools {
 
     @Test
     public void testWriteTableMissingColumns() {
-        // TODO (deephaven/deephaven-core/issues/321): Fix the apparent bug in the parquet table writer.
+        // TODO (deephaven/deephaven-core/issues/321): Fix the apparent bug in the parquet table
+        // writer.
         final Table nullTable = TableTools.emptyTable(10_000L).updateView(
-                "B    = NULL_BYTE",
-                "C    = NULL_CHAR",
-                "S    = NULL_SHORT",
-                "I    = NULL_INT",
-                "L    = NULL_LONG",
-                "F    = NULL_FLOAT",
-                "D    = NULL_DOUBLE",
-                "Bl   = (Boolean) null",
-                "Str  = (String) null",
-                "DT   = (DBDateTime) null"
-        );
+            "B    = NULL_BYTE",
+            "C    = NULL_CHAR",
+            "S    = NULL_SHORT",
+            "I    = NULL_INT",
+            "L    = NULL_LONG",
+            "F    = NULL_FLOAT",
+            "D    = NULL_DOUBLE",
+            "Bl   = (Boolean) null",
+            "Str  = (String) null",
+            "DT   = (DBDateTime) null");
         final File dest = new File(testRoot + File.separator + "Null.parquet");
-        ParquetTools.writeTables(new Table[]{TableTools.emptyTable(10_000L)}, nullTable.getDefinition(), new File[]{dest});
+        ParquetTools.writeTables(new Table[] {TableTools.emptyTable(10_000L)},
+            nullTable.getDefinition(), new File[] {dest});
         final Table result = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(nullTable, result);
         result.close();
@@ -229,36 +240,41 @@ public class TestParquetTools {
     public void testWriteTableExceptions() throws IOException {
         new File(testRoot + File.separator + "unexpectedFile").createNewFile();
         try {
-            ParquetTools.writeTable(table1, new File(testRoot + File.separator + "unexpectedFile" + File.separator + "Table1"));
+            ParquetTools.writeTable(table1,
+                new File(testRoot + File.separator + "unexpectedFile" + File.separator + "Table1"));
             TestCase.fail("Expected exception");
         } catch (UncheckedDeephavenException e) {
-            //Expected
+            // Expected
         }
 
         new File(testRoot + File.separator + "Table1").mkdirs();
-        new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").createNewFile();
+        new File(testRoot + File.separator + "Table1" + File.separator + "extraFile")
+            .createNewFile();
         try {
             ParquetTools.writeTable(table1, new File(testRoot + File.separator + "Table1"));
             TestCase.fail("Expected exception");
         } catch (UncheckedDeephavenException e) {
-            //Expected
+            // Expected
         }
         new File(testRoot + File.separator + "Nested").mkdirs();
         try {
-            ParquetTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"));
+            ParquetTools.writeTable(brokenTable,
+                new File(testRoot + File.separator + "Nested" + File.separator + "Broken"));
             TestCase.fail("Expected exception");
         } catch (UnsupportedOperationException e) {
-            //Expected exception
+            // Expected exception
         }
-        TestCase.assertFalse(new File(testRoot + File.separator + "Nested" + File.separator + "Broken").exists());
+        TestCase.assertFalse(
+            new File(testRoot + File.separator + "Nested" + File.separator + "Broken").exists());
         TestCase.assertTrue(new File(testRoot + File.separator + "Nested").isDirectory());
 
         new File(testRoot + File.separator + "Nested").setReadOnly();
         try {
-            ParquetTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"));
+            ParquetTools.writeTable(brokenTable,
+                new File(testRoot + File.separator + "Nested" + File.separator + "Broken"));
             TestCase.fail("Expected exception");
         } catch (RuntimeException e) {
-            //Expected exception
+            // Expected exception
         }
         new File(testRoot + File.separator + "Nested").setWritable(true);
     }
@@ -266,7 +282,7 @@ public class TestParquetTools {
     @Test
     public void testDeleteTable() {
         if (System.getProperty("os.name").startsWith("Windows")) {
-            //TODO: Remove when come up with a workaround for Windows file handling issues.
+            // TODO: Remove when come up with a workaround for Windows file handling issues.
             return;
         }
         File dest = new File(testRoot + File.separator + "Table1.parquet");
@@ -280,15 +296,16 @@ public class TestParquetTools {
 
     private Table getAggregatedResultTable() {
         final int size = 40;
-        final String [] symbol = new String[size];
-        final double [] bid = new double[size];
-        final double [] bidSize = new double[size];
+        final String[] symbol = new String[size];
+        final double[] bid = new double[size];
+        final double[] bidSize = new double[size];
         for (int ii = 0; ii < size; ++ii) {
-            symbol[ii] =  (ii < 8) ? "Num" : "XYZ";
-            bid[ii] =  (ii < 15) ? 98 : 99;
-            bidSize[ii] =  ii;
+            symbol[ii] = (ii < 8) ? "Num" : "XYZ";
+            bid[ii] = (ii < 15) ? 98 : 99;
+            bidSize[ii] = ii;
         }
-        final Table baseTable = newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize));
+        final Table baseTable = newTable(stringCol("USym", symbol), doubleCol("Bid", bid),
+            doubleCol("BidSize", bidSize));
         return baseTable.by("USym", "Bid").by("USym");
     }
 
@@ -302,29 +319,34 @@ public class TestParquetTools {
         TableTools.show(readBackTable);
         TableTools.show(table);
         final long sz = table.size();
-        TestTableTools.tableRangesAreEqual(table, readBackTable,0, 0, sz);
+        TestTableTools.tableRangesAreEqual(table, readBackTable, 0, 0, sz);
         readBackTable.close();
     }
 
     @Test
     public void testPartitionedRead() {
-        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file1.parquet"));
-        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file2.parquet"));
-        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
+        ParquetTools.writeTable(table1, new File(testRootFile,
+            "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file1.parquet"));
+        ParquetTools.writeTable(table1, new File(testRootFile,
+            "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file2.parquet"));
+        ParquetTools.writeTable(table1, new File(testRootFile,
+            "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
 
         final List<ColumnDefinition> allColumns = new ArrayList<>();
-        allColumns.add(ColumnDefinition.fromGenericType("Date", String.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
-        allColumns.add(ColumnDefinition.fromGenericType("Num", int.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+        allColumns.add(ColumnDefinition.fromGenericType("Date", String.class,
+            ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+        allColumns.add(ColumnDefinition.fromGenericType("Num", int.class,
+            ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         allColumns.addAll(table1.getDefinition().getColumnList());
         final TableDefinition partitionedDefinition = new TableDefinition(allColumns);
 
-        final Table result = ParquetTools.readPartitionedTableInferSchema(KeyValuePartitionLayout.forParquet(testRootFile, 2), ParquetInstructions.EMPTY);
+        final Table result = ParquetTools.readPartitionedTableInferSchema(
+            KeyValuePartitionLayout.forParquet(testRootFile, 2), ParquetInstructions.EMPTY);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
-                table1.updateView("Date=`2021-07-20`", "Num=100"),
-                table1.updateView("Date=`2021-07-20`", "Num=200"),
-                table1.updateView("Date=`2021-07-21`", "Num=300")
-        ).moveUpColumns("Date", "Num");
+            table1.updateView("Date=`2021-07-20`", "Num=100"),
+            table1.updateView("Date=`2021-07-20`", "Num=200"),
+            table1.updateView("Date=`2021-07-21`", "Num=300")).moveUpColumns("Date", "Num");
         TstUtils.assertTableEquals(expected, result);
     }
 }

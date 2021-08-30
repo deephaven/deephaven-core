@@ -13,24 +13,27 @@ import io.deephaven.util.annotations.TestUseOnly;
 import java.util.*;
 import java.util.stream.Stream;
 
-public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl implements DependencyStreamProvider {
+public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl
+    implements DependencyStreamProvider {
     final SelectFilter[] componentFilters;
 
     ComposedFilter(SelectFilter[] componentFilters) {
         for (final SelectFilter componentFilter : componentFilters) {
             if (componentFilter instanceof ReindexingFilter) {
-                throw new UnsupportedOperationException("ComposedFilters do not support ReindexingFilters: " + componentFilter);
+                throw new UnsupportedOperationException(
+                    "ComposedFilters do not support ReindexingFilters: " + componentFilter);
             }
         }
         this.componentFilters = componentFilters;
 
         for (SelectFilter f : this.componentFilters) {
             if (f instanceof LivenessArtifact) {
-                manage((LivenessArtifact)f);
+                manage((LivenessArtifact) f);
             }
         }
 
-        setAutomatedFilter(Arrays.stream(componentFilters).allMatch(SelectFilter::isAutomatedFilter));
+        setAutomatedFilter(
+            Arrays.stream(componentFilters).allMatch(SelectFilter::isAutomatedFilter));
     }
 
     @Override
@@ -96,9 +99,11 @@ public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl im
 
     @Override
     public Stream<NotificationQueue.Dependency> getDependencyStream() {
-        return Stream.concat(Arrays.stream(componentFilters).filter(f -> f instanceof NotificationQueue.Dependency).map(f -> (NotificationQueue.Dependency)f),
-                Arrays.stream(componentFilters).filter(f -> f instanceof DependencyStreamProvider).flatMap(f -> ((DependencyStreamProvider)f).getDependencyStream())
-                );
+        return Stream.concat(
+            Arrays.stream(componentFilters).filter(f -> f instanceof NotificationQueue.Dependency)
+                .map(f -> (NotificationQueue.Dependency) f),
+            Arrays.stream(componentFilters).filter(f -> f instanceof DependencyStreamProvider)
+                .flatMap(f -> ((DependencyStreamProvider) f).getDependencyStream()));
     }
 
     @Override
@@ -108,8 +113,10 @@ public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl im
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final ComposedFilter that = (ComposedFilter) o;
         return Arrays.equals(componentFilters, that.componentFilters);
     }

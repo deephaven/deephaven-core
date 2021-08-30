@@ -11,8 +11,9 @@ import io.deephaven.db.v2.utils.Index;
 import java.io.Serializable;
 
 /**
- * A Raw table snapshot.  Users may use {@link InitialSnapshotTable#setupInitialSnapshotTable(Table, InitialSnapshot)} to
- * convert this into a {@link io.deephaven.db.v2.QueryTable}
+ * A Raw table snapshot. Users may use
+ * {@link InitialSnapshotTable#setupInitialSnapshotTable(Table, InitialSnapshot)} to convert this
+ * into a {@link io.deephaven.db.v2.QueryTable}
  */
 public class InitialSnapshot implements Serializable, Cloneable {
     static final long serialVersionUID = 4380513367437361741L;
@@ -46,11 +47,12 @@ public class InitialSnapshot implements Serializable, Cloneable {
     @Override
     public String toString() {
         return "InitialSnapshot{" +
-                "type=" + type +
-                ", rows=" + rowsIncluded + (index == null ? "" : "/" + index) +
-                ", columns=" + FormatBitSet.formatBitSetAsString(FormatBitSet.arrayToBitSet(dataColumns)) +
-                ", deltaSequence=" + deltaSequence +
-                ", step=" + step +
-                '}';
+            "type=" + type +
+            ", rows=" + rowsIncluded + (index == null ? "" : "/" + index) +
+            ", columns="
+            + FormatBitSet.formatBitSetAsString(FormatBitSet.arrayToBitSet(dataColumns)) +
+            ", deltaSequence=" + deltaSequence +
+            ", step=" + step +
+            '}';
     }
 }

@@ -5,9 +5,8 @@ import jsinterop.annotations.JsType;
 
 @JsType(
     isNative = true,
-    name =
-        "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.DictionaryKind",
+    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.DictionaryKind",
     namespace = JsPackage.GLOBAL)
 public class DictionaryKind {
-  public static int DenseArray;
+    public static int DenseArray;
 }

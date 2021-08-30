@@ -12,37 +12,36 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
- * This is a special version of {@link ArrayList} that can be
- * substituted for a regular Array list but produces no garbage. It
- * only has one iterator, which is reused. It is not thread safe.
+ * This is a special version of {@link ArrayList} that can be substituted for a regular Array list
+ * but produces no garbage. It only has one iterator, which is reused. It is not thread safe.
  */
 public class LowGarbageArrayList<E> extends ArrayList<E> {
 
-    private final Itr m_itr=new Itr();
+    private final Itr m_itr = new Itr();
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     @Override // from AbstractList
     public Iterator<E> iterator() {
         return m_itr.reset();
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     @Override // from AbstractList
     public ListIterator<E> listIterator() {
         throw Assert.statementNeverExecuted("Not yet implemented.");
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     @Override // from AbstractList
     public ListIterator<E> listIterator(int index) {
         throw Assert.statementNeverExecuted("Not yet implemented.");
     }
 
-    //################################################################
+    // ################################################################
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     private class Itr implements Iterator<E> {
         /**
          * Index of element to be returned by subsequent call to next.
@@ -50,23 +49,21 @@ public class LowGarbageArrayList<E> extends ArrayList<E> {
         int cursor;
 
         /**
-         * Index of element returned by most recent call to next or
-         * previous.  Reset to -1 if this element is deleted by a call
-         * to remove.
+         * Index of element returned by most recent call to next or previous. Reset to -1 if this
+         * element is deleted by a call to remove.
          */
         int lastRet;
 
         /**
-         * The modCount value that the iterator believes that the backing
-         * List should have.  If this expectation is violated, the iterator
-         * has detected concurrent modification.
+         * The modCount value that the iterator believes that the backing List should have. If this
+         * expectation is violated, the iterator has detected concurrent modification.
          */
         int expectedModCount;
 
         private Itr reset() {
-            cursor=0;
-            lastRet=-1;
-            expectedModCount=modCount;
+            cursor = 0;
+            lastRet = -1;
+            expectedModCount = modCount;
             return this;
         }
 

@@ -29,16 +29,16 @@ import org.openjdk.jmh.runner.options.CommandLineOptions;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 public class BenchmarkRunner {
-    private static final TableDefinition RESULT_TABLE_DEF = BenchmarkTools.getLogDefinitionWithExtra(
-        Arrays.asList(
-            ColumnDefinition.ofInt("Run"),
-            ColumnDefinition.ofDouble("Score"),
-            ColumnDefinition.ofLong("TotalHeap"),
-            ColumnDefinition.ofLong("FreeHeap"),
-            ColumnDefinition.ofLong("UsedHeap"),
-            ColumnDefinition.ofLong("Threads"),
-            ColumnDefinition.ofDouble("CPULoad")
-    ));
+    private static final TableDefinition RESULT_TABLE_DEF =
+        BenchmarkTools.getLogDefinitionWithExtra(
+            Arrays.asList(
+                ColumnDefinition.ofInt("Run"),
+                ColumnDefinition.ofDouble("Score"),
+                ColumnDefinition.ofLong("TotalHeap"),
+                ColumnDefinition.ofLong("FreeHeap"),
+                ColumnDefinition.ofLong("UsedHeap"),
+                ColumnDefinition.ofLong("Threads"),
+                ColumnDefinition.ofDouble("CPULoad")));
 
     private static final int RETRY_LIMIT = 5;
 
@@ -50,7 +50,8 @@ public class BenchmarkRunner {
                 .build());
             final Collection<RunResult> run = runner.run();
             recordResults(run);
-            CsvResultWriter.recordResults(run, new File(BenchmarkTools.getLogPath() + File.separator + "Benchmark"));
+            CsvResultWriter.recordResults(run,
+                new File(BenchmarkTools.getLogPath() + File.separator + "Benchmark"));
         } catch (Throwable t) {
             t.printStackTrace();
             System.exit(1);
@@ -71,20 +72,20 @@ public class BenchmarkRunner {
             final String benchmarkName = BenchmarkTools.getStrippedBenchmarkName(runParams);
             final String modeString = BenchmarkTools.getModeString(runParams);
 
-            for(final BenchmarkResult benchResult : runResult.getBenchmarkResults()) {
+            for (final BenchmarkResult benchResult : runResult.getBenchmarkResults()) {
                 int itNo = 0;
                 for (final IterationResult itResult : benchResult.getIterationResults()) {
                     builder.addRow(benchmarkName,
-                            modeString,
-                            itNo++,
-                            paramString,
-                            runNo,
-                            filterDouble(itResult.getPrimaryResult().getScore()),
-                            (long)(itResult.getSecondaryResults().get("Max heap").getScore()),
-                            (long)(itResult.getSecondaryResults().get("Max free heap").getScore()),
-                            (long)(itResult.getSecondaryResults().get("Max used heap").getScore()),
-                            (long)(itResult.getSecondaryResults().get("Max threads").getScore()),
-                            filterDouble(itResult.getSecondaryResults().get("Max CPU").getScore()));
+                        modeString,
+                        itNo++,
+                        paramString,
+                        runNo,
+                        filterDouble(itResult.getPrimaryResult().getScore()),
+                        (long) (itResult.getSecondaryResults().get("Max heap").getScore()),
+                        (long) (itResult.getSecondaryResults().get("Max free heap").getScore()),
+                        (long) (itResult.getSecondaryResults().get("Max used heap").getScore()),
+                        (long) (itResult.getSecondaryResults().get("Max threads").getScore()),
+                        filterDouble(itResult.getSecondaryResults().get("Max CPU").getScore()));
                 }
                 runNo++;
             }
@@ -92,29 +93,31 @@ public class BenchmarkRunner {
 
         final Table topLevel = builder.build();
         final Table mergedDetails = getMergedDetails();
-        final Table result = topLevel.naturalJoin(mergedDetails, "Benchmark,Mode,Run,Iteration,Params");
+        final Table result =
+            topLevel.naturalJoin(mergedDetails, "Benchmark,Mode,Run,Iteration,Params");
 
-        final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+        final Path outputPath = Paths.get(BenchmarkTools.getLogPath())
+            .resolve("Benchmark" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
         ParquetTools.writeTable(result, outputPath.toFile(), result.getDefinition());
     }
 
     private static Table getMergedDetails() {
         final File[] files = FileUtils.missingSafeListFiles(
-                new File(BenchmarkTools.getLogPath()),
-                file -> file.getName().startsWith(BenchmarkTools.DETAIL_LOG_PREFIX));
+            new File(BenchmarkTools.getLogPath()),
+            file -> file.getName().startsWith(BenchmarkTools.DETAIL_LOG_PREFIX));
         Arrays.sort(files, Utils.getModifiedTimeComparator(false));
 
         boolean OK;
         int retries;
         final Table[] detailTables = new Table[files.length];
-        for(int i = 0; i < files.length; i++) {
+        for (int i = 0; i < files.length; i++) {
             OK = false;
             retries = 0;
             while (!OK && retries < RETRY_LIMIT) {
                 try {
                     detailTables[i] = TableBenchmarkState.readBin(files[i])
-                            .update("Run=" + i);
+                        .update("Run=" + i);
                     OK = true;
                 } catch (AssertionFailure af) {
                     retries++;
@@ -122,7 +125,8 @@ public class BenchmarkRunner {
             }
 
             if (!OK && (retries == RETRY_LIMIT)) {
-                throw new RuntimeException("Failed to readBin " + files[i].getAbsolutePath() + " after " + RETRY_LIMIT + " attempts.");
+                throw new RuntimeException("Failed to readBin " + files[i].getAbsolutePath()
+                    + " after " + RETRY_LIMIT + " attempts.");
             }
             files[i].deleteOnExit();
         }
@@ -131,7 +135,7 @@ public class BenchmarkRunner {
     }
 
     private static double filterDouble(double original) {
-        if(Double.isNaN(original) || Double.isInfinite(original)) {
+        if (Double.isNaN(original) || Double.isInfinite(original)) {
             return QueryConstants.NULL_DOUBLE;
         }
 

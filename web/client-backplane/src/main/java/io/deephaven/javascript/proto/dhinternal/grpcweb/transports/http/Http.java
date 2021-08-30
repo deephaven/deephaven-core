@@ -10,6 +10,6 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.transports.http.http",
     namespace = JsPackage.GLOBAL)
 public class Http {
-  public static native TransportFactory CrossBrowserHttpTransport(
-      CrossBrowserHttpTransportInit init);
+    public static native TransportFactory CrossBrowserHttpTransport(
+        CrossBrowserHttpTransportInit init);
 }

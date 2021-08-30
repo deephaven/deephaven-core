@@ -3,7 +3,9 @@ package io.deephaven.web.shared.data;
 import java.io.Serializable;
 
 public class RollupDefinition implements Serializable {
-    public enum LeafType { Normal, Constituent }
+    public enum LeafType {
+        Normal, Constituent
+    }
 
     private LeafType leafType;
 

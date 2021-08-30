@@ -31,8 +31,7 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     private static final long serialVersionUID = -3995577961085156934L;
 
     public enum Type {
-        NUMBER,
-        CATEGORY
+        NUMBER, CATEGORY
     }
 
     private final ChartImpl chart;
@@ -125,7 +124,7 @@ public class AxisImpl implements Axis, PlotExceptionCause {
      *
      * @return this AxisImpl's dimensionality
      */
-    public int dim(){
+    public int dim() {
         return dim;
     }
 
@@ -149,7 +148,8 @@ public class AxisImpl implements Axis, PlotExceptionCause {
 
     void setType(final Type type) {
         if (this.type != null && this.type != type) {
-            throw new PlotUnsupportedOperationException("Switching axis types is not supported: " + this.type + " " + type, this);
+            throw new PlotUnsupportedOperationException(
+                "Switching axis types is not supported: " + this.type + " " + type, this);
         }
 
         this.type = type;
@@ -314,7 +314,9 @@ public class AxisImpl implements Axis, PlotExceptionCause {
      *
      * @return this AxisImpl's {@link AxisTransform}
      */
-    public AxisTransform getAxisTransform() { return axisTransform; }
+    public AxisTransform getAxisTransform() {
+        return axisTransform;
+    }
 
     /**
      * Whether this axis is time axis.
@@ -430,10 +432,10 @@ public class AxisImpl implements Axis, PlotExceptionCause {
         return this;
     }
 
-    //todo:chip switch over to new log transformations???
-    //todo:chip should this also set a log formatter? ... if we use the new transformations
-    //todo:chip add a log base N case?
-    //if the transform covers what we need, we should use that. This seems to use log base 10 only
+    // todo:chip switch over to new log transformations???
+    // todo:chip should this also set a log formatter? ... if we use the new transformations
+    // todo:chip add a log base N case?
+    // if the transform covers what we need, we should use that. This seems to use log base 10 only
 
     @Override
     public AxisImpl log() {
@@ -442,17 +444,18 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     }
 
     @Override
-    public AxisImpl businessTime(final BusinessCalendar calendar){
+    public AxisImpl businessTime(final BusinessCalendar calendar) {
         return transform(new AxisTransformBusinessCalendar(calendar));
     }
 
     @Override
     public AxisImpl businessTime(final SelectableDataSet sds, final String valueColumn) {
-        throw new PlotUnsupportedOperationException("Selectable business time transformation is not currently supported", this);
+        throw new PlotUnsupportedOperationException(
+            "Selectable business time transformation is not currently supported", this);
     }
 
     @Override
-    public AxisImpl businessTime(){
+    public AxisImpl businessTime() {
         return businessTime(Calendars.calendar());
     }
 
@@ -495,12 +498,14 @@ public class AxisImpl implements Axis, PlotExceptionCause {
 
     @Override
     public AxisImpl min(final SelectableDataSet sds, final String valueColumn) {
-        throw new PlotUnsupportedOperationException("Selectable min transformation is not currently supported", this);
+        throw new PlotUnsupportedOperationException(
+            "Selectable min transformation is not currently supported", this);
     }
 
     @Override
     public AxisImpl max(final SelectableDataSet sds, final String valueColumn) {
-        throw new PlotUnsupportedOperationException("Selectable max transformation is not currently supported", this);
+        throw new PlotUnsupportedOperationException(
+            "Selectable max transformation is not currently supported", this);
     }
 
 

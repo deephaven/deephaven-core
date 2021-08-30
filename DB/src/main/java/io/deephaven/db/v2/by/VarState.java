@@ -20,6 +20,7 @@ class VarState implements PreviousStateProvider<VarState> {
     VarState createPrev() {
         return new VarState(true);
     }
+
     // only used in the current state
     private long changeTime;
     private final VarState prevValue;
@@ -29,7 +30,7 @@ class VarState implements PreviousStateProvider<VarState> {
     protected long nonNullCount;
 
     double currentValue() {
-        return sum2/(nonNullCount-1) - sum*sum/nonNullCount/(nonNullCount-1);
+        return sum2 / (nonNullCount - 1) - sum * sum / nonNullCount / (nonNullCount - 1);
     }
 
     @Override
@@ -54,9 +55,9 @@ class VarState implements PreviousStateProvider<VarState> {
     @Override
     public String toString() {
         return "Var{" +
-                "sum=" + sum +
-                ", sum2=" + sum2 +
-                ", nonNull=" + nonNullCount +
-                '}';
+            "sum=" + sum +
+            ", sum2=" + sum2 +
+            ", nonNull=" + nonNullCount +
+            '}';
     }
 }

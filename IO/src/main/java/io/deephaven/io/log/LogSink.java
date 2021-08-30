@@ -16,6 +16,7 @@ public interface LogSink<T extends LogSink.Element> {
 
     /**
      * Write an element.
+     * 
      * @param e
      */
     void write(T e);
@@ -31,19 +32,25 @@ public interface LogSink<T extends LogSink.Element> {
     void terminate();
 
     /**
-     * One element of a log sink - guaranteed to be logged without being split over rolling file boundaries, etc.
+     * One element of a log sink - guaranteed to be logged without being split over rolling file
+     * boundaries, etc.
      */
     interface Element {
         long getTimestampMicros();
+
         LogLevel getLevel();
+
         Throwable getThrowable();
+
         LogOutput writing(LogOutput outputBuffer);
+
         void written(LogOutput outputBuffer);
     }
 
     /**
-     * An interceptor is called with each element logged, *and* with the formatted output. It will receive buffers
-     * that are flipped, and should not change the position or limit of these buffers.
+     * An interceptor is called with each element logged, *and* with the formatted output. It will
+     * receive buffers that are flipped, and should not change the position or limit of these
+     * buffers.
      */
     interface Interceptor<T extends Element> {
         void element(T e, LogOutput output) throws IOException;
@@ -74,13 +81,13 @@ public interface LogSink<T extends LogSink.Element> {
         }
 
         public static void shutdown() {
-            for ( LogSink sink : allSinks ) {
+            for (LogSink sink : allSinks) {
                 sink.shutdown();
             }
         }
 
         public static void terminate() {
-            for ( LogSink sink : allSinks ) {
+            for (LogSink sink : allSinks) {
                 sink.terminate();
             }
         }
@@ -92,14 +99,24 @@ public interface LogSink<T extends LogSink.Element> {
     }
 
     interface Factory<T extends LogSink.Element> {
-        LogSink<T> create(String basePath, int rollInterval, DateFormat rollFormat, Pool<T> elementPool, boolean append, LogOutput outputBuffer, String header, LogSinkWriter<LogSinkImpl<T>> maybeWriter);
+        LogSink<T> create(String basePath, int rollInterval, DateFormat rollFormat,
+            Pool<T> elementPool, boolean append, LogOutput outputBuffer, String header,
+            LogSinkWriter<LogSinkImpl<T>> maybeWriter);
     }
 
     public static final Null NULL = new Null();
+
     public static class Null implements LogSink {
-        @Override public void write(Element e) {}
-        @Override public void shutdown() {}
-        @Override public void terminate() {}
-        @Override public void addInterceptor(Interceptor interceptor) {}
+        @Override
+        public void write(Element e) {}
+
+        @Override
+        public void shutdown() {}
+
+        @Override
+        public void terminate() {}
+
+        @Override
+        public void addInterceptor(Interceptor interceptor) {}
     }
 }

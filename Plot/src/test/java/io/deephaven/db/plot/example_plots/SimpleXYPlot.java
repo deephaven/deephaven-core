@@ -17,8 +17,8 @@ public class SimpleXYPlot {
         final Number[] y2 = {1.3, 3.2, 3.4};
 
         Figure fig = FigureFactory.figure()
-                .xInvert(true)
-                .plot("TestF", x1, y1);
+            .xInvert(true)
+            .plot("TestF", x1, y1);
         ExamplePlotUtils.display(fig);
     }
 

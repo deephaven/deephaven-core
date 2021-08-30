@@ -23,8 +23,7 @@ public final class StandaloneTableLocationKey implements ImmutableTableLocationK
         return INSTANCE;
     }
 
-    private StandaloneTableLocationKey() {
-    }
+    private StandaloneTableLocationKey() {}
 
     @Override
     public String getImplementationName() {
@@ -60,7 +59,8 @@ public final class StandaloneTableLocationKey implements ImmutableTableLocationK
     }
 
     @Override
-    public <PARTITION_VALUE_TYPE extends Comparable<PARTITION_VALUE_TYPE>> PARTITION_VALUE_TYPE getPartitionValue(@NotNull final String partitionKey) {
+    public <PARTITION_VALUE_TYPE extends Comparable<PARTITION_VALUE_TYPE>> PARTITION_VALUE_TYPE getPartitionValue(
+        @NotNull final String partitionKey) {
         throw new UnknownPartitionKeyException(partitionKey, this);
     }
 

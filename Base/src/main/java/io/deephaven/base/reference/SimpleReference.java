@@ -11,6 +11,7 @@ public interface SimpleReference<T> {
 
     /**
      * Retrieve the current referent.
+     * 
      * @return The current referent, which may be null.
      */
     T get();

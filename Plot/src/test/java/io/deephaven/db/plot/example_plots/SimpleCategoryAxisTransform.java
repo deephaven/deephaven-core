@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  *
  */
 
@@ -22,11 +22,11 @@ public class SimpleCategoryAxisTransform {
         final Number[] y2 = {18, -5, 0, 9, 12};
 
         Figure axs2 = catPlot("Test2", x2, y2)
-                .catPlot("Test1", x1, y1)
-                .xLabel("Cats")
-                .yLabel("Y")
-                .yTransform(AxisTransforms.SQRT)
-                .plotOrientation("H");
+            .catPlot("Test1", x1, y1)
+            .xLabel("Cats")
+            .yLabel("Y")
+            .yTransform(AxisTransforms.SQRT)
+            .plotOrientation("H");
 
         ExamplePlotUtils.display(axs2);
     }

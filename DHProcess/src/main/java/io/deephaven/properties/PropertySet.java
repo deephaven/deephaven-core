@@ -11,7 +11,8 @@ import java.util.Properties;
  * value can be of type int, long, boolean, or String. (Note: we may use a stronger type in the
  * future for a key, and may expand the types that a value can be.)
  *
- * <p>A property set interface present read-only access to the keys and values via
+ * <p>
+ * A property set interface present read-only access to the keys and values via
  * {@link #traverse(PropertyVisitor)}.
  *
  * @see PropertyVisitor
@@ -83,7 +84,7 @@ public interface PropertySet {
         @Override
         public void traverse(PropertyVisitor visitor) {
             for (Entry<Object, Object> entry : this.properties.entrySet()) {
-                visitor.visit((String)entry.getKey(), (String)entry.getValue());
+                visitor.visit((String) entry.getKey(), (String) entry.getValue());
             }
         }
     }

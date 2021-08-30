@@ -7,4 +7,5 @@ import jsinterop.annotations.JsType;
     isNative = true,
     name = "dhinternal.grpcWeb.transports.Transport.TransportFactory",
     namespace = JsPackage.GLOBAL)
-public interface TransportFactory {}
+public interface TransportFactory {
+}

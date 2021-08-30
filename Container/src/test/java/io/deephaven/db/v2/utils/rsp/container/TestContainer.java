@@ -19,7 +19,7 @@ import org.junit.Test;
 public class TestContainer {
 
     private final static Class<?>[] CONTAINER_TYPES =
-            new Class[]{ArrayContainer.class, BitmapContainer.class, RunContainer.class};
+        new Class[] {ArrayContainer.class, BitmapContainer.class, RunContainer.class};
 
     @Test
     public void testNames() {
@@ -27,7 +27,8 @@ public class TestContainer {
         assertTrue(new ArrayContainer().getContainerName().equals("array"));
         assertTrue(new RunContainer().getContainerName().equals("run"));
         assertTrue(new SingletonContainer((short) 1).getContainerName().equals("singleton"));
-        assertTrue(new TwoValuesContainer((short) 1, (short) 3).getContainerName().equals("twovalues"));
+        assertTrue(
+            new TwoValuesContainer((short) 1, (short) 3).getContainerName().equals("twovalues"));
         assertTrue(new SingleRangeContainer(1, 3).getContainerName().equals("singlerange"));
         if (ImmutableContainer.ENABLED) {
             assertTrue(Container.empty().getContainerName().equals("empty"));
@@ -88,7 +89,7 @@ public class TestContainer {
             for (Class<?> ct1 : CONTAINER_TYPES) {
                 Container ac1 = (Container) ct1.newInstance();
                 Container result = ac.and(ac1);
-                assertTrue(checkContent(result, new short[]{}));
+                assertTrue(checkContent(result, new short[] {}));
                 assertEquals(0, result.getCardinality());
             }
         }
@@ -112,7 +113,7 @@ public class TestContainer {
                 ac1.iset((short) 50004);
 
                 Container result = ac.and(ac1);
-                assertTrue(checkContent(result, new short[]{1}));
+                assertTrue(checkContent(result, new short[] {1}));
             }
         }
     }
@@ -143,7 +144,7 @@ public class TestContainer {
                 ac1.iset((short) 50004);
 
                 Container result = ac.and(ac1);
-                assertTrue(checkContent(result, new short[]{1, 5, (short) 50000}));
+                assertTrue(checkContent(result, new short[] {1, 5, (short) 50000}));
             }
         }
     }
@@ -175,7 +176,7 @@ public class TestContainer {
                 ac1.iset((short) 50004);
 
                 Container result = ac.and(ac1);
-                assertTrue(checkContent(result, new short[]{1, 5, (short) 50000}));
+                assertTrue(checkContent(result, new short[] {1, 5, (short) 50000}));
             }
         }
     }
@@ -204,7 +205,7 @@ public class TestContainer {
                 ac1.iset((short) 50001);
 
                 Container result = ac.and(ac1);
-                assertTrue(checkContent(result, new short[]{1, 5, (short) 50000, (short) 50001}));
+                assertTrue(checkContent(result, new short[] {1, 5, (short) 50000, (short) 50001}));
             }
         }
     }
@@ -238,9 +239,9 @@ public class TestContainer {
         assertTrue(c1 instanceof ArrayContainer);
         assertEquals(14, c1.getCardinality());
         assertTrue(checkContent(c1,
-                new short[]{0, 2, 4, (short) 65190, (short) 65191, (short) 65192, (short) 65193,
-                        (short) 65194, (short) 65195, (short) 65196, (short) 65197, (short) 65198,
-                        (short) 65199, (short) 65200}));
+            new short[] {0, 2, 4, (short) 65190, (short) 65191, (short) 65192, (short) 65193,
+                    (short) 65194, (short) 65195, (short) 65196, (short) 65197, (short) 65198,
+                    (short) 65199, (short) 65200}));
     }
 
     @Test
@@ -670,7 +671,7 @@ public class TestContainer {
 
         ArrayContainer ac1 = new ArrayContainer(); // empty iterator
         Container result = ac.or(ac1.getShortIterator());
-        assertTrue(checkContent(result, new short[]{1, 3, 5, (short) 50000, (short) 50001}));
+        assertTrue(checkContent(result, new short[] {1, 3, 5, (short) 50000, (short) 50001}));
     }
 
 
@@ -691,7 +692,7 @@ public class TestContainer {
 
         Container result = ac.or(ac1.getShortIterator());
         assertTrue(checkContent(result,
-                new short[]{1, 4, 5, (short) 50000, (short) 50002, (short) 50003, (short) 50004}));
+            new short[] {1, 4, 5, (short) 50000, (short) 50002, (short) 50003, (short) 50004}));
     }
 
     @Test
@@ -716,7 +717,7 @@ public class TestContainer {
         ac1.iset((short) 50004);
 
         Container result = ac.or(ac1.getShortIterator());
-        assertTrue(checkContent(result, new short[]{1, 3, 4, 5, (short) 50000, (short) 50001,
+        assertTrue(checkContent(result, new short[] {1, 3, 4, 5, (short) 50000, (short) 50001,
                 (short) 50002, (short) 50003, (short) 50004}));
     }
 
@@ -744,7 +745,7 @@ public class TestContainer {
 
 
         Container result = ac.or(ac1.getShortIterator());
-        assertTrue(checkContent(result, new short[]{1, 3, 4, 5, (short) 50000, (short) 50001,
+        assertTrue(checkContent(result, new short[] {1, 3, 4, 5, (short) 50000, (short) 50001,
                 (short) 50002, (short) 50003, (short) 50004, (short) 50011}));
     }
 
@@ -769,7 +770,7 @@ public class TestContainer {
         ac1.iset((short) 50001);
 
         Container result = ac.or(ac1.getShortIterator());
-        assertTrue(checkContent(result, new short[]{1, 3, 4, 5, (short) 50000, (short) 50001}));
+        assertTrue(checkContent(result, new short[] {1, 3, 4, 5, (short) 50000, (short) 50001}));
     }
 
     @Test
@@ -777,7 +778,7 @@ public class TestContainer {
         final Container c = Container.rangeOfOnes(4, 11); // sparse
         // assertTrue(c instanceof ArrayContainer);
         assertEquals(10 - 4 + 1, c.getCardinality());
-        assertTrue(checkContent(c, new short[]{4, 5, 6, 7, 8, 9, 10}));
+        assertTrue(checkContent(c, new short[] {4, 5, 6, 7, 8, 9, 10}));
     }
 
 
@@ -814,7 +815,7 @@ public class TestContainer {
     @Test
     public void testRunOptimize1() {
         ArrayContainer ac = new ArrayContainer();
-        for (short s : new short[]{1, 2, 3, 4, 5, 6, 7, 8, 9, (short) 50000, (short) 50001}) {
+        for (short s : new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9, (short) 50000, (short) 50001}) {
             ac.iset(s);
         }
         Container c = ac.runOptimize();
@@ -848,7 +849,7 @@ public class TestContainer {
     @Test
     public void testRunOptimize3() {
         RunContainer rc = new RunContainer();
-        for (short s : new short[]{1, 2, 3, 4, 5, 6, 7, 8, 9, (short) 50000, (short) 50001}) {
+        for (short s : new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9, (short) 50000, (short) 50001}) {
             rc.iset(s);
         }
         Container c = rc.runOptimize();
@@ -859,7 +860,7 @@ public class TestContainer {
     @Test
     public void testRunOptimize3A() {
         RunContainer rc = new RunContainer();
-        for (short s : new short[]{1, 3, 5, 7, 9, 11, 17, 21, (short) 50000, (short) 50002}) {
+        for (short s : new short[] {1, 3, 5, 7, 9, 11, 17, 21, (short) 50000, (short) 50002}) {
             rc.iset(s);
         }
         Container c = rc.runOptimize();
@@ -911,7 +912,7 @@ public class TestContainer {
 
         ArrayContainer ac1 = new ArrayContainer(); // empty iterator
         Container result = ac.xor(ac1.getShortIterator());
-        assertTrue(checkContent(result, new short[]{1, 3, 5, (short) 50000, (short) 50001}));
+        assertTrue(checkContent(result, new short[] {1, 3, 5, (short) 50000, (short) 50001}));
     }
 
     @Test
@@ -931,7 +932,7 @@ public class TestContainer {
 
         Container result = ac.xor(ac1.getShortIterator());
         assertTrue(checkContent(result,
-                new short[]{1, 4, 5, (short) 50000, (short) 50002, (short) 50003, (short) 50004}));
+            new short[] {1, 4, 5, (short) 50000, (short) 50002, (short) 50003, (short) 50004}));
     }
 
 
@@ -958,7 +959,7 @@ public class TestContainer {
 
         Container result = ac.xor(ac1.getShortIterator());
         assertTrue(checkContent(result,
-                new short[]{3, 4, (short) 50001, (short) 50002, (short) 50003, (short) 50004}));
+            new short[] {3, 4, (short) 50001, (short) 50002, (short) 50003, (short) 50004}));
     }
 
     @Test
@@ -966,7 +967,7 @@ public class TestContainer {
         ArrayContainer ac = new ArrayContainer();
         BitmapContainer bc = new BitmapContainer();
         RunContainer rc = new RunContainer();
-        for (short i : new short[]{0, 2, 17, Short.MAX_VALUE, -3, -1}) {
+        for (short i : new short[] {0, 2, 17, Short.MAX_VALUE, -3, -1}) {
             ac.iset(i);
             bc.iset(i);
             rc.iset(i);
@@ -976,9 +977,9 @@ public class TestContainer {
         assertEquals(expected, ac.toString());
         assertEquals(expected, bc.toString());
         String normalizedRCstr = rc.toString()
-                .replaceAll("\\d+\\]\\[", "")
-                .replace('[', '{')
-                .replaceFirst(",\\d+\\]", "}");
+            .replaceAll("\\d+\\]\\[", "")
+            .replace('[', '{')
+            .replaceFirst(",\\d+\\]", "}");
         assertEquals(expected, normalizedRCstr);
     }
 
@@ -1006,8 +1007,9 @@ public class TestContainer {
 
 
         Container result = ac.xor(ac1.getShortIterator());
-        assertTrue(checkContent(result, new short[]{3, 4, (short) 50001, (short) 50002, (short) 50003,
-                (short) 50004, (short) 50011}));
+        assertTrue(
+            checkContent(result, new short[] {3, 4, (short) 50001, (short) 50002, (short) 50003,
+                    (short) 50004, (short) 50011}));
     }
 
 
@@ -1031,15 +1033,15 @@ public class TestContainer {
         ac1.iset((short) 50001);
 
         Container result = ac.xor(ac1.getShortIterator());
-        assertTrue(checkContent(result, new short[]{3, 4}));
+        assertTrue(checkContent(result, new short[] {3, 4}));
     }
 
     @Test
     public void testSubsetOf() {
-        ContainerTestCommon.BoolContainerOp testOp = (Container c1, Container c2) ->
-                c1.subsetOf(c2);
-        ContainerTestCommon.BoolContainerOp validateOp = (Container c1, Container c2) ->
-                c1.and(c2).xor(c1).getCardinality() == 0;
+        ContainerTestCommon.BoolContainerOp testOp =
+            (Container c1, Container c2) -> c1.subsetOf(c2);
+        ContainerTestCommon.BoolContainerOp validateOp =
+            (Container c1, Container c2) -> c1.and(c2).xor(c1).getCardinality() == 0;
         ContainerTestCommon.doTestBoolOp(testOp, validateOp);
     }
 }

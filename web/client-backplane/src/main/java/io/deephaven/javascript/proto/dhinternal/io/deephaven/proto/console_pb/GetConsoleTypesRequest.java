@@ -9,18 +9,19 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesRequest",
     namespace = JsPackage.GLOBAL)
 public class GetConsoleTypesRequest {
-  public static native GetConsoleTypesRequest deserializeBinary(Uint8Array bytes);
+    public static native GetConsoleTypesRequest deserializeBinary(Uint8Array bytes);
 
-  public static native GetConsoleTypesRequest deserializeBinaryFromReader(
-      GetConsoleTypesRequest message, Object reader);
+    public static native GetConsoleTypesRequest deserializeBinaryFromReader(
+        GetConsoleTypesRequest message, Object reader);
 
-  public static native void serializeBinaryToWriter(GetConsoleTypesRequest message, Object writer);
+    public static native void serializeBinaryToWriter(GetConsoleTypesRequest message,
+        Object writer);
 
-  public static native Object toObject(boolean includeInstance, GetConsoleTypesRequest msg);
+    public static native Object toObject(boolean includeInstance, GetConsoleTypesRequest msg);
 
-  public native Uint8Array serializeBinary();
+    public native Uint8Array serializeBinary();
 
-  public native Object toObject();
+    public native Object toObject();
 
-  public native Object toObject(boolean includeInstance);
+    public native Object toObject(boolean includeInstance);
 }

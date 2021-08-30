@@ -22,7 +22,7 @@ public class DbImageImpl implements DbImage, Externalizable {
     private transient BufferedImage image;
 
     /**
-     * This method is only present to support Externalizable.  It should not be used otherwise.
+     * This method is only present to support Externalizable. It should not be used otherwise.
      */
     public DbImageImpl() {
         this.name = null;
@@ -99,7 +99,8 @@ public class DbImageImpl implements DbImage, Externalizable {
     @Override
     public byte[] getBytes() {
         if (bytes == null && image == null) {
-            throw new IllegalStateException("Bytes and Image are both null.  The zero argument constructor should only be used during deserialization.");
+            throw new IllegalStateException(
+                "Bytes and Image are both null.  The zero argument constructor should only be used during deserialization.");
         }
 
         if (bytes == null) {
@@ -120,7 +121,8 @@ public class DbImageImpl implements DbImage, Externalizable {
     @Override
     public BufferedImage getBufferedImage() {
         if (bytes == null && image == null) {
-            throw new IllegalStateException("Bytes and Image are both null.  The zero argument constructor should only be used during deserialization.");
+            throw new IllegalStateException(
+                "Bytes and Image are both null.  The zero argument constructor should only be used during deserialization.");
         }
 
         if (image == null) {
@@ -185,7 +187,8 @@ public class DbImageImpl implements DbImage, Externalizable {
     @Override
     public void write(final String formatName, final String file) throws IOException {
         if (!ImageIO.write(getBufferedImage(), formatName, new java.io.File(file))) {
-            throw new IllegalArgumentException("No appropriate image writer found.  formatName=" + formatName);
+            throw new IllegalArgumentException(
+                "No appropriate image writer found.  formatName=" + formatName);
         }
     }
 
@@ -197,7 +200,8 @@ public class DbImageImpl implements DbImage, Externalizable {
 
     @Override
     public DbImageImpl resize(final int width, final int height, final ImageScalingAlgorithm algo) {
-        java.awt.Image tmp = getBufferedImage().getScaledInstance(width, height, algo == null ? ImageScalingAlgorithm.DEFAULT.get() : algo.get());
+        java.awt.Image tmp = getBufferedImage().getScaledInstance(width, height,
+            algo == null ? ImageScalingAlgorithm.DEFAULT.get() : algo.get());
         BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = resized.createGraphics();
         g2d.drawImage(tmp, 0, 0, null);
@@ -260,22 +264,25 @@ public class DbImageImpl implements DbImage, Externalizable {
         }
     }
 
-    ////////////// Utility functions for dealing with images.  //////////////
+    ////////////// Utility functions for dealing with images. //////////////
 
 
     /**
      * Converts a <code>BufferedImage</code> to a byte array.
      *
-     * @param image      input image.
+     * @param image input image.
      * @param formatName output format name (e.g. "JPEG")
-     * @return byte array representation of the image.  This is the same as the contents of an image file of the specified type.
+     * @return byte array representation of the image. This is the same as the contents of an image
+     *         file of the specified type.
      * @throws IOException problem loading the image.
      */
-    static byte[] image2Bytes(@NotNull final BufferedImage image, final String formatName) throws IOException {
+    static byte[] image2Bytes(@NotNull final BufferedImage image, final String formatName)
+        throws IOException {
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
         if (!ImageIO.write(image, formatName, bos)) {
-            throw new IllegalArgumentException("No appropriate image writer found.  formatName=" + formatName);
+            throw new IllegalArgumentException(
+                "No appropriate image writer found.  formatName=" + formatName);
         }
 
         bos.close();

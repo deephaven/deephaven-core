@@ -5,11 +5,11 @@
 package io.deephaven.base;
 
 /**
- * This interface specifies a safe clone operation that never throws a CloneNotSupported
- * exception, and also allows a bound to be placed on the result object's type.
+ * This interface specifies a safe clone operation that never throws a CloneNotSupported exception,
+ * and also allows a bound to be placed on the result object's type.
  *
- * Note that any class that extends a base that implements SafeCloneable must *always*
- * re-implement the safeClone method.
+ * Note that any class that extends a base that implements SafeCloneable must *always* re-implement
+ * the safeClone method.
  */
 public interface SafeCloneable<T> extends Cloneable {
     T safeClone();

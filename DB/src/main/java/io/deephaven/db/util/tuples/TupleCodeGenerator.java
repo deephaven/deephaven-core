@@ -22,13 +22,16 @@ import java.util.stream.Stream;
 public class TupleCodeGenerator {
 
     /*
-     * TODO: Support getters for tuple elements? No use case currently, and might encourage mutations.
-     * TODO: Generify Object elements? No use case without the above, I don't think.
-     * TODO: Refactor to make it possible to generate arbitrary n-tuples, and eliminate duplication between generateDouble and generateTriple.
+     * TODO: Support getters for tuple elements? No use case currently, and might encourage
+     * mutations. TODO: Generify Object elements? No use case without the above, I don't think.
+     * TODO: Refactor to make it possible to generate arbitrary n-tuples, and eliminate duplication
+     * between generateDouble and generateTriple.
      */
 
-    private static final String OUTPUT_PACKAGE = TupleCodeGenerator.class.getPackage().getName() + ".generated";
-    private static final File OUTPUT_RELATIVE_PATH = new File(new File("DB", MAIN_SRC), OUTPUT_PACKAGE.replace('.', File.separatorChar));
+    private static final String OUTPUT_PACKAGE =
+        TupleCodeGenerator.class.getPackage().getName() + ".generated";
+    private static final File OUTPUT_RELATIVE_PATH =
+        new File(new File("DB", MAIN_SRC), OUTPUT_PACKAGE.replace('.', File.separatorChar));
 
     private static final String LHS = "$lhs$";
     private static final String RHS = "$rhs$";
@@ -39,17 +42,16 @@ public class TupleCodeGenerator {
     private static final String NEW_LINE = System.getProperty("line.separator");
 
     private static final String DEFAULT_IMPORTS[] = Stream.of(
-            CanonicalizableTuple.class,
-            Externalizable.class,
-            IOException.class,
-            NotNull.class,
-            ObjectInput.class,
-            ObjectOutput.class,
-            SerializationUtils.class,
-            StreamingExternalizable.class,
-            TIntObjectMap.class,
-            UnaryOperator.class
-    ).map(Class::getName).toArray(String[]::new);
+        CanonicalizableTuple.class,
+        Externalizable.class,
+        IOException.class,
+        NotNull.class,
+        ObjectInput.class,
+        ObjectOutput.class,
+        SerializationUtils.class,
+        StreamingExternalizable.class,
+        TIntObjectMap.class,
+        UnaryOperator.class).map(Class::getName).toArray(String[]::new);
 
     private static final String CLASS_NAME_SUFFIX = "Tuple";
     private static final String ELEMENT1 = "element1";
@@ -86,13 +88,13 @@ public class TupleCodeGenerator {
         private final String imports[];
 
         ElementType(@NotNull final String nameText,
-                    @NotNull final Class<?> implementation,
-                    @NotNull final String equalsText,
-                    @NotNull final String hashCodeText,
-                    @NotNull final String compareToText,
-                    @NotNull final String writeExternalText,
-                    @NotNull final String readExternalText,
-                    @NotNull final Class... importClasses) {
+            @NotNull final Class<?> implementation,
+            @NotNull final String equalsText,
+            @NotNull final String hashCodeText,
+            @NotNull final String compareToText,
+            @NotNull final String writeExternalText,
+            @NotNull final String readExternalText,
+            @NotNull final Class... importClasses) {
             this.nameText = nameText;
             this.implementation = implementation;
             this.equalsText = equalsText;
@@ -123,15 +125,20 @@ public class TupleCodeGenerator {
             return hashCodeText.replace(VAL, elementName);
         }
 
-        private String getCompareToText(@NotNull final String lhsName, @NotNull final String rhsName) {
+        private String getCompareToText(@NotNull final String lhsName,
+            @NotNull final String rhsName) {
             return compareToText.replace(LHS, lhsName).replace(RHS, rhsName);
         }
 
-        private String getWriteExternalText(@SuppressWarnings("SameParameterValue") @NotNull final String outName, @NotNull final String elementName) {
+        private String getWriteExternalText(
+            @SuppressWarnings("SameParameterValue") @NotNull final String outName,
+            @NotNull final String elementName) {
             return writeExternalText.replace(OUT, outName).replace(VAL, elementName);
         }
 
-        private String getReadExternalText(@SuppressWarnings("SameParameterValue") @NotNull final String inName, @NotNull final String elementName) {
+        private String getReadExternalText(
+            @SuppressWarnings("SameParameterValue") @NotNull final String inName,
+            @NotNull final String elementName) {
             return readExternalText.replace(IN, inName).replace(VAL, elementName);
         }
 
@@ -140,7 +147,8 @@ public class TupleCodeGenerator {
         }
     }
 
-    private static final Map<Class, ElementType> PRIMITIVE_CLASS_TO_ELEMENT_TYPE = Collections.unmodifiableMap(Arrays.stream(ElementType.values())
+    private static final Map<Class, ElementType> PRIMITIVE_CLASS_TO_ELEMENT_TYPE =
+        Collections.unmodifiableMap(Arrays.stream(ElementType.values())
             .filter(et -> et != ElementType.OBJECT)
             .collect(Collectors.toMap(ElementType::getImplementation, Function.identity())));
 
@@ -152,12 +160,14 @@ public class TupleCodeGenerator {
      */
     public static String getTupleClassName(@NotNull final Class... classes) {
         if (classes.length < 2) {
-            throw new IllegalArgumentException("There are no tuple class names available for " + Arrays.toString(classes));
+            throw new IllegalArgumentException(
+                "There are no tuple class names available for " + Arrays.toString(classes));
         }
         if (classes.length < 4) {
             return Arrays.stream(classes)
-                    .map(c -> PRIMITIVE_CLASS_TO_ELEMENT_TYPE.getOrDefault(c, ElementType.OBJECT).getNameText())
-                    .collect(Collectors.joining()) + CLASS_NAME_SUFFIX;
+                .map(c -> PRIMITIVE_CLASS_TO_ELEMENT_TYPE.getOrDefault(c, ElementType.OBJECT)
+                    .getNameText())
+                .collect(Collectors.joining()) + CLASS_NAME_SUFFIX;
         }
         return ArrayTuple.class.getSimpleName();
     }
@@ -173,10 +183,12 @@ public class TupleCodeGenerator {
     }
 
     private String generateClassName(@NotNull final ElementType... types) {
-        return Arrays.stream(types).map(ElementType::getNameText).collect(Collectors.joining()) + CLASS_NAME_SUFFIX;
+        return Arrays.stream(types).map(ElementType::getNameText).collect(Collectors.joining())
+            + CLASS_NAME_SUFFIX;
     }
 
-    private String generateDouble(@NotNull final String className, @NotNull final ElementType type1, @NotNull final ElementType type2) {
+    private String generateDouble(@NotNull final String className, @NotNull final ElementType type1,
+        @NotNull final ElementType type2) {
         final Indenter indenter = new Indenter();
         final StringBuilder code = new StringBuilder(1024);
         final String class1Name = type1.getImplementationName();
@@ -188,39 +200,50 @@ public class TupleCodeGenerator {
 
         code.append(NEW_LINE);
 
-        Stream.of(DEFAULT_IMPORTS, type1.getImports(), type2.getImports()).flatMap(Arrays::stream).filter(i -> !i.startsWith("java.")).sorted().distinct().forEachOrdered(
-                i -> code.append("import ").append(i).append(';').append(NEW_LINE)
-        );
+        Stream.of(DEFAULT_IMPORTS, type1.getImports(), type2.getImports()).flatMap(Arrays::stream)
+            .filter(i -> !i.startsWith("java.")).sorted().distinct().forEachOrdered(
+                i -> code.append("import ").append(i).append(';').append(NEW_LINE));
 
         code.append(NEW_LINE);
 
-        Stream.of(DEFAULT_IMPORTS, type1.getImports(), type2.getImports()).flatMap(Arrays::stream).filter(i -> i.startsWith("java.")).sorted().distinct().forEachOrdered(
-                i -> code.append("import ").append(i).append(';').append(NEW_LINE)
-        );
+        Stream.of(DEFAULT_IMPORTS, type1.getImports(), type2.getImports()).flatMap(Arrays::stream)
+            .filter(i -> i.startsWith("java.")).sorted().distinct().forEachOrdered(
+                i -> code.append("import ").append(i).append(';').append(NEW_LINE));
 
         code.append(NEW_LINE);
 
         code.append("/**").append(NEW_LINE);
-        code.append(" * <p>2-Tuple (double) key class composed of ").append(class1Name).append(" and ").append(class2Name).append(" elements.").append(NEW_LINE);
-        code.append(" * <p>Generated by {@link ").append(TupleCodeGenerator.class.getName()).append("}.").append(NEW_LINE);
+        code.append(" * <p>2-Tuple (double) key class composed of ").append(class1Name)
+            .append(" and ").append(class2Name).append(" elements.").append(NEW_LINE);
+        code.append(" * <p>Generated by {@link ").append(TupleCodeGenerator.class.getName())
+            .append("}.").append(NEW_LINE);
         code.append(" */").append(NEW_LINE);
-        code.append("public class ").append(className).append(" implements Comparable<").append(className).append(">, Externalizable, StreamingExternalizable, CanonicalizableTuple<").append(className).append("> {").append(NEW_LINE);
+        code.append("public class ").append(className).append(" implements Comparable<")
+            .append(className)
+            .append(">, Externalizable, StreamingExternalizable, CanonicalizableTuple<")
+            .append(className).append("> {").append(NEW_LINE);
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("private static final long serialVersionUID = 1L;").append(NEW_LINE);
+        code.append(indenter).append("private static final long serialVersionUID = 1L;")
+            .append(NEW_LINE);
         code.append(NEW_LINE);
-        code.append(indenter).append("private ").append(class1Name).append(' ').append(ELEMENT1).append(';').append(NEW_LINE);
-        code.append(indenter).append("private ").append(class2Name).append(' ').append(ELEMENT2).append(';').append(NEW_LINE);
+        code.append(indenter).append("private ").append(class1Name).append(' ').append(ELEMENT1)
+            .append(';').append(NEW_LINE);
+        code.append(indenter).append("private ").append(class2Name).append(' ').append(ELEMENT2)
+            .append(';').append(NEW_LINE);
         code.append(NEW_LINE);
-        code.append(indenter).append("private transient int ").append(CACHED_HASH_CODE).append(';').append(NEW_LINE);
+        code.append(indenter).append("private transient int ").append(CACHED_HASH_CODE).append(';')
+            .append(NEW_LINE);
 
         code.append(NEW_LINE);
 
         code.append(indenter).append("public ").append(className).append('(').append(NEW_LINE);
         indenter.increaseLevel(2);
-        code.append(indenter).append("final ").append(class1Name).append(' ').append(ELEMENT1).append(',').append(NEW_LINE);
-        code.append(indenter).append("final ").append(class2Name).append(' ').append(ELEMENT2).append(NEW_LINE);
+        code.append(indenter).append("final ").append(class1Name).append(' ').append(ELEMENT1)
+            .append(',').append(NEW_LINE);
+        code.append(indenter).append("final ").append(class2Name).append(' ').append(ELEMENT2)
+            .append(NEW_LINE);
         indenter.decreaseLevel(2);
         code.append(indenter).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -235,7 +258,9 @@ public class TupleCodeGenerator {
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("/** Public no-arg constructor for {@link Externalizable} support only. <em>Application code should not use this!</em> **/").append(NEW_LINE);
+        code.append(indenter).append(
+            "/** Public no-arg constructor for {@link Externalizable} support only. <em>Application code should not use this!</em> **/")
+            .append(NEW_LINE);
         code.append(indenter).append("public ").append(className).append("() {").append(NEW_LINE);
         code.append(indenter).append('}').append(NEW_LINE);
 
@@ -243,23 +268,29 @@ public class TupleCodeGenerator {
 
         code.append(indenter).append("private void initialize(").append(NEW_LINE);
         indenter.increaseLevel(2);
-        code.append(indenter).append("final ").append(class1Name).append(' ').append(ELEMENT1).append(',').append(NEW_LINE);
-        code.append(indenter).append("final ").append(class2Name).append(' ').append(ELEMENT2).append(NEW_LINE);
+        code.append(indenter).append("final ").append(class1Name).append(' ').append(ELEMENT1)
+            .append(',').append(NEW_LINE);
+        code.append(indenter).append("final ").append(class2Name).append(' ').append(ELEMENT2)
+            .append(NEW_LINE);
         indenter.decreaseLevel(2);
         code.append(indenter).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
-        code.append(indenter).append("this.").append(ELEMENT1).append(" = ").append(ELEMENT1).append(';').append(NEW_LINE);
-        code.append(indenter).append("this.").append(ELEMENT2).append(" = ").append(ELEMENT2).append(';').append(NEW_LINE);
+        code.append(indenter).append("this.").append(ELEMENT1).append(" = ").append(ELEMENT1)
+            .append(';').append(NEW_LINE);
+        code.append(indenter).append("this.").append(ELEMENT2).append(" = ").append(ELEMENT2)
+            .append(';').append(NEW_LINE);
         code.append(indenter).append(CACHED_HASH_CODE).append(" = (31 +").append(NEW_LINE);
         indenter.increaseLevel(2);
-        code.append(indenter).append(type1.getHashCodeText(ELEMENT1)).append(") * 31 +").append(NEW_LINE);
+        code.append(indenter).append(type1.getHashCodeText(ELEMENT1)).append(") * 31 +")
+            .append(NEW_LINE);
         code.append(indenter).append(type2.getHashCodeText(ELEMENT2)).append(';').append(NEW_LINE);
         indenter.decreaseLevel(3);
         code.append(indenter).append('}').append(NEW_LINE);
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("public final ").append(class1Name).append(" getFirstElement() {").append(NEW_LINE);
+        code.append(indenter).append("public final ").append(class1Name)
+            .append(" getFirstElement() {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return ").append(ELEMENT1).append(';').append(NEW_LINE);
         indenter.decreaseLevel();
@@ -267,7 +298,8 @@ public class TupleCodeGenerator {
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("public final ").append(class2Name).append(" getSecondElement() {").append(NEW_LINE);
+        code.append(indenter).append("public final ").append(class2Name)
+            .append(" getSecondElement() {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return ").append(ELEMENT2).append(';').append(NEW_LINE);
         indenter.decreaseLevel();
@@ -278,29 +310,38 @@ public class TupleCodeGenerator {
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final int hashCode() {").append(NEW_LINE);
         indenter.increaseLevel();
-        code.append(indenter).append("return ").append(CACHED_HASH_CODE).append(';').append(NEW_LINE);
+        code.append(indenter).append("return ").append(CACHED_HASH_CODE).append(';')
+            .append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
 
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final boolean equals(final Object ").append(OTHER).append(") {").append(NEW_LINE);
+        code.append(indenter).append("public final boolean equals(final Object ").append(OTHER)
+            .append(") {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("if (this == ").append(OTHER).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return true;").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
-        code.append(indenter).append("if (").append(OTHER).append(" == null || getClass() != other.getClass()) {").append(NEW_LINE);
+        code.append(indenter).append("if (").append(OTHER)
+            .append(" == null || getClass() != other.getClass()) {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return false;").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
-        code.append(indenter).append("final ").append(className).append(' ').append(TYPED_OTHER).append(" = (").append(className).append(") ").append(OTHER).append(';').append(NEW_LINE);
+        code.append(indenter).append("final ").append(className).append(' ').append(TYPED_OTHER)
+            .append(" = (").append(className).append(") ").append(OTHER).append(';')
+            .append(NEW_LINE);
         code.append(indenter).append("// @formatter:off").append(NEW_LINE);
-        code.append(indenter).append("return ").append(type1.getEqualsText(ELEMENT1, TYPED_OTHER + '.' + ELEMENT1)).append(" &&").append(NEW_LINE);
-        code.append(indenter).append("       ").append(type2.getEqualsText(ELEMENT2, TYPED_OTHER + '.' + ELEMENT2)).append(';').append(NEW_LINE);
+        code.append(indenter).append("return ")
+            .append(type1.getEqualsText(ELEMENT1, TYPED_OTHER + '.' + ELEMENT1)).append(" &&")
+            .append(NEW_LINE);
+        code.append(indenter).append("       ")
+            .append(type2.getEqualsText(ELEMENT2, TYPED_OTHER + '.' + ELEMENT2)).append(';')
+            .append(NEW_LINE);
         code.append(indenter).append("// @formatter:on").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
@@ -308,7 +349,8 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final int compareTo(@NotNull final ").append(className).append(' ').append(OTHER).append(") {").append(NEW_LINE);
+        code.append(indenter).append("public final int compareTo(@NotNull final ").append(className)
+            .append(' ').append(OTHER).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("if (this == ").append(OTHER).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -317,8 +359,12 @@ public class TupleCodeGenerator {
         code.append(indenter).append('}').append(NEW_LINE);
         code.append(indenter).append("int comparison;").append(NEW_LINE);
         code.append(indenter).append("// @formatter:off").append(NEW_LINE);
-        code.append(indenter).append("return 0 != (comparison = ").append(type1.getCompareToText(ELEMENT1, OTHER + '.' + ELEMENT1)).append(") ? comparison :").append(NEW_LINE);
-        code.append(indenter).append("       ").append(type2.getCompareToText(ELEMENT2, OTHER + '.' + ELEMENT2)).append(";").append(NEW_LINE);
+        code.append(indenter).append("return 0 != (comparison = ")
+            .append(type1.getCompareToText(ELEMENT1, OTHER + '.' + ELEMENT1))
+            .append(") ? comparison :").append(NEW_LINE);
+        code.append(indenter).append("       ")
+            .append(type2.getCompareToText(ELEMENT2, OTHER + '.' + ELEMENT2)).append(";")
+            .append(NEW_LINE);
         code.append(indenter).append("// @formatter:on").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
@@ -326,20 +372,28 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public void writeExternal(@NotNull final ObjectOutput out) throws IOException {").append(NEW_LINE);
+        code.append(indenter)
+            .append(
+                "public void writeExternal(@NotNull final ObjectOutput out) throws IOException {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
-        code.append(indenter).append(type1.getWriteExternalText("out", ELEMENT1)).append(';').append(NEW_LINE);
-        code.append(indenter).append(type2.getWriteExternalText("out", ELEMENT2)).append(';').append(NEW_LINE);
+        code.append(indenter).append(type1.getWriteExternalText("out", ELEMENT1)).append(';')
+            .append(NEW_LINE);
+        code.append(indenter).append(type2.getWriteExternalText("out", ELEMENT2)).append(';')
+            .append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
 
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public void readExternal(@NotNull final ObjectInput in) throws IOException, ClassNotFoundException {").append(NEW_LINE);
+        code.append(indenter).append(
+            "public void readExternal(@NotNull final ObjectInput in) throws IOException, ClassNotFoundException {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("initialize(").append(NEW_LINE);
-        code.append(indenter.increaseLevel(2)).append(type1.getReadExternalText("in", ELEMENT1)).append(',').append(NEW_LINE);
+        code.append(indenter.increaseLevel(2)).append(type1.getReadExternalText("in", ELEMENT1))
+            .append(',').append(NEW_LINE);
         code.append(indenter).append(type2.getReadExternalText("in", ELEMENT2)).append(NEW_LINE);
         code.append(indenter.decreaseLevel(2)).append(");").append(NEW_LINE);
         indenter.decreaseLevel();
@@ -348,17 +402,25 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {").append(NEW_LINE);
+        code.append(indenter).append(
+            "public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
         if (type1 != ElementType.OBJECT) {
-            code.append(indenter).append(type1.getWriteExternalText("out", ELEMENT1)).append(';').append(NEW_LINE);
+            code.append(indenter).append(type1.getWriteExternalText("out", ELEMENT1)).append(';')
+                .append(NEW_LINE);
         } else {
-            code.append(indenter).append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 0, ").append(ELEMENT1).append(");").append(NEW_LINE);
+            code.append(indenter)
+                .append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 0, ")
+                .append(ELEMENT1).append(");").append(NEW_LINE);
         }
         if (type2 != ElementType.OBJECT) {
-            code.append(indenter).append(type2.getWriteExternalText("out", ELEMENT2)).append(';').append(NEW_LINE);
+            code.append(indenter).append(type2.getWriteExternalText("out", ELEMENT2)).append(';')
+                .append(NEW_LINE);
         } else {
-            code.append(indenter).append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 1, ").append(ELEMENT2).append(");").append(NEW_LINE);
+            code.append(indenter)
+                .append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 1, ")
+                .append(ELEMENT2).append(");").append(NEW_LINE);
         }
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
@@ -366,18 +428,26 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {").append(NEW_LINE);
+        code.append(indenter).append(
+            "public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("initialize(").append(NEW_LINE);
         if (type1 != ElementType.OBJECT) {
-            code.append(indenter.increaseLevel(2)).append(type1.getReadExternalText("in", ELEMENT1)).append(',').append(NEW_LINE);
+            code.append(indenter.increaseLevel(2)).append(type1.getReadExternalText("in", ELEMENT1))
+                .append(',').append(NEW_LINE);
         } else {
-            code.append(indenter.increaseLevel(2)).append("StreamingExternalizable.readObjectElement(in, cachedReaders, 0)").append(',').append(NEW_LINE);
+            code.append(indenter.increaseLevel(2))
+                .append("StreamingExternalizable.readObjectElement(in, cachedReaders, 0)")
+                .append(',').append(NEW_LINE);
         }
         if (type2 != ElementType.OBJECT) {
-            code.append(indenter).append(type2.getReadExternalText("in", ELEMENT2)).append(NEW_LINE);
+            code.append(indenter).append(type2.getReadExternalText("in", ELEMENT2))
+                .append(NEW_LINE);
         } else {
-            code.append(indenter).append("StreamingExternalizable.readObjectElement(in, cachedReaders, 1)").append(NEW_LINE);
+            code.append(indenter)
+                .append("StreamingExternalizable.readObjectElement(in, cachedReaders, 1)")
+                .append(NEW_LINE);
         }
         code.append(indenter.decreaseLevel(2)).append(");").append(NEW_LINE);
         indenter.decreaseLevel();
@@ -388,7 +458,8 @@ public class TupleCodeGenerator {
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public String toString() {").append(NEW_LINE);
         indenter.increaseLevel();
-        code.append(indenter).append("return \"").append(className).append("{\" +").append(NEW_LINE);
+        code.append(indenter).append("return \"").append(className).append("{\" +")
+            .append(NEW_LINE);
         indenter.increaseLevel(2);
         code.append(indenter).append(ELEMENT1).append(" + \", \" +").append(NEW_LINE);
         code.append(indenter).append(ELEMENT2).append(" + '}';").append(NEW_LINE);
@@ -398,28 +469,44 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public ").append(className).append(" canonicalize(@NotNull final UnaryOperator<Object> canonicalizer) {").append(NEW_LINE);
+        code.append(indenter).append("public ").append(className)
+            .append(" canonicalize(@NotNull final UnaryOperator<Object> canonicalizer) {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
         if (firstIsObject) {
-            code.append(indenter).append("final ").append(class1Name).append(' ').append(CANONICALIZED_ELEMENT1).append(" = canonicalizer.apply(").append(ELEMENT1).append(");").append(NEW_LINE);
+            code.append(indenter).append("final ").append(class1Name).append(' ')
+                .append(CANONICALIZED_ELEMENT1).append(" = canonicalizer.apply(").append(ELEMENT1)
+                .append(");").append(NEW_LINE);
         }
         if (secondIsObject) {
-            code.append(indenter).append("final ").append(class2Name).append(' ').append(CANONICALIZED_ELEMENT2).append(" = canonicalizer.apply(").append(ELEMENT2).append(");").append(NEW_LINE);
+            code.append(indenter).append("final ").append(class2Name).append(' ')
+                .append(CANONICALIZED_ELEMENT2).append(" = canonicalizer.apply(").append(ELEMENT2)
+                .append(");").append(NEW_LINE);
         }
         if (firstIsObject && secondIsObject) {
-            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ").append(ELEMENT1).append(" && ").append(CANONICALIZED_ELEMENT2).append(" == ").append(ELEMENT2).append(NEW_LINE);
+            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ")
+                .append(ELEMENT1).append(" && ").append(CANONICALIZED_ELEMENT2).append(" == ")
+                .append(ELEMENT2).append(NEW_LINE);
             indenter.increaseLevel(2);
-            code.append(indenter).append("? this : new ").append(className).append('(').append(CANONICALIZED_ELEMENT1).append(", ").append(CANONICALIZED_ELEMENT2).append(");").append(NEW_LINE);
+            code.append(indenter).append("? this : new ").append(className).append('(')
+                .append(CANONICALIZED_ELEMENT1).append(", ").append(CANONICALIZED_ELEMENT2)
+                .append(");").append(NEW_LINE);
             indenter.decreaseLevel(2);
         } else if (firstIsObject) {
-            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ").append(ELEMENT1).append(NEW_LINE);
+            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ")
+                .append(ELEMENT1).append(NEW_LINE);
             indenter.increaseLevel(2);
-            code.append(indenter).append("? this : new ").append(className).append('(').append(CANONICALIZED_ELEMENT1).append(", ").append(ELEMENT2).append(");").append(NEW_LINE);
+            code.append(indenter).append("? this : new ").append(className).append('(')
+                .append(CANONICALIZED_ELEMENT1).append(", ").append(ELEMENT2).append(");")
+                .append(NEW_LINE);
             indenter.decreaseLevel(2);
         } else if (secondIsObject) {
-            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT2).append(" == ").append(ELEMENT2).append(NEW_LINE);
+            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT2).append(" == ")
+                .append(ELEMENT2).append(NEW_LINE);
             indenter.increaseLevel(2);
-            code.append(indenter).append("? this : new ").append(className).append('(').append(ELEMENT1).append(", ").append(CANONICALIZED_ELEMENT2).append(");").append(NEW_LINE);
+            code.append(indenter).append("? this : new ").append(className).append('(')
+                .append(ELEMENT1).append(", ").append(CANONICALIZED_ELEMENT2).append(");")
+                .append(NEW_LINE);
             indenter.decreaseLevel(2);
         } else {
             code.append(indenter).append("return this;").append(NEW_LINE);
@@ -432,7 +519,8 @@ public class TupleCodeGenerator {
         return code.toString();
     }
 
-    private String generateTriple(@NotNull final String className, @NotNull final ElementType type1, @NotNull final ElementType type2, @NotNull final ElementType type3) {
+    private String generateTriple(@NotNull final String className, @NotNull final ElementType type1,
+        @NotNull final ElementType type2, @NotNull final ElementType type3) {
         final Indenter indenter = new Indenter();
         final StringBuilder code = new StringBuilder(1024);
         final String class1Name = type1.getImplementationName();
@@ -446,41 +534,57 @@ public class TupleCodeGenerator {
 
         code.append(NEW_LINE);
 
-        Stream.of(DEFAULT_IMPORTS, type1.getImports(), type2.getImports(), type3.getImports()).flatMap(Arrays::stream).filter(i -> !i.startsWith("java.")).sorted().distinct().forEachOrdered(
-                i -> code.append("import ").append(i).append(';').append(NEW_LINE)
-        );
+        Stream.of(DEFAULT_IMPORTS, type1.getImports(), type2.getImports(), type3.getImports())
+            .flatMap(Arrays::stream).filter(i -> !i.startsWith("java.")).sorted().distinct()
+            .forEachOrdered(
+                i -> code.append("import ").append(i).append(';').append(NEW_LINE));
 
         code.append(NEW_LINE);
 
-        Stream.of(DEFAULT_IMPORTS, type1.getImports(), type2.getImports(), type3.getImports()).flatMap(Arrays::stream).filter(i -> i.startsWith("java.")).sorted().distinct().forEachOrdered(
-                i -> code.append("import ").append(i).append(';').append(NEW_LINE)
-        );
+        Stream.of(DEFAULT_IMPORTS, type1.getImports(), type2.getImports(), type3.getImports())
+            .flatMap(Arrays::stream).filter(i -> i.startsWith("java.")).sorted().distinct()
+            .forEachOrdered(
+                i -> code.append("import ").append(i).append(';').append(NEW_LINE));
 
         code.append(NEW_LINE);
 
         code.append("/**").append(NEW_LINE);
-        code.append(" * <p>3-Tuple (triple) key class composed of ").append(class1Name).append(", ").append(class2Name).append(", and ").append(class3Name).append(" elements.").append(NEW_LINE);
-        code.append(" * <p>Generated by {@link ").append(TupleCodeGenerator.class.getName()).append("}.").append(NEW_LINE);
+        code.append(" * <p>3-Tuple (triple) key class composed of ").append(class1Name).append(", ")
+            .append(class2Name).append(", and ").append(class3Name).append(" elements.")
+            .append(NEW_LINE);
+        code.append(" * <p>Generated by {@link ").append(TupleCodeGenerator.class.getName())
+            .append("}.").append(NEW_LINE);
         code.append(" */").append(NEW_LINE);
-        code.append("public class ").append(className).append(" implements Comparable<").append(className).append(">, Externalizable, StreamingExternalizable, CanonicalizableTuple<").append(className).append("> {").append(NEW_LINE);
+        code.append("public class ").append(className).append(" implements Comparable<")
+            .append(className)
+            .append(">, Externalizable, StreamingExternalizable, CanonicalizableTuple<")
+            .append(className).append("> {").append(NEW_LINE);
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("private static final long serialVersionUID = 1L;").append(NEW_LINE);
+        code.append(indenter).append("private static final long serialVersionUID = 1L;")
+            .append(NEW_LINE);
         code.append(NEW_LINE);
-        code.append(indenter).append("private ").append(class1Name).append(' ').append(ELEMENT1).append(';').append(NEW_LINE);
-        code.append(indenter).append("private ").append(class2Name).append(' ').append(ELEMENT2).append(';').append(NEW_LINE);
-        code.append(indenter).append("private ").append(class3Name).append(' ').append(ELEMENT3).append(';').append(NEW_LINE);
+        code.append(indenter).append("private ").append(class1Name).append(' ').append(ELEMENT1)
+            .append(';').append(NEW_LINE);
+        code.append(indenter).append("private ").append(class2Name).append(' ').append(ELEMENT2)
+            .append(';').append(NEW_LINE);
+        code.append(indenter).append("private ").append(class3Name).append(' ').append(ELEMENT3)
+            .append(';').append(NEW_LINE);
         code.append(NEW_LINE);
-        code.append(indenter).append("private transient int ").append(CACHED_HASH_CODE).append(';').append(NEW_LINE);
+        code.append(indenter).append("private transient int ").append(CACHED_HASH_CODE).append(';')
+            .append(NEW_LINE);
 
         code.append(NEW_LINE);
 
         code.append(indenter).append("public ").append(className).append('(').append(NEW_LINE);
         indenter.increaseLevel(2);
-        code.append(indenter).append("final ").append(class1Name).append(' ').append(ELEMENT1).append(',').append(NEW_LINE);
-        code.append(indenter).append("final ").append(class2Name).append(' ').append(ELEMENT2).append(',').append(NEW_LINE);
-        code.append(indenter).append("final ").append(class3Name).append(' ').append(ELEMENT3).append(NEW_LINE);
+        code.append(indenter).append("final ").append(class1Name).append(' ').append(ELEMENT1)
+            .append(',').append(NEW_LINE);
+        code.append(indenter).append("final ").append(class2Name).append(' ').append(ELEMENT2)
+            .append(',').append(NEW_LINE);
+        code.append(indenter).append("final ").append(class3Name).append(' ').append(ELEMENT3)
+            .append(NEW_LINE);
         indenter.decreaseLevel(2);
         code.append(indenter).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -496,7 +600,9 @@ public class TupleCodeGenerator {
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("/** Public no-arg constructor for {@link Externalizable} support only. <em>Application code should not use this!</em> **/").append(NEW_LINE);
+        code.append(indenter).append(
+            "/** Public no-arg constructor for {@link Externalizable} support only. <em>Application code should not use this!</em> **/")
+            .append(NEW_LINE);
         code.append(indenter).append("public ").append(className).append("() {").append(NEW_LINE);
         code.append(indenter).append('}').append(NEW_LINE);
 
@@ -504,26 +610,35 @@ public class TupleCodeGenerator {
 
         code.append(indenter).append("private void initialize(").append(NEW_LINE);
         indenter.increaseLevel(2);
-        code.append(indenter).append("final ").append(class1Name).append(' ').append(ELEMENT1).append(',').append(NEW_LINE);
-        code.append(indenter).append("final ").append(class2Name).append(' ').append(ELEMENT2).append(',').append(NEW_LINE);
-        code.append(indenter).append("final ").append(class3Name).append(' ').append(ELEMENT3).append(NEW_LINE);
+        code.append(indenter).append("final ").append(class1Name).append(' ').append(ELEMENT1)
+            .append(',').append(NEW_LINE);
+        code.append(indenter).append("final ").append(class2Name).append(' ').append(ELEMENT2)
+            .append(',').append(NEW_LINE);
+        code.append(indenter).append("final ").append(class3Name).append(' ').append(ELEMENT3)
+            .append(NEW_LINE);
         indenter.decreaseLevel(2);
         code.append(indenter).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
-        code.append(indenter).append("this.").append(ELEMENT1).append(" = ").append(ELEMENT1).append(';').append(NEW_LINE);
-        code.append(indenter).append("this.").append(ELEMENT2).append(" = ").append(ELEMENT2).append(';').append(NEW_LINE);
-        code.append(indenter).append("this.").append(ELEMENT3).append(" = ").append(ELEMENT3).append(';').append(NEW_LINE);
+        code.append(indenter).append("this.").append(ELEMENT1).append(" = ").append(ELEMENT1)
+            .append(';').append(NEW_LINE);
+        code.append(indenter).append("this.").append(ELEMENT2).append(" = ").append(ELEMENT2)
+            .append(';').append(NEW_LINE);
+        code.append(indenter).append("this.").append(ELEMENT3).append(" = ").append(ELEMENT3)
+            .append(';').append(NEW_LINE);
         code.append(indenter).append(CACHED_HASH_CODE).append(" = ((31 +").append(NEW_LINE);
         indenter.increaseLevel(2);
-        code.append(indenter).append(type1.getHashCodeText(ELEMENT1)).append(") * 31 +").append(NEW_LINE);
-        code.append(indenter).append(type2.getHashCodeText(ELEMENT2)).append(") * 31 +").append(NEW_LINE);
+        code.append(indenter).append(type1.getHashCodeText(ELEMENT1)).append(") * 31 +")
+            .append(NEW_LINE);
+        code.append(indenter).append(type2.getHashCodeText(ELEMENT2)).append(") * 31 +")
+            .append(NEW_LINE);
         code.append(indenter).append(type3.getHashCodeText(ELEMENT3)).append(';').append(NEW_LINE);
         indenter.decreaseLevel(3);
         code.append(indenter).append('}').append(NEW_LINE);
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("public final ").append(class1Name).append(" getFirstElement() {").append(NEW_LINE);
+        code.append(indenter).append("public final ").append(class1Name)
+            .append(" getFirstElement() {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return ").append(ELEMENT1).append(';').append(NEW_LINE);
         indenter.decreaseLevel();
@@ -531,7 +646,8 @@ public class TupleCodeGenerator {
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("public final ").append(class2Name).append(" getSecondElement() {").append(NEW_LINE);
+        code.append(indenter).append("public final ").append(class2Name)
+            .append(" getSecondElement() {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return ").append(ELEMENT2).append(';').append(NEW_LINE);
         indenter.decreaseLevel();
@@ -539,7 +655,8 @@ public class TupleCodeGenerator {
 
         code.append(NEW_LINE);
 
-        code.append(indenter).append("public final ").append(class3Name).append(" getThirdElement() {").append(NEW_LINE);
+        code.append(indenter).append("public final ").append(class3Name)
+            .append(" getThirdElement() {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return ").append(ELEMENT3).append(';').append(NEW_LINE);
         indenter.decreaseLevel();
@@ -550,30 +667,41 @@ public class TupleCodeGenerator {
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final int hashCode() {").append(NEW_LINE);
         indenter.increaseLevel();
-        code.append(indenter).append("return ").append(CACHED_HASH_CODE).append(';').append(NEW_LINE);
+        code.append(indenter).append("return ").append(CACHED_HASH_CODE).append(';')
+            .append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
 
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final boolean equals(final Object ").append(OTHER).append(") {").append(NEW_LINE);
+        code.append(indenter).append("public final boolean equals(final Object ").append(OTHER)
+            .append(") {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("if (this == ").append(OTHER).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return true;").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
-        code.append(indenter).append("if (").append(OTHER).append(" == null || getClass() != other.getClass()) {").append(NEW_LINE);
+        code.append(indenter).append("if (").append(OTHER)
+            .append(" == null || getClass() != other.getClass()) {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("return false;").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
-        code.append(indenter).append("final ").append(className).append(' ').append(TYPED_OTHER).append(" = (").append(className).append(") ").append(OTHER).append(';').append(NEW_LINE);
+        code.append(indenter).append("final ").append(className).append(' ').append(TYPED_OTHER)
+            .append(" = (").append(className).append(") ").append(OTHER).append(';')
+            .append(NEW_LINE);
         code.append(indenter).append("// @formatter:off").append(NEW_LINE);
-        code.append(indenter).append("return ").append(type1.getEqualsText(ELEMENT1, TYPED_OTHER + '.' + ELEMENT1)).append(" &&").append(NEW_LINE);
-        code.append(indenter).append("       ").append(type2.getEqualsText(ELEMENT2, TYPED_OTHER + '.' + ELEMENT2)).append(" &&").append(NEW_LINE);
-        code.append(indenter).append("       ").append(type3.getEqualsText(ELEMENT3, TYPED_OTHER + '.' + ELEMENT3)).append(';').append(NEW_LINE);
+        code.append(indenter).append("return ")
+            .append(type1.getEqualsText(ELEMENT1, TYPED_OTHER + '.' + ELEMENT1)).append(" &&")
+            .append(NEW_LINE);
+        code.append(indenter).append("       ")
+            .append(type2.getEqualsText(ELEMENT2, TYPED_OTHER + '.' + ELEMENT2)).append(" &&")
+            .append(NEW_LINE);
+        code.append(indenter).append("       ")
+            .append(type3.getEqualsText(ELEMENT3, TYPED_OTHER + '.' + ELEMENT3)).append(';')
+            .append(NEW_LINE);
         code.append(indenter).append("// @formatter:on").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
@@ -581,7 +709,8 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final int compareTo(@NotNull final ").append(className).append(' ').append(OTHER).append(") {").append(NEW_LINE);
+        code.append(indenter).append("public final int compareTo(@NotNull final ").append(className)
+            .append(' ').append(OTHER).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("if (this == ").append(OTHER).append(") {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -590,9 +719,15 @@ public class TupleCodeGenerator {
         code.append(indenter).append('}').append(NEW_LINE);
         code.append(indenter).append("int comparison;").append(NEW_LINE);
         code.append(indenter).append("// @formatter:off").append(NEW_LINE);
-        code.append(indenter).append("return 0 != (comparison = ").append(type1.getCompareToText(ELEMENT1, OTHER + '.' + ELEMENT1)).append(") ? comparison :").append(NEW_LINE);
-        code.append(indenter).append("       0 != (comparison = ").append(type2.getCompareToText(ELEMENT2, OTHER + '.' + ELEMENT2)).append(") ? comparison :").append(NEW_LINE);
-        code.append(indenter).append("       ").append(type3.getCompareToText(ELEMENT3, OTHER + '.' + ELEMENT3)).append(";").append(NEW_LINE);
+        code.append(indenter).append("return 0 != (comparison = ")
+            .append(type1.getCompareToText(ELEMENT1, OTHER + '.' + ELEMENT1))
+            .append(") ? comparison :").append(NEW_LINE);
+        code.append(indenter).append("       0 != (comparison = ")
+            .append(type2.getCompareToText(ELEMENT2, OTHER + '.' + ELEMENT2))
+            .append(") ? comparison :").append(NEW_LINE);
+        code.append(indenter).append("       ")
+            .append(type3.getCompareToText(ELEMENT3, OTHER + '.' + ELEMENT3)).append(";")
+            .append(NEW_LINE);
         code.append(indenter).append("// @formatter:on").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
@@ -600,23 +735,33 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public void writeExternal(@NotNull final ObjectOutput out) throws IOException {").append(NEW_LINE);
+        code.append(indenter)
+            .append(
+                "public void writeExternal(@NotNull final ObjectOutput out) throws IOException {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
-        code.append(indenter).append(type1.getWriteExternalText("out", ELEMENT1)).append(';').append(NEW_LINE);
-        code.append(indenter).append(type2.getWriteExternalText("out", ELEMENT2)).append(';').append(NEW_LINE);
-        code.append(indenter).append(type3.getWriteExternalText("out", ELEMENT3)).append(';').append(NEW_LINE);
+        code.append(indenter).append(type1.getWriteExternalText("out", ELEMENT1)).append(';')
+            .append(NEW_LINE);
+        code.append(indenter).append(type2.getWriteExternalText("out", ELEMENT2)).append(';')
+            .append(NEW_LINE);
+        code.append(indenter).append(type3.getWriteExternalText("out", ELEMENT3)).append(';')
+            .append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
 
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public void readExternal(@NotNull final ObjectInput in) throws IOException, ClassNotFoundException {").append(NEW_LINE);
+        code.append(indenter).append(
+            "public void readExternal(@NotNull final ObjectInput in) throws IOException, ClassNotFoundException {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("initialize(").append(NEW_LINE);
         indenter.increaseLevel(2);
-        code.append(indenter).append(type1.getReadExternalText("in", ELEMENT1)).append(',').append(NEW_LINE);
-        code.append(indenter).append(type2.getReadExternalText("in", ELEMENT2)).append(',').append(NEW_LINE);
+        code.append(indenter).append(type1.getReadExternalText("in", ELEMENT1)).append(',')
+            .append(NEW_LINE);
+        code.append(indenter).append(type2.getReadExternalText("in", ELEMENT2)).append(',')
+            .append(NEW_LINE);
         code.append(indenter).append(type3.getReadExternalText("in", ELEMENT3)).append(NEW_LINE);
         indenter.decreaseLevel(2);
         code.append(indenter).append(");").append(NEW_LINE);
@@ -626,22 +771,33 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {").append(NEW_LINE);
+        code.append(indenter).append(
+            "public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
         if (type1 != ElementType.OBJECT) {
-            code.append(indenter).append(type1.getWriteExternalText("out", ELEMENT1)).append(';').append(NEW_LINE);
+            code.append(indenter).append(type1.getWriteExternalText("out", ELEMENT1)).append(';')
+                .append(NEW_LINE);
         } else {
-            code.append(indenter).append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 0, ").append(ELEMENT1).append(");").append(NEW_LINE);
+            code.append(indenter)
+                .append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 0, ")
+                .append(ELEMENT1).append(");").append(NEW_LINE);
         }
         if (type2 != ElementType.OBJECT) {
-            code.append(indenter).append(type2.getWriteExternalText("out", ELEMENT2)).append(';').append(NEW_LINE);
+            code.append(indenter).append(type2.getWriteExternalText("out", ELEMENT2)).append(';')
+                .append(NEW_LINE);
         } else {
-            code.append(indenter).append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 1, ").append(ELEMENT2).append(");").append(NEW_LINE);
+            code.append(indenter)
+                .append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 1, ")
+                .append(ELEMENT2).append(");").append(NEW_LINE);
         }
         if (type3 != ElementType.OBJECT) {
-            code.append(indenter).append(type3.getWriteExternalText("out", ELEMENT3)).append(';').append(NEW_LINE);
+            code.append(indenter).append(type3.getWriteExternalText("out", ELEMENT3)).append(';')
+                .append(NEW_LINE);
         } else {
-            code.append(indenter).append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 2, ").append(ELEMENT3).append(");").append(NEW_LINE);
+            code.append(indenter)
+                .append("StreamingExternalizable.writeObjectElement(out, cachedWriters, 2, ")
+                .append(ELEMENT3).append(");").append(NEW_LINE);
         }
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
@@ -649,23 +805,34 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {").append(NEW_LINE);
+        code.append(indenter).append(
+            "public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("initialize(").append(NEW_LINE);
         if (type1 != ElementType.OBJECT) {
-            code.append(indenter.increaseLevel(2)).append(type1.getReadExternalText("in", ELEMENT1)).append(',').append(NEW_LINE);
+            code.append(indenter.increaseLevel(2)).append(type1.getReadExternalText("in", ELEMENT1))
+                .append(',').append(NEW_LINE);
         } else {
-            code.append(indenter.increaseLevel(2)).append("StreamingExternalizable.readObjectElement(in, cachedReaders, 0)").append(',').append(NEW_LINE);
+            code.append(indenter.increaseLevel(2))
+                .append("StreamingExternalizable.readObjectElement(in, cachedReaders, 0)")
+                .append(',').append(NEW_LINE);
         }
         if (type2 != ElementType.OBJECT) {
-            code.append(indenter).append(type2.getReadExternalText("in", ELEMENT2)).append(',').append(NEW_LINE);
+            code.append(indenter).append(type2.getReadExternalText("in", ELEMENT2)).append(',')
+                .append(NEW_LINE);
         } else {
-            code.append(indenter).append("StreamingExternalizable.readObjectElement(in, cachedReaders, 1)").append(',').append(NEW_LINE);
+            code.append(indenter)
+                .append("StreamingExternalizable.readObjectElement(in, cachedReaders, 1)")
+                .append(',').append(NEW_LINE);
         }
         if (type3 != ElementType.OBJECT) {
-            code.append(indenter).append(type3.getReadExternalText("in", ELEMENT3)).append(NEW_LINE);
+            code.append(indenter).append(type3.getReadExternalText("in", ELEMENT3))
+                .append(NEW_LINE);
         } else {
-            code.append(indenter).append("StreamingExternalizable.readObjectElement(in, cachedReaders, 2)").append(NEW_LINE);
+            code.append(indenter)
+                .append("StreamingExternalizable.readObjectElement(in, cachedReaders, 2)")
+                .append(NEW_LINE);
         }
         code.append(indenter.decreaseLevel(2)).append(");").append(NEW_LINE);
         indenter.decreaseLevel();
@@ -676,7 +843,8 @@ public class TupleCodeGenerator {
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public String toString() {").append(NEW_LINE);
         indenter.increaseLevel();
-        code.append(indenter).append("return \"").append(className).append("{\" +").append(NEW_LINE);
+        code.append(indenter).append("return \"").append(className).append("{\" +")
+            .append(NEW_LINE);
         indenter.increaseLevel(2);
         code.append(indenter).append(ELEMENT1).append(" + \", \" +").append(NEW_LINE);
         code.append(indenter).append(ELEMENT2).append(" + \", \" +").append(NEW_LINE);
@@ -687,74 +855,100 @@ public class TupleCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public ").append(className).append(" canonicalize(@NotNull final UnaryOperator<Object> canonicalizer) {").append(NEW_LINE);
+        code.append(indenter).append("public ").append(className)
+            .append(" canonicalize(@NotNull final UnaryOperator<Object> canonicalizer) {")
+            .append(NEW_LINE);
         indenter.increaseLevel();
         if (firstIsObject) {
-            code.append(indenter).append("final ").append(class1Name).append(' ').append(CANONICALIZED_ELEMENT1).append(" = canonicalizer.apply(").append(ELEMENT1).append(");").append(NEW_LINE);
+            code.append(indenter).append("final ").append(class1Name).append(' ')
+                .append(CANONICALIZED_ELEMENT1).append(" = canonicalizer.apply(").append(ELEMENT1)
+                .append(");").append(NEW_LINE);
         }
         if (secondIsObject) {
-            code.append(indenter).append("final ").append(class2Name).append(' ').append(CANONICALIZED_ELEMENT2).append(" = canonicalizer.apply(").append(ELEMENT2).append(");").append(NEW_LINE);
+            code.append(indenter).append("final ").append(class2Name).append(' ')
+                .append(CANONICALIZED_ELEMENT2).append(" = canonicalizer.apply(").append(ELEMENT2)
+                .append(");").append(NEW_LINE);
         }
         if (thirdIsObject) {
-            code.append(indenter).append("final ").append(class3Name).append(' ').append(CANONICALIZED_ELEMENT3).append(" = canonicalizer.apply(").append(ELEMENT3).append(");").append(NEW_LINE);
+            code.append(indenter).append("final ").append(class3Name).append(' ')
+                .append(CANONICALIZED_ELEMENT3).append(" = canonicalizer.apply(").append(ELEMENT3)
+                .append(");").append(NEW_LINE);
         }
         if (firstIsObject && secondIsObject && thirdIsObject) {
-            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ").append(ELEMENT1)
-                    .append(" && ").append(CANONICALIZED_ELEMENT2).append(" == ").append(ELEMENT2)
-                    .append(" && ").append(CANONICALIZED_ELEMENT3).append(" == ").append(ELEMENT3).append(NEW_LINE);
+            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ")
+                .append(ELEMENT1)
+                .append(" && ").append(CANONICALIZED_ELEMENT2).append(" == ").append(ELEMENT2)
+                .append(" && ").append(CANONICALIZED_ELEMENT3).append(" == ").append(ELEMENT3)
+                .append(NEW_LINE);
             indenter.increaseLevel(2);
-            code.append(indenter).append("? this : new ").append(className).append('(').append(CANONICALIZED_ELEMENT1)
-                    .append(", ").append(CANONICALIZED_ELEMENT2)
-                    .append(", ").append(CANONICALIZED_ELEMENT3).append(");").append(NEW_LINE);
+            code.append(indenter).append("? this : new ").append(className).append('(')
+                .append(CANONICALIZED_ELEMENT1)
+                .append(", ").append(CANONICALIZED_ELEMENT2)
+                .append(", ").append(CANONICALIZED_ELEMENT3).append(");").append(NEW_LINE);
             indenter.decreaseLevel(2);
         } else if (firstIsObject) {
             if (secondIsObject) {
-                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ").append(ELEMENT1)
-                        .append(" && ").append(CANONICALIZED_ELEMENT2).append(" == ").append(ELEMENT2).append(NEW_LINE);
+                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1)
+                    .append(" == ").append(ELEMENT1)
+                    .append(" && ").append(CANONICALIZED_ELEMENT2).append(" == ").append(ELEMENT2)
+                    .append(NEW_LINE);
                 indenter.increaseLevel(2);
-                code.append(indenter).append("? this : new ").append(className).append('(').append(CANONICALIZED_ELEMENT1)
-                        .append(", ").append(CANONICALIZED_ELEMENT2)
-                        .append(", ").append(ELEMENT3).append(");").append(NEW_LINE);
+                code.append(indenter).append("? this : new ").append(className).append('(')
+                    .append(CANONICALIZED_ELEMENT1)
+                    .append(", ").append(CANONICALIZED_ELEMENT2)
+                    .append(", ").append(ELEMENT3).append(");").append(NEW_LINE);
                 indenter.decreaseLevel(2);
             } else if (thirdIsObject) {
-                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ").append(ELEMENT1)
-                        .append(" && ").append(CANONICALIZED_ELEMENT3).append(" == ").append(ELEMENT3).append(NEW_LINE);
+                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1)
+                    .append(" == ").append(ELEMENT1)
+                    .append(" && ").append(CANONICALIZED_ELEMENT3).append(" == ").append(ELEMENT3)
+                    .append(NEW_LINE);
                 indenter.increaseLevel(2);
-                code.append(indenter).append("? this : new ").append(className).append('(').append(CANONICALIZED_ELEMENT1)
-                        .append(", ").append(ELEMENT2)
-                        .append(", ").append(CANONICALIZED_ELEMENT3).append(");").append(NEW_LINE);
+                code.append(indenter).append("? this : new ").append(className).append('(')
+                    .append(CANONICALIZED_ELEMENT1)
+                    .append(", ").append(ELEMENT2)
+                    .append(", ").append(CANONICALIZED_ELEMENT3).append(");").append(NEW_LINE);
                 indenter.decreaseLevel(2);
             } else {
-                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1).append(" == ").append(ELEMENT1).append(NEW_LINE);
+                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT1)
+                    .append(" == ").append(ELEMENT1).append(NEW_LINE);
                 indenter.increaseLevel(2);
-                code.append(indenter).append("? this : new ").append(className).append('(').append(CANONICALIZED_ELEMENT1)
-                        .append(", ").append(ELEMENT2)
-                        .append(", ").append(ELEMENT3).append(");").append(NEW_LINE);
+                code.append(indenter).append("? this : new ").append(className).append('(')
+                    .append(CANONICALIZED_ELEMENT1)
+                    .append(", ").append(ELEMENT2)
+                    .append(", ").append(ELEMENT3).append(");").append(NEW_LINE);
                 indenter.decreaseLevel(2);
             }
         } else if (secondIsObject) {
             if (thirdIsObject) {
-                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT2).append(" == ").append(ELEMENT2)
-                        .append(" && ").append(CANONICALIZED_ELEMENT3).append(" == ").append(ELEMENT3).append(NEW_LINE);
+                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT2)
+                    .append(" == ").append(ELEMENT2)
+                    .append(" && ").append(CANONICALIZED_ELEMENT3).append(" == ").append(ELEMENT3)
+                    .append(NEW_LINE);
                 indenter.increaseLevel(2);
-                code.append(indenter).append("? this : new ").append(className).append('(').append(ELEMENT1)
-                        .append(", ").append(CANONICALIZED_ELEMENT2)
-                        .append(", ").append(CANONICALIZED_ELEMENT3).append(");").append(NEW_LINE);
+                code.append(indenter).append("? this : new ").append(className).append('(')
+                    .append(ELEMENT1)
+                    .append(", ").append(CANONICALIZED_ELEMENT2)
+                    .append(", ").append(CANONICALIZED_ELEMENT3).append(");").append(NEW_LINE);
                 indenter.decreaseLevel(2);
             } else {
-                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT2).append(" == ").append(ELEMENT2).append(NEW_LINE);
+                code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT2)
+                    .append(" == ").append(ELEMENT2).append(NEW_LINE);
                 indenter.increaseLevel(2);
-                code.append(indenter).append("? this : new ").append(className).append('(').append(ELEMENT1)
-                        .append(", ").append(CANONICALIZED_ELEMENT2)
-                        .append(", ").append(ELEMENT3).append(");").append(NEW_LINE);
+                code.append(indenter).append("? this : new ").append(className).append('(')
+                    .append(ELEMENT1)
+                    .append(", ").append(CANONICALIZED_ELEMENT2)
+                    .append(", ").append(ELEMENT3).append(");").append(NEW_LINE);
                 indenter.decreaseLevel(2);
             }
         } else if (thirdIsObject) {
-            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT3).append(" == ").append(ELEMENT3).append(NEW_LINE);
+            code.append(indenter).append("return ").append(CANONICALIZED_ELEMENT3).append(" == ")
+                .append(ELEMENT3).append(NEW_LINE);
             indenter.increaseLevel(2);
-            code.append(indenter).append("? this : new ").append(className).append('(').append(ELEMENT1)
-                    .append(", ").append(ELEMENT2)
-                    .append(", ").append(CANONICALIZED_ELEMENT3).append(");").append(NEW_LINE);
+            code.append(indenter).append("? this : new ").append(className).append('(')
+                .append(ELEMENT1)
+                .append(", ").append(ELEMENT2)
+                .append(", ").append(CANONICALIZED_ELEMENT3).append(");").append(NEW_LINE);
             indenter.decreaseLevel(2);
         } else {
             code.append(indenter).append("return this;").append(NEW_LINE);
@@ -768,7 +962,8 @@ public class TupleCodeGenerator {
     }
 
     private void writeClass(@NotNull final String className, @NotNull final String classBody) {
-        try (final PrintStream destination = new PrintStream(new FileOutputStream(new File(OUTPUT_RELATIVE_PATH, className + ".java")))) {
+        try (final PrintStream destination = new PrintStream(
+            new FileOutputStream(new File(OUTPUT_RELATIVE_PATH, className + ".java")))) {
             destination.print(classBody);
             destination.flush();
         } catch (FileNotFoundException e) {
@@ -778,17 +973,16 @@ public class TupleCodeGenerator {
 
     public static void main(@NotNull final String... args) {
         final TupleCodeGenerator generator = new TupleCodeGenerator();
-        Arrays.stream(ElementType.values()).forEach(t1 ->
-                Arrays.stream(ElementType.values()).forEach(t2 -> {
-                    final String doubleName = generator.generateClassName(t1, t2);
-                    final String doubleBody = generator.generateDouble(doubleName, t1, t2);
-                    generator.writeClass(doubleName, doubleBody);
-                    Arrays.stream(ElementType.values()).forEach(t3 -> {
-                        final String tripleName = generator.generateClassName(t1, t2, t3);
-                        final String tripleBody = generator.generateTriple(tripleName, t1, t2, t3);
-                        generator.writeClass(tripleName, tripleBody);
-                    });
-                })
-        );
+        Arrays.stream(ElementType.values())
+            .forEach(t1 -> Arrays.stream(ElementType.values()).forEach(t2 -> {
+                final String doubleName = generator.generateClassName(t1, t2);
+                final String doubleBody = generator.generateDouble(doubleName, t1, t2);
+                generator.writeClass(doubleName, doubleBody);
+                Arrays.stream(ElementType.values()).forEach(t3 -> {
+                    final String tripleName = generator.generateClassName(t1, t2, t3);
+                    final String tripleBody = generator.generateTriple(tripleName, t1, t2, t3);
+                    generator.writeClass(tripleName, tripleBody);
+                });
+            }));
     }
 }

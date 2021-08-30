@@ -28,7 +28,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 abstract public class LiveTableTestCase extends BaseArrayTestCase implements UpdateErrorReporter {
-    static public boolean printTableUpdates = Configuration.getInstance().getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
+    static public boolean printTableUpdates = Configuration.getInstance()
+        .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
 
     private boolean oldMemoize;
     private UpdateErrorReporter oldReporter;
@@ -61,7 +62,8 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     @Override
     public void reportUpdateError(Throwable t) throws IOException {
         if (!expectError) {
-            System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
+            System.err.println(
+                "Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
             TestCase.fail(t.getMessage());
         }
         if (errors == null) {
@@ -101,25 +103,40 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     }
 
     public void allowingError(Runnable function, Predicate<List<Throwable>> errorsAcceptable) {
-        allowingError(() -> { function.run(); return true; }, errorsAcceptable);
+        allowingError(() -> {
+            function.run();
+            return true;
+        }, errorsAcceptable);
     }
 
-    protected static void simulateShiftAwareStep(int targetUpdateSize, Random random, QueryTable table, TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
+    protected static void simulateShiftAwareStep(int targetUpdateSize, Random random,
+        QueryTable table, TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
         simulateShiftAwareStep("", targetUpdateSize, random, table, columnInfo, en);
     }
 
-    public static void simulateShiftAwareStep(final String ctxt, int targetUpdateSize, Random random, QueryTable table, TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
-        simulateShiftAwareStep(GenerateTableUpdates.DEFAULT_PROFILE, ctxt, targetUpdateSize, random, table, columnInfo, en);
+    public static void simulateShiftAwareStep(final String ctxt, int targetUpdateSize,
+        Random random, QueryTable table, TstUtils.ColumnInfo[] columnInfo,
+        EvalNuggetInterface[] en) {
+        simulateShiftAwareStep(GenerateTableUpdates.DEFAULT_PROFILE, ctxt, targetUpdateSize, random,
+            table, columnInfo, en);
     }
 
-    protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile, final String ctxt, int targetUpdateSize, Random random, QueryTable table, TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(simulationProfile, targetUpdateSize, random, table, columnInfo));
+    protected static void simulateShiftAwareStep(
+        final GenerateTableUpdates.SimulationProfile simulationProfile, final String ctxt,
+        int targetUpdateSize, Random random, QueryTable table, TstUtils.ColumnInfo[] columnInfo,
+        EvalNuggetInterface[] en) {
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+            () -> GenerateTableUpdates.generateShiftAwareTableUpdates(simulationProfile,
+                targetUpdateSize, random, table, columnInfo));
         TstUtils.validate(ctxt, en);
-        // The EvalNugget test cases end up generating very big listener DAGs, for at each step we create a brand new
-        // live incarnation of the table.  This can make debugging a bit awkward, so sometimes it is convenient to
-        // prune the tree after each validation.  The reason not to do it, however, is that this will sometimes expose
+        // The EvalNugget test cases end up generating very big listener DAGs, for at each step we
+        // create a brand new
+        // live incarnation of the table. This can make debugging a bit awkward, so sometimes it is
+        // convenient to
+        // prune the tree after each validation. The reason not to do it, however, is that this will
+        // sometimes expose
         // bugs with shared indices getting updated.
-        //System.gc();
+        // System.gc();
     }
 
     void assertEquals(@NotNull final Table expected, @NotNull final Table actual) {

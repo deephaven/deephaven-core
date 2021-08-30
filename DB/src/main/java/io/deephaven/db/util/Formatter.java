@@ -19,26 +19,26 @@ public class Formatter {
         StringBuilder sb = new StringBuilder();
         Indenter indenter = new Indenter();
 
-        boolean[] skip = new boolean[]{false};
+        boolean[] skip = new boolean[] {false};
         char nl = '\n';
         tdsStr.chars().forEach(c -> {
             boolean skipspace = skip[0];
             skip[0] = false;
-            //noinspection StatementWithEmptyBody
+            // noinspection StatementWithEmptyBody
             if (c == ' ' && skipspace) {
                 // do nothing.
             } else if (c == '{' || c == '[') {
                 indenter.increaseLevel();
-                sb.append((char)c).append(nl).append(indenter);
+                sb.append((char) c).append(nl).append(indenter);
             } else if (c == '}' || c == ']') {
                 indenter.decreaseLevel();
                 sb.append(nl).append(indenter);
-                sb.append((char)c);
+                sb.append((char) c);
             } else if (c == ',') {
-                sb.append((char)c).append(nl).append(indenter);
+                sb.append((char) c).append(nl).append(indenter);
                 skip[0] = true;
             } else {
-                sb.append((char)c);
+                sb.append((char) c);
             }
         });
         return sb.toString();

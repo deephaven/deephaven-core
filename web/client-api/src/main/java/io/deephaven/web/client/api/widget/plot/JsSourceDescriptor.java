@@ -18,8 +18,7 @@ public class JsSourceDescriptor {
     public String type;
 
     @JsConstructor
-    public JsSourceDescriptor() {
-    }
+    public JsSourceDescriptor() {}
 
     @JsIgnore
     public JsSourceDescriptor(JsPropertyMap<Object> source, Map<Object, JsAxisDescriptor> axisMap) {
@@ -29,9 +28,9 @@ public class JsSourceDescriptor {
         if (axisMap.containsKey(axisSource)) {
             axis = axisMap.get(axisSource);
         } else if (axisSource instanceof JsAxisDescriptor) {
-            axis = (JsAxisDescriptor)axisSource;
+            axis = (JsAxisDescriptor) axisSource;
         } else {
-            axis = new JsAxisDescriptor((JsPropertyMap<Object>)axisSource);
+            axis = new JsAxisDescriptor((JsPropertyMap<Object>) axisSource);
         }
         table = JsData.getRequiredProperty(source, "table").cast();
         columnName = JsData.getRequiredStringProperty(source, "columnName");

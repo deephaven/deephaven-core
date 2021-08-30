@@ -4,8 +4,8 @@ package io.deephaven.db.v2.by;
  * An Iterative state factory that computes the count of distinct items within a particular state.
  */
 public class CountDistinctStateFactory extends IterativeOperatorStateFactory {
-    private static final AggregationMemoKey NO_NULLS_INSTANCE = new AggregationMemoKey() { };
-    private static final AggregationMemoKey WITH_NULLS_INSTANCE = new AggregationMemoKey() { };
+    private static final AggregationMemoKey NO_NULLS_INSTANCE = new AggregationMemoKey() {};
+    private static final AggregationMemoKey WITH_NULLS_INSTANCE = new AggregationMemoKey() {};
     private final boolean secondRollup;
     private final boolean countNulls;
 
@@ -43,11 +43,12 @@ public class CountDistinctStateFactory extends IterativeOperatorStateFactory {
     }
 
     @Override
-    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name, boolean exposeInternalColumns) {
+    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
+        boolean exposeInternalColumns) {
         return getCountDistinctChunked(type, name, countNulls, exposeInternalColumns, secondRollup);
     }
 
-    //endregion
+    // endregion
 
     public boolean countNulls() {
         return countNulls;

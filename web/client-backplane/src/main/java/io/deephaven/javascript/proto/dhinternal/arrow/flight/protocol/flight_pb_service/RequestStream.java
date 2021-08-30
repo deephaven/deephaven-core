@@ -14,42 +14,42 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.arrow.flight.protocol.Flight_pb_service.RequestStream",
     namespace = JsPackage.GLOBAL)
 public interface RequestStream<T> {
-  @JsFunction
-  public interface OnHandlerFn {
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface P0Type {
-      @JsOverlay
-      static RequestStream.OnHandlerFn.P0Type create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    @JsFunction
+    public interface OnHandlerFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static RequestStream.OnHandlerFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
 
-      @JsProperty
-      double getCode();
+            @JsProperty
+            double getCode();
 
-      @JsProperty
-      String getDetails();
+            @JsProperty
+            String getDetails();
 
-      @JsProperty
-      BrowserHeaders getMetadata();
+            @JsProperty
+            BrowserHeaders getMetadata();
 
-      @JsProperty
-      void setCode(double code);
+            @JsProperty
+            void setCode(double code);
 
-      @JsProperty
-      void setDetails(String details);
+            @JsProperty
+            void setDetails(String details);
 
-      @JsProperty
-      void setMetadata(BrowserHeaders metadata);
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(RequestStream.OnHandlerFn.P0Type p0);
     }
 
-    void onInvoke(RequestStream.OnHandlerFn.P0Type p0);
-  }
+    void cancel();
 
-  void cancel();
+    void end();
 
-  void end();
+    RequestStream on(String type, RequestStream.OnHandlerFn handler);
 
-  RequestStream on(String type, RequestStream.OnHandlerFn handler);
-
-  RequestStream write(T message);
+    RequestStream write(T message);
 }

@@ -4,8 +4,7 @@ package io.deephaven.db.plot;
  * A factory for creating a new Figure.
  */
 public class FigureFactory {
-    private FigureFactory() {
-    }
+    private FigureFactory() {}
 
     /**
      * Creates a new figure.

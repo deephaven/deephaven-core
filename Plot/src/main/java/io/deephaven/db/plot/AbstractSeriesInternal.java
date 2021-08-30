@@ -29,7 +29,7 @@ public abstract class AbstractSeriesInternal implements Series, SeriesInternal {
         this.name = name;
     }
 
-    //copy constructor
+    // copy constructor
     protected AbstractSeriesInternal(final AbstractSeriesInternal series, final AxesImpl axes) {
         this.axes = axes;
         this.id = series.id;
@@ -56,12 +56,12 @@ public abstract class AbstractSeriesInternal implements Series, SeriesInternal {
 
     @Override
     public void addTableHandle(TableHandle h) {
-            tableHandles.add(h);
+        tableHandles.add(h);
     }
 
     @Override
     public void removeTableHandle(TableHandle h) {
-            tableHandles.remove(h);
+        tableHandles.remove(h);
     }
 
     @Override
@@ -71,7 +71,7 @@ public abstract class AbstractSeriesInternal implements Series, SeriesInternal {
 
     @Override
     public void addTableMapHandle(TableMapHandle map) {
-            tableMapHandles.add(map);
+        tableMapHandles.add(map);
     }
 
     @Override

@@ -16,18 +16,23 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 
-public interface DbArrayBase<DBARRAY extends DbArrayBase> extends Serializable, LongSizedDataStructure {
+public interface DbArrayBase<DBARRAY extends DbArrayBase>
+    extends Serializable, LongSizedDataStructure {
     long serialVersionUID = -2429677814745466454L;
 
     String NULL_ELEMENT_STRING = " ";
 
     DBARRAY subArray(long fromIndex, long toIndex);
-    DBARRAY subArrayByPositions(long [] positions);
+
+    DBARRAY subArrayByPositions(long[] positions);
 
     Object toArray();
+
     Class getComponentType();
 
-    default String toString(int prefixLength) { return ""; }
+    default String toString(int prefixLength) {
+        return "";
+    }
 
     Chunk<Attributes.Values> toChunk();
 
@@ -37,24 +42,34 @@ public interface DbArrayBase<DBARRAY extends DbArrayBase> extends Serializable, 
         return size() == 0;
     }
 
-    /** Return a version of this DbArrayBase that is flattened out to only reference memory.  */
+    /** Return a version of this DbArrayBase that is flattened out to only reference memory. */
     DBARRAY getDirect();
 
-    static long clampIndex(final long validFromInclusive, final long validToExclusive, final long index) {
+    static long clampIndex(final long validFromInclusive, final long validToExclusive,
+        final long index) {
         return index < validFromInclusive || index >= validToExclusive ? -1 : index;
     }
 
-    static long[] mapSelectedPositionRange(@NotNull final long[] currentPositions, final long selectedRangeStartInclusive, final long selectedRangeEndExclusive) {
-        Assert.leq(selectedRangeStartInclusive, "selectedRangeStartInclusive", selectedRangeEndExclusive, "selectedRangeEndExclusive");
-        return LongStream.range(selectedRangeStartInclusive, selectedRangeEndExclusive).map(s -> s < 0 || s >= currentPositions.length ? -1 : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositionRange", s)]).toArray();
+    static long[] mapSelectedPositionRange(@NotNull final long[] currentPositions,
+        final long selectedRangeStartInclusive, final long selectedRangeEndExclusive) {
+        Assert.leq(selectedRangeStartInclusive, "selectedRangeStartInclusive",
+            selectedRangeEndExclusive, "selectedRangeEndExclusive");
+        return LongStream.range(selectedRangeStartInclusive, selectedRangeEndExclusive)
+            .map(s -> s < 0 || s >= currentPositions.length ? -1
+                : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositionRange", s)])
+            .toArray();
     }
 
-    static long[] mapSelectedPositions(@NotNull final long[] currentPositions, @NotNull final long[] selectedPositions) {
-        return Arrays.stream(selectedPositions).map(s -> s < 0 || s >= currentPositions.length ? -1 : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositions", s)]).toArray();
+    static long[] mapSelectedPositions(@NotNull final long[] currentPositions,
+        @NotNull final long[] selectedPositions) {
+        return Arrays.stream(selectedPositions)
+            .map(s -> s < 0 || s >= currentPositions.length ? -1
+                : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositions", s)])
+            .toArray();
     }
 
     static Function<Object, String> classToHelper(final Class clazz) {
-        if (clazz.equals(byte.class) || clazz.equals(Byte.class)){
+        if (clazz.equals(byte.class) || clazz.equals(Byte.class)) {
             return DbByteArray::byteValToString;
         } else if (clazz.equals(char.class) || clazz.equals(Character.class)) {
             return DbCharArray::charValToString;

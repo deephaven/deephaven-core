@@ -13,7 +13,8 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
 
     @Test
     public void testDefaultAdapter() {
-        final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
+        final OpenAddressedCanonicalizationCache SUT =
+            new OpenAddressedCanonicalizationCache(1, 0.9f);
 
         final Integer[] cachedIntegers = new Integer[SUT.getOccupancyThreshold() * 100];
         final Double[] cachedDoubles = new Double[cachedIntegers.length];
@@ -34,11 +35,11 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
         }
 
         final int savedOccupancyThreshold = SUT.getOccupancyThreshold();
-        assertEquals(3*cachedIntegers.length, SUT.getOccupiedSlots());
+        assertEquals(3 * cachedIntegers.length, SUT.getOccupiedSlots());
         System.gc();
         assertSame(cachedIntegers[0], SUT.getCachedItem(cachedIntegers[0])); // Force cleanup
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
-        assertEquals(3*cachedIntegers.length, SUT.getOccupiedSlots());
+        assertEquals(3 * cachedIntegers.length, SUT.getOccupiedSlots());
 
         for (int ii = 0; ii < cachedIntegers.length; ++ii) {
             final Integer equalInteger = new Integer(ii);
@@ -67,14 +68,14 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
         }
 
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
-        assertTrue(3*cachedIntegers.length/2 <= SUT.getOccupiedSlots());
-        assertTrue(3*cachedIntegers.length   >= SUT.getOccupiedSlots());
+        assertTrue(3 * cachedIntegers.length / 2 <= SUT.getOccupiedSlots());
+        assertTrue(3 * cachedIntegers.length >= SUT.getOccupiedSlots());
         System.gc();
-        while (SUT.getOccupiedSlots() != 3*cachedIntegers.length/2) {
+        while (SUT.getOccupiedSlots() != 3 * cachedIntegers.length / 2) {
             assertSame(cachedIntegers[0], SUT.getCachedItem(cachedIntegers[0])); // Force cleanup
         }
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
-        assertEquals(3*cachedIntegers.length/2, SUT.getOccupiedSlots());
+        assertEquals(3 * cachedIntegers.length / 2, SUT.getOccupiedSlots());
 
         for (int ii = 0; ii < cachedIntegers.length; ++ii) {
             if ((ii & 1) == 1) {
@@ -111,40 +112,42 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
         }
 
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
-        assertEquals(3*cachedIntegers.length, SUT.getOccupiedSlots());
+        assertEquals(3 * cachedIntegers.length, SUT.getOccupiedSlots());
         System.gc();
         assertSame(cachedIntegers[0], SUT.getCachedItem(cachedIntegers[0])); // Force cleanup
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
-        assertEquals(3*cachedIntegers.length, SUT.getOccupiedSlots());
+        assertEquals(3 * cachedIntegers.length, SUT.getOccupiedSlots());
     }
 
     /**
      * This is a really crappy example... but it's fine for a unit test.
      */
-    private static OpenAddressedCanonicalizationCache.Adapter<Object, String> OSA = new OpenAddressedCanonicalizationCache.Adapter<Object, String>() {
+    private static OpenAddressedCanonicalizationCache.Adapter<Object, String> OSA =
+        new OpenAddressedCanonicalizationCache.Adapter<Object, String>() {
 
-        @Override
-        public boolean equals(@NotNull Object inputItem, @NotNull Object cachedItem) {
-            if (cachedItem instanceof String) {
-                return inputItem.toString().equals(cachedItem);
+            @Override
+            public boolean equals(@NotNull Object inputItem, @NotNull Object cachedItem) {
+                if (cachedItem instanceof String) {
+                    return inputItem.toString().equals(cachedItem);
+                }
+                return false;
             }
-            return false;
-        }
 
-        @Override
-        public int hashCode(@NotNull Object inputItem) {
-            return inputItem.toString().hashCode();
-        }
+            @Override
+            public int hashCode(@NotNull Object inputItem) {
+                return inputItem.toString().hashCode();
+            }
 
-        @Override
-        public String makeCacheableItem(@NotNull Object inputItem) {
-            return inputItem.toString();
-        }
-    };
+            @Override
+            public String makeCacheableItem(@NotNull Object inputItem) {
+                return inputItem.toString();
+            }
+        };
 
     @Test
     public void testSpecialAdapters() {
-        final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
+        final OpenAddressedCanonicalizationCache SUT =
+            new OpenAddressedCanonicalizationCache(1, 0.9f);
 
         final String[] cachedStrings = new String[SUT.getOccupancyThreshold() * 100 * 2];
 
@@ -154,10 +157,10 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
             assertSame(intString, SUT.getCachedItem(Integer.toString(ii)));
             cachedStrings[ii] = intString;
 
-            final String doubleString = SUT.getCachedItem((double)ii, OSA);
-            assertEquals((double)ii, Double.parseDouble(doubleString));
+            final String doubleString = SUT.getCachedItem((double) ii, OSA);
+            assertEquals((double) ii, Double.parseDouble(doubleString));
             assertSame(doubleString, SUT.getCachedItem(Double.toString(ii)));
-            cachedStrings[ii+1] = doubleString;
+            cachedStrings[ii + 1] = doubleString;
         }
 
         final int savedOccupancyThreshold = SUT.getOccupancyThreshold();
@@ -172,32 +175,32 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
             assertSame(intString, cachedStrings[ii]);
             assertSame(cachedStrings[ii], SUT.getCachedItem(Integer.toString(ii)));
 
-            final String doubleString = SUT.getCachedItem((double)ii, OSA);
-            assertSame(doubleString, cachedStrings[ii+1]);
-            assertSame(cachedStrings[ii+1], SUT.getCachedItem(Double.toString(ii)));
+            final String doubleString = SUT.getCachedItem((double) ii, OSA);
+            assertSame(doubleString, cachedStrings[ii + 1]);
+            assertSame(cachedStrings[ii + 1], SUT.getCachedItem(Double.toString(ii)));
 
-            cachedStrings[ii+1] = null;
+            cachedStrings[ii + 1] = null;
         }
 
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
-        assertTrue(cachedStrings.length/2 <= SUT.getOccupiedSlots());
-        assertTrue(cachedStrings.length   >= SUT.getOccupiedSlots());
+        assertTrue(cachedStrings.length / 2 <= SUT.getOccupiedSlots());
+        assertTrue(cachedStrings.length >= SUT.getOccupiedSlots());
         System.gc();
-        while (SUT.getOccupiedSlots() != cachedStrings.length/2) {
+        while (SUT.getOccupiedSlots() != cachedStrings.length / 2) {
             assertSame(cachedStrings[0], SUT.getCachedItem(cachedStrings[0])); // Force cleanup
         }
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
-        assertEquals(cachedStrings.length/2, SUT.getOccupiedSlots());
+        assertEquals(cachedStrings.length / 2, SUT.getOccupiedSlots());
 
         for (int ii = 0; ii < cachedStrings.length; ii += 2) {
             final String intString = SUT.getCachedItem(ii, OSA);
             assertSame(intString, cachedStrings[ii]);
             assertSame(cachedStrings[ii], SUT.getCachedItem(Integer.toString(ii)));
 
-            final String doubleString = SUT.getCachedItem((double)ii, OSA);
-            assertEquals((double)ii, Double.parseDouble(doubleString));
+            final String doubleString = SUT.getCachedItem((double) ii, OSA);
+            assertEquals((double) ii, Double.parseDouble(doubleString));
             assertSame(doubleString, SUT.getCachedItem(Double.toString(ii)));
-            cachedStrings[ii+1] = doubleString;
+            cachedStrings[ii + 1] = doubleString;
         }
 
         assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());

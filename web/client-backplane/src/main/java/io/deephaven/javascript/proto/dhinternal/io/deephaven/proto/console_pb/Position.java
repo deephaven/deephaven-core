@@ -13,65 +13,66 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.Position",
     namespace = JsPackage.GLOBAL)
 public class Position {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static Position.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static Position.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getCharacter();
+
+        @JsProperty
+        double getLine();
+
+        @JsProperty
+        void setCharacter(double character);
+
+        @JsProperty
+        void setLine(double line);
     }
 
-    @JsProperty
-    double getCharacter();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static Position.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    double getLine();
+        @JsProperty
+        double getCharacter();
 
-    @JsProperty
-    void setCharacter(double character);
+        @JsProperty
+        double getLine();
 
-    @JsProperty
-    void setLine(double line);
-  }
+        @JsProperty
+        void setCharacter(double character);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static Position.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setLine(double line);
     }
 
-    @JsProperty
-    double getCharacter();
+    public static native Position deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    double getLine();
+    public static native Position deserializeBinaryFromReader(Position message, Object reader);
 
-    @JsProperty
-    void setCharacter(double character);
+    public static native void serializeBinaryToWriter(Position message, Object writer);
 
-    @JsProperty
-    void setLine(double line);
-  }
+    public static native Position.ToObjectReturnType toObject(boolean includeInstance,
+        Position msg);
 
-  public static native Position deserializeBinary(Uint8Array bytes);
+    public native double getCharacter();
 
-  public static native Position deserializeBinaryFromReader(Position message, Object reader);
+    public native double getLine();
 
-  public static native void serializeBinaryToWriter(Position message, Object writer);
+    public native Uint8Array serializeBinary();
 
-  public static native Position.ToObjectReturnType toObject(boolean includeInstance, Position msg);
+    public native void setCharacter(double value);
 
-  public native double getCharacter();
+    public native void setLine(double value);
 
-  public native double getLine();
+    public native Position.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setCharacter(double value);
-
-  public native void setLine(double value);
-
-  public native Position.ToObjectReturnType0 toObject();
-
-  public native Position.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native Position.ToObjectReturnType0 toObject(boolean includeInstance);
 }

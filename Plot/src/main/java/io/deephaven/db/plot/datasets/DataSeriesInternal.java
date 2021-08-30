@@ -14,7 +14,7 @@ import io.deephaven.gui.color.Paint;
  */
 public interface DataSeriesInternal extends DataSeries, SeriesInternal, PlotExceptionCause {
 
-    //////////////////////////  internal  //////////////////////////
+    ////////////////////////// internal //////////////////////////
 
     @Override
     DataSeriesInternal copy(final AxesImpl axes);

@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.message.ProtobufMessage",
     namespace = JsPackage.GLOBAL)
 public interface ProtobufMessage {
-  Uint8Array serializeBinary();
+    Uint8Array serializeBinary();
 
-  Object toObject();
+    Object toObject();
 }

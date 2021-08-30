@@ -28,12 +28,12 @@ public class ConversionTest extends PythonTest {
         pyOut = IdentityOut.create(getCreateModule(), PyObjectIdentityOut.class);
         ref = ReferenceCounting.create();
         jpy = JpyModule.create();
-        //jpy.setFlags(EnumSet.of(Flag.ALL));
+        // jpy.setFlags(EnumSet.of(Flag.ALL));
     }
 
     @After
     public void tearDown() {
-        //jpy.setFlags(EnumSet.of(Flag.OFF));
+        // jpy.setFlags(EnumSet.of(Flag.OFF));
         jpy.close();
         ref.close();
         pyOut.close();
@@ -94,7 +94,7 @@ public class ConversionTest extends PythonTest {
     public void implicitPyObjectIntToPyObject() {
         try (final PyObject in = expr(UNIQ_INT)) {
             check(1, in);
-            try (final PyObject out = pyOut.identity((Object)in)) {
+            try (final PyObject out = pyOut.identity((Object) in)) {
                 check(2, in);
                 Assert.assertTrue(out.isInt());
                 Assert.assertEquals(UNIQ_INT, out.getIntValue());
@@ -140,7 +140,7 @@ public class ConversionTest extends PythonTest {
     public void implicitPyObjectStringToPyObject() {
         try (final PyObject in = expr(UNIQ_STR)) {
             check(1, in);
-            try (final PyObject out = pyOut.identity((Object)in)) {
+            try (final PyObject out = pyOut.identity((Object) in)) {
                 check(2, in);
                 Assert.assertTrue(out.isString());
                 Assert.assertEquals(UNIQ_STR, out.str());

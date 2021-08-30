@@ -19,7 +19,8 @@ import java.io.IOException;
 
 public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
 
-    private static final File FILE = new File(Configuration.getInstance().getWorkspacePath(), "TestTrackedFileHandleFactory.dat");
+    private static final File FILE = new File(Configuration.getInstance().getWorkspacePath(),
+        "TestTrackedFileHandleFactory.dat");
     private static final int CAPACITY = 100;
     private static final double TARGET_USAGE_RATIO = 0.9;
     private static final int TARGET_USAGE_THRESHOLD = 90;
@@ -32,15 +33,18 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
     public void setUp() throws Exception {
         super.setUp();
 
-        //noinspection ResultOfMethodCallIgnored
+        // noinspection ResultOfMethodCallIgnored
         FILE.createNewFile();
 
         scheduler = mock(Scheduler.class);
 
-        checking(new Expectations(){{
-            one(scheduler).currentTimeMillis(); will(returnValue(0L));
-            one(scheduler).installJob(with(any(TimedJob.class)), with(equal(60000L)));
-        }});
+        checking(new Expectations() {
+            {
+                one(scheduler).currentTimeMillis();
+                will(returnValue(0L));
+                one(scheduler).installJob(with(any(TimedJob.class)), with(equal(60000L)));
+            }
+        });
 
         FHCUT = new TrackedFileHandleFactory(scheduler, CAPACITY, TARGET_USAGE_RATIO, 60000);
         TestCase.assertEquals(scheduler, FHCUT.getScheduler());
@@ -61,19 +65,23 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
         try {
             new TrackedFileHandleFactory(scheduler, 0);
             TestCase.fail();
-        } catch(RequirementFailure expected) {}
+        } catch (RequirementFailure expected) {
+        }
         try {
             new TrackedFileHandleFactory(scheduler, 10, -0.01, 60000L);
             TestCase.fail();
-        } catch(RequirementFailure expected) {}
+        } catch (RequirementFailure expected) {
+        }
         try {
             new TrackedFileHandleFactory(scheduler, 10, 1.01, 60000L);
             TestCase.fail();
-        } catch(RequirementFailure expected) {}
+        } catch (RequirementFailure expected) {
+        }
         try {
             new TrackedFileHandleFactory(scheduler, 10, 0.09, 60000L);
             TestCase.fail();
-        } catch(RequirementFailure expected) {}
+        } catch (RequirementFailure expected) {
+        }
     }
 
     @Test
@@ -90,17 +98,18 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
     @Test
     public void testFull() throws IOException {
         FileHandle handles[] = new FileHandle[CAPACITY + 1];
-        for(int fhi = 0; fhi < CAPACITY + 1; ++fhi) {
+        for (int fhi = 0; fhi < CAPACITY + 1; ++fhi) {
             TestCase.assertEquals(fhi, FHCUT.getSize());
             handles[fhi] = FHCUT.readOnlyHandleCreator.invoke(FILE);
             assertIsSatisfied();
         }
-        // Synchronous cleanup brings us down to threshold, but the handle that triggered the cleanup is recorded afterwards.
+        // Synchronous cleanup brings us down to threshold, but the handle that triggered the
+        // cleanup is recorded afterwards.
         TestCase.assertEquals(TARGET_USAGE_THRESHOLD + 1, FHCUT.getSize());
 
-        for(int fhi = 0; fhi < handles.length; ++fhi) {
+        for (int fhi = 0; fhi < handles.length; ++fhi) {
             FileHandle fh = handles[fhi];
-            if(fhi < handles.length - TARGET_USAGE_THRESHOLD - 1) {
+            if (fhi < handles.length - TARGET_USAGE_THRESHOLD - 1) {
                 TestCase.assertFalse(fh.isOpen());
             } else {
                 TestCase.assertTrue(fh.isOpen());

@@ -63,7 +63,8 @@ class SoleKey implements OrderedKeys {
     }
 
     @Override
-    public void fillKeyIndicesChunk(WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
+    public void fillKeyIndicesChunk(
+        WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
         chunkToFill.set(0, key);
         chunkToFill.setSize(1);
     }

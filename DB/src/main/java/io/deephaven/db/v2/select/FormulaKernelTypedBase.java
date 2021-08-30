@@ -27,8 +27,8 @@ import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableShortChunk;
 
 /**
- * Extends {@link FormulaKernel} for specifically typed destination
- * {@link WritableChunk WritableChunks}.
+ * Extends {@link FormulaKernel} for specifically typed destination {@link WritableChunk
+ * WritableChunks}.
  */
 public abstract class FormulaKernelTypedBase implements FormulaKernel {
 
@@ -96,82 +96,82 @@ public abstract class FormulaKernelTypedBase implements FormulaKernel {
 
         @Override
         public void visit(ByteChunk<ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableByteChunk(),
+                ((WritableChunk) chunk).asWritableByteChunk(),
                 __sources);
         }
 
         @Override
         public void visit(BooleanChunk<ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableBooleanChunk(),
+                ((WritableChunk) chunk).asWritableBooleanChunk(),
                 __sources);
         }
 
         @Override
         public void visit(CharChunk<ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableCharChunk(),
+                ((WritableChunk) chunk).asWritableCharChunk(),
                 __sources);
         }
 
         @Override
         public void visit(ShortChunk<ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableShortChunk(),
+                ((WritableChunk) chunk).asWritableShortChunk(),
                 __sources);
         }
 
         @Override
         public void visit(IntChunk<ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableIntChunk(),
+                ((WritableChunk) chunk).asWritableIntChunk(),
                 __sources);
         }
 
         @Override
         public void visit(LongChunk<ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableLongChunk(),
+                ((WritableChunk) chunk).asWritableLongChunk(),
                 __sources);
         }
 
         @Override
         public void visit(FloatChunk<ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableFloatChunk(),
+                ((WritableChunk) chunk).asWritableFloatChunk(),
                 __sources);
         }
 
         @Override
         public void visit(DoubleChunk<ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableDoubleChunk(),
+                ((WritableChunk) chunk).asWritableDoubleChunk(),
                 __sources);
         }
 
         @Override
         public <T> void visit(ObjectChunk<T, ATTR> chunk) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             applyFormulaChunk(
                 __context,
-                ((WritableChunk)chunk).asWritableObjectChunk(),
+                ((WritableChunk) chunk).asWritableObjectChunk(),
                 __sources);
         }
     }

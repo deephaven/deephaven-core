@@ -3,7 +3,7 @@ package io.deephaven.db.util.scripts;
 import java.util.*;
 
 /**
- *  Maps from script language name to file extensions.
+ * Maps from script language name to file extensions.
  */
 public class ScriptExtensionsMap extends HashMap<String, List<String>> {
     private ScriptExtensionsMap() {
@@ -13,8 +13,9 @@ public class ScriptExtensionsMap extends HashMap<String, List<String>> {
         put("JavaScript", Arrays.asList("js", "javascript"));
     }
 
-    private static Map<String,List<String>> instance;
-    synchronized public static Map<String,List<String>> getInstance() {
+    private static Map<String, List<String>> instance;
+
+    synchronized public static Map<String, List<String>> getInstance() {
         if (instance == null) {
             instance = Collections.unmodifiableMap(new ScriptExtensionsMap());
         }

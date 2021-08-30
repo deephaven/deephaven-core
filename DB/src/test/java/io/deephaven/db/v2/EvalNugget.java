@@ -60,7 +60,8 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         }
 
         @Override
-        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(Throwable originalException,
+            UpdatePerformanceTracker.Entry sourceEntry) {
             exception = originalException;
             final StringWriter errors = new StringWriter();
             if (description != null) {
@@ -83,7 +84,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
 
     private final TableUpdateValidator validator;
     {
-        if (originalValue instanceof QueryTable && ((QueryTable)originalValue).isRefreshing()) {
+        if (originalValue instanceof QueryTable && ((QueryTable) originalValue).isRefreshing()) {
             validator = TableUpdateValidator.make((QueryTable) originalValue);
             validator.getResultTable().listenForUpdates(failureListener);
         } else {
@@ -119,7 +120,8 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     }
 
     void checkDifferences(String msg, Table recomputed) {
-        TstUtils.assertTableEquals(msg, forComparison(recomputed), forComparison(originalValue), diffItems());
+        TstUtils.assertTableEquals(msg, forComparison(recomputed), forComparison(originalValue),
+            diffItems());
     }
 
     @NotNull
@@ -137,16 +139,20 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         final Table originalForComparison = forComparison(originalValue);
 
         final int maxLines = 100;
-        final Pair<String, Long> diffPair = TableTools.diffPair(originalForComparison, recomputedForComparison, maxLines, diffItems());
+        final Pair<String, Long> diffPair = TableTools.diffPair(originalForComparison,
+            recomputedForComparison, maxLines, diffItems());
 
         if (diffPair.getFirst().equals("")) {
             showResult("Recomputed Table:", recomputedTable);
         } else if (!diffPair.getFirst().equals("")) {
-            final long numTableRows = Math.min(maxLines, Math.max(originalForComparison.size(), recomputedForComparison.size()));
+            final long numTableRows = Math.min(maxLines,
+                Math.max(originalForComparison.size(), recomputedForComparison.size()));
             final long firstRow = Math.max(0, diffPair.getSecond() - 5);
-            final long lastRow = Math.min(firstRow + numTableRows, Math.min(firstRow + maxLines, diffPair.getSecond() + 5));
+            final long lastRow = Math.min(firstRow + numTableRows,
+                Math.min(firstRow + maxLines, diffPair.getSecond() + 5));
 
-            System.out.println("Recomputed Table Differs:\n" + diffPair.getFirst() + "\nRecomputed Table Rows [" + firstRow + ", " + lastRow + "]:");
+            System.out.println("Recomputed Table Differs:\n" + diffPair.getFirst()
+                + "\nRecomputed Table Rows [" + firstRow + ", " + lastRow + "]:");
             TableTools.showWithIndex(recomputedForComparison, firstRow, lastRow + 1);
             System.out.println("Incremental Table Rows [" + firstRow + ", " + lastRow + "]:");
             TableTools.showWithIndex(originalForComparison, firstRow, lastRow + 1);
@@ -162,13 +168,13 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     }
 
     public abstract static class Sorted extends EvalNugget {
-        private final String [] sortColumns;
+        private final String[] sortColumns;
 
-        public Sorted(String ... sortColumns) {
+        public Sorted(String... sortColumns) {
             this.sortColumns = sortColumns;
         }
 
-        public Sorted(String description, String ... sortColumns) {
+        public Sorted(String description, String... sortColumns) {
             super(description);
             this.sortColumns = sortColumns;
         }
@@ -178,7 +184,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
             return t.sort(sortColumns);
         }
 
-        public static EvalNugget from(Supplier<Table> makeTable, String ... sortColumns) {
+        public static EvalNugget from(Supplier<Table> makeTable, String... sortColumns) {
             return new EvalNugget.Sorted(sortColumns) {
                 @Override
                 protected Table e() {

@@ -6,10 +6,11 @@ import java.util.logging.*;
 
 public final class GrpcLogging {
     public static void setupFromBooleanProperty(
-            final String property, final boolean defaultValue, final String shadowPath) {
+        final String property, final boolean defaultValue, final String shadowPath) {
         final boolean logAllDefault = defaultValue;
         final String logAllStr = System.getProperty(property);
-        final boolean logAll = (logAllStr == null) ? logAllDefault : Boolean.parseBoolean(logAllStr);
+        final boolean logAll =
+            (logAllStr == null) ? logAllDefault : Boolean.parseBoolean(logAllStr);
         if (!logAll) {
             return;
         }
@@ -32,7 +33,7 @@ public final class GrpcLogging {
         // This avoids polluting our console logs with distracting stuff that makes it harder
         // to debug actual issues.
         final Set<String> filteredSet = new HashSet<>();
-        for (String annoyingLoggingPath : new String[]{
+        for (String annoyingLoggingPath : new String[] {
                 "io.grpc.netty.Utils",
                 "io.grpc.netty.GrpcSslContexts",
                 "io.grpc.InternalChannelz",

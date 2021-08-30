@@ -34,7 +34,8 @@ public class JsFigureFactory {
         JsArray<JsTable> tables = descriptor.getTables();
 
         if (tables == null || tables.length == 0) {
-            return (Promise<JsFigure>)(Promise)Promise.reject("No tables provided for Figure creation");
+            return (Promise<JsFigure>) (Promise) Promise
+                .reject("No tables provided for Figure creation");
         }
 
         FigureDescriptor figureDescriptor = convertJsFigureDescriptor(descriptor);
@@ -50,55 +51,57 @@ public class JsFigureFactory {
 
                     for (int i = 0; i < tableCopies.length; i++) {
                         final int tableIndex = i;
-                        // Tables are closed when the figure is closed, no need to remove listeners later
-                        removerFns.add(tableCopies[i].addEventListener(JsTable.EVENT_DISCONNECT, ignore -> {
-                            isTableDisconnected[tableIndex] = true;
-                            for (int j = 0; j < isTableDisconnected.length; j++) {
-                                if (isTableDisconnected[j] && j != tableIndex) {
-                                    return;
+                        // Tables are closed when the figure is closed, no need to remove listeners
+                        // later
+                        removerFns.add(
+                            tableCopies[i].addEventListener(JsTable.EVENT_DISCONNECT, ignore -> {
+                                isTableDisconnected[tableIndex] = true;
+                                for (int j = 0; j < isTableDisconnected.length; j++) {
+                                    if (isTableDisconnected[j] && j != tableIndex) {
+                                        return;
+                                    }
                                 }
-                            }
 
-                            figure.fireEvent(JsFigure.EVENT_DISCONNECT);
-                            figure.unsubscribe();
-                        }));
-                        removerFns.add(tableCopies[i].addEventListener(JsTable.EVENT_RECONNECT, ignore -> {
-                            isTableDisconnected[tableIndex] = false;
-                            for (int j = 0; j < isTableDisconnected.length; j++) {
-                                if (isTableDisconnected[j]) {
-                                    return;
+                                figure.fireEvent(JsFigure.EVENT_DISCONNECT);
+                                figure.unsubscribe();
+                            }));
+                        removerFns.add(
+                            tableCopies[i].addEventListener(JsTable.EVENT_RECONNECT, ignore -> {
+                                isTableDisconnected[tableIndex] = false;
+                                for (int j = 0; j < isTableDisconnected.length; j++) {
+                                    if (isTableDisconnected[j]) {
+                                        return;
+                                    }
                                 }
-                            }
 
-                            try {
-                                figure.verifyTables();
-                                figure.fireEvent(JsFigure.EVENT_RECONNECT);
-                                figure.enqueueSubscriptionCheck();
-                            } catch (JsFigure.FigureSourceException e) {
+                                try {
+                                    figure.verifyTables();
+                                    figure.fireEvent(JsFigure.EVENT_RECONNECT);
+                                    figure.enqueueSubscriptionCheck();
+                                } catch (JsFigure.FigureSourceException e) {
+                                    final CustomEventInit init = CustomEventInit.create();
+                                    init.setDetail(e);
+                                    figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
+                                }
+                            }));
+                        removerFns.add(
+                            tableCopies[i].addEventListener(JsTable.EVENT_RECONNECTFAILED, err -> {
+                                for (RemoverFn removerFn : removerFns) {
+                                    removerFn.remove();
+                                }
+                                figure.unsubscribe();
+
                                 final CustomEventInit init = CustomEventInit.create();
-                                init.setDetail(e);
+                                init.setDetail(err);
                                 figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
-                            }
-                        }));
-                        removerFns.add(tableCopies[i].addEventListener(JsTable.EVENT_RECONNECTFAILED, err -> {
-                            for (RemoverFn removerFn : removerFns) {
-                                removerFn.remove();
-                            }
-                            figure.unsubscribe();
-
-                            final CustomEventInit init = CustomEventInit.create();
-                            init.setDetail(err);
-                            figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
-                        }));
+                            }));
                     }
 
                     return Promise.resolve(new JsFigure.FigureTableFetchData(
                         tableCopies,
                         new TableMap[0],
-                        Collections.emptyMap()
-                    ));
-                }
-            ).refetch());
+                        Collections.emptyMap()));
+                }).refetch());
     }
 
     private static FigureDescriptor convertJsFigureDescriptor(JsFigureDescriptor jsDescriptor) {
@@ -111,7 +114,8 @@ public class JsFigureFactory {
         descriptor.setRows(jsDescriptor.rows);
 
         JsArray<JsTable> tables = jsDescriptor.getTables();
-        // The only thing used by the Figure with the tableIds (outside of the default fetchTables function) is the
+        // The only thing used by the Figure with the tableIds (outside of the default fetchTables
+        // function) is the
         // length of these tableIds.
         descriptor.setTablesList(new JsArray<>());
         descriptor.getTablesList().length = tables.length;
@@ -126,7 +130,8 @@ public class JsFigureFactory {
         return descriptor;
     }
 
-    private static ChartDescriptor convertJsChartDescriptor(JsChartDescriptor jsDescriptor, JsArray<JsTable> tables) {
+    private static ChartDescriptor convertJsChartDescriptor(JsChartDescriptor jsDescriptor,
+        JsArray<JsTable> tables) {
         ChartDescriptor descriptor = new ChartDescriptor();
 
         descriptor.setColspan(jsDescriptor.colspan);
@@ -188,7 +193,8 @@ public class JsFigureFactory {
         descriptor.setMajorTicksVisible(jsDescriptor.majorTicksVisible);
         descriptor.setMinorTickCount(jsDescriptor.minorTickCount);
         descriptor.setGapBetweenMajorTicks(jsDescriptor.gapBetweenMajorTicks);
-        descriptor.setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(jsDescriptor.majorTickLocations));
+        descriptor.setMajorTickLocationsList(
+            Js.<JsArray<Double>>uncheckedCast(jsDescriptor.majorTickLocations));
         descriptor.setTickLabelAngle(jsDescriptor.tickLabelAngle);
         descriptor.setInvert(jsDescriptor.invert);
         descriptor.setIsTimeAxis(jsDescriptor.isTimeAxis);
@@ -196,7 +202,8 @@ public class JsFigureFactory {
         return descriptor;
     }
 
-    private static SeriesDescriptor convertJsSeriesDescriptor(JsSeriesDescriptor jsDescriptor, JsArray<JsTable> tables, Map<JsAxisDescriptor, AxisDescriptor> axisMap) {
+    private static SeriesDescriptor convertJsSeriesDescriptor(JsSeriesDescriptor jsDescriptor,
+        JsArray<JsTable> tables, Map<JsAxisDescriptor, AxisDescriptor> axisMap) {
         SeriesDescriptor descriptor = new SeriesDescriptor();
 
         descriptor.setPlotStyle(Js.coerceToInt(jsDescriptor.plotStyle));
@@ -207,7 +214,8 @@ public class JsFigureFactory {
         if (jsDescriptor.shapesVisible != null) {
             descriptor.setShapesVisible(jsDescriptor.shapesVisible);
         }
-        descriptor.setGradientVisible(jsDescriptor.gradientVisible != null ? jsDescriptor.gradientVisible : false);
+        descriptor.setGradientVisible(
+            jsDescriptor.gradientVisible != null ? jsDescriptor.gradientVisible : false);
         descriptor.setLineColor(jsDescriptor.lineColor);
         descriptor.setPointLabelFormat(jsDescriptor.pointLabelFormat);
         descriptor.setXToolTipPattern(jsDescriptor.xToolTipPattern);
@@ -230,7 +238,8 @@ public class JsFigureFactory {
         return descriptor;
     }
 
-    private static SourceDescriptor convertJsSourceDescriptor(JsSourceDescriptor jsDescriptor, JsArray<JsTable> tables, Map<JsAxisDescriptor, AxisDescriptor> axisMap) {
+    private static SourceDescriptor convertJsSourceDescriptor(JsSourceDescriptor jsDescriptor,
+        JsArray<JsTable> tables, Map<JsAxisDescriptor, AxisDescriptor> axisMap) {
         SourceDescriptor descriptor = new SourceDescriptor();
 
         descriptor.setAxisId(axisMap.get(jsDescriptor.axis).getId());

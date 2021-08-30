@@ -7,15 +7,15 @@ package io.deephaven.base.stats;
 import io.deephaven.base.Function;
 
 /**
- * This class accumulates samples in a 64 bin histogram with the property that
- * for a sample value of n, the bin index will be log2(n)+1 (offset by 1) since
- * there are no unsinged numbers, and placing negative and 0 values in bin 0
- * preserves order, with maximum appearing in bin index 63 (max pos numbers)
+ * This class accumulates samples in a 64 bin histogram with the property that for a sample value of
+ * n, the bin index will be log2(n)+1 (offset by 1) since there are no unsinged numbers, and placing
+ * negative and 0 values in bin 0 preserves order, with maximum appearing in bin index 63 (max pos
+ * numbers)
  */
- public class HistogramPower2 extends Value {
+public class HistogramPower2 extends Value {
 
-    private static final int LONG_WIDTH =64;
-    public static char TYPE_TAG='N';
+    private static final int LONG_WIDTH = 64;
+    public static char TYPE_TAG = 'N';
 
     private long[] histo = new long[LONG_WIDTH];
     private long m_samples = 0;
@@ -27,26 +27,29 @@ import io.deephaven.base.Function;
     public void sample(long n) {
         super.sample(n);
         int v = (LONG_WIDTH - Long.numberOfLeadingZeros(n));
-        if (v >= LONG_WIDTH) { v=0; }    // negative and 0 go into bin 0
-        ++histo[v];                // all others go into bin number log2(n) + 1
+        if (v >= LONG_WIDTH) {
+            v = 0;
+        } // negative and 0 go into bin 0
+        ++histo[v]; // all others go into bin number log2(n) + 1
         ++m_samples;
     }
 
-    private final ThreadLocal<StringBuilder> threadLocalStringBuilder = new ThreadLocal<StringBuilder>() {
-        @Override
-        protected StringBuilder initialValue() {
-            return new StringBuilder(100);
-        }
-    };
+    private final ThreadLocal<StringBuilder> threadLocalStringBuilder =
+        new ThreadLocal<StringBuilder>() {
+            @Override
+            protected StringBuilder initialValue() {
+                return new StringBuilder(100);
+            }
+        };
 
-    public String getHistogramString(){
+    public String getHistogramString() {
         if (m_samples == 0) {
             return "<empty profile>";
         }
         StringBuilder hs = threadLocalStringBuilder.get();
         hs.setLength(0);
         hs.append("Samples: ").append(m_samples);
-        int topIdx = LONG_WIDTH -1;
+        int topIdx = LONG_WIDTH - 1;
         int idx = 0;
         while ((topIdx > 0) && (histo[topIdx] == 0)) {
             topIdx--;
@@ -60,14 +63,14 @@ import io.deephaven.base.Function;
         return hs.toString();
     }
 
-    public long [] getHistogram(){
+    public long[] getHistogram() {
         return histo;
     }
 
     public void clear() {
         super.reset();
         m_samples = 0;
-        for (int i = 0; i < LONG_WIDTH; ++i){
+        for (int i = 0; i < LONG_WIDTH; ++i) {
             histo[i] = 0;
         }
     }
@@ -82,9 +85,10 @@ import io.deephaven.base.Function;
         return TYPE_TAG;
     }
 
-    public static final Function.Unary<HistogramPower2, Long> FACTORY = new Function.Unary<HistogramPower2, Long> () {
-        public HistogramPower2 call(Long now) {
-            return new HistogramPower2(now);
-        }
-    };
+    public static final Function.Unary<HistogramPower2, Long> FACTORY =
+        new Function.Unary<HistogramPower2, Long>() {
+            public HistogramPower2 call(Long now) {
+                return new HistogramPower2(now);
+            }
+        };
 }

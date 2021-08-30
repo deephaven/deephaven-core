@@ -14,88 +14,89 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest",
     namespace = JsPackage.GLOBAL)
 public class LogSubscriptionRequest {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static LogSubscriptionRequest.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static LogSubscriptionRequest.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getLastSeenLogTimestamp();
+
+        @JsProperty
+        JsArray<String> getLevelsList();
+
+        @JsProperty
+        void setLastSeenLogTimestamp(double lastSeenLogTimestamp);
+
+        @JsProperty
+        void setLevelsList(JsArray<String> levelsList);
+
+        @JsOverlay
+        default void setLevelsList(String[] levelsList) {
+            setLevelsList(Js.<JsArray<String>>uncheckedCast(levelsList));
+        }
     }
 
-    @JsProperty
-    double getLastSeenLogTimestamp();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static LogSubscriptionRequest.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    JsArray<String> getLevelsList();
+        @JsProperty
+        double getLastSeenLogTimestamp();
 
-    @JsProperty
-    void setLastSeenLogTimestamp(double lastSeenLogTimestamp);
+        @JsProperty
+        JsArray<String> getLevelsList();
 
-    @JsProperty
-    void setLevelsList(JsArray<String> levelsList);
+        @JsProperty
+        void setLastSeenLogTimestamp(double lastSeenLogTimestamp);
+
+        @JsProperty
+        void setLevelsList(JsArray<String> levelsList);
+
+        @JsOverlay
+        default void setLevelsList(String[] levelsList) {
+            setLevelsList(Js.<JsArray<String>>uncheckedCast(levelsList));
+        }
+    }
+
+    public static native LogSubscriptionRequest deserializeBinary(Uint8Array bytes);
+
+    public static native LogSubscriptionRequest deserializeBinaryFromReader(
+        LogSubscriptionRequest message, Object reader);
+
+    public static native void serializeBinaryToWriter(LogSubscriptionRequest message,
+        Object writer);
+
+    public static native LogSubscriptionRequest.ToObjectReturnType toObject(
+        boolean includeInstance, LogSubscriptionRequest msg);
+
+    public native String addLevels(String value, double index);
+
+    public native String addLevels(String value);
+
+    public native void clearLevelsList();
+
+    public native double getLastSeenLogTimestamp();
+
+    public native JsArray<String> getLevelsList();
+
+    public native Uint8Array serializeBinary();
+
+    public native void setLastSeenLogTimestamp(double value);
+
+    public native void setLevelsList(JsArray<String> value);
 
     @JsOverlay
-    default void setLevelsList(String[] levelsList) {
-      setLevelsList(Js.<JsArray<String>>uncheckedCast(levelsList));
-    }
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static LogSubscriptionRequest.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    public final void setLevelsList(String[] value) {
+        setLevelsList(Js.<JsArray<String>>uncheckedCast(value));
     }
 
-    @JsProperty
-    double getLastSeenLogTimestamp();
+    public native LogSubscriptionRequest.ToObjectReturnType0 toObject();
 
-    @JsProperty
-    JsArray<String> getLevelsList();
-
-    @JsProperty
-    void setLastSeenLogTimestamp(double lastSeenLogTimestamp);
-
-    @JsProperty
-    void setLevelsList(JsArray<String> levelsList);
-
-    @JsOverlay
-    default void setLevelsList(String[] levelsList) {
-      setLevelsList(Js.<JsArray<String>>uncheckedCast(levelsList));
-    }
-  }
-
-  public static native LogSubscriptionRequest deserializeBinary(Uint8Array bytes);
-
-  public static native LogSubscriptionRequest deserializeBinaryFromReader(
-      LogSubscriptionRequest message, Object reader);
-
-  public static native void serializeBinaryToWriter(LogSubscriptionRequest message, Object writer);
-
-  public static native LogSubscriptionRequest.ToObjectReturnType toObject(
-      boolean includeInstance, LogSubscriptionRequest msg);
-
-  public native String addLevels(String value, double index);
-
-  public native String addLevels(String value);
-
-  public native void clearLevelsList();
-
-  public native double getLastSeenLogTimestamp();
-
-  public native JsArray<String> getLevelsList();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setLastSeenLogTimestamp(double value);
-
-  public native void setLevelsList(JsArray<String> value);
-
-  @JsOverlay
-  public final void setLevelsList(String[] value) {
-    setLevelsList(Js.<JsArray<String>>uncheckedCast(value));
-  }
-
-  public native LogSubscriptionRequest.ToObjectReturnType0 toObject();
-
-  public native LogSubscriptionRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native LogSubscriptionRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

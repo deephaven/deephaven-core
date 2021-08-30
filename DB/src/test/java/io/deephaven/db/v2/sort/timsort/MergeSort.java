@@ -10,9 +10,9 @@ public class MergeSort {
     }
 
     public static void mergeSort(long[] src,
-                                 long[] dest,
-                                 int low, int high, int off,
-                                 ColumnComparatorFactory.IComparator c) {
+        long[] dest,
+        int low, int high, int off,
+        ColumnComparatorFactory.IComparator c) {
         int length = high - low;
 
         // Insertion sort on smallest arrays
@@ -32,7 +32,7 @@ public class MergeSort {
         mergeSort(dest, src, low, mid, -off, c);
         mergeSort(dest, src, mid, high, -off, c);
 
-        // If list is already sorted, just copy from src to dest.  This is an
+        // If list is already sorted, just copy from src to dest. This is an
         // optimization that results in faster sorts for nearly ordered lists.
         if (c.compare(src[mid - 1], src[mid]) <= 0) {
             System.arraycopy(src, low, dest, destLow, length);

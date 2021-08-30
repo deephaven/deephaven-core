@@ -14,7 +14,7 @@ public class DbFileTest extends BaseArrayTestCase {
     }
 
     public void testNewInstanceByteArray() {
-        final DbFile f = DbFile.newInstance(new byte[]{1, 2, 3});
+        final DbFile f = DbFile.newInstance(new byte[] {1, 2, 3});
         assertNotNull(f);
     }
 

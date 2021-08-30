@@ -19,9 +19,9 @@ import static io.deephaven.db.v2.TstUtils.testTable;
 
 @Category(OutOfBandTest.class)
 public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTestBase {
-   public QueryTableCrossJoinSmallRightBitsTest() {
-       super(1);
-   }
+    public QueryTableCrossJoinSmallRightBitsTest() {
+        super(1);
+    }
 
     public void testIncrementalWithKeyColumnsShallow() {
         final int size = 10;
@@ -34,8 +34,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
     public void testZeroKeyOutOfKeySpace() {
         // idea here is that left uses LARGE keyspace and the right uses SMALL keyspace.
         // (61-bits on the left, 2-bits on the right)
-        final QueryTable ltTable = testRefreshingTable(i(0, (1L<<61) - 1), c("A", 1, 2));
-        final QueryTable lsTable = testTable(i(0, (1L<<61) - 1), c("A", 1, 2));
+        final QueryTable ltTable = testRefreshingTable(i(0, (1L << 61) - 1), c("A", 1, 2));
+        final QueryTable lsTable = testTable(i(0, (1L << 61) - 1), c("A", 1, 2));
         final QueryTable rtTable = testRefreshingTable(i(0, 1, 2, 3), c("B", 1, 2, 3, 4));
         final QueryTable rsTable = testTable(i(0, 1, 2, 3), c("B", 1, 2, 3, 4));
 
@@ -53,7 +53,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                     // we can fit if we use min right bits
                     left.join(right, 1);
                 } else {
-                    left.join(right); // static - static should be OK because it always uses min right bits
+                    left.join(right); // static - static should be OK because it always uses min
+                                      // right bits
                 }
             }
         }
@@ -62,8 +63,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
     public void testKeyColumnOutOfKeySpace() {
         // idea here is that left uses LARGE keyspace and the right uses SMALL keyspace.
         // (62-bits on the left, 1-bit on the right (per group))
-        final QueryTable ltTable = testRefreshingTable(i(0, (1L<<62) - 1), c("A", 1, 2));
-        final QueryTable lsTable = testTable(i(0, (1L<<62) - 1), c("A", 1, 2));
+        final QueryTable ltTable = testRefreshingTable(i(0, (1L << 62) - 1), c("A", 1, 2));
+        final QueryTable lsTable = testTable(i(0, (1L << 62) - 1), c("A", 1, 2));
         final QueryTable rtTable = testRefreshingTable(i(0, 1, 2, 3), c("B", 1, 2, 3, 4));
         final QueryTable rsTable = testTable(i(0, 1, 2, 3), c("B", 1, 2, 3, 4));
 
@@ -81,7 +82,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                     // we can fit if we use min right bits
                     left.join(right, "A=B", 1);
                 } else {
-                    left.join(right, "A=B"); // static - static should be OK because it always uses min right bits
+                    left.join(right, "A=B"); // static - static should be OK because it always uses
+                                             // min right bits
                 }
             }
         }
@@ -89,28 +91,30 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
 
     public void testLeftGroupChangesOnRightShift() {
         // On the step with the shift:
-        //  - one row to not change groups, but group gets smaller (grp 0)
-        //  - one row to change groups to another of smaller size (grp 2 -> 1)
-        //  - one row to change groups to another of same size (grp 2 -> 3)
-        //  - one row to change groups to another of larger size (grp 2 -> 4)
-        //  - one row to not change groups, but group gets larger (grp 5)
+        // - one row to not change groups, but group gets smaller (grp 0)
+        // - one row to change groups to another of smaller size (grp 2 -> 1)
+        // - one row to change groups to another of same size (grp 2 -> 3)
+        // - one row to change groups to another of larger size (grp 2 -> 4)
+        // - one row to not change groups, but group gets larger (grp 5)
         final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4), c("A", 0, 2, 2, 2, 5));
         final QueryTable rTable = testRefreshingTable(i(), intCol("A"));
         int numRightBitsToReserve = 1;
 
-        int []sizes = new int[] {2, 1, 3, 3, 4, 4};
+        int[] sizes = new int[] {2, 1, 3, 3, 4, 4};
         for (int grp = 0; grp < sizes.length; ++grp) {
-            int []data = new int[sizes[grp]];
+            int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1), intCol("A", data));
+            TstUtils.addToTable(rTable,
+                Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
+                intCol("A", data));
         }
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> lTable.join(rTable, "A", numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable)lTable.join(rTable, "A", numRightBitsToReserve);
+        final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
         final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
         jt.listenForUpdates(listener);
 
@@ -139,31 +143,34 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
     }
 
     public void testLeftGroupChangesOnRightShiftWithAllInnerShifts() {
-        // This test is similar to the above, but has at least one inner shift on every group (which hits different logic).
+        // This test is similar to the above, but has at least one inner shift on every group (which
+        // hits different logic).
 
         // On the step with the shift:
-        //  - one row to not change groups, but group gets smaller (grp 0)
-        //  - one row to change groups to another of smaller size (grp 2 -> 1)
-        //  - one row to change groups to another of same size (grp 2 -> 3)
-        //  - one row to change groups to another of larger size (grp 2 -> 4)
-        //  - one row to not change groups, but group gets larger (grp 5)
+        // - one row to not change groups, but group gets smaller (grp 0)
+        // - one row to change groups to another of smaller size (grp 2 -> 1)
+        // - one row to change groups to another of same size (grp 2 -> 3)
+        // - one row to change groups to another of larger size (grp 2 -> 4)
+        // - one row to not change groups, but group gets larger (grp 5)
         final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4), c("A", 0, 2, 2, 2, 5));
         final QueryTable rTable = testRefreshingTable(i(), intCol("A"));
         int numRightBitsToReserve = 1;
 
-        int []sizes = new int[] {3, 2, 3, 3, 3, 4};
+        int[] sizes = new int[] {3, 2, 3, 3, 3, 4};
         for (int grp = 0; grp < sizes.length; ++grp) {
-            int []data = new int[sizes[grp]];
+            int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1), intCol("A", data));
+            TstUtils.addToTable(rTable,
+                Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
+                intCol("A", data));
         }
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> lTable.join(rTable, "A", numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable)lTable.join(rTable, "A", numRightBitsToReserve);
+        final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
         final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
         jt.listenForUpdates(listener);
 
@@ -193,28 +200,30 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
 
     public void testLeftGroupChangesOnBothShift() {
         // On the step with the shift:
-        //  - one row to not change groups, but group gets smaller (grp 0)
-        //  - one row to change groups to another of smaller size (grp 2 -> 1)
-        //  - one row to change groups to another of same size (grp 2 -> 3)
-        //  - one row to change groups to another of larger size (grp 2 -> 4)
-        //  - one row to not change groups, but group gets larger (grp 5)
+        // - one row to not change groups, but group gets smaller (grp 0)
+        // - one row to change groups to another of smaller size (grp 2 -> 1)
+        // - one row to change groups to another of same size (grp 2 -> 3)
+        // - one row to change groups to another of larger size (grp 2 -> 4)
+        // - one row to not change groups, but group gets larger (grp 5)
         final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4), c("A", 0, 2, 2, 2, 5));
         final QueryTable rTable = testRefreshingTable(i(), intCol("A"));
         int numRightBitsToReserve = 1;
 
-        int []sizes = new int[] {2, 1, 3, 3, 4, 4};
+        int[] sizes = new int[] {2, 1, 3, 3, 4, 4};
         for (int grp = 0; grp < sizes.length; ++grp) {
-            int []data = new int[sizes[grp]];
+            int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1), intCol("A", data));
+            TstUtils.addToTable(rTable,
+                Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
+                intCol("A", data));
         }
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> lTable.join(rTable, "A", numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable)lTable.join(rTable, "A", numRightBitsToReserve);
+        final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
         final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
         jt.listenForUpdates(listener);
 
@@ -246,31 +255,34 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
     }
 
     public void testLeftGroupChangesOnBothShiftWithInnerShifts() {
-        // This test is similar to the above, but has at least one inner shift on every group (which hits different logic).
+        // This test is similar to the above, but has at least one inner shift on every group (which
+        // hits different logic).
 
         // On the step with the shift:
-        //  - one row to not change groups, but group gets smaller (grp 0)
-        //  - one row to change groups to another of smaller size (grp 2 -> 1)
-        //  - one row to change groups to another of same size (grp 2 -> 3)
-        //  - one row to change groups to another of larger size (grp 2 -> 4)
-        //  - one row to not change groups, but group gets larger (grp 5)
+        // - one row to not change groups, but group gets smaller (grp 0)
+        // - one row to change groups to another of smaller size (grp 2 -> 1)
+        // - one row to change groups to another of same size (grp 2 -> 3)
+        // - one row to change groups to another of larger size (grp 2 -> 4)
+        // - one row to not change groups, but group gets larger (grp 5)
         final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4), c("A", 0, 2, 2, 2, 5));
         final QueryTable rTable = testRefreshingTable(i(), intCol("A"));
         int numRightBitsToReserve = 1;
 
-        int []sizes = new int[] {2, 1, 3, 3, 4, 4};
+        int[] sizes = new int[] {2, 1, 3, 3, 4, 4};
         for (int grp = 0; grp < sizes.length; ++grp) {
-            int []data = new int[sizes[grp]];
+            int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1), intCol("A", data));
+            TstUtils.addToTable(rTable,
+                Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
+                intCol("A", data));
         }
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> lTable.join(rTable, "A", numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable)lTable.join(rTable, "A", numRightBitsToReserve);
+        final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
         final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
         jt.listenForUpdates(listener);
 

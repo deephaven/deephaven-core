@@ -22,6 +22,7 @@ public class DelayedLogEntryImpl implements LogEntry {
 
     private static final AtomicLong starts = new AtomicLong(0);
     private static final AtomicLong ends = new AtomicLong(0);
+
     @SuppressWarnings("unused")
     public static long getDifferenceInStartToEnds() {
         final long e = ends.get(); // getting this one first
@@ -37,13 +38,13 @@ public class DelayedLogEntryImpl implements LogEntry {
 
     // This doesn't apply to this implementation, it's intended for when the buffer is being created
     @Override
-    public int getEndOfHeaderOffset() { return 0; }
+    public int getEndOfHeaderOffset() {
+        return 0;
+    }
 
     private enum Action {
-        APPEND_BOOLEAN, APPEND_CHAR, APPEND_SHORT, APPEND_INT, APPEND_LONG,
-        APPEND_DOUBLE, APPEND_CHARSEQ, APPEND_CHARSEQ_RANGE,
-        APPEND_TIMESTAMP, APPEND_NULL, APPEND_THROWABLE, NF, NL, APPEND_TIMESTAMP_MICROS,
-        END_OF_HEADER }
+        APPEND_BOOLEAN, APPEND_CHAR, APPEND_SHORT, APPEND_INT, APPEND_LONG, APPEND_DOUBLE, APPEND_CHARSEQ, APPEND_CHARSEQ_RANGE, APPEND_TIMESTAMP, APPEND_NULL, APPEND_THROWABLE, NF, NL, APPEND_TIMESTAMP_MICROS, END_OF_HEADER
+    }
 
     private final FastArray<Action> actions = new FastArray<>(Action.class, null, 8, false);
     private final FastBooleanArray booleans = new FastBooleanArray(8);
@@ -53,10 +54,15 @@ public class DelayedLogEntryImpl implements LogEntry {
     private final FastLongArray longs = new FastLongArray(8);
     private final FastFloatArray floats = new FastFloatArray(8);
     private final FastDoubleArray doubles = new FastDoubleArray(8);
-    private final FastArray<CharSequence> sequences = new FastArray<>(CharSequence.class, null, 8, false);
-    private final FastArray<TimestampBuffer> timestamps = new FastArray<>(TimestampBuffer.class, null, 8, false);
-    private final FastArray<TimestampBufferMicros> timestampsMicros = new FastArray<>(TimestampBufferMicros.class, null, 8, false);
-    private final FastArray<Throwable> throwables = new FastArray<>(Throwable.class, null, 8, false);
+    private final FastArray<CharSequence> sequences =
+        new FastArray<>(CharSequence.class, null, 8, false);
+    private final FastArray<TimestampBuffer> timestamps =
+        new FastArray<>(TimestampBuffer.class, null, 8, false);
+    private final FastArray<TimestampBufferMicros> timestampsMicros =
+        new FastArray<>(TimestampBufferMicros.class, null, 8, false);
+    private final FastArray<Throwable> throwables =
+        new FastArray<>(Throwable.class, null, 8, false);
+
     private void reset() {
         actions.quickReset();
         booleans.quickReset();
@@ -105,7 +111,8 @@ public class DelayedLogEntryImpl implements LogEntry {
     }
 
     @Override
-    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros, final Throwable t) {
+    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros,
+        final Throwable t) {
         starts.getAndIncrement();
         this.timestamp = currentTimeMicros;
         this.level = level;
@@ -116,7 +123,7 @@ public class DelayedLogEntryImpl implements LogEntry {
 
     @Override
     public LogEntry end() {
-        //noinspection unchecked
+        // noinspection unchecked
         sink.write(this);
         ends.getAndIncrement();
         return this;
@@ -202,7 +209,7 @@ public class DelayedLogEntryImpl implements LogEntry {
 
     @Override
     public LogEntry append(final LogOutputAppendable appendable) {
-        if(appendable == null) {
+        if (appendable == null) {
             actions.add(Action.APPEND_NULL);
         } else {
             appendable.append(this);
@@ -238,8 +245,7 @@ public class DelayedLogEntryImpl implements LogEntry {
     public LogEntry append(final CharSequence seq) {
         if (seq == null) {
             actions.add(Action.APPEND_NULL);
-        }
-        else {
+        } else {
             actions.add(Action.APPEND_CHARSEQ);
             sequences.add(seq);
         }
@@ -250,8 +256,7 @@ public class DelayedLogEntryImpl implements LogEntry {
     public LogEntry append(final CharSequence seq, final int start, final int length) {
         if (seq == null) {
             actions.add(Action.APPEND_NULL);
-        }
-        else {
+        } else {
             actions.add(Action.APPEND_CHARSEQ_RANGE);
             sequences.add(seq);
             ints.add(start);
@@ -269,7 +274,7 @@ public class DelayedLogEntryImpl implements LogEntry {
             final int limit = bb.limit();
             for (int i = pos; i < limit; ++i) {
                 actions.add(Action.APPEND_CHAR);
-                chars.add((char)bb.get(i));
+                chars.add((char) bb.get(i));
             }
         }
         return this;
@@ -311,7 +316,7 @@ public class DelayedLogEntryImpl implements LogEntry {
     public LogEntry append(final byte[] ba, int pos, int length) {
         for (int i = pos; i < pos + length; ++i) {
             actions.add(Action.APPEND_CHAR);
-            chars.add((char)ba[i]);
+            chars.add((char) ba[i]);
         }
         return this;
     }
@@ -320,7 +325,7 @@ public class DelayedLogEntryImpl implements LogEntry {
     public LogEntry append(final byte[] ba, byte terminator) {
         for (int i = 0; i < ba.length && ba[i] != terminator; ++i) {
             actions.add(Action.APPEND_CHAR);
-            chars.add((char)ba[i]);
+            chars.add((char) ba[i]);
         }
         return this;
     }
@@ -388,16 +393,19 @@ public class DelayedLogEntryImpl implements LogEntry {
                     logOutputBuffer = logOutputBuffer.append(seqs[seqPosition++]);
                     break;
                 case APPEND_CHARSEQ_RANGE:
-                    logOutputBuffer = logOutputBuffer.append(seqs[seqPosition++], is[intPosition++], is[intPosition++]);
+                    logOutputBuffer = logOutputBuffer.append(seqs[seqPosition++], is[intPosition++],
+                        is[intPosition++]);
                     break;
                 case APPEND_TIMESTAMP:
-                    logOutputBuffer = logOutputBuffer.appendTimestamp(ls[longPosition++], times[timePosition++]);
+                    logOutputBuffer =
+                        logOutputBuffer.appendTimestamp(ls[longPosition++], times[timePosition++]);
                     break;
                 case APPEND_TIMESTAMP_MICROS:
-                    logOutputBuffer = logOutputBuffer.appendTimestampMicros(ls[longPosition++], timesMicros[timeMicrosPosition++]);
+                    logOutputBuffer = logOutputBuffer.appendTimestampMicros(ls[longPosition++],
+                        timesMicros[timeMicrosPosition++]);
                     break;
                 case APPEND_NULL:
-                    logOutputBuffer = logOutputBuffer.append((LogOutputAppendable)null);
+                    logOutputBuffer = logOutputBuffer.append((LogOutputAppendable) null);
                     break;
                 case APPEND_THROWABLE:
                     logOutputBuffer = logOutputBuffer.append(throwables[throwablePosition++]);
@@ -437,37 +445,37 @@ public class DelayedLogEntryImpl implements LogEntry {
 
     @Override
     public LogOutput start() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public LogOutput close() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public int size() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public int getBufferCount() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public ByteBuffer getBuffer(final int i) {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public LogEntry clear() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 }

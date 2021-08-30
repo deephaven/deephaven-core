@@ -4,15 +4,13 @@
 
 package io.deephaven.base.pool;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
- * Indicates that a {@link Pool} is full and can't be
- * {@link Pool#give give}n more items.
+ * Indicates that a {@link Pool} is full and can't be {@link Pool#give give}n more items.
  */
-public class PoolFullException extends RuntimeException{
+public class PoolFullException extends RuntimeException {
 
-    public PoolFullException() {
-    }
+    public PoolFullException() {}
 
     public PoolFullException(String message) {
         super(message);

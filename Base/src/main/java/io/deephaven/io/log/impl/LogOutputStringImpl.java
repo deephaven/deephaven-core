@@ -13,7 +13,8 @@ import io.deephaven.base.log.LogOutputAppendable;
 import java.nio.ByteBuffer;
 
 /**
- * A LogOutput implementation, designed solely as an adapter for LogOutputAppendable's to produce Strings.
+ * A LogOutput implementation, designed solely as an adapter for LogOutputAppendable's to produce
+ * Strings.
  */
 public class LogOutputStringImpl implements LogOutput, CharSequence {
 
@@ -35,15 +36,18 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
         this.builder = builder;
     }
 
-    @Override public int length() {
+    @Override
+    public int length() {
         return builder.length();
     }
 
-    @Override public char charAt(int index) {
+    @Override
+    public char charAt(int index) {
         return builder.charAt(index);
     }
 
-    @Override public CharSequence subSequence(int start, int end) {
+    @Override
+    public CharSequence subSequence(int start, int end) {
         return builder.subSequence(start, end);
     }
 
@@ -63,9 +67,9 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
         return builder.toString();
     }
 
-    //------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
     // LogOutput implementation
-    //------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
 
     @Override
     public LogOutput start() {
@@ -154,11 +158,12 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
 
     @Override
     public LogOutput append(final ByteBuffer bb) {
-        if (bb == null) return append("null");
+        if (bb == null)
+            return append("null");
         final int pos = bb.position();
         final int limit = bb.limit();
         for (int i = pos; i < limit; ++i) {
-            builder.append((char)bb.get(i));
+            builder.append((char) bb.get(i));
         }
         return this;
     }
@@ -166,8 +171,8 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
     @Override
     public LogOutput appendTimestamp(long utcMillis, TimestampBuffer tb) {
         ByteBuffer byteBuffer = tb.getTimestamp(utcMillis);
-        for(int bi = byteBuffer.position(); bi < byteBuffer.limit(); ++bi) {
-            builder.append((char)byteBuffer.get(bi));
+        for (int bi = byteBuffer.position(); bi < byteBuffer.limit(); ++bi) {
+            builder.append((char) byteBuffer.get(bi));
         }
         return this;
     }
@@ -175,8 +180,8 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
     @Override
     public LogOutput appendTimestampMicros(long utcMicros, TimestampBufferMicros tb) {
         ByteBuffer byteBuffer = tb.getTimestamp(utcMicros);
-        for(int bi = byteBuffer.position(); bi < byteBuffer.limit(); ++bi) {
-            builder.append((char)byteBuffer.get(bi));
+        for (int bi = byteBuffer.position(); bi < byteBuffer.limit(); ++bi) {
+            builder.append((char) byteBuffer.get(bi));
         }
         return this;
     }
@@ -186,28 +191,28 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
         boolean root = true;
         String delim = "[";
         do {
-            if ( !root ) {
+            if (!root) {
                 append("; caused by");
-            }
-            else {
+            } else {
                 root = false;
             }
             append(delim);
             append(t.getClass().getName()).append(": ").append(t.getMessage());
-            for ( StackTraceElement e : t.getStackTrace() ) {
+            for (StackTraceElement e : t.getStackTrace()) {
                 append(delim)
-                        .append(e.getClassName()).append(".").append(e.getMethodName())
-                        .append("(").append(e.getFileName()).append(":").append(e.getLineNumber()).append(")");
+                    .append(e.getClassName()).append(".").append(e.getMethodName())
+                    .append("(").append(e.getFileName()).append(":").append(e.getLineNumber())
+                    .append(")");
                 delim = ";";
             }
-        } while ( (t = t.getCause()) != null );
+        } while ((t = t.getCause()) != null);
         append("]");
         return this;
     }
 
     @Override
     public LogOutput append(final byte[] ba) {
-        for ( int i = 0; i < ba.length; ++i ) {
+        for (int i = 0; i < ba.length; ++i) {
             builder.append((char) ba[i]);
         }
         return this;
@@ -215,7 +220,7 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
 
     @Override
     public LogOutput append(final byte[] ba, int pos, int length) {
-        for ( int i = pos; i < pos + length; ++i ) {
+        for (int i = pos; i < pos + length; ++i) {
             builder.append((char) ba[i]);
         }
         return this;
@@ -223,7 +228,7 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
 
     @Override
     public LogOutput append(final byte[] ba, byte terminator) {
-        for ( int i = 0; i < ba.length &&  ba[i] != terminator; ++i ) {
+        for (int i = 0; i < ba.length && ba[i] != terminator; ++i) {
             builder.append((char) ba[i]);
         }
         return this;

@@ -17,7 +17,7 @@ public class AbstractVisitor implements FilterDescriptor.Visitor {
             children[i].accept(this);
         }
     }
-    
+
     @Override
     public void onAnd(FilterDescriptor descriptor) {
         visitChildren(descriptor.getChildren());

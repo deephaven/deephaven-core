@@ -48,11 +48,13 @@ public class WouldMatchPair {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final WouldMatchPair other = (WouldMatchPair) o;
         return Objects.equals(columnName, other.columnName) &&
-                Objects.equals(filter, other.filter);
+            Objects.equals(filter, other.filter);
     }
 
     @Override

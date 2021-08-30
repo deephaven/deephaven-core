@@ -21,10 +21,10 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class IndexIterationRaw {
 
-    //Generate index as ranges and as individual position
-    //Build and index for it
-    //Generate 4 double arrays
-    //Have chunk fetching:
+    // Generate index as ranges and as individual position
+    // Build and index for it
+    // Generate 4 double arrays
+    // Have chunk fetching:
     // - using OrderedKeys, range, direct,
     // - using fetched long chunk range/direct,
     // - iteration over array of indices/ranges with chunk get,
@@ -32,15 +32,15 @@ public class IndexIterationRaw {
     // - iteration over Index with by elements or by ranges
     // - Params: spars
 
-    @Param({/*100", "10000",*/ "1000000", "10000000"})
+    @Param({/* 100", "10000", */ "1000000", "10000000"})
     private int indexCount;
 
-    //@Param({"1","2", "4", "10", "100", "10000", "100000000"})
+    // @Param({"1","2", "4", "10", "100", "10000", "100000000"})
     @Param({"1", "4", "16", "64"})
     private int avgElementsPerRange;
 
-//    @Param({"1", "2", "4", "10", "100", "10000", "100000000"})
-//    private int sparsity;
+    // @Param({"1", "2", "4", "10", "100", "10000", "100000000"})
+    // private int sparsity;
 
     // @Param({"256", /*"512", */"1024", /*"2048", */"4096"})
     private int chunkSize = 1024;
@@ -65,7 +65,8 @@ public class IndexIterationRaw {
         int j = 0;
         for (int i = 0; i < rangeCount - 1; i++) {
             indexRanges[2 * i] = lastPos + 1 + random.nextInt(2 * avgElementsPerRange - 1);
-            int step = 1 + Math.max(0, Math.min(random.nextInt(2 * avgElementsPerRange - 1), remainingCount - rangeCount));
+            int step = 1 + Math.max(0,
+                Math.min(random.nextInt(2 * avgElementsPerRange - 1), remainingCount - rangeCount));
             lastPos = indexRanges[2 * i + 1] = indexRanges[2 * i] + step;
             remainingCount -= step;
             indexPoints[j++] = indexRanges[2 * i];
@@ -150,7 +151,7 @@ public class IndexIterationRaw {
         for (long i = rangeStart; i < rangeStart + length; i++) {
             sum += i;
         }
-        return new long[]{rangeStart + length, sum};
+        return new long[] {rangeStart + length, sum};
     }
 
     private long[] fillChunkDirectByRangeIndexIteration(int posInRange, int rangeStart, int size) {
@@ -172,14 +173,14 @@ public class IndexIterationRaw {
         for (long i = rangeStart; i < rangeStart + length; i++) {
             sum += i;
         }
-        return new long[]{posInRange, rangeStart + length, sum};
+        return new long[] {posInRange, rangeStart + length, sum};
     }
 
 
 
     @Benchmark
     public void rspOrderedKeysByRange(Blackhole bh) {
-        orderedKeysByRange(bh,rspIndex);
+        orderedKeysByRange(bh, rspIndex);
     }
 
     private void orderedKeysByRange(Blackhole bh, Index index) {
@@ -209,7 +210,7 @@ public class IndexIterationRaw {
 
     @Benchmark
     public void rspOrderedKeysByItems(Blackhole bh) {
-        orderedKeysByItems(bh,rspIndex);
+        orderedKeysByItems(bh, rspIndex);
     }
 
     public void orderedKeysByItems(Blackhole bh, Index index) {
@@ -235,7 +236,8 @@ public class IndexIterationRaw {
         int rangeStart = (int) indexRanges[0];
         for (int step = 0; step < stepCount; step++) {
             int[] posInRangeAndRangeStart = null;
-            long[] res = fillChunkDirectByRangeIndexIteration(lastPosInRange, rangeStart, chunkSize);
+            long[] res =
+                fillChunkDirectByRangeIndexIteration(lastPosInRange, rangeStart, chunkSize);
             lastPosInRange = (int) res[0];
             rangeStart = (int) res[1];
             sum += res[2];
@@ -243,7 +245,8 @@ public class IndexIterationRaw {
         }
 
 
-        sum += fillChunkDirectByRangeIndexIteration(lastPosInRange, rangeStart, indexCount % chunkSize)[2];
+        sum += fillChunkDirectByRangeIndexIteration(lastPosInRange, rangeStart,
+            indexCount % chunkSize)[2];
         bh.consume(sum);
         print(sum);
     }
@@ -253,18 +256,21 @@ public class IndexIterationRaw {
         int stepCount = indexCount / chunkSize;
         long sum = 0;
         for (int step = 0; step < stepCount; step++) {
-            indexChunk = WritableLongChunk.writableChunkWrap(indexPoints, step * chunkSize, chunkSize);
+            indexChunk =
+                WritableLongChunk.writableChunkWrap(indexPoints, step * chunkSize, chunkSize);
 
             sum += fillChunkDirectByItems(indexChunk);
             bh.consume(sum);
         }
-        indexChunk = WritableLongChunk.writableChunkWrap(indexPoints, (indexCount / chunkSize) * chunkSize, indexCount % chunkSize);
+        indexChunk = WritableLongChunk.writableChunkWrap(indexPoints,
+            (indexCount / chunkSize) * chunkSize, indexCount % chunkSize);
         sum += fillChunkDirectByItems(indexChunk);
         bh.consume(sum);
         print(sum);
     }
 
-    private int fillChunkOfIndicesFromRange(WritableLongChunk<OrderedKeyIndices> indices, int posInRange, long startValue, int count) {
+    private int fillChunkOfIndicesFromRange(WritableLongChunk<OrderedKeyIndices> indices,
+        int posInRange, long startValue, int count) {
         indices.setSize(0);
         long pos = startValue;
         do {
@@ -294,18 +300,19 @@ public class IndexIterationRaw {
         int posInRange = 0;
         long startValue = indexRanges[0];
         for (int step = 0; step < stepCount; step++) {
-            posInRange = fillChunkOfIndicesFromRange(indexChunk,posInRange,startValue,chunkSize);
+            posInRange = fillChunkOfIndicesFromRange(indexChunk, posInRange, startValue, chunkSize);
             startValue = indexChunk.get(chunkSize - 1) + 1;
             sum += fillChunkDirectByItems(indexChunk);
             bh.consume(sum);
         }
-        fillChunkOfIndicesFromRange(indexChunk,posInRange,startValue,indexCount % chunkSize);
+        fillChunkOfIndicesFromRange(indexChunk, posInRange, startValue, indexCount % chunkSize);
         sum += fillChunkDirectByItems(indexChunk);
         bh.consume(sum);
         print(sum);
     }
 
-    private void fillChunkOfRangesFromIndices(WritableLongChunk<OrderedKeyRanges> ranges, final int posInIndex, final int count) {
+    private void fillChunkOfRangesFromIndices(WritableLongChunk<OrderedKeyRanges> ranges,
+        final int posInIndex, final int count) {
         ranges.setSize(0);
         ranges.add(indexPoints[posInIndex]);
         long prevValue = indexPoints[posInIndex];
@@ -332,12 +339,13 @@ public class IndexIterationRaw {
         int stepCount = indexCount / chunkSize;
         long sum = 0;
         for (int step = 0; step < stepCount; step++) {
-            fillChunkOfRangesFromIndices(rangeChunk,step*chunkSize,chunkSize);
+            fillChunkOfRangesFromIndices(rangeChunk, step * chunkSize, chunkSize);
             sum += fillChunkDirectByRange(rangeChunk);
             bh.consume(sum);
         }
 
-        fillChunkOfRangesFromIndices(rangeChunk,(indexCount/chunkSize)*chunkSize,indexCount % chunkSize);
+        fillChunkOfRangesFromIndices(rangeChunk, (indexCount / chunkSize) * chunkSize,
+            indexCount % chunkSize);
         sum += fillChunkDirectByRange(rangeChunk);
 
         bh.consume(sum);
@@ -346,7 +354,7 @@ public class IndexIterationRaw {
 
     @Benchmark
     public void rspIndexByIndexIterator(Blackhole bh) {
-        indexByIndexIterator(bh,rspIndex);
+        indexByIndexIterator(bh, rspIndex);
     }
 
     public void indexByIndexIterator(Blackhole bh, Index index) {
@@ -366,7 +374,7 @@ public class IndexIterationRaw {
 
     @Benchmark
     public void rspIndexByIndexRangeIterator(Blackhole bh) {
-        indexByIndexRangeIterator(bh,rspIndex);
+        indexByIndexRangeIterator(bh, rspIndex);
     }
 
     public void indexByIndexRangeIterator(Blackhole bh, Index index) {

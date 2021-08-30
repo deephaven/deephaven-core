@@ -24,15 +24,21 @@ public class JsChart extends HasEventHandling {
     @JsIgnore
     public JsChart(ChartDescriptor descriptor, JsFigure jsFigure) {
         this.descriptor = descriptor;
-        //build axes first, key them in a map for easy reuse when constructing series instances
-        axes = descriptor.getAxesList().asList().stream().map((axisDescriptor) -> new JsAxis(axisDescriptor, jsFigure)).toArray(JsAxis[]::new);
+        // build axes first, key them in a map for easy reuse when constructing series instances
+        axes = descriptor.getAxesList().asList().stream()
+            .map((axisDescriptor) -> new JsAxis(axisDescriptor, jsFigure)).toArray(JsAxis[]::new);
         JsObject.freeze(axes);
         Map<String, JsAxis> indexed = new HashMap<>();
         for (int i = 0; i < axes.length; i++) {
             indexed.put(axes[i].getId(), axes[i]);
         }
-        series = descriptor.getSeriesList().asList().stream().map((seriesDescriptor) -> new JsSeries(seriesDescriptor, jsFigure, indexed)).toArray(JsSeries[]::new);
-        multiSeries = descriptor.getMultiSeriesList().asList().stream().map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure, indexed, this)).toArray(JsMultiSeries[]::new);
+        series = descriptor.getSeriesList().asList().stream()
+            .map((seriesDescriptor) -> new JsSeries(seriesDescriptor, jsFigure, indexed))
+            .toArray(JsSeries[]::new);
+        multiSeries = descriptor.getMultiSeriesList().asList().stream()
+            .map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure,
+                indexed, this))
+            .toArray(JsMultiSeries[]::new);
         JsObject.freeze(multiSeries);
     }
 
@@ -90,12 +96,13 @@ public class JsChart extends HasEventHandling {
         return descriptor.getIs3d();
     }
 
-    //exposed for JS, do not use this from java methods
+    // exposed for JS, do not use this from java methods
     @JsProperty(name = "series")
     public JsSeries[] getExportedSeriesArray() {
         return Js.uncheckedCast(Js.<JsArray<JsSeries>>uncheckedCast(series).slice());
     }
-    //exposed for JS, do not use this from java methods
+
+    // exposed for JS, do not use this from java methods
     @JsProperty(name = "multiSeries")
     public JsMultiSeries[] getExportedMultiSeriesArray() {
         return multiSeries;

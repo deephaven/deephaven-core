@@ -29,7 +29,7 @@ class AvgState implements PreviousStateProvider<AvgState> {
     protected long nonNullCount;
 
     double currentValue() {
-        return runningSum/nonNullCount;
+        return runningSum / nonNullCount;
     }
 
     @Override
@@ -53,8 +53,8 @@ class AvgState implements PreviousStateProvider<AvgState> {
     @Override
     public String toString() {
         return "Avg{" +
-                "sum=" + runningSum +
-                ", nonNull=" + nonNullCount +
-                '}';
+            "sum=" + runningSum +
+            ", nonNull=" + nonNullCount +
+            '}';
     }
 }

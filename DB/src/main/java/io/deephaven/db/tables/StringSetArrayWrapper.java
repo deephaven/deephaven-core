@@ -13,13 +13,13 @@ import java.util.Iterator;
 import java.util.function.ToIntFunction;
 
 /**
-* Array-backed {@link StringSet} implementation.
-*/
+ * Array-backed {@link StringSet} implementation.
+ */
 public class StringSetArrayWrapper implements StringSet, Serializable {
 
     private final String[] innerSet;
 
-    public StringSetArrayWrapper(String... values){
+    public StringSetArrayWrapper(String... values) {
         Arrays.sort(values);
         innerSet = values;
     }
@@ -87,7 +87,8 @@ public class StringSetArrayWrapper implements StringSet, Serializable {
             String s = innerSet[i];
             final int key = toOffset.applyAsInt(s);
             if (key > 63) {
-                throw new RuntimeException("Symbol " + s + " exceeds the limit of 63 symbols for StringSetArrayWrapper");
+                throw new RuntimeException(
+                    "Symbol " + s + " exceeds the limit of 63 symbols for StringSetArrayWrapper");
             }
             encoding |= 1L << key;
         }

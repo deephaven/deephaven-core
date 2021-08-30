@@ -16,11 +16,11 @@ public class UnfairSemaphore {
 
     public UnfairSemaphore(int resources, int spinsUntilPark) {
         this.spinsUntilPark = spinsUntilPark;
-        threads = new LockFreeArrayQueue<Thread>(12);  // 4094 threads max
+        threads = new LockFreeArrayQueue<Thread>(12); // 4094 threads max
         resource = new AtomicInteger(resources);
     }
 
-    // careful w/ sizes > 1, might starve a guy waiting fora  large number...
+    // careful w/ sizes > 1, might starve a guy waiting fora large number...
     // true means fast path, false means slow path
     public boolean acquire(int toAcquire) {
         return acquire(toAcquire, true);
@@ -88,20 +88,22 @@ public class UnfairSemaphore {
         int resourcesAvailable;
         int spins = 0;
         boolean peekNotMe = true;
-        while ( (peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves once, we don't need to do it again!
-                (resourcesAvailable = getAndDecreaseIfCan(toAcquire)) < toAcquire) {
-            if ( (++spins % spinsUntilPark) == 0 ) {
+        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves
+                                                                      // once, we don't need to do
+                                                                      // it again!
+            (resourcesAvailable = getAndDecreaseIfCan(toAcquire)) < toAcquire) {
+            if ((++spins % spinsUntilPark) == 0) {
 
                 LockSupport.park(this);
 
                 // ignore interrupts while waiting
-                if ( Thread.interrupted() ) {
+                if (Thread.interrupted()) {
                     wasInterrupted = true;
                 }
             }
         }
-        if ( (t = threads.dequeue()) != me ) {
-            throw new IllegalStateException("Failed to dequeue myself, got "+t);
+        if ((t = threads.dequeue()) != me) {
+            throw new IllegalStateException("Failed to dequeue myself, got " + t);
         }
 
         // we want to unpark, and there are resources left
@@ -111,8 +113,8 @@ public class UnfairSemaphore {
         }
 
         // reassert interrupt status on exit
-        if ( wasInterrupted ) {
-           me.interrupt();
+        if (wasInterrupted) {
+            me.interrupt();
         }
 
         return false;

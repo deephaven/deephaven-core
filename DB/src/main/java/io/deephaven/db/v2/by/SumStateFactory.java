@@ -8,15 +8,16 @@ package io.deephaven.db.v2.by;
  * Factory for iterative sum aggregations.
  */
 public class SumStateFactory extends IterativeOperatorStateFactory {
-    public SumStateFactory() {
-    }
+    public SumStateFactory() {}
 
     @Override
-    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name, boolean exposeInternalColumns) {
+    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
+        boolean exposeInternalColumns) {
         return getSumChunked(type, name);
     }
 
     private static final AggregationMemoKey SUM_INSTANCE = new AggregationMemoKey() {};
+
     @Override
     public AggregationMemoKey getMemoKey() {
         return SUM_INSTANCE;

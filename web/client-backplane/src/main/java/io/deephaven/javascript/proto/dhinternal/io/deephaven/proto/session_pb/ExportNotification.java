@@ -15,227 +15,223 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.session_pb.ExportNotification",
     namespace = JsPackage.GLOBAL)
 public class ExportNotification {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface TicketFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(
-            Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface TicketFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static ExportNotification.ToObjectReturnType.TicketFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static ExportNotification.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        String getContext();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        String getDependentHandle();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        double getExportState();
 
-      @JsOverlay
-      static ExportNotification.ToObjectReturnType.TicketFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+        @JsProperty
+        ExportNotification.ToObjectReturnType.TicketFieldType getTicket();
 
-      @JsProperty
-      ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType getTicket();
+        @JsProperty
+        void setContext(String context);
 
-      @JsProperty
-      void setTicket(
-          ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
+        @JsProperty
+        void setDependentHandle(String dependentHandle);
 
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setExportState(double exportState);
 
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setTicket(ExportNotification.ToObjectReturnType.TicketFieldType ticket);
     }
 
-    @JsOverlay
-    static ExportNotification.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    String getContext();
-
-    @JsProperty
-    String getDependentHandle();
-
-    @JsProperty
-    double getExportState();
-
-    @JsProperty
-    ExportNotification.ToObjectReturnType.TicketFieldType getTicket();
-
-    @JsProperty
-    void setContext(String context);
-
-    @JsProperty
-    void setDependentHandle(String dependentHandle);
-
-    @JsProperty
-    void setExportState(double exportState);
-
-    @JsProperty
-    void setTicket(ExportNotification.ToObjectReturnType.TicketFieldType ticket);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface TicketFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(
-            Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface TicketFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static ExportNotification.ToObjectReturnType0.TicketFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static ExportNotification.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        String getContext();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        String getDependentHandle();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        double getExportState();
 
-      @JsOverlay
-      static ExportNotification.ToObjectReturnType0.TicketFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+        @JsProperty
+        ExportNotification.ToObjectReturnType0.TicketFieldType getTicket();
 
-      @JsProperty
-      ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType getTicket();
+        @JsProperty
+        void setContext(String context);
 
-      @JsProperty
-      void setTicket(
-          ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
+        @JsProperty
+        void setDependentHandle(String dependentHandle);
 
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setExportState(double exportState);
 
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setTicket(ExportNotification.ToObjectReturnType0.TicketFieldType ticket);
     }
 
-    @JsOverlay
-    static ExportNotification.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static StateMap State;
 
-    @JsProperty
-    String getContext();
+    public static native ExportNotification deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getDependentHandle();
+    public static native ExportNotification deserializeBinaryFromReader(
+        ExportNotification message, Object reader);
 
-    @JsProperty
-    double getExportState();
+    public static native void serializeBinaryToWriter(ExportNotification message, Object writer);
 
-    @JsProperty
-    ExportNotification.ToObjectReturnType0.TicketFieldType getTicket();
+    public static native ExportNotification.ToObjectReturnType toObject(
+        boolean includeInstance, ExportNotification msg);
 
-    @JsProperty
-    void setContext(String context);
+    public native void clearTicket();
 
-    @JsProperty
-    void setDependentHandle(String dependentHandle);
+    public native String getContext();
 
-    @JsProperty
-    void setExportState(double exportState);
+    public native String getDependentHandle();
 
-    @JsProperty
-    void setTicket(ExportNotification.ToObjectReturnType0.TicketFieldType ticket);
-  }
+    public native double getExportState();
 
-  public static StateMap State;
+    public native Ticket getTicket();
 
-  public static native ExportNotification deserializeBinary(Uint8Array bytes);
+    public native boolean hasTicket();
 
-  public static native ExportNotification deserializeBinaryFromReader(
-      ExportNotification message, Object reader);
+    public native Uint8Array serializeBinary();
 
-  public static native void serializeBinaryToWriter(ExportNotification message, Object writer);
+    public native void setContext(String value);
 
-  public static native ExportNotification.ToObjectReturnType toObject(
-      boolean includeInstance, ExportNotification msg);
+    public native void setDependentHandle(String value);
 
-  public native void clearTicket();
+    public native void setExportState(double value);
 
-  public native String getContext();
+    public native void setTicket();
 
-  public native String getDependentHandle();
+    public native void setTicket(Ticket value);
 
-  public native double getExportState();
+    public native ExportNotification.ToObjectReturnType0 toObject();
 
-  public native Ticket getTicket();
-
-  public native boolean hasTicket();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setContext(String value);
-
-  public native void setDependentHandle(String value);
-
-  public native void setExportState(double value);
-
-  public native void setTicket();
-
-  public native void setTicket(Ticket value);
-
-  public native ExportNotification.ToObjectReturnType0 toObject();
-
-  public native ExportNotification.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ExportNotification.ToObjectReturnType0 toObject(boolean includeInstance);
 }

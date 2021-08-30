@@ -8,30 +8,31 @@ public class FilterDescriptor implements Serializable {
 
     private static FilterDescriptor[] EMPTY = new FilterDescriptor[0];
 
-    public enum Kind { Condition, Value }
+    public enum Kind {
+        Condition, Value
+    }
     public enum FilterOperation {
-        //2+ children are conditions
+        // 2+ children are conditions
         AND(Kind.Condition), OR(Kind.Condition),
-        //1 child, condition. this is sugar over almost any other Condition operation
+        // 1 child, condition. this is sugar over almost any other Condition operation
         NOT(Kind.Condition),
-        //2 children are values
-        LT(Kind.Condition), GT(Kind.Condition), LTE(Kind.Condition), GTE(Kind.Condition),
-        EQ(Kind.Condition), EQ_ICASE(Kind.Condition), NEQ(Kind.Condition), NEQ_ICASE(Kind.Condition),
+        // 2 children are values
+        LT(Kind.Condition), GT(Kind.Condition), LTE(Kind.Condition), GTE(Kind.Condition), EQ(
+            Kind.Condition), EQ_ICASE(
+                Kind.Condition), NEQ(Kind.Condition), NEQ_ICASE(Kind.Condition),
 
-        //2+ children are values
-        IN(Kind.Condition), IN_ICASE(Kind.Condition),
-        NOT_IN(Kind.Condition), NOT_IN_ICASE(Kind.Condition),
-        //1 child is anything (probably just value)
+        // 2+ children are values
+        IN(Kind.Condition), IN_ICASE(Kind.Condition), NOT_IN(Kind.Condition), NOT_IN_ICASE(
+            Kind.Condition),
+        // 1 child is anything (probably just value)
         IS_NULL(Kind.Condition),
-        //0+ children are anything
+        // 0+ children are anything
         INVOKE(Kind.Condition),
-        //0 children
+        // 0 children
         LITERAL(Kind.Value), REFERENCE(Kind.Value),
 
-        CONTAINS(Kind.Condition),
-        CONTAINS_ICASE(Kind.Condition),
-        MATCHES(Kind.Condition),
-        MATCHES_ICASE(Kind.Condition),
+        CONTAINS(Kind.Condition), CONTAINS_ICASE(Kind.Condition), MATCHES(
+            Kind.Condition), MATCHES_ICASE(Kind.Condition),
 
         SEARCH(Kind.Condition),
         ;
@@ -44,21 +45,21 @@ public class FilterDescriptor implements Serializable {
     }
 
     /**
-     * Describes types of value literals. This is much rougher than we'll eventually want, but as an internal-only
-     * detail it does fit our purposes
+     * Describes types of value literals. This is much rougher than we'll eventually want, but as an
+     * internal-only detail it does fit our purposes
      */
     public enum ValueType {
-        //js/java String
+        // js/java String
         String,
-        //js/java Number/Double
+        // js/java Number/Double
         Number,
-        //js/java Boolean
+        // js/java Boolean
         Boolean,
-        //wrapped DateWrapper, string will be a long
+        // wrapped DateWrapper, string will be a long
         Datetime,
-        //gwt-emulated long, usually in the form of a LongWrapper
+        // gwt-emulated long, usually in the form of a LongWrapper
         Long,
-        //TODO handle other cases?
+        // TODO handle other cases?
         Other
     }
 
@@ -76,7 +77,8 @@ public class FilterDescriptor implements Serializable {
         children = EMPTY;
     }
 
-    public FilterDescriptor(FilterOperation operation, @Nullable String value, @Nullable ValueType type, FilterDescriptor[] children) {
+    public FilterDescriptor(FilterOperation operation, @Nullable String value,
+        @Nullable ValueType type, FilterDescriptor[] children) {
         setOperation(operation);
         setValue(value);
         setType(type);
@@ -197,44 +199,60 @@ public class FilterDescriptor implements Serializable {
 
     public interface Visitor {
         void onAnd(FilterDescriptor descriptor);
+
         void onOr(FilterDescriptor descriptor);
+
         void onNot(FilterDescriptor descriptor);
 
         void onLessThan(FilterDescriptor descriptor);
+
         void onGreaterThan(FilterDescriptor descriptor);
+
         void onLessThanOrEqualTo(FilterDescriptor descriptor);
+
         void onGreaterThanOrEqualTo(FilterDescriptor descriptor);
 
         void onEqual(FilterDescriptor descriptor);
+
         void onEqualIgnoreCase(FilterDescriptor descriptor);
+
         void onNotEqual(FilterDescriptor descriptor);
+
         void onNotEqualIgnoreCase(FilterDescriptor descriptor);
 
         void onIn(FilterDescriptor descriptor);
+
         void onInIgnoreCase(FilterDescriptor descriptor);
+
         void onNotIn(FilterDescriptor descriptor);
+
         void onNotInIgnoreCase(FilterDescriptor descriptor);
 
         void onIsNull(FilterDescriptor descriptor);
 
         void onInvoke(FilterDescriptor descriptor);
+
         void onLiteral(FilterDescriptor descriptor);
+
         void onReference(FilterDescriptor descriptor);
 
         void onContains(FilterDescriptor descriptor);
+
         void onContainsIgnoreCase(FilterDescriptor descriptor);
+
         void onPattern(FilterDescriptor descriptor);
+
         void onPatternIgnoreCase(FilterDescriptor descriptor);
 
         void onSearch(FilterDescriptor descriptor);
     }
 
-    //TODO probably move this out to an optimization, or to the api itself?
+    // TODO probably move this out to an optimization, or to the api itself?
     public FilterDescriptor not() {
         assert getOperation().expressionKind == Kind.Condition;
         FilterDescriptor negative = new FilterDescriptor();
 
-        //general case is that we reference the same list of children, except in three situations:
+        // general case is that we reference the same list of children, except in three situations:
         // * AND/OR we switch to the other, and NOT all children (demorgans law)
         // * NOT we remove the other NOT
         // * INVOKE/IS_NULL we just wrap in NOT, interpret it at runtime
@@ -242,21 +260,21 @@ public class FilterDescriptor implements Serializable {
 
         switch (getOperation()) {
             case AND:
-                //demorgan means we need to also not() the children...
+                // demorgan means we need to also not() the children...
                 negative.setOperation(FilterOperation.OR);
                 for (int i = 0; i < negative.getChildren().length; i++) {
                     negative.getChildren()[i] = negative.getChildren()[i].not();
                 }
                 break;
             case OR:
-                //demorgan means we need to also not() the children...
+                // demorgan means we need to also not() the children...
                 negative.setOperation(FilterOperation.AND);
                 for (int i = 0; i < negative.getChildren().length; i++) {
                     negative.getChildren()[i] = negative.getChildren()[i].not();
                 }
                 break;
             case NOT:
-                //unwrap child, return that instead of a new item
+                // unwrap child, return that instead of a new item
                 assert getChildren().length == 1;
                 return getChildren()[0];
             case LT:
@@ -301,9 +319,9 @@ public class FilterDescriptor implements Serializable {
             case CONTAINS_ICASE:
             case MATCHES:
             case MATCHES_ICASE:
-                //special case, we simply wrap these in the NOT operation
+                // special case, we simply wrap these in the NOT operation
                 negative.setOperation(FilterOperation.NOT);
-                negative.setChildren(new FilterDescriptor[] { this });
+                negative.setChildren(new FilterDescriptor[] {this});
                 break;
             case SEARCH:
                 throw new IllegalStateException("Cannot not() a search");

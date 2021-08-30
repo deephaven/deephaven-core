@@ -21,9 +21,9 @@ public class SimpleXYBar {
         final Number[] y2 = {1.3, 3.2, 3.4};
 
         Figure axs2 = plot("Test2", x2, y2)
-                .plot("Test1", x1, y1)
-                .plotStyle("BAR")
-                .yTransform(AxisTransforms.LOG);
+            .plot("Test1", x1, y1)
+            .plotStyle("BAR")
+            .yTransform(AxisTransforms.LOG);
 
         ExamplePlotUtils.display(axs2);
     }

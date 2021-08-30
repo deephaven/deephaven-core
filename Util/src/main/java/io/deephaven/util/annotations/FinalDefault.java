@@ -11,5 +11,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Inherited
 @Documented
-public @interface FinalDefault
-{}
+public @interface FinalDefault {
+}

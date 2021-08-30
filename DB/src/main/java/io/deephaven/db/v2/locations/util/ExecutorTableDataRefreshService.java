@@ -38,24 +38,35 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
     private final Value locationSubscriptionRefreshDurationNanos;
 
     public ExecutorTableDataRefreshService(@NotNull final String name,
-                                           final long tableLocationProviderRefreshIntervalMillis,
-                                           final long tableLocationRefreshIntervalMillis,
-                                           final int threadPoolSize) {
+        final long tableLocationProviderRefreshIntervalMillis,
+        final long tableLocationRefreshIntervalMillis,
+        final int threadPoolSize) {
         this.name = Require.neqNull(name, "name");
-        this.tableLocationProviderRefreshIntervalMillis = Require.gtZero(tableLocationProviderRefreshIntervalMillis, "tableLocationProviderRefreshIntervalMillis");
-        this.tableLocationRefreshIntervalMillis = Require.gtZero(tableLocationRefreshIntervalMillis, "tableLocationRefreshIntervalMillis");
+        this.tableLocationProviderRefreshIntervalMillis =
+            Require.gtZero(tableLocationProviderRefreshIntervalMillis,
+                "tableLocationProviderRefreshIntervalMillis");
+        this.tableLocationRefreshIntervalMillis = Require.gtZero(tableLocationRefreshIntervalMillis,
+            "tableLocationRefreshIntervalMillis");
 
-        scheduler = new ScheduledThreadPoolExecutor(threadPoolSize, this::makeThread, new ThreadPoolExecutor.AbortPolicy());
+        scheduler = new ScheduledThreadPoolExecutor(threadPoolSize, this::makeThread,
+            new ThreadPoolExecutor.AbortPolicy());
         scheduler.setRemoveOnCancelPolicy(true);
 
-        providerSubscriptions = Stats.makeItem(NAME_PREFIX + name, "providerSubscriptions", Counter.FACTORY).getValue();
-        providerSubscriptionRefreshDurationNanos = Stats.makeItem(NAME_PREFIX + name, "providerSubscriptionRefreshDurationNanos", State.FACTORY).getValue();
-        locationSubscriptions = Stats.makeItem(NAME_PREFIX + name, "locationSubscriptions", Counter.FACTORY).getValue();
-        locationSubscriptionRefreshDurationNanos = Stats.makeItem(NAME_PREFIX + name, "locationSubscriptionRefreshDurationNanos", State.FACTORY).getValue();
+        providerSubscriptions =
+            Stats.makeItem(NAME_PREFIX + name, "providerSubscriptions", Counter.FACTORY).getValue();
+        providerSubscriptionRefreshDurationNanos = Stats
+            .makeItem(NAME_PREFIX + name, "providerSubscriptionRefreshDurationNanos", State.FACTORY)
+            .getValue();
+        locationSubscriptions =
+            Stats.makeItem(NAME_PREFIX + name, "locationSubscriptions", Counter.FACTORY).getValue();
+        locationSubscriptionRefreshDurationNanos = Stats
+            .makeItem(NAME_PREFIX + name, "locationSubscriptionRefreshDurationNanos", State.FACTORY)
+            .getValue();
     }
 
     private Thread makeThread(final Runnable runnable) {
-        final Thread thread = new Thread(runnable, NAME_PREFIX + name + "-refreshThread-" + threadCount.incrementAndGet());
+        final Thread thread = new Thread(runnable,
+            NAME_PREFIX + name + "-refreshThread-" + threadCount.incrementAndGet());
         thread.setDaemon(true);
         return thread;
     }
@@ -65,7 +76,8 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
         scheduler.submit(task);
     }
 
-    private abstract class ScheduledSubscriptionTask<TYPE extends SubscriptionAggregator> implements CancellableSubscriptionToken {
+    private abstract class ScheduledSubscriptionTask<TYPE extends SubscriptionAggregator>
+        implements CancellableSubscriptionToken {
 
         final TYPE subscriptionAggregator;
 
@@ -73,9 +85,11 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
 
         private volatile boolean firstInvocation = true;
 
-        private ScheduledSubscriptionTask(@NotNull final TYPE subscriptionAggregator, final long refreshIntervalMillis) {
+        private ScheduledSubscriptionTask(@NotNull final TYPE subscriptionAggregator,
+            final long refreshIntervalMillis) {
             this.subscriptionAggregator = subscriptionAggregator;
-            future = scheduler.scheduleAtFixedRate(this::doRefresh, 0, refreshIntervalMillis, TimeUnit.MILLISECONDS);
+            future = scheduler.scheduleAtFixedRate(this::doRefresh, 0, refreshIntervalMillis,
+                TimeUnit.MILLISECONDS);
         }
 
         private void doRefresh() {
@@ -101,9 +115,11 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
         }
     }
 
-    private class ScheduledTableLocationProviderRefresh extends ScheduledSubscriptionTask<AbstractTableLocationProvider> {
+    private class ScheduledTableLocationProviderRefresh
+        extends ScheduledSubscriptionTask<AbstractTableLocationProvider> {
 
-        private ScheduledTableLocationProviderRefresh(@NotNull AbstractTableLocationProvider tableLocationProvider) {
+        private ScheduledTableLocationProviderRefresh(
+            @NotNull AbstractTableLocationProvider tableLocationProvider) {
             super(tableLocationProvider, tableLocationProviderRefreshIntervalMillis);
             providerSubscriptions.increment(1);
         }
@@ -122,7 +138,8 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
         }
     }
 
-    private class ScheduledTableLocationRefresh extends ScheduledSubscriptionTask<AbstractTableLocation> {
+    private class ScheduledTableLocationRefresh
+        extends ScheduledSubscriptionTask<AbstractTableLocation> {
 
         private ScheduledTableLocationRefresh(@NotNull AbstractTableLocation tableLocation) {
             super(tableLocation, tableLocationRefreshIntervalMillis);
@@ -144,12 +161,14 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
     }
 
     @Override
-    public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(@NotNull final AbstractTableLocationProvider tableLocationProvider) {
+    public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
+        @NotNull final AbstractTableLocationProvider tableLocationProvider) {
         return new ScheduledTableLocationProviderRefresh(tableLocationProvider);
     }
 
     @Override
-    public CancellableSubscriptionToken scheduleTableLocationRefresh(@NotNull final AbstractTableLocation tableLocation) {
+    public CancellableSubscriptionToken scheduleTableLocationRefresh(
+        @NotNull final AbstractTableLocation tableLocation) {
         return new ScheduledTableLocationRefresh(tableLocation);
     }
 }

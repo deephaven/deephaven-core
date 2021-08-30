@@ -64,6 +64,6 @@ public class NumGenerator implements DataGenerator<Number> {
     }
 
     public char getChar() {
-        return (char)getShort();
+        return (char) getShort();
     }
 }

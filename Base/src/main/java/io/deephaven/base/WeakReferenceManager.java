@@ -9,8 +9,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * A helper for manging a list of WeakReferences. It hides the internal management
- * of expired references and provides for iteration over the valid ones
+ * A helper for manging a list of WeakReferences. It hides the internal management of expired
+ * references and provides for iteration over the valid ones
  */
 public class WeakReferenceManager<T> {
     private final List<WeakReference<T>> refs;
@@ -23,8 +23,8 @@ public class WeakReferenceManager<T> {
     }
 
     /**
-     * Create a WeakReferenceManager, with either
-     * {@link ArrayList} or {@link CopyOnWriteArrayList} as backing structure.
+     * Create a WeakReferenceManager, with either {@link ArrayList} or {@link CopyOnWriteArrayList}
+     * as backing structure.
      *
      * @param useCowList Use CopyOnWriteArrayList if true, else ArrayList.
      */
@@ -60,9 +60,8 @@ public class WeakReferenceManager<T> {
     }
 
     /**
-     * Execute the provided procedure on each listener that has not been GC'd.
-     * If a listener was GC'd the reference will be removed from the internal list
-     * of refs.
+     * Execute the provided procedure on each listener that has not been GC'd. If a listener was
+     * GC'd the reference will be removed from the internal list of refs.
      *
      * @param proc The procedure to call with each valid listener
      */
@@ -79,8 +78,7 @@ public class WeakReferenceManager<T> {
                         expiredRefs.add(ref);
                     }
                 }
-            }
-            finally {
+            } finally {
                 refs.removeAll(expiredRefs);
             }
         }
@@ -100,15 +98,14 @@ public class WeakReferenceManager<T> {
                 for (WeakReference<T> ref : refs) {
                     T item = ref.get();
                     if (item != null) {
-                        if(test.test(item)) {
+                        if (test.test(item)) {
                             return item;
                         }
                     } else {
                         expiredRefs.add(ref);
                     }
                 }
-            }
-            finally {
+            } finally {
                 refs.removeAll(expiredRefs);
             }
         }

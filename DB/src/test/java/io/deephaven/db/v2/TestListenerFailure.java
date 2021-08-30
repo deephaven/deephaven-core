@@ -15,7 +15,8 @@ import static io.deephaven.db.v2.TstUtils.i;
 public class TestListenerFailure extends LiveTableTestCase {
     public void testListenerFailure() {
         final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
-        final Table updated = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> source.update("UC=Str.toUpperCase()"));
+        final Table updated = LiveTableMonitor.DEFAULT.sharedLock()
+            .computeLocked(() -> source.update("UC=Str.toUpperCase()"));
 
         TableTools.showWithIndex(updated);
 
@@ -24,7 +25,7 @@ public class TestListenerFailure extends LiveTableTestCase {
             source.notifyListeners(i(2, 3), i(), i());
         });
 
-        assertFalse(((DynamicTable)updated).isFailed());
+        assertFalse(((DynamicTable) updated).isFailed());
 
         allowingError(() -> {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -34,21 +35,21 @@ public class TestListenerFailure extends LiveTableTestCase {
             return null;
         }, TestListenerFailure::isNpe);
 
-        assertTrue(((DynamicTable)updated).isFailed());
-        
+        assertTrue(((DynamicTable) updated).isFailed());
+
         try {
-            ((DynamicTable) updated).listenForUpdates(new ErrorListener((QueryTable)updated));
+            ((DynamicTable) updated).listenForUpdates(new ErrorListener((QueryTable) updated));
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
         }
 
         try {
-            ((DynamicTable) updated).listenForUpdates(new InstrumentedListenerAdapter("Dummy", (QueryTable)updated, false) {
-                @Override
-                public void onUpdate(Index added, Index removed, Index modified) {
-                }
-            }, false);
+            ((DynamicTable) updated).listenForUpdates(
+                new InstrumentedListenerAdapter("Dummy", (QueryTable) updated, false) {
+                    @Override
+                    public void onUpdate(Index added, Index removed, Index modified) {}
+                }, false);
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
@@ -56,7 +57,7 @@ public class TestListenerFailure extends LiveTableTestCase {
     }
 
     private static boolean isNpe(List<Throwable> throwables) {
-        if (1 !=  throwables.size()) {
+        if (1 != throwables.size()) {
             return false;
         }
         if (!throwables.get(0).getClass().equals(FormulaEvaluationException.class)) {
@@ -72,8 +73,9 @@ public class TestListenerFailure extends LiveTableTestCase {
         QueryTable.setMemoizeResults(true);
 
         final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
-        final QueryTable viewed = (QueryTable)source.updateView("UC=Str.toUpperCase()");
-        final Table filtered = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final QueryTable viewed = (QueryTable) source.updateView("UC=Str.toUpperCase()");
+        final Table filtered =
+            LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
 
         TableTools.showWithIndex(filtered);
 
@@ -82,9 +84,10 @@ public class TestListenerFailure extends LiveTableTestCase {
             source.notifyListeners(i(2, 3), i(), i());
         });
 
-        assertFalse(((DynamicTable)filtered).isFailed());
+        assertFalse(((DynamicTable) filtered).isFailed());
 
-        final Table filteredAgain = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredAgain =
+            LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
         assertSame(filtered, filteredAgain);
 
         allowingError(() -> {
@@ -95,22 +98,25 @@ public class TestListenerFailure extends LiveTableTestCase {
             return null;
         }, TestListenerFailure::isFilterNpe);
 
-        assertTrue(((DynamicTable)filtered).isFailed());
-        assertTrue(((DynamicTable)filteredAgain).isFailed());
+        assertTrue(((DynamicTable) filtered).isFailed());
+        assertTrue(((DynamicTable) filteredAgain).isFailed());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(5));
             source.notifyListeners(i(), i(5), i());
         });
 
-        final Table filteredYetAgain = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredYetAgain =
+            LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
         assertNotSame(filtered, filteredYetAgain);
-        assertFalse(((DynamicTable)filteredYetAgain).isFailed());
-        assertTableEquals(TableTools.newTable(TableTools.col("Str", "A"), TableTools.col("UC", "A")), filteredYetAgain);
+        assertFalse(((DynamicTable) filteredYetAgain).isFailed());
+        assertTableEquals(
+            TableTools.newTable(TableTools.col("Str", "A"), TableTools.col("UC", "A")),
+            filteredYetAgain);
     }
 
     private static boolean isFilterNpe(List<Throwable> throwables) {
-        if (1 !=  throwables.size()) {
+        if (1 != throwables.size()) {
             return false;
         }
         if (!throwables.get(0).getClass().equals(FormulaEvaluationException.class)) {

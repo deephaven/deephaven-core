@@ -7,9 +7,11 @@ public abstract class ReplacingVisitor {
     public FilterDescriptor onAnd(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onOr(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onNot(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
@@ -17,12 +19,15 @@ public abstract class ReplacingVisitor {
     public FilterDescriptor onLessThan(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onGreaterThan(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onLessThanOrEqualTo(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onGreaterThanOrEqualTo(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
@@ -30,12 +35,15 @@ public abstract class ReplacingVisitor {
     public FilterDescriptor onEqual(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onEqualIgnoreCase(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onNotEqual(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onNotEqualIgnoreCase(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
@@ -43,12 +51,15 @@ public abstract class ReplacingVisitor {
     public FilterDescriptor onIn(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onInIgnoreCase(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onNotIn(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onNotInIgnoreCase(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
@@ -60,9 +71,11 @@ public abstract class ReplacingVisitor {
     public FilterDescriptor onInvoke(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onLiteral(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onReference(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
@@ -70,15 +83,19 @@ public abstract class ReplacingVisitor {
     public FilterDescriptor onContains(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onContainsIgnoreCase(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onPattern(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onPatternIgnoreCase(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
+
     public FilterDescriptor onSearch(FilterDescriptor descriptor) {
         return visitChildren(descriptor);
     }
@@ -157,7 +174,8 @@ public abstract class ReplacingVisitor {
         if (!changed) {
             return descriptor;
         }
-        return new FilterDescriptor(descriptor.getOperation(), descriptor.getValue(), descriptor.getType(), children);
+        return new FilterDescriptor(descriptor.getOperation(), descriptor.getValue(),
+            descriptor.getType(), children);
     }
 
 }

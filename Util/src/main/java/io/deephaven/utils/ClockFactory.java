@@ -4,9 +4,8 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.util.clock.RealTimeClock;
 
 /**
- * This is a hook to enable testing and simulation.
- * Users of Clock should use this factory to get an instance. When they do,
- * it is possible to change the class behavior from a test harness.
+ * This is a hook to enable testing and simulation. Users of Clock should use this factory to get an
+ * instance. When they do, it is possible to change the class behavior from a test harness.
  *
  * Note: This would be better housed as a member of Clock.
  */

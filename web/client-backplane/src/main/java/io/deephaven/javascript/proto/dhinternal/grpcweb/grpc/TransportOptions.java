@@ -8,5 +8,5 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.grpc.TransportOptions",
     namespace = JsPackage.GLOBAL)
 public interface TransportOptions
-    extends io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport
-        .TransportOptions {}
+    extends io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportOptions {
+}

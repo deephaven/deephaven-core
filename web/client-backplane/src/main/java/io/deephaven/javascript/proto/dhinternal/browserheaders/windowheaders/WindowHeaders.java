@@ -10,26 +10,26 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.browserHeaders.WindowHeaders.WindowHeaders",
     namespace = JsPackage.GLOBAL)
 public interface WindowHeaders {
-  @JsFunction
-  public interface ForEachCallbackFn {
-    void onInvoke(String p0, String p1);
-  }
+    @JsFunction
+    public interface ForEachCallbackFn {
+        void onInvoke(String p0, String p1);
+    }
 
-  void append(String key, String value);
+    void append(String key, String value);
 
-  void delete(String key);
+    void delete(String key);
 
-  Object entries();
+    Object entries();
 
-  Object forEach(WindowHeaders.ForEachCallbackFn callback);
+    Object forEach(WindowHeaders.ForEachCallbackFn callback);
 
-  JsArray<String> get(String key);
+    JsArray<String> get(String key);
 
-  JsArray<String> getAll(String key);
+    JsArray<String> getAll(String key);
 
-  boolean has(String key);
+    boolean has(String key);
 
-  Object keys();
+    Object keys();
 
-  void set(String key, String value);
+    void set(String key, String value);
 }

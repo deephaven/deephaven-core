@@ -15,15 +15,16 @@ public abstract class OneClickChartModifier<T> implements Serializable {
     private final VisibilityLevel visibilityLevel;
 
     /**
-     * Creates a OneClickChartModifier instance.
-     * to the given swappable table {@code t}.
+     * Creates a OneClickChartModifier instance. to the given swappable table {@code t}.
      *
      * @param t swappable table
      * @param valueColumn column of swappable table
-     * @param visibilityLevel which series to hide before a OneClick event, e.g. AXIS will hide all series for the given axis
+     * @param visibilityLevel which series to hide before a OneClick event, e.g. AXIS will hide all
+     *        series for the given axis
      * @param plotInfo info for exceptions
      */
-    public OneClickChartModifier(final SwappableTable t, final String valueColumn, final VisibilityLevel visibilityLevel, final PlotInfo plotInfo) {
+    public OneClickChartModifier(final SwappableTable t, final String valueColumn,
+        final VisibilityLevel visibilityLevel, final PlotInfo plotInfo) {
         this.valueColumn = valueColumn;
         this.visibilityLevel = visibilityLevel;
         this.plotInfo = plotInfo;
@@ -51,8 +52,8 @@ public abstract class OneClickChartModifier<T> implements Serializable {
     }
 
     /**
-     * At what level in the Figure hierarchy the series of a plot will be restricted, e.g. AXIS
-     * will hide all series for the given {@link io.deephaven.db.plot.Axis}
+     * At what level in the Figure hierarchy the series of a plot will be restricted, e.g. AXIS will
+     * hide all series for the given {@link io.deephaven.db.plot.Axis}
      */
     public enum VisibilityLevel {
         AXIS

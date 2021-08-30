@@ -12,7 +12,7 @@ import io.deephaven.db.tables.utils.ColumnsSpecHelper;
 import java.io.IOException;
 
 public class ProcessMetricsLogLogger
-        extends TableLoggerImpl2<ProcessMetricsLogLogger.ISetter> {
+    extends TableLoggerImpl2<ProcessMetricsLogLogger.ISetter> {
 
     private static final String TABLE_NAME = "ProcessMetricsLog";
 
@@ -25,8 +25,10 @@ public class ProcessMetricsLogLogger
     }
 
     interface ISetter extends WritableRowContainer {
-        void log(Row.Flags flags, long timestamp, String processUniqueId, String name, String interval, String type,
-                 long n, long sum, long last, long min, long max,long avg, long sum2,long stdev) throws IOException;
+        void log(Row.Flags flags, long timestamp, String processUniqueId, String name,
+            String interval, String type,
+            long n, long sum, long last, long min, long max, long avg, long sum2, long stdev)
+            throws IOException;
     }
 
     class DirectSetter extends BaseSetter implements ISetter {
@@ -61,9 +63,10 @@ public class ProcessMetricsLogLogger
         }
 
         @Override
-        public void log(final Row.Flags flags, final long timestamp, final String processUniqueId, final String name, final String interval, final String type,
-                        final long n, final long sum, final long last, final long min, final long max, final long avg, final long sum2, final long stdev
-        ) throws IOException {
+        public void log(final Row.Flags flags, final long timestamp, final String processUniqueId,
+            final String name, final String interval, final String type,
+            final long n, final long sum, final long last, final long min, final long max,
+            final long avg, final long sum2, final long stdev) throws IOException {
             setRowFlags(flags);
             this.ProcessUniqueId.set(processUniqueId);
             this.Timestamp.set(timestamp);
@@ -91,20 +94,19 @@ public class ProcessMetricsLogLogger
 
     static {
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
-                .add("ProcessUniqueId", String.class)
-                .add("Timestamp", long.class)
-                .add("Name", String.class)
-                .add("Interval", String.class)
-                .add("Type", String.class)
-                .add("N", long.class)
-                .add("Sum", long.class)
-                .add("Last", long.class)
-                .add("Min", long.class)
-                .add("Max", long.class)
-                .add("Avg", long.class)
-                .add("Sum2", long.class)
-                .add("Stdev", long.class)
-                ;
+            .add("ProcessUniqueId", String.class)
+            .add("Timestamp", long.class)
+            .add("Name", String.class)
+            .add("Interval", String.class)
+            .add("Type", String.class)
+            .add("N", long.class)
+            .add("Sum", long.class)
+            .add("Last", long.class)
+            .add("Min", long.class)
+            .add("Max", long.class)
+            .add("Avg", long.class)
+            .add("Sum2", long.class)
+            .add("Stdev", long.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
     }
@@ -115,21 +117,25 @@ public class ProcessMetricsLogLogger
         return new DirectSetter();
     }
 
-    public void log(final long timestamp, final String processId, final String name, final String interval, final String type,
-                    final long n, final long sum, final long last, final long min, final long max, final long avg, final long sum2, final long stdev
-    ) throws IOException {
-        log(DEFAULT_INTRADAY_LOGGER_FLAGS, timestamp,processId,name,interval,type,n,sum,last,min,max,avg,sum2,stdev);
+    public void log(final long timestamp, final String processId, final String name,
+        final String interval, final String type,
+        final long n, final long sum, final long last, final long min, final long max,
+        final long avg, final long sum2, final long stdev) throws IOException {
+        log(DEFAULT_INTRADAY_LOGGER_FLAGS, timestamp, processId, name, interval, type, n, sum, last,
+            min, max, avg, sum2, stdev);
     }
 
-    public void log(final Row.Flags flags, final long timestamp, final String processId, final String name, final String interval, final String type,
-                    final long n, final long sum, final long last, final long min, final long max, final long avg, final long sum2, final long stdev
-    ) throws IOException {
+    public void log(final Row.Flags flags, final long timestamp, final String processId,
+        final String name, final String interval, final String type,
+        final long n, final long sum, final long last, final long min, final long max,
+        final long avg, final long sum2, final long stdev) throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");
         final ISetter setter = setterPool.take();
         try {
-            setter.log(flags, timestamp, processId, name, interval, type, n, sum, last, min, max, avg, sum2, stdev);
+            setter.log(flags, timestamp, processId, name, interval, type, n, sum, last, min, max,
+                avg, sum2, stdev);
         } catch (Exception e) {
             setterPool.give(setter);
             throw e;
@@ -137,7 +143,8 @@ public class ProcessMetricsLogLogger
         flush(setter);
     }
 
-    private static final TableDefinition TABLE_DEFINITION = TableDefinition.tableDefinition(columnDbTypes, columnNames);
+    private static final TableDefinition TABLE_DEFINITION =
+        TableDefinition.tableDefinition(columnDbTypes, columnNames);
 
     public static TableDefinition getTableDefinition() {
         return TABLE_DEFINITION;

@@ -19,7 +19,7 @@ import static io.deephaven.configuration.Configuration.LOGDIR_PROPERTY;
  */
 public class ProcessNameFileAppender extends DailyRollingFileAppender {
 
-    private boolean first=false;
+    private boolean first = false;
 
     @SuppressWarnings("unused")
     public ProcessNameFileAppender() {
@@ -27,19 +27,20 @@ public class ProcessNameFileAppender extends DailyRollingFileAppender {
     }
 
     @SuppressWarnings("unused")
-    public ProcessNameFileAppender(Layout layout, String filename, String datePattern) throws IOException {
+    public ProcessNameFileAppender(Layout layout, String filename, String datePattern)
+        throws IOException {
         super(layout, filename, datePattern);
     }
 
     public void activateOptions() {
-        String mainClass=System.getProperty("processname.main");
+        String mainClass = System.getProperty("processname.main");
 
-        if (mainClass==null){
+        if (mainClass == null) {
             StackTraceElement trace[] = Thread.currentThread().getStackTrace();
 
-            String main[]=trace[trace.length-1].getClassName().split("\\.");
+            String main[] = trace[trace.length - 1].getClassName().split("\\.");
 
-            mainClass=main[main.length-1];
+            mainClass = main[main.length - 1];
         }
 
         final String suffix = ProcessNameUtil.getSuffix();
@@ -48,23 +49,41 @@ public class ProcessNameFileAppender extends DailyRollingFileAppender {
         if (logDirJvmProp != null) {
             setFile(logDirJvmProp + File.separator + mainClass + suffix + ".log");
         } else {
-            setFile(System.getProperty("workspace") + "/../logs/" + mainClass + suffix + ".log");     //can't use a property here since configuration needs log4j and log4j would need configuration
+            setFile(System.getProperty("workspace") + "/../logs/" + mainClass + suffix + ".log"); // can't
+                                                                                                  // use
+                                                                                                  // a
+                                                                                                  // property
+                                                                                                  // here
+                                                                                                  // since
+                                                                                                  // configuration
+                                                                                                  // needs
+                                                                                                  // log4j
+                                                                                                  // and
+                                                                                                  // log4j
+                                                                                                  // would
+                                                                                                  // need
+                                                                                                  // configuration
         }
 
         super.activateOptions();
     }
 
-    //the append below is a hack.  we grep out std out logs to send an email when the process is completed.  since we are now logging to a file we also need the email messages to go to the console
+    // the append below is a hack. we grep out std out logs to send an email when the process is
+    // completed. since we are now logging to a file we also need the email messages to go to the
+    // console
     public void append(LoggingEvent event) {
-        if (!first){
-            super.append(new LoggingEvent(event.getFQNOfLoggerClass(), event.getLogger(), Level.INFO, "********************************  " + new Date() + " *******************************", null));
+        if (!first) {
+            super.append(new LoggingEvent(event.getFQNOfLoggerClass(), event.getLogger(),
+                Level.INFO, "********************************  " + new Date()
+                    + " *******************************",
+                null));
 
-            first=true;
+            first = true;
         }
 
         super.append(event);
 
-        if (event.getLevel().equals(CustomLog4jLevel.EMAIL)){
+        if (event.getLevel().equals(CustomLog4jLevel.EMAIL)) {
             System.out.println("EMAIL - " + event.getMessage());
         }
     }

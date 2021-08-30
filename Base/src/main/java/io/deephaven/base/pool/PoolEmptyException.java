@@ -4,15 +4,13 @@
 
 package io.deephaven.base.pool;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
- * Indicates that a {@link Pool} is empty and no more items can be
- * {@link Pool#take}n.
+ * Indicates that a {@link Pool} is empty and no more items can be {@link Pool#take}n.
  */
-public class PoolEmptyException extends RuntimeException{
+public class PoolEmptyException extends RuntimeException {
 
-    public PoolEmptyException() {
-    }
+    public PoolEmptyException() {}
 
     public PoolEmptyException(String message) {
         super(message);

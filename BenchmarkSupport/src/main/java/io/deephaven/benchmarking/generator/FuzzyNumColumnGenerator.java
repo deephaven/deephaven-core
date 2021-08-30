@@ -6,12 +6,14 @@ public class FuzzyNumColumnGenerator<T extends Number> extends SequentialNumColu
     private final double fuzz;
     private ExtendedRandom random;
 
-    public FuzzyNumColumnGenerator(Class<T> type, String name, double start, double step, double fuzz) {
+    public FuzzyNumColumnGenerator(Class<T> type, String name, double start, double step,
+        double fuzz) {
         super(type, name, start, step);
         this.fuzz = fuzz;
     }
 
-    public FuzzyNumColumnGenerator(Class<T> type, String name, double start, double step, double max, double fuzz, Mode mode) {
+    public FuzzyNumColumnGenerator(Class<T> type, String name, double start, double step,
+        double max, double fuzz, Mode mode) {
         super(type, name, start, step, max, mode);
         this.fuzz = fuzz;
     }

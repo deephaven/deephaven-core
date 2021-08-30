@@ -9,15 +9,16 @@ import java.util.Arrays;
 import java.util.Map;
 
 class RollupSmartKeyColumnDuplicationTransformer implements AggregationContextTransformer {
-    private final String [] names;
+    private final String[] names;
 
-    RollupSmartKeyColumnDuplicationTransformer(String [] names) {
+    RollupSmartKeyColumnDuplicationTransformer(String[] names) {
         this.names = names;
     }
 
     @Override
     public void resultColumnFixup(Map<String, ColumnSource<?>> resultColumns) {
-        final ColumnSource[] keySources = Arrays.stream(names).map(resultColumns::get).toArray(ColumnSource[]::new);
+        final ColumnSource[] keySources =
+            Arrays.stream(names).map(resultColumns::get).toArray(ColumnSource[]::new);
         resultColumns.put(RollupInfo.ROLLUP_COLUMN, new SmartKeySource(keySources));
     }
 }

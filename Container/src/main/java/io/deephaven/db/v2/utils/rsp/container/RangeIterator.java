@@ -4,8 +4,8 @@ import java.util.Arrays;
 
 public interface RangeIterator {
     /**
-     * Checks if the iterator has more ranges.
-     * If hasNext() returns false, calling next thereafter results in undefined behavior.
+     * Checks if the iterator has more ranges. If hasNext() returns false, calling next thereafter
+     * results in undefined behavior.
      *
      * @return whether there is another range.
      */
@@ -14,8 +14,7 @@ public interface RangeIterator {
     /**
      * Start of the current range.
      * <p>
-     * Calling start() without calling next() at least once
-     * results in undefined behavior.
+     * Calling start() without calling next() at least once results in undefined behavior.
      *
      * @return the start of the current range.
      */
@@ -24,22 +23,20 @@ public interface RangeIterator {
     /**
      * End of the current range (exclusive).
      * <p>
-     * Calling end() without calling next() at least once
-     * results in undefined behavior.
+     * Calling end() without calling next() at least once results in undefined behavior.
      *
      * @return the end of the current range (exclusive).
      */
     int end();
 
     /**
-     * Advance the iterator to the next range.
-     * Only call after hasNext() has returned true.
+     * Advance the iterator to the next range. Only call after hasNext() has returned true.
      */
     void next();
 
     /**
-     * Call accept on the provided AbortableRangeConsumer until it returns false
-     * or we run out of values.
+     * Call accept on the provided AbortableRangeConsumer until it returns false or we run out of
+     * values.
      *
      * @param rc An AbortableRangeConsumer to feed ranges to.
      * @return false if AbortableRangeConsumer returned false at any point, true otherwise.
@@ -58,12 +55,12 @@ public interface RangeIterator {
     /**
      * Get the next batch of ranges.
      *
-     * @param buffer    a short array where consecutive pairs of (start, end-1) values will be stored.
-     * @param offset    where in buffer to start storing range boundary values.
-     * @param maxRanges maximum number of ranges that can be written to buffer;
-     *                  {@code buffer} should have at least space for {@code 2*maxRanges} shorts starting
-     *                  at {@code offset}.
-     * @return how many ranges were written in {@code buffer}; this is two times the individual elements written.
+     * @param buffer a short array where consecutive pairs of (start, end-1) values will be stored.
+     * @param offset where in buffer to start storing range boundary values.
+     * @param maxRanges maximum number of ranges that can be written to buffer; {@code buffer}
+     *        should have at least space for {@code 2*maxRanges} shorts starting at {@code offset}.
+     * @return how many ranges were written in {@code buffer}; this is two times the individual
+     *         elements written.
      */
     default int next(final short[] buffer, final int offset, final int maxRanges) {
         int count = 0;
@@ -83,7 +80,8 @@ public interface RangeIterator {
 
         public Single(int start, int end) {
             if (end < start || start < 0) {
-                throw new IllegalArgumentException("Invalid range start=" + start + ", endI=" + end);
+                throw new IllegalArgumentException(
+                    "Invalid range start=" + start + ", endI=" + end);
             }
             this.start = start;
             this.end = end;
@@ -132,7 +130,8 @@ public interface RangeIterator {
 
         public ArrayBacked(int[] ranges) {
             if ((ranges.length & 1) != 0) {
-                throw new IllegalArgumentException("Invalid array for range, odd size=" + ranges.length);
+                throw new IllegalArgumentException(
+                    "Invalid array for range, odd size=" + ranges.length);
             }
             this.ranges = Arrays.copyOf(ranges, ranges.length);
             pos = -2;
