@@ -55,11 +55,6 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        ensureCapacity(capacity, true);
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ensureCapacity(capacity, blocks, prevBlocks, nullFill);
     }

@@ -26,7 +26,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
     private long totalSize = 0;
 
     // region constructor
-    protected CharChunkColumnSource() {
+    public CharChunkColumnSource() {
         this(new TLongArrayList());
     }
 
@@ -145,7 +145,15 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
         return index;
     }
 
-    private void addChunk(@NotNull final WritableCharChunk<? extends Attributes.Values> chunk) {
+    /**
+     * Append a chunk of data to this column source.
+     *
+     * The chunk must not be empty (i.e., the size must be greater than zero).
+     *
+     * @param chunk the chunk of data to add
+     */
+    public void addChunk(@NotNull final WritableCharChunk<? extends Attributes.Values> chunk) {
+        Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
             firstOffsetForData.add(totalSize);

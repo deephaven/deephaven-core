@@ -18,9 +18,11 @@ import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.db.tables.remotequery.QueryProcessingResults;
 import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.db.util.liveness.Liveness;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
@@ -29,6 +31,7 @@ import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -488,6 +491,11 @@ public class SessionState {
             this.exportId = exportId;
             this.logIdentity = isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
             setState(ExportNotification.State.UNKNOWN);
+
+            // non-exports stay alive until they have been exported
+            if (isNonExport()) {
+                retainReference();
+            }
         }
 
         /**
@@ -526,8 +534,17 @@ public class SessionState {
             this.parents = parents;
             dependentCount = parents.size();
             parents.stream().filter(Objects::nonNull).forEach(this::manage);
-        }
 
+            if (log.isDebugEnabled()) {
+                final Exception e = new RuntimeException();
+                final LogEntry entry = log.debug().append(e).nl().append(session.logPrefix).append("export '").append(logIdentity)
+                        .append("' has ").append(dependentCount).append(" dependencies remaining: ");
+                for (ExportObject<?> parent : parents) {
+                    entry.nl().append('\t').append(parent.logIdentity).append(" is ").append(parent.getState().name());
+                }
+                entry.endl();
+            }
+        }
 
         /**
          * Sets the dependencies and initializes the relevant data structures to include this export as a child for each.
@@ -764,8 +781,10 @@ public class SessionState {
          * Performs the actual export on a scheduling thread.
          */
         private void doExport() {
+            final Callable<T> capturedExport;
             synchronized (this) {
-                if (state != ExportNotification.State.QUEUED || session.isExpired()) {
+                capturedExport = exportMain;
+                if (state != ExportNotification.State.QUEUED || session.isExpired() || capturedExport == null) {
                     return; // had a cancel race with client
                 }
             }
@@ -779,16 +798,23 @@ public class SessionState {
 
                 evaluationNumber = QueryPerformanceRecorder.getInstance().startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
                 try {
-                    setResult(exportMain.call());
+                    setResult(capturedExport.call());
                 } finally {
                     shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
+
+                    if (isNonExport()) {
+                        // we force non-exports to remain live until they are resolved
+                        dropReference();
+                    }
                 }
             } catch (final Exception err) {
                 exception = err;
                 synchronized (this) {
-                    errorId = UuidCreator.toString(UuidCreator.getRandomBased());
-                    log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
-                    setState(ExportNotification.State.FAILED);
+                    if (!isExportStateTerminal(state)) {
+                        errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                        setState(ExportNotification.State.FAILED);
+                    }
                 }
             } finally {
                 if (exception != null && queryProcessingResults != null) {
@@ -845,11 +871,9 @@ public class SessionState {
                     // client may race a cancel with setResult
                     if (!isExportStateTerminal(state)) {
                         this.result = result;
-
-                        if (this.result instanceof LivenessReferent) {
-                            tryManage((LivenessReferent) result);
+                        if (result instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(result)) {
+                            manage((LivenessReferent) result);
                         }
-
                         setState(ExportNotification.State.EXPORTED);
                     }
                 }
@@ -1088,6 +1112,15 @@ public class SessionState {
             } else {
                 //noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+                switch (this.export.getState()) {
+                    case UNKNOWN:
+                        return;
+                    case RELEASED:
+                    case CANCELLED:
+                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "export already released/cancelled id: " + exportId);
+                    default:
+                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "cannot re-export to existing exportId: " + exportId);
+                }
             }
         }
 
@@ -1152,7 +1185,7 @@ public class SessionState {
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
                 errorHandler.onError(StatusProto.toStatusRuntimeException(Status.newBuilder()
-                        .setCode(Code.INTERNAL.getNumber())
+                        .setCode(Code.FAILED_PRECONDITION.getNumber())
                         .setMessage("Details Logged w/ID '" + errorContext + "'" + dependentStr)
                         .build()));
             }));

@@ -63,7 +63,7 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
     }
 
     @Override
-    public final IntType type() {
+    public final IntType componentType() {
         return IntType.instance();
     }
 

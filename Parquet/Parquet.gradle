@@ -29,3 +29,11 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
 
 }
+
+spotless {
+    java {
+        targetExclude(
+                '**/*ChunkedWriter.java',
+        )
+    }
+}

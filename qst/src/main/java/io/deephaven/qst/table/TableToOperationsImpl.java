@@ -1,6 +1,6 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.qst.TableCreation.TableToOperations;
+import io.deephaven.qst.TableCreator.TableToOperations;
 
 enum TableToOperationsImpl implements TableToOperations<TableSpec, TableSpec> {
     INSTANCE;

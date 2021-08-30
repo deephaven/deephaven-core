@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.api.filter.FilterAnd$Builder",
+ "methods": {
+  "addAllFilters": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.filter.Filter>\n:return: io.deephaven.api.filter.FilterAnd.Builder",
+  "addFilters": "*Overload 1*  \n  :param elements: io.deephaven.api.filter.Filter\n  :return: io.deephaven.api.filter.FilterAnd.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.filter.Filter...\n  :return: io.deephaven.api.filter.FilterAnd.Builder",
+  "build": ":return: io.deephaven.api.filter.FilterAnd"
+ },
+ "path": "io.deephaven.api.filter.FilterAnd.Builder",
+ "typeName": "interface"
+}

@@ -1,6 +1,10 @@
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.DeephavenException;
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -18,10 +22,13 @@ import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,6 +54,9 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private ChunkColumnSource<?> [] currentChunkSources;
     private ChunkColumnSource<?> [] prevChunkSources;
 
+    // a list of failures that have occurred
+    private List<Exception> enqueuedFailure;
+
     public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
                                 @NotNull final StreamPublisher streamPublisher,
                                 @NotNull final LiveTableRegistrar liveTableRegistrar) {
@@ -63,9 +73,44 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
         index = Index.FACTORY.getEmptyIndex();
 
-        table = new QueryTable(index, visibleSources);
-        table.setRefreshing(true);
-        table.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
+        table = new QueryTable(index, visibleSources) {
+            {
+                setFlat();
+                setRefreshing(true);
+                setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
+            }
+        };
+    }
+
+    /**
+     * Create an array of chunks suitable for passing to our accept method.
+     *
+     * @param size the size of the chunks
+     * @return an array of writable chunks
+     */
+    public WritableChunk[] makeChunksForDefinition(int size) {
+        return makeChunksForDefinition(tableDefinition, size);
+    }
+
+    /**
+     * Return the ChunkType for a given column index.
+     *
+     * @param idx the column index to get the ChunkType for
+     * @return the ChunkType for the specified column
+     */
+    public ChunkType chunkTypeForIndex(int idx) {
+        return chunkTypeForColumn(tableDefinition.getColumns()[idx]);
+    }
+
+    /**
+     * Make output chunks for the specified table definition.
+     *
+     * @param definition the definition to make chunks for
+     * @param size       the size of the returned chunks
+     * @return an array of writable chunks
+     */
+    public static WritableChunk[] makeChunksForDefinition(TableDefinition definition, int size) {
+        return definition.getColumnStream().map(cd -> makeChunk(cd, size)).toArray(WritableChunk[]::new);
     }
 
     @NotNull
@@ -75,7 +120,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     @NotNull
-    private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets, io.deephaven.db.tables.ColumnDefinition<?> cd) {
+    private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets, ColumnDefinition<?> cd) {
         final Class<?> replacementType = replacementType(cd.getDataType());
         if (replacementType != null) {
             return ChunkColumnSource.make(ChunkType.fromElementType(replacementType), replacementType, null, offsets);
@@ -85,11 +130,26 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     @NotNull
+    private static WritableChunk<?> makeChunk(ColumnDefinition<?> cd, int size) {
+        final ChunkType chunkType = chunkTypeForColumn(cd);
+        WritableChunk<Attributes.Any> returnValue = chunkType.makeWritableChunk(size);
+        returnValue.setSize(0);
+        return returnValue;
+    }
+
+    private static ChunkType chunkTypeForColumn(ColumnDefinition<?> cd) {
+        final Class<?> replacementType = replacementType(cd.getDataType());
+        final Class<?> useType = replacementType != null ? replacementType : cd.getDataType();
+        final ChunkType chunkType = ChunkType.fromElementType(useType);
+        return chunkType;
+    }
+
+    @NotNull
     private static NullValueColumnSource<?> [] makeNullColumnSources(TableDefinition tableDefinition) {
         return tableDefinition.getColumnStream().map(StreamToTableAdapter::makeNullValueColumnSourceFromDefinition).toArray(NullValueColumnSource<?>[]::new);
     }
 
-    private static NullValueColumnSource<?> makeNullValueColumnSourceFromDefinition(io.deephaven.db.tables.ColumnDefinition<?> cd) {
+    private static NullValueColumnSource<?> makeNullValueColumnSourceFromDefinition(ColumnDefinition<?> cd) {
         final Class<?> replacementType = replacementType(cd.getDataType());
         if (replacementType != null) {
             return NullValueColumnSource.getInstance(replacementType, null);
@@ -146,6 +206,11 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         }
     }
 
+    /**
+     * Return the stream table that this adapter is producing.
+     *
+     * @return the resultant stream table
+     */
     public DynamicTable table() {
         return table;
     }
@@ -161,10 +226,21 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             doRefresh();
         } catch (Exception e) {
             table.notifyListenersOnError(e, null);
+            liveTableRegistrar.removeTable(this);
         }
     }
 
     private void doRefresh() {
+        synchronized (this) {
+            // if we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush itself
+            if (enqueuedFailure != null) {
+                throw new UncheckedDeephavenException(
+                        MultiException.maybeWrapInMultiException(
+                                "Multiple errors encountered while ingesting stream",
+                                enqueuedFailure.toArray(new Exception[0])));
+            }
+        }
+
         streamPublisher.flush();
         // Switch columns, update index, deliver notification
 
@@ -203,7 +279,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             index.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(new ShiftAwareListener.Update(Index.FACTORY.getFlatIndex(newSize), Index.FACTORY.getFlatIndex(oldSize), Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        table.notifyListeners(new ShiftAwareListener.Update(Index.CURRENT_FACTORY.getFlatIndex(newSize), Index.CURRENT_FACTORY.getFlatIndex(oldSize), Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }
 
     @SafeVarargs
@@ -221,8 +297,19 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected " + bufferChunkSources.length);
             }
             for (int ii = 0; ii < data.length; ++ii) {
+                Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");
                 bufferChunkSources[ii].addChunk(data[ii]);
             }
+        }
+    }
+
+    @Override
+    public void acceptFailure(@NotNull Exception cause) {
+        synchronized (this) {
+            if (enqueuedFailure == null) {
+                enqueuedFailure = new ArrayList<>();
+            }
+            enqueuedFailure.add(cause);
         }
     }
 }

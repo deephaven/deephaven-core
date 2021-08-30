@@ -55,11 +55,6 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        ensureCapacity(capacity, true);
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ensureCapacity(capacity, blocks, prevBlocks, nullFill);
     }

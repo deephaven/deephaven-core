@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * A column header is {@link #name() name} and {@link #type() type} pair.
+ * A column header is {@link #name() name} and {@link #componentType() type} pair.
  *
  * <p>
  * Multiple column headers, up to 9, can be strongly-linked together to provide a convenient
@@ -31,12 +31,12 @@ public abstract class ColumnHeader<T1> implements TableHeader.Buildable {
 
     static final int DEFAULT_BUILDER_INITIAL_CAPACITY = 16;
 
-    public static <T> ColumnHeader<T> of(String name, Class<T> clazz) {
-        return of(name, Type.find(clazz));
+    public static <T> ColumnHeader<T> of(String name, Class<T> componentType) {
+        return of(name, Type.find(componentType));
     }
 
-    public static <T> ColumnHeader<T> of(String name, Type<T> type) {
-        return ImmutableColumnHeader.of(name, type);
+    public static <T> ColumnHeader<T> of(String name, Type<T> componentType) {
+        return ImmutableColumnHeader.of(name, componentType);
     }
 
     public static ColumnHeader<Boolean> ofBoolean(String name) {
@@ -139,7 +139,7 @@ public abstract class ColumnHeader<T1> implements TableHeader.Buildable {
     public abstract String name();
 
     @Parameter
-    public abstract Type<T1> type();
+    public abstract Type<T1> componentType();
 
     public final <T2> ColumnHeaders2<T1, T2> header(String name, Class<T2> clazz) {
         return header(ColumnHeader.of(name, clazz));
@@ -166,7 +166,7 @@ public abstract class ColumnHeader<T1> implements TableHeader.Buildable {
         private final ArrayBuilder<T1, ?, ?> arrayBuilder;
 
         Rows(int initialCapacity) {
-            arrayBuilder = Array.builder(type(), initialCapacity);
+            arrayBuilder = Array.builder(componentType(), initialCapacity);
         }
 
         public final Rows row(T1 a) {

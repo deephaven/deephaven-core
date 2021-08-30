@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.SortPair;
 import io.deephaven.db.tables.SortingOrder;
@@ -11,11 +12,15 @@ import io.deephaven.db.v2.hashing.HashMapK4V4;
 import io.deephaven.db.v2.hashing.HashMapLockFreeK4V4;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.ReadOnlyRedirectedColumnSource;
+import io.deephaven.db.v2.sources.SwitchColumnSource;
 import io.deephaven.db.v2.sources.WritableChunkSink;
 import io.deephaven.db.v2.sources.chunk.LongChunk;
+import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.db.v2.sources.chunkcolumnsource.LongChunkColumnSource;
 import io.deephaven.db.v2.utils.*;
 import io.deephaven.util.SafeCloseableList;
 
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -115,16 +120,82 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         return resultTable;
     }
 
+    @NotNull
+    private Result<QueryTable> streamSort(@NotNull final SortHelpers.SortMapping initialSortedKeys) {
+        final LongChunkColumnSource initialInnerRedirectionSource = new LongChunkColumnSource();
+        if (initialSortedKeys.size() > 0) {
+            initialInnerRedirectionSource.addChunk(WritableLongChunk.writableChunkWrap(initialSortedKeys.getArrayMapping()));
+        }
+        final MutableObject<LongChunkColumnSource> recycledInnerRedirectionSource = new MutableObject<>();
+        final SwitchColumnSource<Long> redirectionSource = new SwitchColumnSource<>(initialInnerRedirectionSource, (final ColumnSource<Long> previousInnerRedirectionSource) -> {
+            final LongChunkColumnSource recycled = (LongChunkColumnSource) previousInnerRedirectionSource;
+            recycled.clear();
+            recycledInnerRedirectionSource.setValue(recycled);
+        });
+
+        sortMapping = new ReadOnlyLongColumnSourceRedirectionIndex<>(redirectionSource);
+        final Index resultIndex = Index.FACTORY.getFlatIndex(initialSortedKeys.size());
+
+        final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
+        for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
+            //noinspection unchecked
+            resultMap.put(stringColumnSourceEntry.getKey(), new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
+        }
+
+        resultTable = new QueryTable(resultIndex, resultMap);
+        parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
+        resultTable.setFlat();
+        setSorted(resultTable);
+
+        final ShiftAwareListener resultListener = new BaseTable.ShiftAwareListenerImpl("Stream sort listener", parent, resultTable) {
+            @Override
+            public void onUpdate(@NotNull final Update upstream) {
+                Assert.assertion(upstream.modified.empty() && upstream.shifted.empty(), "upstream.modified.empty() && upstream.shifted.empty()");
+                Assert.eq(resultIndex.size(), "resultIndex.size()", upstream.removed.size(), "upstream.removed.size()");
+                if (upstream.empty()) {
+                    return;
+                }
+
+                final SortHelpers.SortMapping updateSortedKeys = SortHelpers.getSortedKeys(sortOrder, sortColumns, upstream.added, false);
+                final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
+                recycledInnerRedirectionSource.setValue(null);
+                final LongChunkColumnSource updateInnerRedirectSource = recycled == null ? new LongChunkColumnSource() : recycled;
+                if (updateSortedKeys.size() > 0) {
+                    updateInnerRedirectSource.addChunk(WritableLongChunk.writableChunkWrap(updateSortedKeys.getArrayMapping()));
+                }
+                redirectionSource.setNewCurrent(updateInnerRedirectSource);
+
+                final Index added = Index.CURRENT_FACTORY.getFlatIndex(upstream.added.size());
+                final Index removed = Index.CURRENT_FACTORY.getFlatIndex(upstream.removed.size());
+                if (added.size() > removed.size()) {
+                    resultIndex.insertRange(removed.size(), added.size() - 1);
+                } else if (removed.size() > added.size()) {
+                    resultIndex.removeRange(added.size(), removed.size() - 1);
+                }
+                resultTable.notifyListeners(new Update(added, removed, Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+            }
+        };
+
+        return new Result<>(resultTable, resultListener);
+    }
+
     private void setSorted(QueryTable table) {
         // no matter what we are always sorted by the first column
         SortedColumnsAttribute.setOrderForColumn(table, sortColumnNames[0], sortOrder[0]);
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         if (!parent.isRefreshing()) {
             final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(sortOrder, sortColumns, parent.getIndex(), false);
-            return new Result(historicalSort(sortedKeys));
+            return new Result<>(historicalSort(sortedKeys));
+        }
+        if (parent.isStream()) {
+            try (final ReadOnlyIndex prevIndex = usePrev ? parent.getIndex().getPrevIndex() : null) {
+                final ReadOnlyIndex indexToUse = usePrev ? prevIndex : parent.getIndex();
+                final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(sortOrder, sortColumns, indexToUse, usePrev);
+                return streamSort(sortedKeys);
+            }
         }
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
@@ -178,7 +249,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             setSorted(resultTable);
 
-            return new Result(resultTable, listener);
+            return new Result<>(resultTable, listener);
         }
     }
 }

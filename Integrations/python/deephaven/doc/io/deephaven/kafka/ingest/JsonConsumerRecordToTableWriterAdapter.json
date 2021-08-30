@@ -1,7 +1,8 @@
 {
  "className": "io.deephaven.kafka.ingest.JsonConsumerRecordToTableWriterAdapter",
  "methods": {
-  "consumeRecord": "Consume a Kafka record, producing zero or more rows in the output.\n\n:param record: (org.apache.kafka.clients.consumer.ConsumerRecord<?,?>) - the record received from KafkaConsumer.poll(Duration)."
+  "consumeRecord": "Consume a Kafka record, producing zero or more rows in the output.\n\n:param record: (org.apache.kafka.clients.consumer.ConsumerRecord<?,?>) - the record received from KafkaConsumer.poll(Duration).",
+  "make": ":param writer: io.deephaven.tablelogger.TableWriter<?>\n:param kafkaPartitionColumn: java.lang.String\n:param offsetColumnName: java.lang.String\n:param timestampColumnName: java.lang.String\n:param valueColumns: java.util.Map<java.lang.String,java.lang.String>\n:return: io.deephaven.kafka.ingest.JsonConsumerRecordToTableWriterAdapter"
  },
  "path": "io.deephaven.kafka.ingest.JsonConsumerRecordToTableWriterAdapter",
  "text": "Converts a consumer record containing JSON serialized objects to a Deephaven row.\n\n After processing explicit mappings for fields; the JSON record is searched for exact matches of the key.",

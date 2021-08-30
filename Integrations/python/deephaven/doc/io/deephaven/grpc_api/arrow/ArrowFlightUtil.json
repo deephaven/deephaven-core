@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.grpc_api.arrow.ArrowFlightUtil",
+ "methods": {
+  "parseProtoMessage": ":param stream: java.io.InputStream\n:return: io.deephaven.grpc_api.arrow.ArrowFlightUtil.MessageInfo"
+ },
+ "path": "io.deephaven.grpc_api.arrow.ArrowFlightUtil",
+ "typeName": "class"
+}

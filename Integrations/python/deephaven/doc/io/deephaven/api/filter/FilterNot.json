@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.filter.FilterNot",
+ "methods": {
+  "filter": "The filter.\n\n:return: (io.deephaven.api.filter.Filter) the filter",
+  "of": ":param filter: io.deephaven.api.filter.Filter\n:return: io.deephaven.api.filter.FilterNot",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.filter.Filter.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.filter.FilterNot",
+ "text": "Evaluates to true when the given filter evaluates to false.",
+ "typeName": "class"
+}

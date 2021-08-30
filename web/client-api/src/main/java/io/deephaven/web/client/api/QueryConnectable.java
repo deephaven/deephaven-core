@@ -2,6 +2,7 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
+import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.ide.shared.IdeSession;
@@ -20,6 +21,7 @@ import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +67,9 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
     @JsProperty(namespace = "dh.QueryInfo")
     public static final String EVENT_CONNECT = "connect";
 
+    @JsProperty(namespace = "dh.IdeConnection")
+    public static final String HACK_CONNECTION_FAILURE = "hack-connection-failure";
+
     private final List<IdeSession> sessions = new ArrayList<>();
     private final JsSet<Ticket> cancelled = new JsSet<>();
 
@@ -74,6 +79,16 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
 
     public QueryConnectable(Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
         this.connection = JsLazy.of(() -> new WorkerConnection(this, authTokenPromiseSupplier));
+    }
+
+    public void notifyConnectionError(ResponseStreamWrapper.Status status) {
+        CustomEventInit event = CustomEventInit.create();
+        event.setDetail(JsPropertyMap.of(
+                "status", status.getCode(),
+                "details", status.getDetails(),
+                "metadata", status.getMetadata()
+        ));
+        fireEvent(HACK_CONNECTION_FAILURE, event);
     }
 
     @Override

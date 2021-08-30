@@ -12,7 +12,7 @@ buildscript {
 plugins {
   id "com.github.hierynomus.license" version "0.14.0" apply false
   id "com.google.protobuf" version "0.8.10" apply false
-  id 'com.diffplug.spotless' version '5.10.2' apply false
+  id 'com.diffplug.spotless' version '5.14.2' apply false
 }
 
 import io.deephaven.tools.Java
@@ -262,6 +262,16 @@ configure modsRegular,
     } }
 }
 
+configure subprojects - [ ':ParquetHadoop', ':deephaven-jpy' ].collect( { project(it) }), { Project p ->
+    p.apply plugin: 'com.diffplug.spotless'
+    p.spotless {
+        ratchetFrom 'pre-style-guide-apply'
+        java {
+            eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+        }
+    }
+}
+
 (tasks.clean as Delete).delete(
         // Only the build rpm task outputs to the $rootDir/target directory.  Add it to the clean task.
         'target',
@@ -326,7 +336,7 @@ tasks.register 'allJavadoc', Javadoc, {
 
         //add to as javadoc gets completed
         String [] exportedProjects = [
-                ':DataStructures', ':DB', ':Util', ':ModelFarm', ':Numerics', ':Plot', ':KafkaIngester', ':grpc-api', ':qst', ':table-api'
+                ':DataStructures', ':DB', ':Util', ':ModelFarm', ':Numerics', ':Plot', ':Kafka', ':grpc-api', ':qst', ':table-api'
         ]
         jdoc.source = exportedProjects.collect { Java.sourceSet(project(it)).allJava }
         jdoc.classpath = files(exportedProjects.collect { project(it).sourceSets.main.compileClasspath })

@@ -1289,7 +1289,6 @@ public class ConstructSnapshot {
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
                 mcd.rowsModified = Index.CURRENT_FACTORY.getEmptyIndex();
-                mcd.rowsIncluded = Index.CURRENT_FACTORY.getEmptyIndex();
                 mcd.data = getSnapshotDataAsChunk(columnSource, null, Index.FACTORY.getEmptyIndex(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;

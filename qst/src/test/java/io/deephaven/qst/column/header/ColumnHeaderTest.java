@@ -33,51 +33,51 @@ public class ColumnHeaderTest {
 
     @Test
     void ofBooleanType() {
-        assertThat(ofBoolean("X").type()).isEqualTo(booleanType());
+        assertThat(ofBoolean("X").componentType()).isEqualTo(booleanType());
     }
 
     @Test
     void ofByteType() {
-        assertThat(ofByte("X").type()).isEqualTo(byteType());
+        assertThat(ofByte("X").componentType()).isEqualTo(byteType());
     }
 
     @Test
     void ofCharType() {
-        assertThat(ofChar("X").type()).isEqualTo(charType());
+        assertThat(ofChar("X").componentType()).isEqualTo(charType());
     }
 
     @Test
     void ofShortType() {
-        assertThat(ofShort("X").type()).isEqualTo(shortType());
+        assertThat(ofShort("X").componentType()).isEqualTo(shortType());
     }
 
     @Test
     void ofIntType() {
-        assertThat(ofInt("X").type()).isEqualTo(intType());
+        assertThat(ofInt("X").componentType()).isEqualTo(intType());
     }
 
     @Test
     void ofLongType() {
-        assertThat(ofLong("X").type()).isEqualTo(longType());
+        assertThat(ofLong("X").componentType()).isEqualTo(longType());
     }
 
     @Test
     void ofFloatType() {
-        assertThat(ofFloat("X").type()).isEqualTo(floatType());
+        assertThat(ofFloat("X").componentType()).isEqualTo(floatType());
     }
 
     @Test
     void ofDoubleType() {
-        assertThat(ofDouble("X").type()).isEqualTo(doubleType());
+        assertThat(ofDouble("X").componentType()).isEqualTo(doubleType());
     }
 
     @Test
     void ofStringType() {
-        assertThat(ofString("X").type()).isEqualTo(stringType());
+        assertThat(ofString("X").componentType()).isEqualTo(stringType());
     }
 
     @Test
     void ofInstantType() {
-        assertThat(ofInstant("X").type()).isEqualTo(instantType());
+        assertThat(ofInstant("X").componentType()).isEqualTo(instantType());
     }
 }

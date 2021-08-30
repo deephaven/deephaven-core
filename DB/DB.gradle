@@ -215,6 +215,7 @@ createMainExecTask('replicateToPage', 'io.deephaven.db.v2.locations.parquet.topa
 createMainExecTask('replicateDbArrays', 'io.deephaven.db.tables.dbarrays.ReplicateDbArrays')
 createMainExecTask('replicateDbArrayColumnWrappers', 'io.deephaven.db.v2.dbarrays.ReplicateDbArrayColumnWrappers')
 createMainExecTask('replicateCopyKernel', 'io.deephaven.db.v2.utils.copy.ReplicateCopyKernel')
+createMainExecTask('replicateUnboxerKernel', 'io.deephaven.db.v2.utils.unboxer.ReplicateUnboxerKernel')
 createMainExecTask('replicateOperators', 'io.deephaven.db.v2.by.ReplicateOperators')
 createMainExecTask('replicateFreezeBy', 'io.deephaven.db.v2.utils.freezeby.ReplicateFreezeBy')
 
@@ -241,8 +242,30 @@ task replicate {
     dependsOn 'replicateDbArrays'
     dependsOn 'replicateDbArrayColumnWrappers'
     dependsOn 'replicateCopyKernel'
+    dependsOn 'replicateUnboxerKernel'
     dependsOn 'replicateOperators'
     dependsOn 'replicateFreezeBy'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/generated/**',
+                '**/**Boolean*.java',
+                '**/**Byte*.java',
+                '**/**Char*.java',
+                '**/**Short*.java',
+                '**/**Int*.java',
+                '**/**Long*.java',
+                '**/**Float*.java',
+                '**/**Double*.java',
+                '**/**Object*.java',
+                '**/**StateManager.java',
+                'src/main/java/io/deephaven/db/v2/SymbolTableCombiner.java',
+                'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
+                'src/test/java/**/*Sample.java'
+        )
+    }
 }
 
 test {

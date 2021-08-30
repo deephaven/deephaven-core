@@ -39,11 +39,6 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        ensureCapacity(capacity, true);
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ensureCapacity(capacity, blocks, prevBlocks, nullFill);
     }
@@ -612,8 +607,9 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             BooleanArraySource.this.set(destKey, sourceColumn.getByte(sourceKey));
         }
 
-        public void ensureCapacity(long capacity) {
-            BooleanArraySource.this.ensureCapacity(capacity);
+        @Override
+        public void ensureCapacity(long capacity, boolean nullFill) {
+            BooleanArraySource.this.ensureCapacity(capacity, nullFill);
         }
 
         @Override

@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Require;
@@ -471,7 +474,10 @@ class RightIncrementalChunkedNaturalJoinStateManager
         // region build start
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // endregion build initialization try
+        ) {
             // region build initialization
             // the destination hash slots for each left-hand-side entry
             final WritableLongChunk<KeyIndices> sourceChunkLeftHashSlots = WritableLongChunk.makeWritableChunk(bc.chunkSize);
@@ -1282,35 +1288,48 @@ class RightIncrementalChunkedNaturalJoinStateManager
     @Override
     public String keyString(long slot) {
         final WritableChunk<Values>[] keyChunk = getWritableKeyChunks(1);
-        final WritableLongChunk<KeyIndices> slotChunk = WritableLongChunk.makeWritableChunk(1);
-        if (isOverflowLocation(slot)) {
-            slotChunk.set(0, hashLocationToOverflowLocation(slot));
-            final ColumnSource.FillContext[] contexts = makeFillContexts(overflowKeySources, null, 1);
-            try {
-                fillOverflowKeys(contexts, keyChunk, slotChunk);
-            } finally {
-                for (Context c : contexts) {
-                    c.close();
+        try (final WritableLongChunk<KeyIndices> slotChunk = WritableLongChunk.makeWritableChunk(1)) {
+            if (isOverflowLocation(slot)) {
+                slotChunk.set(0, hashLocationToOverflowLocation(slot));
+                final ColumnSource.FillContext[] contexts = makeFillContexts(overflowKeySources, null, 1);
+                try {
+                    fillOverflowKeys(contexts, keyChunk, slotChunk);
+                } finally {
+                    for (Context c : contexts) {
+                        c.close();
+                    }
+                }
+            } else {
+                slotChunk.set(0, slot);
+                final ColumnSource.FillContext[] contexts = makeFillContexts(keySources, null, 1);
+                try {
+                    fillKeys(contexts, keyChunk, slotChunk);
+                } finally {
+                    for (Context c : contexts) {
+                        c.close();
+                    }
                 }
             }
-        } else {
-            slotChunk.set(0, slot);
-            final ColumnSource.FillContext[] contexts = makeFillContexts(keySources, null, 1);
-            try {
-                fillKeys(contexts, keyChunk, slotChunk);
-            } finally {
-                for (Context c : contexts) {
-                    c.close();
-                }
+            return ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, keyChunk, 0);
+        } finally {
+            for (WritableChunk<Values> chunk : keyChunk) {
+                chunk.close();
             }
         }
-        return ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, keyChunk, 0);
     }
 
     RedirectionIndex buildRedirectionIndexFromHashSlot(QueryTable leftTable, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
-        return buildRedirectionIndex(leftTable, exactMatch, position -> getStateValue(leftHashSlots, position), redirectionType);
+        return buildRedirectionIndex(leftTable, exactMatch, position -> getRightSide(leftHashSlots, position), redirectionType);
     }
 
+    private long getRightSide(final LongArraySource leftHashSlots, final long position) {
+        final long stateValue = getStateValue(leftHashSlots, position);
+        if (stateValue == DUPLICATE_RIGHT_VALUE) {
+            final long hashSlot = leftHashSlots.getLong(position);
+            throw new IllegalStateException("Duplicate right key for " + keyString(hashSlot));
+        }
+        return stateValue;
+    }
 
     RedirectionIndex buildRedirectionIndexFromHashSlotGrouped(QueryTable leftTable, ObjectArraySource<Index> indexSource, int groupingSize, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
@@ -1427,7 +1446,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     }
 
     // region getStateValue
-    private long getStateValue(LongArraySource hashSlots, long locationInHashSlots) {
+    private long getStateValue(final LongArraySource hashSlots, final long locationInHashSlots) {
         final long hashSlot = hashSlots.getLong(locationInHashSlots);
         if (isOverflowLocation(hashSlot)) {
             return overflowRightIndexSource.getLong(hashLocationToOverflowLocation(hashSlot));

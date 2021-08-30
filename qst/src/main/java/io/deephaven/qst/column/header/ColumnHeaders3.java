@@ -51,7 +51,7 @@ public abstract class ColumnHeaders3<T1, T2, T3> implements TableHeader.Buildabl
 
         Rows(int initialCapacity) {
             others = others().start(initialCapacity);
-            builder = Array.builder(header3().type(), initialCapacity);
+            builder = Array.builder(header3().componentType(), initialCapacity);
         }
 
         public final Rows row(T1 a, T2 b, T3 c) {

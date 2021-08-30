@@ -4,6 +4,7 @@
 
 package io.deephaven.grpc_api.session;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.auth.AuthContextProvider;
@@ -22,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
+    // TODO (#997): use flight AuthConstants
     public static final String DEEPHAVEN_SESSION_ID = "DEEPHAVEN_SESSION_ID";
     public static final Metadata.Key<String> SESSION_HEADER_KEY = Metadata.Key.of(DEEPHAVEN_SESSION_ID, Metadata.ASCII_STRING_MARSHALLER);
     public static final Context.Key<SessionState> SESSION_CONTEXT_KEY = Context.key(DEEPHAVEN_SESSION_ID);
@@ -149,10 +151,13 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(final ServerCall<ReqT, RespT> serverCall,
                                                                      final Metadata metadata,
                                                                      final ServerCallHandler<ReqT, RespT> serverCallHandler) {
+            SessionState session = null;
             final Optional<String> tokenBytes = Optional.ofNullable(metadata.get(SESSION_HEADER_KEY));
-            final Optional<UUID> token = tokenBytes.map(UUID::fromString);
-            final Context newContext = Context.current()
-                    .withValue(SESSION_CONTEXT_KEY, token.map(service::getSessionForToken).orElse(null));
+            if (tokenBytes.isPresent()) {
+                UUID token = UuidCreator.fromString(tokenBytes.get());
+                session = service.getSessionForToken(token);
+            }
+            final Context newContext = Context.current().withValue(SESSION_CONTEXT_KEY, session);
             return Contexts.interceptCall(newContext, serverCall, metadata, serverCallHandler);
         }
     }

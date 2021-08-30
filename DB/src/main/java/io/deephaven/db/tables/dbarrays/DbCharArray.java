@@ -9,6 +9,8 @@ import io.deephaven.db.v2.sources.chunk.CharChunk;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.libs.primitives.CharacterPrimitives;
+import io.deephaven.qst.type.CharType;
+import io.deephaven.qst.type.DbPrimitiveArrayType;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,6 +20,10 @@ import java.util.Arrays;
 public interface DbCharArray extends DbArrayBase<DbCharArray> {
 
     long serialVersionUID = -1373264425081841175L;
+
+    static DbPrimitiveArrayType<DbCharArray, Character> type() {
+        return DbPrimitiveArrayType.of(DbCharArray.class, CharType.instance());
+    }
 
     char get(long i);
 

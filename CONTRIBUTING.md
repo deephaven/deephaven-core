@@ -46,13 +46,5 @@ For more information, see:
 * [CLI In Use](https://cli.github.com/manual/examples.html)
 
 ## Styleguide
-The [styleguide](style/README.md) is not global yet.
-To opt-in, module build files apply the following:
-
-```groovy
-spotless {
-  java {
-    eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
-  }
-}
-```
+The [styleguide](style/README.md) is applied globally, except for cases of check-in code generation.
+To apply the styleguide, run `./gradlew spotlessApply`.

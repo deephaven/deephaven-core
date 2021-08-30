@@ -18,7 +18,7 @@ dependencies {
     // add configs, and some runtime dependencies to test classpaths
     testRuntime project(':configs'), project(':test-configs'),
             // need these projects so session default imports / generated type wrappers resolve correctly
-            project(':Numerics'), project(':Plot'), project(':KafkaIngester')
+            project(':Numerics'), project(':Plot'), project(':Kafka'), project(':DbTypesImpl')
 }
 
 sourceSets {
@@ -35,9 +35,7 @@ sourceSets {
         resources.srcDirs = ['src/main/resources']
     }
     test {
-        java.srcDirs = []
-        // TODO: test doesn't compile
-        //java.srcDirs = ['src/test/java']
+        java.srcDirs = ['src/test/java']
         resources.srcDirs = ['test_python', 'src/test/resources']
     }
 }
@@ -164,9 +162,9 @@ def pyFunctionalTest = runInDocker('py-functional-test', ['/bin/bash', 'run-func
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
-tasks.getByName('test').dependsOn(pyTest)
+tasks.getByName('check').dependsOn(pyTest)
 
 pyFunctionalTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
-tasks.getByName('test').dependsOn(pyFunctionalTest)
+tasks.getByName('check').dependsOn(pyFunctionalTest)

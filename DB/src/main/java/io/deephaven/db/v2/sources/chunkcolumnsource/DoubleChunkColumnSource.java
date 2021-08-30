@@ -29,7 +29,7 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     private long totalSize = 0;
 
     // region constructor
-    protected DoubleChunkColumnSource() {
+    public DoubleChunkColumnSource() {
         this(new TLongArrayList());
     }
 
@@ -148,7 +148,15 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
         return index;
     }
 
-    private void addChunk(@NotNull final WritableDoubleChunk<? extends Attributes.Values> chunk) {
+    /**
+     * Append a chunk of data to this column source.
+     *
+     * The chunk must not be empty (i.e., the size must be greater than zero).
+     *
+     * @param chunk the chunk of data to add
+     */
+    public void addChunk(@NotNull final WritableDoubleChunk<? extends Attributes.Values> chunk) {
+        Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
             firstOffsetForData.add(totalSize);

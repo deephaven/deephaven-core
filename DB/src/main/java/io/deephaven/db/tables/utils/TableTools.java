@@ -4,6 +4,7 @@
 
 package io.deephaven.db.tables.utils;
 
+import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -1643,5 +1644,15 @@ public class TableTools {
             return "NULL_BYTE";
         }
         return "(" + dataType.getName() + ")" + " null";
+    }
+
+    public static Class<?> typeFromName(final String dataTypeStr) {
+        final Class<?> dataType;
+        try {
+            dataType = ClassUtil.lookupClass(dataTypeStr);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Type " + dataTypeStr + " not known", e);
+        }
+        return dataType;
     }
 }

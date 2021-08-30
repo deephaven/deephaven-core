@@ -1,6 +1,5 @@
 plugins {
 	id 'java-library'
-	id 'com.diffplug.spotless'
 }
 
 dependencies {
@@ -8,10 +7,4 @@ dependencies {
 	// internal logger, that is in service of the ServiceLoader - and if consumers should not need
 	// access to the internal logger.
 	implementation project(':log-factory')
-}
-
-spotless {
-	java {
-		eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
-	}
 }
