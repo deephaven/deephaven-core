@@ -14,6 +14,8 @@ public class OpCase {
             DROP_COLUMNS,
             EMPTY_TABLE,
             EXACT_JOIN,
+            FETCH_PANDAS_TABLE,
+            FETCH_TABLE,
             FILTER,
             FLATTEN,
             HEAD,

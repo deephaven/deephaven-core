@@ -3462,1716 +3462,1716 @@ public final class DBLanguageFunctionUtil {
         return ret;
     }
 
-    public static int times(int a, int b) {
+    public static int multiply(int a, int b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(int a[], int b[]) {
+    public static int[] multiplyArray(int a[], int b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (int, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(int a[], int b) {
+    public static int[] multiplyArray(int a[], int b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(int a, int b[]) {
+    public static int[] multiplyArray(int a, int b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(int a, double b) {
+    public static double multiply(int a, double b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(int a[], double b[]) {
+    public static double[] multiplyArray(int a[], double b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (int, double) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(int a[], double b) {
+    public static double[] multiplyArray(int a[], double b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(int a, double b[]) {
+    public static double[] multiplyArray(int a, double b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(int a, long b) {
+    public static long multiply(int a, long b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(int a[], long b[]) {
+    public static long[] multiplyArray(int a[], long b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (int, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(int a[], long b) {
+    public static long[] multiplyArray(int a[], long b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(int a, long b[]) {
+    public static long[] multiplyArray(int a, long b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(int a, float b) {
+    public static float multiply(int a, float b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(int a[], float b[]) {
+    public static float[] multiplyArray(int a[], float b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (int, float) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(int a[], float b) {
+    public static float[] multiplyArray(int a[], float b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(int a, float b[]) {
+    public static float[] multiplyArray(int a, float b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(int a, char b) {
+    public static int multiply(int a, char b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(int a[], char b[]) {
+    public static int[] multiplyArray(int a[], char b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (int, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(int a[], char b) {
+    public static int[] multiplyArray(int a[], char b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(int a, char b[]) {
+    public static int[] multiplyArray(int a, char b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(int a, byte b) {
+    public static int multiply(int a, byte b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(int a[], byte b[]) {
+    public static int[] multiplyArray(int a[], byte b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (int, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(int a[], byte b) {
+    public static int[] multiplyArray(int a[], byte b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(int a, byte b[]) {
+    public static int[] multiplyArray(int a, byte b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(int a, short b) {
+    public static int multiply(int a, short b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(int a[], short b[]) {
+    public static int[] multiplyArray(int a[], short b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (int, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(int a[], short b) {
+    public static int[] multiplyArray(int a[], short b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(int a, short b[]) {
+    public static int[] multiplyArray(int a, short b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(double a, int b) {
+    public static double multiply(double a, int b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(double a[], int b[]) {
+    public static double[] multiplyArray(double a[], int b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (double, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a[], int b) {
+    public static double[] multiplyArray(double a[], int b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a, int b[]) {
+    public static double[] multiplyArray(double a, int b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(double a, double b) {
+    public static double multiply(double a, double b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(double a[], double b[]) {
+    public static double[] multiplyArray(double a[], double b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (double, double) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a[], double b) {
+    public static double[] multiplyArray(double a[], double b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a, double b[]) {
+    public static double[] multiplyArray(double a, double b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(double a, long b) {
+    public static double multiply(double a, long b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(double a[], long b[]) {
+    public static double[] multiplyArray(double a[], long b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (double, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a[], long b) {
+    public static double[] multiplyArray(double a[], long b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a, long b[]) {
+    public static double[] multiplyArray(double a, long b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(double a, float b) {
+    public static double multiply(double a, float b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(double a[], float b[]) {
+    public static double[] multiplyArray(double a[], float b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (double, float) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a[], float b) {
+    public static double[] multiplyArray(double a[], float b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a, float b[]) {
+    public static double[] multiplyArray(double a, float b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(double a, char b) {
+    public static double multiply(double a, char b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(double a[], char b[]) {
+    public static double[] multiplyArray(double a[], char b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (double, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a[], char b) {
+    public static double[] multiplyArray(double a[], char b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a, char b[]) {
+    public static double[] multiplyArray(double a, char b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(double a, byte b) {
+    public static double multiply(double a, byte b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(double a[], byte b[]) {
+    public static double[] multiplyArray(double a[], byte b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (double, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a[], byte b) {
+    public static double[] multiplyArray(double a[], byte b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a, byte b[]) {
+    public static double[] multiplyArray(double a, byte b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(double a, short b) {
+    public static double multiply(double a, short b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(double a[], short b[]) {
+    public static double[] multiplyArray(double a[], short b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (double, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a[], short b) {
+    public static double[] multiplyArray(double a[], short b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(double a, short b[]) {
+    public static double[] multiplyArray(double a, short b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(long a, int b) {
+    public static long multiply(long a, int b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_INT ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(long a[], int b[]) {
+    public static long[] multiplyArray(long a[], int b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (long, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a[], int b) {
+    public static long[] multiplyArray(long a[], int b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a, int b[]) {
+    public static long[] multiplyArray(long a, int b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(long a, double b) {
+    public static double multiply(long a, double b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(long a[], double b[]) {
+    public static double[] multiplyArray(long a[], double b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (long, double) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(long a[], double b) {
+    public static double[] multiplyArray(long a[], double b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(long a, double b[]) {
+    public static double[] multiplyArray(long a, double b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(long a, long b) {
+    public static long multiply(long a, long b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(long a[], long b[]) {
+    public static long[] multiplyArray(long a[], long b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (long, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a[], long b) {
+    public static long[] multiplyArray(long a[], long b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a, long b[]) {
+    public static long[] multiplyArray(long a, long b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(long a, float b) {
+    public static float multiply(long a, float b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(long a[], float b[]) {
+    public static float[] multiplyArray(long a[], float b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (long, float) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(long a[], float b) {
+    public static float[] multiplyArray(long a[], float b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(long a, float b[]) {
+    public static float[] multiplyArray(long a, float b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(long a, char b) {
+    public static long multiply(long a, char b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(long a[], char b[]) {
+    public static long[] multiplyArray(long a[], char b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (long, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a[], char b) {
+    public static long[] multiplyArray(long a[], char b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a, char b[]) {
+    public static long[] multiplyArray(long a, char b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(long a, byte b) {
+    public static long multiply(long a, byte b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(long a[], byte b[]) {
+    public static long[] multiplyArray(long a[], byte b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (long, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a[], byte b) {
+    public static long[] multiplyArray(long a[], byte b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a, byte b[]) {
+    public static long[] multiplyArray(long a, byte b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(long a, short b) {
+    public static long multiply(long a, short b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(long a[], short b[]) {
+    public static long[] multiplyArray(long a[], short b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (long, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a[], short b) {
+    public static long[] multiplyArray(long a[], short b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(long a, short b[]) {
+    public static long[] multiplyArray(long a, short b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(float a, int b) {
+    public static float multiply(float a, int b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(float a[], int b[]) {
+    public static float[] multiplyArray(float a[], int b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (float, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a[], int b) {
+    public static float[] multiplyArray(float a[], int b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a, int b[]) {
+    public static float[] multiplyArray(float a, int b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(float a, double b) {
+    public static double multiply(float a, double b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(float a[], double b[]) {
+    public static double[] multiplyArray(float a[], double b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (float, double) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(float a[], double b) {
+    public static double[] multiplyArray(float a[], double b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(float a, double b[]) {
+    public static double[] multiplyArray(float a, double b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(float a, long b) {
+    public static float multiply(float a, long b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(float a[], long b[]) {
+    public static float[] multiplyArray(float a[], long b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (float, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a[], long b) {
+    public static float[] multiplyArray(float a[], long b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a, long b[]) {
+    public static float[] multiplyArray(float a, long b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(float a, float b) {
+    public static float multiply(float a, float b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(float a[], float b[]) {
+    public static float[] multiplyArray(float a[], float b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (float, float) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a[], float b) {
+    public static float[] multiplyArray(float a[], float b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a, float b[]) {
+    public static float[] multiplyArray(float a, float b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(float a, char b) {
+    public static float multiply(float a, char b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(float a[], char b[]) {
+    public static float[] multiplyArray(float a[], char b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (float, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a[], char b) {
+    public static float[] multiplyArray(float a[], char b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a, char b[]) {
+    public static float[] multiplyArray(float a, char b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(float a, byte b) {
+    public static float multiply(float a, byte b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(float a[], byte b[]) {
+    public static float[] multiplyArray(float a[], byte b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (float, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a[], byte b) {
+    public static float[] multiplyArray(float a[], byte b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a, byte b[]) {
+    public static float[] multiplyArray(float a, byte b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(float a, short b) {
+    public static float multiply(float a, short b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(float a[], short b[]) {
+    public static float[] multiplyArray(float a[], short b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (float, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a[], short b) {
+    public static float[] multiplyArray(float a[], short b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(float a, short b[]) {
+    public static float[] multiplyArray(float a, short b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(char a, int b) {
+    public static int multiply(char a, int b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(char a[], int b[]) {
+    public static int[] multiplyArray(char a[], int b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (char, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(char a[], int b) {
+    public static int[] multiplyArray(char a[], int b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(char a, int b[]) {
+    public static int[] multiplyArray(char a, int b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(char a, double b) {
+    public static double multiply(char a, double b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(char a[], double b[]) {
+    public static double[] multiplyArray(char a[], double b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (char, double) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(char a[], double b) {
+    public static double[] multiplyArray(char a[], double b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(char a, double b[]) {
+    public static double[] multiplyArray(char a, double b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(char a, long b) {
+    public static long multiply(char a, long b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(char a[], long b[]) {
+    public static long[] multiplyArray(char a[], long b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (char, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(char a[], long b) {
+    public static long[] multiplyArray(char a[], long b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(char a, long b[]) {
+    public static long[] multiplyArray(char a, long b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(char a, float b) {
+    public static float multiply(char a, float b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(char a[], float b[]) {
+    public static float[] multiplyArray(char a[], float b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (char, float) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(char a[], float b) {
+    public static float[] multiplyArray(char a[], float b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(char a, float b[]) {
+    public static float[] multiplyArray(char a, float b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(char a, char b) {
+    public static int multiply(char a, char b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(char a[], char b[]) {
+    public static int[] multiplyArray(char a[], char b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (char, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(char a[], char b) {
+    public static int[] multiplyArray(char a[], char b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(char a, char b[]) {
+    public static int[] multiplyArray(char a, char b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(char a, byte b) {
+    public static int multiply(char a, byte b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(char a[], byte b[]) {
+    public static int[] multiplyArray(char a[], byte b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (char, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(char a[], byte b) {
+    public static int[] multiplyArray(char a[], byte b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(char a, byte b[]) {
+    public static int[] multiplyArray(char a, byte b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(char a, short b) {
+    public static int multiply(char a, short b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(char a[], short b[]) {
+    public static int[] multiplyArray(char a[], short b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (char, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(char a[], short b) {
+    public static int[] multiplyArray(char a[], short b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(char a, short b[]) {
+    public static int[] multiplyArray(char a, short b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(byte a, int b) {
+    public static int multiply(byte a, int b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(byte a[], int b[]) {
+    public static int[] multiplyArray(byte a[], int b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (byte, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(byte a[], int b) {
+    public static int[] multiplyArray(byte a[], int b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(byte a, int b[]) {
+    public static int[] multiplyArray(byte a, int b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(byte a, double b) {
+    public static double multiply(byte a, double b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(byte a[], double b[]) {
+    public static double[] multiplyArray(byte a[], double b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (byte, double) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(byte a[], double b) {
+    public static double[] multiplyArray(byte a[], double b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(byte a, double b[]) {
+    public static double[] multiplyArray(byte a, double b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(byte a, long b) {
+    public static long multiply(byte a, long b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(byte a[], long b[]) {
+    public static long[] multiplyArray(byte a[], long b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (byte, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(byte a[], long b) {
+    public static long[] multiplyArray(byte a[], long b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(byte a, long b[]) {
+    public static long[] multiplyArray(byte a, long b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(byte a, float b) {
+    public static float multiply(byte a, float b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(byte a[], float b[]) {
+    public static float[] multiplyArray(byte a[], float b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (byte, float) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(byte a[], float b) {
+    public static float[] multiplyArray(byte a[], float b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(byte a, float b[]) {
+    public static float[] multiplyArray(byte a, float b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(byte a, char b) {
+    public static int multiply(byte a, char b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(byte a[], char b[]) {
+    public static int[] multiplyArray(byte a[], char b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (byte, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(byte a[], char b) {
+    public static int[] multiplyArray(byte a[], char b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(byte a, char b[]) {
+    public static int[] multiplyArray(byte a, char b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(byte a, byte b) {
+    public static int multiply(byte a, byte b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(byte a[], byte b[]) {
+    public static int[] multiplyArray(byte a[], byte b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (byte, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(byte a[], byte b) {
+    public static int[] multiplyArray(byte a[], byte b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(byte a, byte b[]) {
+    public static int[] multiplyArray(byte a, byte b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(byte a, short b) {
+    public static int multiply(byte a, short b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(byte a[], short b[]) {
+    public static int[] multiplyArray(byte a[], short b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (byte, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(byte a[], short b) {
+    public static int[] multiplyArray(byte a[], short b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(byte a, short b[]) {
+    public static int[] multiplyArray(byte a, short b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(short a, int b) {
+    public static int multiply(short a, int b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(short a[], int b[]) {
+    public static int[] multiplyArray(short a[], int b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (short, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(short a[], int b) {
+    public static int[] multiplyArray(short a[], int b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(short a, int b[]) {
+    public static int[] multiplyArray(short a, int b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static double times(short a, double b) {
+    public static double multiply(short a, double b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_DOUBLE : a * b;
     }
 
-    public static double[] timesArray(short a[], double b[]) {
+    public static double[] multiplyArray(short a[], double b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (short, double) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(short a[], double b) {
+    public static double[] multiplyArray(short a[], double b) {
         double[] ret = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static double[] timesArray(short a, double b[]) {
+    public static double[] multiplyArray(short a, double b[]) {
         double[] ret = new double[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long times(short a, long b) {
+    public static long multiply(short a, long b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : a * b;
     }
 
-    public static long[] timesArray(short a[], long b[]) {
+    public static long[] multiplyArray(short a[], long b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (short, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(short a[], long b) {
+    public static long[] multiplyArray(short a[], long b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] timesArray(short a, long b[]) {
+    public static long[] multiplyArray(short a, long b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static float times(short a, float b) {
+    public static float multiply(short a, float b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_FLOAT : a * b;
     }
 
-    public static float[] timesArray(short a[], float b[]) {
+    public static float[] multiplyArray(short a[], float b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (short, float) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(short a[], float b) {
+    public static float[] multiplyArray(short a[], float b) {
         float[] ret = new float[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static float[] timesArray(short a, float b[]) {
+    public static float[] multiplyArray(short a, float b[]) {
         float[] ret = new float[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(short a, char b) {
+    public static int multiply(short a, char b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(short a[], char b[]) {
+    public static int[] multiplyArray(short a[], char b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (short, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(short a[], char b) {
+    public static int[] multiplyArray(short a[], char b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(short a, char b[]) {
+    public static int[] multiplyArray(short a, char b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(short a, byte b) {
+    public static int multiply(short a, byte b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(short a[], byte b[]) {
+    public static int[] multiplyArray(short a[], byte b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (short, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(short a[], byte b) {
+    public static int[] multiplyArray(short a[], byte b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(short a, byte b[]) {
+    public static int[] multiplyArray(short a, byte b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int times(short a, short b) {
+    public static int multiply(short a, short b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : a * b;
     }
 
-    public static int[] timesArray(short a[], short b[]) {
+    public static int[] multiplyArray(short a[], short b[]) {
         if (a.length != b.length)
             throw new IllegalArgumentException("Attempt to multiply two arrays (short, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b[i]);
+            ret[i] = multiply(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(short a[], short b) {
+    public static int[] multiplyArray(short a[], short b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = times(a[i], b);
+            ret[i] = multiply(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] timesArray(short a, short b[]) {
+    public static int[] multiplyArray(short a, short b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = times(a, b[i]);
+            ret[i] = multiply(a, b[i]);
         }
 
         return ret;
@@ -8691,176 +8691,176 @@ public final class DBLanguageFunctionUtil {
         return ret;
     }
 
-    public static int binOr(int a, int b) {
+    public static int binaryOr(int a, int b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : a | b;
     }
 
-    public static int[] binOrArray(int a[], int b[]) {
+    public static int[] binaryOrArray(int a[], int b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binOr two arrays (int, int) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_OR two arrays (int, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b[i]);
+            ret[i] = binaryOr(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] binOrArray(int a[], int b) {
+    public static int[] binaryOrArray(int a[], int b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b);
+            ret[i] = binaryOr(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] binOrArray(int a, int b[]) {
+    public static int[] binaryOrArray(int a, int b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binOr(a, b[i]);
+            ret[i] = binaryOr(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long binOr(long a, long b) {
+    public static long binaryOr(long a, long b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : a | b;
     }
 
-    public static long[] binOrArray(long a[], long b[]) {
+    public static long[] binaryOrArray(long a[], long b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binOr two arrays (long, long) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_OR two arrays (long, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b[i]);
+            ret[i] = binaryOr(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] binOrArray(long a[], long b) {
+    public static long[] binaryOrArray(long a[], long b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b);
+            ret[i] = binaryOr(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] binOrArray(long a, long b[]) {
+    public static long[] binaryOrArray(long a, long b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binOr(a, b[i]);
+            ret[i] = binaryOr(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int binOr(char a, char b) {
+    public static int binaryOr(char a, char b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_INT : a | b;
     }
 
-    public static int[] binOrArray(char a[], char b[]) {
+    public static int[] binaryOrArray(char a[], char b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binOr two arrays (char, char) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_OR two arrays (char, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b[i]);
+            ret[i] = binaryOr(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] binOrArray(char a[], char b) {
+    public static int[] binaryOrArray(char a[], char b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b);
+            ret[i] = binaryOr(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] binOrArray(char a, char b[]) {
+    public static int[] binaryOrArray(char a, char b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binOr(a, b[i]);
+            ret[i] = binaryOr(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int binOr(byte a, byte b) {
+    public static int binaryOr(byte a, byte b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_INT : a | b;
     }
 
-    public static int[] binOrArray(byte a[], byte b[]) {
+    public static int[] binaryOrArray(byte a[], byte b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binOr two arrays (byte, byte) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_OR two arrays (byte, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b[i]);
+            ret[i] = binaryOr(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] binOrArray(byte a[], byte b) {
+    public static int[] binaryOrArray(byte a[], byte b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b);
+            ret[i] = binaryOr(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] binOrArray(byte a, byte b[]) {
+    public static int[] binaryOrArray(byte a, byte b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binOr(a, b[i]);
+            ret[i] = binaryOr(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int binOr(short a, short b) {
+    public static int binaryOr(short a, short b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : a | b;
     }
 
-    public static int[] binOrArray(short a[], short b[]) {
+    public static int[] binaryOrArray(short a[], short b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binOr two arrays (short, short) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_OR two arrays (short, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b[i]);
+            ret[i] = binaryOr(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] binOrArray(short a[], short b) {
+    public static int[] binaryOrArray(short a[], short b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binOr(a[i], b);
+            ret[i] = binaryOr(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] binOrArray(short a, short b[]) {
+    public static int[] binaryOrArray(short a, short b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binOr(a, b[i]);
+            ret[i] = binaryOr(a, b[i]);
         }
 
         return ret;
@@ -8872,7 +8872,7 @@ public final class DBLanguageFunctionUtil {
 
     public static int[] xorArray(int a[], int b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to xor two arrays (int, int) of different length" +
+            throw new IllegalArgumentException("Attempt to XOR two arrays (int, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
@@ -8907,7 +8907,7 @@ public final class DBLanguageFunctionUtil {
 
     public static long[] xorArray(long a[], long b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to xor two arrays (long, long) of different length" +
+            throw new IllegalArgumentException("Attempt to XOR two arrays (long, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
@@ -8942,7 +8942,7 @@ public final class DBLanguageFunctionUtil {
 
     public static int[] xorArray(char a[], char b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to xor two arrays (char, char) of different length" +
+            throw new IllegalArgumentException("Attempt to XOR two arrays (char, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
@@ -8977,7 +8977,7 @@ public final class DBLanguageFunctionUtil {
 
     public static int[] xorArray(byte a[], byte b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to xor two arrays (byte, byte) of different length" +
+            throw new IllegalArgumentException("Attempt to XOR two arrays (byte, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
@@ -9012,7 +9012,7 @@ public final class DBLanguageFunctionUtil {
 
     public static int[] xorArray(short a[], short b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to xor two arrays (short, short) of different length" +
+            throw new IllegalArgumentException("Attempt to XOR two arrays (short, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
@@ -9041,176 +9041,176 @@ public final class DBLanguageFunctionUtil {
         return ret;
     }
 
-    public static int binAnd(int a, int b) {
+    public static int binaryAnd(int a, int b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : a & b;
     }
 
-    public static int[] binAndArray(int a[], int b[]) {
+    public static int[] binaryAndArray(int a[], int b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binAnd two arrays (int, int) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_AND two arrays (int, int) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b[i]);
+            ret[i] = binaryAnd(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] binAndArray(int a[], int b) {
+    public static int[] binaryAndArray(int a[], int b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b);
+            ret[i] = binaryAnd(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] binAndArray(int a, int b[]) {
+    public static int[] binaryAndArray(int a, int b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binAnd(a, b[i]);
+            ret[i] = binaryAnd(a, b[i]);
         }
 
         return ret;
     }
 
-    public static long binAnd(long a, long b) {
+    public static long binaryAnd(long a, long b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : a & b;
     }
 
-    public static long[] binAndArray(long a[], long b[]) {
+    public static long[] binaryAndArray(long a[], long b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binAnd two arrays (long, long) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_AND two arrays (long, long) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b[i]);
+            ret[i] = binaryAnd(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static long[] binAndArray(long a[], long b) {
+    public static long[] binaryAndArray(long a[], long b) {
         long[] ret = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b);
+            ret[i] = binaryAnd(a[i], b);
         }
 
         return ret;
     }
 
-    public static long[] binAndArray(long a, long b[]) {
+    public static long[] binaryAndArray(long a, long b[]) {
         long[] ret = new long[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binAnd(a, b[i]);
+            ret[i] = binaryAnd(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int binAnd(char a, char b) {
+    public static int binaryAnd(char a, char b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_CHAR ? QueryConstants.NULL_INT : a & b;
     }
 
-    public static int[] binAndArray(char a[], char b[]) {
+    public static int[] binaryAndArray(char a[], char b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binAnd two arrays (char, char) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_AND two arrays (char, char) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b[i]);
+            ret[i] = binaryAnd(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] binAndArray(char a[], char b) {
+    public static int[] binaryAndArray(char a[], char b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b);
+            ret[i] = binaryAnd(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] binAndArray(char a, char b[]) {
+    public static int[] binaryAndArray(char a, char b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binAnd(a, b[i]);
+            ret[i] = binaryAnd(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int binAnd(byte a, byte b) {
+    public static int binaryAnd(byte a, byte b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_INT : a & b;
     }
 
-    public static int[] binAndArray(byte a[], byte b[]) {
+    public static int[] binaryAndArray(byte a[], byte b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binAnd two arrays (byte, byte) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_AND two arrays (byte, byte) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b[i]);
+            ret[i] = binaryAnd(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] binAndArray(byte a[], byte b) {
+    public static int[] binaryAndArray(byte a[], byte b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b);
+            ret[i] = binaryAnd(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] binAndArray(byte a, byte b[]) {
+    public static int[] binaryAndArray(byte a, byte b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binAnd(a, b[i]);
+            ret[i] = binaryAnd(a, b[i]);
         }
 
         return ret;
     }
 
-    public static int binAnd(short a, short b) {
+    public static int binaryAnd(short a, short b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : a & b;
     }
 
-    public static int[] binAndArray(short a[], short b[]) {
+    public static int[] binaryAndArray(short a[], short b[]) {
         if (a.length != b.length)
-            throw new IllegalArgumentException("Attempt to binAnd two arrays (short, short) of different length" +
+            throw new IllegalArgumentException("Attempt to BINARY_AND two arrays (short, short) of different length" +
                     " (a.length=" + a.length + ", b.length=" + b.length + ')');
 
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b[i]);
+            ret[i] = binaryAnd(a[i], b[i]);
         }
 
         return ret;
     }
 
-    public static int[] binAndArray(short a[], short b) {
+    public static int[] binaryAndArray(short a[], short b) {
         int[] ret = new int[a.length];
         for (int i = 0; i < a.length; i++) {
-            ret[i] = binAnd(a[i], b);
+            ret[i] = binaryAnd(a[i], b);
         }
 
         return ret;
     }
 
-    public static int[] binAndArray(short a, short b[]) {
+    public static int[] binaryAndArray(short a, short b[]) {
         int[] ret = new int[b.length];
         for (int i = 0; i < b.length; i++) {
-            ret[i] = binAnd(a, b[i]);
+            ret[i] = binaryAnd(a, b[i]);
         }
 
         return ret;
@@ -18858,7 +18858,7 @@ public final class DBLanguageFunctionUtil {
         return compareTo(a, b) >= 0;
     }
 
-    public static Boolean binOr(Boolean a, Boolean b) {
+    public static Boolean binaryOr(Boolean a, Boolean b) {
         return a == QueryConstants.NULL_BOOLEAN || b == QueryConstants.NULL_BOOLEAN ? QueryConstants.NULL_BOOLEAN
                 : Boolean.valueOf(a | b);
     }
@@ -18868,7 +18868,7 @@ public final class DBLanguageFunctionUtil {
                 : Boolean.valueOf(a ^ b);
     }
 
-    public static Boolean binAnd(Boolean a, Boolean b) {
+    public static Boolean binaryAnd(Boolean a, Boolean b) {
         return a == QueryConstants.NULL_BOOLEAN || b == QueryConstants.NULL_BOOLEAN ? QueryConstants.NULL_BOOLEAN
                 : Boolean.valueOf(a & b);
     }

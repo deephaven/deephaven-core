@@ -21,9 +21,9 @@ public class GroovyConsoleSessionModule {
     }
 
     @Provides
-    GroovyDeephavenSession bindGroovySession(final RunScripts runScripts) {
+    GroovyDeephavenSession bindGroovySession(final ScriptSession.Listener listener, final RunScripts runScripts) {
         try {
-            return new GroovyDeephavenSession(runScripts, true);
+            return new GroovyDeephavenSession(listener, runScripts, true);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

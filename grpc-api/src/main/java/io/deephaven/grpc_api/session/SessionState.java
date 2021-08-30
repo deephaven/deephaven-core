@@ -141,7 +141,7 @@ public class SessionState {
 
     /**
      * This method is controlled by SessionService to update the expiration whenever the session is refreshed.
-     * 
+     *
      * @param expiration the initial expiration time and session token
      */
     @VisibleForTesting
@@ -162,7 +162,7 @@ public class SessionState {
 
     /**
      * This method is controlled by SessionService to update the expiration whenever the session is refreshed.
-     * 
+     *
      * @param expiration the new expiration time and session token
      */
     @VisibleForTesting
@@ -216,7 +216,7 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided ticket.
-     * 
+     *
      * @param ticket the export ticket
      * @return a future-like object that represents this export
      */
@@ -226,18 +226,17 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided ticket.
-     * 
+     *
      * @param ticket the export ticket
      * @return a future-like object that represents this export
      */
-    // TODO #412 use this or remove it
     public <T> ExportObject<T> getExport(final Flight.Ticket ticket) {
         return getExport(ExportTicketHelper.ticketToExportId(ticket));
     }
 
     /**
      * Grab the ExportObject for the provided id.
-     * 
+     *
      * @param exportId the export handle id
      * @return a future-like object that represents this export
      */
@@ -266,7 +265,7 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided id if it already exists, otherwise return null.
-     * 
+     *
      * @param exportId the export handle id
      * @return a future-like object that represents this export
      */
@@ -281,7 +280,7 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided id if it already exists, otherwise return null.
-     * 
+     *
      * @param ticket the export ticket
      * @return a future-like object that represents this export
      */
@@ -353,7 +352,7 @@ public class SessionState {
 
     /**
      * Create an ExportBuilder to perform work after dependencies are satisfied that itself does not create any exports.
-     * 
+     *
      * @return an export builder
      */
     public <T> ExportBuilder<T> nonExport() {
@@ -381,11 +380,11 @@ public class SessionState {
      * Remove an on-close callback bound to the life of the session.
      *
      * @param onClose the callback to no longer invoke at end-of-life
-     * @return The item if it was removed, else null
+     * @return true iff the callback was removed
      */
-    public Closeable removeOnCloseCallback(final Closeable onClose) {
+    public boolean removeOnCloseCallback(final Closeable onClose) {
         synchronized (onCloseCallbacks) {
-            return onCloseCallbacks.remove(onClose);
+            return onCloseCallbacks.remove(onClose) != null;
         }
     }
 
@@ -453,7 +452,7 @@ public class SessionState {
      *
      *
      * Note: we reuse ExportObject for non-exporting tasks that have export dependencies.
-     * 
+     *
      * @param <T> Is context sensitive depending on the export.
      *
      * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
@@ -612,7 +611,7 @@ public class SessionState {
          * {@link ExportNotification.State#EXPORTED}. The caller must abide by the Liveness API and dropReference.
          * <p/>
          * Example:
-         * 
+         *
          * <pre>
          * {@code
          *  <T> T getFromExport(ExportObject<T> export) {
@@ -664,7 +663,7 @@ public class SessionState {
 
         /**
          * Add dependency if object export has not yet completed.
-         * 
+         *
          * @param child the dependent task
          * @return true if the child was added as a dependency
          */
@@ -731,7 +730,7 @@ public class SessionState {
 
         /**
          * Decrements parent counter and kicks off the export if that was the last dependency.
-         * 
+         *
          * @param parent the parent that just resolved; it may have failed
          */
         private void onResolveOne(@Nullable final ExportObject<?> parent) {
@@ -811,6 +810,7 @@ public class SessionState {
                 if (state != ExportNotification.State.QUEUED || session.isExpired() || capturedExport == null) {
                     return; // had a cancel race with client
                 }
+                setState(ExportNotification.State.RUNNING);
             }
             Exception exception = null;
             boolean shouldLog = false;

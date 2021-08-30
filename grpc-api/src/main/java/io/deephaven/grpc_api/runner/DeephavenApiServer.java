@@ -1,6 +1,9 @@
 package io.deephaven.grpc_api.runner;
 
+import io.deephaven.grpc_api.appmode.ApplicationInjector;
 import io.deephaven.db.util.AbstractScriptSession;
+import io.deephaven.grpc_api.appmode.AppMode;
+import io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.io.logger.Logger;
@@ -50,11 +53,15 @@ public class DeephavenApiServer {
             @BindsInstance
             Builder withErr(@Named("err") PrintStream err);
 
+            @BindsInstance
+            Builder withAppMode(AppMode appMode);
+
             ServerComponent build();
         }
     }
 
-    public static void startMain(PrintStream out, PrintStream err) throws IOException, InterruptedException {
+    public static void startMain(PrintStream out, PrintStream err)
+            throws IOException, InterruptedException, ClassNotFoundException {
         final ServerComponent injector = DaggerDeephavenApiServer_ServerComponent
                 .builder()
                 .withPort(8080)
@@ -62,6 +69,7 @@ public class DeephavenApiServer {
                 .withSessionTokenExpireTmMs(300000) // defaults to 5 min
                 .withOut(out)
                 .withErr(err)
+                .withAppMode(AppMode.currentMode())
                 .build();
         final DeephavenApiServer server = injector.getServer();
         final SessionService sessionService = injector.getSessionService();
@@ -97,20 +105,26 @@ public class DeephavenApiServer {
     private final LiveTableMonitor ltm;
     private final LogInit logInit;
     private final ConsoleServiceGrpcImpl consoleService;
+    private final ApplicationInjector applicationInjector;
+    private final ApplicationServiceGrpcImpl applicationService;
 
     @Inject
     public DeephavenApiServer(
             final Server server,
             final LiveTableMonitor ltm,
             final LogInit logInit,
-            final ConsoleServiceGrpcImpl consoleService) {
+            final ConsoleServiceGrpcImpl consoleService,
+            final ApplicationInjector applicationInjector,
+            final ApplicationServiceGrpcImpl applicationService) {
         this.server = server;
         this.ltm = ltm;
         this.logInit = logInit;
         this.consoleService = consoleService;
+        this.applicationInjector = applicationInjector;
+        this.applicationService = applicationService;
     }
 
-    private void start() throws IOException {
+    private void start() throws IOException, ClassNotFoundException {
         log.info().append("Configuring logging...").endl();
         logInit.run();
 
@@ -124,6 +138,9 @@ public class DeephavenApiServer {
 
         log.info().append("Starting LTM...").endl();
         ltm.start();
+
+        // inject applications before we start the gRPC server
+        applicationInjector.run();
 
         log.info().append("Starting server...").endl();
         server.start();

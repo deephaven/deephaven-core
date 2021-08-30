@@ -1,6 +1,5 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
-import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
@@ -84,29 +83,7 @@ public class StartConsoleResponse {
         StartConsoleResponse.ToObjectReturnType.ResultIdFieldType getResultId();
 
         @JsProperty
-        JsArray<String> getTableNamesList();
-
-        @JsProperty
-        JsArray<String> getWidgetNamesList();
-
-        @JsProperty
         void setResultId(StartConsoleResponse.ToObjectReturnType.ResultIdFieldType resultId);
-
-        @JsProperty
-        void setTableNamesList(JsArray<String> tableNamesList);
-
-        @JsOverlay
-        default void setTableNamesList(String[] tableNamesList) {
-            setTableNamesList(Js.<JsArray<String>>uncheckedCast(tableNamesList));
-        }
-
-        @JsProperty
-        void setWidgetNamesList(JsArray<String> widgetNamesList);
-
-        @JsOverlay
-        default void setWidgetNamesList(String[] widgetNamesList) {
-            setWidgetNamesList(Js.<JsArray<String>>uncheckedCast(widgetNamesList));
-        }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -178,29 +155,7 @@ public class StartConsoleResponse {
         StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType getResultId();
 
         @JsProperty
-        JsArray<String> getTableNamesList();
-
-        @JsProperty
-        JsArray<String> getWidgetNamesList();
-
-        @JsProperty
         void setResultId(StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType resultId);
-
-        @JsProperty
-        void setTableNamesList(JsArray<String> tableNamesList);
-
-        @JsOverlay
-        default void setTableNamesList(String[] tableNamesList) {
-            setTableNamesList(Js.<JsArray<String>>uncheckedCast(tableNamesList));
-        }
-
-        @JsProperty
-        void setWidgetNamesList(JsArray<String> widgetNamesList);
-
-        @JsOverlay
-        default void setWidgetNamesList(String[] widgetNamesList) {
-            setWidgetNamesList(Js.<JsArray<String>>uncheckedCast(widgetNamesList));
-        }
     }
 
     public static native StartConsoleResponse deserializeBinary(Uint8Array bytes);
@@ -213,25 +168,9 @@ public class StartConsoleResponse {
     public static native StartConsoleResponse.ToObjectReturnType toObject(
             boolean includeInstance, StartConsoleResponse msg);
 
-    public native String addTableNames(String value, double index);
-
-    public native String addTableNames(String value);
-
-    public native String addWidgetNames(String value, double index);
-
-    public native String addWidgetNames(String value);
-
     public native void clearResultId();
 
-    public native void clearTableNamesList();
-
-    public native void clearWidgetNamesList();
-
     public native Ticket getResultId();
-
-    public native JsArray<String> getTableNamesList();
-
-    public native JsArray<String> getWidgetNamesList();
 
     public native boolean hasResultId();
 
@@ -240,20 +179,6 @@ public class StartConsoleResponse {
     public native void setResultId();
 
     public native void setResultId(Ticket value);
-
-    public native void setTableNamesList(JsArray<String> value);
-
-    @JsOverlay
-    public final void setTableNamesList(String[] value) {
-        setTableNamesList(Js.<JsArray<String>>uncheckedCast(value));
-    }
-
-    public native void setWidgetNamesList(JsArray<String> value);
-
-    @JsOverlay
-    public final void setWidgetNamesList(String[] value) {
-        setWidgetNamesList(Js.<JsArray<String>>uncheckedCast(value));
-    }
 
     public native StartConsoleResponse.ToObjectReturnType0 toObject();
 

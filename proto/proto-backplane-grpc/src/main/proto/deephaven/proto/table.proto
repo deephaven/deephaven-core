@@ -12,6 +12,25 @@ option optimize_for = SPEED;
 import "deephaven/proto/ticket.proto";
 
 service TableService {
+  /*
+   * Request an ETCR for this ticket. Ticket must reference a Table.
+   */
+  rpc GetExportedTableCreationResponse(Ticket) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Fetches a Table from an existing source ticket and exports it to the local session result ticket.
+   */
+  rpc FetchTable(FetchTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
+   */
+  rpc FetchPandasTable(FetchPandasTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Fetches a TableMap from an existing source ticket and exports it to the local session result ticket.
+   */
+  rpc FetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
 
   /*
    * Create an empty table with the given column names and types.
@@ -199,6 +218,25 @@ message ExportedTableCreationResponse {
   sint64 size = 6 [jstype=JS_STRING];
 
   // TODO: attributes
+}
+
+message FetchTableRequest {
+  TableReference source_id = 1;
+  Ticket result_id = 2;
+}
+
+message FetchPandasTableRequest {
+  TableReference source_id = 1;
+  Ticket result_id = 2;
+}
+
+message FetchTableMapRequest {
+  TableReference source_id = 1;
+  Ticket result_id = 2;
+}
+
+message FetchTableMapResponse {
+  // TODO (core#62): Implement Table Maps
 }
 
 message ExportedTableUpdatesRequest {
@@ -563,6 +601,8 @@ message BatchTableRequest {
       ExactJoinTablesRequest exact_join = 25;
       LeftJoinTablesRequest left_join = 26;
       AsOfJoinTablesRequest as_of_join = 27;
+      FetchTableRequest fetch_table = 28;
+      FetchPandasTableRequest fetch_pandas_table = 29;
     }
   }
 }

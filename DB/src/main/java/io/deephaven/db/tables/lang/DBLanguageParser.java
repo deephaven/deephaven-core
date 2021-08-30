@@ -4,7 +4,6 @@
 
 package io.deephaven.db.tables.lang;
 
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -51,8 +50,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     // We need some class to represent null. We know for certain that this one won't be used...
     private static final Class<?> NULL_CLASS = DBLanguageParser.class;
 
-    private static final Set<String> simpleNameWhiteList = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList("java.lang", DbArrayBase.class.getPackage().getName())));
+    private static final Set<String> simpleNameWhiteList = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList("java.lang", DbArrayBase.class.getPackage().getName())));
 
     /**
      * The result of the DBLanguageParser for the expression passed given to the constructor.
@@ -73,7 +72,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
      * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
      *        imported.
      * @param variables A map of the names of scope variables to their types
-     * @param variableParameterizedTypes A map of the names of scope variables to their paramterized types
+     * @param variableParameterizedTypes A map of the names of scope variables to their parameterized types
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public DBLanguageParser(String expression,
@@ -82,7 +81,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             Collection<Class<?>> staticImports,
             Map<String, Class<?>> variables,
             Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
-        this(expression, packageImports, classImports, staticImports, variables, variableParameterizedTypes, true);
+        this(expression, packageImports, classImports, staticImports, variables,
+                variableParameterizedTypes, true);
     }
 
     /**
@@ -135,7 +135,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             }
 
             result = new Result(type, printer.builder.toString(), variablesUsed);
-        } catch (Throwable e) { // need to catch it and make a new one because it contains unserializable variables...
+        } catch (Throwable e) {
+            // need to catch it and make a new one because it contains unserializable variables...
             final StringBuilder exceptionMessageBuilder = new StringBuilder(1024)
                     .append("\n\nHaving trouble with the following expression:\n")
                     .append("Full expression           : ")
@@ -482,6 +483,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         return method.getReturnType();
     }
 
+    @SuppressWarnings({"ConstantConditions"})
     private Constructor<?> getConstructor(final Class<?> scope, final Class<?>[] paramTypes,
             final Class<?>[][] parameterizedTypes) {
         final ArrayList<Constructor<?>> acceptableConstructors = new ArrayList<>();
@@ -520,9 +522,11 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         return buf.toString();
     }
 
-    private static <EXECUTABLE_TYPE extends Executable> void possiblyAddExecutable(final List<EXECUTABLE_TYPE> accepted,
+    private static <EXECUTABLE_TYPE extends Executable> void possiblyAddExecutable(
+            final List<EXECUTABLE_TYPE> accepted,
             final EXECUTABLE_TYPE candidate,
-            final String name, final Class<?>[] paramTypes, final Class<?>[][] parameterizedTypes) {
+            final String name, final Class<?>[] paramTypes,
+            final Class<?>[][] parameterizedTypes) {
         if (candidate.getName().equals(name)) {
             final Class<?>[] candidateParamTypes = candidate.getParameterTypes();
 
@@ -533,8 +537,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
             boolean acceptable = true;
 
-            for (int i =
-                    0; i < (candidate.isVarArgs() ? candidateParamTypes.length - 1 : candidateParamTypes.length); i++) {
+            for (int i = 0; i < (candidate.isVarArgs() ? candidateParamTypes.length - 1
+                    : candidateParamTypes.length); i++) {
                 Class<?> paramType = paramTypes[i];
 
                 if (isDbArray(paramType) && candidateParamTypes[i].isArray()) {
@@ -601,8 +605,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         return executableResult == null ? isAssignableFrom(m1.getReturnType(), m2.getReturnType()) : executableResult;
     }
 
-    private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(final EXECUTABLE_TYPE e1,
-            final EXECUTABLE_TYPE e2) {
+    private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(
+            final EXECUTABLE_TYPE e1, final EXECUTABLE_TYPE e2) {
 
         // var args (variable arity) methods always go after fixed arity methods when determining the proper overload
         // https://docs.oracle.com/javase/specs/jls/se7/html/jls-15.html#jls-15.12.2
@@ -627,7 +631,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             }
         }
 
-        if (!Arrays.equals(e1ParamTypes, e2ParamTypes)) { // this means that e2 params are more specific
+        if (!Arrays.equals(e1ParamTypes, e2ParamTypes)) {
+            // this means that e2 params are more specific
             return true;
         }
 
@@ -656,7 +661,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
         for (int i = 0; i < expressions.length; i++) {
             if ((expressions[i] instanceof NameExpr)) {
-                parameterizedTypes[i] = variableParameterizedTypes.get(((NameExpr) expressions[i]).getName());
+                parameterizedTypes[i] = variableParameterizedTypes.get(((NameExpr) expressions[i]).getNameAsString());
             }
         }
 
@@ -670,6 +675,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (DbIntArray.class.isAssignableFrom(type)) {
             return int[].class;
         }
+        // noinspection deprecation
         if (DbBooleanArray.class.isAssignableFrom(type)) {
             return Boolean[].class;
         }
@@ -703,46 +709,52 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     static String getOperatorSymbol(BinaryExpr.Operator op) {
-        switch (op) {
-            case or:
-                return "||";
-            case and:
-                return "&&";
-            case binOr:
-                return "|";
-            case binAnd:
-                return "&";
-            case xor:
-                return "^";
-            case equals:
-                return "==";
-            case notEquals:
-                return "!=";
-            case less:
-                return "<";
-            case greater:
-                return ">";
-            case lessEquals:
-                return "<=";
-            case greaterEquals:
-                return ">=";
-            case plus:
-                return "+";
-            case minus:
-                return "-";
-            case times:
-                return "*";
-            case divide:
-                return "/";
-            case remainder:
-                return "%";
-        }
-
-        throw new RuntimeException("Operation not supported " + op);
+        return op.asString();
     }
 
     static String getOperatorName(BinaryExpr.Operator op) {
-        return (op == BinaryExpr.Operator.equals) ? "eq" : op.name();
+        switch (op) {
+            case OR:
+                return "or";
+            case AND:
+                return "and";
+            case BINARY_OR:
+                return "binaryOr";
+            case BINARY_AND:
+                return "binaryAnd";
+            case XOR:
+                return "xor";
+            case EQUALS:
+                return "eq";
+            case NOT_EQUALS:
+                return "notEquals";
+            case LESS:
+                return "less";
+            case GREATER:
+                return "greater";
+            case LESS_EQUALS:
+                return "lessEquals";
+            case GREATER_EQUALS:
+                return "greaterEquals";
+            case LEFT_SHIFT:
+                return "leftShift";
+            case SIGNED_RIGHT_SHIFT:
+                return "signedRightShift";
+            case UNSIGNED_RIGHT_SHIFT:
+                return "unsignedRightShift";
+            case PLUS:
+                return "plus";
+            case MINUS:
+                return "minus";
+            case MULTIPLY:
+                return "multiply";
+            case DIVIDE:
+                return "divide";
+            case REMAINDER:
+                return "remainder";
+            default:
+                throw new IllegalArgumentException("Could not find operator name for op " + op.name());
+        }
     }
 
     static boolean isNonFPNumber(Class<?> type) {
@@ -758,6 +770,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     public static boolean isDbArray(Class<?> type) {
+        // noinspection deprecation
         return DbArray.class.isAssignableFrom(type) ||
                 DbIntArray.class.isAssignableFrom(type) ||
                 DbBooleanArray.class.isAssignableFrom(type) ||
@@ -784,22 +797,23 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
      * @return An array of new expressions that maintain the 'meaning' of the input {@code expressions} but are
      *         appropriate to pass to {@code executable}
      */
-    private Expression[] convertParameters(final Executable executable, final Class<?>[] argumentTypes,
-            final Class<?>[] expressionTypes, final Class<?>[][] parameterizedTypes, Expression[] expressions) {
+    private Expression[] convertParameters(final Executable executable,
+            final Class<?>[] argumentTypes, final Class<?>[] expressionTypes,
+            final Class<?>[][] parameterizedTypes, Expression[] expressions) {
         final int nArgs = argumentTypes.length; // Number of declared arguments
         for (int ai = 0; ai < (executable.isVarArgs() ? nArgs - 1 : nArgs); ai++) {
             if (argumentTypes[ai] != expressionTypes[ai] && argumentTypes[ai].isPrimitive()
                     && expressionTypes[ai].isPrimitive()) {
                 expressions[ai] = new CastExpr(
                         new PrimitiveType(PrimitiveType.Primitive
-                                .valueOf(StringUtils.makeFirstLetterCapital(argumentTypes[ai].getSimpleName()))),
+                                .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())),
                         expressions[ai]);
             } else if (unboxArguments && argumentTypes[ai].isPrimitive() && !expressionTypes[ai].isPrimitive()) {
-                expressions[ai] =
-                        new MethodCallExpr(expressions[ai], argumentTypes[ai].getSimpleName() + "Value", null);
+                expressions[ai] = new MethodCallExpr(expressions[ai],
+                        argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
             } else if (argumentTypes[ai].isArray() && isDbArray(expressionTypes[ai])) {
                 expressions[ai] = new MethodCallExpr(new NameExpr("ArrayUtils"), "nullSafeDbArrayToArray",
-                        Collections.singletonList(expressions[ai]));
+                        new NodeList<>(expressions[ai]));
                 expressionTypes[ai] = convertDBArray(expressionTypes[ai],
                         parameterizedTypes[ai] == null ? null : parameterizedTypes[ai][0]);
             }
@@ -818,17 +832,19 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                     && varArgType != expressionTypes[lastArgIndex]
                     && isDbArray(expressionTypes[lastArgIndex])) {
                 expressions[lastArgIndex] = new MethodCallExpr(new NameExpr("ArrayUtils"), "nullSafeDbArrayToArray",
-                        Collections.singletonList(expressions[lastArgIndex]));
+                        new NodeList<>(expressions[lastArgIndex]));
                 expressionTypes[lastArgIndex] = convertDBArray(expressionTypes[lastArgIndex],
                         parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);
                 anyExpressionTypesArePrimitive = false;
             } else {
-                for (int ei = nArgs - 1; ei < nArgExpressions; ei++) { // iterate over the vararg argument expresions
+                for (int ei = nArgs - 1; ei < nArgExpressions; ei++) {
+                    // iterate over the vararg argument expressions
                     if (varArgType != expressionTypes[ei] && varArgType.isPrimitive()
-                            && expressionTypes[ei].isPrimitive()) { // cast primitives to the appropriate type
+                            && expressionTypes[ei].isPrimitive()) {
+                        // cast primitives to the appropriate type
                         expressions[ei] = new CastExpr(
                                 new PrimitiveType(PrimitiveType.Primitive
-                                        .valueOf(StringUtils.makeFirstLetterCapital(varArgType.getSimpleName()))),
+                                        .valueOf(varArgType.getSimpleName().toUpperCase())),
                                 expressions[ei]);
                     }
 
@@ -836,18 +852,19 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 }
             }
 
-            if (varArgType.isPrimitive() && anyExpressionTypesArePrimitive) { // we have some problems with ambiguous
-                                                                              // oddities and varargs, so if its
-                                                                              // primitive lets just box it ourselves
+            if (varArgType.isPrimitive() && anyExpressionTypesArePrimitive) {
+                // there are ambiguous oddities with primitive varargs, so if its primitive lets just box it ourselves
                 Expression[] temp = new Expression[nArgs];
                 Expression[] varArgExpressions = new Expression[nArgExpressions - nArgs + 1];
                 System.arraycopy(expressions, 0, temp, 0, temp.length - 1);
-                System.arraycopy(expressions, nArgs - 1, varArgExpressions, 0, varArgExpressions.length);
+                System.arraycopy(expressions, nArgs - 1, varArgExpressions, 0,
+                        varArgExpressions.length);
 
+                NodeList<ArrayCreationLevel> levels = new NodeList<>(new ArrayCreationLevel());
                 temp[temp.length - 1] = new ArrayCreationExpr(
-                        new PrimitiveType(PrimitiveType.Primitive
-                                .valueOf(StringUtils.makeFirstLetterCapital(varArgType.getSimpleName()))),
-                        1, new ArrayInitializerExpr(Arrays.asList(varArgExpressions)));
+                        new PrimitiveType(
+                                PrimitiveType.Primitive.valueOf(varArgType.getSimpleName().toUpperCase())),
+                        levels, new ArrayInitializerExpr(new NodeList<>(varArgExpressions)));
 
                 expressions = temp;
             }
@@ -872,12 +889,12 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
          * throw them to 'findClass()'. Many details are not relevant here. For example, field access is handled by a
          * different method: visit(FieldAccessExpr, StringBuilder).
          */
-        printer.append(n.getName());
+        printer.append(n.getNameAsString());
 
-        Class<?> ret = variables.get(n.getName());
+        Class<?> ret = variables.get(n.getNameAsString());
 
         if (ret != null) {
-            variablesUsed.add(n.getName());
+            variablesUsed.add(n.getNameAsString());
 
             return ret;
         }
@@ -886,13 +903,13 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         // *all* members of a class.
         for (Class<?> classImport : staticImports) {
             try {
-                ret = classImport.getField(n.getName()).getType();
+                ret = classImport.getField(n.getNameAsString()).getType();
                 return ret;
             } catch (NoSuchFieldException ignored) {
             }
         }
 
-        ret = findClass(n.getName());
+        ret = findClass(n.getNameAsString());
 
         if (ret != null) {
             return ret;
@@ -904,28 +921,28 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     @Override
     public Class<?> visit(PrimitiveType n, VisitArgs printer) {
         switch (n.getType()) {
-            case Boolean:
+            case BOOLEAN:
                 printer.append("boolean");
                 return boolean.class;
-            case Byte:
+            case BYTE:
                 printer.append("byte");
                 return byte.class;
-            case Char:
+            case CHAR:
                 printer.append("char");
                 return char.class;
-            case Double:
+            case DOUBLE:
                 printer.append("double");
                 return double.class;
-            case Float:
+            case FLOAT:
                 printer.append("float");
                 return float.class;
-            case Int:
+            case INT:
                 printer.append("int");
                 return int.class;
-            case Long:
+            case LONG:
                 printer.append("long");
                 return long.class;
-            case Short:
+            case SHORT:
                 printer.append("short");
                 return short.class;
         }
@@ -963,7 +980,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             printer.append(')');
 
             if (DbArray.class.isAssignableFrom(type) && (n.getName() instanceof NameExpr)) {
-                Class<?> ret = variableParameterizedTypes.get(((NameExpr) n.getName()).getName())[0];
+                Class<?> ret = variableParameterizedTypes.get(((NameExpr) n.getName()).getNameAsString())[0];
 
                 if (ret != null) {
                     return ret;
@@ -981,7 +998,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         Class<?> lhType = getTypeWithCaching(n.getLeft());
         Class<?> rhType = getTypeWithCaching(n.getRight());
 
-        if ((lhType == String.class || rhType == String.class) && op == BinaryExpr.Operator.plus) {
+        if ((lhType == String.class || rhType == String.class) && op == BinaryExpr.Operator.PLUS) {
 
             if (printer.hasStringBuilder()) {
                 n.getLeft().accept(this, printer);
@@ -996,7 +1013,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             return String.class;
         }
 
-        if (op == BinaryExpr.Operator.or || op == BinaryExpr.Operator.and) {
+        if (op == BinaryExpr.Operator.OR || op == BinaryExpr.Operator.AND) {
 
             if (printer.hasStringBuilder()) {
                 n.getLeft().accept(this, printer);
@@ -1011,9 +1028,9 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             return boolean.class;
         }
 
-        if (op == BinaryExpr.Operator.notEquals) {
+        if (op == BinaryExpr.Operator.NOT_EQUALS) {
             printer.append('!');
-            op = BinaryExpr.Operator.equals;
+            op = BinaryExpr.Operator.EQUALS;
         }
 
         boolean isArray = lhType.isArray() || rhType.isArray() || isDbArray(lhType) || isDbArray(rhType);
@@ -1021,7 +1038,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         String methodName = getOperatorName(op) + (isArray ? "Array" : "");
 
         if (printer.hasStringBuilder()) {
-            new MethodCallExpr(null, methodName, Arrays.asList(n.getLeft(), n.getRight())).accept(this, printer);
+            new MethodCallExpr(null, methodName, new NodeList<>(n.getLeft(), n.getRight()))
+                    .accept(this, printer);
         }
 
         // printer.append(methodName + '(');
@@ -1038,25 +1056,25 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     public Class<?> visit(UnaryExpr n, VisitArgs printer) {
         String opName;
 
-        if (n.getOperator() == UnaryExpr.Operator.not) {
+        if (n.getOperator() == UnaryExpr.Operator.LOGICAL_COMPLEMENT) {
             opName = "not";
-        } else if (n.getOperator() == UnaryExpr.Operator.negative) {
+        } else if (n.getOperator() == UnaryExpr.Operator.MINUS) {
             opName = "negate";
         } else {
             throw new RuntimeException("Unary operation (" + n.getOperator().name() + ") not supported");
         }
 
         printer.append(opName).append('(');
-        Class<?> type = n.getExpr().accept(this, printer);
+        Class<?> type = n.getExpression().accept(this, printer);
         printer.append(')');
 
-        return getMethodReturnType(null, opName, new Class[] {type}, getParameterizedTypes(n.getExpr()));
+        return getMethodReturnType(null, opName, new Class[] {type}, getParameterizedTypes(n));
     }
 
     @Override
     public Class<?> visit(CastExpr n, VisitArgs printer) {
         final Class<?> ret = n.getType().accept(this, VisitArgs.WITHOUT_STRING_BUILDER); // the target type
-        final Expression expr = n.getExpr();
+        final Expression expr = n.getExpression();
 
         final VisitArgs innerArgs = VisitArgs.create().cloneWithCastingContext(ret);
         final Class<?> exprType = expr.accept(this, innerArgs);
@@ -1089,7 +1107,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             // Now check whether we're converting from a boxed type
             else if (fromBoxedType) {
                 isWidening = isWideningPrimitiveConversion(unboxedExprType, ret);
-                if (!ret.equals(unboxedExprType) && // Unboxing and Identity conversions are always OK
+                // Unboxing and Identity conversions are always OK
+                if (!ret.equals(unboxedExprType) &&
                 /*
                  * Boolean is the only boxed type that can be cast to boolean, and boolean is the only primitive type to
                  * which Boolean can be cast:
@@ -1127,9 +1146,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
          *
          * There are also no special functions for the identity conversion -- e.g. "intCast(int)"
          */
-        if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) { // Casting to a primitive, except
-                                                                                  // booleans and the identity
-                                                                                  // conversion
+        if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) {
+            // Casting to a primitive, except booleans and the identity conversion
             printer.append(ret.getSimpleName());
             printer.append("Cast(");
 
@@ -1263,8 +1281,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     @Override
     public Class<?> visit(ClassOrInterfaceType n, VisitArgs printer) {
         Class<?> ret;
-        final ClassOrInterfaceType scope = n.getScope();
-        final String className = n.getName();
+        final ClassOrInterfaceType scope = n.getScope().orElse(null);
+        final String className = n.getNameAsString();
 
         // Note that we must pass a class name *excluding* generics to findClass()
         final String fullClassName = (scope != null ? scope.toString() + '.' : "") + className;
@@ -1293,14 +1311,14 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     @Override
-    public Class<?> visit(ReferenceType n, VisitArgs printer) {
-        Class<?> ret = n.getType().accept(this, printer);
+    public Class<?> visit(ArrayType n, VisitArgs printer) {
+        Class<?> ret = n.getElementType().accept(this, printer);
 
-        for (int i = 0; i < n.getArrayCount(); i++) {
+        for (int i = 0; i < n.getArrayLevel(); i++) {
             printer.append("[]");
         }
 
-        for (int i = 0; i < n.getArrayCount(); i++) {
+        for (int i = 0; i < n.getArrayLevel(); i++) {
             ret = Array.newInstance(ret, 0).getClass();
         }
 
@@ -1313,21 +1331,21 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         Class<?> classB = getTypeWithCaching(n.getElseExpr());
 
         if (classA == NULL_CLASS && io.deephaven.util.type.TypeUtils.getUnboxedType(classB) != null) {
-            n.setThenExpr(new NameExpr(
-                    "NULL_" + io.deephaven.util.type.TypeUtils.getUnboxedType(classB).getSimpleName().toUpperCase()));
+            n.setThenExpr(new NameExpr("NULL_" + io.deephaven.util.type.TypeUtils.getUnboxedType(classB)
+                    .getSimpleName().toUpperCase()));
             classA = n.getThenExpr().accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
         } else if (classB == NULL_CLASS && io.deephaven.util.type.TypeUtils.getUnboxedType(classA) != null) {
             n.setElseExpr(new NameExpr("NULL_" + TypeUtils.getUnboxedType(classA).getSimpleName().toUpperCase()));
             classB = n.getElseExpr().accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
         }
 
-        if (classA == boolean.class && classB == Boolean.class) { // a little hacky, but this handles the null case
-                                                                  // where it unboxes. very weird stuff
+        if (classA == boolean.class && classB == Boolean.class) {
+            // a little hacky, but this handles the null case where it unboxes. very weird stuff
             n.setThenExpr(new CastExpr(new ClassOrInterfaceType("java.lang.Boolean"), n.getThenExpr()));
         }
 
-        if (classA == Boolean.class && classB == boolean.class) { // a little hacky, but this handles the null case
-                                                                  // where it unboxes. very weird stuff
+        if (classA == Boolean.class && classB == boolean.class) {
+            // a little hacky, but this handles the null case where it unboxes. very weird stuff
             n.setElseExpr(new CastExpr(new ClassOrInterfaceType("java.lang.Boolean"), n.getElseExpr()));
         }
 
@@ -1376,7 +1394,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
         Expression scopeExpr = n.getScope();
         String scopeName = scopeExpr.toString();
-        String fieldName = n.getField();
+        String fieldName = n.getNameAsString();
 
         // A class name can also come through as a FieldAccessExpr (*not*, as one might expect,
         // as QualifiedNameExpr or ClassOrInterfaceType).
@@ -1389,8 +1407,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         // manually check whether the scope is a class.
         Class<?> scopeType;
         if (scopeExpr instanceof FieldAccessExpr
-                && (scopeType = findClass(scopeName)) != null) { // 'scope' was a class, and we found it - print
-                                                                 // 'scopeType' ourselves
+                && (scopeType = findClass(scopeName)) != null) {
+            // 'scope' was a class, and we found it - print 'scopeType' ourselves
             printer.append(scopeName);
         } else { // 'scope' was *not* a class; call accept() on it to print it and find its type.
             try {
@@ -1421,8 +1439,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             if (ret == null) {
                 try {
                     // For Python object, the type of the field is PyObject by default, the actual data type if
-                    // primitive
-                    // will only be known at runtime
+                    // primitive will only be known at runtime
                     if (scopeType == PyObject.class) {
                         ret = PyObject.class;
                     } else {
@@ -1442,7 +1459,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (ret == PyObject.class) {
             // This is a direct field access on a Python object which is wrapped in PyObject.class
             // and must be accessed through PyObject.getAttribute() method
-            printer.append('.').append("getAttribute(\"" + n.getField() + "\"");
+            printer.append('.').append("getAttribute(\"" + n.getNameAsString() + "\"");
             if (printer.pythonCastContext != null) {
                 // The to-be-cast expr is a Python object field accessor
                 final String clsName = printer.pythonCastContext.getSimpleName();
@@ -1450,7 +1467,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             }
             printer.append(')');
         } else {
-            printer.append('.').append(n.getField());
+            printer.append('.').append(n.getNameAsString());
         }
         return ret;
     }
@@ -1528,20 +1545,6 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     @Override
-    public Class<?> visit(IntegerLiteralMinValueExpr n, VisitArgs printer) {
-        printer.append(n.getValue());
-
-        return int.class;
-    }
-
-    @Override
-    public Class<?> visit(LongLiteralMinValueExpr n, VisitArgs printer) {
-        printer.append(n.getValue());
-
-        return long.class;
-    }
-
-    @Override
     public Class<?> visit(StringLiteralExpr n, VisitArgs printer) {
         printer.append('"');
         printer.append(n.getValue());
@@ -1568,27 +1571,28 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
     @Override
     public Class<?> visit(MethodCallExpr n, VisitArgs printer) {
-        Class<?> scope = null;
         final VisitArgs innerPrinter = VisitArgs.create();
 
-        if (n.getScope() != null) {
-            scope = n.getScope().accept(this, innerPrinter);
+        Class<?> scope = n.getScope().map(sc -> {
+            Class<?> result = sc.accept(this, innerPrinter);
             innerPrinter.append('.');
-        }
+            return result;
+        }).orElse(null);
 
-        Expression[] expressions = n.getArgs() == null ? new Expression[0] : n.getArgs().toArray(new Expression[0]);
+        Expression[] expressions = n.getArguments() == null ? new Expression[0]
+                : n.getArguments().toArray(new Expression[0]);
 
         Class<?>[] expressionTypes = printArguments(expressions, VisitArgs.WITHOUT_STRING_BUILDER);
 
         Class<?>[][] parameterizedTypes = getParameterizedTypes(expressions);
 
-        Method method = getMethod(scope, n.getName(), expressionTypes, parameterizedTypes);
+        Method method = getMethod(scope, n.getNameAsString(), expressionTypes, parameterizedTypes);
 
         Class<?>[] argumentTypes = method.getParameterTypes();
 
         // now do some parameter conversions...
 
-        Class<?> methodClass = variables.get(n.getName());
+        Class<?> methodClass = variables.get(n.getNameAsString());
         if (methodClass == NumbaCallableWrapper.class) {
             checkPyNumbaVectorizedFunc(n, expressions, expressionTypes);
         }
@@ -1602,14 +1606,15 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                  * CallableWrapper 2. the func will be called via CallableWrapper.call() method
                  */
                 printer.append(innerPrinter);
-                printer.append(n.getName());
+                printer.append(n.getNameAsString());
                 printer.append(".call");
             } else {
                 /*
                  * python method call 1. need to reference the method with PyObject.getAttribute(); 2. wrap the method
                  * reference in CallableWrapper() 3. the method will be called via CallableWrapper.call()
                  */
-                if (!n.getName().equals("call")) { // to be backwards compatible with the syntax func.call(...)
+                if (!n.getNameAsString().equals("call")) {
+                    // to be backwards compatible with the syntax func.call(...)
                     innerPrinter.append("getAttribute(\"" + n.getName() + "\")");
                     printer.append("(new io.deephaven.db.util.PythonScopeJpyImpl.CallableWrapper(");
                     printer.append(innerPrinter);
@@ -1621,7 +1626,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             }
         } else { // Groovy or Java method call
             printer.append(innerPrinter);
-            printer.append(n.getName());
+            printer.append(n.getNameAsString());
         }
 
         if (printer.hasStringBuilder()) {
@@ -1635,14 +1640,15 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         // numba vectorized functions return arrays of primitive types. This will break the generated expression
         // evaluation code that expects singular values. This check makes sure that numba vectorized functions must be
         // used alone (or with cast only) as the entire expression.
-        if (n.getParentNode() != null
-                && (n.getParentNode().getClass() != CastExpr.class || n.getParentNode().getParentNode() != null)) {
-            throw new RuntimeException("Numba vectorized function can't be used in an expression.");
-        }
+        n.getParentNode().ifPresent(parent -> {
+            if (parent.getClass() != CastExpr.class || parent.getParentNode().isPresent()) {
+                throw new RuntimeException("Numba vectorized function can't be used in an expression.");
+            }
+        });
 
         final QueryScope queryScope = QueryScope.getScope();
         for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
-            if (param.getName().equals(n.getName())) {
+            if (param.getName().equals(n.getNameAsString())) {
                 NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
                 List<Class<?>> params = numbaCallableWrapper.getParamTypes();
                 if (params.size() != expressions.length) {
@@ -1663,8 +1669,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     private static boolean isSafelyCoerceable(Class<?> expressionType, Class<?> aClass) {
-        // TODO, numba does appear to check for type coercing at runtime, though no explicit rules exist.
-        // GH-709 is filed to address this at some point in the future.
+        // TODO (core#709): numba does appear to check for type coercing at runtime, though no explicit rules exist
         return true;
     }
 
@@ -1681,7 +1686,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
         Class<?> ret = n.getType().accept(this, printer);
 
-        Expression[] expressions = n.getArgs() == null ? new Expression[0] : n.getArgs().toArray(new Expression[0]);
+        Expression[] expressions = n.getArguments() == null ? new Expression[0]
+                : n.getArguments().toArray(new Expression[0]);
 
         Class<?>[] expressionTypes = printArguments(expressions, VisitArgs.WITHOUT_STRING_BUILDER);
 
@@ -1706,33 +1712,17 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     public Class<?> visit(ArrayCreationExpr n, VisitArgs printer) {
         printer.append("new ");
 
-        Class<?> ret = n.getType().accept(this, printer);
+        Class<?> ret = n.getElementType().accept(this, printer);
 
-        if (n.getDimensions() != null) {
-            for (Expression dim : n.getDimensions()) {
-                printer.append('[');
-                dim.accept(this, printer);
-                printer.append(']');
+        for (ArrayCreationLevel dim : n.getLevels()) {
+            printer.append('[');
+            dim.accept(this, printer);
+            printer.append(']');
 
-                ret = Array.newInstance(ret, 0).getClass();
-            }
-
-            for (int i = 0; i < n.getArrayCount(); i++) {
-                printer.append("[]");
-
-                ret = Array.newInstance(ret, 0).getClass();
-            }
-        } else {
-            for (int i = 0; i < n.getArrayCount(); i++) {
-                printer.append("[]");
-
-                ret = Array.newInstance(ret, 0).getClass();
-            }
-
-            printer.append(' ');
-            n.getInitializer().accept(this, printer);
+            ret = Array.newInstance(ret, 0).getClass();
         }
 
+        n.getInitializer().ifPresent(init -> init.accept(this, printer));
         return ret;
     }
 
@@ -1756,10 +1746,10 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     @Override
-    @SuppressWarnings("ClassGetClass") // class.getClass is the purpose of this visitor
     public Class<?> visit(ClassExpr n, VisitArgs printer) {
         Class<?> type = n.getType().accept(this, printer);
         printer.append(".class");
+        // noinspection ClassGetClass
         return type.getClass();
     }
 
@@ -1818,7 +1808,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         //
         //
         //
-        // // Also...waht to do with the type parameters? n.getTypeParameters()?
+        // // Also...what to do with the type parameters? n.getTypeParameters()?
         //
         // /* If the method identifier is 'new' (and the scope type has a public constructor),
         // then the return type is an instance of this object */
@@ -1917,18 +1907,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     @Override
-    public Class<?> visit(EmptyMemberDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("EmptyMemberDeclaration Operation not supported");
-    }
-
-    @Override
     public Class<?> visit(EmptyStmt n, VisitArgs printer) {
         throw new RuntimeException("EmptyStmt Operation not supported");
-    }
-
-    @Override
-    public Class<?> visit(EmptyTypeDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("EmptyTypeDeclaration Operation not supported");
     }
 
     @Override
@@ -1949,11 +1929,6 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     @Override
     public Class<?> visit(FieldDeclaration n, VisitArgs printer) {
         throw new RuntimeException("FieldDeclaration Operation not supported");
-    }
-
-    @Override
-    public Class<?> visit(ForeachStmt n, VisitArgs printer) {
-        throw new RuntimeException("ForeachStmt Operation not supported");
     }
 
     @Override
@@ -2017,11 +1992,6 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     @Override
-    public Class<?> visit(MultiTypeParameter n, VisitArgs printer) {
-        throw new RuntimeException("MultiTypeParameter Operation not supported");
-    }
-
-    @Override
     public Class<?> visit(NormalAnnotationExpr n, VisitArgs printer) {
         throw new RuntimeException("NormalAnnotationExpr Operation not supported");
     }
@@ -2037,11 +2007,6 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     @Override
-    public Class<?> visit(QualifiedNameExpr n, VisitArgs printer) {
-        throw new RuntimeException("QualifiedNameExpr Operation not supported");
-    }
-
-    @Override
     public Class<?> visit(ReturnStmt n, VisitArgs printer) {
         throw new RuntimeException("ReturnStmt Operation not supported");
     }
@@ -2054,11 +2019,6 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     @Override
     public Class<?> visit(SuperExpr n, VisitArgs printer) {
         throw new RuntimeException("SuperExpr Operation not supported");
-    }
-
-    @Override
-    public Class<?> visit(SwitchEntryStmt n, VisitArgs printer) {
-        throw new RuntimeException("SwitchEntryStmt Operation not supported");
     }
 
     @Override
@@ -2087,11 +2047,6 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     @Override
-    public Class<?> visit(TypeDeclarationStmt n, VisitArgs printer) {
-        throw new RuntimeException("TypeDeclarationStmt Operation not supported");
-    }
-
-    @Override
     public Class<?> visit(TypeParameter n, VisitArgs printer) {
         throw new RuntimeException("TypeParameter Operation not supported");
     }
@@ -2104,11 +2059,6 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     @Override
     public Class<?> visit(VariableDeclarator n, VisitArgs printer) {
         throw new RuntimeException("VariableDeclarator Operation not supported");
-    }
-
-    @Override
-    public Class<?> visit(VariableDeclaratorId n, VisitArgs printer) {
-        throw new RuntimeException("VariableDeclaratorId Operation not supported");
     }
 
     @Override

@@ -6,11 +6,9 @@ package io.deephaven.grpc_api.arrow;
 
 import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
-import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.browserstreaming.BrowserStream;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.util.UnaryInputStreamMarshaller;
-import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.grpc_api.util.GrpcServiceOverrideBuilder;
 import io.deephaven.grpc_api.util.PassthroughInputStreamMarshaller;
 import io.deephaven.internal.log.LoggerFactory;

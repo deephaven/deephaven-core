@@ -33,12 +33,15 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
     private final SessionService service;
     private final AuthContextProvider authProvider;
+    private final TicketRouter ticketRouter;
 
     @Inject()
     public SessionServiceGrpcImpl(final SessionService service,
-            final AuthContextProvider authProvider) {
+            final AuthContextProvider authProvider,
+            final TicketRouter ticketRouter) {
         this.service = service;
         this.authProvider = authProvider;
+        this.ticketRouter = ticketRouter;
     }
 
     @Override
@@ -100,7 +103,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     }
 
     @Override
-    public void closeSession(final HandshakeRequest request, final StreamObserver<ReleaseResponse> responseObserver) {
+    public void closeSession(final HandshakeRequest request,
+            final StreamObserver<CloseSessionResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             if (request.getAuthProtocol() != 0) {
                 responseObserver.onError(
@@ -116,23 +120,68 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             }
 
             service.closeSession(session);
-            responseObserver.onNext(ReleaseResponse.newBuilder().setSuccess(true).build());
+            responseObserver.onNext(CloseSessionResponse.getDefaultInstance());
             responseObserver.onCompleted();
         });
     }
 
     @Override
-    public void release(final Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
+    public void release(final ReleaseRequest request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState.ExportObject<?> export = service.getCurrentSession().getExportIfExists(request);
-            final ExportNotification.State currState =
-                    export != null ? export.getState() : ExportNotification.State.UNKNOWN;
-            if (export != null) {
-                export.release();
+            final SessionState session = service.getCurrentSession();
+            if (!request.hasId()) {
+                responseObserver
+                        .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
+                return;
             }
-            responseObserver.onNext(
-                    ReleaseResponse.newBuilder().setSuccess(currState != ExportNotification.State.UNKNOWN).build());
+            final SessionState.ExportObject<?> export = session.getExportIfExists(request.getId());
+            if (export == null) {
+                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAVAILABLE, "Export not yet defined"));
+                return;
+            }
+
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (export) {
+                final ExportNotification.State currState = export.getState();
+                if (currState != ExportNotification.State.PENDING
+                        && currState != ExportNotification.State.QUEUED
+                        && currState != ExportNotification.State.EXPORTED) {
+                    responseObserver.onError(
+                            GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Ticket already in state: " + currState));
+                    return;
+                }
+            }
+
+            export.cancel();
+            responseObserver.onNext(ReleaseResponse.getDefaultInstance());
             responseObserver.onCompleted();
+        });
+    }
+
+    @Override
+    public void exportFromTicket(ExportRequest request, StreamObserver<ExportResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = service.getCurrentSession();
+            if (!request.hasSourceId()) {
+                responseObserver
+                        .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Source ticket not supplied"));
+                return;
+            }
+            if (!request.hasResultId()) {
+                responseObserver
+                        .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result ticket not supplied"));
+                return;
+            }
+
+            final SessionState.ExportObject<Object> source = ticketRouter.resolve(session, request.getSourceId());
+            session.newExport(request.getResultId())
+                    .require(source)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        GrpcUtil.safelyExecute(() -> responseObserver.onNext(ExportResponse.getDefaultInstance()));
+                        GrpcUtil.safelyExecute(responseObserver::onCompleted);
+                        return source.get();
+                    });
         });
     }
 

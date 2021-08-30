@@ -3,12 +3,9 @@ package io.deephaven.client.impl;
 import com.google.common.annotations.VisibleForTesting;
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.proto.backplane.grpc.BatchTableRequest;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.stub.StreamObserver;
@@ -225,7 +222,8 @@ final class ExportStates {
             if (children.isEmpty()) {
                 ExportStates.this.release(this);
                 released = true;
-                sessionStub.release(ticket, new TicketReleaseHandler(ticket));
+                sessionStub.release(ReleaseRequest.newBuilder().setId(ticket).build(),
+                        new TicketReleaseHandler(ticket));
                 ++releaseCount;
             }
         }
@@ -288,10 +286,7 @@ final class ExportStates {
 
         @Override
         public void onNext(ReleaseResponse value) {
-            if (!value.getSuccess()) {
-                log.warn("Unable to release ticket '{}'",
-                        ExportTicketHelper.toReadableString(ticket));
-            }
+            // success!
         }
 
         @Override

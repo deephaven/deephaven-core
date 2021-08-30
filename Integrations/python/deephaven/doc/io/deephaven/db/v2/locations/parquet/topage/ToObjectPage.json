@@ -2,9 +2,9 @@
  "className": "io.deephaven.db.v2.locations.parquet.topage.ToObjectPage",
  "methods": {
   "convertResult": ":param result: java.lang.Object\n:return: (ToObjectPage.T[]) Produce the array of values from the result",
-  "create": "Note: Java generics information - <T,\nATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<T>\n:param codec: io.deephaven.util.codec.ObjectCodec<T>\n:param dictionary: org.apache.parquet.column.Dictionary\n:return: io.deephaven.db.v2.locations.parquet.topage.ToPage<ATTR,T[]>",
+  "create": "Note: Java generics information - <T,\nATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<T>\n:param codec: io.deephaven.util.codec.ObjectCodec<T>\n:param dictionarySupplier: java.util.function.Supplier<org.apache.parquet.column.Dictionary>\n:return: io.deephaven.db.v2.locations.parquet.topage.ToPage<ATTR,T[]>",
   "getChunkType": ":return: (io.deephaven.db.v2.sources.chunk.ChunkType) The chunk type used to wrap the arrays produced by this object.",
-  "getNativeType": ":return: (java.lang.Class) The native type for the elements of the arrays produced by this object."
+  "getNativeType": ":return: (java.lang.Class<?>) The native type for the elements of the arrays produced by this object."
  },
  "path": "io.deephaven.db.v2.locations.parquet.topage.ToObjectPage",
  "typeName": "class"

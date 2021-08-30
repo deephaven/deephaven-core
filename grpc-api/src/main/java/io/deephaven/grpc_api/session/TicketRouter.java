@@ -87,7 +87,6 @@ public class TicketRouter {
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    // TODO #412 use this or remove it?
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor) {
@@ -120,7 +119,6 @@ public class TicketRouter {
      * @param <T> the type of the result the export will publish
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    // TODO #412 use this or remove it
     public <T> SessionState.ExportBuilder<T> publish(
             final SessionState session,
             final Flight.Ticket ticket) {
@@ -164,7 +162,16 @@ public class TicketRouter {
      * @param ticket the ticket to parse
      * @return a string that is good for log/error messages
      */
-    // TODO #412 use this or remove it
+    public String getLogNameFor(final Ticket ticket) {
+        return getLogNameFor(ticket.getTicket().asReadOnlyByteBuffer());
+    }
+
+    /**
+     * Create a human readable string to identify this Flight.Ticket.
+     *
+     * @param ticket the ticket to parse
+     * @return a string that is good for log/error messages
+     */
     public String getLogNameFor(final Flight.Ticket ticket) {
         return getLogNameFor(ticket.getTicket().asReadOnlyByteBuffer());
     }

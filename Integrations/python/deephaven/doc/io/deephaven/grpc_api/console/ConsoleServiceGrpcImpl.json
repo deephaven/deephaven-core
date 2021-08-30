@@ -1,16 +1,12 @@
 {
  "className": "io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl",
  "methods": {
+  "autoCompleteStream": ":param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse>\n:return: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest>",
   "bindTableToVariable": ":param request: io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse>",
   "cancelCommand": ":param request: io.deephaven.proto.backplane.script.grpc.CancelCommandRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.CancelCommandResponse>",
-  "changeDocument": ":param request: io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.ChangeDocumentResponse>",
-  "closeDocument": ":param request: io.deephaven.proto.backplane.script.grpc.CloseDocumentRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.CloseDocumentResponse>",
   "executeCommand": ":param request: io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse>",
   "fetchFigure": ":param request: io.deephaven.proto.backplane.script.grpc.FetchFigureRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.FetchFigureResponse>",
-  "fetchTable": ":param request: io.deephaven.proto.backplane.script.grpc.FetchTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
-  "getCompletionItems": ":param request: io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse>",
   "getConsoleTypes": ":param request: io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse>",
-  "openDocument": ":param request: io.deephaven.proto.backplane.script.grpc.OpenDocumentRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.OpenDocumentResponse>",
   "startConsole": ":param request: io.deephaven.proto.backplane.script.grpc.StartConsoleRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.StartConsoleResponse>",
   "subscribeToLogs": ":param request: io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.LogSubscriptionData>"
  },

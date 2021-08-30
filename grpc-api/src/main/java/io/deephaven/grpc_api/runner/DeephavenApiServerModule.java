@@ -5,6 +5,7 @@ import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.sources.chunk.util.pools.MultiChunkPool;
+import io.deephaven.grpc_api.appmode.AppModeModule;
 import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.auth.AuthContextModule;
 import io.deephaven.grpc_api.console.ConsoleModule;
@@ -37,6 +38,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @Module(includes = {
+        AppModeModule.class,
         ArrowModule.class,
         AuthContextModule.class,
         LogModule.class,

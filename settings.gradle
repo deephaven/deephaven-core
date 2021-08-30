@@ -161,6 +161,10 @@ project(':client-flight-examples').projectDir = file('java-client/flight-example
 
 include(':qst:graphviz')
 
+include(':application-mode')
+
+include(':util-immutables')
+project(':util-immutables').projectDir = file('Util/util-immutables')
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {

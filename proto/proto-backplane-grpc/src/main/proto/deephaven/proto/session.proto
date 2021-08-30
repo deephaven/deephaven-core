@@ -43,13 +43,21 @@ service SessionService {
    * Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
    * unreleased exports will be automatically released.
    */
-  rpc CloseSession(HandshakeRequest) returns (ReleaseResponse) {}
+  rpc CloseSession(HandshakeRequest) returns (CloseSessionResponse) {}
 
   /*
    * Attempts to release an export by its ticket. Returns true if an existing export was found. It is the client's
-   * responsibility to release all resources they no longer want the server to hold on to.
+   * responsibility to release all resources they no longer want the server to hold on to. Proactively cancels work; do
+   * not release a ticket that is needed by dependent work that has not yet finished
+   * (i.e. the dependencies that are staying around should first be in EXPORTED state).
    */
-  rpc Release(Ticket) returns (ReleaseResponse) {}
+  rpc Release(ReleaseRequest) returns (ReleaseResponse) {}
+
+  /*
+   * Makes a copy from a source ticket to a client managed result ticket. The source ticket does not need to be
+   * a client managed ticket.
+   */
+  rpc ExportFromTicket(ExportRequest) returns (ExportResponse) {}
 
   /*
    * Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
@@ -110,19 +118,25 @@ message HandshakeResponse {
   sint64 token_expiration_delay_millis = 4 [jstype=JS_STRING];
 }
 
-/*
- * A message for doing simple auth.
- */
-message BasicAuth {
-  string username = 2;
-  string password = 3;
+message CloseSessionResponse {
+  // Intentionally empty and is here for backwards compatibility should this API change.
 }
 
-/*
- * Returns success=true if an item was found to release. The export is released and/or cancelled if applicable.
- */
+message ReleaseRequest {
+  Ticket id = 1;
+}
+
 message ReleaseResponse {
-  bool success = 1;
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}
+
+message ExportRequest {
+  Ticket source_id = 1;
+  Ticket result_id = 2;
+}
+
+message ExportResponse {
+  // Intentionally empty and is here for backwards compatibility should this API change.
 }
 
 message ExportNotificationRequest {
@@ -136,14 +150,15 @@ message ExportNotification {
     PENDING = 1; // This item has pending dependencies.
     PUBLISHING = 2; // This item is a client-supplied dependency with no guarantee on timing to EXPORT state.
     QUEUED = 3; // This item is eligible for resolution and has been submitted to the executor.
-    EXPORTED = 4; // This item was successfully exported and is currently being retained.
-    RELEASED = 5; // This item was successfully released.
-    CANCELLED = 6; //  CANCELLED: The user cancelled the item before it exported.
-    FAILED = 7; // This item had a specific error.
-    DEPENDENCY_FAILED = 8; // One of this item's dependencies had an internal error before it exported.
-    DEPENDENCY_NEVER_FOUND = 9; // One of this item's dependencies was already released or never submitted within the out-of-order window.
-    DEPENDENCY_CANCELLED = 10; // Dependency was cancelled, causing a cascading cancel that applies to this export.
-    DEPENDENCY_RELEASED = 11; // Dependency was already released, causing a cascading failure that applies to this export.
+    RUNNING = 4; // This item is now executing.
+    EXPORTED = 5; // This item was successfully exported and is currently being retained.
+    RELEASED = 6; // This item was successfully released.
+    CANCELLED = 7; //  CANCELLED: The user cancelled the item before it exported.
+    FAILED = 8; // This item had a specific error.
+    DEPENDENCY_FAILED = 9; // One of this item's dependencies had an internal error before it exported.
+    DEPENDENCY_NEVER_FOUND = 10; // One of this item's dependencies was already released or never submitted within the out-of-order window.
+    DEPENDENCY_CANCELLED = 11; // Dependency was cancelled, causing a cascading cancel that applies to this export.
+    DEPENDENCY_RELEASED = 12; // Dependency was already released, causing a cascading failure that applies to this export.
   }
   State export_state = 2;
 

@@ -136,7 +136,7 @@ def convertSchema(schema, keyValueMetadata, readInstructionsIn):
             ParquetFileReader!
     :param keyValueMetadata: (java.util.Map<java.lang.String,java.lang.String>) - Parquet key-value metadata map
     :param readInstructionsIn: (io.deephaven.db.v2.parquet.ParquetInstructions) - Input conversion ParquetInstructions
-    :return: (io.deephaven.base.Pair<java.util.List<io.deephaven.db.tables.ColumnDefinition>,io.deephaven.db.v2.parquet.ParquetInstructions>) A Pair with ColumnDefinitions and adjusted ParquetInstructions
+    :return: (io.deephaven.base.Pair<java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>,io.deephaven.db.v2.parquet.ParquetInstructions>) A Pair with ColumnDefinitions and adjusted ParquetInstructions
     """
     
     return _java_type_.convertSchema(schema, keyValueMetadata, readInstructionsIn)
