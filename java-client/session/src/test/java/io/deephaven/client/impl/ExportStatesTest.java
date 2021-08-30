@@ -77,7 +77,8 @@ public class ExportStatesTest {
         ManagedChannel channel = grpcCleanup
                 .register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-        states = new ExportStates(SessionServiceGrpc.newStub(channel), TableServiceGrpc.newStub(channel), 1);
+        states = new ExportStates(SessionServiceGrpc.newStub(channel), TableServiceGrpc.newStub(channel),
+                new ExportTicketCreator());
     }
 
     Export export(TableSpec table) {

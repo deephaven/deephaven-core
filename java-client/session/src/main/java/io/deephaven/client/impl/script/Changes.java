@@ -22,6 +22,10 @@ public abstract class Changes {
 
     public abstract List<VariableDefinition> removed();
 
+    public final boolean isEmpty() {
+        return created().isEmpty() && updated().isEmpty() && removed().isEmpty();
+    }
+
     public interface Builder {
         Builder errorMessage(String errorMessage);
 

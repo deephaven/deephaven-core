@@ -9,7 +9,6 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -63,25 +62,14 @@ public abstract class SessionImplConfig {
     }
 
     /**
-     * The {@link SessionImpl#close()} timeout. By default, is {@code PT5s}. The default can be overridden via the
-     * system property {@code deephaven.session.closeTimeout}.
+     * The {@link Session} and {@link ConsoleSession} close timeout. By default, is {@code PT5s}. The default can be
+     * overridden via the system property {@code deephaven.session.closeTimeout}.
      *
-     * @return the session close timeout
+     * @return the close timeout
      */
     @Default
     public Duration closeTimeout() {
         return Duration.parse(System.getProperty("deephaven.session.closeTimeout", "PT5s"));
-    }
-
-    /**
-     * The expected script console type. By default, is not set. The default can be overridden via the system property
-     * {@code deephaven.console.type}.
-     *
-     * @return the expected script console type
-     */
-    @Default
-    public Optional<String> consoleType() {
-        return Optional.ofNullable(System.getProperty("deephaven.console.type", null));
     }
 
     public final SessionImpl createSession(SessionServiceBlockingStub stubBlocking) {
@@ -107,8 +95,6 @@ public abstract class SessionImplConfig {
         Builder mixinStacktrace(boolean mixinStacktrace);
 
         Builder closeTimeout(Duration closeTimeout);
-
-        Builder consoleType(Optional<String> consoleType);
 
         SessionImplConfig build();
     }

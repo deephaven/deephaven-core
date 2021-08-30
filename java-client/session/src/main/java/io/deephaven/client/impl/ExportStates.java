@@ -25,32 +25,31 @@ import java.util.Set;
 
 final class ExportStates {
 
-    private static final Logger log = LoggerFactory.getLogger(ExportStates.class);
-
     private final SessionImpl session;
     private final SessionServiceStub sessionStub;
     private final TableServiceStub tableStub;
 
     private final Map<TableSpec, State> exports;
-    private int nextTicket;
+    private final ExportTicketCreator exportTicketCreator;
     private long batchCount;
     private long releaseCount;
 
-    ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub, int nextTicket) {
+    ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub,
+            ExportTicketCreator exportTicketCreator) {
         this.session = Objects.requireNonNull(session);
         this.sessionStub = Objects.requireNonNull(sessionStub);
         this.tableStub = Objects.requireNonNull(tableStub);
+        this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
-        this.nextTicket = nextTicket;
     }
 
     @VisibleForTesting
-    ExportStates(SessionServiceStub sessionStub, TableServiceStub tableStub, int nextTicket) {
+    ExportStates(SessionServiceStub sessionStub, TableServiceStub tableStub, ExportTicketCreator exportTicketCreator) {
         this.session = null;
         this.sessionStub = Objects.requireNonNull(sessionStub);
         this.tableStub = Objects.requireNonNull(tableStub);
+        this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
-        this.nextTicket = nextTicket;
     }
 
     long batchCount() {
@@ -104,7 +103,7 @@ final class ExportStates {
                 continue;
             }
 
-            final Ticket ticket = ExportTicketHelper.exportIdToTicket(nextTicket++);
+            final Ticket ticket = exportTicketCreator.create();
             final State state = new State(request.table(), ticket);
             if (exports.putIfAbsent(request.table(), state) != null) {
                 throw new IllegalStateException("Unable to put export, already exists");
