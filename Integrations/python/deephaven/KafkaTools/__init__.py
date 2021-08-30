@@ -98,6 +98,12 @@ def _custom_avroSchemaToColumnDefinitions(schema, mapping:dict = None):
     return _java_type_.avroSchemaToColumnDefinitions(schema, mapping)
 
 
+# Define all of our functionality, if currently possible
+try:
+    _defineSymbols()
+except Exception as e:
+    pass
+
 @_passThrough
 def consumeToTable(
         kafka_config:dict,
@@ -248,15 +254,13 @@ def simple(column_name:str, data_type:dh.DataType = None):
 @_passThrough
 def streamTableToAppendTable(t):
     return _stream_table_tools_.streamToAppendOnlyTable(t)
-    
-# Define all of our functionality, if currently possible
-try:
-    _defineSymbols()
-except Exception as e:
-    pass
 @_passThrough
 def avroSchemaToColumnDefinitions(*args):
     """
+    **Incompatible overloads text - text from the first overload:**
+    
+    Convert an Avro schema to a list of column definitions, mapping every avro field to a column of the same name.
+    
     *Overload 1*  
       :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
       :param mappedOut: java.util.Map<java.lang.String,java.lang.String>
@@ -264,13 +268,14 @@ def avroSchemaToColumnDefinitions(*args):
       :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
       
     *Overload 2*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
-      :param schema: org.apache.avro.Schema
-      :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
+      :param columns: (java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>) - Column definitions for output; should be empty on entry.
+      :param schema: (org.apache.avro.Schema) - Avro schema
+      :param fieldNameToColumnName: (java.util.function.Function<java.lang.String,java.lang.String>) - An optional mapping to specify selection and naming of columns from Avro fields, or
+              null for map all fields using field name for column name.
       
     *Overload 3*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
-      :param schema: org.apache.avro.Schema
+      :param columns: (java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>) - Column definitions for output; should be empty on entry.
+      :param schema: (org.apache.avro.Schema) - Avro schema
     """
     
     return _java_type_.avroSchemaToColumnDefinitions(*args)
@@ -291,16 +296,20 @@ def friendlyNameToTableType(typeName):
 @_passThrough
 def getAvroSchema(*args):
     """
+    **Incompatible overloads text - text from the first overload:**
+    
+    Fetch an Avro schema from a Confluent compatible Schema Server.
+    
     *Overload 1*  
-      :param schemaServerUrl: java.lang.String
-      :param resourceName: java.lang.String
-      :param version: java.lang.String
-      :return: org.apache.avro.Schema
+      :param schemaServerUrl: (java.lang.String) - The schema server URL
+      :param resourceName: (java.lang.String) - The resource name that the schema is known as in the schema server
+      :param version: (java.lang.String) - The version to fetch, or the string "latest" for the latest version.
+      :return: (org.apache.avro.Schema) An Avro schema.
       
     *Overload 2*  
-      :param schemaServerUrl: java.lang.String
-      :param resourceName: java.lang.String
-      :return: org.apache.avro.Schema
+      :param schemaServerUrl: (java.lang.String) - The schema server URL
+      :param resourceName: (java.lang.String) - The resource name that the schema is known as in the schema server
+      :return: (org.apache.avro.Schema) An Avro schema.
     """
     
     return _java_type_.getAvroSchema(*args)

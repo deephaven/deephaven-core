@@ -5,5 +5,6 @@
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.kafka.KafkaTools.KeyOrValue[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.kafka.KafkaTools.KeyOrValue",
+ "text": "Enum to specify operations that may apply to either of Kafka KEY or VALUE fields.",
  "typeName": "enum"
 }
