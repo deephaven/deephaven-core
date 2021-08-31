@@ -26,6 +26,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.tools.GroovyClass;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.tools.JavaFileObject;
@@ -175,6 +176,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         executedScripts.add(script);
     }
 
+    @NotNull
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         try {

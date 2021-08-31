@@ -16,6 +16,7 @@ import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.KeyError;
 import org.jpy.PyDictWrapper;
@@ -149,6 +150,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
         }
     }
 
+    @NotNull
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         return scope

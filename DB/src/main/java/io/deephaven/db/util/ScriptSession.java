@@ -9,6 +9,7 @@ import io.deephaven.db.util.liveness.LivenessNode;
 import io.deephaven.db.util.liveness.ReleasableLivenessManager;
 import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -23,11 +24,14 @@ import java.util.function.Supplier;
 public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * Retrieve a variable from the script session's bindings.
+     * <p/>
+     * Please use {@link ScriptSession#getVariable(String, Object)} if you expect the variable may not exist.
      *
      * @param name the variable to retrieve
      * @return the variable
      * @throws QueryScope.MissingVariableException if the variable does not exist
      */
+    @NotNull
     Object getVariable(String name) throws QueryScope.MissingVariableException;
 
     /**

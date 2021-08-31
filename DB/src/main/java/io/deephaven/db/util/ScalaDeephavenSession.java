@@ -7,6 +7,7 @@ import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import scala.Option;
 import scala.collection.JavaConverters;
@@ -117,6 +118,7 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
         return new QueryScope.SynchronizedScriptSessionImpl(this);
     }
 
+    @NotNull
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         Option<Object> value = interpreter.valueOfTerm(name);

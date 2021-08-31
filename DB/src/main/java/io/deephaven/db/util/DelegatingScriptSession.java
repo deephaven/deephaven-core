@@ -50,6 +50,7 @@ public class DelegatingScriptSession implements ScriptSession {
         return diff;
     }
 
+    @NotNull
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         return delegate.getVariable(name);
