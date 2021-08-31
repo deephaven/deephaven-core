@@ -3,11 +3,8 @@ package io.deephaven.ide.shared;
 import com.google.gwt.user.client.Timer;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
-import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
-import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
@@ -34,6 +31,7 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static io.deephaven.web.client.api.QueryConnectable.EVENT_TABLE_OPENED;
@@ -93,23 +91,40 @@ public class IdeSession extends HasEventHandling {
         };
     }
 
-    public Promise<JsTable> getTable(String id) {
-        JsVariableDefinition varDef = new JsVariableDefinition(JsVariableChanges.TABLE, "", id, "");
-        final Promise<JsTable> table = connection.getTable(varDef);
-        final CustomEventInit event = CustomEventInit.create();
-        event.setDetail(table);
-        fireEvent(EVENT_TABLE_OPENED, event);
-        return table;
+    public Promise<JsTable> getTable(String name) {
+        return getVariableDefinition(name, JsVariableChanges.TABLE).then(varDef -> {
+            final Promise<JsTable> table = connection.getTable(varDef);
+            final CustomEventInit event = CustomEventInit.create();
+            event.setDetail(table);
+            fireEvent(EVENT_TABLE_OPENED, event);
+            return table;
+        });
     }
 
-    public Promise<JsFigure> getFigure(String id) {
-        JsVariableDefinition varDef = new JsVariableDefinition(JsVariableChanges.FIGURE, "", id, "");
-        return connection.getFigure(varDef);
+    public Promise<JsFigure> getFigure(String name) {
+        return getVariableDefinition(name, JsVariableChanges.FIGURE).then(connection::getFigure);
     }
 
-    public Promise<Object> getObject(Object definitionObject) {
-        JsVariableDefinition definition = JsVariableDefinition.from(definitionObject);
-        return connection.getObject(definition);
+    public Promise<Object> getObject(JsPropertyMap<Object> definitionObject) {
+        if (!definitionObject.has("type")) {
+            throw new IllegalArgumentException("no type field; could not getObject");
+        }
+        String type = definitionObject.getAny("type").asString();
+
+        boolean hasName = definitionObject.has("name");
+        boolean hasId = definitionObject.has("id");
+        if (hasName && hasId) {
+            throw new IllegalArgumentException("has both name and id field; could not getObject");
+        } else if (hasName) {
+            String name = definitionObject.getAny("name").asString();
+            return getVariableDefinition(name, type)
+                    .then(connection::getObject);
+        } else if (hasId) {
+            String id = definitionObject.getAny("id").asString();
+            return connection.getObject(new JsVariableDefinition(type, null, id, null));
+        } else {
+            throw new IllegalArgumentException("no name/id field; could not construct getObject");
+        }
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
@@ -144,6 +159,46 @@ public class IdeSession extends HasEventHandling {
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
         return connection.subscribeToFieldUpdates(callback);
+    }
+
+    private Promise<JsVariableDefinition> getVariableDefinition(String name, String type) {
+        LazyPromise<JsVariableDefinition> promise = new LazyPromise<>();
+
+        final class Listener implements Consumer<JsVariableChanges> {
+            final JsRunnable subscription;
+
+            Listener() {
+                subscription = subscribeToFieldUpdates(this::accept);
+            }
+
+            @Override
+            public void accept(JsVariableChanges changes) {
+                JsVariableDefinition foundField = changes.getCreated()
+                        .find((field, p1, p2) -> field.getTitle().equals(name) && field.getType().equals(type));
+
+                if (foundField == null) {
+                    foundField = changes.getUpdated().find((field, p1, p2) -> field.getTitle().equals(name)
+                            && field.getType().equals(type));
+                }
+
+                if (foundField != null) {
+                    subscription.run();
+                    promise.succeed(foundField);
+                }
+            }
+        }
+
+        Listener listener = new Listener();
+
+        return promise
+                .timeout(10_000)
+                .asPromise()
+                .then(Promise::resolve, fail -> {
+                    listener.subscription.run();
+                    // noinspection unchecked, rawtypes
+                    return (Promise<JsVariableDefinition>) (Promise) Promise
+                            .reject(fail);
+                });
     }
 
     public void close() {

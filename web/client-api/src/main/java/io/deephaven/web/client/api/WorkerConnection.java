@@ -624,13 +624,18 @@ public class WorkerConnection {
                     knownFields.put(result.getId(), result);
                 }
 
-                notifyFieldsChangeListeners(new JsVariableChanges(created, updated, removed));
+                // Ensure that if a new subscription is in line to receive its initial update, we need to defer
+                // the updates until after it receives its initial state.
+                LazyPromise
+                        .runLater(() -> notifyFieldsChangeListeners(new JsVariableChanges(created, updated, removed)));
             });
             fieldsChangeUpdateStream.onEnd(this::checkStatus);
         } else {
             final JsVariableDefinition[] empty = new JsVariableDefinition[0];
             final JsVariableChanges update = new JsVariableChanges(knownFields.values().toArray(empty), empty, empty);
-            callback.apply(update);
+            LazyPromise.runLater(() -> {
+                callback.apply(update);
+            });
         }
         return () -> {
             fieldUpdatesCallback.delete(callback);

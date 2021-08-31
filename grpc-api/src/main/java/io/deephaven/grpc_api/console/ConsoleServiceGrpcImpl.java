@@ -13,6 +13,7 @@ import io.deephaven.db.util.ExportedObjectType;
 import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.VariableProvider;
+import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.figures.FigureWidgetTranslator;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
@@ -230,7 +231,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         exportedConsole != null ? exportedConsole.get() : globalSessionProvider.getGlobalSession();
                 Table table = exportedTable.get();
                 scriptSession.setVariable(request.getVariableName(), table);
-                scriptSession.manage(table);
+                if (DynamicNode.notDynamicOrIsRefreshing(table)) {
+                    scriptSession.manage(table);
+                }
                 responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
                 responseObserver.onCompleted();
             });

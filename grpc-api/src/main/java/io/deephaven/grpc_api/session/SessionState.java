@@ -523,7 +523,7 @@ public class SessionState {
             this.dependentCount = 0;
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
-            if (result instanceof LivenessReferent) {
+            if (result instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(result)) {
                 manage((LivenessReferent) result);
             }
         }
@@ -575,12 +575,6 @@ public class SessionState {
             if (isExportStateTerminal(this.state)) {
                 // nothing to do because dependency already failed; hooray??
                 return;
-            }
-
-            if (isNonExport()) {
-                // exports are retained via the exportMap; non-exports need to be retained while their work is
-                // outstanding
-                retainReference();
             }
 
             this.exportMain = exportMain;
@@ -826,11 +820,6 @@ public class SessionState {
                     setResult(capturedExport.call());
                 } finally {
                     shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
-
-                    if (isNonExport()) {
-                        // we force non-exports to remain live until they are resolved
-                        dropReference();
-                    }
                 }
             } catch (final Exception err) {
                 exception = err;
