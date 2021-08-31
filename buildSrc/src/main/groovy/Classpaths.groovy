@@ -26,10 +26,9 @@ class Classpaths {
 
     static final String JAVA_PARSER_GROUP = 'com.github.javaparser'
     static final String JAVA_PARSER_NAME = 'javaparser-core'
-    static final String JAVA_PARSER_VERSION = '2.0.0'
-    // TODO: upgrade to 3.6.23 / latest, so we can use the "most of the work's already done" symbol solver IDS-1517-20
+    static final String JAVA_PARSER_VERSION = '3.23.0'
+    // TODO (core#1163): take advantage of symbol-solver-core
 //    static final String JAVA_PARSER_NAME = 'javaparser-symbol-solver-core'
-//    static final String JAVA_PARSER_VERSION = '3.6.23'
 
     static final String JAVAX_ANNOTATIONS_GROUP = 'javax.validation'
     static final String JAVAX_ANNOTATIONS_NAME = 'validation-api'
@@ -77,8 +76,6 @@ class Classpaths {
 
     static void inheritJavaParser(Project p, String name = JAVA_PARSER_NAME) {
         Configuration compile = compile p
-        // Hm.... how to reconcile?  :DB uses version 2.0.0, we want 3.6.23
-        // For now, we'll stick to 2.0.0
         addDependency compile, JAVA_PARSER_GROUP, name, JAVA_PARSER_VERSION
     }
 

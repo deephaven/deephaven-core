@@ -7,6 +7,7 @@ import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import scala.Option;
 import scala.collection.JavaConverters;
@@ -117,6 +118,7 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
         return new QueryScope.SynchronizedScriptSessionImpl(this);
     }
 
+    @NotNull
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         Option<Object> value = interpreter.valueOfTerm(name);
@@ -189,15 +191,16 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
     }
 
     @Override
-    public void setVariable(String name, Object value) {
-        super.setVariable(name, value);
-        if (value == null) {
+    public void setVariable(String name, @Nullable Object newValue) {
+        final Object oldValue = getVariable(name, null);
+        if (newValue == null) {
             interpreter.beQuietDuring(
                     () -> interpreter.bind(new NamedParamClass(name, Object.class.getCanonicalName(), null)));
         } else {
-            final String type = value.getClass().getCanonicalName();
-            interpreter.beQuietDuring(() -> interpreter.bind(new NamedParamClass(name, type, value)));
+            final String type = newValue.getClass().getCanonicalName();
+            interpreter.beQuietDuring(() -> interpreter.bind(new NamedParamClass(name, type, newValue)));
         }
+        notifyVariableChange(name, oldValue, newValue);
     }
 
     @Override

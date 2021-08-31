@@ -74,8 +74,6 @@ class TestTableTools(unittest.TestCase):
         
         del t
 
-
-
     def testJson(self):
         """
         Check a JSON Kafka subscription creates the right table.

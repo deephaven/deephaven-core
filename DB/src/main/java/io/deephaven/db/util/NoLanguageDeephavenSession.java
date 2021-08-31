@@ -3,6 +3,7 @@ package io.deephaven.db.util;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -37,6 +38,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
         return new QueryScope.SynchronizedScriptSessionImpl(this);
     }
 
+    @NotNull
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         final Object var = variables.get(name);
@@ -80,9 +82,10 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
     }
 
     @Override
-    public void setVariable(String name, Object value) {
-        super.setVariable(name, value);
-        variables.put(name, value);
+    public void setVariable(String name, @Nullable Object newValue) {
+        Object oldValue = getVariable(name, null);
+        variables.put(name, newValue);
+        notifyVariableChange(name, oldValue, newValue);
     }
 
     @Override
