@@ -35,7 +35,8 @@ public interface Session extends AutoCloseable, TableHandleManager {
      * Creates a new console session of script type {@code type}.
      *
      * <p>
-     * Note: the server does not currently support independent console sessions.
+     * Note: the server does not currently support independent console sessions. See
+     * <a href="https://github.com/deephaven/deephaven-core/issues/1172">Issue 1172</a>.
      *
      * @param type the script type
      * @return the console session future
