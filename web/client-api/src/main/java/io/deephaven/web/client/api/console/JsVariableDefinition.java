@@ -6,6 +6,8 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 public class JsVariableDefinition {
+    private static final String JS_UNAVAILABLE = "js-constructed-not-available";
+
     private final String type;
     private final String title;
     private final String id;
@@ -13,19 +15,11 @@ public class JsVariableDefinition {
     private final String applicationId;
     private final String applicationName;
 
-    public static JsVariableDefinition from(Object definitionObject) {
-        if (definitionObject instanceof JsVariableDefinition) {
-            return (JsVariableDefinition) definitionObject;
-        } else {
-            return new JsVariableDefinition(Js.asPropertyMap(definitionObject));
-        }
-    }
-
     public JsVariableDefinition(String type, String title, String id, String description) {
         this.type = type;
-        this.title = title;
+        this.title = title == null ? JS_UNAVAILABLE : title;
         this.id = id;
-        this.description = description;
+        this.description = description == null ? JS_UNAVAILABLE : description;
         this.applicationId = "scope";
         this.applicationName = "";
     }
@@ -37,31 +31,6 @@ public class JsVariableDefinition {
         this.description = field.getFieldDescription();
         this.applicationId = field.getApplicationId();
         this.applicationName = field.getApplicationName();
-    }
-
-    public JsVariableDefinition(JsPropertyMap<Object> source) {
-        if (source.has("type")) {
-            this.type = source.getAny("type").asString();
-        } else {
-            throw new IllegalArgumentException("no type field; could not construct JsVariableDefinition");
-        }
-
-        boolean hasName = source.has("name");
-        boolean hasId = source.has("id");
-        if (hasName && hasId) {
-            throw new IllegalArgumentException("has both name and id field; could not construct JsVariableDefinition");
-        } else if (hasName) {
-            this.id = source.getAny("name").asString();
-        } else if (hasId) {
-            this.id = source.getAny("id").asString();
-        } else {
-            throw new IllegalArgumentException("no name/id field; could not construct JsVariableDefinition");
-        }
-
-        this.title = "js-constructed-not-available";
-        this.description = "js-constructed-not-available";
-        this.applicationId = "js-constructed-not-available";
-        this.applicationName = "js-constructed-not-available";
     }
 
     @JsProperty
