@@ -163,7 +163,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
                 .setExportId(ticket).setSize(size);
 
         if (error != null) {
-            update.setUpdateFailureMessage(GrpcUtil.securelyWrapError(log, error).getMessage());
+            update.setUpdateFailureMessage("Table propagation error of type: " + error.getClass().getSimpleName());
         }
 
         try {
