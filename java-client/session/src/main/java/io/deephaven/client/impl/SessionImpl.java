@@ -1,15 +1,23 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
+import io.deephaven.client.impl.script.Changes;
+import io.deephaven.client.impl.script.VariableDefinition;
 import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
+import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
+import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
+import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.grpc.CallCredentials;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -20,12 +28,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.lang.model.SourceVersion;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A {@link Session} implementation that uses {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests}
@@ -35,6 +50,7 @@ import java.util.concurrent.TimeUnit;
  * {@inheritDoc}
  */
 public final class SessionImpl extends SessionBase {
+    private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);
 
     private static final int REFRESH_RETRIES = 5;
 
@@ -157,12 +173,15 @@ public final class SessionImpl extends SessionBase {
     private final SessionServiceStub sessionService;
     private final ConsoleServiceStub consoleService;
     private final Handler handler;
+    private final ExportTicketCreator exportTicketCreator;
     private final ExportStates states;
 
     private volatile AuthenticationInfo auth;
 
     private final boolean delegateToBatch;
     private final boolean mixinStacktrace;
+    private final Duration executeTimeout;
+    private final Duration closeTimeout;
     private final TableHandleManagerSerial serialManager;
     private final TableHandleManagerBatch batchManager;
 
@@ -174,10 +193,13 @@ public final class SessionImpl extends SessionBase {
         this.executor = config.executor();
         this.sessionService = config.sessionService().withCallCredentials(credentials);
         this.consoleService = config.consoleService().withCallCredentials(credentials);
-        this.states = new ExportStates(this, sessionService,
-                config.tableService().withCallCredentials(credentials));
+        this.exportTicketCreator = new ExportTicketCreator();
+        this.states = new ExportStates(this, sessionService, config.tableService().withCallCredentials(credentials),
+                exportTicketCreator);
         this.delegateToBatch = config.delegateToBatch();
         this.mixinStacktrace = config.mixinStacktrace();
+        this.executeTimeout = config.executeTimeout();
+        this.closeTimeout = config.closeTimeout();
         this.serialManager = TableHandleManagerSerial.of(this);
         this.batchManager = TableHandleManagerBatch.of(this, mixinStacktrace);
     }
@@ -189,6 +211,15 @@ public final class SessionImpl extends SessionBase {
     @Override
     public List<Export> export(ExportsRequest request) {
         return states.export(request);
+    }
+
+    @Override
+    public CompletableFuture<? extends ConsoleSession> console(String type) {
+        final StartConsoleRequest request =
+                StartConsoleRequest.newBuilder().setSessionType(type).setResultId(exportTicketCreator.create()).build();
+        final ConsoleHandler handler = new ConsoleHandler(request);
+        consoleService.startConsole(request, handler);
+        return handler.future();
     }
 
     @Override
@@ -204,7 +235,16 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public void close() {
-        closeFuture();
+        try {
+            closeFuture().get(closeTimeout.toNanos(), TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Interrupted waiting for session close");
+        } catch (TimeoutException e) {
+            log.warn("Timed out waiting for session close");
+        } catch (ExecutionException e) {
+            log.error("Exception waiting for session close", e);
+        }
     }
 
     @Override
@@ -356,6 +396,173 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void onCompleted() {
             future.complete(null);
+        }
+    }
+
+    private static class ExecuteCommandHandler implements StreamObserver<ExecuteCommandResponse> {
+
+        private final CompletableFuture<Changes> future = new CompletableFuture<>();
+
+        private static VariableDefinition of(io.deephaven.proto.backplane.script.grpc.VariableDefinition d) {
+            return VariableDefinition.of(d.getType(), d.getTitle());
+        }
+
+        private static Changes of(ExecuteCommandResponse value) {
+            Changes.Builder builder = Changes.builder();
+            if (!value.getErrorMessage().isEmpty()) {
+                builder.errorMessage(value.getErrorMessage());
+            }
+            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getCreatedList()) {
+                builder.addCreated(of(d));
+            }
+            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getUpdatedList()) {
+                builder.addUpdated(of(d));
+            }
+            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getRemovedList()) {
+                builder.addRemoved(of(d));
+            }
+            return builder.build();
+        }
+
+        @Override
+        public void onNext(ExecuteCommandResponse value) {
+            future.complete(of(value));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(new IllegalStateException("ExecuteCommandHandler.onNext not called"));
+            }
+        }
+    }
+
+    private class ConsoleHandler implements StreamObserver<StartConsoleResponse> {
+        private final StartConsoleRequest request;
+        private final CompletableFuture<ConsoleSession> future;
+
+        public ConsoleHandler(StartConsoleRequest request) {
+            this.request = Objects.requireNonNull(request);
+            this.future = new CompletableFuture<>();
+        }
+
+        CompletableFuture<ConsoleSession> future() {
+            return future;
+        }
+
+        @Override
+        public void onNext(StartConsoleResponse response) {
+            future.complete(new ConsoleSessionImpl(request, response));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(new IllegalStateException("ConsoleHandler.onNext not called"));
+            }
+        }
+    }
+
+    private class ConsoleSessionImpl implements ConsoleSession {
+
+        private final StartConsoleRequest request;
+        private final StartConsoleResponse response;
+
+        public ConsoleSessionImpl(StartConsoleRequest request, StartConsoleResponse response) {
+            this.request = Objects.requireNonNull(request);
+            this.response = Objects.requireNonNull(response);
+        }
+
+        @Override
+        public String type() {
+            return request.getSessionType();
+        }
+
+        @Override
+        public Ticket ticket() {
+            return request.getResultId();
+        }
+
+        @Override
+        public Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException {
+            return executeCodeFuture(code).get(executeTimeout.toNanos(), TimeUnit.NANOSECONDS);
+        }
+
+        @Override
+        public Changes executeScript(Path path)
+                throws IOException, InterruptedException, ExecutionException, TimeoutException {
+            return executeScriptFuture(path).get(executeTimeout.toNanos(), TimeUnit.NANOSECONDS);
+        }
+
+        @Override
+        public CompletableFuture<Changes> executeCodeFuture(String code) {
+            final ExecuteCommandRequest request =
+                    ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).build();
+            final ExecuteCommandHandler handler = new ExecuteCommandHandler();
+            consoleService.executeCommand(request, handler);
+            return handler.future;
+        }
+
+        @Override
+        public CompletableFuture<Changes> executeScriptFuture(Path path) throws IOException {
+            final String code = String.join(System.lineSeparator(), Files.readAllLines(path, StandardCharsets.UTF_8));
+            return executeCodeFuture(code);
+        }
+
+        @Override
+        public CompletableFuture<Void> closeFuture() {
+            final ConsoleCloseHandler handler = new ConsoleCloseHandler();
+            sessionService.release(ReleaseRequest.newBuilder().setId(request.getResultId()).build(), handler);
+            return handler.future();
+        }
+
+        @Override
+        public void close() {
+            try {
+                closeFuture().get(closeTimeout.toNanos(), TimeUnit.NANOSECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Interrupted waiting for console close");
+            } catch (TimeoutException e) {
+                log.warn("Timed out waiting for console close");
+            } catch (ExecutionException e) {
+                log.error("Exception waiting for console close", e);
+            }
+        }
+    }
+
+    private static class ConsoleCloseHandler implements StreamObserver<ReleaseResponse> {
+        private final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        CompletableFuture<Void> future() {
+            return future;
+        }
+
+        @Override
+        public void onNext(ReleaseResponse value) {
+            future.complete(null);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(new IllegalStateException("ConsoleCloseHandler.onNext not called"));
+            }
         }
     }
 }

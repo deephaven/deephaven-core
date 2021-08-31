@@ -3,16 +3,15 @@ package io.deephaven.client.examples;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
 import io.deephaven.client.impl.Session;
-import io.deephaven.client.impl.SessionFactory;
 import io.deephaven.client.impl.SessionImpl;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.qst.LabeledValue;
 import io.deephaven.qst.LabeledValues;
-import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.TableCreationLabeledLogic;
 import io.deephaven.qst.TableCreationLogic;
+import io.deephaven.qst.TableCreator;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -20,11 +19,10 @@ import picocli.CommandLine.Option;
 
 import java.time.Duration;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 @Command(name = "table-manager", mixinStandardHelpOptions = true,
         description = "Table Manager example code", version = "0.1.0")
-class TableManagerExample extends SessionExampleBase {
+class TableManagerExample extends SingleSessionExampleBase {
 
     static class Mode {
         @Option(names = {"-b", "--batch"}, required = true, description = "Batch mode")
@@ -143,20 +141,15 @@ class TableManagerExample extends SessionExampleBase {
 
 
     @Override
-    protected void execute(SessionFactory factory) throws Exception {
+    protected void execute(Session session) throws Exception {
         showExpectations();
-        final Session session = factory.newSession();
-        try {
-            final TableHandleManager manager = manager(session);
-            if (oneStage) {
-                executeOneStage(manager);
-            } else {
-                executeFourStages(session, manager);
-            }
-            System.out.printf("Sent %d messages%n", ((SessionImpl) session).batchCount());
-        } finally {
-            session.closeFuture().get(5, TimeUnit.SECONDS);
+        final TableHandleManager manager = manager(session);
+        if (oneStage) {
+            executeOneStage(manager);
+        } else {
+            executeFourStages(session, manager);
         }
+        System.out.printf("Sent %d messages%n", ((SessionImpl) session).batchCount());
     }
 
     /**
