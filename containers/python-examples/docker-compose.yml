@@ -40,7 +40,7 @@ services:
   examples:
     image: ghcr.io/deephaven/examples
     volumes:
-      - ./docker/core/data:/data
+      - ./data:/data
 
 volumes:
     web-tmp:
