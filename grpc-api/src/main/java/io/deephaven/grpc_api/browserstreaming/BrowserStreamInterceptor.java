@@ -6,9 +6,6 @@ import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.*;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 /**
  * Interceptor to notice x-deephaven-stream headers in a request and provide them to later parts of BrowserStream
  * tooling so that unary and server-streaming calls can be combined into an emulated bidirectional stream.
@@ -47,7 +44,7 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
         boolean hasHalfClose = headers.containsKey(HALF_CLOSE_HEADER);
         if (ticketInt != null) {
             // ticket was provided, sequence is assumed to be provided as well, otherwise that is an error
-            final Ticket rpcTicket = ExportTicketHelper.exportIdToTicket(Integer.parseInt(ticketInt));
+            final Ticket rpcTicket = ExportTicketHelper.wrapExportIdInTicket(Integer.parseInt(ticketInt));
             StreamData data = new StreamData(rpcTicket, Integer.parseInt(sequenceString), hasHalfClose);
             Context ctx = Context.current().withValue(StreamData.STREAM_DATA_KEY, data);
             return Contexts.interceptCall(ctx, call, headers, next);

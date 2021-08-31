@@ -211,7 +211,7 @@ public class FlightMessageRoundTripTest {
     @Test
     public void testSimpleEmptyTableDoGet() {
         Flight.Ticket simpleTableTicket = ExportTicketHelper.exportIdToArrowTicket(1);
-        currentSession.newExport(simpleTableTicket)
+        currentSession.newExport(simpleTableTicket, "test")
                 .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
         FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()));
@@ -340,7 +340,7 @@ public class FlightMessageRoundTripTest {
         // flight ticket can be resolved).
         final Flight.Ticket ticket = ExportTicketHelper.exportIdToArrowTicket(1);
         final Table table = TableTools.emptyTable(10).update("I = i");
-        currentSession.newExport(ticket).submit(() -> table);
+        currentSession.newExport(ticket, "test").submit(() -> table);
 
         // test fetch info from export ticket
         final FlightInfo info = client.getInfo(FlightDescriptor.path("export", "1"));
@@ -377,7 +377,7 @@ public class FlightMessageRoundTripTest {
     private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException, ExecutionException {
         // bind the table in the session
         Flight.Ticket dhTableTicket = ExportTicketHelper.exportIdToArrowTicket(nextTicket++);
-        currentSession.newExport(dhTableTicket).submit(() -> deephavenTable);
+        currentSession.newExport(dhTableTicket, "test").submit(() -> deephavenTable);
 
         // fetch with DoGet
         FlightStream stream = client.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()));

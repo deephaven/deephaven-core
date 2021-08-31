@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A request to export a {@link #table() table}.
- * 
+ *
  * @see Session#export(ExportsRequest)
  */
 @Immutable
@@ -76,11 +76,11 @@ public abstract class ExportRequest {
         @Override
         public void onNext(ExportedTableCreationResponse response) {
             if (response.getSuccess()) {
-                String reference = ExportTicketHelper.toReadableString(response.getResultId());
+                String reference = ExportTicketHelper.toReadableString(response.getResultId(), "resultId");
                 log.debug("ExportedTableCreationResponse for '{}' was successful", reference);
                 return;
             }
-            String reference = ExportTicketHelper.toReadableString(response.getResultId());
+            String reference = ExportTicketHelper.toReadableString(response.getResultId(), "resultId");
             log.warn("ExportedTableCreationResponse for '{}' was not successful: {}", reference,
                     response.getErrorInfo());
         }

@@ -75,7 +75,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getOptionalSession();
 
-            final SessionState.ExportObject<Flight.FlightInfo> export = ticketRouter.flightInfoFor(session, request);
+            final SessionState.ExportObject<Flight.FlightInfo> export =
+                    ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
                 session.nonExport()
@@ -109,7 +110,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getOptionalSession();
 
-            final SessionState.ExportObject<Flight.FlightInfo> export = ticketRouter.flightInfoFor(session, request);
+            final SessionState.ExportObject<Flight.FlightInfo> export =
+                    ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
                 session.nonExport()
@@ -144,7 +146,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     public void doGetCustom(final Flight.Ticket request, final StreamObserver<InputStream> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            final SessionState.ExportObject<BaseTable> export = ticketRouter.resolve(session, request);
+            final SessionState.ExportObject<BaseTable> export =
+                    ticketRouter.resolve(session, request, "request");
             session.nonExport()
                     .require(export)
                     .onError(responseObserver)

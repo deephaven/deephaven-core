@@ -18,7 +18,6 @@ import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api_client.table.BarrageTable;
-import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
@@ -31,7 +30,6 @@ import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -128,8 +126,8 @@ public class SimpleDeephavenClient {
         return ++nextTableId;
     }
 
-    final Ticket exportTable = ExportTicketHelper.exportIdToTicket(nextExportId());
-    final Ticket putResultTicket = ExportTicketHelper.exportIdToTicket(nextExportId());
+    final Ticket exportTable = ExportTicketHelper.wrapExportIdInTicket(nextExportId());
+    final Ticket putResultTicket = ExportTicketHelper.wrapExportIdInTicket(nextExportId());
 
     BarrageTable resultTable;
     BarrageClientSubscription resultSub;
@@ -171,7 +169,7 @@ public class SimpleDeephavenClient {
                         .build());
 
         flightService.getSchema(
-                ExportTicketHelper.ticketToDescriptor(exportTable),
+                ExportTicketHelper.ticketToDescriptor(exportTable, "exportTable"),
                 new ResponseBuilder<Flight.SchemaResult>()
                         .onError(this::onError)
                         .onNext(this::onSchemaResult)
@@ -218,7 +216,7 @@ public class SimpleDeephavenClient {
         resultTable.listenForUpdates(listener);
 
         resultSub = new BarrageClientSubscription(
-                ExportTicketHelper.toReadableString(exportTable),
+                ExportTicketHelper.toReadableString(exportTable, "exportTable"),
                 serverChannel, BarrageClientSubscription.makeRequest(null, columns),
                 new BarrageStreamReader(), resultTable);
     }
@@ -238,7 +236,8 @@ public class SimpleDeephavenClient {
         final LogEntry entry = log.info().append("Received ExportedTableCreationResponse for {");
 
         if (result.getResultId().hasTicket()) {
-            entry.append("exportId: ").append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket()));
+            entry.append("exportId: ")
+                    .append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket(), "resultId"));
         } else {
             entry.append("batchOffset: ").append(result.getResultId().getBatchOffset());
         }
@@ -270,7 +269,7 @@ public class SimpleDeephavenClient {
 
     private void onExportNotificationMessage(final String prefix, final ExportNotification notification) {
         final LogEntry entry = log.info().append(prefix).append("Received ExportNotification: {id: ")
-                .append(ExportTicketHelper.ticketToExportId(notification.getTicket()))
+                .append(ExportTicketHelper.ticketToExportId(notification.getTicket(), "ticket"))
                 .append(", state: ").append(notification.getExportState().toString());
 
         if (!notification.getContext().isEmpty()) {
@@ -286,7 +285,7 @@ public class SimpleDeephavenClient {
         log.info().append("Received ExportedTableUpdatedMessage:").endl();
 
         final LogEntry entry = log.info().append("\tid=")
-                .append(ExportTicketHelper.ticketToExportId(msg.getExportId()))
+                .append(ExportTicketHelper.ticketToExportId(msg.getExportId(), "exportId"))
                 .append(" size=").append(msg.getSize());
 
         if (!msg.getUpdateFailureMessage().isEmpty()) {

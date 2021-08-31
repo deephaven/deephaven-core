@@ -107,6 +107,6 @@ public final class Export implements AutoCloseable {
     }
 
     public String toReadableString() {
-        return ExportTicketHelper.toReadableString(state.ticket());
+        return ExportTicketHelper.toReadableString(state.ticket(), "ticket");
     }
 }

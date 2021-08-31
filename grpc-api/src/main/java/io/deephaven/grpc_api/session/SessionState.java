@@ -218,20 +218,22 @@ public class SessionState {
      * Grab the ExportObject for the provided ticket.
      *
      * @param ticket the export ticket
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return a future-like object that represents this export
      */
-    public <T> ExportObject<T> getExport(final Ticket ticket) {
-        return getExport(ExportTicketHelper.ticketToExportId(ticket));
+    public <T> ExportObject<T> getExport(final Ticket ticket, final String logId) {
+        return getExport(ExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     /**
      * Grab the ExportObject for the provided ticket.
      *
      * @param ticket the export ticket
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return a future-like object that represents this export
      */
-    public <T> ExportObject<T> getExport(final Flight.Ticket ticket) {
-        return getExport(ExportTicketHelper.ticketToExportId(ticket));
+    public <T> ExportObject<T> getExport(final Flight.Ticket ticket, final String logId) {
+        return getExport(ExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     /**
@@ -282,11 +284,11 @@ public class SessionState {
      * Grab the ExportObject for the provided id if it already exists, otherwise return null.
      *
      * @param ticket the export ticket
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return a future-like object that represents this export
      */
-    @SuppressWarnings("unchecked")
-    public <T> ExportObject<T> getExportIfExists(final Ticket ticket) {
-        return getExportIfExists(ExportTicketHelper.ticketToExportId(ticket));
+    public <T> ExportObject<T> getExportIfExists(final Ticket ticket, final String logId) {
+        return getExportIfExists(ExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     /**
@@ -314,22 +316,24 @@ public class SessionState {
      * Create an ExportBuilder to create the export after dependencies are satisfied.
      *
      * @param ticket the grpc {@link Flight.Ticket} for this export
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @param <T> the export type that the callable will return
      * @return an export builder
      */
-    public <T> ExportBuilder<T> newExport(final Flight.Ticket ticket) {
-        return newExport(ExportTicketHelper.ticketToExportId(ticket));
+    public <T> ExportBuilder<T> newExport(final Flight.Ticket ticket, final String logId) {
+        return newExport(ExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     /**
      * Create an ExportBuilder to create the export after dependencies are satisfied.
      *
      * @param ticket the grpc {@link Ticket} for this export
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @param <T> the export type that the callable will return
      * @return an export builder
      */
-    public <T> ExportBuilder<T> newExport(final Ticket ticket) {
-        return newExport(ExportTicketHelper.ticketToExportId(ticket));
+    public <T> ExportBuilder<T> newExport(final Ticket ticket, final String logId) {
+        return newExport(ExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     /**
@@ -652,7 +656,7 @@ public class SessionState {
          *         anything and is considered an invalid ticket
          */
         public Ticket getExportId() {
-            return ExportTicketHelper.exportIdToTicket(exportId);
+            return ExportTicketHelper.wrapExportIdInTicket(exportId);
         }
 
         /**
@@ -941,7 +945,7 @@ public class SessionState {
          */
         private synchronized ExportNotification makeExportNotification() {
             final ExportNotification.Builder builder = ExportNotification.newBuilder()
-                    .setTicket(ExportTicketHelper.exportIdToTicket(exportId))
+                    .setTicket(ExportTicketHelper.wrapExportIdInTicket(exportId))
                     .setExportState(state);
 
             if (errorId != null) {
@@ -1071,7 +1075,7 @@ public class SessionState {
 
             // notify that the refresh has completed
             notify(ExportNotification.newBuilder()
-                    .setTicket(ExportTicketHelper.exportIdToTicket(NON_EXPORT_ID))
+                    .setTicket(ExportTicketHelper.wrapExportIdInTicket(NON_EXPORT_ID))
                     .setExportState(ExportNotification.State.EXPORTED)
                     .setContext("refresh is complete")
                     .build());

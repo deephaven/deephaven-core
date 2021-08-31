@@ -272,7 +272,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
                 switch (ref.getRefCase()) {
                     case TICKET:
-                        return ticketRouter.resolve(session, ref.getTicket());
+                        return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
                     case BATCH_OFFSET:
                         final int offset = ref.getBatchOffset();
                         if (offset < 0 || offset >= exportBuilders.size()) {
@@ -300,7 +300,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 if (exportId == SessionState.NON_EXPORT_ID) {
                     resultId = TableReference.newBuilder().setBatchOffset(i).build();
                 } else {
-                    resultId = TableReference.newBuilder().setTicket(ExportTicketHelper.exportIdToTicket(exportId))
+                    resultId = TableReference.newBuilder().setTicket(ExportTicketHelper.wrapExportIdInTicket(exportId))
                             .build();
                 }
 
@@ -337,9 +337,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final SessionState session = sessionService.getCurrentSession();
             final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
             session.addExportListener(listener);
-            ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(() -> {
-                session.removeExportListener(listener);
-            });
+            ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
+                    () -> session.removeExportListener(listener));
         });
     }
 
@@ -349,7 +348,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
-            final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request);
+            if (request.getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No request ticket supplied");
+            }
+
+            final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
 
             session.nonExport()
                     .require(export)
@@ -396,14 +399,18 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             operation.validateRequest(request);
 
             final Ticket resultId = operation.getResultTicket(request);
+            if (resultId.getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No result ticket supplied");
+            }
+
             final TableReference resultRef = TableReference.newBuilder().setTicket(resultId).build();
 
             final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
                     .map(TableReference::getTicket)
-                    .map((ticket) -> ticketRouter.<Table>resolve(session, ticket))
+                    .map((ticket) -> ticketRouter.<Table>resolve(session, ticket, "sourceId"))
                     .collect(Collectors.toList());
 
-            session.newExport(resultId)
+            session.newExport(resultId, "resultId")
                     .require(dependencies)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -428,7 +435,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             operation = getOp(op.getOpCase()); // get operation from op code
             request = operation.getRequestFromOperation(op);
             final Ticket resultId = operation.getResultTicket(request);
-            exportBuilder = resultId.getTicket().size() == 0 ? session.nonExport() : session.newExport(resultId);
+            exportBuilder =
+                    resultId.getTicket().isEmpty() ? session.nonExport() : session.newExport(resultId, "resultId");
         }
 
         void resolveDependencies(final Function<TableReference, SessionState.ExportObject<Table>> resolveReference) {

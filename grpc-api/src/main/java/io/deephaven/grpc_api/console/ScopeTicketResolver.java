@@ -41,29 +41,29 @@ public class ScopeTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public String getLogNameFor(ByteBuffer ticket) {
-        return FLIGHT_DESCRIPTOR_ROUTE + "/" + nameForTicket(ticket);
+    public String getLogNameFor(final ByteBuffer ticket, final String logId) {
+        return FLIGHT_DESCRIPTOR_ROUTE + "/" + nameForTicket(ticket, logId);
     }
 
     @Override
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
-            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor) {
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         // there is no mechanism to wait for a scope variable to resolve; require that the scope variable exists now
-        final String scopeName = nameForDescriptor(descriptor);
+        final String scopeName = nameForDescriptor(descriptor, logId);
 
         final Flight.FlightInfo flightInfo = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> {
             final ScriptSession gss = globalSessionProvider.getGlobalSession();
-            Object scopeVar = gss.getVariable(scopeName);
+            Object scopeVar = gss.getVariable(scopeName, null);
             if (scopeVar == null) {
                 throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                        "Could not resolve: no variable exists with name '" + scopeName + "'");
+                        "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
             }
             if (scopeVar instanceof Table) {
                 return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, flightTicketForName(scopeName));
             }
 
             throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                    "Could not resolve: no variable exists with name '" + scopeName + "'");
+                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
         });
 
         return SessionState.wrapAsExport(flightInfo);
@@ -80,17 +80,19 @@ public class ScopeTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session, final ByteBuffer ticket) {
-        return resolve(session, nameForTicket(ticket));
+    public <T> SessionState.ExportObject<T> resolve(
+            @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
+        return resolve(session, nameForTicket(ticket, logId), logId);
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session,
-            final Flight.FlightDescriptor descriptor) {
-        return resolve(session, nameForDescriptor(descriptor));
+    public <T> SessionState.ExportObject<T> resolve(
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+        return resolve(session, nameForDescriptor(descriptor, logId), logId);
     }
 
-    private <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session, final String scopeName) {
+    private <T> SessionState.ExportObject<T> resolve(
+            @Nullable final SessionState session, final String scopeName, final String logId) {
         // if we are not attached to a session, check the scope for a variable right now
         final T export = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> {
             final ScriptSession gss = globalSessionProvider.getGlobalSession();
@@ -98,30 +100,32 @@ public class ScopeTicketResolver extends TicketResolverBase {
             T scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
             if (scopeVar == null) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Could not resolve: no variable exists with name '" + scopeName + "'");
+                        "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
             }
             return scopeVar;
         });
 
         if (export == null) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve: no variable exists with name '" + scopeName + "'");
+                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
         }
         return SessionState.wrapAsExport(export);
     }
 
     @Override
-    public <T> SessionState.ExportBuilder<T> publish(final SessionState session, final ByteBuffer ticket) {
-        return publish(session, nameForTicket(ticket));
+    public <T> SessionState.ExportBuilder<T> publish(
+            final SessionState session, final ByteBuffer ticket, final String logId) {
+        return publish(session, nameForTicket(ticket, logId), logId);
     }
 
     @Override
-    public <T> SessionState.ExportBuilder<T> publish(final SessionState session,
-            final Flight.FlightDescriptor descriptor) {
-        return publish(session, nameForDescriptor(descriptor));
+    public <T> SessionState.ExportBuilder<T> publish(
+            final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+        return publish(session, nameForDescriptor(descriptor, logId), logId);
     }
 
-    private <T> SessionState.ExportBuilder<T> publish(final SessionState session, final String varName) {
+    private <T> SessionState.ExportBuilder<T> publish(
+            final SessionState session, final String varName, final String logId) {
         // We publish to the query scope after the client finishes publishing their result. We accomplish this by
         // directly depending on the result of this export builder.
         final SessionState.ExportBuilder<T> resultBuilder = session.nonExport();
@@ -183,16 +187,18 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * Convenience method to convert from a Flight.Ticket (as ByteBuffer) to scope variable name
      *
      * @param ticket the ticket to convert
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return the query scope name this ticket represents
      */
-    public static String nameForTicket(final ByteBuffer ticket) {
-        if (ticket == null) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket not supplied");
+    public static String nameForTicket(final ByteBuffer ticket, final String logId) {
+        if (ticket == null || ticket.remaining() == 0) {
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': no ticket supplied");
         }
         if (ticket.remaining() < 3 || ticket.get(ticket.position()) != TICKET_PREFIX
                 || ticket.get(ticket.position() + 1) != '/') {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + "' (hex)");
+                    "Could not resolve '" + logId + "': found 0x" + byteBufToHex(ticket) + "' (hex)");
         }
 
         final int initialLimit = ticket.limit();
@@ -203,7 +209,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             return decoder.decode(ticket).toString();
         } catch (CharacterCodingException e) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Cannot parse ticket: failed to decode: " + e.getMessage());
+                    "Could not resolve '" + logId + "': failed to decode: " + e.getMessage());
         } finally {
             ticket.position(initialPosition);
             ticket.limit(initialLimit);
@@ -214,15 +220,17 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * Convenience method to convert from a Flight.FlightDescriptor to scoped Variable Name
      *
      * @param descriptor the descriptor to convert
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return the query scope name this descriptor represents
      */
-    public static String nameForDescriptor(final Flight.FlightDescriptor descriptor) {
+    public static String nameForDescriptor(final Flight.FlightDescriptor descriptor, final String logId) {
         if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse descriptor: not a path");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve descriptor '" + logId + "': only paths are supported");
         }
         if (descriptor.getPathCount() != 2) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Cannot parse descriptor: unexpected path length (found: "
+                    "Could not resolve descriptor '" + logId + "': unexpected path length (found: "
                             + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
         }
 
@@ -233,19 +241,21 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * Convenience method to convert from a Flight.Ticket to a Flight.FlightDescriptor.
      *
      * @param ticket the ticket to convert
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return a flight descriptor that represents the ticket
      */
-    public static Flight.FlightDescriptor ticketToDescriptor(final Flight.Ticket ticket) {
-        return descriptorForName(nameForTicket(ticket.getTicket().asReadOnlyByteBuffer()));
+    public static Flight.FlightDescriptor ticketToDescriptor(final Flight.Ticket ticket, final String logId) {
+        return descriptorForName(nameForTicket(ticket.getTicket().asReadOnlyByteBuffer(), logId));
     }
 
     /**
      * Convenience method to convert from a Flight.Descriptor to a Flight.Ticket.
      *
      * @param descriptor the descriptor to convert
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return a flight ticket that represents the descriptor
      */
-    public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor) {
-        return flightTicketForName(nameForDescriptor(descriptor));
+    public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor, final String logId) {
+        return flightTicketForName(nameForDescriptor(descriptor, logId));
     }
 }

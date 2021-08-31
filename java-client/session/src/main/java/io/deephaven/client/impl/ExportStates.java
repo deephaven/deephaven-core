@@ -291,7 +291,7 @@ final class ExportStates {
         @Override
         public void onError(Throwable t) {
             log.error(String.format("onError releasing ticket '%s'",
-                    ExportTicketHelper.toReadableString(ticket)), t);
+                    ExportTicketHelper.toReadableString(ticket, "ticket")), t);
         }
 
         @Override

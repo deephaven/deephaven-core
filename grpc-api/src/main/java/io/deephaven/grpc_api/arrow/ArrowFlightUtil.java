@@ -185,7 +185,7 @@ public class ArrowFlightUtil {
                                 "Only one descriptor definition allowed");
                     }
                     resultExportBuilder = ticketRouter
-                            .<Table>publish(session, mi.descriptor)
+                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
                             .onError(observer);
                     manage(resultExportBuilder.getExport());
                 }
@@ -428,7 +428,7 @@ public class ArrowFlightUtil {
                     preExportSubscriptions = new ArrayDeque<>();
                     preExportSubscriptions.add(subscriptionRequest);
                     final SessionState.ExportObject<Object> parent =
-                            ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer());
+                            ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "ticket");
 
                     onExportResolvedContinuation = session.nonExport()
                             .require(parent)
@@ -462,7 +462,7 @@ public class ArrowFlightUtil {
                 }
             } else {
                 GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
-                        + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer())
+                        + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer(), "ticket")
                         + ") is not a subscribable table.");
                 return;
             }
@@ -491,7 +491,7 @@ public class ArrowFlightUtil {
 
         /**
          * Update the existing subscription to match the new request.
-         * 
+         *
          * @param subscriptionRequest the requested view change
          */
         private void apply(final BarrageSubscriptionRequest subscriptionRequest) {
