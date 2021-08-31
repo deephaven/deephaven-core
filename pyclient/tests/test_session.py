@@ -30,7 +30,7 @@ class SessionTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             session = Session(port=80)
 
-    @unittest.skipIf(True, "don't want to wait until timeout is changeable.")
+    @unittest.skip("don't want to wait until timeout is changeable.")
     def test_never_timeout(self):
         session = Session()
         for _ in range(2):
@@ -92,6 +92,7 @@ class SessionTestCase(BaseTestCase):
         df = pa_table2.to_pandas()
         self.assertEquals(1000, len(df.index))
 
+    @unittest.skip("GH ticket filed.")
     def test_import_table_time64(self):
         pa_array = pa.array([1, 2], type=pa.time64('ns'))
         pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
@@ -100,6 +101,7 @@ class SessionTestCase(BaseTestCase):
         pa_table2 = new_table.snapshot()
         self.assertEqual(pa_table, pa_table2)
 
+    @unittest.skip("GH ticket filed.")
     def test_import_table_ints(self):
         types = [pa.int8(), pa.int16(), pa.int32(), pa.int64()]
         exception_list = []
@@ -116,6 +118,7 @@ class SessionTestCase(BaseTestCase):
 
         self.assertEqual(0, len(exception_list))
 
+    @unittest.skip("GH ticket filed.")
     def test_import_table_unsigned_ints(self):
         types = [pa.uint16()]
         exception_list = []
@@ -165,6 +168,7 @@ class SessionTestCase(BaseTestCase):
 
         self.assertEqual(0, len(exception_list))
 
+    @unittest.skip("GH ticket filed.")
     def test_import_table_dates(self):
         types = [pa.date32(), pa.date64()]
         exception_list = []

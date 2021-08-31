@@ -30,4 +30,5 @@ from .constants import SortDirection, MatchRule
 from ._table_interface import TableInterface
 from .query import Query
 
+__vesion__ = "0.4.0"
 __all__ = ["Session", "Table", "Query", "TableInterface", "ComboAggregation", "DHError", "SortDirection", "MatchRule"]
