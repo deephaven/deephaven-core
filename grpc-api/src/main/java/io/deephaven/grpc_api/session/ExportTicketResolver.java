@@ -61,7 +61,7 @@ public class ExportTicketResolver extends TicketResolverBase {
             @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
         if (session == null) {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
-                    "Could not resolve '" + logId + "': no exports can exist without a session to search");
+                    "Could not resolve '" + logId + "': no exports can exist without an active session");
         }
 
         return session.getExport(ExportTicketHelper.ticketToExportId(ticket, logId));
