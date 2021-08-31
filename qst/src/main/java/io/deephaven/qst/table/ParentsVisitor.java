@@ -254,6 +254,11 @@ public class ParentsVisitor implements Visitor {
         out = single(aggregationTable);
     }
 
+    @Override
+    public void visit(TicketTable ticketTable) {
+        out = none();
+    }
+
     private static class Search {
 
         private final Predicate<TableSpec> excludePaths;

@@ -5,6 +5,7 @@ import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
 import java.time.Duration;
@@ -76,6 +77,14 @@ public interface TableCreator<TABLE> {
      * @return the time table
      */
     TABLE of(TimeTable timeTable);
+
+    /**
+     * Creates a ticket table.
+     *
+     * @param ticketTable the ticket table
+     * @return the ticket table
+     */
+    TABLE of(TicketTable ticketTable);
 
     /**
      * Merges the given {@code tables}.
@@ -221,6 +230,28 @@ public interface TableCreator<TABLE> {
      */
     default TABLE merge(TABLE[] tables) {
         return merge(Arrays.asList(tables));
+    }
+
+    /**
+     * Equivalent to {@code of(TicketTable.of(ticket))}.
+     *
+     * @param ticket the ticket string
+     * @return the ticket table
+     * @see TicketTable#of(String)
+     */
+    default TABLE ticket(String ticket) {
+        return of(TicketTable.of(ticket));
+    }
+
+    /**
+     * Equivalent to {@code of(TicketTable.of(ticket))}.
+     *
+     * @param ticket the ticket
+     * @return the ticket table
+     * @see TicketTable#of(byte[])
+     */
+    default TABLE ticket(byte[] ticket) {
+        return of(TicketTable.of(ticket));
     }
 
     /**

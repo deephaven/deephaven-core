@@ -17,6 +17,7 @@ import io.deephaven.qst.table.SelectableTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableVisitorGeneric;
 import io.deephaven.qst.table.TailTable;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
@@ -143,6 +144,11 @@ public class LabelBuilder extends TableVisitorGeneric {
         sb.append("by([");
         append(Strings::of, aggregationTable.columns(), sb);
         sb.append("],[ todo ])");
+    }
+
+    @Override
+    public void visit(TicketTable ticketTable) {
+        sb.append("ticketTable(...)");
     }
 
     private void join(String name, Join j) {
