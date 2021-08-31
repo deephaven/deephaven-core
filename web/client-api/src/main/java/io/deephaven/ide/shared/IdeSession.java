@@ -191,7 +191,7 @@ public class IdeSession extends HasEventHandling {
         Listener listener = new Listener();
 
         return promise
-                .timeout(10000)
+                .timeout(10_000)
                 .asPromise()
                 .then(Promise::resolve, fail -> {
                     listener.subscription.run();
