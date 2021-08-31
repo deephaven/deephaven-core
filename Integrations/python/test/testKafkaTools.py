@@ -26,10 +26,6 @@ class TestTableTools(unittest.TestCase):
     Test cases for the deephaven.KafkaTools module (performed locally) -
     """
 
-    @classmethod
-    def setUpClass(self):
-        kt._defineSymbols()
-
     def _assertCommonCols(self, cols):
         self.assertEquals("KafkaPartition", cols[0].getName())
         self.assertEquals(dh.int_.clazz(), cols[0].getDataType())
@@ -64,15 +60,13 @@ class TestTableTools(unittest.TestCase):
             'orders',
             key = kt.IGNORE,
             value = kt.simple('Price', dh.double))
-        self.assertIsNotNone(t)
 
         cols = t.getDefinition().getColumns()
         self.assertEquals(4, len(cols))
         self._assertCommonCols(cols)
         self.assertEquals("Price", cols[3].getName())
         self.assertEquals(dh.double.clazz(), cols[3].getDataType())
-        
-        del t
+
 
     def testJson(self):
         """
@@ -96,7 +90,6 @@ class TestTableTools(unittest.TestCase):
             ),
             table_type = 'append'
         )
-        self.assertIsNotNone(t)
 
         cols = t.getDefinition().getColumns()
         self.assertEquals(7, len(cols))
@@ -110,8 +103,7 @@ class TestTableTools(unittest.TestCase):
         self.assertEquals(dh.double.clazz(), cols[5].getDataType())
         self.assertEquals("Qty", cols[6].getName())
         self.assertEquals(dh.int_.clazz(), cols[6].getDataType())
-        
-        del t
+
 
     def testAvro(self):
         """
@@ -148,8 +140,6 @@ class TestTableTools(unittest.TestCase):
             table_type='append'
         )
 
-        self.assertIsNotNone(t)
-
         cols = t.getDefinition().getColumns()
         self.assertEquals(7, len(cols))
         self._assertCommonCols(cols)
@@ -163,4 +153,3 @@ class TestTableTools(unittest.TestCase):
         self.assertEquals("Price", cols[6].getName())
         self.assertEquals(dh.double.clazz(), cols[6].getDataType())
         
-        del t
