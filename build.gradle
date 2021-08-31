@@ -13,6 +13,9 @@ plugins {
   id "com.github.hierynomus.license" version "0.14.0" apply false
   id "com.google.protobuf" version "0.8.10" apply false
   id 'com.diffplug.spotless' version '5.14.2' apply false
+
+  id 'io.deephaven.java-conventions' apply false
+  id 'io.deephaven.java-publishing-conventions' apply false
 }
 
 import io.deephaven.tools.Java
@@ -137,10 +140,12 @@ allprojects*.tasks*.withType(JavaCompile)*.configureEach {
 
 subprojects {
     Project p ->
-    p.group = 'dh'
+    p.group = 'io.deephaven'
     p.version = globalVersion
     p.plugins.apply('io.deephaven.java-conventions')
-    License.createFrom(p).register()
+    def license = License.createFrom(p)
+    license.register()
+    p.ext.license = license
 }
 
 

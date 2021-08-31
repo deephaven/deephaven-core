@@ -2,9 +2,12 @@ plugins {
   id 'java-library'
 }
 
+description = 'The Deephaven client session library'
+
 dependencies {
   api project(':qst')
-  api project(':proto:proto-backplane-grpc-util')
+  api project(':proto:proto-backplane-grpc')
+  implementation project(':proto:proto-backplane-grpc-util')
 
   annotationProcessor 'org.immutables:value:2.8.1'
   compileOnly project(':util-immutables')
@@ -27,3 +30,5 @@ dependencies {
 test {
   useJUnitPlatform()
 }
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

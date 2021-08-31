@@ -4,6 +4,8 @@ plugins {
 
 evaluationDependsOn ':protoc'
 
+description = 'The Deephaven proto-backplane-grpc'
+
 configurations.create('download')
 configurations.download.transitive=false
 
@@ -56,3 +58,5 @@ spotless {
     )
   }
 }
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

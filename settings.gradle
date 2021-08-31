@@ -141,23 +141,23 @@ include(':envoy')
 
 include(':grpc-proxy')
 
-include(':java-client-session')
-project(':java-client-session').projectDir = file('java-client/session')
+include(':client-session')
+project(':client-session').projectDir = file('java-client/session')
 
-include(':java-client-flight')
-project(':java-client-flight').projectDir = file('java-client/flight')
+include(':client-flight')
+project(':client-flight').projectDir = file('java-client/flight')
 
-include(':java-client-session-dagger')
-project(':java-client-session-dagger').projectDir = file('java-client/session-dagger')
+include(':client-session-dagger')
+project(':client-session-dagger').projectDir = file('java-client/session-dagger')
 
-include(':java-client-flight-dagger')
-project(':java-client-flight-dagger').projectDir = file('java-client/flight-dagger')
+include(':client-flight-dagger')
+project(':client-flight-dagger').projectDir = file('java-client/flight-dagger')
 
-include(':java-client-session-examples')
-project(':java-client-session-examples').projectDir = file('java-client/session-examples')
+include(':client-session-examples')
+project(':client-session-examples').projectDir = file('java-client/session-examples')
 
-include(':java-client-flight-examples')
-project(':java-client-flight-examples').projectDir = file('java-client/flight-examples')
+include(':client-flight-examples')
+project(':client-flight-examples').projectDir = file('java-client/flight-examples')
 
 include(':qst:graphviz')
 

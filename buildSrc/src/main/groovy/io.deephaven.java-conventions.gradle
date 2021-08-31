@@ -2,6 +2,10 @@ plugins {
   id 'java'
 }
 
+def archivesBaseNamePrefix = 'deephaven-'
+
+archivesBaseName = "${archivesBaseNamePrefix}${project.name}"
+
 java {
   toolchain {
     languageVersion = JavaLanguageVersion.of(8)

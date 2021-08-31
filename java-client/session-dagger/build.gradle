@@ -2,8 +2,10 @@ plugins {
     id 'java-library'
 }
 
+description = 'The Deephaven client session dagger library'
+
 dependencies {
-    api project(':java-client-session')
+    api project(':client-session')
 
     implementation 'com.google.dagger:dagger:2.31.1'
     annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
@@ -16,3 +18,5 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

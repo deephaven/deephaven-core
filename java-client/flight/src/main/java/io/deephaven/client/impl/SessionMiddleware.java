@@ -1,6 +1,5 @@
 package io.deephaven.client.impl;
 
-import dagger.assisted.AssistedFactory;
 import org.apache.arrow.flight.CallInfo;
 import org.apache.arrow.flight.FlightClientMiddleware;
 import org.apache.arrow.flight.FlightClientMiddleware.Factory;

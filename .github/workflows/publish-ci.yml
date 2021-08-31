@@ -1,0 +1,37 @@
+name: Publish CI
+
+on:
+  push:
+    branches: [ 'release/v*' ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
+      - name: Setup JDK
+        id: setup-java
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'zulu'
+          java-version: '8.0.302'
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
+
+      - name: Publish
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: publish
+          arguments: publish
+          gradle-version: wrapper
+        env:
+          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.CI_AT_DEEPHAVEN_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.CI_AT_DEEPHAVEN_PASSWORD }}

@@ -184,7 +184,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
     }
 
     /**
-     * The logically inversion of {@link this}.
+     * The logically inversion of {@code this}.
      *
      * @return the inverted filter
      */

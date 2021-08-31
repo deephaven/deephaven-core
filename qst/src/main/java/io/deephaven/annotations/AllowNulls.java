@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * Annotation to allow nulls in {@link org.immutables.value.Value.Immutable} collections.
  *
- * @see <a href="https://immutables.github.io/immutable.html#nulls-in-collection>nulls-in-collection</a>
+ * @see <a href="https://immutables.github.io/immutable.html#nulls-in-collection">nulls-in-collection</a>
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.METHOD})
