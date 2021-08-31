@@ -9,6 +9,7 @@ import io.deephaven.db.util.liveness.LivenessNode;
 import io.deephaven.db.util.liveness.ReleasableLivenessManager;
 import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -23,11 +24,14 @@ import java.util.function.Supplier;
 public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * Retrieve a variable from the script session's bindings.
+     * <p/>
+     * Please use {@link ScriptSession#getVariable(String, Object)} if you expect the variable may not exist.
      *
      * @param name the variable to retrieve
      * @return the variable
      * @throws QueryScope.MissingVariableException if the variable does not exist
      */
+    @NotNull
     Object getVariable(String name) throws QueryScope.MissingVariableException;
 
     /**
@@ -45,7 +49,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * A {@link VariableProvider} instance, for services like autocomplete which may want a limited "just the variables"
      * view of our session state.
-     * 
+     *
      * @return a VariableProvider instance backed by the global/binding context of this script session.
      */
     VariableProvider getVariableProvider();
@@ -110,7 +114,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
     /**
      * Check if the scope has the given variable name
-     * 
+     *
      * @param name the variable name
      * @return True iff the scope has the given variable name
      */
@@ -122,7 +126,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      * @param name the variable name to set
      * @param value the new value of the variable
      */
-    void setVariable(String name, Object value);
+    void setVariable(String name, @Nullable Object value);
 
     /**
      * @return a textual description of this script session's language for use in messages.
@@ -153,7 +157,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
     /**
      * Sets the scriptPathLoader that is in use for this session.
-     * 
+     *
      * @param scriptPathLoader a supplier of a script path loader
      * @param caching whether the source operation should cache results
      */

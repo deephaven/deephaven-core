@@ -26,6 +26,8 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.tools.GroovyClass;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.tools.JavaFileObject;
 import java.io.File;
@@ -174,6 +176,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         executedScripts.add(script);
     }
 
+    @NotNull
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         try {
@@ -596,7 +599,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     /**
      * I factored out this horrible snippet of code from the updateClassLoader, to isolate the badness. I can't think of
      * a replacement that doesn't involve regex matching.
-     * 
+     *
      * @param s The string to evaluate
      * @return Whether s can be parsed as an int.
      */
@@ -627,9 +630,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public void setVariable(String name, Object value) {
-        super.setVariable(name, value);
-        groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), value);
+    public void setVariable(String name, @Nullable Object newValue) {
+        final Object oldValue = getVariable(name, null);
+        groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), newValue);
+        notifyVariableChange(name, oldValue, newValue);
     }
 
     public Binding getBinding() {
@@ -794,9 +798,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     // present
     /*
      * public static class Calendars implements InitScript {
-     * 
+     *
      * @Override public String getScriptPath() { return "groovy/2-calendars.groovy"; }
-     * 
+     *
      * @Override public int priority() { return 2; } }
      */
 
