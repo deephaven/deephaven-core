@@ -89,7 +89,8 @@ task deephavenPythonDockerfile(type: Dockerfile) {
     // liblzo2-2 below is needed for supporting LZO parquet encoding.
     runCommand('''set -eux; \\
                   apt update; \\
-                  apt install liblzo2-2; \\
+                  apt -y install liblzo2-2; \\
+                  apt -y install curl; \\
                   pip3 install setuptools wheel; \\
                   pip3 install *.whl; \\
                   rm *.whl
