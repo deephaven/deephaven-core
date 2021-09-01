@@ -216,7 +216,8 @@ public class ExportTableUpdateListenerTest {
         Assert.eq(msg.getSize(), "msg.getSize()", 42);
         Assert.eqFalse(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");
 
-        // TODO (core#801): validate that our error is not directly embedded in the update (that would be a security concern)
+        // TODO (core#801): validate that our error is not directly embedded in the update (that would be a security
+        // concern)
         Assert.eqTrue(msg.getUpdateFailureMessage().contains("awful"), "msg.contains('awful')");
     }
 
