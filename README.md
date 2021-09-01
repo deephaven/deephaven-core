@@ -133,35 +133,35 @@ These commands will create:
  1. a `deephaven-core` directory containing the source code.
  2. Docker images containing everything needed to launch Deephaven.
 
-### Run Deephaven Database (Python)
+### Run Deephaven (Python)
 
 From the `deephaven-core` directory, run
 ```
     docker-compose up
 ```
-This will start the database.  The console will fill with status and logging output.
+This will start Deephaven.  The console will fill with status and logging output.
 
 Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
 
-### Run Deephaven Database (Groovy)
+### Run Deephaven (Groovy)
 
 From the `deephaven-core` directory, run
 ```
     docker-compose --env-file default_groovy.env up
 ```
-This will start the database.  The console will fill with status and logging output.
+This will start Deephaven.  The console will fill with status and logging output.
 
 Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
 
 ### Run Deephaven IDE
 
-Once Deephaven Database is running, you can launch a Deephaven IDE in your web browser.  Deephaven IDE allows you
+Once Deephaven is running, you can launch a Deephaven IDE in your web browser.  Deephaven IDE allows you
 to interactively analyze data and develop new analytics.
 
-- If Deephaven Database is running locally,
+- If Deephaven is running locally,
 navigate to [http://localhost:10000/ide/](http://localhost:10000/ide/).
-- If Deephaven Database is running remotely, navigate
-to `http://<hostname>:10000/ide/`, where `<hostname>` is the address of the machine Deephaven Database is running on.
+- If Deephaven is running remotely, navigate
+to `http://<hostname>:10000/ide/`, where `<hostname>` is the address of the machine Deephaven is running on.
 
 ![alt_text](docs/images/ide_startup.png "Deephaven IDE")
 
