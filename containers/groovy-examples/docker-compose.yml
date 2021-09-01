@@ -9,7 +9,7 @@ services:
       - ./data:/data
       - api-cache:/cache
     environment:
-      - JAVA_TOOL_OPTIONS=-Xmx4g -Dio.deephaven.console.type=groovy
+      - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=groovy
 
   web:
     image: ghcr.io/deephaven/web:${VERSION:-latest}
