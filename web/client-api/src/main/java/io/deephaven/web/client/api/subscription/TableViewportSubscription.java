@@ -106,6 +106,8 @@ public class TableViewportSubscription extends HasEventHandling {
                 table.addEventListener(JsTable.EVENT_ROWREMOVED, this::refire);
                 table.addEventListener(JsTable.EVENT_ROWUPDATED, this::refire);
                 table.addEventListener(JsTable.EVENT_SIZECHANGED, this::refire);
+                // TODO (core#1181): fix this hack that enables barrage errors to propagate to the UI widget
+                table.addEventListener(JsTable.EVENT_REQUEST_FAILED, this::refire);
 
                 // Take over for the "parent" table
                 // Cache original table size so we can tell if we need to notify about a change

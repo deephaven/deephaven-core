@@ -1213,6 +1213,12 @@ public class WorkerConnection {
                 });
                 stream.onStatus(err -> {
                     checkStatus(err);
+                    if (!err.isOk()) {
+                        // TODO (core#1181): fix this hack that enables barrage errors to propagate to the UI widget
+                        state.forActiveSubscriptions((table, subscription) -> {
+                            table.failureHandled(err.getDetails());
+                        });
+                    }
                 });
                 BiDiStream<FlightData, FlightData> oldStream = subscriptionStreams.put(state, stream);
                 if (oldStream != null) {

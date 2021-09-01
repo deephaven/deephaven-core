@@ -106,6 +106,10 @@ public class IdeSession extends HasEventHandling {
     }
 
     public Promise<Object> getObject(JsPropertyMap<Object> definitionObject) {
+        if (definitionObject instanceof JsVariableDefinition) {
+            return connection.getObject((JsVariableDefinition) definitionObject);
+        }
+
         if (!definitionObject.has("type")) {
             throw new IllegalArgumentException("no type field; could not getObject");
         }

@@ -5,6 +5,7 @@
 package io.deephaven.grpc_api.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Streams;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
@@ -49,6 +50,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -839,9 +841,16 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         updateSubscriptionsSnapshotAndPropagate();
                     }
                 } catch (final Exception exception) {
-                    // TODO: global error notification core/#55
-                    log.error().append(logPrefix).append("Could not handle barrage update propagation: ")
-                            .append(exception).endl();
+                    synchronized (BarrageMessageProducer.this) {
+                        final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
+
+                        Streams.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
+                                .forEach(sub -> GrpcUtil.safelyExecuteLocked(sub.listener,
+                                        () -> sub.listener.onError(apiError)));
+
+                        activeSubscriptions.clear();
+                        pendingSubscriptions.clear();
+                    }
                 } finally {
                     runLock.unlock();
                 }
