@@ -20,13 +20,16 @@
 # == Common to all:
 #
 #  * Start the redpanda-apicurio compose: (cd redpanda-apicurio && docker-compose up --build)
-#  * From web UI do: > from deephaven import KafkaTools
+#  * From web UI do:
+#
+#    > from deephaven import KafkaTools
 #
 # == Example (1)
 #
 # Load a schema into schema registry for share_price_record.
 # From the command line in the host (not on a docker image), run:
-# $ sh ../post-share-price-schema.sh
+#
+#    $ sh ../post-share-price-schema.sh
 #
 # The last command above should have loaded the avro schema in the file avro/share_price.json
 # to the apicurio registry. You can check it was loaded visiting on the host the URL:
@@ -34,14 +37,14 @@
 # That page should now list 'share_price_record' as an available schema.
 #
 # From the web IDE, run:
-# > from deephaven import KafkaTools
-# > s = getAvroSchema('http://registry:8080/api/ccompat', 'share_price_record', '1')
-# > t = consumeToTable({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value_avro_schema=s, table_type='append')
+#
+#    > from deephaven import KafkaTools as kt
+#    > t = kt.consumeToTable({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value=kt.avro('share_price_record'), table_type='append')
 #
 # The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
-#
 # Run this script on the host (not on a docker image) to generate one row:
-# $ python3 ./kafka-produce-avro.py share_price 0 avro/share_price.json str:Symbol=MSFT str:Side=BUY double:Price=274.82 int:Qty=200
+#
+#    $ python3 ./kafka-produce-avro.py share_price 0 ../avro/share_price.json str:Symbol=MSFT str:Side=BUY double:Price=274.82 int:Qty=200
 #
 # You should see a new row show up in the web IDE with data matching the data sent above.
 #
