@@ -25,7 +25,7 @@ $ python3 -m unittest discover tests
 ```
 ## Install
 ``` shell
-$ pip3 install dist/pydeephaven-0.4.0-py3-none-any.whl
+$ pip3 install dist/pydeephaven-0.5.0-py3-none-any.whl
 ```
 ## Quick start
 
