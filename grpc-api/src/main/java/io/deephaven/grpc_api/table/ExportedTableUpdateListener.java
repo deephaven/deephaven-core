@@ -163,7 +163,9 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
                 .setExportId(ticket).setSize(size);
 
         if (error != null) {
-            update.setUpdateFailureMessage(GrpcUtil.securelyWrapError(log, error).getMessage());
+            // TODO (core#801): revisit this error communication to properly match the API Error mode
+            // Note if this does get turned into an INTERNAL_ERROR we should re-use the same UUID for all listeners.
+            update.setUpdateFailureMessage(error.getMessage());
         }
 
         try {
