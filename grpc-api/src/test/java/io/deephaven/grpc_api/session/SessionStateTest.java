@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.deephaven.grpc_api.util.ExportTicketHelper.exportIdToTicket;
+import static io.deephaven.grpc_api.util.ExportTicketHelper.wrapExportIdInTicket;
 import static io.deephaven.grpc_api.util.ExportTicketHelper.ticketToExportId;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.DEPENDENCY_FAILED;
@@ -91,7 +91,7 @@ public class SessionStateTest {
 
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
-        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", exportIdToTicket(nextExportId - 1),
+        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", wrapExportIdInTicket(nextExportId - 1),
                 "nextExportId - 1");
 
         // release
@@ -111,8 +111,8 @@ public class SessionStateTest {
         Assert.eq(export.refCount, "export.refCount", 1);
 
         // assert lookup is same object
-        Assert.eq(session.getExport(exportObj.getExportId()), "session.getExport(exportObj.getExportId())", exportObj,
-                "exportObj");
+        Assert.eq(session.getExport(exportObj.getExportId(), "test"),
+                "session.getExport(exportObj.getExportId())", exportObj, "exportObj");
 
         // release
         exportObj.release();
@@ -135,8 +135,9 @@ public class SessionStateTest {
         Assert.eq(export.refCount, "export.refCount", 1);
 
         // assert lookup is same object
-        Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
-        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", exportIdToTicket(nextExportId - 1),
+        Assert.eq(session.getExport(nextExportId - 1),
+                "session.getExport(nextExport - 1)", exportObj, "exportObj");
+        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", wrapExportIdInTicket(nextExportId - 1),
                 "nextExportId - 1");
 
         // release
@@ -156,8 +157,8 @@ public class SessionStateTest {
         Assert.eq(export.refCount, "export.refCount", 1);
 
         // assert lookup is same object
-        Assert.eq(session.getExport(exportObj.getExportId()), "session.getExport(exportObj.getExportId())", exportObj,
-                "exportObj");
+        Assert.eq(session.getExport(exportObj.getExportId(), "test"),
+                "session.getExport(exportObj.getExportId())", exportObj, "exportObj");
 
         // release
         session.onExpired();
@@ -309,7 +310,7 @@ public class SessionStateTest {
                 .require(d1)
                 .submit(submitted::setTrue);
 
-        session.newExport(d1.getExportId())
+        session.newExport(d1.getExportId(), "test")
                 .submit(() -> {
                     throw new RuntimeException("I fail.");
                 });
@@ -348,7 +349,7 @@ public class SessionStateTest {
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.PENDING);
 
-        session.newExport(d1.getExportId())
+        session.newExport(d1.getExportId(), "test")
                 .submit(() -> {
                 });
         scheduler.runOne(); // d1
@@ -532,7 +533,7 @@ public class SessionStateTest {
                 .require(e1)
                 .submit(() -> {
                 });
-        session.newExport(e1.getExportId()).submit(() -> {
+        session.newExport(e1.getExportId(), "test").submit(() -> {
             throw new RuntimeException();
         });
         scheduler.runUntilQueueEmpty();
@@ -680,9 +681,9 @@ public class SessionStateTest {
     public void testWorkItemDirectCycle() {
         final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
         final SessionState.ExportObject<Object> e2 = session.getExport(nextExportId++);
-        session.newExport(e1.getExportId()).require(e2).submit(() -> {
+        session.newExport(e1.getExportId(), "test").require(e2).submit(() -> {
         });
-        session.newExport(e2.getExportId()).require(e1).submit(() -> {
+        session.newExport(e2.getExportId(), "test").require(e1).submit(() -> {
         });
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.FAILED);
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.FAILED);
@@ -694,11 +695,11 @@ public class SessionStateTest {
         final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
         final SessionState.ExportObject<Object> e2 = session.getExport(nextExportId++);
         final SessionState.ExportObject<Object> e3 = session.getExport(nextExportId++);
-        session.newExport(e1.getExportId()).require(e2).submit(() -> {
+        session.newExport(e1.getExportId(), "test").require(e2).submit(() -> {
         });
-        session.newExport(e2.getExportId()).require(e3).submit(() -> {
+        session.newExport(e2.getExportId(), "test").require(e3).submit(() -> {
         });
-        session.newExport(e3.getExportId()).require(e1).submit(() -> {
+        session.newExport(e3.getExportId(), "test").require(e1).submit(() -> {
         });
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.FAILED);
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.FAILED);
@@ -712,9 +713,9 @@ public class SessionStateTest {
         final SessionState.ExportObject<Object> e2 = session.getExport(nextExportId++);
         final SessionState.ExportObject<Object> e3 = session.newExport(nextExportId++).require(e1, e2).submit(() -> {
         });
-        session.newExport(e1.getExportId()).require(e2).submit(() -> {
+        session.newExport(e1.getExportId(), "test").require(e2).submit(() -> {
         });
-        session.newExport(e2.getExportId()).require(e1).submit(() -> {
+        session.newExport(e2.getExportId(), "test").require(e1).submit(() -> {
         });
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.FAILED);
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.FAILED);
@@ -766,7 +767,7 @@ public class SessionStateTest {
         session.addExportListener(listener);
         Assert.eq(listener.notifications.size(), "notifications.size()", 1);
         final ExportNotification refreshComplete = listener.notifications.get(listener.notifications.size() - 1);
-        Assert.eq(ticketToExportId(refreshComplete.getTicket()), "refreshComplete.getTicket()",
+        Assert.eq(ticketToExportId(refreshComplete.getTicket(), "test"), "refreshComplete.getTicket()",
                 SessionState.NON_EXPORT_ID, "SessionState.NON_EXPORT_ID");
     }
 
@@ -782,7 +783,7 @@ public class SessionStateTest {
         // ensure export was from refresh
         Assert.eq(listener.notifications.size(), "notifications.size()", 2);
         final ExportNotification refreshComplete = listener.notifications.get(1);
-        Assert.eq(ticketToExportId(refreshComplete.getTicket()), "lastNotification.getTicket()",
+        Assert.eq(ticketToExportId(refreshComplete.getTicket(), "test"), "lastNotification.getTicket()",
                 SessionState.NON_EXPORT_ID, "SessionState.NON_EXPORT_ID");
     }
 
@@ -792,7 +793,7 @@ public class SessionStateTest {
         final QueueingExportListener listener = new QueueingExportListener() {
             @Override
             public void onNext(final ExportNotification n) {
-                if (ticketToExportId(n.getTicket()) != SessionState.NON_EXPORT_ID) {
+                if (ticketToExportId(n.getTicket(), "test") != SessionState.NON_EXPORT_ID) {
                     notifications.add(n);
                     return;
                 }
@@ -819,7 +820,7 @@ public class SessionStateTest {
     @Test
     public void testExportListenerInterestingRefresh() {
         final QueueingExportListener listener = new QueueingExportListener();
-        final SessionState.ExportObject<SessionState> e1 = session.<SessionState>getExport(nextExportId++);
+        final SessionState.ExportObject<SessionState> e1 = session.getExport(nextExportId++);
         final SessionState.ExportObject<SessionState> e4 =
                 session.<SessionState>newExport(nextExportId++).submit(() -> session); // exported
         final SessionState.ExportObject<SessionState> e5 =
@@ -1245,7 +1246,7 @@ public class SessionStateTest {
     }
 
     private static long getExportId(final ExportNotification notification) {
-        return ticketToExportId(notification.getTicket());
+        return ticketToExportId(notification.getTicket(), "test");
     }
 
     private static class QueueingExportListener implements StreamObserver<ExportNotification> {

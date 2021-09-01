@@ -67,12 +67,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         }
 
         final Ticket ticket = notification.getTicket();
-        final int exportId = ExportTicketHelper.ticketToExportId(ticket);
+        final int exportId = ExportTicketHelper.ticketToExportId(ticket, "ticket");
 
         try {
             final ExportNotification.State state = notification.getExportState();
             if (state == ExportNotification.State.EXPORTED) {
-                final SessionState.ExportObject<?> export = session.getExport(ticket);
+                final SessionState.ExportObject<?> export = session.getExport(ticket, "ticket");
                 if (export.tryRetainReference()) {
                     try {
                         final Object obj = export.get();
@@ -194,12 +194,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         @Override
         public void onUpdate(final Update upstream) {
-            sendUpdateMessage(ExportTicketHelper.exportIdToTicket(exportId), table.size(), null);
+            sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), null);
         }
 
         @Override
         public void onFailureInternal(final Throwable error, final UpdatePerformanceTracker.Entry sourceEntry) {
-            sendUpdateMessage(ExportTicketHelper.exportIdToTicket(exportId), table.size(), error);
+            sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), error);
         }
     }
 

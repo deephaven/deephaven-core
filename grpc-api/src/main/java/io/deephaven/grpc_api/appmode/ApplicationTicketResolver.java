@@ -51,47 +51,54 @@ public class ApplicationTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(final @Nullable SessionState session, final ByteBuffer ticket) {
-        return resolve(appFieldIdFor(ticket));
+    public <T> SessionState.ExportObject<T> resolve(
+            final @Nullable SessionState session, final ByteBuffer ticket, final String logId) {
+        return resolve(appFieldIdFor(ticket, logId), logId);
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(final @Nullable SessionState session,
-            final Flight.FlightDescriptor descriptor) {
-        return resolve(appFieldIdFor(descriptor));
+    public <T> SessionState.ExportObject<T> resolve(
+            final @Nullable SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+        return resolve(appFieldIdFor(descriptor, logId), logId);
     }
 
-    private <T> SessionState.ExportObject<T> resolve(final AppFieldId id) {
+    private <T> SessionState.ExportObject<T> resolve(final AppFieldId id, final String logId) {
         if (id.app == null) {
-            throw new IllegalStateException("Cannot resolve field without knowing the application");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': field '" + getLogNameFor(id)
+                            + "' does not belong to an application");
         }
         final Field<Object> field = id.app.getField(id.fieldName);
         if (field == null) {
-            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "ticket not found: " + getLogNameFor(id));
+            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                    "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' not found");
         }
         // noinspection unchecked
         return SessionState.wrapAsExport((T) field.value());
     }
 
     @Override
-    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(final @Nullable SessionState session,
-            final Flight.FlightDescriptor descriptor) {
-        final AppFieldId id = appFieldIdFor(descriptor);
+    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
+            final @Nullable SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+        final AppFieldId id = appFieldIdFor(descriptor, logId);
         if (id.app == null) {
-            throw new IllegalStateException("Cannot resolve field without knowing the application");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': field does not belong to an application");
         }
 
         final Flight.FlightInfo info;
         synchronized (id.app) {
             Field<?> field = id.app.getField(id.fieldName);
             if (field == null) {
-                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "no flight found: " + getLogNameFor(id));
+                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                        "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' not found");
             }
             Object value = field.value();
             if (value instanceof Table) {
                 info = TicketRouter.getFlightInfo((Table) value, descriptor, flightTicketForName(id.app, id.fieldName));
             } else {
-                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "flight not found: " + getLogNameFor(id));
+                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                        "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' is not a flight");
             }
         }
 
@@ -99,18 +106,22 @@ public class ApplicationTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportBuilder<T> publish(SessionState session, ByteBuffer ticket) {
-        throw new UnsupportedOperationException("applications cannot be published to");
+    public <T> SessionState.ExportBuilder<T> publish(
+            SessionState session, ByteBuffer ticket, final String logId) {
+        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                "Could not publish '" + logId + "': application tickets cannot be published to");
     }
 
     @Override
-    public <T> SessionState.ExportBuilder<T> publish(SessionState session, Flight.FlightDescriptor descriptor) {
-        throw new UnsupportedOperationException("applications cannot be published to");
+    public <T> SessionState.ExportBuilder<T> publish(
+            final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                "Could not publish '" + logId + "': application flight descriptors cannot be published to");
     }
 
     @Override
-    public String getLogNameFor(final ByteBuffer ticket) {
-        return getLogNameFor(appFieldIdFor(ticket));
+    public String getLogNameFor(final ByteBuffer ticket, final String logId) {
+        return getLogNameFor(appFieldIdFor(ticket, logId));
     }
 
     private String getLogNameFor(final AppFieldId id) {
@@ -176,9 +187,10 @@ public class ApplicationTicketResolver extends TicketResolverBase {
                 .build();
     }
 
-    private AppFieldId appFieldIdFor(final ByteBuffer ticket) {
+    private AppFieldId appFieldIdFor(final ByteBuffer ticket, final String logId) {
         if (ticket == null) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket not supplied");
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': ticket not supplied");
         }
 
         final String ticketAsString;
@@ -189,7 +201,7 @@ public class ApplicationTicketResolver extends TicketResolverBase {
             ticketAsString = decoder.decode(ticket).toString();
         } catch (CharacterCodingException e) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Cannot parse ticket: failed to decode: " + e.getMessage());
+                    "Could not resolve '" + logId + "': failed to decode: " + e.getMessage());
         } finally {
             ticket.position(initialPosition);
             ticket.limit(initialLimit);
@@ -199,7 +211,8 @@ public class ApplicationTicketResolver extends TicketResolverBase {
         final int endOfAppId = ticketAsString.indexOf('/', endOfRoute + 1);
         final int endOfFieldSegment = ticketAsString.indexOf('/', endOfAppId + 1);
         if (endOfAppId == -1 || endOfFieldSegment == -1) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket does conform to expected format");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': ticket does conform to expected format");
         }
         final String appId = ticketAsString.substring(endOfRoute + 1, endOfAppId);
         final String fieldName = ticketAsString.substring(endOfFieldSegment + 1);
@@ -207,25 +220,27 @@ public class ApplicationTicketResolver extends TicketResolverBase {
         final ApplicationState app = applicationMap.get(appId);
         if (app == null) {
             throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                    "No application exists with the identifier: " + appId);
+                    "Could not resolve '" + logId + "': no application exists with the identifier: " + appId);
         }
 
         return AppFieldId.from(app, fieldName);
     }
 
-    private AppFieldId appFieldIdFor(final Flight.FlightDescriptor descriptor) {
+    private AppFieldId appFieldIdFor(final Flight.FlightDescriptor descriptor, final String logId) {
         if (descriptor == null) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Descriptor not supplied");
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': descriptor not supplied");
         }
 
         if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse descriptor: not a path");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': only flight paths are supported");
         }
 
         // current structure: a/app_id/f/field_name
         if (descriptor.getPathCount() != 4) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Cannot parse descriptor: unexpected path length (found: "
+                    "Could not resolve '" + logId + "': unexpected path length (found: "
                             + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 4)");
         }
 
@@ -233,11 +248,12 @@ public class ApplicationTicketResolver extends TicketResolverBase {
         final ApplicationState app = applicationMap.get(appId);
         if (app == null) {
             throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                    "No application exists with the identifier: " + appId);
+                    "Could not resolve '" + logId + "': no application exists with the identifier: " + appId);
         }
 
         if (!descriptor.getPath(2).equals(FIELD_PATH_SEGMENT)) {
-            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Path is not an application field.");
+            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                    "Could not resolve '" + logId + "': path is not an application field");
         }
 
         return AppFieldId.from(app, descriptor.getPath(3));

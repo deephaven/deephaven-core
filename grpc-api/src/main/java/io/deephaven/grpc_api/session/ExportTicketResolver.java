@@ -25,27 +25,29 @@ public class ExportTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public String getLogNameFor(ByteBuffer ticket) {
-        return ExportTicketHelper.toReadableString(ticket);
+    public String getLogNameFor(final ByteBuffer ticket, final String logId) {
+        return ExportTicketHelper.toReadableString(ticket, logId);
     }
 
     @Override
-    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable final SessionState session,
-            final Flight.FlightDescriptor descriptor) {
+    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         if (session == null) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "No session to search");
+            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
+                    "Could not resolve '" + logId + "': no exports can exist without a session to search");
         }
 
-        final SessionState.ExportObject<?> export = resolve(session, descriptor);
+        final SessionState.ExportObject<?> export = resolve(session, descriptor, logId);
         return session.<Flight.FlightInfo>nonExport()
                 .require(export)
                 .submit(() -> {
                     if (export.get() instanceof Table) {
                         return TicketRouter.getFlightInfo((Table) export.get(), descriptor,
-                                ExportTicketHelper.descriptorToArrowTicket(descriptor));
+                                ExportTicketHelper.descriptorToArrowTicket(descriptor, logId));
                     }
 
-                    throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "No such flight exists");
+                    throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                            "Could not resolve '" + logId + "': flight '" + descriptor.toString() + " does not exist");
                 });
     }
 
@@ -55,32 +57,36 @@ public class ExportTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session, final ByteBuffer ticket) {
+    public <T> SessionState.ExportObject<T> resolve(
+            @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
         if (session == null) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "No session to resolve from");
+            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
+                    "Could not resolve '" + logId + "': no exports can exist without an active session");
         }
 
-        return session.getExport(ExportTicketHelper.ticketToExportId(ticket));
+        return session.getExport(ExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session,
-            final Flight.FlightDescriptor descriptor) {
+    public <T> SessionState.ExportObject<T> resolve(
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         if (session == null) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "No session to resolve from");
+            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
+                    "Could not resolve '" + logId + "': no exports can exist without a session to search");
         }
 
-        return session.getExport(ExportTicketHelper.descriptorToExportId(descriptor));
+        return session.getExport(ExportTicketHelper.descriptorToExportId(descriptor, logId));
     }
 
     @Override
-    public <T> SessionState.ExportBuilder<T> publish(final SessionState session, final ByteBuffer ticket) {
-        return session.newExport(ExportTicketHelper.ticketToExportId(ticket));
+    public <T> SessionState.ExportBuilder<T> publish(
+            final SessionState session, final ByteBuffer ticket, final String logId) {
+        return session.newExport(ExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     @Override
-    public <T> SessionState.ExportBuilder<T> publish(final SessionState session,
-            final Flight.FlightDescriptor descriptor) {
-        return session.newExport(ExportTicketHelper.descriptorToExportId(descriptor));
+    public <T> SessionState.ExportBuilder<T> publish(
+            final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+        return session.newExport(ExportTicketHelper.descriptorToExportId(descriptor, logId));
     }
 }

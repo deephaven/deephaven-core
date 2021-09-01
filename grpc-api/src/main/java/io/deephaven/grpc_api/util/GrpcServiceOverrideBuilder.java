@@ -255,7 +255,7 @@ public class GrpcServiceOverrideBuilder {
                 if (!streamData.isHalfClose()) {
                     // if this isn't a half-close, we should export it for later calls - if it is, the client won't send
                     // more messages
-                    session.newExport(streamData.getRpcTicket())
+                    session.newExport(streamData.getRpcTicket(), "rpcTicket")
                             // not setting an onError here, failure can only happen if the session ends
                             .submit(() -> browserStream);
                 }
@@ -273,7 +273,7 @@ public class GrpcServiceOverrideBuilder {
                 final SessionState session = sessionService.getCurrentSession();
 
                 final SessionState.ExportObject<BrowserStream<ReqT>> browserStream =
-                        session.getExport(streamData.getRpcTicket());
+                        session.getExport(streamData.getRpcTicket(), "rpcTicket");
 
                 session.nonExport()
                         .require(browserStream)

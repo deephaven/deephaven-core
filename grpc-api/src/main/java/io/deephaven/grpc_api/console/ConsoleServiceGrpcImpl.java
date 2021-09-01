@@ -31,6 +31,7 @@ import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.*;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -122,7 +123,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         "session type '" + sessionType + "' is not supported");
             }
 
-            session.newExport(request.getResultId())
+            session.newExport(request.getResultId(), "resultId")
                     .onError(responseObserver)
                     .submit(() -> {
                         final ScriptSession scriptSession;
@@ -168,8 +169,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
+            final Ticket consoleId = request.getConsoleId();
+            if (consoleId.getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
+            }
+
             SessionState.ExportObject<ScriptSession> exportedConsole =
-                    ticketRouter.resolve(session, request.getConsoleId());
+                    ticketRouter.resolve(session, consoleId, "consoleId");
             session.nonExport()
                     .requiresSerialQueue()
                     .require(exportedConsole)
@@ -211,7 +217,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             StreamObserver<BindTableToVariableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
+            Ticket tableId = request.getTableId();
+            if (tableId.getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No source tableId supplied");
+            }
+            final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, tableId, "tableId");
             final SessionState.ExportObject<ScriptSession> exportedConsole;
 
             ExportBuilder<?> exportBuilder = session.nonExport()
@@ -219,7 +229,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .onError(responseObserver);
 
             if (request.hasConsoleId()) {
-                exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
+                exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
                 exportBuilder.require(exportedTable, exportedConsole);
             } else {
                 exportedConsole = null;
@@ -278,7 +288,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         case GET_COMPLETION_ITEMS: {
                             GetCompletionItemsRequest request = value.getGetCompletionItems();
                             SessionState.ExportObject<ScriptSession> exportedConsole =
-                                    session.getExport(request.getConsoleId());
+                                    session.getExport(request.getConsoleId(), "consoleId");
                             session.nonExport()
                                     .require(exportedConsole)
                                     .onError(responseObserver)
@@ -365,7 +375,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            final SessionState.ExportObject<Object> figure = ticketRouter.resolve(session, request.getSourceId());
+            if (request.getSourceId().getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No sourceId supplied");
+            }
+            final SessionState.ExportObject<Object> figure = ticketRouter.resolve(
+                    session, request.getSourceId(), "sourceId");
 
             session.nonExport()
                     .require(figure)
@@ -373,7 +387,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .submit(() -> {
                         Object result = figure.get();
                         if (!(result instanceof FigureWidget)) {
-                            final String name = ticketRouter.getLogNameFor(request.getSourceId());
+                            final String name = ticketRouter.getLogNameFor(request.getSourceId(), "sourceId");
                             throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
                                     "Value bound to ticket " + name + " is not a FigureWidget");
                         }

@@ -118,7 +118,7 @@ public class ConsoleClient {
     private int nextId = 1;
 
     private void startConsole() {
-        consoleTicket = ExportTicketHelper.exportIdToTicket(nextId++);
+        consoleTicket = ExportTicketHelper.wrapExportIdInTicket(nextId++);
         consoleServiceGrpc.startConsole(StartConsoleRequest.newBuilder()
                 .setResultId(consoleTicket)
                 .setSessionType(sessionType)
@@ -193,7 +193,7 @@ public class ConsoleClient {
                             firstTable.ifPresent(table -> {
                                 log.debug().append("A table was created: ").append(table.toString()).endl();
                                 tableServiceGrpc.fetchTable(FetchTableRequest.newBuilder()
-                                        .setResultId(ExportTicketHelper.exportIdToTicket(nextId++))
+                                        .setResultId(ExportTicketHelper.wrapExportIdInTicket(nextId++))
                                         .setSourceId(TableReference.newBuilder()
                                                 .setTicket(ScopeTicketResolver.ticketForName(table.getTitle())))
                                         .build(),
@@ -255,7 +255,8 @@ public class ConsoleClient {
         final LogEntry entry = log.info().append("Received ExportedTableCreationResponse for {");
 
         if (result.getResultId().hasTicket()) {
-            entry.append("exportId: ").append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket()));
+            entry.append("exportId: ")
+                    .append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket(), "resultId"));
         } else {
             entry.append("batchOffset: ").append(result.getResultId().getBatchOffset());
         }

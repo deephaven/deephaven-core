@@ -19,6 +19,6 @@ final class ExportTicketCreator {
     }
 
     public Ticket create() {
-        return ExportTicketHelper.exportIdToTicket(nextId.getAndIncrement());
+        return ExportTicketHelper.wrapExportIdInTicket(nextId.getAndIncrement());
     }
 }

@@ -55,7 +55,7 @@ public final class FlightSession implements AutoCloseable {
     }
 
     private static FlightDescriptor descriptor(Export export) {
-        return adapt(ExportTicketHelper.ticketToDescriptor(export.ticket()));
+        return adapt(ExportTicketHelper.ticketToDescriptor(export.ticket(), "export"));
     }
 
     private static FlightDescriptor adapt(

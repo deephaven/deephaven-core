@@ -134,7 +134,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                         .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
                 return;
             }
-            final SessionState.ExportObject<?> export = session.getExportIfExists(request.getId());
+            final SessionState.ExportObject<?> export = session.getExportIfExists(request.getId(), "id");
             if (export == null) {
                 responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAVAILABLE, "Export not yet defined"));
                 return;
@@ -173,8 +173,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 return;
             }
 
-            final SessionState.ExportObject<Object> source = ticketRouter.resolve(session, request.getSourceId());
-            session.newExport(request.getResultId())
+            final SessionState.ExportObject<Object> source = ticketRouter.resolve(
+                    session, request.getSourceId(), "sourceId");
+            session.newExport(request.getResultId(), "resultId")
                     .require(source)
                     .onError(responseObserver)
                     .submit(() -> {

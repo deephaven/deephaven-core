@@ -29,20 +29,23 @@ public interface TicketResolver {
      *
      * @param session the user session context
      * @param ticket (as ByteByffer) the ticket to resolve
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, ByteBuffer ticket);
+    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, ByteBuffer ticket, final String logId);
 
     /**
      * Resolve a flight descriptor to an export object future.
      *
      * @param session the user session context
      * @param descriptor the descriptor to resolve
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, Flight.FlightDescriptor descriptor);
+    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, Flight.FlightDescriptor descriptor,
+            final String logId);
 
     /**
      * Publish a new result as a flight ticket to an export object future.
@@ -51,10 +54,11 @@ public interface TicketResolver {
      *
      * @param session the user session context
      * @param ticket (as ByteByffer) the ticket to publish to
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @param <T> the type of the result the export will publish
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportBuilder<T> publish(SessionState session, ByteBuffer ticket);
+    <T> SessionState.ExportBuilder<T> publish(SessionState session, ByteBuffer ticket, final String logId);
 
     /**
      * Publish a new result as a flight descriptor to an export object future.
@@ -63,28 +67,32 @@ public interface TicketResolver {
      *
      * @param session the user session context
      * @param descriptor (as Flight.Descriptor) the descriptor to publish to
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @param <T> the type of the result the export will publish
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportBuilder<T> publish(SessionState session, Flight.FlightDescriptor descriptor);
+    <T> SessionState.ExportBuilder<T> publish(SessionState session, Flight.FlightDescriptor descriptor,
+            final String logId);
 
     /**
      * Retrieve a FlightInfo for a given FlightDescriptor.
      *
      * @param descriptor the flight descriptor to retrieve a ticket for
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return a FlightInfo describing this flight
      */
     SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable SessionState session,
-            Flight.FlightDescriptor descriptor);
+            Flight.FlightDescriptor descriptor, final String logId);
 
     /**
      * Create a human readable string to identify this ticket.
      *
      * @param ticket the ticket to parse
+     * @param logId an end-user friendly identification of the ticket should an error occur
      * @return a string that is good for log/error messages
      * @apiNote There is not a {@link Flight.FlightDescriptor} equivalent as the path must already be displayable.
      */
-    String getLogNameFor(ByteBuffer ticket);
+    String getLogNameFor(ByteBuffer ticket, final String logId);
 
     /**
      * This invokes the provided visitor for each valid flight descriptor this ticket resolver exposes via flight.
