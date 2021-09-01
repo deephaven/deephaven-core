@@ -1,6 +1,7 @@
 #
 #  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
+import unittest
 
 from pyarrow import csv
 
@@ -9,6 +10,7 @@ from tests.testbase import BaseTestCase
 
 class ConsoleTestCase(BaseTestCase):
 
+    @unittest.skip("GH ticket filed #1177.")
     def test_bind_table(self):
         pa_table = csv.read_csv(self.csv_file)
         user_table = self.session.import_table(pa_table)

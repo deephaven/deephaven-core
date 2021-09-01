@@ -5,7 +5,8 @@ Deephaven Python Client is a Python package created by Deephaven Data Labs. It i
 
 ## Source Directory
 
-### From the deephaven-core repository root
+### From the deephaven-core repository root 
+(clone from https://github.com/deephaven/deephaven-core)
 ``` shell
 $ cd pyclient
 ```
@@ -24,7 +25,7 @@ $ python3 -m unittest discover tests
 ```
 ## Install
 ``` shell
-$ pip3 install dist/pydeephaven-0.0.1-py3-none-any.whl
+$ pip3 install dist/pydeephaven-0.4.0-py3-none-any.whl
 ```
 ## Quick start
 
