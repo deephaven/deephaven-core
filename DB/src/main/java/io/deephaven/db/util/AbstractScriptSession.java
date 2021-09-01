@@ -85,6 +85,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
 
     @Override
     public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
+        final Changes diff = new Changes();
         final Map<String, Object> existingScope = new HashMap<>(getVariables());
 
         // store pointers to exist query scope static variables
@@ -101,6 +102,8 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
 
             // actually evaluate the script
             evaluate(script, scriptName);
+        } catch (final RuntimeException err) {
+            diff.error = err;
         } finally {
             // restore pointers to query scope static variables
             QueryScope.setScope(prevQueryScope);
@@ -111,7 +114,6 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         final Map<String, Object> newScope = new HashMap<>(getVariables());
 
         // produce a diff
-        final Changes diff = new Changes();
         for (final Map.Entry<String, Object> entry : newScope.entrySet()) {
             final String name = entry.getKey();
             final Object existingValue = existingScope.get(name);
@@ -129,6 +131,12 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
 
         if (changeListener != null && !diff.isEmpty()) {
             changeListener.onScopeChanges(this, diff);
+        }
+
+        // re-throw any captured exception now that our listener knows what query scope state had changed prior
+        // to the script session execution error
+        if (diff.error != null) {
+            throw diff.error;
         }
 
         return diff;

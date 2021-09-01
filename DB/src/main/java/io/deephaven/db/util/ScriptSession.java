@@ -55,6 +55,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     VariableProvider getVariableProvider();
 
     class Changes {
+        public RuntimeException error = null;
         public Map<String, ExportedObjectType> created = new HashMap<>();
         public Map<String, ExportedObjectType> updated = new HashMap<>();
         public Map<String, ExportedObjectType> removed = new HashMap<>();
