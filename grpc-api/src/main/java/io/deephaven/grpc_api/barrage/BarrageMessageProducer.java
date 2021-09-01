@@ -841,7 +841,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         updateSubscriptionsSnapshotAndPropagate();
                     }
                 } catch (final Exception exception) {
-                    synchronized (BarrageMessageProducer.class) {
+                    synchronized (BarrageMessageProducer.this) {
                         // noinspection ThrowableNotThrown
                         final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
                         log.error().append(logPrefix).append("Could not handle barrage update propagation: ")
