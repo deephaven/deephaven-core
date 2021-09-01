@@ -6,7 +6,7 @@ description = 'The Deephaven proto-backplane-grpc-util'
 
 dependencies {
     api project(':proto:proto-backplane-grpc')
-    api 'org.apache.arrow:flight-grpc:4.0.1'
+    Classpaths.inheritArrow(project, 'flight-grpc', 'api')
 }
 
 apply plugin: 'io.deephaven.java-publishing-conventions'
