@@ -28,8 +28,8 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: publish
-          # Note: even though we specify org.gradle.parallel=false in our CI gradle.properties, we need to be explicit
-          # here about no parallelism, otherwise we'll create disjointed staging repositories.
+          # Note: even though we specify org.gradle.parallel=false in our CI gradle.properties, we want to be explicit
+          # here about no parallelism to ensure we don't create disjointed staging repositories.
           arguments: --no-parallel publish
           gradle-version: wrapper
         env:
