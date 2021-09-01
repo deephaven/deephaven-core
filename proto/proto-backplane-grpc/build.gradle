@@ -14,8 +14,8 @@ dependencies {
   // the same output that it contains, and we have declared the correct dependencies as necessary
   //  compile 'io.deephaven.barrage:barrage-core:0.2.0'
   download 'io.deephaven.barrage:barrage-core:0.2.0'
-  download 'org.apache.arrow:flight-core:5.0.0'
-  compile 'org.apache.arrow:flight-core:5.0.0'
+  Classpaths.inheritArrow(project, 'flight-core', 'download')
+  Classpaths.inheritArrow(project, 'flight-core', 'implementation')
 }
 
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {

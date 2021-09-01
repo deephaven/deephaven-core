@@ -8,8 +8,8 @@ dependencies {
     api project(':client-session')
     implementation project(':proto:proto-backplane-grpc-util')
 
-    api 'org.apache.arrow:flight-core:5.0.0'
-    implementation 'org.apache.arrow:flight-grpc:5.0.0'
+    Classpaths.inheritArrow(project, 'flight-core', 'api')
+    Classpaths.inheritArrow(project, 'flight-grpc', 'implementation')
 
     testImplementation(platform('org.junit:junit-bom:5.7.2'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
