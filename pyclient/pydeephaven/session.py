@@ -12,7 +12,7 @@ from bitstring import BitArray
 from pydeephaven._arrow_flight_service import ArrowFlightService
 from pydeephaven._console_service import ConsoleService
 from pydeephaven._session_service import SessionService
-from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp
+from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp
 from pydeephaven._table_service import TableService
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import ticket_pb2
@@ -73,7 +73,7 @@ class Session:
 
     @property
     def tables(self):
-        return [t for t in self._tables if self._tables[t] == 'Table']
+        return [t for t in self._tables if self._tables[t][0] == 'Table']
 
     @property
     def grpc_metadata(self):
@@ -179,15 +179,15 @@ class Session:
     def _parse_script_response(self, response):
         if response.created:
             for t in response.created:
-                self._tables[t.name] = t.type
+                self._tables[t.title] = (t.type, Table(session=self, ticket=t.id))
 
         if response.updated:
             for t in response.updated:
-                self._tables[t.name] = t.type
+                self._tables[t.title] = (t.type, Table(session=self, ticket=t.id))
 
         if response.removed:
             for t in response.removed:
-                self._tables.pop(t.name, None)
+                self._tables.pop(t.title, None)
 
     # convenience/factory methods
     def run_script(self, script: str) -> None:
@@ -220,7 +220,10 @@ class Session:
 
         """
         with self._r_lock:
-            return self.console_service.open_table(name)
+            if name not in self.tables:
+                raise DHError(f"no table by the name {name}")
+            table_op = FetchTableOp()
+            return self.table_service.grpc_table_op(self._tables[name][1], table_op)
 
     def bind_table(self, table: Table, name: str) -> None:
         """ Bind a table to the given name on the server so that it can be referenced by that name.
