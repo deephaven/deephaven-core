@@ -21,7 +21,6 @@ services:
     # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
     volumes:
       - ./data:/data
-      - ./docker/core/cache:/cache
 
     deploy:
       resources:
