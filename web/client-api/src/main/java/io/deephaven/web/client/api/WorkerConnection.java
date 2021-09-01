@@ -303,11 +303,10 @@ public class WorkerConnection {
                 });
     }
 
-    public boolean checkStatus(ResponseStreamWrapper.Status status) {
+    public void checkStatus(ResponseStreamWrapper.Status status) {
         // TODO provide simpler hooks to retry auth, restart the stream
         if (status.isOk()) {
             // success, ignore
-            return true;
         } else if (status.getCode() == Code.Unauthenticated) {
             // TODO re-create session once?
             // for now treating this as fatal, UI should encourage refresh to try again
@@ -318,7 +317,6 @@ public class WorkerConnection {
         } else if (status.getCode() == Code.Unavailable) {
             // TODO skip re-authing for now, just backoff and try again
         } // others probably are meaningful to the caller
-        return false;
     }
 
     private void startExportNotificationsStream() {
@@ -1216,6 +1214,7 @@ public class WorkerConnection {
                 stream.onStatus(err -> {
                     checkStatus(err);
                     if (!err.isOk()) {
+                        // TODO (core#1181): fix this hack that enables barrage errors to propagate to the UI widget
                         state.forActiveSubscriptions((table, subscription) -> {
                             table.failureHandled(err.getDetails());
                         });

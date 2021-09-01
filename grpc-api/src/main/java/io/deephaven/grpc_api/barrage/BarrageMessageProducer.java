@@ -844,11 +844,10 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 } catch (final Exception exception) {
                     synchronized (BarrageMessageProducer.this) {
                         final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
-                        log.error().append(logPrefix).append("Could not handle barrage update propagation: ")
-                                .append(exception).endl();
 
                         Streams.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
-                                .forEach(sub -> GrpcUtil.safelyExecute(() -> sub.listener.onError(apiError)));
+                                .forEach(sub -> GrpcUtil.safelyExecuteLocked(sub.listener,
+                                        () -> sub.listener.onError(apiError)));
 
                         activeSubscriptions.clear();
                         pendingSubscriptions.clear();
