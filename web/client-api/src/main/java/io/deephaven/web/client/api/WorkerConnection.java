@@ -163,6 +163,9 @@ public class WorkerConnection {
     private Map<String, JsVariableDefinition> knownFields = new HashMap<>();
     private ResponseStreamWrapper<FieldsChangeUpdate> fieldsChangeUpdateStream;
 
+    private long lastSuccessResponseTime = 0;
+    private static final long GIVE_UP_TIMEOUT_MS = 10_000;
+
     public WorkerConnection(QueryConnectable<?> info, Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
         this.info = info;
         this.config = new ClientConfiguration();
@@ -305,8 +308,10 @@ public class WorkerConnection {
 
     public void checkStatus(ResponseStreamWrapper.Status status) {
         // TODO provide simpler hooks to retry auth, restart the stream
+        final long now = System.currentTimeMillis();
         if (status.isOk()) {
             // success, ignore
+            lastSuccessResponseTime = now;
         } else if (status.getCode() == Code.Unauthenticated) {
             // TODO re-create session once?
             // for now treating this as fatal, UI should encourage refresh to try again
@@ -316,6 +321,13 @@ public class WorkerConnection {
             info.notifyConnectionError(status);
         } else if (status.getCode() == Code.Unavailable) {
             // TODO skip re-authing for now, just backoff and try again
+            if (lastSuccessResponseTime == 0) {
+                lastSuccessResponseTime = now;
+            } else if (now - lastSuccessResponseTime >= GIVE_UP_TIMEOUT_MS) {
+                // this actually seems to be a problem; likely the worker has unexpectedly exited
+                // UI should encourage refresh to try again (which will probably fail; but at least doesn't look "OK")
+                info.notifyConnectionError(status);
+            }
         } // others probably are meaningful to the caller
     }
 
@@ -354,14 +366,15 @@ public class WorkerConnection {
             sessionServiceClient.refreshSessionToken(req, metadata, (fail, success) -> {
                 if (fail != null) {
                     // TODO set a flag so others know not to try until we re-trigger initial auth
-                    // TODO re-trigger auth
+                    // TODO re-trigger auth; but for now let's try again using our last successful auth
                     checkStatus((ResponseStreamWrapper.Status) fail);
+                    authUpdate(handshakeResponse);
                     return;
                 }
                 // mark the new token, schedule a new check
                 authUpdate(success);
             });
-        }, 5000);
+        }, 2500);
     }
 
     private void notifyLog(LogItem log) {
