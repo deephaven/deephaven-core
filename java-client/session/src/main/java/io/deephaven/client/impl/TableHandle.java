@@ -204,6 +204,13 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         return response != null && response.getSuccess();
     }
 
+    public ExportedTableCreationResponse response() {
+        if (!isSuccessful()) {
+            throw new IllegalStateException("Should only get the response on success");
+        }
+        return response;
+    }
+
     /**
      * The table handle has an error when the response from the server indicates an error.
      *

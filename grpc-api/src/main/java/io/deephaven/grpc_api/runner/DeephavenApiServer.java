@@ -1,79 +1,30 @@
 package io.deephaven.grpc_api.runner;
 
-import io.deephaven.grpc_api.appmode.ApplicationInjector;
+import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.util.AbstractScriptSession;
-import io.deephaven.grpc_api.appmode.AppMode;
+import io.deephaven.db.v2.utils.MemoryTableLoggers;
+import io.deephaven.grpc_api.appmode.ApplicationInjector;
 import io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
-import io.deephaven.grpc_api.session.SessionService;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.utils.MemoryTableLoggers;
-import dagger.BindsInstance;
-import dagger.Component;
 import io.deephaven.grpc_api.log.LogInit;
+import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.grpc.Server;
 
 import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.TimeUnit;
 
 public class DeephavenApiServer {
-    @Singleton
-    @Component(modules = {
-            DeephavenApiServerModule.class,
-    })
-    public interface ServerComponent {
-        @Singleton
-        DeephavenApiServer getServer();
 
-        @Singleton
-        SessionService getSessionService();
+    private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
 
-        @Component.Builder
-        interface Builder {
-            @BindsInstance
-            Builder withPort(@Named("grpc.port") int port);
-
-            @BindsInstance
-            Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
-
-            @BindsInstance
-            Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
-
-            @BindsInstance
-            Builder withOut(@Named("out") PrintStream out);
-
-            @BindsInstance
-            Builder withErr(@Named("err") PrintStream err);
-
-            @BindsInstance
-            Builder withAppMode(AppMode appMode);
-
-            ServerComponent build();
-        }
-    }
-
-    public static void startMain(PrintStream out, PrintStream err)
-            throws IOException, InterruptedException, ClassNotFoundException {
-        final ServerComponent injector = DaggerDeephavenApiServer_ServerComponent
-                .builder()
-                .withPort(8080)
-                .withSchedulerPoolSize(4)
-                .withSessionTokenExpireTmMs(300000) // defaults to 5 min
-                .withOut(out)
-                .withErr(err)
-                .withAppMode(AppMode.currentMode())
-                .build();
-        final DeephavenApiServer server = injector.getServer();
-        final SessionService sessionService = injector.getSessionService();
-
+    public static void start(DeephavenApiServer server, SessionService sessionService)
+            throws IOException, ClassNotFoundException, InterruptedException {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
                 server.server::shutdown);
@@ -99,8 +50,6 @@ public class DeephavenApiServer {
         server.blockUntilShutdown();
     }
 
-    private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
-
     private final Server server;
     private final LiveTableMonitor ltm;
     private final LogInit logInit;
@@ -124,7 +73,11 @@ public class DeephavenApiServer {
         this.applicationService = applicationService;
     }
 
-    private void start() throws IOException, ClassNotFoundException {
+    public Server server() {
+        return server;
+    }
+
+    public void start() throws IOException, ClassNotFoundException {
         log.info().append("Configuring logging...").endl();
         logInit.run();
 
@@ -141,6 +94,30 @@ public class DeephavenApiServer {
 
         // inject applications before we start the gRPC server
         applicationInjector.run();
+
+        log.info().append("Starting server...").endl();
+        server.start();
+    }
+
+    void startForUnitTests() throws IOException {
+        // log.info().append("Configuring logging...").endl();
+        // logInit.run();
+
+        // MemoryTableLoggers.maybeStartStatsCollection();
+
+        // log.info().append("Creating/Clearing Script Cache...").endl();
+        // AbstractScriptSession.createScriptCache();
+
+        // Don't do script sessions yet...
+        // log.info().append("Initializing Script Session...").endl();
+        // consoleService.initializeGlobalScriptSession();
+
+        // Can't start LTM in Unit test mode ATM
+        // log.info().append("Starting LTM...").endl();
+        // ltm.start();
+
+        // inject applications before we start the gRPC server
+        // applicationInjector.run();
 
         log.info().append("Starting server...").endl();
         server.start();

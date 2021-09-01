@@ -16,6 +16,7 @@ import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
+import io.deephaven.grpc_api.DefensiveDrainable;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.FieldNode;
 import org.apache.arrow.flatbuf.Message;
@@ -41,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -49,6 +49,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static io.deephaven.grpc_api_client.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
@@ -688,26 +689,41 @@ public class BarrageStreamGenerator implements
         }
     }
 
-    public static class DrainableByteArrayInputStream extends ByteArrayInputStream implements Drainable {
+    public static class DrainableByteArrayInputStream extends DefensiveDrainable {
+
+        private byte[] buf;
+        private final int offset;
+        private final int length;
+
         public DrainableByteArrayInputStream(final byte[] buf, final int offset, final int length) {
-            super(buf, offset, length);
+            this.buf = Objects.requireNonNull(buf);
+            this.offset = offset;
+            this.length = length;
         }
 
         @Override
-        public synchronized int read() {
-            throw new UnsupportedOperationException("to be used as a Drainable only");
+        public int available() {
+            if (buf == null) {
+                return 0;
+            }
+            return length;
         }
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            final int numToDrain = count - pos;
-            outputStream.write(buf, pos, numToDrain);
-            pos += numToDrain;
-            return numToDrain;
+            if (buf != null) {
+                try {
+                    outputStream.write(buf, offset, length);
+                } finally {
+                    buf = null;
+                }
+                return length;
+            }
+            return 0;
         }
     }
 
-    public static class ConsecutiveDrainableStreams extends InputStream implements Drainable {
+    public static class ConsecutiveDrainableStreams extends DefensiveDrainable {
         final InputStream[] streams;
 
         ConsecutiveDrainableStreams(final InputStream... streams) {
@@ -733,11 +749,6 @@ public class BarrageStreamGenerator implements
                 }
             }
             return total;
-        }
-
-        @Override
-        public int read() {
-            throw new UnsupportedOperationException("to be used as a Drainable only");
         }
 
         @Override

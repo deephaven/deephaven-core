@@ -49,15 +49,13 @@ import java.util.concurrent.TimeUnit;
         PythonConsoleSessionModule.class
 })
 public class DeephavenApiServerModule {
+
     @Provides
     @Singleton
     static Server buildServer(
-            final @Named("grpc.port") int port,
+            final ServerBuilder<?> builder,
             final Set<BindableService> services,
             final Set<ServerInterceptor> interceptors) {
-
-        final ServerBuilder<?> builder = ServerBuilder.forPort(port);
-
         for (final BindableService service : services) {
             builder.addService(service);
         }
