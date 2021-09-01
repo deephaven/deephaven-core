@@ -504,3 +504,16 @@ class ComboAggOp(TableOp):
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
             combo_aggregate=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class FetchTableOp(TableOp):
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.FetchTable
+
+    def make_grpc_request(self, result_id, source_id):
+        return table_pb2.FetchTableRequest(result_id=result_id, source_id=source_id)
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        return table_pb2.BatchTableRequest.Operation(
+            empty_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
