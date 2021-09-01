@@ -33,11 +33,14 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 ### Required Dependencies
 
 Building and running Deephaven requires a few software packages.
-1. `git`
-2. `java`
-3. `docker`
-4. `docker-compose`
-5. (Windows) [WSL 2](https://docs.microsoft.com/en-us/windows/wsl/install-win10)
+
+| Package | Version | OS  |
+| ------- | ------- | --- |
+| `git`     |      | All |
+| `java`    | 8     | All |
+| `docker`  | ≥19.3     | All |
+| `docker-compose` | ≥1.29 | All |
+| [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) | 2 | Only Windows |
 
 You can check if these packages are installed and functioning by running:
 ```
