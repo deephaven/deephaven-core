@@ -157,6 +157,21 @@ your own data will not need the example data sets.
 [Deephaven's examples repository](https://github.com/deephaven/examples) contains documentation on the available data sets. 
 Additionally, there is documentation on managing the data sets. This includes instructions on how to upgrade to the latest version.
 
+To upgrade a deployment to the latest example data, run:
+
+```bash
+docker-compose run examples download
+```
+
+To see what other example data management commands are available, run:
+
+```bash
+docker-compose run examples
+```
+
+These commands must be run from the deployment directory.  
+If you deployment does not have example data, these commands will fail with `ERROR: No such service`.
+
 
 ## Run Deephaven IDE
 
