@@ -111,7 +111,7 @@ public class FlightExportTicketHelper {
      * @param logId an end-user friendly identification of the ticket should an error occur
      * @return a flight ticket that represents the descriptor
      */
-    public static Flight.Ticket descriptorToArrowTicket(final Flight.FlightDescriptor descriptor, final String logId) {
+    public static Flight.Ticket descriptorToFlightTicket(final Flight.FlightDescriptor descriptor, final String logId) {
         return exportIdToArrowTicket(descriptorToExportId(descriptor, logId));
     }
 

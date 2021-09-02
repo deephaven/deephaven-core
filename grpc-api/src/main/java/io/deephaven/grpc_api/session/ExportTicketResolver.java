@@ -44,7 +44,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                 .submit(() -> {
                     if (export.get() instanceof Table) {
                         return TicketRouter.getFlightInfo((Table) export.get(), descriptor,
-                                FlightExportTicketHelper.descriptorToArrowTicket(descriptor, logId));
+                                FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
                     }
 
                     throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
