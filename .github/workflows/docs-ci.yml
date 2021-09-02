@@ -120,8 +120,7 @@ jobs:
         with:
           switches: -avzr --delete
           path: pyclient/docs/build/html
-          remote_path: /core/client-api/python/
-          #remote_path: deephaven-core/pydoc/
+          remote_path: deephaven-core/client-api/python/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
