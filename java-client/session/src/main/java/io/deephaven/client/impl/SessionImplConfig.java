@@ -1,10 +1,7 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceBlockingStub;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
-import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
-import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
+import io.deephaven.grpc_api.DeephavenChannel;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
@@ -22,11 +19,7 @@ public abstract class SessionImplConfig {
 
     public abstract ScheduledExecutorService executor();
 
-    public abstract SessionServiceStub sessionService();
-
-    public abstract TableServiceStub tableService();
-
-    public abstract ConsoleServiceStub consoleService();
+    public abstract DeephavenChannel channel();
 
     /**
      * Whether the {@link Session} implementation will implement a batch {@link TableHandleManager}. By default, is
@@ -72,8 +65,8 @@ public abstract class SessionImplConfig {
         return Duration.parse(System.getProperty("deephaven.session.closeTimeout", "PT5s"));
     }
 
-    public final SessionImpl createSession(SessionServiceBlockingStub stubBlocking) {
-        return SessionImpl.create(this, stubBlocking);
+    public final SessionImpl createSession() {
+        return SessionImpl.create(this);
     }
 
     public final CompletableFuture<SessionImpl> createSessionFuture() {
@@ -84,11 +77,7 @@ public abstract class SessionImplConfig {
 
         Builder executor(ScheduledExecutorService executor);
 
-        Builder sessionService(SessionServiceStub sessionService);
-
-        Builder tableService(TableServiceStub tableService);
-
-        Builder consoleService(ConsoleServiceStub consoleService);
+        Builder channel(DeephavenChannel channel);
 
         Builder delegateToBatch(boolean delegateToBatch);
 

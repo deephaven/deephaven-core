@@ -101,10 +101,9 @@ public final class SessionImpl extends SessionBase {
         }
     }
 
-    public static SessionImpl create(SessionImplConfig config,
-            SessionServiceBlockingStub stubBlocking) {
+    public static SessionImpl create(SessionImplConfig config) {
         final HandshakeRequest request = initialHandshake();
-        final HandshakeResponse response = stubBlocking.newSession(request);
+        final HandshakeResponse response = config.channel().sessionBlocking().newSession(request);
         final AuthenticationInfo initialAuth = AuthenticationInfo.of(response);
         final SessionImpl session =
                 new SessionImpl(config, new Retrying(REFRESH_RETRIES), initialAuth);
@@ -115,7 +114,7 @@ public final class SessionImpl extends SessionBase {
     public static CompletableFuture<SessionImpl> createFuture(SessionImplConfig config) {
         final HandshakeRequest request = initialHandshake();
         final SessionObserver sessionObserver = new SessionObserver(config);
-        config.sessionService().newSession(request, sessionObserver);
+        config.channel().session().newSession(request, sessionObserver);
         return sessionObserver.future;
     }
 
@@ -191,10 +190,10 @@ public final class SessionImpl extends SessionBase {
         this.auth = Objects.requireNonNull(auth);
         this.handler = Objects.requireNonNull(handler);
         this.executor = config.executor();
-        this.sessionService = config.sessionService().withCallCredentials(credentials);
-        this.consoleService = config.consoleService().withCallCredentials(credentials);
+        this.sessionService = config.channel().session().withCallCredentials(credentials);
+        this.consoleService = config.channel().console().withCallCredentials(credentials);
         this.exportTicketCreator = new ExportTicketCreator();
-        this.states = new ExportStates(this, sessionService, config.tableService().withCallCredentials(credentials),
+        this.states = new ExportStates(this, sessionService, config.channel().table().withCallCredentials(credentials),
                 exportTicketCreator);
         this.delegateToBatch = config.delegateToBatch();
         this.mixinStacktrace = config.mixinStacktrace();
