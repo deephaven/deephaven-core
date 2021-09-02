@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ main ]
+    branches: [ 'main', 'docs/**']
     tags: [ 'v*' ]
 
 jobs:
@@ -97,6 +97,31 @@ jobs:
           switches: -avzr --delete
           path: sphinx/build/docs/
           remote_path: deephaven-core/pydoc/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+
+  pyclientdoc:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Generate the docs in html
+        run: |
+          pip3 install sphinx sphinx-autodoc-typehints
+          cd pyclient/docs
+          make html
+
+      - name: Deploy Python Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: pyclient/docs/build/html
+          remote_path: /core/client-api/python/
+          #remote_path: deephaven-core/pydoc/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
