@@ -32,20 +32,17 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 
 ### Required Dependencies
 
-Building and running Deephaven requires a few software packages.
+Running Deephaven requires a few software packages.
 
 | Package | Version | OS  |
 | ------- | ------- | --- |
-| git     |  | All |
-| java    | 8 | All |
 | docker  | ≥19.3 | All |
 | docker-compose | ≥1.29 | All |
 | WSL | 2 | Only Windows |
 
 You can check if these packages are installed and functioning by running:
 ```
-git version
-java -version
+docker version
 docker-compose version
 docker run hello-world
 ```
@@ -59,35 +56,6 @@ These commands must be run using WSL 2 on Windows.
   on other operating systems.
   
   Instructions for installing WSL 2 can be found at [https://docs.microsoft.com/en-us/windows/wsl/install-win10](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
-</details>
-
-<details>
-  <summary>Installing Java...</summary>
-
-  Deephaven can be built with either [Oracle JDK](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html)
-   or [OpenJDK](https://openjdk.java.net/install/).  Java 8 is required.  To install Java, run
-  * Mac
-      ```
-      brew install openjdk@8
-      ```
-      OpenJDK 8 may need to be added to your path:
-      ```
-      echo 'export PATH="/usr/local/opt/openjdk@8/bin:$PATH"' >> ~/.zshrc
-      ```
-  * Windows WSL2 - Ubuntu
-      ```
-      sudo apt update
-      sudo apt install openjdk-8-jdk-headless
-      ```
-  * Linux
-      ```
-      sudo apt update
-      sudo apt install openjdk-8-jdk
-      ```
-    or
-      ```
-      sudo yum install java-1.8.0-openjdk
-      ```
 </details>
 
 <details>
@@ -133,39 +101,92 @@ These commands must be run using WSL 2 on Windows.
       ```
 </details>
 
+### Choose a deployment
 
-### Checkout & Build Deephaven
+When determining which deployment is right for your application, there are two key questions:
 
-Once all of the required dependencies are installed and functioning, run:
+1. What programming language will your queries be written in?
+2. Do you need example data from the [Deephaven's examples repository](https://github.com/deephaven/examples)?
+
+Based on your answers, you can use the following table to find the URL to the desired Docker Compose configuration. For example, if you will be working through examples in the Deephaven documentation, and you develop in Python, you will choose [https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml), since it supports Python queries and has the example data used in the Deephaven documentation.
+
+| Language | Examples | URL                                                                                                           |
+| -------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| Groovy   | No       | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy/docker-compose.yml          |
+| Groovy   | Yes      | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy-examples/docker-compose.yml |
+| Python   | No       | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/docker-compose.yml          |
+| Python   | Yes      | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml |
+
+### Set up your Deephaven deployment
+
+First, create a directory for the system to live in. Use any directory name you like; we chose `deephaven-deployment`:
+
+```bash
+mkdir deephaven-deployment
 ```
-    git clone git@github.com:deephaven/deephaven-core.git
-    cd deephaven-core
-    ./gradlew prepareCompose
-    docker-compose build
+
+Then, make that the current working directory:
+
+```bash
+cd deephaven-deployment
 ```
-These commands will create:
- 1. a `deephaven-core` directory containing the source code.
- 2. Docker images containing everything needed to launch Deephaven.
 
-### Run Deephaven (Python)
+Now, use `curl` to get the Docker Compose file for your desired configuration. Substitute the URL of your choice from the table above. We use the Python build with the examples manager included:
 
-From the `deephaven-core` directory, run
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml -O
 ```
-    docker-compose up
+
+Now that the `docker-compose.yml` file is locally available, download the Docker images:
+
+```bash
+docker-compose pull
 ```
-This will start Deephaven.  The console will fill with status and logging output.
 
-Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
+Since this step only gets the container images and does not run anything, the Deephaven services will not start, and you will not see any logging output.
 
-### Run Deephaven (Groovy)
+When new features are added to Deephaven, you will need to redownload the `docker-compose.yml` file and redownload the Docker images to get the latest version of Deephaven.
 
-From the `deephaven-core` directory, run
+## Manage the Deephaven deployment
+
+Now that your chosen configuration is set up, enter its directory and bring up the deployment:
+
+```bash
+docker-compose up -d
 ```
-    docker-compose --env-file default_groovy.env up
-```
-This will start Deephaven.  The console will fill with status and logging output.
 
-Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
+The `-d` option causes the containers to run in the background, in detached mode. This option allows you to use your shell after Docker launches the containers.
+
+Since the container is running detached, you will not see any logs. However, you can follow the logs by running:
+
+```bash
+docker-compose logs -f
+```
+
+Use CTRL+C to stop monitoring the logs and return to a prompt.
+
+The deployment can be brought down by running:
+
+```bash
+docker-compose down
+```
+
+The Deephaven containers use a few [Docker volumes](https://docs.docker.com/storage/volumes/) to store persistent data. If you don't want to keep that persistent storage around, you might want to remove all the volumes that were associated with the deployment. This can be done by running:
+
+Running the following command will permanently delete important state for your Deephaven deployment. Only perform this step if you are certain that the deployment state is no longer needed.
+
+```bash
+docker-compose down -v
+```
+
+### Manage example data
+
+The [Deephaven examples repository](https://github.com/deephaven/examples) contains data sets that are useful when learning to use Deephaven. These data sets are used extensively in Deephaven's documentation and are needed to run some examples.
+
+If you have chosen a deployment with example data, the example data sets will be downloaded. Production deployments containing your own data will not need the example data sets.
+
+[Deephaven's examples repository](https://github.com/deephaven/examples) contains documentation on the available data sets. Additionally, there is documentation on managing the data sets. This includes instructions on how to upgrade to the latest version.
+
 
 ### Run Deephaven IDE
 

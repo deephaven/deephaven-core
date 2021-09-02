@@ -17,6 +17,7 @@ You can check if these packages are installed and functioning by running:
 ```
 git version
 java -version
+docker version
 docker-compose version
 docker run hello-world
 ```
