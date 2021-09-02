@@ -41,8 +41,7 @@ services:
     image: ghcr.io/deephaven/examples
     volumes:
       - ./data:/data
-    args:
-      - download
+    command: download
 
 volumes:
     web-tmp:
