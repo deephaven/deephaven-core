@@ -23,6 +23,7 @@ import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.hash.KeyedIntObjectHash;
@@ -233,7 +234,7 @@ public class SessionState {
      * @return a future-like object that represents this export
      */
     public <T> ExportObject<T> getExport(final Flight.Ticket ticket, final String logId) {
-        return getExport(ExportTicketHelper.ticketToExportId(ticket, logId));
+        return getExport(FlightExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     /**
@@ -321,7 +322,7 @@ public class SessionState {
      * @return an export builder
      */
     public <T> ExportBuilder<T> newExport(final Flight.Ticket ticket, final String logId) {
-        return newExport(ExportTicketHelper.ticketToExportId(ticket, logId));
+        return newExport(FlightExportTicketHelper.ticketToExportId(ticket, logId));
     }
 
     /**
