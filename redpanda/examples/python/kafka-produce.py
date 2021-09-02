@@ -20,35 +20,45 @@
 # == Common to all:
 #
 #  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
-#  * From web UI do: > from deephaven import KafkaTools
+#  * From web UI do:
+#
+#    > from deephaven import KafkaTools as kt
 #
 # == Example (1)  Simple String Key and simple double Value
 #
 # From web UI do:
-# > t = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes', table_type='append')
+#
+#    > t = kt.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes', table_type='append')
+#
 # You should see a table show up with columns [ KafkaPartition, KafkaOffset, KafkaTimestamp, symbol, price ]
 #
 # Run this script on the host (not on a docker image) to produce one row:
-# $ python ./kafka-produce.py quotes MSFT double:274.82
+#
+#    $ python3 ./kafka-produce.py quotes 0 MSFT double:274.82
+#
 # You should see one row show up on the web UI table, data matching above.
 #
 # == Example (2)  Simple String Key and simple long Value
 #
 # From web UI do:
-# > t2 = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics', table_type='append')
+#    > t2 = kt.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics', table_type='append')
+#
 # You should see a table show up with columns: [ KafkaTimestamp, Metric, Value ]
 #
 # Run this script on the host (not on a docker image) to produce one row:
-# $ python ./kafka-produce.py metrics us_west.latency.millis long:29
+#
+#    $ python3 ./kafka-produce.py metrics 0 us_west.latency.millis long:29
 #
 # == Example (3)  JSON.
 #
 # From web UI do:
-# > from deephaven.TableTools import *   # to get colDef
-# > t = consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value_json=[ ('Symbol', 'string'), ('Side', 'string'), ('Price', 'double'), ('Qty', 'int') ], table_type='append')
+#
+#    > import deephaven.Types as dh
+#    > t3 = kt.consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value=kt.json([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_) ]), table_type='append')
 #
 # Run this script on the host (not on a docker image) to produce one row:
-# $ python3 kafka-produce.py orders 0 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200" }'
+#
+#    $ python3 kafka-produce.py orders 0 '' 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200" }'
 #
 # You should see one row of data as per above showing up in the UI.
 #
@@ -61,15 +71,30 @@ import struct
 
 data_arg_form = "type:value"
 
-if len(sys.argv) < 4 or len(sys.argv) > 5 or (len(sys.argv) == 2 and sys.argv[1] == '-h'):
+def usage():
     print("Usage: " + sys.argv[0] + " topic-name partition " +
           data_arg_form + " [" + data_arg_form + "]", file=sys.stderr)
     sys.exit(1)
+    
+
+if len(sys.argv) < 4 or len(sys.argv) > 5 or (len(sys.argv) == 2 and sys.argv[1] == '-h'):
+    usage()
 
 c = 1
+
 topic_name = sys.argv[c]
 c += 1
-partition = int(sys.argv[c])
+
+try:
+    partition = int(sys.argv[c])
+except ValueError as err:
+    print('Failed to parse "' + sys.argv[c] + '" as a partition number: ' + str(err), file=sys.stderr)
+    usage()
+
+if partition < 0:
+    print('Partition argument should be a non-negative integer, instead got: ' + str(partition), file=sys.stderr)
+    usage()
+    
 c += 1
 
 def delivery_report(err, msg):
