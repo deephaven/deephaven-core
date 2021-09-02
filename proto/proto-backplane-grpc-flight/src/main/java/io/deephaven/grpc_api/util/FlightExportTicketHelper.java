@@ -14,7 +14,7 @@ public class FlightExportTicketHelper {
      * @param exportId the export id
      * @return a grpc Ticket wrapping the export id
      */
-    public static Flight.Ticket exportIdToArrowTicket(int exportId) {
+    public static Flight.Ticket exportIdToFlightTicket(int exportId) {
         final byte[] dest = ExportTicketHelper.exportIdToBytes(exportId);
         return Flight.Ticket.newBuilder().setTicket(ByteStringAccess.wrap(dest)).build();
     }
@@ -112,7 +112,7 @@ public class FlightExportTicketHelper {
      * @return a flight ticket that represents the descriptor
      */
     public static Flight.Ticket descriptorToFlightTicket(final Flight.FlightDescriptor descriptor, final String logId) {
-        return exportIdToArrowTicket(descriptorToExportId(descriptor, logId));
+        return exportIdToFlightTicket(descriptorToExportId(descriptor, logId));
     }
 
     /**
