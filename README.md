@@ -36,11 +36,11 @@ Building and running Deephaven requires a few software packages.
 
 | Package | Version | OS  |
 | ------- | ------- | --- |
-| `git`     |      | All |
-| `java`    | 8     | All |
-| `docker`  | ≥19.3     | All |
-| `docker-compose` | ≥1.29 | All |
-| [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) | 2 | Only Windows |
+| git     |  | All |
+| java    | 8 | All |
+| docker  | ≥19.3 | All |
+| docker-compose | ≥1.29 | All |
+| WSL | 2 | Only Windows |
 
 You can check if these packages are installed and functioning by running:
 ```
@@ -49,6 +49,17 @@ java -version
 docker-compose version
 docker run hello-world
 ```
+
+These commands must be run using WSL 2 on Windows.
+
+<details>
+  <summary>Installing WSL 2...</summary>
+
+  On Windows, Windows Subsystem for Linux (WSL) version 2 must be installed.  WSL is not needed
+  on other operating systems.
+  
+  Instructions for installing WSL 2 can be found at [https://docs.microsoft.com/en-us/windows/wsl/install-win10](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+</details>
 
 <details>
   <summary>Installing Java...</summary>
