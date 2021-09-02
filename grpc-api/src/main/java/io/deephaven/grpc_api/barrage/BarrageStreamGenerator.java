@@ -599,7 +599,7 @@ public class BarrageStreamGenerator implements
 
         /**
          * Appends the intersection of the viewport and the originally provided index.
-         * 
+         *
          * @param viewport the key-space version of the viewport
          * @param builder the flatbuffer builder
          * @return offset of the item in the flatbuffer
@@ -702,12 +702,12 @@ public class BarrageStreamGenerator implements
         public int drainTo(final OutputStream outputStream) throws IOException {
             final int numToDrain = count - pos;
             outputStream.write(buf, pos, numToDrain);
-            count += numToDrain;
+            pos += numToDrain;
             return numToDrain;
         }
     }
 
-    private static class ConsecutiveDrainableStreams extends InputStream implements Drainable {
+    public static class ConsecutiveDrainableStreams extends InputStream implements Drainable {
         final InputStream[] streams;
 
         ConsecutiveDrainableStreams(final InputStream... streams) {
