@@ -1,36 +1,7 @@
-# Deephaven Community Core
 
-![Deephaven Data Labs Logo](docs/images/Deephaven_GH_Logo.svg)
+# Build and Run Deephaven
 
-Deephaven Community Core is a real-time, time-series, column-oriented analytics engine
-with relational database features.
-Queries can seamlessly operate upon both historical and real-time data.
-Deephaven includes an intuitive user experience and visualization tools.
-It can ingest data from a variety of sources, apply computation and analysis algorithms
-to that data, and build rich queries, dashboards, and representations with the results.
-
-Deephaven Community Core is an open version of [Deephaven Enterprise](https://deephaven.io),
-which functions as the data backbone for prominent hedge funds, banks, and financial exchanges.
-
-![Build CI](https://github.com/deephaven/deephaven-core/actions/workflows/build-ci.yml/badge.svg?branch=main)
-![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
-![Docs CI](https://github.com/deephaven/deephaven-core/actions/workflows/docs-ci.yml/badge.svg?branch=main)
-![Long Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/long-check-ci.yml/badge.svg?branch=main)
-![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg?branch=main)
-![Nightly Benchmarks](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-benchmarks.yml/badge.svg?branch=main)
-
-## Supported Languages
-
-| Language      | Server Application | Client Application (OpenAPI) |
-| ------------- | ------------------ | ---------------------------- |
-| Python        | Yes                | No                           |
-| Java / Groovy | Yes                | No                           |
-| JavaScript    | No                 | Yes                          |
-| gRPC          | -                  | Yes                          |
-
-## Running Deephaven
-
-### Required Dependencies
+## Required Dependencies
 
 Building and running Deephaven requires a few software packages.
 
@@ -134,7 +105,7 @@ These commands must be run using WSL 2 on Windows.
 </details>
 
 
-### Checkout & Build Deephaven
+## Checkout & Build Deephaven
 
 Once all of the required dependencies are installed and functioning, run:
 ```
@@ -147,7 +118,7 @@ These commands will create:
  1. a `deephaven-core` directory containing the source code.
  2. Docker images containing everything needed to launch Deephaven.
 
-### Run Deephaven (Python)
+## Run Deephaven (Python)
 
 From the `deephaven-core` directory, run
 ```
@@ -157,7 +128,7 @@ This will start Deephaven.  The console will fill with status and logging output
 
 Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
 
-### Run Deephaven (Groovy)
+## Run Deephaven (Groovy)
 
 From the `deephaven-core` directory, run
 ```
@@ -167,7 +138,7 @@ This will start Deephaven.  The console will fill with status and logging output
 
 Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
 
-### Run Deephaven IDE
+## Run Deephaven IDE
 
 Once Deephaven is running, you can launch a Deephaven IDE in your web browser.  Deephaven IDE allows you
 to interactively analyze data and develop new analytics.
@@ -209,24 +180,3 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 ![alt_text](docs/images/ide_first_query.png "Deephaven IDE First Query")
 
-
-## Resources
-* [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
-* [Discussions](https://docs.github.com/en/discussions)
-* [deephaven.io](https://deephaven.io)
-* [Deephaven Community Core docs](https://deephaven.io/core/docs/)
-* [Java API docs](https://deephaven.io/core/javadoc/)
-* [Python API docs](https://deephaven.io/core/pydoc/)
-
-## Code Of Conduct
-
-This project has adopted the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/0/code_of_conduct/).
-For more information see the [Code of Conduct](CODE_OF_CONDUCT.md) or contact [opencode@deephaven.io](mailto:opencode@deephaven.io)
-with any additional questions or comments.
-
-
-## License
-
-Copyright (c) Deephaven Data Labs. All rights reserved.
-
-Provided under the [Deephaven Community License](LICENSE.md).
