@@ -36,6 +36,10 @@ For detailed instructions on running Deephaven, see [Launch Deephaven from pre-b
 For detailed instructions on building and running Deephaven from source code, 
 see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build).
 
+If you are not sure which of the two is right for you, you want to use the pre-built images.
+The pre-built images are for normal Deephaven deployments.
+Building from source is for developers that are modifying the Deephaven Community Core source code.
+
 ### Required Dependencies
 
 Running Deephaven requires a few software packages.
@@ -58,9 +62,9 @@ On Windows, these commands must be run using WSL 2.
 If any dependencies are missing or unsupported versions are installed, 
 see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
 
-### Quick Start: Python
+### Launch: Python
 
-Run the following commands to launch Deephaven for Python. 
+Run the following commands to launch Deephaven for Python server applications. 
 
 ```bash
 mkdir deephaven-deployment
@@ -70,9 +74,9 @@ docker-compose pull
 docker-compose up -d
 ```
 
-### Quick Start: Python With Example Data
+### Launch: Python With Example Data
 
-Run the following commands to launch Deephaven for Python, with example data.
+Run the following commands to launch Deephaven for Python server applications, with example data.
 
 ```bash
 mkdir deephaven-deployment
@@ -82,9 +86,9 @@ docker-compose pull
 docker-compose up -d
 ```
 
-### Quick Start: Groovy / Java
+### Launch: Groovy / Java
 
-Run the following commands to launch Deephaven for Groovy / Java. 
+Run the following commands to launch Deephaven for Groovy / Java server applications. 
 
 ```bash
 mkdir deephaven-deployment
@@ -94,9 +98,9 @@ docker-compose pull
 docker-compose up -d
 ```
 
-### Quick Start: Groovy / Java With Example Data
+### Launch: Groovy / Java With Example Data
 
-Run the following commands to launch Deephaven for Groovy / Java, with example data.
+Run the following commands to launch Deephaven for Groovy / Java server applications, with example data.
 
 ```bash
 mkdir deephaven-deployment
@@ -121,7 +125,7 @@ This command must be run from the deployment directory.
 
 Use CTRL+C to stop monitoring the logs and return to a prompt.
 
-### Shutdown Deephaven
+### Shutdown
 
 The deployment can be brought down by running:
 
