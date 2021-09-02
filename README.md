@@ -62,13 +62,24 @@ On Windows, these commands must be run using WSL 2.
 If any dependencies are missing or unsupported versions are installed, 
 see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
 
+
+### Create Deployment
+
+A directory must be created to store files and mount points for your deployment.
+Here, we are using the `deephaven-deployment` directory.  
+
+You will need to cd into the deployment directory to launch or interact with the deployment.
+
+```bash
+mkdir deephaven-deployment
+cd deephaven-deployment
+```
+
 ### Launch: Python
 
 Run the following commands to launch Deephaven for Python server applications. 
 
 ```bash
-mkdir deephaven-deployment
-cd deephaven-deployment
 curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/docker-compose.yml -O
 docker-compose pull
 docker-compose up -d
@@ -79,36 +90,36 @@ docker-compose up -d
 Run the following commands to launch Deephaven for Python server applications, with example data.
 
 ```bash
-mkdir deephaven-deployment
-cd deephaven-deployment
 curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml -O
 docker-compose pull
 docker-compose up -d
 ```
+
+These commands must be run from the deployment directory.
 
 ### Launch: Groovy / Java
 
 Run the following commands to launch Deephaven for Groovy / Java server applications. 
 
 ```bash
-mkdir deephaven-deployment
-cd deephaven-deployment
 curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy/docker-compose.yml -O
 docker-compose pull
 docker-compose up -d
 ```
+
+These commands must be run from the deployment directory.
 
 ### Launch: Groovy / Java With Example Data
 
 Run the following commands to launch Deephaven for Groovy / Java server applications, with example data.
 
 ```bash
-mkdir deephaven-deployment
-cd deephaven-deployment
 curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy-examples/docker-compose.yml -O
 docker-compose pull
 docker-compose up -d
 ```
+
+These commands must be run from the deployment directory.
 
 ### Monitor Logs
 
