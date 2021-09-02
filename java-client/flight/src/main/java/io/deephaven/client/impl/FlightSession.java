@@ -1,6 +1,6 @@
 package io.deephaven.client.impl;
 
-import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.Criteria;
 import org.apache.arrow.flight.FlightClient;
@@ -55,7 +55,7 @@ public final class FlightSession implements AutoCloseable {
     }
 
     private static FlightDescriptor descriptor(Export export) {
-        return adapt(ExportTicketHelper.ticketToDescriptor(export.ticket(), "export"));
+        return adapt(FlightExportTicketHelper.ticketToDescriptor(export.ticket(), "export"));
     }
 
     private static FlightDescriptor adapt(
