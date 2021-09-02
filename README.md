@@ -33,6 +33,9 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 This section is a quick start guide for running Deephaven from pre-built images.
 For detailed instructions on running Deephaven, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
 
+For detailed instructions on building and running Deephaven from source code, 
+see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build)
+
 ### Required Dependencies
 
 Running Deephaven requires a few software packages.
@@ -52,7 +55,7 @@ docker run hello-world
 
 On Windows, these commands must be run using WSL 2.
 
-If any dependencies are missing or are unsupported versions, 
+If any dependencies are missing or unsupported versions are installed, 
 see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
 
 ### Quick Start: Python
@@ -138,12 +141,6 @@ your own data will not need the example data sets.
 
 [Deephaven's examples repository](https://github.com/deephaven/examples) contains documentation on the available data sets. 
 Additionally, there is documentation on managing the data sets. This includes instructions on how to upgrade to the latest version.
-
-
-## Build Deephaven
-
-For detailed instructions on building and running Deephaven from source code, 
-see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build)
 
 
 ## Run Deephaven IDE
