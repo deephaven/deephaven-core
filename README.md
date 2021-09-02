@@ -34,7 +34,7 @@ This section is a quick start guide for running Deephaven from pre-built images.
 For detailed instructions on running Deephaven, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
 
 For detailed instructions on building and running Deephaven from source code, 
-see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build)
+see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build).
 
 ### Required Dependencies
 
@@ -188,7 +188,7 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 ## Resources
 * [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
-* [Discussions](https://docs.github.com/en/discussions)
+* [Discussions](https://github.com/deephaven/deephaven-core/discussions)
 * [deephaven.io](https://deephaven.io)
 * [Deephaven Community Core docs](https://deephaven.io/core/docs/)
 * [Java API docs](https://deephaven.io/core/javadoc/)
