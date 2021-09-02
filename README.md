@@ -47,7 +47,7 @@ docker-compose version
 docker run hello-world
 ```
 
-These commands must be run using WSL 2 on Windows.
+On Windows, these commands must be run using WSL 2.
 
 <details>
   <summary>Installing WSL...</summary>
