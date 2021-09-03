@@ -73,6 +73,7 @@ public class SessionService {
                         .setIsFromUncaughtException(isFromUncaught)
                         .setReason(message);
 
+        // TODO (core#801): revisit this error communication to properly match the API Error mode
         while (throwable != null) {
             builder.addStackTraces(transformToProtoBuf(throwable));
             throwable = throwable.getCause();
