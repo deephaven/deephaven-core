@@ -117,7 +117,6 @@ public class SessionService {
         terminationListeners.add(new TerminationNotificationListener(session, responseObserver));
     }
 
-
     /**
      * Create a new session object for the provided auth context.
      *
