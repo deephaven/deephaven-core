@@ -34,11 +34,9 @@ This section is a quick start guide for running Deephaven from pre-built images.
 For detailed instructions on running Deephaven, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
 
 For detailed instructions on building and running Deephaven from source code, 
-see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build).
+Developers interested in tinkering with and modifying source code should build from the source code.  For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build).
 
 If you are not sure which of the two is right for you, you want to use the pre-built images.
-The pre-built images are for normal Deephaven deployments.
-Building from source is for developers that are modifying the Deephaven Community Core source code.
 
 ### Required Dependencies
 
@@ -59,16 +57,15 @@ docker run hello-world
 
 On Windows, these commands must be run using WSL 2.
 
-If any dependencies are missing or unsupported versions are installed, 
-see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
+If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built/#prerequisites) for installation instructions.
 
 
-### Create Deployment
+### Create deployment
 
 A directory must be created to store files and mount points for your deployment.
 Here, we are using the `deephaven-deployment` directory.  
 
-You will need to cd into the deployment directory to launch or interact with the deployment.
+You will need to `cd` into the deployment directory to launch or interact with the deployment.
 
 ```bash
 mkdir deephaven-deployment
@@ -85,7 +82,9 @@ docker-compose pull
 docker-compose up -d
 ```
 
-### Launch: Python With Example Data
+These commands must be run from the deployment directory.
+
+### Launch: Python with example data
 
 Run the following commands to launch Deephaven for Python server applications, with example data.
 
@@ -109,7 +108,7 @@ docker-compose up -d
 
 These commands must be run from the deployment directory.
 
-### Launch: Groovy / Java With Example Data
+### Launch: Groovy / Java with example data
 
 Run the following commands to launch Deephaven for Groovy / Java server applications, with example data.
 
@@ -121,7 +120,7 @@ docker-compose up -d
 
 These commands must be run from the deployment directory.
 
-### Monitor Logs
+### Monitor logs
 
 The `-d` option to `docker-compose` causes the containers to run in the background, in detached mode. 
 This option allows you to use your shell after Docker launches the containers.
@@ -148,14 +147,12 @@ This command must be run from the deployment directory.
 
 ### Manage example data
 
-The [Deephaven examples repository](https://github.com/deephaven/examples) contains data sets that are useful when learning 
-to use Deephaven. These data sets are used extensively in Deephaven's documentation and are needed to run some examples.
+[Deephaven's examples repository](https://github.com/deephaven/examples) contains data sets that are useful when learning 
+to use Deephaven. These data sets are used extensively in Deephaven's documentation and are needed to run some examples. [Deephaven's examples repository](https://github.com/deephaven/examples) contains documentation on the available data sets and how to manage them. 
 
 If you have chosen a deployment with example data, the example data sets will be downloaded. Production deployments containing 
 your own data will not need the example data sets.
 
-[Deephaven's examples repository](https://github.com/deephaven/examples) contains documentation on the available data sets. 
-Additionally, there is documentation on managing the data sets. This includes instructions on how to upgrade to the latest version.
 
 To upgrade a deployment to the latest example data, run:
 
@@ -170,18 +167,15 @@ docker-compose run examples
 ```
 
 These commands must be run from the deployment directory.  
-If you deployment does not have example data, these commands will fail with `ERROR: No such service`.
+If your deployment does not have example data, these commands will fail with `ERROR: No such service`.
 
 
 ## Run Deephaven IDE
 
-Once Deephaven is running, you can launch a Deephaven IDE in your web browser.  Deephaven IDE allows you
-to interactively analyze data and develop new analytics.
+Once Deephaven is running, you can launch a Deephaven IDE in your web browser.  Deephaven IDE allows you to interactively analyze data.
 
-- If Deephaven is running locally,
-navigate to [http://localhost:10000/ide/](http://localhost:10000/ide/).
-- If Deephaven is running remotely, navigate
-to `http://<hostname>:10000/ide/`, where `<hostname>` is the address of the machine Deephaven is running on.
+- If Deephaven is running locally, navigate to [http://localhost:10000/ide/](http://localhost:10000/ide/).
+- If Deephaven is running remotely, navigate to `http://<hostname>:10000/ide/`, where `<hostname>` is the address of the machine Deephaven is running on.
 
 ![alt_text](docs/images/ide_startup.png "Deephaven IDE")
 
