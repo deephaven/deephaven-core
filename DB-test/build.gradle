@@ -5,8 +5,8 @@ plugins {
 evaluationDependsOn ':Integrations' // runtimeBase
 
 configurations {
-  //compile.extendsFrom dhDb
-  testCompile.extendsFrom dhDbTest, fishIoTest
+  //compile.extendsFrom dhEngine
+  testCompile.extendsFrom dhEngineTest, fishIoTest
 }
 
 test {

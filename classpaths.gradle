@@ -42,14 +42,14 @@ configurations {
 
     dhNumerics.extendsFrom fishNumerics, jama
     dhUtil.extendsFrom commonsCli, commonsIo, commonsCsv, commonsLang3, commonsText, fishUtil, fishStats, jdom
-    dhDb.extendsFrom fishStats, fishNumerics, jdom, commonsCsv, commonsCli, commonsLang3, jacksonDatabind, slf4jSimple
-    dhDbTest.extendsFrom dhDb, mxj, fishDataTest
-    dhPlot.extendsFrom dhDb
+    dhEngine.extendsFrom fishStats, fishNumerics, jdom, commonsCsv, commonsCli, commonsLang3, jacksonDatabind, slf4jSimple
+    dhEngineTest.extendsFrom dhEngine, mxj, fishDataTest
+    dhPlot.extendsFrom dhEngine
     dhDbTypes.extendsFrom fishBase, commonsIo
     dhDbTypesImpl.extendsFrom fishBase, commonsIo
     dhBenchmarkSupport.extendsFrom fishData, commonsCsv
     dhIntegrations.extendsFrom math3
-    dhKafka.extendsFrom dhDb
+    dhKafka.extendsFrom dhEngine
 }
 
 // exported properties
@@ -108,7 +108,7 @@ dependencies {
 
     dhUtil 'ant:ant:1.6.5'
 
-    dhDb 'joda-time:joda-time:2.10',
+    dhEngine 'joda-time:joda-time:2.10',
             "org.codehaus.groovy:groovy:$GROOVY_VERSION",
             "org.codehaus.groovy:groovy-json:$GROOVY_VERSION",
             'com.jcraft:jsch:0.1.51',

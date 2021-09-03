@@ -1,7 +1,7 @@
 configurations {
     compile.extendsFrom dhBenchmarkSupport
 
-    testCompile.extendsFrom dhDbTest, fishIoTest
+    testCompile.extendsFrom dhEngineTest, fishIoTest
 
     testRuntime.extendsFrom fishDataGenerator
 }

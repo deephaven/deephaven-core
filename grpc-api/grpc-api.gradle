@@ -3,8 +3,8 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom dhDb
-    testCompile.extendsFrom dhDbTest
+    compile.extendsFrom dhEngine
+    testCompile.extendsFrom dhEngineTest
 
     // custom configuration, sourceset, test task to keep flight-core off the main/test classpath
     flightTestCompile.extendsFrom(testCompile)

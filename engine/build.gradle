@@ -1,9 +1,9 @@
 import io.deephaven.tools.Tools
 
 configurations {
-    compile.extendsFrom dhDb
+    compile.extendsFrom dhEngine
 
-    testCompile.extendsFrom dhDbTest, mxj, fishIoTest
+    testCompile.extendsFrom dhEngineTest, mxj, fishIoTest
 
     testRuntime.extendsFrom fishDataGenerator
 

@@ -1,7 +1,7 @@
 configurations {
     compile.extendsFrom dhPlot
 
-    testCompile.extendsFrom dhDbTest, fishIoTest
+    testCompile.extendsFrom dhEngineTest, fishIoTest
 }
 
 dependencies {
