@@ -67,6 +67,12 @@ service SessionService {
    * updated exports. An export id of zero will be sent to indicate all pre-existing exports have been sent.
    */
   rpc ExportNotifications(ExportNotificationRequest) returns (stream ExportNotification) {}
+
+  /*
+   * Receive a best-effort message on-exit indicating why this server is exiting. Reception of this message cannot be
+   * guaranteed.
+   */
+  rpc TerminationNotification(TerminationNotificationRequest) returns (TerminationNotificationResponse) {}
 }
 
 /*
@@ -171,4 +177,25 @@ message ExportNotification {
    * will be set to an identifier of the dependency that cascaded the error if applicable
    */
   string dependent_handle = 4;
+}
+
+message TerminationNotificationRequest {
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}
+
+message TerminationNotificationResponse {
+  // whether or not this termination is expected
+  bool abnormal_termination = 1;
+  // if additional information is available then provide it in this field
+  string reason = 2;
+  // if this is due to an exception, whether or not it was uncaught
+  bool is_from_uncaught_exception = 3;
+  // if applicable, the list of stack traces in reverse causal order
+  repeated StackTrace stack_traces = 4;
+
+  message StackTrace {
+    string type = 1;
+    string message = 2;
+    repeated string elements = 3;
+  }
 }

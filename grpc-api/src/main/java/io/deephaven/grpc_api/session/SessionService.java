@@ -4,21 +4,25 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.Deque;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 @Singleton
 public class SessionService {
@@ -36,6 +40,8 @@ public class SessionService {
     private boolean cleanupJobInstalled = false;
     private final SessionCleanupJob sessionCleanupJob = new SessionCleanupJob();
 
+    private final List<TerminationNotificationListener> terminationListeners = new CopyOnWriteArrayList<>();
+
     @Inject()
     public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
             @Named("session.tokenExpireMs") final long tokenExpireMs) {
@@ -51,7 +57,63 @@ public class SessionService {
 
         // Protect ourselves from rotation spam, but be loose enough that any reasonable refresh strategy works.
         this.tokenRotateMs = tokenExpireMs / 5;
+
+        ProcessEnvironment.getGlobalFatalErrorReporter().addInterceptor(this::onFatalError);
     }
+
+    private synchronized void onFatalError(
+            @NotNull String message,
+            @NotNull Throwable throwable,
+            boolean isFromUncaught) {
+        final TerminationNotificationResponse.Builder builder =
+                TerminationNotificationResponse.newBuilder()
+                        .setAbnormalTermination(true)
+                        .setIsFromUncaughtException(isFromUncaught)
+                        .setReason(message);
+
+        while (throwable != null) {
+            builder.addStackTraces(transformToProtoBuf(throwable));
+            throwable = throwable.getCause();
+        }
+
+        final TerminationNotificationResponse notification = builder.build();
+        terminationListeners.forEach(listener -> listener.sendMessage(notification));
+        terminationListeners.clear();
+    }
+
+    private static TerminationNotificationResponse.StackTrace transformToProtoBuf(@NotNull final Throwable throwable) {
+        return TerminationNotificationResponse.StackTrace.newBuilder()
+                .setType(throwable.getClass().getSimpleName())
+                .setMessage(throwable.getMessage())
+                .addAllElements(Arrays.stream(throwable.getStackTrace())
+                        .map(StackTraceElement::toString)
+                        .collect(Collectors.toList()))
+                .build();
+    }
+
+    public synchronized void onShutdown() {
+        final TerminationNotificationResponse notification = TerminationNotificationResponse.newBuilder()
+                .setAbnormalTermination(false)
+                .build();
+        terminationListeners.forEach(listener -> listener.sendMessage(notification));
+        terminationListeners.clear();
+
+        closeAllSessions();
+    }
+
+    /**
+     * Add a listener who receives a single notification when this process is exiting and yet able to communicate with
+     * the observer.
+     *
+     * @param session the session the observer belongs to
+     * @param responseObserver the observer to notify
+     */
+    public void addTerminationListener(
+            final SessionState session,
+            final StreamObserver<TerminationNotificationResponse> responseObserver) {
+        terminationListeners.add(new TerminationNotificationListener(session, responseObserver));
+    }
+
 
     /**
      * Create a new session object for the provided auth context.
@@ -168,7 +230,7 @@ public class SessionService {
 
     /**
      * Reduces the liveness of the session.
-     * 
+     *
      * @param session the session to close
      */
     public void closeSession(final SessionState session) {
@@ -237,6 +299,27 @@ public class SessionService {
                     scheduler.runAtTime(next.deadline, this);
                 }
             }
+        }
+    }
+
+    private final class TerminationNotificationListener
+            extends SessionCloseableObserver<TerminationNotificationResponse> {
+        public TerminationNotificationListener(
+                final SessionState session,
+                final StreamObserver<TerminationNotificationResponse> responseObserver) {
+            super(session, responseObserver);
+        }
+
+        @Override
+        void onClose() {
+            terminationListeners.remove(this);
+        }
+
+        void sendMessage(final TerminationNotificationResponse response) {
+            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
+                responseObserver.onNext(response);
+                responseObserver.onCompleted();
+            });
         }
     }
 }
