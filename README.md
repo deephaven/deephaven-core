@@ -60,8 +60,7 @@ If any dependencies are missing or unsupported versions are installed, see [Laun
 
 ### Create deployment
 
-A directory must be created to store files and mount points for your deployment.
-Here, we are using the `deephaven-deployment` directory.  
+A directory must be created to store files and mount points for your deployment.  Here, we are using the `deephaven-deployment` directory.  
 
 You will need to `cd` into the deployment directory to launch or interact with the deployment.
 
@@ -120,8 +119,7 @@ These commands must be run from the deployment directory.
 
 ### Monitor logs
 
-The `-d` option to `docker-compose` causes the containers to run in the background, in detached mode. 
-This option allows you to use your shell after Docker launches the containers.
+The `-d` option to `docker-compose` causes the containers to run in the background, in detached mode.  This option allows you to use your shell after Docker launches the containers.
 
 Since the container is running detached, you will not see any logs. However, you can follow the logs by running:
 
@@ -163,8 +161,7 @@ To see what other example data management commands are available, run:
 docker-compose run examples
 ```
 
-These commands must be run from the deployment directory.  
-If your deployment does not have example data, these commands will fail with `ERROR: No such service`.
+These commands must be run from the deployment directory.  If your deployment does not have example data, these commands will fail with `ERROR: No such service`.
 
 
 ## Run Deephaven IDE
