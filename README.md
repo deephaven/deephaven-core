@@ -30,10 +30,8 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 
 ## Run Deephaven
 
-This section is a quick start guide for running Deephaven from pre-built images.
-For detailed instructions on running Deephaven, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
+This section is a quick start guide for running Deephaven from pre-built images.  Almost all users will want to run Deephaven using pre-built images.  It is the easiest way to deploy.  For detailed instructions, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
 
-For detailed instructions on building and running Deephaven from source code, 
 Developers interested in tinkering with and modifying source code should build from the source code.  For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build).
 
 If you are not sure which of the two is right for you, you want to use the pre-built images.
@@ -150,8 +148,7 @@ This command must be run from the deployment directory.
 [Deephaven's examples repository](https://github.com/deephaven/examples) contains data sets that are useful when learning 
 to use Deephaven. These data sets are used extensively in Deephaven's documentation and are needed to run some examples. [Deephaven's examples repository](https://github.com/deephaven/examples) contains documentation on the available data sets and how to manage them. 
 
-If you have chosen a deployment with example data, the example data sets will be downloaded. Production deployments containing 
-your own data will not need the example data sets.
+If you have chosen a deployment with example data, the example data sets will be downloaded. Production deployments containing your own data will not need the example data sets.
 
 
 To upgrade a deployment to the latest example data, run:
