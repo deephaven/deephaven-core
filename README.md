@@ -69,7 +69,7 @@ mkdir deephaven-deployment
 cd deephaven-deployment
 ```
 
-:warning: **Commands in the following sections must be run from the deployment directory.**
+:warning: **Commands in the following sections for interacting with a deployment must be run from the deployment directory.**
 ### Launch: Python
 
 Run the following commands to launch Deephaven for Python server applications. 
@@ -80,7 +80,6 @@ docker-compose pull
 docker-compose up -d
 ```
 
-These commands must be run from the deployment directory.
 
 ### Launch: Python with example data
 
@@ -91,8 +90,6 @@ curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/
 docker-compose pull
 docker-compose up -d
 ```
-
-These commands must be run from the deployment directory.
 
 ### Launch: Groovy / Java
 
@@ -116,8 +113,6 @@ docker-compose pull
 docker-compose up -d
 ```
 
-These commands must be run from the deployment directory.
-
 ### Monitor logs
 
 The `-d` option to `docker-compose` causes the containers to run in the background, in detached mode.  This option allows you to use your shell after Docker launches the containers.
@@ -128,8 +123,6 @@ Since the container is running detached, you will not see any logs. However, you
 docker-compose logs -f
 ```
 
-This command must be run from the deployment directory.
-
 Use CTRL+C to stop monitoring the logs and return to a prompt.
 
 ### Shutdown
@@ -139,8 +132,6 @@ The deployment can be brought down by running:
 ```bash
 docker-compose down
 ```
-
-This command must be run from the deployment directory.
 
 ### Manage example data
 
@@ -162,7 +153,7 @@ To see what other example data management commands are available, run:
 docker-compose run examples
 ```
 
-These commands must be run from the deployment directory.  If your deployment does not have example data, these commands will fail with `ERROR: No such service`.
+If your deployment does not have example data, these commands will fail with `ERROR: No such service`.
 
 
 ## Run Deephaven IDE
