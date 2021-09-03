@@ -58,7 +58,9 @@ public class SessionService {
         // Protect ourselves from rotation spam, but be loose enough that any reasonable refresh strategy works.
         this.tokenRotateMs = tokenExpireMs / 5;
 
-        ProcessEnvironment.getGlobalFatalErrorReporter().addInterceptor(this::onFatalError);
+        if (ProcessEnvironment.tryGet() != null) {
+            ProcessEnvironment.getGlobalFatalErrorReporter().addInterceptor(this::onFatalError);
+        }
     }
 
     private synchronized void onFatalError(
