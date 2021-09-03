@@ -69,6 +69,7 @@ mkdir deephaven-deployment
 cd deephaven-deployment
 ```
 
+:warning: **Commands in the following sections must be run from the deployment directory.**
 ### Launch: Python
 
 Run the following commands to launch Deephaven for Python server applications. 
