@@ -69,7 +69,7 @@ mkdir deephaven-deployment
 cd deephaven-deployment
 ```
 
-:warning: **Commands in the following sections for interacting with a deployment must be run from the deployment directory.**
+> :warning: **Commands in the following sections for interacting with a deployment must be run from the deployment directory.**
 ### Launch: Python
 
 Run the following commands to launch Deephaven for Python server applications. 
@@ -101,7 +101,6 @@ docker-compose pull
 docker-compose up -d
 ```
 
-These commands must be run from the deployment directory.
 
 ### Launch: Groovy / Java with example data
 
