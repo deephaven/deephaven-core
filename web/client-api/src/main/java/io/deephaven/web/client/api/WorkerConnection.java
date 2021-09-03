@@ -25,12 +25,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_se
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotification;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotificationRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
@@ -224,6 +220,8 @@ public class WorkerConnection {
                 }).then(handshakeResponse -> {
                     // start the reauth cycle
                     authUpdate(handshakeResponse);
+                    // subscribe to fatal errors
+                    subscribeToTerminationNotification();
 
                     state = State.Connected;
 
@@ -306,12 +304,13 @@ public class WorkerConnection {
                 });
     }
 
-    public void checkStatus(ResponseStreamWrapper.Status status) {
+    public boolean checkStatus(ResponseStreamWrapper.Status status) {
         // TODO provide simpler hooks to retry auth, restart the stream
         final long now = System.currentTimeMillis();
         if (status.isOk()) {
             // success, ignore
             lastSuccessResponseTime = now;
+            return true;
         } else if (status.getCode() == Code.Unauthenticated) {
             // TODO re-create session once?
             // for now treating this as fatal, UI should encourage refresh to try again
@@ -323,12 +322,16 @@ public class WorkerConnection {
             // TODO skip re-authing for now, just backoff and try again
             if (lastSuccessResponseTime == 0) {
                 lastSuccessResponseTime = now;
+                return true;
             } else if (now - lastSuccessResponseTime >= GIVE_UP_TIMEOUT_MS) {
                 // this actually seems to be a problem; likely the worker has unexpectedly exited
                 // UI should encourage refresh to try again (which will probably fail; but at least doesn't look "OK")
                 info.notifyConnectionError(status);
+            } else {
+                return true;
             }
         } // others probably are meaningful to the caller
+        return false;
     }
 
     private void startExportNotificationsStream() {
@@ -375,6 +378,66 @@ public class WorkerConnection {
                 authUpdate(success);
             });
         }, 2500);
+    }
+
+    private void subscribeToTerminationNotification() {
+        sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
+                (fail, success) -> {
+                    if (fail != null) {
+                        if (checkStatus((ResponseStreamWrapper.Status) fail)) {
+                            // restart the termination notification
+                            subscribeToTerminationNotification();
+                            return;
+                        }
+                    }
+
+                    // welp; the server is gone -- let everyone know
+                    info.notifyConnectionError(new ResponseStreamWrapper.Status() {
+                        @Override
+                        public double getCode() {
+                            return 14; // UNAVAILABLE
+                        }
+
+                        @Override
+                        public String getDetails() {
+                            final TerminationNotificationResponse response = (TerminationNotificationResponse) success;
+                            if (!response.getAbnormalTermination()) {
+                                return "Server exited normally.";
+                            }
+
+                            final StringBuilder retval;
+                            if (!response.getReason().isEmpty()) {
+                                retval = new StringBuilder(response.getReason());
+                            } else {
+                                retval = new StringBuilder("Server exited abnormally.");
+                            }
+
+                            final JsArray<StackTrace> traces = response.getStackTracesList();
+                            for (int ii = 0; ii < traces.length; ++ii) {
+                                final StackTrace trace = traces.getAt(ii);
+                                retval.append("\n\n");
+                                if (ii != 0) {
+                                    retval.append("Caused By: ").append(trace.getType()).append(": ")
+                                            .append(trace.getMessage());
+                                } else {
+                                    retval.append(trace.getType()).append(": ").append(trace.getMessage());
+                                }
+
+                                final JsArray<String> elements = trace.getElementsList();
+                                for (int jj = 0; jj < elements.length; ++jj) {
+                                    retval.append("\n").append(elements.getAt(jj));
+                                }
+                            }
+
+                            return retval.toString();
+                        }
+
+                        @Override
+                        public BrowserHeaders getMetadata() {
+                            return null; // nothing to offer
+                        }
+                    });
+                });
     }
 
     private void notifyLog(LogItem log) {
