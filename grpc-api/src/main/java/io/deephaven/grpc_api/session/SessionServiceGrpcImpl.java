@@ -13,17 +13,14 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.util.auth.AuthContext;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.*;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
     // TODO (#997): use flight AuthConstants
@@ -234,5 +231,4 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             return Contexts.interceptCall(newContext, serverCall, metadata, serverCallHandler);
         }
     }
-
 }

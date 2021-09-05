@@ -1,13 +1,20 @@
 package io.deephaven.web.client.api;
 
-import elemental2.core.*;
+import elemental2.core.JsArray;
+import elemental2.core.JsSet;
+import elemental2.core.JsWeakMap;
+import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.*;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Buffer;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.MetadataVersion;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
@@ -25,10 +32,21 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_se
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FetchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
@@ -48,7 +66,13 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
-import io.deephaven.web.shared.data.*;
+import io.deephaven.web.shared.data.ConnectToken;
+import io.deephaven.web.shared.data.DeltaUpdates;
+import io.deephaven.web.shared.data.InitialTableDefinition;
+import io.deephaven.web.shared.data.LogItem;
+import io.deephaven.web.shared.data.TableMapHandle;
+import io.deephaven.web.shared.data.TableSnapshot;
+import io.deephaven.web.shared.data.TableSubscriptionRequest;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.ide.VariableType;
@@ -434,7 +458,7 @@ public class WorkerConnection {
 
                         @Override
                         public BrowserHeaders getMetadata() {
-                            return null; // nothing to offer
+                            return new BrowserHeaders(); // nothing to offer
                         }
                     });
                 });

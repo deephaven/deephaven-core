@@ -86,12 +86,17 @@ public class SessionService {
 
     private static TerminationNotificationResponse.StackTrace transformToProtoBuf(@NotNull final Throwable throwable) {
         return TerminationNotificationResponse.StackTrace.newBuilder()
-                .setType(throwable.getClass().getSimpleName())
-                .setMessage(throwable.getMessage())
+                .setType(throwable.getClass().getName())
+                .setMessage(stringifyIfNull(throwable.getMessage()))
                 .addAllElements(Arrays.stream(throwable.getStackTrace())
+                        .limit(50)
                         .map(StackTraceElement::toString)
                         .collect(Collectors.toList()))
                 .build();
+    }
+
+    private static String stringifyIfNull(@Nullable String value) {
+        return value == null ? "null" : value;
     }
 
     public synchronized void onShutdown() {
