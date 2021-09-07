@@ -46,8 +46,8 @@ enum TableCreatorImpl implements TableCreator<Table> {
 
     @Override
     public Table of(TicketTable ticketTable) {
-        throw new UnsupportedOperationException(
-                "Ticket tables can't be referenced in a static context; no access to TicketRouter nor SessionState - see deephaven-core#1172 for more details");
+        throw new UnsupportedOperationException("Ticket tables can't be referenced in a static context;" +
+                "no access to TicketRouter nor SessionState - see deephaven-core#1172 for more details");
     }
 
     @Override
