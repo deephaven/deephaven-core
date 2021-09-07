@@ -53,7 +53,7 @@ docker-compose version
 docker run hello-world
 ```
 
-On Windows, these commands must be run using WSL 2.
+On Windows, these commands must be run inside a WSL 2 terminal.
 
 If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built/#prerequisites) for installation instructions.
 
