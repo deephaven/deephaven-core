@@ -41,6 +41,7 @@ services:
     image: ghcr.io/deephaven/examples
     volumes:
       - ./data:/data
+    command: initialize
 
 volumes:
     web-tmp:
