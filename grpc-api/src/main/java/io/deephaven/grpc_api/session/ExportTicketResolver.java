@@ -7,6 +7,7 @@ package io.deephaven.grpc_api.session;
 import com.google.rpc.Code;
 import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +44,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                 .submit(() -> {
                     if (export.get() instanceof Table) {
                         return TicketRouter.getFlightInfo((Table) export.get(), descriptor,
-                                ExportTicketHelper.descriptorToArrowTicket(descriptor, logId));
+                                FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
                     }
 
                     throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
@@ -75,7 +76,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': no exports can exist without a session to search");
         }
 
-        return session.getExport(ExportTicketHelper.descriptorToExportId(descriptor, logId));
+        return session.getExport(FlightExportTicketHelper.descriptorToExportId(descriptor, logId));
     }
 
     @Override
@@ -87,6 +88,6 @@ public class ExportTicketResolver extends TicketResolverBase {
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
             final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        return session.newExport(ExportTicketHelper.descriptorToExportId(descriptor, logId));
+        return session.newExport(FlightExportTicketHelper.descriptorToExportId(descriptor, logId));
     }
 }

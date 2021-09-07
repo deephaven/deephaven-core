@@ -16,6 +16,7 @@ import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api_client.table.BarrageTable;
 import io.deephaven.internal.log.LoggerFactory;
@@ -169,7 +170,7 @@ public class SimpleDeephavenClient {
                         .build());
 
         flightService.getSchema(
-                ExportTicketHelper.ticketToDescriptor(exportTable, "exportTable"),
+                FlightExportTicketHelper.ticketToDescriptor(exportTable, "exportTable"),
                 new ResponseBuilder<Flight.SchemaResult>()
                         .onError(this::onError)
                         .onNext(this::onSchemaResult)

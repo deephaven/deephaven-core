@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.grpc_api.table;
+package io.deephaven.grpc_api.barrage;
 
 import dagger.BindsInstance;
 import dagger.Component;
@@ -33,10 +33,6 @@ import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
-import io.deephaven.grpc_api.barrage.BarrageMessageConsumer;
-import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
-import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
-import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;

@@ -15,7 +15,9 @@ dependencies {
   //  compile 'io.deephaven.barrage:barrage-core:0.2.0'
   download 'io.deephaven.barrage:barrage-core:0.2.0'
   Classpaths.inheritArrow(project, 'flight-core', 'download')
-  Classpaths.inheritArrow(project, 'flight-core', 'implementation')
+  Classpaths.inheritArrow(project, 'flight-core', 'compileOnly')
+
+  compileOnly 'javax.inject:javax.inject:1'
 }
 
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
