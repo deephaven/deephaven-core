@@ -1,44 +1,73 @@
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
+description = 'Generates docs for the python libraries provided in Deephaven Core'
+
 evaluationDependsOn ':Integrations'
 
-boolean java8 = JavaVersion.current().isJava8()
-List<Object> dependsList
-dependsList = [':Generators:generateFigureImmutable',
-                          ':Generators:generatePythonFigureWrapper',
-                          ':Generators:generatePythonIntegrationStaticMethods',
-]
-def sourceDir = "$projectDir/source"
-def docBuildDir = "$buildDir/docs"
+def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
+    destFile.set layout.buildDirectory.file('sphinx-image/Dockerfile')
+    from 'deephaven/runtime-base:local-build'
 
-TaskProvider<? extends Task> pyDoc
+    runCommand '''set -eux; \\ 
+                  pip3 install sphinx==3.5.4 sphinx-autodoc-typehints==1.12.0 pyarrow==5.0.0 protobuf==3.17.3 grpcio==1.39.0 bitstring==3.1.9
+                  '''
+}
+def sphinxImage = Docker.registerDockerImage(project, 'sphinx') {
+    inputs.files sphinxDockerfile.get().outputs.files
+    inputDir.set layout.buildDirectory.dir('sphinx-image')
+    inputs.files project(':Integrations').tasks.findByName('buildDeephavenPython').outputs.files // deephaven/runtime-base
+    images.add('deephaven/sphinx:local-build')
+}
 
-pyDoc = Docker.registerDockerTask(project, "pythonDocs") {
-    copyIn {
-        from 'docker'
-        from(sourceDir) {
-            into 'source'
+def makePyDocTask = { name, archiveBaseName, sourcePaths, outDirPath ->
+
+    TaskProvider<? extends Task> pyDoc = Docker.registerDockerTask(project, name) {
+        copyIn {
+            sourcePaths.each { entry ->
+                from(entry.key) {
+                    into entry.value
+                }
+            }
+        }
+        dockerfile {
+            from 'deephaven/sphinx:local-build'
+
+            copyFile('.', '/project')
+
+            runCommand '''set -eux; \\
+                       mkdir /build; \\
+                       cd /project; \\
+                       sphinx-build -b html source /build
+                       '''
+        }
+        parentContainers = [sphinxImage.get()]
+        containerOutPath = '/build'
+        copyOut {
+            into outDirPath
         }
     }
-//        dockerfile = project.file('Dockerfile') // not needed with the above from 'docker'
-    parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
-    imageName = 'deephaven/sphinx:local-build'
-    containerOutPath = '/build'
-    copyOut {
-        into docBuildDir
+
+    project.tasks.register "${name}Tar", Tar, {
+        Tar tar ->
+            tar.from(outDirPath)
+            tar.dependsOn(pyDoc)
+            tar.archiveBaseName.set(archiveBaseName)
     }
 }
 
-pyDoc.configure {
-    dependsOn dependsList
+def pythonDocs = makePyDocTask('pythonDocs', 'dh-python-docs', ["$projectDir/source":'source'], "$buildDir/docs")
+//TODO why do docs depend on this, but the wheel itself doesn't? makes more sense to depend on assert, right?
+project.tasks.named('pythonDocsMakeImage').configure {
+    dependsOn ':Generators:generateFigureImmutable'
+    dependsOn ':Generators:generatePythonFigureWrapper'
+    dependsOn ':Generators:generatePythonIntegrationStaticMethods'
 }
 
-project.tasks.register 'pythonDocsTar', Tar, {
-    Tar tar ->
-        tar.from(docBuildDir)
-        tar.dependsOn(pyDoc)
-        tar.archiveBaseName.set("dh-python-docs")
-}
+makePyDocTask('pydeephavenDocs', 'pydeephaven', [
+        ("$rootDir/pyclient/docs/source".toString()):'source',
+        ("$rootDir/pyclient/pydeephaven".toString()):'pydeephaven'
+], "$buildDir/pyclient-docs")
