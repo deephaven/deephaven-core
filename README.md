@@ -40,11 +40,11 @@ If you are not sure which of the two is right for you, use the pre-built images.
 
 Running Deephaven requires a few software packages.
 
-| Package | Version | OS  |
-| ------- | ------- | --- |
-| docker  | ≥19.3 | All |
-| docker-compose | ≥1.29 | All |
-| WSL | 2 | Only Windows |
+| Package        | Version  | OS           |
+| -------------- | -------- | ------------ |
+| docker         | ^20.10.8 | All          |
+| docker-compose | ^1.29.0  | All          |
+| WSL            | 2        | Only Windows |
 
 You can check if these packages are installed and functioning by running:
 ```
