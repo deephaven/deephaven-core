@@ -14,10 +14,22 @@ import java.nio.charset.StandardCharsets;
 @SimpleStyle
 public abstract class TicketTable extends TableBase {
 
+    /**
+     * Create a ticket table with the {@code ticket} bytes.
+     *
+     * @param ticket the ticket
+     * @return the ticket table
+     */
     public static TicketTable of(byte[] ticket) {
         return ImmutableTicketTable.of(ticket);
     }
 
+    /**
+     * Create a ticket table with the UTF-8 bytes from the {@code ticket} string.
+     *
+     * @param ticket the ticket string
+     * @return the ticket table
+     */
     public static TicketTable of(String ticket) {
         return ImmutableTicketTable.of(ticket.getBytes(StandardCharsets.UTF_8));
     }
