@@ -34,7 +34,7 @@ This section is a quick start guide for running Deephaven from pre-built images.
 
 Developers interested in tinkering with and modifying source code should build from the source code.  For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build).
 
-If you are not sure which of the two is right for you, you want to use the pre-built images.
+If you are not sure which of the two is right for you, use the pre-built images.
 
 ### Required Dependencies
 
