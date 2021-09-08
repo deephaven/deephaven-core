@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Deephaven JS API table viewport and updates</title>
+    <script src="dh-internal.js" type="text/javascript"></script>
+    <script src="dh-core.js" type="text/javascript"></script>
+    <link href="basic.css" rel="stylesheet" type="text/css" />
+    <style>
+        table { border-spacing: 0; }
+        thead td { font-weight: bold; border-bottom: 1px solid black; }
+        tbody td { border-bottom: 1px solid gray; padding: 4px; }
+    </style>
+</head>
+<body>
+
+<h3>Table data</h3>
+<table id="simpleTable" />
+
+<script>
+(async () => {
+    // Open a connection to the server
+    var connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+
+    // Start a python session
+    var ide = await connection.startSession("python");
+
+    // Run code that will create a static table with 10 rows and three columns, I, J, K
+    await ide.runCode(`
+from deephaven.TableTools import emptyTable
+remoteTable = emptyTable(10).updateView("I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`")
+    `)
+
+    // Retrieve the JS Table object
+    var table = await ide.getTable('remoteTable');
+
+    // Retrieve the element to append the table to
+    var tableElement = document.getElementById('simpleTable');
+
+    // Create a header element and append it to the document
+    var header = document.createElement('thead');
+    var headerRow = document.createElement('tr');
+    table.columns.forEach(columnDef => {
+        // build a very simple header
+        var td = document.createElement('td');
+        td.innerText = columnDef.name;
+        headerRow.appendChild(td);
+    });
+    header.appendChild(headerRow);
+    tableElement.appendChild(header);
+
+    // Set the viewport to view the full ten rows. Bottom row is inclusive, and starts at zero index.
+    table.setViewport(0, 9)
+
+    // Extract the viewport data and build a table for it
+    var tbody = document.createElement('tbody');
+    var viewportData = await table.getViewportData()
+    var rows = viewportData.rows;
+    for (var i = 0; i < rows.length; i++) {
+        var tr = document.createElement('tr');
+        for (var j = 0; j < table.columns.length; j++) {
+            var td = document.createElement('td');
+            td.textContent = rows[i].get(table.columns[j]);
+            tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+    }
+    simpleTable.appendChild(tbody);
+})();
+</script>
+</body>
+</html>
