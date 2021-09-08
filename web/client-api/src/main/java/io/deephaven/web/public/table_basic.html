@@ -34,25 +34,20 @@ remoteTable = emptyTable(10).updateView("I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`Wo
     // Retrieve the JS Table object
     var table = await ide.getTable('remoteTable');
 
-    // Retrieve the element to append the table to
-    var tableElement = document.getElementById('simpleTable');
-
-    // Create a header element and append it to the document
+    // Create a table header element with the table columns
     var header = document.createElement('thead');
     var headerRow = document.createElement('tr');
-    table.columns.forEach(columnDef => {
+    table.columns.forEach(column => {
         // build a very simple header
         var td = document.createElement('td');
-        td.innerText = columnDef.name;
+        td.innerText = column.name;
         headerRow.appendChild(td);
     });
     header.appendChild(headerRow);
-    tableElement.appendChild(header);
 
-    // Set the viewport to view the full ten rows. Bottom row is inclusive, and starts at zero index.
+    // Set the viewport and extract data to build the table body.
+    // Since the bottom of the viewport specified is inclusive and the table is ten rows, we only need specific `0,9`.
     table.setViewport(0, 9)
-
-    // Extract the viewport data and build a table for it
     var tbody = document.createElement('tbody');
     var viewportData = await table.getViewportData()
     var rows = viewportData.rows;
@@ -65,7 +60,11 @@ remoteTable = emptyTable(10).updateView("I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`Wo
         }
         tbody.appendChild(tr);
     }
-    simpleTable.appendChild(tbody);
+
+    // Retrieve the element to append the table to
+    var tableElement = document.getElementById('simpleTable');
+    tableElement.appendChild(header);
+    tableElement.appendChild(tbody);
 })();
 </script>
 </body>
