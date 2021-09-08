@@ -28,6 +28,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
 import io.deephaven.stream.StreamToTableAdapter;
 
+import org.apache.avro.LogicalType;
+import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -168,7 +170,13 @@ public class KafkaTools {
                 columnsOut.add(ColumnDefinition.ofInt(mappedName));
                 break;
             case LONG:
-                columnsOut.add(ColumnDefinition.ofLong(mappedName));
+                final LogicalType logicalType = field.schema().getLogicalType();
+                if (LogicalTypes.timestampMicros().equals(logicalType) ||
+                        LogicalTypes.timestampMillis().equals(logicalType)) {
+                    columnsOut.add(ColumnDefinition.ofTime(mappedName));
+                } else {
+                    columnsOut.add(ColumnDefinition.ofLong(mappedName));
+                }
                 break;
             case FLOAT:
                 columnsOut.add(ColumnDefinition.ofFloat(mappedName));
@@ -176,6 +184,7 @@ public class KafkaTools {
             case DOUBLE:
                 columnsOut.add(ColumnDefinition.ofDouble(mappedName));
                 break;
+            case ENUM:
             case STRING:
                 columnsOut.add(ColumnDefinition.ofString(mappedName));
                 break;
@@ -215,7 +224,6 @@ public class KafkaTools {
                 }
                 return;
             case MAP:
-            case ENUM:
             case NULL:
             case ARRAY:
             case BYTES:
