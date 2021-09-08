@@ -172,7 +172,7 @@ public class KafkaTools {
             case LONG:
                 final LogicalType logicalType = field.schema().getLogicalType();
                 if (LogicalTypes.timestampMicros().equals(logicalType) ||
-                    LogicalTypes.timestampMillis().equals(logicalType)) {
+                        LogicalTypes.timestampMillis().equals(logicalType)) {
                     columnsOut.add(ColumnDefinition.ofTime(mappedName));
                 } else {
                     columnsOut.add(ColumnDefinition.ofLong(mappedName));
