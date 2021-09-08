@@ -16,18 +16,11 @@ public class FilterPrinter implements FilterVisitor<Void> {
         return visitor.sb.toString();
     }
 
-    public static String print(Literal literal) {
-        FilterPrinter visitor = new FilterPrinter(true);
-        visitor.onLiteral(literal);
-
-        return visitor.sb.toString();
-    }
-
     public static String printNoEscape(Literal literal) {
         FilterPrinter visitor = new FilterPrinter(false);
         visitor.onLiteral(literal);
 
-        return visitor.sb.toString();
+        return "\"" + visitor.sb.toString() + "\"";
     }
 
     public FilterPrinter(boolean escapeStrings) {

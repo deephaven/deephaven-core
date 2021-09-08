@@ -173,7 +173,7 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
                 values[i] = "'" + new DBDateTime(literal.getNanoTimeValue()).toString(DBTimeZone.TZ_DEFAULT) + "'";
             } else {
-                values[i] = FilterPrinter.print(literal);
+                values[i] = FilterPrinter.printNoEscape(literal);
             }
         }
         return new MatchFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(),
