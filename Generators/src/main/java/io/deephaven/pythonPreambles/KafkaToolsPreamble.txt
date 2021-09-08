@@ -53,7 +53,7 @@ def _defineSymbols():
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
         _stream_table_tools_ = jpy.get_type("io.deephaven.db.v2.StreamTableTools")
-        _avro_schema_type_ = jpy.get_type("org.apache.avro.Schema")
+        _avro_schema_jtype_ = jpy.get_type("org.apache.avro.Schema")
         SEEK_TO_BEGINNING = getattr(_java_type_, 'SEEK_TO_BEGINNING')
         DONT_SEEK = getattr(_java_type_, 'DONT_SEEK')
         SEEK_TO_END = getattr(_java_type_, 'SEEK_TO_END')
@@ -244,7 +244,7 @@ def avro(schema, schema_version:str = None, mapping:dict = None, mapping_only:di
             raise TypeError(
                 "argument 'schema_version' should be of str type, instead got " +
                 str(schema_version) + " of type " + type(schema_version).__name__)
-    elif instanceof(schema, _avro_schema_jtype_):
+    elif isinstance(schema, _avro_schema_jtype_):
         have_actual_schema = True
         if schema_version is not None:
             raise Exception(
