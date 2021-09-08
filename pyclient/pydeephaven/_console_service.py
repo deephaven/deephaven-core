@@ -18,7 +18,7 @@ class ConsoleService:
             return
 
         try:
-            result_id = self.session.make_flight_ticket()
+            result_id = self.session.make_ticket()
             response = self._grpc_console_stub.StartConsole(
                 console_pb2.StartConsoleRequest(result_id=result_id, session_type='python'),
                 metadata=self.session.grpc_metadata)
@@ -43,7 +43,7 @@ class ConsoleService:
         self.start_console()
 
         try:
-            result_id = self.session.make_flight_ticket()
+            result_id = self.session.make_ticket()
             response = self._grpc_console_stub.FetchTable(
                 console_pb2.FetchTableRequest(console_id=self.console_id,
                                               table_id=result_id,

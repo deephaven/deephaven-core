@@ -104,7 +104,7 @@ class Session:
 
         return self._flight_service
 
-    def make_flight_ticket(self, ticket_no=None):
+    def make_ticket(self, ticket_no=None):
         if not ticket_no:
             ticket_no = self.get_ticket()
         ticket_bytes = ticket_no.to_bytes(4, byteorder='little', signed=True)

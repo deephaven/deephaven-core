@@ -25,7 +25,7 @@ class BatchOpAssembler:
             self._curr_source = table_pb2.TableReference(batch_offset=len(self.grpc_table_ops) - 1)
 
         # the last op in the batch needs a result_id to reference the result
-        result_id = self.session.make_flight_ticket()
+        result_id = self.session.make_ticket()
         self.grpc_table_ops.append(
             self.table_ops[-1].make_grpc_request_for_batch(result_id=result_id, source_id=self._curr_source))
 

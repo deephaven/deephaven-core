@@ -39,7 +39,7 @@ class Table(TableInterface):
 
     def __del__(self):
         try:
-            if self.ticket and self.session.is_alive:
+            if self.ticket and self.schema and self.session.is_alive:
                 self.session.release(self.ticket)
         except Exception as e:
             # TODO: log the exception

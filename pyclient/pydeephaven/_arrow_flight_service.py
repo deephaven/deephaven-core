@@ -55,7 +55,7 @@ def _map_arrow_type(arrow_type):
             dh_type = "io.deephaven.db.tables.utils.DBDateTime"
 
     if not dh_type:
-        raise DHError('unsupported arrow data type : ', arrow_type)
+        raise DHError(f'unsupported arrow data type : {arrow_type}')
 
     return {"deephaven:type": dh_type}
 
@@ -81,7 +81,7 @@ class ArrowFlightService:
             writer.write_table(data)
             writer.close()
             _ = reader.read()
-            flight_ticket = self.session.make_flight_ticket(ticket)
+            flight_ticket = self.session.make_ticket(ticket)
             return Table(self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema)
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
