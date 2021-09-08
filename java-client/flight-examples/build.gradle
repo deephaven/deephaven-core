@@ -82,11 +82,24 @@ task createExcessiveScript(type: CreateStartScripts) {
             '-XX:+UseStringDeduplication' ]
 }
 
+task createGetTicketTableScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.GetTicketTable'
+    applicationName = 'get-ticket-table'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
 applicationDistribution.into('bin') {
     from(createGetSchemaScripts)
     from(createGetTsvScripts)
     from(createPollTsvScripts)
     from(createListTablesScripts)
     from(createExcessiveScript)
+    from(createGetTicketTableScript)
     fileMode = 0755
 }

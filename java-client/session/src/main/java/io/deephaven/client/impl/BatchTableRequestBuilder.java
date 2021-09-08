@@ -1,5 +1,6 @@
 package io.deephaven.client.impl;
 
+import com.google.protobuf.ByteStringAccess;
 import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
@@ -56,6 +57,7 @@ import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
@@ -95,6 +97,7 @@ import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SortTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TailTable;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeProvider.Visitor;
 import io.deephaven.qst.table.TimeProviderSystem;
 import io.deephaven.qst.table.TimeTable;
@@ -421,6 +424,15 @@ class BatchTableRequestBuilder {
                 builder.addAllAggregates(AggregationAdapter.of(aggregation));
             }
             out = op(Builder::setComboAggregate, builder);
+        }
+
+        @Override
+        public void visit(TicketTable ticketTable) {
+            Ticket sourceTicket = Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticketTable.ticket())).build();
+            TableReference sourceReference = TableReference.newBuilder().setTicket(sourceTicket).build();
+            FetchTableRequest.Builder builder =
+                    FetchTableRequest.newBuilder().setResultId(ticket).setSourceId(sourceReference);
+            out = op(Builder::setFetchTable, builder);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

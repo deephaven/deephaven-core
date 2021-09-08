@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -52,6 +53,14 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
 
     static TableSpec of(TableCreationLogic logic) {
         return logic.create(TableCreatorImpl.INSTANCE);
+    }
+
+    static TicketTable ticket(String ticket) {
+        return TicketTable.of(ticket);
+    }
+
+    static TicketTable ticket(byte[] ticket) {
+        return TicketTable.of(ticket);
     }
 
     /**
@@ -136,5 +145,7 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
         void visit(ByTable byTable);
 
         void visit(AggregationTable aggregationTable);
+
+        void visit(TicketTable ticketTable);
     }
 }

@@ -123,4 +123,9 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     public void visit(AggregationTable aggregationTable) {
         accept(aggregationTable);
     }
+
+    @Override
+    public void visit(TicketTable ticketTable) {
+        accept(ticketTable);
+    }
 }

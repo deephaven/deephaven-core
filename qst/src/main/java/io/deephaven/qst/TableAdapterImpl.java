@@ -23,6 +23,7 @@ import io.deephaven.qst.table.SortTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableSpec.Visitor;
 import io.deephaven.qst.table.TailTable;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
@@ -241,6 +242,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(AggregationTable aggregationTable) {
         addOp(aggregationTable, parentOps(aggregationTable).by(aggregationTable.columns(),
                 aggregationTable.aggregations()));
+    }
+
+    @Override
+    public void visit(TicketTable ticketTable) {
+        addTable(ticketTable, tableCreation.of(ticketTable));
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

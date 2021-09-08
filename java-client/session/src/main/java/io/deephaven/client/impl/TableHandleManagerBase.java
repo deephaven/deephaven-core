@@ -8,6 +8,7 @@ import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
 import java.util.Collection;
@@ -42,6 +43,11 @@ public abstract class TableHandleManagerBase implements TableHandleManager {
     @Override
     public final TableHandle of(TimeTable timeTable) {
         return handle(timeTable);
+    }
+
+    @Override
+    public final TableHandle of(TicketTable ticketTable) {
+        return handle(ticketTable);
     }
 
     @Override
