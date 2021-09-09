@@ -54,7 +54,7 @@ docker-compose version
 docker run hello-world
 ```
 
-On Windows, these commands must be run inside a WSL 2 terminal.
+> :warning: **On Windows, all commands must be run inside a WSL 2 terminal.**
 
 If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built/#prerequisites) for installation instructions.
 
@@ -71,6 +71,7 @@ cd deephaven-deployment
 ```
 
 > :warning: **Commands in the following sections for interacting with a deployment must be run from the deployment directory.**
+
 ### Launch: Python
 
 Run the following commands to launch Deephaven for Python server applications. 
