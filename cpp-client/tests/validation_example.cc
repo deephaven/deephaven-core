@@ -18,10 +18,10 @@ namespace tests {
 namespace {
 void testWheres(const TableHandleManager &scope);
 void testSelects(const TableHandleManager &scope);
-void testWheresHelper(absl::string_view what, const TableHandle &table,
+void testWheresHelper(std::string_view what, const TableHandle &table,
     const std::vector<std::string> &badWheres,
     const std::vector<std::string> &goodWheres);
-void testSelectsHelper(absl::string_view what, const TableHandle &table,
+void testSelectsHelper(std::string_view what, const TableHandle &table,
     const std::vector<std::vector<std::string>> &badSelects,
     const std::vector<std::vector<std::string>> &goodSelects);
 
@@ -80,7 +80,7 @@ void testWheres(const TableHandleManager &scope) {
       goodWheres);
 }
 
-void testWheresHelper(absl::string_view what, const TableHandle &table,
+void testWheresHelper(std::string_view what, const TableHandle &table,
     const std::vector<std::string> &badWheres,
     const std::vector<std::string> &goodWheres) {
   for (const auto &bw : badWheres) {
@@ -141,7 +141,7 @@ void testSelects(const TableHandleManager &scope) {
   testSelectsHelper("dynamic table", dynamicTable, concat(badSelects, badSelectsWhenDynamic), goodSelects);
 }
 
-void testSelectsHelper(absl::string_view what, const TableHandle &table,
+void testSelectsHelper(std::string_view what, const TableHandle &table,
     const std::vector<std::vector<std::string>> &badSelects,
     const std::vector<std::vector<std::string>> &goodSelects) {
   for (const auto &bs : badSelects) {

@@ -78,6 +78,12 @@ TableHandle TableHandleManager::timeTable(int64_t startTimeNanos, int64_t period
   return TableHandle(std::move(qsImpl));
 }
 
+std::tuple<TableHandle, arrow::flight::FlightDescriptor> TableHandleManager::newTableHandleAndFlightDescriptor() const {
+  auto [thImpl, fd] = impl_->newTicket();
+  TableHandle th(std::move(thImpl));
+  return std::make_tuple(std::move(th), std::move(fd));
+}
+
 TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point startTime,
     std::chrono::system_clock::duration period) const {
   auto stNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
@@ -211,6 +217,7 @@ AggregateCombo AggregateCombo::create(std::vector<Aggregate> vec) {
 AggregateCombo::AggregateCombo(std::shared_ptr<impl::AggregateComboImpl> impl) : impl_(std::move(impl)) {}
 AggregateCombo::~AggregateCombo() = default;
 
+TableHandle::TableHandle() = default;
 TableHandle::TableHandle(std::shared_ptr<impl::TableHandleImpl> impl) : impl_(std::move(impl)) {}
 TableHandle::TableHandle(const TableHandle &other) = default;
 TableHandle &TableHandle::operator=(const TableHandle &other) = default;

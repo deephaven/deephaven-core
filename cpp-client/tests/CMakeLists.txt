@@ -16,7 +16,6 @@ add_executable(tests
     select_example.cc
     sort_example.cc
     string_filter_example.cc
-    table_cleanup_example.cc
     test_util.cc
     test_util.h
     ungroup_example.cc
