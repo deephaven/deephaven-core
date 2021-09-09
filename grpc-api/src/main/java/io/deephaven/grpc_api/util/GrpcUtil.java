@@ -21,7 +21,7 @@ public class GrpcUtil {
     /**
      * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the message if
      * there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
-     * 
+     *
      * @param log the current class's logger
      * @param response the responseStream used to send messages to the client
      * @param lambda the code to safely execute
@@ -46,7 +46,7 @@ public class GrpcUtil {
     /**
      * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the message if
      * there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
-     * 
+     *
      * @param log the current class's logger
      * @param response the responseStream used to send messages to the client
      * @param lambda the code to safely execute
@@ -57,7 +57,11 @@ public class GrpcUtil {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             return lambda.call();
         } catch (final StatusRuntimeException err) {
-            log.error().append(err).endl();
+            if (err.getStatus().equals(Status.UNAUTHENTICATED)) {
+                log.debug().append("ignoring unauthenticated request: ").append(err).endl();
+            } else {
+                log.error().append(err).endl();
+            }
             safelyError(response, err);
         } catch (final InterruptedException err) {
             Thread.currentThread().interrupt();
