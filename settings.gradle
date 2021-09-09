@@ -159,6 +159,9 @@ project(':client-session-examples').projectDir = file('java-client/session-examp
 include(':client-flight-examples')
 project(':client-flight-examples').projectDir = file('java-client/flight-examples')
 
+include(':weather-server-example')
+project(':weather-server-example').projectDir = file('java-client/weather-server-example')
+
 include(':qst:graphviz')
 
 include(':application-mode')

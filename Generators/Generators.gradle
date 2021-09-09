@@ -233,7 +233,9 @@ def pythonStaticMethodsArgs = ['io.deephaven.util.calendar.Calendars',
                                     '/Integrations/python/deephaven/PerformanceQueries/__init__.py',
                                'io.deephaven.kafka.KafkaTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/KafkaToolsPreamble.txt',
-                                    '/Integrations/python/deephaven/KafkaTools/__init__.py']
+                                    '/Integrations/python/deephaven/KafkaTools/__init__.py',
+                               'io.deephaven.qst.table.TableHeader',
+                                    '/Integrations/python/deephaven/TableLoggers/__init__.py']
 
 task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonIntegrationStaticMethods'
