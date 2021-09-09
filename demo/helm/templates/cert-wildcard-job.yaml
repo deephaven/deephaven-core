@@ -1,0 +1,27 @@
+#apiVersion: batch/v1
+#kind: Job
+#metadata:
+#  name: cert-wildcard-job
+#  labels:
+#    app: letsencrypt
+#spec:
+#  template:
+#    metadata:
+#      name: letsencrypt
+#      labels:
+#        app: letsencrypt
+#    spec:
+#      containers:
+#        # Bash script that starts an http server and launches certbot
+#        # Fork of github.com/sjenning/kube-nginx-letsencrypt
+#        - image: "{{ .Values.dh.repo}}/cert-wildcard-job:{{ .Values.dh.version }}"
+#          name: cert-wildcard-job
+#          imagePullPolicy: Always
+#          env:
+#            - name: DOMAINS
+#              value: "{{ .Values.dh.dnsName }},*.{{ .Values.dh.dnsName }}"
+#            - name: EMAIL
+#              value: jamesnelson@deephaven.io
+#            - name: SECRET
+#              value: {{ .Values.dh.certWildcard }}
+#      restartPolicy: Never

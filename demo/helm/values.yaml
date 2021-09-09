@@ -19,14 +19,23 @@ dh:
   version: 0.0.4
   repo: us-central1-docker.pkg.dev/deephaven-oss/deephaven
 
+  namespace: default
+
   ipAddrName: dh-demo-ip
   #presharedCertName: dh-internal-key
   presharedCertName: dh-demo-us-central
   secretCertName: dh-demo-cert
   #secretCertName: dh-internal-key
   managedCertName: dh-auto-cert
+  certWildcard: dh-wildcard-cert
 
+  # hm, this should not be configurable. move to dh.doNotConfigure.ingressName? same goes for dh-deploy
   ingressName: dh-ingress
+  deploymentName: dh-deploy
+  controllerDeploymentName: dh-control
+  workerDeploymentName: dh-deploy
+
+
   portEnvoy: 10000
   portEnvoyInternal: 10000
   portGrpcApi: 8888
@@ -35,7 +44,8 @@ dh:
   portWeb: 8080
   portWebInternal: 8080
   # portWebInternal: 8443
-  portControlInternal: 1771
+  #portControlInternal: 1771
+  portControlInternal: 7117
   portControl: 7117
   envoyServiceType: NodePort
   serviceType: NodePort
@@ -44,10 +54,8 @@ dh:
   cookieTtlSeconds: 2700 # 45 minutes
 
   # If we want to allow long-lived connection, we need to allow a long backendResponseSeconds:
-  # backendResponseSeconds: 2700 # 45 minutes
+  backendResponseSeconds: 2700 # 45 minutes
   # For a production system, you may want to allow more than 24 hrs.
-  # hm... turning this way down, it seems to mess w/ health check somehow...
-  backendResponseSeconds: 30
 
   svcNameGrpc: dh-grpc
   svcNameWeb: dh-web

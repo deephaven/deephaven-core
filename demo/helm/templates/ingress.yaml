@@ -1,92 +1,54 @@
 apiVersion: networking.k8s.io/v1
+# To make autocomplete work, hover the yellow-backgrounded "Ingress"
+# There should be a link that'll pop up a window where you can add files / URLs
+# Download/add https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json
 kind: Ingress
 metadata:
   name: {{ .Values.dh.ingressName }}
   annotations:
     kubernetes.io/ingress.global-static-ip-name: {{ .Values.dh.ipAddrName }}
-    #networking.gke.io/pre-shared-certificates: {{ .Values.dh.presharedCertName  }}
-    networking.gke.io/managed-certificates: {{ .Values.dh.managedCertName  }}
+#    networking.gke.io/managed-certificates: {{ .Values.dh.managedCertName  }}
+    networking.gke.io/pre-shared-cert: {{ .Values.dh.certWildcard  }}
     kubernetes.io/ingress.class: "gce"
     networking.gke.io/v1beta1.FrontendConfig: {{ .Values.dh.frontendConfigName }}
+    # we redirect http->https, but need to explicitly enable it
+    kubernetes.io/ingress.allow-http: "true"
 spec:
-  # defaultBackend is /*, left open to grpc
-  defaultBackend:
-    service:
-      name: {{ .Values.dh.svcNameEnvoy }}
-      port:
-        number: {{ .Values.dh.portEnvoyInternal }}
+  # The default backend will be the demo-server controller,
+  # as it will be responsible for connecting you to the correct DNS vs. pod/service.
+  # So, if you visit does-not-exist-anymore.domain.com/ide/ (route to real service has been removed),
+  # you'll get sent to the controller who will redirect you to a warm DNS name.
 #  defaultBackend:
 #    service:
-#      name: {{ .Values.dh.svcNameGrpc }}
+#      # TODO: change the default from envoy to our controller
+#      # As our controller should be redirecting everyone to worker-specific subdomains
+#      name: {{ .Values.dh.svcNameControl }}
 #      port:
-#        number: {{ .Values.dh.portGrpcApiInternal }}
-#  rules:
-#    #- host: demo.deephavencommunity.com
-#    - http:
-#        # deephaven web ide requires the following paths:
-#        paths:
-#          - path: /health
-#            pathType: ImplementationSpecific
-#            backend:
-#              service:
-#                name: {{ .Values.dh.svcNameControl }}
-#                port:
-#                  number: {{ .Values.dh.portControlInternal }}
-#          - path: /ide
-#            pathType: ImplementationSpecific
-#            # google stopped supporting this over the weekend :-/
-#            #pathType: Exact
-#            backend:
-#              service:
-#                name: {{ .Values.dh.svcNameWeb }}
-#                port:
-#                  number: {{ .Values.dh.portWebInternal }}
-#          - path: /ide/*
-#            pathType: ImplementationSpecific
-#            #pathType: Prefix
-#            backend:
-#              service:
-#                name: {{ .Values.dh.svcNameWeb }}
-#                port:
-#                  number: {{ .Values.dh.portWebInternal }}
-#          - path: /jsapi/*
-#            pathType: ImplementationSpecific
-#            #pathType: Prefix
-#            backend:
-#              service:
-#                name: {{ .Values.dh.svcNameWeb }}
-#                port:
-#                  number: {{ .Values.dh.portWebInternal }}
-#          - path: /notebooks/*
-#            pathType: ImplementationSpecific
-#            #pathType: Prefix
-#            backend:
-#              service:
-#                name: {{ .Values.dh.svcNameWeb }}
-#                port:
-#                  number: {{ .Values.dh.portWebInternal }}
-#          #- path: /io.deephaven.proto.backplane.grpc.SessionService/*
-#          #  pathType: ImplementationSpecific
-#          #  #pathType: Prefix
-#          #  backend:
-#          #    service:
-#          #      name: {{ .Values.dh.svcNameEnvoy }}
-#          #      port:
-#          #        number: {{ .Values.dh.portEnvoyInternal }}
-#          # web server will redirect to /ide/
-#          - path: /
-#            pathType: ImplementationSpecific
-#            #pathType: Exact
-#            backend:
-#              service:
-#                name: {{ .Values.dh.svcNameWeb }}
-#                port:
-#                  number: {{ .Values.dh.portWebInternal }}
-#          - path: /*
-#            pathType: ImplementationSpecific
-#            #pathType: Prefix
-#            backend:
-#              service:
-#                name: {{ .Values.dh.svcNameGrpc }}
-#                port:
-#                  number: {{ .Values.dh.portGrpcApiInternal }}
+#        number: {{ .Values.dh.portControlInternal }}
+  rules:
+    - host: {{ .Values.dh.dnsName }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ .Values.dh.svcNameControl }}
+                port:
+                  number: {{ .Values.dh.portControlInternal }}
+            pathType: ImplementationSpecific
+            path: "/*"
+      # Define a template for default.demo.deephavencommunity.com.
+      # This is a default worker that is always initialized immediately
+      # It is also loaded by the controller, who simply mutates this object
+      # to create new workers once the default instance has already been taken.
+      # The controller will mutate the host and the service name, to isolate workers
+      # DO NOT CHANGE OR REMOVE THE default. prefix without updating / deprecating HelmGenerator.java
+    - host: default.{{ .Values.dh.dnsName }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ .Values.dh.svcNameEnvoy }}
+                port:
+                  number: {{ .Values.dh.portEnvoyInternal }}
+            pathType: ImplementationSpecific
+            path: "/*"

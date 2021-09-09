@@ -150,17 +150,20 @@ gcloud compute firewall-rules create dh-admin --project ${PROJECT_ID} --allow tc
 
 Setup DNS:
 
-DNS_ZONE=dhce-zone
+DNS_ZONE=dh-demo
 DOMAIN_ROOT=deephavencommunity.com
 NODE_IP=34.149.181.117
-MACHINE_NAME=dhce
+MACHINE_NAME=demo
 
 
 gcloud beta dns --project=${PROJECT_ID} managed-zones create ${DNS_ZONE} --description="DNS for Deephaven" --dns-name="${DOMAIN_ROOT}." --visibility="public" --dnssec-state="off"
 
 gcloud dns --project=${PROJECT_ID} record-sets transaction start --zone=${DNS_ZONE}
 gcloud dns --project=${PROJECT_ID} record-sets transaction add ${NODE_IP} --name=${MACHINE_NAME}.${DOMAIN_ROOT}. --ttl=300 --type=A --zone=${DNS_ZONE}
+gcloud dns --project=${PROJECT_ID} record-sets transaction add ${NODE_IP} --name=*.${MACHINE_NAME}.${DOMAIN_ROOT}. --ttl=300 --type=A --zone=${DNS_ZONE}
 gcloud dns --project=${PROJECT_ID} record-sets transaction execute --zone=${DNS_ZONE}
+
+
 
 
 # Get certificates for your domain
@@ -255,10 +258,35 @@ openssl req -x509 -nodes -newkey rsa:4096 \
     -addext 'extendedKeyUsage=serverAuth,clientAuth' \
     -addext "subjectAltName=DNS:cluster.local,DNS:${DOMAINS_CSV:-demo.deephavencommunity.com},IP:127.0.0.1"
 
-kubectl create secret tls dh-grpc-sercret \
+kubectl create secret tls dh-grpc-secret \
 --cert="$CERT_ROOT/tls.crt" \
 --key="$CERT_ROOT/tls.key"
 
+
+
+
+# Pull lets encrypt certs and ca into gcloud
+CERT_ROOT=/dh/ws0/deephaven-core/demo/certs/wildcards
+
+# We need to create a gcloud ssl-certificates, so we can reference it as a pre-shared-cert
+# TODO: make sure our service account binding for workers doesn't allow pulling this secret from gcloud
+gcloud compute ssl-certificates create dh-wildcard-cert \
+    --certificate "$CERT_ROOT/fullchain.pem" \
+    --private-key "$CERT_ROOT/privkey.pem"
+
+# We also upload the CA as a generic secret, so clients can use as truststore
+kubectl create secret generic dh-wildcard-ca --from-file \
+    "$CERT_ROOT/chain.pem"
+
+# We're putting the wildcard cert and key into kubernetes as a secret.
+# We really shouldn't do that, as a kubernetes savvy user might read it
+# (TODO: make sure workers run without any kubernetes read permissions)
+kubectl create secret tls dh-wildcard-cert \
+    --cert "$CERT_ROOT/fullchain.pem" \
+    --key "$CERT_ROOT/privkey.pem"
+
+# this kubectl command to read secrets can be `curl`ed by a savvy user:
+kubectl get secret dh-wildcard-cert -o go-template='{{range $k,$v := .data}}{{"### "}}{{$k}}{{"\n"}}{{$v|base64decode}}{{"\n\n"}}{{end}}'
 
 
 
@@ -338,6 +366,16 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
 
 
 
+# TODO: reduce this to a minimum needed for certbot
+#gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+#    --role "roles/dns.admin" \
+#    --member "serviceAccount:${PROJECT_ID}.svc.id.goog[$K8NS/$K8_SRV_ACT]"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --role "roles/dns.changes.create" \
+    --member "serviceAccount:${PROJECT_ID}.svc.id.goog[$K8NS/$K8_SRV_ACT]"
+
+
+
 kubectl annotate serviceaccount \
     --namespace "$K8NS" \
     "$K8_SRV_ACT" \
@@ -363,3 +401,38 @@ container.clusters.get
 container.clusters.update
 RBAC needed:
 https://v1-19.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#-strong-write-operations-serviceaccount-v1-core-strong-
+
+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform
+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform.read-only
+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fndev.clouddns.readonly
+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fndev.clouddns.readwrite
+
+
+
+
+
+
+
+
+CLUSTER_NAME=dhce-auto
+PROJECT_ID=deephaven-oss
+ZONE=us-central1
+K8S_CONTEXT=gke_"$PROJECT_ID"_"$ZONE"_"$CLUSTER_NAME"
+K8S_NAMESPACE=dh
+DOCKER_VERSION=0.0.4
+
+
+cd demo/certs
+docker build . -t ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/cert-wildcard-job:$DOCKER_VERSION
+docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/cert-wildcard-job:$DOCKER_VERSION
+
+
+blech.
+Go to https://console.cloud.google.com/iam-admin/serviceaccounts?authuser=2&orgonly=true&project=deephaven-oss&supportedpurview=organizationId
+Create/download a key for your service account (json)
+Rename to google-svc.json and place next to the Dockerfile in demo/certs
+
+...ughhhhh, real instructions should be:
+On a trusted machine, get your svc account json, run script, get certs, sed patch file
+
+kubectl patch secret dh-wildcard-cert --type='strategic' --patch "$(cat secret-patch.json)"

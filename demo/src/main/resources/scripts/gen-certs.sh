@@ -25,7 +25,7 @@ REGION=us-central1
 
 MY_POD_IP="${MY_POD_IP:-}"
 IP_LIST="${IP_LIST:-127.0.0.1,::1,$MY_POD_IP}"
-DOMAIN_LIST="${DOMAIN_LIST:-demo.deephavencommunity.com,localhost}"
+DOMAIN_LIST="${DOMAIN_LIST:-demo.deephavencommunity.com,*.demo.deephavencommunity.com,localhost}"
 #Pick the first domain out of the list
 # The `|| [ -n` bit ensures we handle when trailing newline is missing
 while read -r DOMAIN || [ -n "$DOMAIN" ]; do

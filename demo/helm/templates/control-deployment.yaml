@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.dh.controllerDeploymentName }}
+  labels:
+    dh.purpose: controller
+    {{- include "dhdemo.labels" . | nindent 4 }}
+spec:
+  # We only ever want a single controller running
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "dhdemo.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        # This deployment is for the controller,
+        # who will load it's own running pod yaml via ~ kubectl get pod --selector=dh.purpose=controller
+        # and then swap out key values, like dh.purpose,
+        # and dynamically create a pod from whatever is in our runtime yaml
+        dh.purpose: controller
+        {{- include "dhdemo.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "dhdemo.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      containers:
+
+        # demo-server is our quarkus (vert.x) kubernetes controller and health checker.
+        - name: demo-server
+          image: "{{ .Values.dh.repo}}/demo-server:{{ .Values.dh.version }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: MY_DNS_NAME
+              value: {{ .Values.dh.dnsName }}
+            {{- toYaml .Values.envVars | nindent 12 }}
+          ports:
+            - name: health-check
+              containerPort: {{ .Values.dh.portControl }}
+              protocol: TCP
+
+          livenessProbe:
+            failureThreshold: 4
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+            periodSeconds: 10
+            httpGet:
+              port: "health-check"
+              path: /health
+          readinessProbe:
+            failureThreshold: 4
+            initialDelaySeconds: 3
+            timeoutSeconds: 3
+            periodSeconds: 10
+            httpGet:
+              port: "health-check"
+              path: /health

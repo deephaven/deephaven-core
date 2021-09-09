@@ -19,6 +19,7 @@ java {
 
 application {
     mainClassName = 'io.deephaven.demo.DhDemoServer'
+
 }
 
 // we use withType(JavaExec) to catch intellij-created run configurations
@@ -28,6 +29,12 @@ tasks.withType(JavaExec).configureEach {
         // setting this here ensures local gradle runs won't cache things,
         // but running in a production container (not a gradle JavaExec), we let it cache
         exe.systemProperty("vertxweb.environment", "dev")
+        exe.systemProperty("dh-helm-root", new File(projectDir, "helm").absolutePath)
+        exe.systemProperty("dh-helm-mode", "generate")
+        exe.systemProperty("dh-helm-target", new File(buildDir, "helm").absolutePath)
+        exe.doFirst {
+            exe.args("generate")
+        }
 }
 
 
@@ -46,8 +53,8 @@ dependencies {
         implementation enforcedPlatform("${quarkusGroup}:quarkus-google-cloud-services-bom:${quarkusVersion}")
 
         // The tools we will use to build our controller
-        implementation 'io.quarkus:quarkus-vertx'
-        implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
+        implementation 'io.quarkus:quarkus-vertx-http'
+       // implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
         implementation 'io.smallrye.reactive:smallrye-mutiny-vertx-web-client'
 
         runtime "io.netty:netty-transport-native-epoll:$quarkusVersion:linux-x86_64"
@@ -88,7 +95,7 @@ dependencies {
         implementation 'io.kubernetes:client-java:10.0.0'
     }
     // dependencies added w/o adequate replacements in quarkus (afaik)
-    implementation 'io.kubernetes:client-java-extended:10.0.0'
+    implementation 'io.kubernetes:client-java-extended:13.0.0'
 }
 
 String protoSyncName = 'protoSync'

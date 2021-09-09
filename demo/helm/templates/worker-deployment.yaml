@@ -1,13 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "dhdemo.fullname" . }}
+  name: {{ .Values.dh.deploymentName }}
+  namespace: {{ .Values.dh.namespace }}
   labels:
+    dh.purpose: worker
     {{- include "dhdemo.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "dhdemo.selectorLabels" . | nindent 6 }}
@@ -18,6 +17,8 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        # This deployment is for workers, who will run user sessions
+        dh.purpose: worker
         {{- include "dhdemo.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -38,6 +39,10 @@ spec:
           env:
               # .Values.envVars includes MY_POD_IP env var, which the CertFactory class uses to detect "local cert mode"
           {{- toYaml .Values.envVars | nindent 12 }}
+            - name: DOMAIN_LIST
+              value: "{{ .Values.dh.dnsName }},*.{{ .Values.dh.dnsName }},localhost"
+            - name: MY_DNS_NAME
+              value: {{ .Values.dh.dnsName }}
             - name: AUTH_DIR
               value: /etc/ssl/dh
           volumeMounts:
@@ -59,7 +64,9 @@ spec:
           securityContext:
           {{- toYaml .Values.securityContext | nindent 12 }}
           env:
-          {{- toYaml .Values.envVars | nindent 12 }}
+            - name: MY_DNS_NAME
+              value: {{ .Values.dh.dnsName }}
+            {{- toYaml .Values.envVars | nindent 12 }}
             #command:
             #- "/bin/grpc_health_proxy"
             #- "-http-listen-addr"
@@ -155,34 +162,6 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 8
             timeoutSeconds: 10
-
-         # grpc-proxy container.  Converts http 1.1 to http2 for grpc
-        #
-        - name: grpc-proxy
-          image: "{{ .Values.dh.repo}}/grpc-proxy:{{ .Values.dh.version }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          ports:
-            - name: http
-              containerPort: 8008
-              protocol: TCP
-            - name: https
-              containerPort: 8443
-              protocol: TCP
-          # TODO: copy the readinessProbe / livenessProbe from dh-prod.yaml
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          env:
-            - name: BACKEND_ADDR
-              value: localhost:8888
-            - name: TLS_DIR
-              value: /etc/ssl/dh
-            {{- toYaml .Values.envVars | nindent 12 }}
-          volumeMounts:
-            - name: gen-secret
-              mountPath: /etc/ssl/dh
-              readOnly: true
 
         #
         # web container.  Serves our js static web resources
