@@ -7,6 +7,7 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.kafka.Utils;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
@@ -52,8 +53,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                 definition, chunkTypeForIndex, columns, schema, allowNulls);
     }
 
-    private static FieldCopier makeFieldCopier(Schema schema, String fieldName, ChunkType chunkType,
-            Class<?> dataType) {
+    private static FieldCopier makeFieldCopier(
+            final Schema schema, final String fieldName, final ChunkType chunkType, final Class<?> dataType) {
         switch (chunkType) {
             case Char:
                 return new GenericRecordCharFieldCopier(fieldName);
@@ -70,7 +71,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                 if (dataType == DBDateTime.class) {
                     final Schema.Field field = schema.getField(fieldName);
                     if (field != null) {
-                        final LogicalType logicalType = field.schema().getLogicalType();
+                        Schema fieldSchema = Utils.getEffectiveSchema(fieldName, field.schema());
+                        final LogicalType logicalType = fieldSchema.getLogicalType();
                         if (logicalType == null) {
                             throw new IllegalArgumentException(
                                     "Can not map field without a logical type to DBDateTime: field=" + fieldName);
