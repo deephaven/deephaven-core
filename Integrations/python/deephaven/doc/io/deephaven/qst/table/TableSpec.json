@@ -7,6 +7,7 @@
   "logic": ":return: io.deephaven.qst.TableCreationLogic",
   "merge": "*Overload 1*  \n  :param first: io.deephaven.qst.table.TableSpec\n  :param second: io.deephaven.qst.table.TableSpec\n  :param rest: io.deephaven.qst.table.TableSpec...\n  :return: io.deephaven.qst.table.MergeTable\n  \n*Overload 2*  \n  :param tables: java.util.Collection<? extendsio.deephaven.qst.table.TableSpec>\n  :return: io.deephaven.qst.table.TableSpec",
   "of": ":param logic: io.deephaven.qst.TableCreationLogic\n:return: io.deephaven.qst.table.TableSpec",
+  "ticket": "*Overload 1*  \n  :param ticket: java.lang.String\n  :return: io.deephaven.qst.table.TicketTable\n  \n*Overload 2*  \n  :param ticket: byte[]\n  :return: io.deephaven.qst.table.TicketTable",
   "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.qst.table.TableSpec",

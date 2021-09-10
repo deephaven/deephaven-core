@@ -1,7 +1,8 @@
 {
  "className": "io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl",
  "methods": {
-  "create": "This actually performs the operation. It will typically be performed after the\n\n:param request: (io.deephaven.proto.backplane.grpc.ComboAggregateRequest) - the original request from the user\n:param sourceTables: (java.util.List<io.deephaven.grpc_api.session.SessionState.ExportObject<io.deephaven.db.tables.Table>>) - the source tables that this operation may or may not need\n:return: (io.deephaven.db.tables.Table) the resulting table"
+  "create": "This actually performs the operation. It will typically be performed after the\n\n:param request: (io.deephaven.proto.backplane.grpc.ComboAggregateRequest) - the original request from the user\n:param sourceTables: (java.util.List<io.deephaven.grpc_api.session.SessionState.ExportObject<io.deephaven.db.tables.Table>>) - the source tables that this operation may or may not need\n:return: (io.deephaven.db.tables.Table) the resulting table",
+  "validateRequest": "This method validates preconditions of the request.\n\n:param request: (io.deephaven.proto.backplane.grpc.ComboAggregateRequest) - the original request from the user"
  },
  "path": "io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl",
  "typeName": "class"
