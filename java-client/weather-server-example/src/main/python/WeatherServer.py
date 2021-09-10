@@ -3,7 +3,6 @@ from deephaven import DynamicTableWriter, Types as dht
 from deephaven import ComboAggregateFactory as caf
 from deephaven import DBTimeUtils
 import time
-import requests
 from threading import Lock
 from threading import Thread
 import random
@@ -13,6 +12,10 @@ from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime
 from math import cos, asin, sqrt, pi
+import os
+
+os.system("pip install requests")
+import requests
 
 @dataclass
 class Location:
@@ -29,7 +32,7 @@ class Location:
     def __hash__(self):
         return hash((self.city, self.state))
 
-API_KEY = 'AIzaSyAPD7FPbAzzJXhn29VsiuYTZ2LFDotvM60'
+API_KEY = 'YOUR_KEY_HERE'
 CITY_LOCK = Lock()
 trackedCities = set()
 
