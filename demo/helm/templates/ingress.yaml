@@ -18,13 +18,12 @@ spec:
   # as it will be responsible for connecting you to the correct DNS vs. pod/service.
   # So, if you visit does-not-exist-anymore.domain.com/ide/ (route to real service has been removed),
   # you'll get sent to the controller who will redirect you to a warm DNS name.
-#  defaultBackend:
-#    service:
-#      # TODO: change the default from envoy to our controller
-#      # As our controller should be redirecting everyone to worker-specific subdomains
-#      name: {{ .Values.dh.svcNameControl }}
-#      port:
-#        number: {{ .Values.dh.portControlInternal }}
+  defaultBackend:
+    service:
+      # Our controller will redirect everyone to worker-specific subdomains
+      name: {{ .Values.dh.svcNameControl }}
+      port:
+        number: {{ .Values.dh.portControlInternal }}
   rules:
     - host: {{ .Values.dh.dnsName }}
       http:
@@ -36,6 +35,16 @@ spec:
                   number: {{ .Values.dh.portControlInternal }}
             pathType: ImplementationSpecific
             path: "/*"
+    - host: {{ .Values.dh.dnsName }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ .Values.dh.svcNameControl }}
+                port:
+                  number: {{ .Values.dh.portControlInternal }}
+            pathType: ImplementationSpecific
+            path: "/new"
       # Define a template for default.demo.deephavencommunity.com.
       # This is a default worker that is always initialized immediately
       # It is also loaded by the controller, who simply mutates this object

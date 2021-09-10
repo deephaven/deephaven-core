@@ -107,8 +107,8 @@ public class DhDemoServer implements QuarkusApplication {
             System.out.println("Handled " + req.normalizedPath());
             Cookie cookie = req.getCookie("dh-user");
             if (cookie != null) {
-                // TODO: verify that this cookie points to a running service, and if so, redirect to it.
                 String uname = cookie.getValue();
+                // verify that this cookie points to a running service, and if so, redirect to it.
                 if (state.hasValidRoute(uname)) {
                     String uri = "https://" + uname + "." + NameConstants.DOMAIN;
                     req.response()
@@ -127,7 +127,7 @@ public class DhDemoServer implements QuarkusApplication {
                 try {
                     // hm... we should actually send the user a response with a token that we'll stream events on vert.x event bus.
                     // this will let us render a "preparing your machine" loading message, while we do... expensive things waiting....
-                    worker = state.createWorker();
+                    worker = state.getWorker();
                 } catch (KubectlException | ApiException | InterruptedException e) {
                     String unique = UUID.randomUUID().toString();
                     String msg = "Unknown error occurred getting a worker, please report error " + unique;

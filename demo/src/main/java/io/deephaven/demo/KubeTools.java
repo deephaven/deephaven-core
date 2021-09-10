@@ -52,8 +52,13 @@ public class KubeTools {
             }
 
         } else {
-            System.out.println("No " + kubeConfigPath + " file found; not loading context from filesystem");
-            apiClient = Configuration.getDefaultApiClient();
+            // no kube config
+            System.out.println("No " + kubeConfigPath + " file found; assuming we are running in cluster");
+            try {
+                apiClient = ClientBuilder.cluster().build();
+            } catch (IOException e) {
+                throw new UncheckedIOException("Unable to initialize controller from cluster. If running locally, make sure kubectl commands work on your terminal.", e);
+            }
         }
     }
 
@@ -62,4 +67,5 @@ public class KubeTools {
         api.getApiClient().setDebugging(true);
         return api;
     }
+
 }

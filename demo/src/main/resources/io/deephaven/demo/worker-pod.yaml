@@ -1,0 +1,461 @@
+# This document is a template loaded by DhDemoServer to initialize a worker's pod.
+# The worker pod runs grpc, envoy and the web server, and will be given a unique subdomain address.
+# worker-service.yaml describes this subdomain-to-pod-port-mapping,
+# and, for now, we patch it into place by modifying / adding some Ingress objects.
+# Once the Gateway API is more stable, we'll be able to simply create a worker-httproute,
+# instead of patching Ingress with new subdomains.
+
+# The contents of this pod were taken by analyzing the running pod created by deployment.yaml
+# The helm file contains variables, and rather than try to run helm from our controller,
+# we just transcribe live pod yaml obtained by:
+# kubectl get pods
+# <find name dh-local-123abc456>
+# kubectl get pod dh-local-123abc456 -o yaml
+# Then, deleting anything status-related / generated
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app.kubernetes.io/instance: dh-demo
+    app.kubernetes.io/name: deephaven
+    pod-template-hash: 59d6bff87b
+  name: POD_NAME
+  namespace: default
+  ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: dh-local-59d6bff87b
+      uid: ba8d39af-0c56-4ea5-a8bb-b2183b9b777a
+  resourceVersion: "22326429"
+  uid: 8a6f0189-88f8-43c1-a05e-2aa0b7205a69
+spec:
+  containers:
+    - env:
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: MY_POD_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.serviceAccountName
+      image: us-central1-docker.pkg.dev/deephaven-oss/deephaven/demo-server:0.0.4
+      imagePullPolicy: Always
+      livenessProbe:
+        failureThreshold: 4
+        httpGet:
+          path: /health
+          port: health-check
+          scheme: HTTP
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 3
+      name: demo-server
+      ports:
+        - containerPort: 7117
+          name: health-check
+          protocol: TCP
+      readinessProbe:
+        failureThreshold: 4
+        httpGet:
+          path: /health
+          port: health-check
+          scheme: HTTP
+        initialDelaySeconds: 3
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 3
+      resources:
+        limits:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 2Gi
+        requests:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 2Gi
+      securityContext:
+        capabilities:
+          drop:
+            - NET_RAW
+        privileged: false
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+        - mountPath: /etc/ssl/grpc-secret
+          name: grpc-secret
+          readOnly: true
+        - mountPath: /etc/ssl/dh
+          name: gen-secret
+          readOnly: true
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: kube-api-access-jgxgc
+          readOnly: true
+    - env:
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: MY_POD_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.serviceAccountName
+        - name: DH_TLS_CHAIN
+          value: /etc/ssl/dh/tls.crt
+        - name: DH_TLS_KEY
+          value: /etc/ssl/dh/tls.key.pk8
+        - name: GRPC_VERBOSITY
+          value: DEBUG
+        - name: GRPC_TRACE
+          value: http2_stream_state,http,http1,transport_security
+      image: us-central1-docker.pkg.dev/deephaven-oss/deephaven/grpc-api:0.0.4
+      imagePullPolicy: Always
+      livenessProbe:
+        exec:
+          command:
+            - /health/grpc_health_probe
+            - -addr=:8888
+            - -tls
+            - -tls-no-verify
+        failureThreshold: 3
+        initialDelaySeconds: 10
+        periodSeconds: 8
+        successThreshold: 1
+        timeoutSeconds: 10
+      name: grpc-api
+      ports:
+        - containerPort: 8888
+          name: http
+          protocol: TCP
+      readinessProbe:
+        exec:
+          command:
+            - /health/grpc_health_probe
+            - -addr=:8888
+            - -tls
+            - -tls-no-verify
+        failureThreshold: 12
+        initialDelaySeconds: 4
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 10
+      resources:
+        limits:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 2Gi
+        requests:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 2Gi
+      securityContext:
+        capabilities:
+          drop:
+            - NET_RAW
+        privileged: false
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+      terminationMessagePath: /tmp/termination.log
+      terminationMessagePolicy: File
+      volumeMounts:
+        - mountPath: /etc/ssl/grpc-secret
+          name: grpc-secret
+          readOnly: true
+        - mountPath: /etc/ssl/dh
+          name: gen-secret
+          readOnly: true
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: kube-api-access-jgxgc
+          readOnly: true
+    - env:
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: MY_POD_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.serviceAccountName
+      image: us-central1-docker.pkg.dev/deephaven-oss/deephaven/web:0.0.4
+      imagePullPolicy: Always
+      livenessProbe:
+        failureThreshold: 28
+        httpGet:
+          path: /ide/
+          port: 8080
+          scheme: HTTP
+        initialDelaySeconds: 2
+        periodSeconds: 1
+        successThreshold: 1
+        timeoutSeconds: 3
+      name: web
+      ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+      readinessProbe:
+        failureThreshold: 28
+        httpGet:
+          path: /ide/
+          port: 8080
+          scheme: HTTP
+        initialDelaySeconds: 2
+        periodSeconds: 1
+        successThreshold: 1
+        timeoutSeconds: 3
+      resources:
+        limits:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 2Gi
+        requests:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 2Gi
+      securityContext:
+        capabilities:
+          drop:
+            - NET_RAW
+        privileged: false
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: kube-api-access-jgxgc
+          readOnly: true
+    - env:
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: MY_POD_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.serviceAccountName
+      image: envoyproxy/envoy:v1.18.3
+      imagePullPolicy: IfNotPresent
+      name: envoy
+      ports:
+        - containerPort: 10000
+          name: https
+          protocol: TCP
+      resources:
+        limits:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 2Gi
+        requests:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 2Gi
+      securityContext:
+        capabilities:
+          drop:
+            - NET_RAW
+        privileged: false
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+        - mountPath: /etc/envoy
+          name: envoy-conf
+        - mountPath: /etc/ssl/dh
+          name: gen-secret
+          readOnly: true
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: kube-api-access-jgxgc
+          readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  initContainers:
+    - args:
+        - ensure-certs
+      env:
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: MY_POD_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.serviceAccountName
+        - name: AUTH_DIR
+          value: /etc/ssl/dh
+      image: us-central1-docker.pkg.dev/deephaven-oss/deephaven/demo-server:0.0.4
+      imagePullPolicy: Always
+      name: gen-keys
+      resources:
+        limits:
+          cpu: 250m
+          ephemeral-storage: 4Gi
+          memory: 64Mi
+        requests:
+          cpu: 250m
+          ephemeral-storage: 4Gi
+          memory: 64Mi
+      securityContext:
+        capabilities:
+          drop:
+            - NET_RAW
+        privileged: false
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+        - mountPath: /etc/ssl/dh
+          name: gen-secret
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: kube-api-access-jgxgc
+          readOnly: true
+  nodeName: gk3-dhce-auto-nap-178h35ss-5d7658d5-ljac
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: gke.io/optimize-utilization-scheduler
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  serviceAccount: deephaven
+  serviceAccountName: deephaven
+  terminationGracePeriodSeconds: 30
+  tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+  volumes:
+    - configMap:
+        defaultMode: 420
+        name: envoy-conf
+      name: envoy-conf
+    - name: envoy-secrets
+      secret:
+        defaultMode: 420
+        secretName: secret-envoy
+    - name: grpc-secret
+      secret:
+        defaultMode: 420
+        secretName: dh-demo-cert
+    - emptyDir: {}
+      name: gen-secret

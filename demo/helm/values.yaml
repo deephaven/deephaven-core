@@ -33,6 +33,7 @@ dh:
   ingressName: dh-ingress
   deploymentName: dh-deploy
   controllerDeploymentName: dh-control
+  controllerUserName: dhcontrol
   workerDeploymentName: dh-deploy
 
 

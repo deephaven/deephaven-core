@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.io.Files;
-import com.google.gson.JsonPrimitive;
 import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.models.*;
@@ -69,7 +68,7 @@ public class HelmGenerator {
         // copy Chart.yaml, values.yaml and any yaml templates we don't want to modify.
         copyFile("Chart.yaml");
         copyFile("values.yaml");
-        copyTemplate("_helpers.tpl");
+//        copyTemplate("_helpers.tpl", dryRun);
 
         // in order to modify certain yaml files, we need to do a helm --dry-run, and capture output.
         // this will expand all properties, and create documents that we can parse as yaml WITHOUT go template language in it.
@@ -99,7 +98,7 @@ public class HelmGenerator {
                 case "hpa.yaml":
                     continue;
                 default:
-                    copyTemplate(file.getName());
+                    copyTemplate(file.getName(), dryRun);
                     break;
             }
             System.out.println("Done processing " + file);
@@ -360,8 +359,13 @@ public class HelmGenerator {
         return list;
     }
 
-    private void copyTemplate(final String file) throws IOException {
-        copyFile("templates" + File.separator + file);
+    private void copyTemplate(final String file, final Map<String, String> dryRun) throws IOException {
+        String tpl = dryRun.get(file);
+        if (tpl == null) {
+            copyFile("templates" + File.separator + file);
+        } else {
+            FileUtils.write(new File(helmTarget, "templates/" + file), tpl, StandardCharsets.UTF_8);
+        }
     }
     private void copyFile(final String file) throws IOException {
         final File source = new File(helmRoot, file);

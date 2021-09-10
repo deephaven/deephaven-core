@@ -118,12 +118,13 @@ public class KubeState {
 
         });
         if (!needIngress.isEmpty()) {
-            String newIngress = manager.newIngressName();
-            final V1Ingress result = manager.createIngress(newIngress,
-                    needIngress.stream().map(KubeSession::getUserName).collect(Collectors.toList()));
-            for (KubeSession ingress : needIngress) {
-                ingress.setIngress(result);
-            }
+            System.out.println("IN NEED OF INGRESS: " + needIngress);
+//            String newIngress = manager.newIngressName();
+//            final V1Ingress result = manager.createIngress(newIngress,
+//                    needIngress.stream().map(KubeSession::getUserName).collect(Collectors.toList()));
+//            for (KubeSession ingress : needIngress) {
+//                ingress.setIngress(result);
+//            }
         }
 
     }

@@ -305,7 +305,17 @@ public class KubeManager {
                     .execute();
         } catch (KubectlException e) {
             System.err.println("Unable to get metadata for pod " + myPod);
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.err.flush();
+            try {
+                Kubectl.get(V1Pod.class)
+                    .apiClient(apiClient)
+                    .namespace(DH_NAMESPACE)
+                    .execute();
+                System.err.println("Able to read pod list...");
+            } catch (Exception ignored) {
+                System.err.println("Unable to read any pods at all!");
+            }
             return false;
         }
         final Map<String, String> labels = pod.getMetadata().getLabels();
@@ -380,13 +390,13 @@ public class KubeManager {
         }
         System.out.println("[WARN] Found not-ready worker " + worker);
         return false;
-    }2552598
+    }
 
-    public DhWorker createWorker() throws KubectlException, ApiException, InterruptedException {
+    public DhWorker getWorker() throws KubectlException, ApiException, InterruptedException {
         DhWorker result = null;
         long start = System.nanoTime();
         try {
-            result = doCreateWorker();
+            result = createOrAssignWorker();
             return result;
         } finally {
             String msg;
@@ -405,7 +415,7 @@ public class KubeManager {
             }
         }
     }
-    private DhWorker doCreateWorker() throws KubectlException, ApiException, InterruptedException {
+    private DhWorker createOrAssignWorker() throws KubectlException, ApiException, InterruptedException {
         // First, ping the check-state-thread, to get it reading data
         final KubeState origState = state;
         refreshWorkers();
@@ -719,7 +729,7 @@ public class KubeManager {
         labels.put(LABEL_USER, userName);
         labels.put(LABEL_PURPOSE, PURPOSE_WORKER);
         metadata.setLabels(labels);
-        metadata.setName(userName);
+        metadata.setName("svc-" + userName);
         metadata.setNamespace(NAMESPACE);
 
         final V1ServiceSpec spec = new V1ServiceSpec();
@@ -777,7 +787,7 @@ public class KubeManager {
         final String realLabel = check.getMetadata().getLabels().get(NameConstants.LABEL_USER);
         if (userName.equals(realLabel)) {
             System.out.println(NameGen.getMyName() + " won pod " + podName +" for user " + userName);
-            final DhWorker worker = new DhWorker(userName, pod.getMetadata().getName(), userName, ingressName, userName + "." + NameConstants.DOMAIN);
+            final DhWorker worker = new DhWorker(userName, pod.getMetadata().getName(), "svc-" + userName, ingressName, userName + "." + NameConstants.DOMAIN);
             return worker;
         }
         System.out.println(NameGen.getMyName() + " lost pod " + podName +" for user " + userName);

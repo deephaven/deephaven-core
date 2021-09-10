@@ -10,6 +10,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      dh.purpose: controller
       {{- include "dhdemo.selectorLabels" . | nindent 6 }}
   template:
     metadata:
@@ -29,7 +30,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "dhdemo.serviceAccountName" . }}
+      serviceAccountName: {{ .Values.dh.controllerUserName }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
 
