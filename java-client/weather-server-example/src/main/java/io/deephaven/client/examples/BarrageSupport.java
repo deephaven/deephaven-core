@@ -32,7 +32,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
- * This class is here as a shim between the Java-API and the gRPC Barrage client.  This class will be superceded once
+ * This class is here as a shim between the Java-API and the gRPC Barrage client.  This class will be superseded once
  * proper support for retrieving Barrage tables directly is implemented, in the near future
  */
 public class BarrageSupport {

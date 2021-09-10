@@ -19,19 +19,13 @@ import org.apache.arrow.memory.RootAllocator;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.*;
 
 public class Ui {
-    private JTabbedPane tabbedPane1;
     private JPanel panel1;
     private JTextField locationField;
     private JButton addButton;
     private JButton removeButton;
-    private JComboBox<String> statCombo;
-    private JComboBox<String> valueCombo;
     private JTable summaryTable;
     private JLabel statusLabel;
     private JTextField hostField;
@@ -45,7 +39,7 @@ public class Ui {
     private BarrageSupport support;
 
 
-    private Set<String> monitoredPlaces = new HashSet<>();
+    private BarrageTable statsTable;
 
     public Ui() {
         // Start the LTM.  This module is responsible for deterministically handling table updates
@@ -68,9 +62,13 @@ public class Ui {
         }
 
         try (final ConsoleSession console = flightSession.session().console("python").get()) {
-            final Changes changes = console.executeCode("beginWatch(" + place + ")");
-
-            // TODO: Something
+            SwingUtilities.invokeLater(() -> statusLabel.setText("Attempting to add " + place));
+            final Changes c = console.executeCode("beginWatch(\"" + place + "\")");
+            if (c.errorMessage().isPresent()) {
+                SwingUtilities.invokeLater(() -> statusLabel.setText("Error adding " + place + " -> " + c.errorMessage().get()));
+            } else {
+                SwingUtilities.invokeLater(() -> statusLabel.setText("Added " + place));
+            }
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             e.printStackTrace();
         }
@@ -109,6 +107,7 @@ public class Ui {
             }
         }
 
+        SwingUtilities.invokeLater(() -> statusLabel.setText("Connecting..."));
         boolean plaintext = plaintextCheckBox.isSelected();
 
         // Create the new connection
@@ -129,6 +128,8 @@ public class Ui {
                         .allocator(bufferAllocator)
                         .build();
 
+        SwingUtilities.invokeLater(() -> statusLabel.setText("Connected!"));
+
         flightSession = flightSessionFactory.newFlightSession();
         support = new BarrageSupport(managedChannel, flightSession);
         tryFetchTables();
@@ -138,10 +139,12 @@ public class Ui {
      * Fetch each of the tables that this example cares about.
      */
     private void tryFetchTables() {
-        BarrageTable awesomeCool = support.fetchSubscribedTable("s/LastByCityState");
+        statsTable = support.fetchSubscribedTable("s/LastByCityState");
+        configureDisplay();
+    }
 
-        final Object[] rec = awesomeCool.getRecord(0);
-        System.out.println("WOOHOO " + Arrays.toString(rec));
+    private void configureDisplay() {
+        summaryTable.setModel(new BarrageBackedTableModel(statsTable));
     }
 
     /**
@@ -149,8 +152,15 @@ public class Ui {
      * and shutdown any running threads.
      */
     private void onShutdown() {
-        flightScheduler.shutdownNow();
-        managedChannel.shutdownNow();
+        if (statsTable != null) {
+            support.releaseTable(statsTable);
+        }
+
+        if (support != null) {
+            support.close();
+        }
+
+        flightScheduler.shutdown();
         try {
             if (!flightScheduler.awaitTermination(10, TimeUnit.SECONDS)) {
                 throw new RuntimeException("Scheduler not shutdown after 10 seconds");
@@ -159,12 +169,16 @@ public class Ui {
             Thread.currentThread().interrupt();
             return;
         }
-        try {
-            if (!managedChannel.awaitTermination(10, TimeUnit.SECONDS)) {
-                throw new RuntimeException("Channel not shutdown after 10 seconds");
+
+        if (managedChannel != null) {
+            managedChannel.shutdown();
+            try {
+                if (!managedChannel.awaitTermination(10, TimeUnit.SECONDS)) {
+                    throw new RuntimeException("Channel not shutdown after 10 seconds");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 
@@ -184,68 +198,51 @@ public class Ui {
      */
     private void $$$setupUI$$$() {
         panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane1 = new JTabbedPane();
-        tabbedPane1.setTabLayoutPolicy(1);
-        tabbedPane1.setTabPlacement(1);
-        panel1.add(tabbedPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
+        panel1.setLayout(new BorderLayout(0, 0));
         final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(4, 4, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane1.addTab("Main", panel2);
-        locationField = new JTextField();
-        panel2.add(locationField, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
-        addButton = new JButton();
-        addButton.setText("Add");
-        panel2.add(addButton, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        removeButton = new JButton();
-        removeButton.setText("Remove");
-        panel2.add(removeButton, new GridConstraints(1, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JLabel label1 = new JLabel();
-        label1.setText("Location");
-        panel2.add(label1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel2.setLayout(new GridLayoutManager(3, 4, new Insets(5, 5, 5, 5), -1, -1));
+        panel1.add(panel2, BorderLayout.CENTER);
         final JPanel panel3 = new JPanel();
         panel3.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        panel2.add(panel3, new GridConstraints(3, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel2.add(panel3, new GridConstraints(2, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         final JScrollPane scrollPane1 = new JScrollPane();
         panel3.add(scrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         summaryTable = new JTable();
         scrollPane1.setViewportView(summaryTable);
         final JPanel panel4 = new JPanel();
-        panel4.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-        panel2.add(panel4, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        statCombo = new JComboBox();
-        final DefaultComboBoxModel defaultComboBoxModel1 = new DefaultComboBoxModel();
-        defaultComboBoxModel1.addElement("Min");
-        defaultComboBoxModel1.addElement("Max");
-        defaultComboBoxModel1.addElement("Average");
-        statCombo.setModel(defaultComboBoxModel1);
-        panel4.add(statCombo, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        valueCombo = new JComboBox();
-        final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
-        defaultComboBoxModel2.addElement("Temperature");
-        defaultComboBoxModel2.addElement("Humidity");
-        valueCombo.setModel(defaultComboBoxModel2);
-        panel4.add(valueCombo, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JLabel label2 = new JLabel();
-        label2.setText("Display Statistic");
-        panel2.add(label2, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JPanel panel5 = new JPanel();
-        panel5.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
-        panel2.add(panel5, new GridConstraints(0, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        final JLabel label3 = new JLabel();
-        label3.setText("Status:");
-        panel5.add(label3, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel4.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel2.add(panel4, new GridConstraints(0, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label1 = new JLabel();
+        label1.setText("Status:");
+        panel4.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer1 = new Spacer();
-        panel5.add(spacer1, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        panel4.add(spacer1, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         statusLabel = new JLabel();
         statusLabel.setText("Label");
-        panel5.add(statusLabel, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel4.add(statusLabel, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel5 = new JPanel();
+        panel5.setLayout(new GridLayoutManager(1, 5, new Insets(0, 0, 0, 0), -1, -1));
+        panel2.add(panel5, new GridConstraints(1, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        locationField = new JTextField();
+        panel5.add(locationField, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        addButton = new JButton();
+        addButton.setText("Add");
+        panel5.add(addButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        removeButton = new JButton();
+        removeButton.setText("Remove");
+        panel5.add(removeButton, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label2 = new JLabel();
+        label2.setText("Location");
+        panel5.add(label2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final Spacer spacer2 = new Spacer();
+        panel5.add(spacer2, new GridConstraints(0, 4, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         final JToolBar toolBar1 = new JToolBar();
         toolBar1.setFloatable(false);
-        panel1.add(toolBar1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
-        final JLabel label4 = new JLabel();
-        label4.setText("Host");
-        toolBar1.add(label4);
+        toolBar1.setMargin(new Insets(0, 5, 5, 5));
+        panel1.add(toolBar1, BorderLayout.SOUTH);
+        final JLabel label3 = new JLabel();
+        label3.setText("Host");
+        toolBar1.add(label3);
         hostField = new JTextField();
         hostField.setText("localhost:10000");
         toolBar1.add(hostField);
