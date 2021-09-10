@@ -7,13 +7,19 @@ dependencies {
     implementation project(':client-flight-dagger'),
             'com.intellij:forms_rt:6.0.3'
 
-    implementation 'info.picocli:picocli:4.6.1'
+    implementation(project(':grpc-api')) {
+        // way too many dependencies right now
+        // but at least we can cut-off slf4j-simple
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
 
     testImplementation(platform('org.junit:junit-bom:5.7.2'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core:3.19.0'
 
     implementation 'org.slf4j:slf4j-api:1.7.30'
+
+    runtimeOnly project(':log-to-slf4j')
     runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 }
 

@@ -7,6 +7,11 @@ import java.awt.*;
 
 public class WeatherDash {
     public static void main(String[] args) {
+        // Assign properties that need to be set to even turn on
+        System.setProperty("Configuration.rootFile", "grpc-api.prop");
+        System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override",
+                "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
+
         JFrame mainFrame = new JFrame("Weather Example Dashboard");
 
         // Defaults settings (workspace may override the size / location)

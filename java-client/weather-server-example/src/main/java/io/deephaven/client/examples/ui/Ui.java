@@ -3,19 +3,23 @@ package io.deephaven.client.examples.ui;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import io.deephaven.client.impl.*;
+import io.deephaven.client.examples.BarrageSupport;
+import io.deephaven.client.impl.ConsoleSession;
+import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
+import io.deephaven.client.impl.FlightSession;
+import io.deephaven.client.impl.FlightSessionFactory;
 import io.deephaven.client.impl.script.Changes;
-import io.deephaven.qst.table.LabeledTable;
-import io.deephaven.qst.table.TableSpec;
+import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.grpc_api_client.table.BarrageTable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.apache.arrow.flight.FlightInfo;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -34,13 +38,24 @@ public class Ui {
     private JButton connectButton;
     private JCheckBox plaintextCheckBox;
     private FlightSession flightSession;
-    private TableHandleManager manager;
+
+    // Connection related items both for GRPC and Flight.
+    private final ScheduledExecutorService flightScheduler = Executors.newScheduledThreadPool(8);
+    private ManagedChannel managedChannel;
+    private BarrageSupport support;
+
 
     private Set<String> monitoredPlaces = new HashSet<>();
 
     public Ui() {
+        // Start the LTM.  This module is responsible for deterministically handling table updates
+        //  In other words,  it drives the 'ticking' of tables.
+        LiveTableMonitor.DEFAULT.start();
+
         connectButton.addActionListener(this::doConnect);
-        addButton(this::onAdd);
+        addButton.addActionListener(this::onAdd);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::onShutdown));
     }
 
     private void onAdd(final ActionEvent ev) {
@@ -48,11 +63,11 @@ public class Ui {
         // If we get an Ack (true) We'll stuff this thing in the list.  This is crude on purpose --
         // We don't actually care about having complex logic to track places, only that we can submit them.
         final String place = locationField.getText();
-        if(place == null || place.isEmpty()) {
+        if (place == null || place.isEmpty()) {
             return;
         }
 
-        try(final ConsoleSession console = flightSession.session().console("python").get()) {
+        try (final ConsoleSession console = flightSession.session().console("python").get()) {
             final Changes changes = console.executeCode("beginWatch(" + place + ")");
 
             // TODO: Something
@@ -63,17 +78,30 @@ public class Ui {
 
     /**
      * Connect to the Deephaven Community Core server via Arrow FLight and fetch the relevant tables for this example.
+     *
      * @param ev
      */
     private void doConnect(final ActionEvent ev) {
-        final String host = hostField.getText();
-        if(host == null || host.isEmpty()) {
+        // This bit is an oddity of the Swing UI implementation -- we just ensure we are not
+        // executing potentially blocking I/O on the thread that handles UI management & drawing.
+        if (SwingUtilities.isEventDispatchThread()) {
+            flightScheduler.schedule(() -> doConnect(ev), 0, TimeUnit.SECONDS);
             return;
         }
 
-        if(flightSession != null) {
+        // Do we have everything we need to know to connect?  Host / port?
+        final String host = hostField.getText();
+        if (host == null || host.isEmpty()) {
+            return;
+        }
+
+        // Close any pre-existing session and wait for it to terminate
+        if (flightSession != null) {
             try {
+                support.close();
                 flightSession.close();
+                managedChannel.shutdownNow();
+                managedChannel.awaitTermination(5, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 // No error handling for now.
                 e.printStackTrace();
@@ -83,30 +111,26 @@ public class Ui {
 
         boolean plaintext = plaintextCheckBox.isSelected();
 
-        BufferAllocator bufferAllocator = new RootAllocator();
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-        ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forTarget(host);
+        // Create the new connection
+        final ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forTarget(host);
         if (plaintext || "localhost:10000".equals(host)) {
             channelBuilder.usePlaintext();
         } else {
             channelBuilder.useTransportSecurity();
         }
 
-        ManagedChannel managedChannel = channelBuilder.build();
+        managedChannel = channelBuilder.build();
 
-        Runtime.getRuntime()
-                .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
-
-        FlightSessionFactory flightSessionFactory =
+        final BufferAllocator bufferAllocator = new RootAllocator();
+        final FlightSessionFactory flightSessionFactory =
                 DaggerDeephavenFlightRoot.create().factoryBuilder()
                         .managedChannel(managedChannel)
-                        .scheduler(scheduler)
+                        .scheduler(flightScheduler)
                         .allocator(bufferAllocator)
                         .build();
 
         flightSession = flightSessionFactory.newFlightSession();
-        manager = flightSessionFactory.newFlightSession().session();
-
+        support = new BarrageSupport(managedChannel, flightSession);
         tryFetchTables();
     }
 
@@ -114,15 +138,21 @@ public class Ui {
      * Fetch each of the tables that this example cares about.
      */
     private void tryFetchTables() {
-        // Wow,  this is impossible. Cool!
+        BarrageTable awesomeCool = support.fetchSubscribedTable("s/LastByCityState");
+
+        final Object[] rec = awesomeCool.getRecord(0);
+        System.out.println("WOOHOO " + Arrays.toString(rec));
     }
 
-    private void onShutdown(ScheduledExecutorService scheduler,
-                            ManagedChannel managedChannel) {
-        scheduler.shutdownNow();
+    /**
+     * When the application shuts down, ensure that we clean up our connections
+     * and shutdown any running threads.
+     */
+    private void onShutdown() {
+        flightScheduler.shutdownNow();
         managedChannel.shutdownNow();
         try {
-            if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
+            if (!flightScheduler.awaitTermination(10, TimeUnit.SECONDS)) {
                 throw new RuntimeException("Scheduler not shutdown after 10 seconds");
             }
         } catch (InterruptedException e) {
@@ -217,6 +247,7 @@ public class Ui {
         label4.setText("Host");
         toolBar1.add(label4);
         hostField = new JTextField();
+        hostField.setText("localhost:10000");
         toolBar1.add(hostField);
         plaintextCheckBox = new JCheckBox();
         plaintextCheckBox.setText("Plaintext?");
