@@ -12,6 +12,7 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -137,6 +138,39 @@ public class TestChunkColumnSource {
             }
             for (int ii = 4; ii <= 10; ++ii) {
                 TestCase.assertEquals(charChunk2.get(ii - 4), values.get(ii));
+            }
+        }
+    }
+
+    @Test
+    public void testFillMultipleRanges() {
+        try (final WritableCharChunk<Attributes.Values> charChunk1 = WritableCharChunk.makeWritableChunk(1024);
+                final WritableCharChunk<Attributes.Values> charChunk2 = WritableCharChunk.makeWritableChunk(1024)) {
+            for (int ii = 0; ii < 1024; ++ii) {
+                charChunk1.set(ii, (char) (1024 + ii));
+                charChunk2.set(ii, (char) (2048 + ii));
+            }
+
+            final CharChunkColumnSource columnSource = new CharChunkColumnSource();
+            columnSource.addChunk(charChunk1);
+            columnSource.addChunk(charChunk2);
+
+            try (final OrderedKeys ranges = OrderedKeys.wrapKeyRangesChunkAsOrderedKeys(LongChunk.chunkWrap(
+                    new long[] {0, 0, 2, 99, 101, 101, 1000, 1023, 1025, 1026, 1029, 2047}));
+                    final WritableCharChunk<Attributes.Values> destChunk =
+                            WritableCharChunk.makeWritableChunk(ranges.intSize());
+                    final ChunkSource.FillContext fillContext = columnSource.makeFillContext(ranges.intSize())) {
+                columnSource.fillChunk(fillContext, destChunk, ranges);
+                TestCase.assertEquals(ranges.intSize(), destChunk.size());
+                final MutableInt di = new MutableInt(0);
+                ranges.forAllLongs(kk -> {
+                    final int si = (int) kk;
+                    if (si < 1024) {
+                        TestCase.assertEquals(charChunk1.get(si), destChunk.get(di.getAndIncrement()));
+                    } else {
+                        TestCase.assertEquals(charChunk2.get(si - 1024), destChunk.get(di.getAndIncrement()));
+                    }
+                });
             }
         }
     }
