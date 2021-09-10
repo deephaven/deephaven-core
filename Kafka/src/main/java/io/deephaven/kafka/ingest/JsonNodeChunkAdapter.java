@@ -56,7 +56,7 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
                 return new JsonNodeIntFieldCopier(fieldName);
             case Long:
                 if (dataType == DBDateTime.class) {
-                    throw new UnsupportedOperationException();
+                    return new JsonNodeDBDateTimeFieldCopier(fieldName);
                 }
                 return new JsonNodeLongFieldCopier(fieldName);
             case Float:
