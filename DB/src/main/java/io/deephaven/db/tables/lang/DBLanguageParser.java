@@ -25,6 +25,7 @@ import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.DeephavenException;
+import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jpy.PyObject;
 
@@ -527,68 +528,70 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             final EXECUTABLE_TYPE candidate,
             final String name, final Class<?>[] paramTypes,
             final Class<?>[][] parameterizedTypes) {
-        if (candidate.getName().equals(name)) {
-            final Class<?>[] candidateParamTypes = candidate.getParameterTypes();
+        if (!candidate.getName().equals(name)) {
+            return;
+        }
 
-            if (candidate.isVarArgs() ? candidateParamTypes.length > paramTypes.length + 1
-                    : candidateParamTypes.length != paramTypes.length) {
+        final Class<?>[] candidateParamTypes = candidate.getParameterTypes();
+
+        if (candidate.isVarArgs() ? candidateParamTypes.length > paramTypes.length + 1
+                : candidateParamTypes.length != paramTypes.length) {
+            return;
+        }
+
+        int lengthWithoutVarArg = candidate.isVarArgs() ? candidateParamTypes.length - 1 : candidateParamTypes.length;
+        for (int i = 0; i < lengthWithoutVarArg; i++) {
+            Class<?> paramType = paramTypes[i];
+
+            if (isDbArray(paramType) && candidateParamTypes[i].isArray()) {
+                paramType = convertDBArray(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
+            }
+
+            boolean canAssignWithoutWidening = isAssignableFrom(candidateParamTypes[i], paramType);
+
+            Class<?> maybePrimitive = ClassUtils.wrapperToPrimitive(paramType);
+            boolean canAssignViaUnbox =
+                    maybePrimitive != null && isAssignableFrom(candidateParamTypes[i], maybePrimitive);
+            boolean canAssignWithWidening = maybePrimitive != null && candidateParamTypes[i].isPrimitive()
+                    && isWideningPrimitiveConversion(maybePrimitive, candidateParamTypes[i]);
+
+            if (!canAssignWithoutWidening && !canAssignViaUnbox && !canAssignWithWidening) {
                 return;
             }
+        }
 
-            boolean acceptable = true;
+        // If the paramTypes includes 1+ varArgs check the classes match -- no need to check if there are 0 varArgs
+        if (candidate.isVarArgs() && paramTypes.length >= candidateParamTypes.length) {
+            Class<?> paramType = paramTypes[candidateParamTypes.length - 1];
 
-            for (int i = 0; i < (candidate.isVarArgs() ? candidateParamTypes.length - 1
-                    : candidateParamTypes.length); i++) {
-                Class<?> paramType = paramTypes[i];
-
-                if (isDbArray(paramType) && candidateParamTypes[i].isArray()) {
-                    paramType =
-                            convertDBArray(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
-                }
-
-                if (!isAssignableFrom(candidateParamTypes[i], paramType)) {
-                    acceptable = false;
-                    break;
-                }
+            if (isDbArray(paramType) && candidateParamTypes[candidateParamTypes.length - 1].isArray()) {
+                paramType = convertDBArray(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
+                        : parameterizedTypes[candidateParamTypes.length - 1][0]);
             }
 
-            // If the paramTypes includes 1+ varArgs check the classes match -- no need to check if there are 0 varArgs
-            if (candidate.isVarArgs() && paramTypes.length >= candidateParamTypes.length) {
-                Class<?> paramType = paramTypes[candidateParamTypes.length - 1];
-
-                if (isDbArray(paramType) && candidateParamTypes[candidateParamTypes.length - 1].isArray()) {
-                    paramType =
-                            convertDBArray(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
-                                    : parameterizedTypes[candidateParamTypes.length - 1][0]);
+            if (candidateParamTypes.length == paramTypes.length && paramType.isArray()) {
+                if (!isAssignableFrom(candidateParamTypes[candidateParamTypes.length - 1], paramType)) {
+                    return;
                 }
+            } else {
+                final Class<?> lastClass = candidateParamTypes[candidateParamTypes.length - 1].getComponentType();
 
-                if (candidateParamTypes.length == paramTypes.length && paramType.isArray()) {
-                    if (!isAssignableFrom(candidateParamTypes[candidateParamTypes.length - 1], paramType)) {
-                        acceptable = false;
+                for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
+                    paramType = paramTypes[i];
+
+                    if (isDbArray(paramType) && lastClass.isArray()) {
+                        paramType = convertDBArray(paramType,
+                                parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
                     }
-                } else {
-                    final Class<?> lastClass = candidateParamTypes[candidateParamTypes.length - 1].getComponentType();
 
-                    for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
-                        paramType = paramTypes[i];
-
-                        if (isDbArray(paramType) && lastClass.isArray()) {
-                            paramType = convertDBArray(paramType,
-                                    parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
-                        }
-
-                        if (!isAssignableFrom(lastClass, paramType)) {
-                            acceptable = false;
-                            break;
-                        }
+                    if (!isAssignableFrom(lastClass, paramType)) {
+                        return;
                     }
                 }
-            }
-
-            if (acceptable) {
-                accepted.add(candidate);
             }
         }
+
+        accepted.add(candidate);
     }
 
     private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2) {
