@@ -20,7 +20,8 @@ import static io.kubernetes.client.util.KubeConfig.loadKubeConfig;
 
 /**
  * KubeTools:
- * <p><p>
+ * <p>
+ * <p>
  */
 public class KubeTools {
 
@@ -35,7 +36,8 @@ public class KubeTools {
             try {
                 apiClient = kubeconfig(loadKubeConfig(new FileReader(kubeConfigPath))).build();
             } catch (IOException e) {
-                // static initializer exceptions can get lost, so make sure we're chatty about stack traces
+                // static initializer exceptions can get lost, so make sure we're chatty about stack
+                // traces
                 e.printStackTrace();
                 throw new UncheckedIOException(e);
             }
@@ -46,18 +48,21 @@ public class KubeTools {
                 ModelMapper.refresh(new Discovery(apiClient));
             } catch (ApiException e) {
                 System.err.println("Failed to run discovery on kubernetes apiClient:\n" +
-                        "code: " + e.getCode() + " response: " + e.getResponseBody());
+                    "code: " + e.getCode() + " response: " + e.getResponseBody());
                 e.printStackTrace();
                 throw new RuntimeException(e);
             }
 
         } else {
             // no kube config
-            System.out.println("No " + kubeConfigPath + " file found; assuming we are running in cluster");
+            System.out.println(
+                "No " + kubeConfigPath + " file found; assuming we are running in cluster");
             try {
                 apiClient = ClientBuilder.cluster().build();
             } catch (IOException e) {
-                throw new UncheckedIOException("Unable to initialize controller from cluster. If running locally, make sure kubectl commands work on your terminal.", e);
+                throw new UncheckedIOException(
+                    "Unable to initialize controller from cluster. If running locally, make sure kubectl commands work on your terminal.",
+                    e);
             }
         }
     }

@@ -11,7 +11,8 @@ import java.util.Objects;
 /**
  * DhWorker:
  * <p>
- * <p> Encapsulates the configuration information for a running pod + service + http route
+ * <p>
+ * Encapsulates the configuration information for a running pod + service + http route
  * <p>
  */
 public class DhWorker {
@@ -26,10 +27,10 @@ public class DhWorker {
     private long createdTime;
 
     public DhWorker(@NotNull final String userName,
-                    @NotNull final String podName,
-                    @NotNull final String serviceName,
-                    @NotNull final String ingressName,
-                    @NotNull final String dnsName) {
+        @NotNull final String podName,
+        @NotNull final String serviceName,
+        @NotNull final String ingressName,
+        @NotNull final String dnsName) {
         this.userName = userName;
         this.podName = podName;
         this.serviceName = serviceName;
@@ -55,8 +56,10 @@ public class DhWorker {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final DhWorker dhWorker = (DhWorker) o;
         return podName.equals(dhWorker.podName) && dnsName.equals(dhWorker.dnsName);
     }
@@ -88,8 +91,8 @@ public class DhWorker {
         // fastest way to do this, ping the worker's /health uri...
         String uri = "https://" + getDnsName() + "/health";
         final Request req = new Request.Builder().get()
-                .url(uri)
-                .build();
+            .url(uri)
+            .build();
         final Response response;
         try {
             response = client.newCall(req).execute();
@@ -122,15 +125,15 @@ public class DhWorker {
     @Override
     public String toString() {
         return "DhWorker{" +
-                "userName='" + userName + '\'' +
-                ", podName='" + podName + '\'' +
-                ", dnsName='" + dnsName + '\'' +
-                ", ingressName='" + ingressName + '\'' +
-                ", inUse=" + inUse +
-                ", ready=" + ready +
-                ", destroyed=" + destroyed +
-                ", createdTime=" + createdTime +
-                '}';
+            "userName='" + userName + '\'' +
+            ", podName='" + podName + '\'' +
+            ", dnsName='" + dnsName + '\'' +
+            ", ingressName='" + ingressName + '\'' +
+            ", inUse=" + inUse +
+            ", ready=" + ready +
+            ", destroyed=" + destroyed +
+            ", createdTime=" + createdTime +
+            '}';
     }
 
     public String getIngressName() {

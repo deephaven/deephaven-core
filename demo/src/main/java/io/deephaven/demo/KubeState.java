@@ -23,22 +23,28 @@ import static io.deephaven.demo.NameConstants.LABEL_USER;
 /**
  * KubeState: an immutable snapshot of the "State of the world of Kubernetes objects we care about".
  * <p>
- * <p> Only one instance of {@link KubeManager} should create and maintain KubeState instances.
- * <p> This pod is labeled as {@link NameConstants#LABEL_PURPOSE}={@link NameConstants#PURPOSE_CONTROLLER}
- * <p> (dh.purpose = controller)
- * <p> and is defined in demo/helm/templates/control-deployment.yaml.
+ * <p>
+ * Only one instance of {@link KubeManager} should create and maintain KubeState instances.
+ * <p>
+ * This pod is labeled as
+ * {@link NameConstants#LABEL_PURPOSE}={@link NameConstants#PURPOSE_CONTROLLER}
+ * <p>
+ * (dh.purpose = controller)
+ * <p>
+ * and is defined in demo/helm/templates/control-deployment.yaml.
  */
 public class KubeState {
 
     private final ConcurrentMap<String, KubeSession> sessions = new ConcurrentHashMap<>();
-    private final ConcurrentLinkedQueue<Consumer<KubeState>> onRefresh = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<Consumer<KubeState>> onRefresh =
+        new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<V1Pod> unclaimedPods = new ConcurrentLinkedQueue<>();
 
     public List<Throwable> computeNow(KubeManager manager) {
         // read in all worker pods, all services, and all ingresses... at the same time.
         List<Throwable> failures = new ArrayList<>();
         Runnable[] readTasks = {
-                ()-> {
+                () -> {
                     try {
                         final List<V1Pod> pods = manager.getWorkerPods();
                         copyPodsToSession(pods);
@@ -46,7 +52,7 @@ public class KubeState {
                         failures.add(t);
                     }
                 },
-                ()-> {
+                () -> {
                     try {
                         final List<V1Service> services = manager.getWorkerServices();
                         copyServicesToSession(services);
@@ -55,7 +61,7 @@ public class KubeState {
                     }
 
                 },
-                ()-> {
+                () -> {
                     try {
                         final List<V1Ingress> ingresses = manager.getWorkerIngress();
                         copyIngressesToSession(ingresses);
@@ -87,7 +93,7 @@ public class KubeState {
                 while (session.getPod() == null) {
                     V1Pod readyToGo = unclaimedPods.poll();
                     if (readyToGo == null) {
-                        // nothing is ready to go.  consider scale up?
+                        // nothing is ready to go. consider scale up?
                         return;
                     } else {
                         // claim this pod for the given session
@@ -96,7 +102,8 @@ public class KubeState {
                                 break;
                             }
                         } catch (KubectlException | ApiException e) {
-                            System.err.println("Failure claiming pod " + readyToGo.getMetadata().getName() + " for " + session);
+                            System.err.println("Failure claiming pod "
+                                + readyToGo.getMetadata().getName() + " for " + session);
                             e.printStackTrace();
                         }
                     }
@@ -119,12 +126,12 @@ public class KubeState {
         });
         if (!needIngress.isEmpty()) {
             System.out.println("IN NEED OF INGRESS: " + needIngress);
-//            String newIngress = manager.newIngressName();
-//            final V1Ingress result = manager.createIngress(newIngress,
-//                    needIngress.stream().map(KubeSession::getUserName).collect(Collectors.toList()));
-//            for (KubeSession ingress : needIngress) {
-//                ingress.setIngress(result);
-//            }
+            // String newIngress = manager.newIngressName();
+            // final V1Ingress result = manager.createIngress(newIngress,
+            // needIngress.stream().map(KubeSession::getUserName).collect(Collectors.toList()));
+            // for (KubeSession ingress : needIngress) {
+            // ingress.setIngress(result);
+            // }
         }
 
     }
@@ -136,9 +143,11 @@ public class KubeState {
             assert ingress.getMetadata() != null : "Ingress sent without metadata? " + ingress;
             String ingressName = ingress.getMetadata().getName();
 
-            assert ingress.getSpec() != null : "Ingress " + ingressName + " sent without spec? " + ingress;
+            assert ingress.getSpec() != null
+                : "Ingress " + ingressName + " sent without spec? " + ingress;
             final List<V1IngressRule> rules = ingress.getSpec().getRules();
-            // it is legal to have no rules; one may have a single ingress defining only a default provider (the controller)
+            // it is legal to have no rules; one may have a single ingress defining only a default
+            // provider (the controller)
             // thus is the rules are null, we return from this callback
             if (rules == null) {
                 return;
@@ -176,7 +185,8 @@ public class KubeState {
             String userName = labels.get(LABEL_USER);
 
             if (userName == null) {
-                System.out.println("Service " + serviceName + " did not have a label " + LABEL_USER + " in labels: " + labels);
+                System.out.println("Service " + serviceName + " did not have a label " + LABEL_USER
+                    + " in labels: " + labels);
             } else {
                 KubeSession session = sessions.computeIfAbsent(userName, KubeSession::new);
                 session.setService(service);
@@ -197,7 +207,8 @@ public class KubeState {
 
             if (userName == null) {
                 // hm... consider claiming this item for any sessions w/o a pod?
-                System.out.println("Pod " + podName + " did not have a label " + LABEL_USER + " in labels: " + labels);
+                System.out.println("Pod " + podName + " did not have a label " + LABEL_USER
+                    + " in labels: " + labels);
                 unclaimedPods.add(pod);
             } else {
                 KubeSession session = sessions.computeIfAbsent(userName, KubeSession::new);

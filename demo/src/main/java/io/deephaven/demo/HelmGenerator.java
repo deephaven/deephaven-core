@@ -30,12 +30,17 @@ import static io.deephaven.demo.NameConstants.*;
 /**
  * HelmGenerator:
  * <p>
- * <p> For a quick-cut at a working, but inefficient demo site,
- * <p> we'll simply generate a helm deployment with N (default 30) instances.
  * <p>
- * <p> This will be done using random, but stable names,
- * <p> so the cluster size can be increased by rerunning the generator,
- * <p> and all generated subdomains (routes to an individual's worker) will have stable names.
+ * For a quick-cut at a working, but inefficient demo site,
+ * <p>
+ * we'll simply generate a helm deployment with N (default 30) instances.
+ * <p>
+ * <p>
+ * This will be done using random, but stable names,
+ * <p>
+ * so the cluster size can be increased by rerunning the generator,
+ * <p>
+ * and all generated subdomains (routes to an individual's worker) will have stable names.
  * <p>
  */
 public class HelmGenerator {
@@ -46,16 +51,19 @@ public class HelmGenerator {
         this.helmRoot = helmRoot;
         this.helmTarget = helmTarget;
         if (!helmRoot.exists()) {
-            throw new IllegalArgumentException("System property " + PROP_HELM_ROOT + " points to non-existent directory: " + helmRoot);
+            throw new IllegalArgumentException("System property " + PROP_HELM_ROOT
+                + " points to non-existent directory: " + helmRoot);
         }
         File templates = getTemplates();
         if (!templates.isDirectory()) {
-            throw new IllegalArgumentException("System property " + PROP_HELM_ROOT + " directory exists, but does not contain a templates directory: " + helmRoot);
+            throw new IllegalArgumentException("System property " + PROP_HELM_ROOT
+                + " directory exists, but does not contain a templates directory: " + helmRoot);
         }
 
         if (!helmTarget.isDirectory()) {
             if (!helmTarget.mkdirs()) {
-                throw new IllegalArgumentException("Unable to create directory backed by " + PROP_HELM_TARGET + ": " + helmTarget + "; check permissions and disk space.");
+                throw new IllegalArgumentException("Unable to create directory backed by "
+                    + PROP_HELM_TARGET + ": " + helmTarget + "; check permissions and disk space.");
             }
         }
     }
@@ -68,10 +76,12 @@ public class HelmGenerator {
         // copy Chart.yaml, values.yaml and any yaml templates we don't want to modify.
         copyFile("Chart.yaml");
         copyFile("values.yaml");
-//        copyTemplate("_helpers.tpl", dryRun);
+        // copyTemplate("_helpers.tpl", dryRun);
 
-        // in order to modify certain yaml files, we need to do a helm --dry-run, and capture output.
-        // this will expand all properties, and create documents that we can parse as yaml WITHOUT go template language in it.
+        // in order to modify certain yaml files, we need to do a helm --dry-run, and capture
+        // output.
+        // this will expand all properties, and create documents that we can parse as yaml WITHOUT
+        // go template language in it.
         Map<String, String> dryRun = helmDryRun();
 
         List<String> subdomains = getSubdomains();
@@ -111,11 +121,13 @@ public class HelmGenerator {
     private Map<String, String> helmDryRun() throws IOException {
         final Map<String, String> resolvedFiles = new HashMap<>();
         File upgradeOutput = new File(helmTarget, "helm.resolved");
-        ProcessBuilder p = new ProcessBuilder("helm", "upgrade", "dh-demo", helmRoot + File.separator, "--dry-run");
+        ProcessBuilder p = new ProcessBuilder("helm", "upgrade", "dh-demo",
+            helmRoot + File.separator, "--dry-run");
         p.directory(helmRoot);
         p.redirectError(ProcessBuilder.Redirect.PIPE);
         p.redirectOutput(upgradeOutput);
-        System.out.println("Saving output of `helm upgrade dh-demo " + helmRoot + File.separator + "` to " + upgradeOutput);
+        System.out.println("Saving output of `helm upgrade dh-demo " + helmRoot + File.separator
+            + "` to " + upgradeOutput);
         final Process proc = p.start();
         boolean failed = false;
         try {
@@ -125,7 +137,8 @@ public class HelmGenerator {
             System.err.println("Interrupted while running helm upgrade; bailing");
             failed = true;
         }
-        String failMsg = "Failed to run helm upgrade dh-demo " + helmRoot + File.separator + "; have you ran helm install dh-demo ./ from " + helmRoot + "?";
+        String failMsg = "Failed to run helm upgrade dh-demo " + helmRoot + File.separator
+            + "; have you ran helm install dh-demo ./ from " + helmRoot + "?";
         if (!failed) {
             int code = proc.exitValue();
             if (code != 0) {
@@ -138,7 +151,7 @@ public class HelmGenerator {
             throw new IllegalStateException(failMsg);
         }
 
-        // yay, we finished.  Read the file. We'll process it by lines.
+        // yay, we finished. Read the file. We'll process it by lines.
         int mode = 0, line = 0;
         final int modeBegin = 0, modeFileName = 1, modeFileBody = 2, modeDone = 3;
         String filePath = "";
@@ -154,13 +167,15 @@ public class HelmGenerator {
                     break;
                 case modeFileName:
                     if (!readLine.startsWith("# Source: ")) {
-                        throw new IllegalStateException("Invalid yaml filename line " + readLine + " on line " + line + " of " + upgradeOutput);
+                        throw new IllegalStateException("Invalid yaml filename line " + readLine
+                            + " on line " + line + " of " + upgradeOutput);
                     }
                     // Hm... check if windows hates this /
                     String[] names = readLine.split("templates/");
                     filePath = names[names.length - 1];
                     if (filePath.contains("# Source:")) {
-                        throw new IllegalStateException("Invalid filepath " + filePath + " found on line " + line + " of " + upgradeOutput);
+                        throw new IllegalStateException("Invalid filepath " + filePath
+                            + " found on line " + line + " of " + upgradeOutput);
                     }
                     mode = modeFileBody;
                     break;
@@ -170,14 +185,17 @@ public class HelmGenerator {
                         break;
                     }
                     if (filePath.isEmpty()) {
-                        throw new IllegalStateException("Got to file body mode with invalid filename " + filePath + " (on line " + line + " of " + upgradeOutput + ")");
+                        throw new IllegalStateException(
+                            "Got to file body mode with invalid filename " + filePath + " (on line "
+                                + line + " of " + upgradeOutput + ")");
                     }
                     resolvedFiles.merge(filePath, readLine, (a, b) -> a + "\n" + b);
                     break;
                 case modeDone:
                     break;
                 default:
-                    throw new IllegalStateException("Illegal mode " + mode + " (found when on line " + line +" of " + upgradeOutput + ")");
+                    throw new IllegalStateException("Illegal mode " + mode + " (found when on line "
+                        + line + " of " + upgradeOutput + ")");
             }
 
         }
@@ -185,7 +203,8 @@ public class HelmGenerator {
         return resolvedFiles;
     }
 
-    private void alterDeployment(final File file, final Map<String, String> dryRun, final List<String> subdomains) throws IOException {
+    private void alterDeployment(final File file, final Map<String, String> dryRun,
+        final List<String> subdomains) throws IOException {
         // Alter the deployment to have N (default 30) replicas defined.
         // These replicas will be assigned routing labels by the controller once it boots up.
         String resolvedYaml = dryRun.get(file.getName());
@@ -199,14 +218,16 @@ public class HelmGenerator {
         String sep = "";
         final File outputFile = new File(helmTarget, "templates/" + file.getName());
         try (
-                final Writer output = new FileWriter(outputFile);
-        ) {
+            final Writer output = new FileWriter(outputFile);) {
             for (String subdomain : subdomains) {
                 deployment.getMetadata().setName("wrk-" + subdomain);
-                deployment.getSpec().getTemplate().getMetadata().getLabels().put(LABEL_USER, subdomain);
-                deployment.getSpec().getTemplate().getMetadata().getLabels().put(LABEL_PURPOSE, PURPOSE_WORKER);
+                deployment.getSpec().getTemplate().getMetadata().getLabels().put(LABEL_USER,
+                    subdomain);
+                deployment.getSpec().getTemplate().getMetadata().getLabels().put(LABEL_PURPOSE,
+                    PURPOSE_WORKER);
                 deployment.getSpec().getSelector().putMatchLabelsItem(LABEL_USER, subdomain);
-                deployment.getSpec().getSelector().putMatchLabelsItem(LABEL_PURPOSE, PURPOSE_WORKER);
+                deployment.getSpec().getSelector().putMatchLabelsItem(LABEL_PURPOSE,
+                    PURPOSE_WORKER);
                 String yaml = asYaml(deployment);
                 // stupid yaml marshalling gets weird escaping sometimes...
                 yaml = yaml.replaceAll("[\\\\]\\s+", " ");
@@ -220,7 +241,8 @@ public class HelmGenerator {
         }
     }
 
-    private void alterIngress(final File file, final Map<String, String> dryRun, final List<String> subdomains) throws IOException {
+    private void alterIngress(final File file, final Map<String, String> dryRun,
+        final List<String> subdomains) throws IOException {
         // Alter the ingress rule to have N (default 30) ingress routes defined.
         String resolvedYaml = dryRun.get(file.getName());
         final V1Ingress ingress = Yaml.loadAs(resolvedYaml, V1Ingress.class);
@@ -245,16 +267,16 @@ public class HelmGenerator {
     }
 
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(
-            new YAMLFactory()
-                    .disable(YAMLGenerator.Feature.USE_NATIVE_TYPE_ID)
-                    .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
-    );
+        new YAMLFactory()
+            .disable(YAMLGenerator.Feature.USE_NATIVE_TYPE_ID)
+            .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
     static {
         YAML_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
         YAML_MAPPER.getSerializationConfig().introspectClassAnnotations(IntOrString.class);
         final JsonSerializer<? super IntOrString> serialIntStr = new JsonSerializer<>() {
             @Override
-            public void serialize(final IntOrString src, final JsonGenerator gen, final SerializerProvider serializers) throws IOException {
+            public void serialize(final IntOrString src, final JsonGenerator gen,
+                final SerializerProvider serializers) throws IOException {
                 if (src.isInteger()) {
                     gen.writeNumber(src.getIntValue());
                 } else {
@@ -264,12 +286,13 @@ public class HelmGenerator {
         };
         final JsonSerializer<? super Quantity> serialQuantity = new JsonSerializer<>() {
             @Override
-            public void serialize(final Quantity src, final JsonGenerator gen, final SerializerProvider serializers) throws IOException {
+            public void serialize(final Quantity src, final JsonGenerator gen,
+                final SerializerProvider serializers) throws IOException {
                 gen.writeString(src.toSuffixedString());
             }
         };
         SimpleModule intStrModule = new SimpleModule(
-                "intStringMod", new Version(1, 0, 0, null, null, null))
+            "intStringMod", new Version(1, 0, 0, null, null, null))
                 .addSerializer(IntOrString.class, serialIntStr)
                 .addSerializer(Quantity.class, serialQuantity);
 
@@ -285,7 +308,8 @@ public class HelmGenerator {
         }
     }
 
-    private List<V1IngressRule> expandDomains(final V1IngressRule rule, final List<String> subdomains) {
+    private List<V1IngressRule> expandDomains(final V1IngressRule rule,
+        final List<String> subdomains) {
         final List<V1IngressRule> results = new ArrayList<>();
 
         String ruleYaml = asYaml(rule.getHttp());
@@ -293,7 +317,8 @@ public class HelmGenerator {
             final V1IngressRule newRule = new V1IngressRule();
             newRule.setHost(rule.getHost().replace("default.", subdomain + "."));
             // just copy the interesting glue
-            final V1HTTPIngressRuleValue newHttp = Yaml.loadAs(ruleYaml, V1HTTPIngressRuleValue.class) ;
+            final V1HTTPIngressRuleValue newHttp =
+                Yaml.loadAs(ruleYaml, V1HTTPIngressRuleValue.class);
             newRule.setHttp(newHttp);
 
             for (V1HTTPIngressPath path : newHttp.getPaths()) {
@@ -306,7 +331,8 @@ public class HelmGenerator {
         return results;
     }
 
-    private void alterService(final File file, final Map<String, String> dryRun, final List<String> subdomains) throws IOException {
+    private void alterService(final File file, final Map<String, String> dryRun,
+        final List<String> subdomains) throws IOException {
         // We are going to create N (default 30) services in one yaml file.
         // We can write all these services to one file, using yaml file separator: ---
         String resolvedYaml = dryRun.get(file.getName());
@@ -315,8 +341,7 @@ public class HelmGenerator {
 
         final File outputFile = new File(helmTarget, "templates/" + file.getName());
         try (
-            final Writer output = new FileWriter(outputFile);
-        ) {
+            final Writer output = new FileWriter(outputFile);) {
             // set the labels we want, and reserialize each subdomain
             String sep = "";
             for (String subdomain : subdomains) {
@@ -348,18 +373,17 @@ public class HelmGenerator {
 
         long seed = 0xcafebabe;
         Random rnd = new Random(seed);
-        for (int numInstances = Integer.parseInt(DH_HELM_INSTANCES);
-             numInstances --> 0;) {
+        for (int numInstances = Integer.parseInt(DH_HELM_INSTANCES); numInstances-- > 0;) {
             String newName = NameGen.newName(
-                    rnd.nextInt(NameGen.ADJECTIVES.length), rnd.nextInt(NameGen.NOUNS.length)
-            );
+                rnd.nextInt(NameGen.ADJECTIVES.length), rnd.nextInt(NameGen.NOUNS.length));
             list.add(newName);
         }
 
         return list;
     }
 
-    private void copyTemplate(final String file, final Map<String, String> dryRun) throws IOException {
+    private void copyTemplate(final String file, final Map<String, String> dryRun)
+        throws IOException {
         String tpl = dryRun.get(file);
         if (tpl == null) {
             copyFile("templates" + File.separator + file);
@@ -367,6 +391,7 @@ public class HelmGenerator {
             FileUtils.write(new File(helmTarget, "templates/" + file), tpl, StandardCharsets.UTF_8);
         }
     }
+
     private void copyFile(final String file) throws IOException {
         final File source = new File(helmRoot, file);
         final File target = new File(helmTarget, file);

@@ -4338,10 +4338,12 @@ public class NameGen {
         nounCnt = new AtomicInteger(rnd.nextInt(NOUNS.length));
         // TODO: we should really look in env var for this before we make a new one...
         MY_NAME = newName();
-        // This may seem silly, but this log message will allow us to reverse-engineer the starting indices,
+        // This may seem silly, but this log message will allow us to reverse-engineer the starting
+        // indices,
         // in case there is ever a bug where we need to recreate specific machine names.
         System.out.println("Initialized NameSources from " + MY_NAME);
     }
+
     public static String getMyName() {
         return MY_NAME;
     }

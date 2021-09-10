@@ -6,11 +6,11 @@ package io.deephaven.demo;
  * <p>
  * Created by James X. Nelson (James@WeTheInter.net) on 04/08/2021 @ 1:28 a.m..
  */
-//@Path("/hello")
+// @Path("/hello")
 public class HealthEndpoint {
 
-//    @GET
-//    @Produces(MediaType.TEXT_PLAIN)
+    // @GET
+    // @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
         return "hello";
     }

@@ -22,8 +22,10 @@ public class KubeSession {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final KubeSession that = (KubeSession) o;
         return userName.equals(that.userName);
     }
@@ -85,8 +87,8 @@ public class KubeSession {
         }
 
         return new DhWorker(
-                getUserName(), podName, serviceName, ingressName,
-                getUserName() + "." + NameConstants.DOMAIN
+            getUserName(), podName, serviceName, ingressName,
+            getUserName() + "." + NameConstants.DOMAIN
 
         );
     }
@@ -98,10 +100,10 @@ public class KubeSession {
     @Override
     public String toString() {
         return "KubeSession{" +
-                "userName='" + userName + '\'' +
-                ", pod=" + (pod == null ? null : pod.getMetadata().getName()) +
-                ", service=" + (service == null ? null : service.getMetadata().getName()) +
-                ", ingress=" + (ingress == null ? null : ingress.getMetadata().getName()) +
-                '}';
+            "userName='" + userName + '\'' +
+            ", pod=" + (pod == null ? null : pod.getMetadata().getName()) +
+            ", service=" + (service == null ? null : service.getMetadata().getName()) +
+            ", ingress=" + (ingress == null ? null : ingress.getMetadata().getName()) +
+            '}';
     }
 }

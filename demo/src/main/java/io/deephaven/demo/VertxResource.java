@@ -17,7 +17,7 @@ import java.util.Map;
  * <p>
  * Created by James X. Nelson (James@WeTheInter.net) on 04/08/2021 @ 1:39 a.m..
  */
-//@Path("/")
+// @Path("/")
 public class VertxResource {
 
     private final Vertx vertx;
@@ -32,32 +32,33 @@ public class VertxResource {
         if (CertFactory.class.isAssignableFrom(Object.class)) {
             try {
                 CertFactory.main("");
-            } catch (Throwable ignore) { }
+            } catch (Throwable ignore) {
+            }
         }
         for (Map.Entry<String, String> e : System.getenv().entrySet()) {
             System.out.println(e.getKey() + " = " + e.getValue());
         }
     }
 
-//    @GET
-//    @Path("/health")
+    // @GET
+    // @Path("/health")
     public Uni<String> performHealthCheck(HttpServerRequest req) {
         // TODO: use the client to query running grpc-api server!
-//        client.getAbs("grpc-api:8888").send()
-//                .onItem().transform(HttpResponse::bodyAsString);
+        // client.getAbs("grpc-api:8888").send()
+        // .onItem().transform(HttpResponse::bodyAsString);
 
         // This env var is set by kubernetes when we run as a sidecar
         String grpcIp = System.getenv("DH_GRPC_PORT_8888_TCP_ADDR");
         // With this IP, we should ensure there are generated certs...
         System.out.println("My uri: " + req.uri());
         int delay = 100;
-        vertx.setTimer(delay, t-> {
+        vertx.setTimer(delay, t -> {
             if (!req.isEnded()) {
-                System.out.println("Stream was not closed after "+ delay + "ms, closing it");
+                System.out.println("Stream was not closed after " + delay + "ms, closing it");
                 req.end();
             }
         });
-        return Uni.createFrom().item(()-> {
+        return Uni.createFrom().item(() -> {
             return "READY";
         });
     }
@@ -65,11 +66,11 @@ public class VertxResource {
     /**
      *
      * @param req - The http request to process
-     * @return a Uni which either results in a redirect to a warm machine,
-     * or renders a "please wait while your machine is prepared" message.
+     * @return a Uni which either results in a redirect to a warm machine, or renders a "please wait
+     *         while your machine is prepared" message.
      */
-//    @GET
-//    @Path("s:.*")
+    // @GET
+    // @Path("s:.*")
     public void sendToSession(HttpServerRequest req) {
 
         Cookie cookie = req.getCookie("dh-user");
@@ -80,9 +81,9 @@ public class VertxResource {
             if (hasValidRoute(uname)) {
                 String uri = uname + "." + NameConstants.DOMAIN;
                 req.response()
-                        .putHeader("Location", uri)
-                        .setStatusCode(302)
-                        .end();
+                    .putHeader("Location", uri)
+                    .setStatusCode(302)
+                    .end();
                 return;
             } else {
                 uname = null;
@@ -100,11 +101,12 @@ public class VertxResource {
         // okay... we should actually be blocking until this route is fully functional
 
         req.response().putHeader("Location", uri)
-                      .setStatusCode(302)
-                      .end();
+            .setStatusCode(302)
+            .end();
         return;
 
-        // A "fresh" visitor has arrived, check if they have headers routing them to an *online* service pod,
+        // A "fresh" visitor has arrived, check if they have headers routing them to an *online*
+        // service pod,
         // if valid, send them straight on to their ready-to-go-box with a redirect.
 
         // If there's no headers, or if the service has been deleted from kuberenetes cluster,
@@ -112,11 +114,14 @@ public class VertxResource {
 
         // If no such machine exists,
         // send user to a "please wait while you machine is prepared" page,
-        // which will speak on the vert.x event bus to us, waiting for a machine to become available,
+        // which will speak on the vert.x event bus to us, waiting for a machine to become
+        // available,
         // while we start a background thread to provision a new service.
         // Once the server thinks it's online, we should signal client webpage on vert.x event bus,
-        // who will then poll until DNS for sure resolves (in case the pool of DNS names are all used),
-        // and then, finally, send the user to their machine when we know the DNS is good and the page is loading.
+        // who will then poll until DNS for sure resolves (in case the pool of DNS names are all
+        // used),
+        // and then, finally, send the user to their machine when we know the DNS is good and the
+        // page is loading.
     }
 
     private boolean hasValidRoute(final String uname) {

@@ -30,12 +30,17 @@ import static io.deephaven.demo.NameConstants.*;
 /**
  * KubeState:
  * <p>
- * <p> A service for tracking the current state of our kubernetes cluster.
- * <p> Rather than make every request for information request lists of things,
- * <p> we can just keep low-ttl, manually-invalidatable caches.
  * <p>
- * <p> For now, we're just going to do network requests everywhere, but done through this class
- * <p> so we have a single place to manage those caching details.
+ * A service for tracking the current state of our kubernetes cluster.
+ * <p>
+ * Rather than make every request for information request lists of things,
+ * <p>
+ * we can just keep low-ttl, manually-invalidatable caches.
+ * <p>
+ * <p>
+ * For now, we're just going to do network requests everywhere, but done through this class
+ * <p>
+ * so we have a single place to manage those caching details.
  */
 public class KubeManager {
 
@@ -44,12 +49,31 @@ public class KubeManager {
     private final ApiClient apiClient;
     private final AtomicInteger ingressCnt = new AtomicInteger();
     /**
-     * Instead of Thread.sleep(...), we use <pre>synchronized(stateRequestLock) { stateRequestLock.wait(...); }</pre>
+     * Instead of Thread.sleep(...), we use
+     * 
+     * <pre>
+     * synchronized(stateRequestLock) { stateRequestLock.wait(...); }
+     * </pre>
      * <p>
-     * <p> This allows us to <pre>synchronized(stateRequestLock) { stateRequestLock.notify(); }</pre> to wake up the get-state-thread.
-     * <p> Once you have .notify() this lock, you should then wait for a re-sync to finish:
-     * <pre>synchronized(stateResponseLock) { stateResponseLock.wait(...) }</pre>
-     * <p> The response lock will be notified whenever state is re-read, or if re-reading is skipped due to too many requests.
+     * <p>
+     * This allows us to
+     * 
+     * <pre>
+     * synchronized (stateRequestLock) {
+     *     stateRequestLock.notify();
+     * }
+     * </pre>
+     * 
+     * to wake up the get-state-thread.
+     * <p>
+     * Once you have .notify() this lock, you should then wait for a re-sync to finish:
+     * 
+     * <pre>
+     * synchronized(stateResponseLock) { stateResponseLock.wait(...) }
+     * </pre>
+     * <p>
+     * The response lock will be notified whenever state is re-read, or if re-reading is skipped due
+     * to too many requests.
      *
      */
     private final Object stateRequestLock = new Object();
@@ -72,7 +96,8 @@ public class KubeManager {
                     System.out.println("Leader node starting KubeState monitoring loop");
                     while (true) {
 
-                        // ok, lets collect up all of our ingresses, services and pods into a new state.
+                        // ok, lets collect up all of our ingresses, services and pods into a new
+                        // state.
                         try {
                             KubeState oldState;
                             synchronized (stateResponseLock) {
@@ -104,26 +129,31 @@ public class KubeManager {
             }.start();
         } else {
             // we are not the leader.
-            // TODO: consider loading KubeState by pinging leader on a url like /state? ...seems like a security risk.
+            // TODO: consider loading KubeState by pinging leader on a url like /state? ...seems
+            // like a security risk.
         }
     }
 
     /**
      * Called whenever we compute a new {@link KubeState} with the previous, nullable KubeState.
      * <p>
-     * <p> This is where we will detect when a worker is unhealthy or expired, and delete it.
      * <p>
+     * This is where we will detect when a worker is unhealthy or expired, and delete it.
+     * <p>
+     * 
      * @param oldState our this.state field value before we called {@link #computeState()}
      * @param state our this.state field value after we called {@link #computeState()}
      */
-    private void processStateChanges(final @Nullable KubeState oldState, @NotNull final KubeState state) {
+    private void processStateChanges(final @Nullable KubeState oldState,
+        @NotNull final KubeState state) {
         // check that all the sessions are healthy;
         // cleanup anything that's broken / in a FAILED state.
         Map<String, ConcurrentLinkedQueue<String>> ingressPatches = new ConcurrentHashMap<>();
         state.getSessions().parallel().forEach(session -> {
             String userName = session.getUserName();
             if (isUnhealthy(session)) {
-                System.out.println("[WARN] Removing no-longer-healthy username " + userName +" : " + session);
+                System.out.println(
+                    "[WARN] Removing no-longer-healthy username " + userName + " : " + session);
                 final DhWorker removed = workers.get(userName);
                 if (removed != null) {
                     // hm... we should be batching the ingress patch calls into one here...
@@ -136,10 +166,11 @@ public class KubeManager {
                         worker = session.asWorker();
                         workers.put(userName, worker);
                     } else {
-                        System.out.println("Incomplete session for " + userName +" :\n" + session);
+                        System.out.println("Incomplete session for " + userName + " :\n" + session);
                     }
                 } else {
-                    // hm, perhaps validate that the worker is correct, and replace it if it's expired?
+                    // hm, perhaps validate that the worker is correct, and replace it if it's
+                    // expired?
                     // we maintain state on our thin DhWorker object
                 }
                 if (worker != null && !worker.isReady()) {
@@ -154,7 +185,8 @@ public class KubeManager {
         oldState.getSessions().parallel().forEach(oldSession -> {
             String uname = oldSession.getUserName();
             if (state.hasSession(oldSession.getUserName())) {
-                // hm... we could diff session values to notify on change... but we have nothing needing such a callback atm.
+                // hm... we could diff session values to notify on change... but we have nothing
+                // needing such a callback atm.
             } else {
                 // current state no longer has this entry... delete our worker!
                 System.out.println("[INFO] Removing no-longer-present username " + uname);
@@ -167,15 +199,14 @@ public class KubeManager {
             System.out.println("[INFO] Patching " + ingressPatches.size() + " ingresses");
             ingressPatches.entrySet().parallelStream().forEach(item -> {
                 final KubectlPatch<V1Ingress> patchCall = Kubectl.patch(V1Ingress.class)
-                        .apiClient(apiClient)
-                        .namespace(DH_NAMESPACE)
-                        .name(item.getKey());
+                    .apiClient(apiClient)
+                    .namespace(DH_NAMESPACE)
+                    .name(item.getKey());
                 final String body = item.getValue().stream().collect(Collectors.joining(",\n"));
                 final V1Patch patch = new V1Patch(
-                        "" +
+                    "" +
                         body +
-                        ""
-                );
+                        "");
                 patchCall.patchContent(patch);
 
             });
@@ -230,14 +261,15 @@ public class KubeManager {
         return OffsetDateTime.now().minus(50, ChronoUnit.MINUTES);
     }
 
-    private void cleanupWorker(final DhWorker removed, final Map<String, ConcurrentLinkedQueue<String>> ingressPatches) {
+    private void cleanupWorker(final DhWorker removed,
+        final Map<String, ConcurrentLinkedQueue<String>> ingressPatches) {
         if (removed == null) {
             // tolerate nulls.
             return;
         }
         removed.setDestroyed(true);
         // delete kube resources on background thread, prepare ingress patches
-        Vertx.currentContext().owner().setTimer(0, later-> {
+        Vertx.currentContext().owner().setTimer(0, later -> {
             if (removed.getPodName() != null) {
                 // delete the pod
             }
@@ -253,9 +285,14 @@ public class KubeManager {
     /**
      * Gets or computes/blocks until the KubeState is fully read.
      * <p>
-     * <p> This method will only call {@link #computeState()} if the state is not yet initialized when invoked.
-     * <p> If the get-state-thread is already running, we'll use a double-checked lock to avoid spurious recomputes.
      * <p>
+     * This method will only call {@link #computeState()} if the state is not yet initialized when
+     * invoked.
+     * <p>
+     * If the get-state-thread is already running, we'll use a double-checked lock to avoid spurious
+     * recomputes.
+     * <p>
+     * 
      * @return a KubeState, as soon as one is ready to read.
      */
     public KubeState getState() {
@@ -275,12 +312,14 @@ public class KubeManager {
         KubeState state = new KubeState();
         final List<Throwable> failures = state.computeNow(this);
         if (failures != null && !failures.isEmpty()) {
-            // kube logs split up by line, so ugly toStringing the exceptions here can help when searching [ERROR]
+            // kube logs split up by line, so ugly toStringing the exceptions here can help when
+            // searching [ERROR]
             System.err.println("[ERROR] failures computing KubeState: " + failures);
             for (Throwable failure : failures) {
                 failure.printStackTrace(System.err);
             }
-            // for now, we'll keep running... in the future, we may want to consider self-destruction here.
+            // for now, we'll keep running... in the future, we may want to consider
+            // self-destruction here.
         }
         return state;
     }
@@ -288,7 +327,8 @@ public class KubeManager {
     private boolean checkIfLeader() {
         // check if we are the leader node.
 
-        // on a real system, every controller will have a MY_POD_NAME env var set, so we can check ourself for pod labels
+        // on a real system, every controller will have a MY_POD_NAME env var set, so we can check
+        // ourself for pod labels
         String myPod = System.getenv("MY_POD_NAME");
         if (myPod == null) {
             // if the var is not set, then we are running localhost
@@ -299,10 +339,10 @@ public class KubeManager {
         final V1Pod pod;
         try {
             pod = Kubectl.get(V1Pod.class)
-                    .apiClient(apiClient)
-                    .namespace(DH_NAMESPACE)
-                    .name(myPod)
-                    .execute();
+                .apiClient(apiClient)
+                .namespace(DH_NAMESPACE)
+                .name(myPod)
+                .execute();
         } catch (KubectlException e) {
             System.err.println("Unable to get metadata for pod " + myPod);
             e.printStackTrace(System.err);
@@ -332,14 +372,18 @@ public class KubeManager {
 
     public List<V1Service> getWorkerServices() throws ApiException {
         String cntu = null;
-        final String fieldSel = ""; // we want the controller to see ALL services. "status.phase!=Failed";
+        final String fieldSel = ""; // we want the controller to see ALL services.
+                                    // "status.phase!=Failed";
         final String labelSel = LABEL_PURPOSE + "=" + PURPOSE_WORKER;
         // we can page these, and we might as well do decent-sized chunks.
         final Integer limit = 400;
-        V1ServiceList result = api.listNamespacedService(DH_NAMESPACE, "False", false, cntu, fieldSel, labelSel, limit, null, null, 5, false);
+        V1ServiceList result = api.listNamespacedService(DH_NAMESPACE, "False", false, cntu,
+            fieldSel, labelSel, limit, null, null, 5, false);
         List<V1Service> all = new ArrayList<>(result.getItems());
         while (result.getMetadata() != null && result.getMetadata().getContinue() != null) {
-            result = api.listNamespacedService(DH_NAMESPACE, "False", false, result.getMetadata().getContinue(), fieldSel, labelSel, limit, null, null, 5, false);
+            result = api.listNamespacedService(DH_NAMESPACE, "False", false,
+                result.getMetadata().getContinue(), fieldSel, labelSel, limit, null, null, 5,
+                false);
             all.addAll(result.getItems());
         }
         return all;
@@ -348,27 +392,32 @@ public class KubeManager {
     public List<V1Ingress> getWorkerIngress() throws KubectlException {
         final ListOptions listOptions = new ListOptions();
         // it's a big pain right now to get _continue token out of kubernetes api response.
-        // we can dig into the .execute() method below to get "inspiration" on how to read the continue token and page results.
+        // we can dig into the .execute() method below to get "inspiration" on how to read the
+        // continue token and page results.
         listOptions.setLimit(50_000);
         List<V1Ingress> ingresses = Kubectl.get(V1Ingress.class)
-                .apiClient(apiClient)
-                .namespace(DH_NAMESPACE)
-                .options(listOptions)
-                .execute();
+            .apiClient(apiClient)
+            .namespace(DH_NAMESPACE)
+            .options(listOptions)
+            .execute();
 
         return ingresses;
     }
 
     public List<V1Pod> getWorkerPods() throws ApiException {
         String cntu = null;
-        final String fieldSel = ""; // we want the controller to see ALL pods, not just: "status.phase!=Failed";
+        final String fieldSel = ""; // we want the controller to see ALL pods, not just:
+                                    // "status.phase!=Failed";
         final String labelSel = LABEL_PURPOSE + "=" + PURPOSE_WORKER;
         // we can page these, and we might as well do decent-sized chunks.
         final Integer limit = 400;
-        V1PodList result = api.listNamespacedPod(DH_NAMESPACE, "False", false, cntu, fieldSel, labelSel, limit, null, null, 5, false);
+        V1PodList result = api.listNamespacedPod(DH_NAMESPACE, "False", false, cntu, fieldSel,
+            labelSel, limit, null, null, 5, false);
         List<V1Pod> all = new ArrayList<>(result.getItems());
         while (result.getMetadata() != null && result.getMetadata().getContinue() != null) {
-            result = api.listNamespacedPod(DH_NAMESPACE, "False", false, result.getMetadata().getContinue(), fieldSel, labelSel, limit, null, null, 5, false);
+            result = api.listNamespacedPod(DH_NAMESPACE, "False", false,
+                result.getMetadata().getContinue(), fieldSel, labelSel, limit, null, null, 5,
+                false);
             all.addAll(result.getItems());
         }
         return all;
@@ -409,13 +458,17 @@ public class KubeManager {
             if (timeUsed < 1_000_000) {
                 System.out.println(msg + " in " + timeUsed + " nanoseconds");
             } else if (timeUsed < 2_000_000_000) {
-                System.out.println(msg + " in " + TimeUnit.NANOSECONDS.toMillis(timeUsed) + " milliseconds");
+                System.out.println(
+                    msg + " in " + TimeUnit.NANOSECONDS.toMillis(timeUsed) + " milliseconds");
             } else {
-                System.out.println(msg + " in " + TimeUnit.NANOSECONDS.toSeconds(timeUsed) + " seconds");
+                System.out
+                    .println(msg + " in " + TimeUnit.NANOSECONDS.toSeconds(timeUsed) + " seconds");
             }
         }
     }
-    private DhWorker createOrAssignWorker() throws KubectlException, ApiException, InterruptedException {
+
+    private DhWorker createOrAssignWorker()
+        throws KubectlException, ApiException, InterruptedException {
         // First, ping the check-state-thread, to get it reading data
         final KubeState origState = state;
         refreshWorkers();
@@ -437,10 +490,11 @@ public class KubeManager {
         }
 
         // ok... if there are workers who are still spinning up, we should wait on one of them.
-        // before we pick a pending machine though, lets wait a little longer for refreshed sessions metadata.
+        // before we pick a pending machine though, lets wait a little longer for refreshed sessions
+        // metadata.
         if (!sawChanges) {
             int waits = 3;
-            while (waits --> 0) {
+            while (waits-- > 0) {
                 if (waitForRefreshedWorkerList(origState)) {
                     break;
                 }
@@ -449,7 +503,8 @@ public class KubeManager {
         // pick a pending pod, preferring one that is running
         DhWorker pending = findPendingWorker();
         if (pending != null) {
-            // ok, there is a pending machine that should be ready soon. Send id to client so they can wait
+            // ok, there is a pending machine that should be ready soon. Send id to client so they
+            // can wait
             // (that is, poll for https://user-name.site.com/health until it's ready)
             maybeScaleUp();
             return pending;
@@ -467,7 +522,8 @@ public class KubeManager {
         if (pending != null) {
             return pending;
         }
-        System.err.println("NO WORKERS AVAILABLE AFTER SCALE UP; SOMETHING HAS GONE TERRIBLY WRONG!");
+        System.err
+            .println("NO WORKERS AVAILABLE AFTER SCALE UP; SOMETHING HAS GONE TERRIBLY WRONG!");
         return null;
     }
 
@@ -494,6 +550,7 @@ public class KubeManager {
         return best;
 
     }
+
     private DhWorker findReadyWorker() throws KubectlException, ApiException {
         Set<DhWorker> notReadyYet = new HashSet<>();
         synchronized (workers) {
@@ -529,14 +586,16 @@ public class KubeManager {
         }
     }
 
-    private boolean waitForRefreshedWorkerList(final KubeState origState) throws InterruptedException {
+    private boolean waitForRefreshedWorkerList(final KubeState origState)
+        throws InterruptedException {
         if (origState != state) {
             // request already completed while calling code was busy
             return true;
         }
         // pull in all the pods
         synchronized (stateResponseLock) {
-            // wait up to 4 seconds for a response... we try twice as well, so this should be enough latency, I hope!
+            // wait up to 4 seconds for a response... we try twice as well, so this should be enough
+            // latency, I hope!
             stateResponseLock.wait(4_000);
         }
         final KubeState newState = state;
@@ -550,7 +609,8 @@ public class KubeManager {
             if (worker.checkReady(httpClient)) {
                 // attempt to claim the worker
                 synchronized (workers) {
-                    // TODO: claim by updating a label and checking for race conditions... outside the synchro block.
+                    // TODO: claim by updating a label and checking for race conditions... outside
+                    // the synchro block.
                     if (!worker.isInUse()) {
                         worker.setInUse(true);
                         return true;
@@ -558,8 +618,7 @@ public class KubeManager {
                 }
             }
             return false;
-        }
-        ).findFirst();
+        }).findFirst();
 
         return winner.orElse(null);
     }
@@ -600,12 +659,12 @@ public class KubeManager {
         int desired = (replicas == null ? 0 : replicas) + batchSize;
 
         final V1Deployment scale = Kubectl.scale(V1Deployment.class)
-                .apiClient(apiClient)
-                .namespace(NAMESPACE)
-                .name(NAME_DEPLOYMENT)
-                .skipDiscovery()
-                .replicas(desired)
-                .execute();
+            .apiClient(apiClient)
+            .namespace(NAMESPACE)
+            .name(NAME_DEPLOYMENT)
+            .skipDiscovery()
+            .replicas(desired)
+            .execute();
 
         assert scale.getSpec() != null;
         System.out.println("Scaled replicas to " + scale.getSpec().getReplicas());
@@ -616,7 +675,8 @@ public class KubeManager {
         final String labelSel = "!" + LABEL_USER;
         String ingressName = newIngressName();
 
-        V1PodList result = api.listNamespacedPod(NAMESPACE, null, false, null, fieldSel, labelSel, 5, null, null, 10, false);
+        V1PodList result = api.listNamespacedPod(NAMESPACE, null, false, null, fieldSel, labelSel,
+            5, null, null, 10, false);
         List<DhWorker> needService = new ArrayList<>();
         result.getItems().parallelStream().forEach(pod -> {
             // add the dh.user label, once we confirm we won the label, add to our needService list.
@@ -638,7 +698,8 @@ public class KubeManager {
                     createService(worker.getUserName());
                     needsIngress.add(worker.getUserName());
                 } catch (ApiException e) {
-                    System.err.println("Unable to create service for worker " + worker.getUserName());
+                    System.err
+                        .println("Unable to create service for worker " + worker.getUserName());
                     e.printStackTrace();
                     // TODO: schedule the pod for deletion...
                 }
@@ -653,15 +714,16 @@ public class KubeManager {
         return DH_INGRESS_NAME + "-" + NameGen.getMyName() + "-" + ingressCnt.incrementAndGet();
     }
 
-    public V1Ingress createIngress(final String ingressName, final Iterable<String> needService) throws KubectlException {
+    public V1Ingress createIngress(final String ingressName, final Iterable<String> needService)
+        throws KubectlException {
         // alright! create an all new Ingress that maps to all of the services we have created.
         // rather than hardcode all the values that helm chart may have overridden,
         // we'll instead load up the one-deployed ingress named dh-ingress
         final V1Ingress ingress = Kubectl.get(V1Ingress.class)
-                .apiClient(apiClient)
-                .namespace(DH_NAMESPACE)
-                .name(DH_INGRESS_NAME)
-                .execute();
+            .apiClient(apiClient)
+            .namespace(DH_NAMESPACE)
+            .name(DH_INGRESS_NAME)
+            .execute();
 
         V1Ingress newIngress = new V1Ingress();
         copyBasics(ingressName, ingress, newIngress);
@@ -670,22 +732,22 @@ public class KubeManager {
         final List<V1IngressRule> rules = new ArrayList<>();
         for (String worker : needService) {
             V1IngressRule rule = new V1IngressRuleBuilder()
-                    .withHost(worker + "." + DOMAIN)
-                    .withNewHttp()
-                        .addNewPath()
-                            .withPath("/*")
-                            .withPathType("ImplementationSpecific")
-                            .withNewBackend()
-                                .withNewService()
-                                    .withName(worker)
-                                    .withNewPort()
-                                        .withNumber(PORT_ENVOY_CLIENT)
-                                    .endPort()
-                                .endService()
-                            .endBackend()
-                        .endPath()
-                    .endHttp()
-                    .build();
+                .withHost(worker + "." + DOMAIN)
+                .withNewHttp()
+                .addNewPath()
+                .withPath("/*")
+                .withPathType("ImplementationSpecific")
+                .withNewBackend()
+                .withNewService()
+                .withName(worker)
+                .withNewPort()
+                .withNumber(PORT_ENVOY_CLIENT)
+                .endPort()
+                .endService()
+                .endBackend()
+                .endPath()
+                .endHttp()
+                .build();
 
             rules.add(rule);
         }
@@ -696,21 +758,23 @@ public class KubeManager {
 
         // alright! create the ingress!
         final V1Ingress result = Kubectl.create(V1Ingress.class)
-                .apiClient(apiClient)
-                .namespace(DH_NAMESPACE)
-                .name(newIngress.getMetadata().getName())
-                .resource(newIngress)
-                .execute();
+            .apiClient(apiClient)
+            .namespace(DH_NAMESPACE)
+            .name(newIngress.getMetadata().getName())
+            .resource(newIngress)
+            .execute();
         System.out.println("Created ingress " + result.getMetadata().getName());
         // TODO: monitor the status of this ingress to see when the pods it created are ready.
         return result;
     }
 
-    private void copyBasics(final String ingressName, final V1Ingress ingress, final V1Ingress newIngress) {
+    private void copyBasics(final String ingressName, final V1Ingress ingress,
+        final V1Ingress newIngress) {
         final V1ObjectMeta meta = new V1ObjectMeta();
         meta.setName(ingressName);
         final Map<String, String> annos = new LinkedHashMap<>();
-        for (Map.Entry<String, String> annotation : ingress.getMetadata().getAnnotations().entrySet()) {
+        for (Map.Entry<String, String> annotation : ingress.getMetadata().getAnnotations()
+            .entrySet()) {
             annos.put(annotation.getKey(), annotation.getValue());
         }
         meta.setAnnotations(annos);
@@ -755,7 +819,8 @@ public class KubeManager {
         newSvc.setMetadata(metadata);
         newSvc.setSpec(spec);
 
-        final V1Service createdSvc = api.createNamespacedService(NAMESPACE, newSvc, null, null, null);
+        final V1Service createdSvc =
+            api.createNamespacedService(NAMESPACE, newSvc, null, null, null);
         System.out.println("Created service " + createdSvc.getMetadata().getName());
         return createdSvc;
     }
@@ -766,12 +831,12 @@ public class KubeManager {
         V1Pod result;
         try {
             result = Kubectl.label(V1Pod.class)
-                    .apiClient(apiClient)
-                    .namespace(pod.getMetadata().getNamespace())
-                    .name(pod.getMetadata().getName())
-                    .addLabel(LABEL_USER, userName)
-                    .addLabel(LABEL_PURPOSE, PURPOSE_WORKER)
-                    .execute();
+                .apiClient(apiClient)
+                .namespace(pod.getMetadata().getNamespace())
+                .name(pod.getMetadata().getName())
+                .addLabel(LABEL_USER, userName)
+                .addLabel(LABEL_PURPOSE, PURPOSE_WORKER)
+                .execute();
         } catch (KubectlException e) {
             e.printStackTrace();
             return null;
@@ -779,34 +844,38 @@ public class KubeManager {
 
         // hokay! we got back a result, assume we may _not_ have won a race!
         final V1Pod check = Kubectl.get(V1Pod.class)
-                .apiClient(apiClient)
-                .namespace(NAMESPACE)
-                .name(podName)
-                .execute();
+            .apiClient(apiClient)
+            .namespace(NAMESPACE)
+            .name(podName)
+            .execute();
 
         final String realLabel = check.getMetadata().getLabels().get(NameConstants.LABEL_USER);
         if (userName.equals(realLabel)) {
-            System.out.println(NameGen.getMyName() + " won pod " + podName +" for user " + userName);
-            final DhWorker worker = new DhWorker(userName, pod.getMetadata().getName(), "svc-" + userName, ingressName, userName + "." + NameConstants.DOMAIN);
+            System.out
+                .println(NameGen.getMyName() + " won pod " + podName + " for user " + userName);
+            final DhWorker worker = new DhWorker(userName, pod.getMetadata().getName(),
+                "svc-" + userName, ingressName, userName + "." + NameConstants.DOMAIN);
             return worker;
         }
-        System.out.println(NameGen.getMyName() + " lost pod " + podName +" for user " + userName);
-        // This weird log is here so we can detect if race conditions actually happen, or if we'll know we lost immediately
-        System.out.println("Pre-check label: " + result.getMetadata().getLabels().get(NameConstants.LABEL_USER));
+        System.out.println(NameGen.getMyName() + " lost pod " + podName + " for user " + userName);
+        // This weird log is here so we can detect if race conditions actually happen, or if we'll
+        // know we lost immediately
+        System.out.println(
+            "Pre-check label: " + result.getMetadata().getLabels().get(NameConstants.LABEL_USER));
         return null;
     }
 
     private V1Deployment getDeployment() {
         KubectlGet<V1Deployment>.KubectlGetSingle getDeploy = Kubectl.get(V1Deployment.class)
-                .namespace(NameConstants.DH_NAMESPACE)
-                .name(NameConstants.NAME_DEPLOYMENT)
-                ;
+            .namespace(NameConstants.DH_NAMESPACE)
+            .name(NameConstants.NAME_DEPLOYMENT);
         getDeploy.apiClient(apiClient);
         try {
             return getDeploy.execute();
         } catch (Exception e) {
             e.printStackTrace();
-            throw new IllegalStateException("No deployment named " + NameConstants.NAME_DEPLOYMENT + "; have you run helm install yet?");
+            throw new IllegalStateException("No deployment named " + NameConstants.NAME_DEPLOYMENT
+                + "; have you run helm install yet?");
         }
     }
 
@@ -814,7 +883,8 @@ public class KubeManager {
         return httpClient;
     }
 
-    public boolean claimPod(final KubeSession session, final V1Pod pod) throws KubectlException, ApiException {
+    public boolean claimPod(final KubeSession session, final V1Pod pod)
+        throws KubectlException, ApiException {
         if (session.getPod() != null) {
             return false;
         }
@@ -823,13 +893,15 @@ public class KubeManager {
 
         // now, also set the dh.user label on the given pod
         final KubectlPatch<V1Pod> patchCmd = Kubectl.patch(V1Pod.class)
-                .apiClient(apiClient)
-                .namespace(DH_NAMESPACE)
-                .name(podName);
+            .apiClient(apiClient)
+            .namespace(DH_NAMESPACE)
+            .name(podName);
 
-        String patchBody = "[{\"op\":\"add\",\"path\":\"/metadata/labels/" + LABEL_USER + "\", \"value\": \"" + session.getUserName() + "\" }]";
+        String patchBody = "[{\"op\":\"add\",\"path\":\"/metadata/labels/" + LABEL_USER
+            + "\", \"value\": \"" + session.getUserName() + "\" }]";
         final V1Patch patch = new V1Patch(patchBody);
-//        final V1Pod result = api.patchNamespacedPod(podName, DH_NAMESPACE, patch, null, null, null, null);
+        // final V1Pod result = api.patchNamespacedPod(podName, DH_NAMESPACE, patch, null, null,
+        // null, null);
         patchCmd.patchContent(patch);
         patchCmd.patchType("json");
         final V1Pod result = patchCmd.execute();

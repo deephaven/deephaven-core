@@ -15,12 +15,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class CertFactory {
 
-    public static void main(String ... args) throws IOException {
+    public static void main(String... args) throws IOException {
 
         // load up our cert generating shell script
         final String genKeyPath = "/scripts/gen-certs.sh";
         final InputStream genKeyScript = CertFactory.class.getResourceAsStream(genKeyPath);
-        System.out.println("Prop test: " + System.getProperty("quarkus.http.ssl.certificate.key-file"));
+        System.out
+            .println("Prop test: " + System.getProperty("quarkus.http.ssl.certificate.key-file"));
         if (genKeyScript == null) {
             System.err.println("No " + genKeyPath + " found in classloader, bailing!");
             System.exit(98);
@@ -35,7 +36,7 @@ public class CertFactory {
         dest.writeFrom(new InputStreamReader(genKeyScript));
         scriptFile.setExecutable(true);
 
-        // There, now the file exists.  run it.
+        // There, now the file exists. run it.
         ProcessBuilder proc = new ProcessBuilder();
         proc.command("bash", scriptLoc);
         proc.inheritIO();
