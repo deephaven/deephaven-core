@@ -9,27 +9,17 @@ import io.deephaven.grpc_api.barrage.BarrageClientSubscription;
 import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.grpc_api_client.table.BarrageTable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.Ticket;
-import io.grpc.CallCredentials;
-import io.grpc.ManagedChannel;
-import io.grpc.Metadata;
-import io.grpc.stub.StreamObserver;
-import org.apache.arrow.flatbuf.Schema;
-import org.apache.arrow.flight.impl.Flight;
-import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import io.grpc.*;
+import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 
 /**
  * This class is here as a shim between the Java-API and the gRPC Barrage client.  This class will be superceded once
@@ -38,8 +28,7 @@ import java.util.function.Consumer;
 public class BarrageSupport {
     private static final Logger log = LoggerFactory.getLogger(BarrageSupport.class);
 
-    private final ManagedChannel channel;
-    private final FlightServiceGrpc.FlightServiceStub flightService;
+    private final Channel channel;
     private final FlightSession session;
 
     // This should really hold WeakReferences to BarrageTable os we can automatically clean up subscriptions.
@@ -47,9 +36,8 @@ public class BarrageSupport {
     private final Map<BarrageTable, BarrageClientSubscription> subscriptionMap = new HashMap<>();
 
     public BarrageSupport(final @NotNull ManagedChannel channel, FlightSession session) {
-        this.channel = channel;
+        this.channel = ClientInterceptors.intercept(channel, new AuthInterceptor());
         this.session = session;
-        flightService = FlightServiceGrpc.newStub(channel).withCallCredentials(new SessionCallCredentials());
     }
 
     /**
@@ -65,22 +53,8 @@ public class BarrageSupport {
         final Export tableExport = handle.export();
         final Ticket tableTicket = tableExport.ticket();
 
-        final CompletableFuture<BarrageTable> tableFuture = new CompletableFuture<>();
-        flightService.getSchema(
-                FlightExportTicketHelper.ticketToDescriptor(tableTicket, "exportTable"),
-                new ResponseBuilder<Flight.SchemaResult>()
-                        .onError(t -> {
-                            log.error().append("Unexpected error ").append(t).endl();
-                            tableFuture.completeExceptionally(t);
-                        })
-                        .onNext(r -> onSchemaResult(r, tableTicket, tableFuture))
-                        .build());
-
-        try {
-            return tableFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new UncheckedDeephavenException("Error retrieving Subscribed Barrage table", e);
-        }
+        final Schema schema = session.getSchema(tableExport);
+        return onSchemaResult(schema, tableTicket);
     }
 
     /**
@@ -105,15 +79,15 @@ public class BarrageSupport {
         }
     }
 
-    private void onSchemaResult(final Flight.SchemaResult schemaResult, final Ticket tableTicket, final CompletableFuture<BarrageTable> resultFuture) {
-        final Schema schema = Schema.getRootAsSchema(schemaResult.getSchema().asReadOnlyByteBuffer());
+    InstrumentedShiftAwareListener listener;
+    private BarrageTable onSchemaResult(final Schema schema, final Ticket tableTicket) {
         final TableDefinition definition = BarrageSchemaUtil.schemaToTableDefinition(schema);
 
         final BitSet columns = new BitSet();
         columns.set(0, definition.getColumns().length);
 
         final BarrageTable resultTable = BarrageTable.make(definition, false);
-        final InstrumentedShiftAwareListener listener = new InstrumentedShiftAwareListener("test") {
+        listener = new InstrumentedShiftAwareListener("test") {
             @Override
             protected void onFailureInternal(final Throwable originalException,
                                              final UpdatePerformanceTracker.Entry sourceEntry) {
@@ -129,71 +103,29 @@ public class BarrageSupport {
 
         final BarrageClientSubscription resultSub = new BarrageClientSubscription(
                 ExportTicketHelper.toReadableString(tableTicket, "exportTable"),
-                channel, BarrageClientSubscription.makeRequest(null, columns),
+                channel, BarrageClientSubscription.makeRequest(tableTicket, null, columns),
                 new BarrageStreamReader(), resultTable);
 
         synchronized (subscriptionMap) {
             subscriptionMap.put(resultTable, resultSub);
         }
 
-        resultFuture.complete(resultTable);
+        return resultTable;
     }
 
-    private class SessionCallCredentials extends CallCredentials {
+    private class AuthInterceptor implements ClientInterceptor {
         @Override
-        public void applyRequestMetadata(RequestInfo requestInfo, Executor appExecutor,
-                                         MetadataApplier applier) {
-            AuthenticationInfo localAuth = ((SessionImpl)session.session()).auth();
-            Metadata metadata = new Metadata();
-            metadata.put(Metadata.Key.of(localAuth.sessionHeaderKey(), Metadata.ASCII_STRING_MARSHALLER),
-                    localAuth.session());
-            applier.apply(metadata);
-        }
-
-        @Override
-        public void thisUsesUnstableApi() {
-
-        }
-    }
-
-    private static class ResponseBuilder<T> {
-        private Consumer<T> _onNext;
-        private Consumer<Throwable> _onError;
-        private Runnable _onComplete;
-
-        public ResponseBuilder<T> onNext(final Consumer<T> _onNext) {
-            this._onNext = _onNext;
-            return this;
-        }
-
-        public ResponseBuilder<T> onError(final Consumer<Throwable> _onError) {
-            this._onError = _onError;
-            return this;
-        }
-
-        public ResponseBuilder<T> onComplete(final Runnable _onComplete) {
-            this._onComplete = _onComplete;
-            return this;
-        }
-
-        public StreamObserver<T> build() {
-            return new StreamObserver<T>() {
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
+                final Channel channel) {
+            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
+                    channel.newCall(methodDescriptor, callOptions)) {
                 @Override
-                public void onNext(final T value) {
-                    if (_onNext != null)
-                        _onNext.accept(value);
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    if (_onError != null)
-                        _onError.accept(t);
-                }
-
-                @Override
-                public void onCompleted() {
-                    if (_onComplete != null)
-                        _onComplete.run();
+                public void start(final Listener<RespT> responseListener, final Metadata headers) {
+                    AuthenticationInfo localAuth = ((SessionImpl)session.session()).auth();
+                    headers.put(Metadata.Key.of(localAuth.sessionHeaderKey(), Metadata.ASCII_STRING_MARSHALLER),
+                            localAuth.session());
+                    super.start(responseListener, headers);
                 }
             };
         }

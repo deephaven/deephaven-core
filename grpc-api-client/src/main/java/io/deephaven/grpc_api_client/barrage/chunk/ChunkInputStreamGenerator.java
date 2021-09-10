@@ -44,10 +44,11 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
         }
 
         public static Options of(final BarrageSubscriptionRequest subscriptionRequest) {
-            final byte mode = subscriptionRequest.serializationOptions().columnConversionMode();
+            final BarrageSerializationOptions opts = subscriptionRequest.serializationOptions();
+            final byte mode = opts == null ?  io.deephaven.barrage.flatbuf.ColumnConversionMode.Stringify : opts.columnConversionMode();
             return new Builder()
                     .setIsViewport(subscriptionRequest.viewportVector() != null)
-                    .setUseDeephavenNulls(subscriptionRequest.serializationOptions().useDeephavenNulls())
+                    .setUseDeephavenNulls(opts == null || opts.useDeephavenNulls())
                     .setColumnConversionMode(convertColumnConversionMode(mode))
                     .build();
         }
