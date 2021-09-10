@@ -107,8 +107,11 @@ public class ShortChunkColumnSource extends AbstractColumnSource<Short> implemen
                 final int currentDestinationSize = destination.size();
                 destination.copyFromChunk(shortChunk, offsetWithinChunk, currentDestinationSize, length);
                 destination.setSize(currentDestinationSize + length);
-                searchStartChunkIndex.setValue(chunkIndex + 1);
                 s += length;
+                if (s <= e) {
+                    // We have more of this range to gather from a subsequent chunk.
+                    searchStartChunkIndex.setValue(chunkIndex + 1);
+                }
             }
         });
     }
