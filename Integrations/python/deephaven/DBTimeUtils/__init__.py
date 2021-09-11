@@ -80,6 +80,23 @@ except Exception as e:
 
 
 @_passThrough
+def autoEpochToNanos(epoch):
+    """
+    Converts a long offset from Epoch value to a nanoseconds as a long. This method uses expected date ranges to
+     infer whether the passed value is in milliseconds, microseconds, or nanoseconds. Thresholds used are
+     TimeConstants.MICROTIME_THRESHOLD divided by 1000 for milliseconds, as-is for microseconds, and
+     multiplied by 1000 for nanoseconds. The value is tested to see if its ABS exceeds the threshold. E.g. a value
+     whose ABS is greater than 1000 * TimeConstants.MICROTIME_THRESHOLD will be treated as nanoseconds.
+    
+    :param epoch: (long) - The long Epoch offset value to convert.
+    :return: (long) null, if the input is equal to QueryConstants.NULL_LONG, otherwise a nanoseconds value
+             corresponding to the passed in epoch value.
+    """
+    
+    return _java_type_.autoEpochToNanos(epoch)
+
+
+@_passThrough
 def autoEpochToTime(epoch):
     """
     Converts a long offset from Epoch value to a DBDateTime. This method uses expected date ranges to infer

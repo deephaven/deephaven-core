@@ -81,18 +81,20 @@ class TestTableTools(unittest.TestCase):
                 [ ('Symbol', dh.string),
                   ('Side', dh.string),
                   ('Price', dh.double),
-                  ('Qty', dh.int_) ],
+                  ('Qty', dh.int_),
+                  ('Tstamp', dh.datetime) ],
                 mapping = {
                     'jsymbol' : 'Symbol',
                     'jside' : 'Side',
                     'jprice' : 'Price',
-                    'jqty' : 'Qty'}
+                    'jqty' : 'Qty',
+                    'jts' : 'Tstamp' }
             ),
             table_type = 'append'
         )
 
         cols = t.getDefinition().getColumns()
-        self.assertEquals(7, len(cols))
+        self.assertEquals(8, len(cols))
         self._assertCommonCols(cols)
 
         self.assertEquals("Symbol", cols[3].getName())
@@ -103,6 +105,8 @@ class TestTableTools(unittest.TestCase):
         self.assertEquals(dh.double.clazz(), cols[5].getDataType())
         self.assertEquals("Qty", cols[6].getName())
         self.assertEquals(dh.int_.clazz(), cols[6].getDataType())
+        self.assertEquals("Tstamp", cols[7].getName())
+        self.assertEquals(dh.datetime.clazz(), cols[7].getDataType())
 
 
     def testAvro(self):
