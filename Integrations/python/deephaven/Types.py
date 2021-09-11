@@ -35,6 +35,7 @@ bool_ = None
 byte = None
 short = None
 int16 = None
+char = None
 int_ = None
 int32 = None
 long_ = None
@@ -74,7 +75,7 @@ def _defineSymbols():
 
     global _table_tools_, _col_def_, _python_tools_, _qst_col_header_, \
         _qst_column_, _qst_newtable_, _qst_type_, _table_, \
-        DataType, bool_, byte, short, int16, int_, int32, long_, int64, \
+        DataType, bool_, byte, short, int16, char, int_, int32, long_, int64, \
         float_, single, float32, double, float64, \
         string, bigdecimal, stringset, datetime, \
         byte_array, short_array, int16_array, int_array, int32_array, long_array, int64_array, \
@@ -98,6 +99,7 @@ def _defineSymbols():
         byte = DataType(_qst_type_.byteType())
         short = DataType(_qst_type_.shortType())
         int16 = short  # make life simple for people who are used to pyarrow
+        char = DataType(_qst_type_.charType())
         int_ = DataType(_qst_type_.intType())
         int32 = int_  # make life simple for people who are used to pyarrow
         long_ = DataType(_qst_type_.longType())
@@ -191,12 +193,12 @@ def _jpyTypeFromType(data_type : DataType):
     if jpy_type is not None:
         return jpy_type
     jclass = _jclassFromType(data_type)
-    return jpy_get_type(jclass.getName())
+    return jpy.get_type(jclass.getName())
 
 
 @_passThrough
 def _isPrimitive(data_type : DataType):
-    primitives = { byte, short, int_, long_, float_, double }
+    primitives = { byte, short, char, int_, long_, float_, double }
     return data_type in primitives
 
 @_passThrough
@@ -238,6 +240,8 @@ def _getQstCol(col_name:str, col_type:DataType, col_data=None):
     if jtype is None:
         raise Exception("value for argument 'col_type' " +
                         str(col_type) + " is not a known data type.")
+    if col_type is char and len(col_data) > 0 and isinstance(col_data[0], str):
+        col_data = [ ord(x[0]) for x in col_data ]
     jvalues = jpy.array(jtype, col_data)
     if _isPrimitive(col_type):
         return _qst_column_.ofUnsafe(col_name, jvalues)
