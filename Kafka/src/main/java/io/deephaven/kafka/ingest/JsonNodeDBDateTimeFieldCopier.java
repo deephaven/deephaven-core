@@ -18,11 +18,11 @@ public class JsonNodeDBDateTimeFieldCopier implements FieldCopier {
             final int sourceOffset,
             final int destOffset,
             final int length) {
-        final WritableObjectChunk<Object, Attributes.Values> output = publisherChunk.asWritableObjectChunk();
+        final WritableLongChunk<Attributes.Values> output = publisherChunk.asWritableLongChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
             final long valueAsLong = JsonNodeUtil.getLong(node, fieldName, true, true);
-            output.set(ii + destOffset, DBTimeUtils.autoEpochToTime(valueAsLong));
+            output.set(ii + destOffset, DBTimeUtils.autoEpochToNanos(valueAsLong));
         }
     }
 }
