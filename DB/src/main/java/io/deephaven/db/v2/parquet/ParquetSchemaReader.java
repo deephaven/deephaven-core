@@ -331,14 +331,15 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-                errorString.setValue("DateLogicalType");
-                return Optional.empty();
+                return Optional.of(int.class);
             }
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-                errorString.setValue("TimeLogicalType, isAdjustedToUTC=" + timeLogicalType.isAdjustedToUTC());
-                return Optional.empty();
+                if (timeLogicalType.getUnit() == LogicalTypeAnnotation.TimeUnit.MILLIS) {
+                    return Optional.of(int.class);
+                }
+                return Optional.of(long.class);
             }
 
             @Override
