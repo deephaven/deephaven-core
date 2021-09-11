@@ -28,7 +28,7 @@ import java.util.Map;
 public class BarrageSupport {
     private static final Logger log = LoggerFactory.getLogger(BarrageSupport.class);
 
-    private final ManagedChannel channel;
+    private final Channel channel;
     private final FlightSession session;
 
     // This should really hold WeakReferences to BarrageTable os we can automatically clean up subscriptions.
@@ -36,7 +36,7 @@ public class BarrageSupport {
     private final Map<BarrageTable, BarrageClientSubscription> subscriptionMap = new HashMap<>();
 
     public BarrageSupport(final @NotNull ManagedChannel channel, FlightSession session) {
-        this.channel = channel;
+        this.channel = ClientInterceptors.intercept(channel, new AuthInterceptor());
         this.session = session;
     }
 
@@ -62,7 +62,7 @@ public class BarrageSupport {
         final BarrageTable resultTable = BarrageTable.make(definition, false);
         final BarrageClientSubscription resultSub = new BarrageClientSubscription(
                 ExportTicketHelper.toReadableString(tableTicket, "exportTable"),
-                channel, BarrageClientSubscription.makeRequest(null, columns),
+                channel, BarrageClientSubscription.makeRequest(tableTicket, null, columns),
                 new BarrageStreamReader(), resultTable);
 
         synchronized (subscriptionMap) {

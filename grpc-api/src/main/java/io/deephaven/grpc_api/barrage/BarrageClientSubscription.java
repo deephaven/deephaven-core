@@ -20,6 +20,7 @@ import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -146,8 +147,20 @@ public class BarrageClientSubscription implements LogOutputAppendable {
         this.connected = true;
 
         // Send the initial subscription:
+        final FlatBufferBuilder message = new FlatBufferBuilder();
+        final int requestOffset = message.createByteVector(initialRequest.getByteBuffer());
+        message.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                message,
+                BarrageStreamGenerator.FLATBUFFER_MAGIC,
+                BarrageMessageType.BarrageSubscriptionRequest,
+                requestOffset,
+                0, // no ticket -- now unused anyway
+                0, // no sequence -- now unused anyway
+                false // don't half close -- now unused anyway
+        ));
+
         call.sendMessage(Flight.FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(initialRequest.getByteBuffer()))
+                .setAppMetadata(ByteStringAccess.wrap(message.dataBuffer()))
                 .build());
 
         // Allow the server to send us all of the commands when there is bandwidth:
@@ -184,9 +197,10 @@ public class BarrageClientSubscription implements LogOutputAppendable {
             throw new IllegalStateException("Cannot set viewport on a full subscription.");
         }
 
-        call.sendMessage(Flight.FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns)))
-                .build());
+        throw new UnsupportedOperationException("Viewports not yet supported");
+//        call.sendMessage(Flight.FlightData.newBuilder()
+//                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns)))
+//                .build());
     }
 
     @Override
@@ -195,11 +209,11 @@ public class BarrageClientSubscription implements LogOutputAppendable {
                 .append(System.identityHashCode(this)).append("/");
     }
 
-    public static BarrageSubscriptionRequest makeRequest(final Index viewport, final BitSet columns) {
-        return BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(makeRequestInternal(viewport, columns));
+    public static BarrageSubscriptionRequest makeRequest(final Ticket ticket, final Index viewport, final BitSet columns) {
+        return BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(makeRequestInternal(ticket, viewport, columns));
     }
 
-    private static ByteBuffer makeRequestInternal(final Index viewport, final BitSet columns) {
+    private static ByteBuffer makeRequestInternal(final Ticket ticket, final Index viewport, final BitSet columns) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
         int colOffset = 0;
@@ -211,22 +225,14 @@ public class BarrageClientSubscription implements LogOutputAppendable {
             vpOffset =
                     BarrageSubscriptionRequest.createViewportVector(metadata, BarrageProtoUtil.toByteBuffer(viewport));
         }
+        int ticketOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticket.getTicket().asReadOnlyByteBuffer());
 
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
         BarrageSubscriptionRequest.addColumns(metadata, colOffset);
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
-        final int subscription = BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata);
+        BarrageSubscriptionRequest.addTicket(metadata, ticketOffset);
+        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
 
-        final int wrapper = BarrageMessageWrapper.createBarrageMessageWrapper(
-                metadata,
-                BarrageStreamGenerator.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSubscriptionRequest,
-                subscription,
-                0, // no ticket
-                0, // no sequence
-                false // don't half-close
-        );
-        metadata.finish(wrapper);
         return metadata.dataBuffer();
     }
 }

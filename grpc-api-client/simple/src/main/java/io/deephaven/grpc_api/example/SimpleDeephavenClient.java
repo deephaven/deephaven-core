@@ -216,10 +216,10 @@ public class SimpleDeephavenClient {
         };
         resultTable.listenForUpdates(listener);
 
-        resultSub = new BarrageClientSubscription(
-                ExportTicketHelper.toReadableString(exportTable, "exportTable"),
-                serverChannel, BarrageClientSubscription.makeRequest(null, columns),
-                new BarrageStreamReader(), resultTable);
+//        resultSub = new BarrageClientSubscription(
+//                ExportTicketHelper.toReadableString(exportTable, "exportTable"),
+//                serverChannel, BarrageClientSubscription.makeRequest(null, columns),
+//                new BarrageStreamReader(), resultTable);
     }
 
     private void onScriptComplete() {
