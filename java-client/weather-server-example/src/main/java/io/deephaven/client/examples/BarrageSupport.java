@@ -1,19 +1,15 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.client.impl.Export;
-import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.*;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.grpc_api.barrage.BarrageClientSubscription;
 import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api_client.table.BarrageTable;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.Ticket;
-import io.grpc.ManagedChannel;
+import io.grpc.*;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,8 +22,6 @@ import java.util.Map;
  * proper support for retrieving Barrage tables directly is implemented, in the near future
  */
 public class BarrageSupport {
-    private static final Logger log = LoggerFactory.getLogger(BarrageSupport.class);
-
     private final Channel channel;
     private final FlightSession session;
 
@@ -77,7 +71,11 @@ public class BarrageSupport {
      * @param table the table to release.
      */
     public void releaseTable(final @NotNull BarrageTable table) {
-        final BarrageClientSubscription sub = subscriptionMap.get(table);
+        final BarrageClientSubscription sub;
+        synchronized (subscriptionMap) {
+            sub = subscriptionMap.remove(table);
+        }
+
         if(sub == null) {
             throw new UncheckedDeephavenException("Table was already unsubscribed, or could not be found");
         }
@@ -89,8 +87,28 @@ public class BarrageSupport {
      * Close and release -all- subscriptions held by this instance.
      */
     public void close() {
-        for(BarrageClientSubscription sub : subscriptionMap.values()) {
-            sub.close();
+        synchronized (subscriptionMap) {
+            for (final BarrageClientSubscription sub : subscriptionMap.values()) {
+                sub.close();
+            }
+        }
+    }
+
+    private class AuthInterceptor implements ClientInterceptor {
+        @Override
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
+                final Channel channel) {
+            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
+                    channel.newCall(methodDescriptor, callOptions)) {
+                @Override
+                public void start(final Listener<RespT> responseListener, final Metadata headers) {
+                    final AuthenticationInfo localAuth = ((SessionImpl)session.session()).auth();
+                    headers.put(Metadata.Key.of(localAuth.sessionHeaderKey(), Metadata.ASCII_STRING_MARSHALLER),
+                            localAuth.session());
+                    super.start(responseListener, headers);
+                }
+            };
         }
     }
 }
