@@ -712,5 +712,20 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
             return Optional.empty();
         }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(
+                LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
+            return Optional.of(ToIntPage.create(componentType));
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(
+                LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
+            if (timeLogicalType.getUnit() == LogicalTypeAnnotation.TimeUnit.MILLIS) {
+                return Optional.of(ToIntPage.create(componentType));
+            }
+            return Optional.of(ToLongPage.create(componentType));
+        }
     }
 }
