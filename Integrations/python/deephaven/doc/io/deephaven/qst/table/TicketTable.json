@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.table.TicketTable",
+ "methods": {
+  "of": "**Incompatible overloads text - text from the first overload:**\n\nCreate a ticket table with the UTF-8 bytes from the ticket string.\n\n*Overload 1*  \n  :param ticket: (byte[]) - the ticket\n  :return: (io.deephaven.qst.table.TicketTable) the ticket table\n  \n*Overload 2*  \n  :param ticket: (java.lang.String) - the ticket string\n  :return: (io.deephaven.qst.table.TicketTable) the ticket table",
+  "ticket": "The ticket.\n\n:return: (byte[]) the ticket",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.TicketTable",
+ "text": "A ticket table is a byte format that allows callers to reference an existing table via ticket. The ticket bytes are\n opaque; the byte-format may change from release to release.",
+ "typeName": "class"
+}

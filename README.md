@@ -30,9 +30,9 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 
 ## Run Deephaven
 
-This section is a quick start guide for running Deephaven from pre-built images.  Almost all users will want to run Deephaven using pre-built images.  It is the easiest way to deploy.  For detailed instructions, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built).
+This section is a quick start guide for running Deephaven from pre-built images.  Almost all users will want to run Deephaven using pre-built images.  It is the easiest way to deploy.  For detailed instructions, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/quickstart/launch-pre-built).
 
-Developers interested in tinkering with and modifying source code should build from the source code.  For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/tutorials/launch-build).
+Developers interested in tinkering with and modifying source code should build from the source code.  For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/how-to-guides/launch-build).
 
 If you are not sure which of the two is right for you, use the pre-built images.
 
@@ -40,11 +40,12 @@ If you are not sure which of the two is right for you, use the pre-built images.
 
 Running Deephaven requires a few software packages.
 
-| Package        | Version  | OS           |
-| -------------- | -------- | ------------ |
-| docker         | ^20.10.8 | All          |
-| docker-compose | ^1.29.0  | All          |
-| WSL            | 2        | Only Windows |
+| Package        | Version                       | OS           |
+| -------------- | ----------------------------- | ------------ |
+| docker         | ^20.10.8                      | All          |
+| docker-compose | ^1.29.0                       | All          |
+| Windows        | 10 (OS build 20262 or higher) | Only Windows |
+| WSL            | 2                             | Only Windows |
 
 You can check if these packages are installed and functioning by running:
 ```
@@ -53,9 +54,9 @@ docker-compose version
 docker run hello-world
 ```
 
-On Windows, these commands must be run inside a WSL 2 terminal.
+> :warning: **On Windows, all commands must be run inside a WSL 2 terminal.**
 
-If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/launch-pre-built/#prerequisites) for installation instructions.
+If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/quickstart/launch-pre-built/#prerequisites) for installation instructions.
 
 
 ### Create deployment
@@ -70,6 +71,7 @@ cd deephaven-deployment
 ```
 
 > :warning: **Commands in the following sections for interacting with a deployment must be run from the deployment directory.**
+
 ### Launch: Python
 
 Run the following commands to launch Deephaven for Python server applications. 

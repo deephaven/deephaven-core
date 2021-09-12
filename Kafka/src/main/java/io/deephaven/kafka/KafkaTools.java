@@ -170,7 +170,7 @@ public class KafkaTools {
                 columnsOut.add(ColumnDefinition.ofInt(mappedName));
                 break;
             case LONG:
-                final LogicalType logicalType = field.schema().getLogicalType();
+                final LogicalType logicalType = fieldSchema.getLogicalType();
                 if (LogicalTypes.timestampMicros().equals(logicalType) ||
                         LogicalTypes.timestampMillis().equals(logicalType)) {
                     columnsOut.add(ColumnDefinition.ofTime(mappedName));
@@ -189,30 +189,12 @@ public class KafkaTools {
                 columnsOut.add(ColumnDefinition.ofString(mappedName));
                 break;
             case UNION:
-                final List<Schema> unionTypes = fieldSchema.getTypes();
-                final int unionSize = unionTypes.size();
-                if (unionSize == 0) {
-                    throw new IllegalArgumentException("empty union " + fieldName);
-                }
-                if (unionSize != 2) {
-                    throw new UnsupportedOperationException(
-                            "Union " + fieldName + " with more than 2 fields not supported");
-                }
-                final Schema.Type unionType0 = unionTypes.get(0).getType();
-                final Schema.Type unionType1 = unionTypes.get(1).getType();
-                if (unionType1 == Schema.Type.NULL) {
-                    pushColumnTypesFromAvroField(
-                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType0,
-                            fieldNameToColumnName);
-                    return;
-                } else if (unionType0 == Schema.Type.NULL) {
-                    pushColumnTypesFromAvroField(
-                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType1,
-                            fieldNameToColumnName);
-                    return;
-                }
-                throw new UnsupportedOperationException(
-                        "Union " + fieldName + " not supported; only unions with NULL are supported at this time.");
+                final Schema effectiveSchema = Utils.getEffectiveSchema(fieldName, fieldSchema);
+                pushColumnTypesFromAvroField(
+                        columnsOut, mappedOut, prefix, field, fieldName, effectiveSchema, mappedName,
+                        effectiveSchema.getType(),
+                        fieldNameToColumnName);
+                return;
             case RECORD:
                 // Linearize any nesting.
                 for (final Schema.Field nestedField : field.schema().getFields()) {
