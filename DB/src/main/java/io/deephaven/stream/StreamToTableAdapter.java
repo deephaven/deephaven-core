@@ -61,15 +61,16 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private List<Exception> enqueuedFailure;
 
     public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
-                                @NotNull final StreamPublisher streamPublisher,
-                                @NotNull final LiveTableRegistrar liveTableRegistrar,
-                                @NotNull final String name) {
+            @NotNull final StreamPublisher streamPublisher,
+            @NotNull final LiveTableRegistrar liveTableRegistrar,
+            @NotNull final String name) {
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
         this.liveTableRegistrar = liveTableRegistrar;
         this.name = name;
         streamPublisher.register(this);
-        log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name).endl();
+        log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
+                .endl();
         liveTableRegistrar.addTable(this);
 
         nullColumnSources = makeNullColumnSources(tableDefinition);
@@ -227,7 +228,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     @Override
     public void close() {
-        log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name).endl();
+        log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
+                .endl();
         liveTableRegistrar.removeTable(this);
     }
 
@@ -236,7 +238,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         try {
             doRefresh();
         } catch (Exception e) {
-            log.error().append("Error refreshing ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name).append(": ").append(e).endl();
+            log.error().append("Error refreshing ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
+                    .append(name).append(": ").append(e).endl();
             table.notifyListenersOnError(e, null);
             liveTableRegistrar.removeTable(this);
         }
