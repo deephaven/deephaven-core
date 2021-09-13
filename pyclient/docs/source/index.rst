@@ -15,12 +15,12 @@ Examples:
     >>> from pydeephaven import Session
     >>> from pyarrow import csv
     >>> session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
-    >>> table1 = session.import_table(csv.read_csv("data1.csv")
-    >>> table2 = session.import_table(csv.read_csv("data2.csv")
+    >>> table1 = session.import_table(csv.read_csv("data1.csv"))
+    >>> table2 = session.import_table(csv.read_csv("data2.csv"))
     >>> joined_table = table1.join(table2, keys=["key_col_1", "key_col_2"], columns_to_add=["data_col1"])
-    >>> df = joined_table.snapshot().to_pandas())
+    >>> df = joined_table.snapshot().to_pandas()
     >>> print(df)
-    >>> session.close())
+    >>> session.close()
 
 .. toctree::
    :maxdepth: 2
