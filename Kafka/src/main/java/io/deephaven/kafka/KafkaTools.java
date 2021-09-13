@@ -647,7 +647,7 @@ public class KafkaTools {
         final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
             final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
             final StreamToTableAdapter streamToTableAdapter =
-                    new StreamToTableAdapter(tableDefinition, streamPublisher, liveTableRegistrar);
+                    new StreamToTableAdapter(tableDefinition, streamPublisher, liveTableRegistrar, "Kafka-" + topic + '-' + partitionFilter);
             streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
                     streamToTableAdapter::chunkTypeForIndex);
 
