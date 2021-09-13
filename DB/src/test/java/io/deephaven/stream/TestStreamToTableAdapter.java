@@ -12,16 +12,16 @@ import io.deephaven.db.v2.ModifiedColumnSet;
 import io.deephaven.db.v2.SimpleShiftAwareListener;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.sources.chunk.*;
-import io.deephaven.db.v2.utils.ChunkUtils;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.db.v2.utils.*;
 import io.deephaven.util.BooleanUtils;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -48,7 +48,7 @@ public class TestStreamToTableAdapter {
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -223,7 +223,7 @@ public class TestStreamToTableAdapter {
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -292,7 +292,7 @@ public class TestStreamToTableAdapter {
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -352,7 +352,7 @@ public class TestStreamToTableAdapter {
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -418,8 +418,34 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(0, listener.getCount());
     }
 
+    @Test
+    public void testError() {
+        final TableDefinition tableDefinition = new TableDefinition(
+                Arrays.asList(String.class, int.class, long.class, double.class), Arrays.asList("S", "I", "L", "D"));
+        final DummyStreamPublisher streamPublisher = new DummyStreamPublisher();
+
+        final StreamToTableAdapter adapter =
+                new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
+        final DynamicTable result = adapter.table();
+
+        final MutableBoolean listenerFailed = new MutableBoolean();
+        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(result) {
+            @Override
+            public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+                listenerFailed.setTrue();
+            }
+        };
+        result.listenForUpdates(listener);
+
+        streamPublisher.fail = true;
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TestCase.assertTrue(listenerFailed.booleanValue());
+    }
 
     private static class DummyStreamPublisher implements StreamPublisher {
+
+        private boolean fail;
+
         @Override
         public void register(@NotNull StreamConsumer consumer) {
 
@@ -427,7 +453,10 @@ public class TestStreamToTableAdapter {
 
         @Override
         public void flush() {
-
+            if (fail) {
+                fail = false;
+                throw new RuntimeException("I am a fake failure");
+            }
         }
     }
 }
