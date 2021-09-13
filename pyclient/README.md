@@ -57,4 +57,4 @@ $ pip3 install dist/pydeephaven-0.4.2-py3-none-any.whl
 * https://arrow.apache.org/docs/python/index.html
 
 ## API Reference
-[start here] https://deephaven.io/core/docs/clientapis/python
+[start here] https://deephaven.io/core/client-api/python/
