@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2.replay;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.db.exceptions.QueryCancellationException;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTable;
@@ -14,6 +15,7 @@ import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.InstrumentedListener;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.db.v2.utils.TerminalNotification;
 import io.deephaven.db.v2.utils.TimeProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -37,7 +39,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
     protected DBDateTime endTime;
     private long delta = Long.MAX_VALUE;
     private CopyOnWriteArrayList<LiveTable> currentTables = new CopyOnWriteArrayList<>();
-    private boolean done;
+    private volatile boolean done;
     private boolean lastLap;
     private final ReplayerHandle handle = new ReplayerHandle() {
         @Override
@@ -95,10 +97,30 @@ public class Replayer implements ReplayerInterface, LiveTable {
         }
         LiveTableMonitor.DEFAULT.removeTables(currentTables);
         currentTables = null;
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> {
-            done = true;
-            ltmCondition.signalAll();
-        });
+        if (LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+            shutdownInternal();
+        } else if (LiveTableMonitor.DEFAULT.isRefreshThread()) {
+            LiveTableMonitor.DEFAULT.addNotification(new TerminalNotification() {
+                @Override
+                public boolean mustExecuteWithLtmLock() {
+                    return true;
+                }
+
+                @Override
+                public void run() {
+                    shutdownInternal();
+                }
+            });
+        } else {
+            LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(this::shutdownInternal);
+        }
+    }
+
+    private void shutdownInternal() {
+        Assert.assertion(LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread(),
+                "LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()");
+        done = true;
+        ltmCondition.signalAll();
     }
 
     /**
