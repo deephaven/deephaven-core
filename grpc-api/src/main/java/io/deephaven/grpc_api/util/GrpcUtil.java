@@ -33,7 +33,7 @@ public class GrpcUtil {
             lambda.run();
         } catch (final StatusRuntimeException err) {
             if (err.getStatus().equals(Status.UNAUTHENTICATED)) {
-                log.debug().append("ignoring unauthenticated request: ").append(err).endl();
+                log.info().append("ignoring unauthenticated request").endl();
             } else {
                 log.error().append(err).endl();
             }
@@ -58,7 +58,7 @@ public class GrpcUtil {
             return lambda.call();
         } catch (final StatusRuntimeException err) {
             if (err.getStatus().equals(Status.UNAUTHENTICATED)) {
-                log.debug().append("ignoring unauthenticated request: ").append(err).endl();
+                log.info().append("ignoring unauthenticated request").endl();
             } else {
                 log.error().append(err).endl();
             }
