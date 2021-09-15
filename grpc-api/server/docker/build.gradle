@@ -67,10 +67,18 @@ docker {
   dockerCreateDockerfile {
     //volume("/app/resources")
 
+    runCommand('''set -eux;\\
+                  GRPC_HEALTH_PROBE_VERSION=v0.3.1;\\
+                  curl -L -o /bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64; \\
+                  chmod +x /bin/grpc_health_probe
+                  ''')
+
     copyFile('licenses/', '/')
 
     volume("/data")
     volume("/cache")
+
+    instruction('HEALTHCHECK --interval=3s --timeout=10s CMD /bin/grpc_health_probe -addr=localhost:8080 -connect-timeout=10s')
   }
 }
 

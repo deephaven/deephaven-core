@@ -11,6 +11,7 @@ import io.deephaven.grpc_api.auth.AuthContextModule;
 import io.deephaven.grpc_api.console.ConsoleModule;
 import io.deephaven.grpc_api.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.grpc_api.console.python.PythonConsoleSessionModule;
+import io.deephaven.grpc_api.healthcheck.HealthCheckModule;
 import io.deephaven.grpc_api.log.LogModule;
 import io.deephaven.grpc_api.session.SessionModule;
 import io.deephaven.grpc_api.table.TableModule;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeUnit;
         AppModeModule.class,
         ArrowModule.class,
         AuthContextModule.class,
+        HealthCheckModule.class,
         LogModule.class,
         SessionModule.class,
         TableModule.class,
