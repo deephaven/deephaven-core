@@ -319,9 +319,9 @@ def simple(column_name:str, data_type:dh.DataType = None):
 @_passThrough
 def streamTableToAppendTable(t):
     """
-    Creates a 'stream' table from an 'append' type.
+    Creates an 'append' table from a 'stream' table type.
 
-    :param t:  The 'stream' table input.
-    :return:  The resulting 'append' table.
+    :param t:  The 'append' table input.
+    :return:  The resulting 'stream' table.
     """
     return _stream_table_tools_.streamToAppendOnlyTable(t)
