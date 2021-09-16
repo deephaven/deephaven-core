@@ -114,7 +114,7 @@ def _defineSymbols():
         bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
         stringset =  _typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
         datetime = _typeFromJavaClassName('io.deephaven.db.tables.utils.DBDateTime')
-	period = _typeFromJavaClassName('io.deephaven.db.tables.utils.DBPeriod')
+        period = _typeFromJavaClassName('io.deephaven.db.tables.utils.DBPeriod')
 
         # Array types.
         byte_array = DataType(byte.arrayType())
