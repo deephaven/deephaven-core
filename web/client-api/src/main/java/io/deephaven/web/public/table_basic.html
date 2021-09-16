@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Deephaven JS API display basic table</title>
+    <script src="dh-internal.js" type="text/javascript"></script>
+    <script src="dh-core.js" type="text/javascript"></script>
+    <link href="basic.css" rel="stylesheet" type="text/css" />
+    <style>
+        table { border-spacing: 0; }
+        thead td { font-weight: bold; border-bottom: 1px solid black; }
+        tbody td { border-bottom: 1px solid gray; padding: 4px; }
+    </style>
+</head>
+<body>
+
+<h3>Table data</h3>
+<table id="simpleTable"></table>
+
+<script>
+(async () => {
+    // Open a connection to the server
+    var connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+
+    // Start a python session
+    var ide = await connection.startSession("python");
+
+    // Run code that will create a static table with 10 rows and three columns, I, J, K
+    await ide.runCode(`
+from deephaven.TableTools import emptyTable
+remoteTable = emptyTable(10).updateView('I=i', 'J=I*I', 'K=i%2==0?"Hello":"World"')
+    `)
+
+    // Retrieve the JS Table object
+    var table = await ide.getTable('remoteTable');
+
+    // Create a table header element with the table columns
+    var header = document.createElement('thead');
+    var headerRow = document.createElement('tr');
+    table.columns.forEach(column => {
+        // build a very simple header
+        var td = document.createElement('td');
+        td.innerText = column.name;
+        headerRow.appendChild(td);
+    });
+    header.appendChild(headerRow);
+
+    // Set the viewport and extract data to build the table body.
+    // Since the bottom of the viewport specified is inclusive and the table is ten rows, we only need specific `0,9`.
+    table.setViewport(0, 9)
+    var tbody = document.createElement('tbody');
+    var viewportData = await table.getViewportData()
+    var rows = viewportData.rows;
+    for (var i = 0; i < rows.length; i++) {
+        var tr = document.createElement('tr');
+        for (var j = 0; j < table.columns.length; j++) {
+            var td = document.createElement('td');
+            td.textContent = rows[i].get(table.columns[j]);
+            tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+    }
+
+    // Retrieve the element to append the table to
+    var tableElement = document.getElementById('simpleTable');
+    tableElement.appendChild(header);
+    tableElement.appendChild(tbody);
+})();
+</script>
+</body>
+</html>
