@@ -13,10 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TableHandle implements Serializable {
     private static final long serialVersionUID = 2390871455829249662L;
-    private static final AtomicInteger nextId = new AtomicInteger();
-
-    /** A unique id that identifies this handle */
-    private final int id;
 
     /** The base table for this query. */
     private transient Table table;
@@ -26,7 +22,6 @@ public class TableHandle implements Serializable {
 
     public TableHandle(@NotNull final Table table,
             @NotNull final String... columns) {
-        this.id = nextId.incrementAndGet();
         this.table = table;
         this.columns =
                 new TreeSet<>(Arrays.asList(Arrays.stream(columns).filter(Objects::nonNull).toArray(String[]::new)));
@@ -63,22 +58,5 @@ public class TableHandle implements Serializable {
 
     public void setTable(Table table) {
         this.table = table;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        TableHandle that = (TableHandle) o;
-
-        return id == that.id;
-    }
-
-    @Override
-    public int hashCode() {
-        return id;
     }
 }
