@@ -37,6 +37,8 @@ import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.grpc_api_client.util.FlatBufferIteratorAdapter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.Message;
@@ -526,8 +528,17 @@ public class ArrowFlightUtil {
 
         @Override
         public void onError(final Throwable t) {
-            log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ").append(t)
-                    .endl();
+            boolean doLog = true;
+            if (t instanceof StatusRuntimeException) {
+                final Status status = ((StatusRuntimeException) t).getStatus();
+                if (status.getCode() == Status.Code.CANCELLED || status.getCode() == Status.Code.ABORTED) {
+                    doLog = false;
+                }
+            }
+            if (doLog) {
+                log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ")
+                        .append(t).endl();
+            }
             tryClose();
         }
 
