@@ -105,6 +105,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         variables.put("myDummyClass", DBLanguageParserDummyClass.class);
         variables.put("myDummyInnerClass", DBLanguageParserDummyClass.InnerClass.class);
         variables.put("myClosure", Closure.class);
+        variables.put("myDBDateTime", DBDateTime.class);
 
         variables.put("myTable", Table.class);
 
@@ -1053,44 +1054,43 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     }
 
 
-    // TODO: Enable this test & make it pass. (IDS-571)
-    // public void testMethodOverloading() throws Exception {
-    // String expression="DBLanguageParserDummyClass.overloadedStaticMethod()";
-    // String resultExpression="DBLanguageParserDummyClass.overloadedStaticMethod()";
-    // check(expression, resultExpression, int.class, new String[]{});
-    //
-    // expression="DBLanguageParserDummyClass.overloadedStaticMethod(`test`)";
-    // resultExpression="DBLanguageParserDummyClass.overloadedStaticMethod(\"test\")";
-    // check(expression, resultExpression, int.class, new String[]{});
-    //
-    // expression="DBLanguageParserDummyClass.overloadedStaticMethod(`test1`, `test2`)";
-    // resultExpression="DBLanguageParserDummyClass.overloadedStaticMethod(\"test1\", \"test2\")";
-    // check(expression, resultExpression, int.class, new String[]{});
-    //
-    // expression="myDummyClass.overloadedMethod()";
-    // resultExpression="myDummyClass.overloadedMethod()";
-    // check(expression, resultExpression, int.class, new String[]{"myDummyClass"});
-    //
-    // expression="myDummyClass.overloadedMethod(`test`)";
-    // resultExpression="myDummyClass.overloadedMethod(\"test\")";
-    // check(expression, resultExpression, int.class, new String[]{"myDummyClass"});
-    //
-    // expression="myDummyClass.overloadedMethod(`test1`, `test2`)";
-    // resultExpression="myDummyClass.overloadedMethod(\"test1\", \"test2\")";
-    // check(expression, resultExpression, int.class, new String[]{"myDummyClass"});
-    //
-    // expression="myClosure.call()";
-    // resultExpression="myClosure.call()";
-    // check(expression, resultExpression, Object.class, new String[]{"myClosure"});
-    //
-    // expression="myClosure.call(1)";
-    // resultExpression="myClosure.call(1)";
-    // check(expression, resultExpression, Object.class, new String[]{"myClosure"});
-    //
-    // expression="myClosure.call(1, 2, 3)";
-    // resultExpression="myClosure.call(1, 2, 3)";
-    // check(expression, resultExpression, Object.class, new String[]{"myClosure"});
-    // }
+    public void testMethodOverloading() throws Exception {
+        String expression = "DBLanguageParserDummyClass.overloadedStaticMethod()";
+        String resultExpression = "DBLanguageParserDummyClass.overloadedStaticMethod()";
+        check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "DBLanguageParserDummyClass.overloadedStaticMethod(`test`)";
+        resultExpression = "DBLanguageParserDummyClass.overloadedStaticMethod(\"test\")";
+        check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "DBLanguageParserDummyClass.overloadedStaticMethod(`test1`, `test2`)";
+        resultExpression = "DBLanguageParserDummyClass.overloadedStaticMethod(\"test1\", \"test2\")";
+        check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "myDummyClass.overloadedMethod()";
+        resultExpression = "myDummyClass.overloadedMethod()";
+        check(expression, resultExpression, int.class, new String[] {"myDummyClass"});
+
+        expression = "myDummyClass.overloadedMethod(`test`)";
+        resultExpression = "myDummyClass.overloadedMethod(\"test\")";
+        check(expression, resultExpression, int.class, new String[] {"myDummyClass"});
+
+        expression = "myDummyClass.overloadedMethod(`test1`, `test2`)";
+        resultExpression = "myDummyClass.overloadedMethod(\"test1\", \"test2\")";
+        check(expression, resultExpression, int.class, new String[] {"myDummyClass"});
+
+        expression = "myClosure.call()";
+        resultExpression = "myClosure.call()";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+
+        expression = "myClosure.call(1)";
+        resultExpression = "myClosure.call(1)";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+
+        expression = "myClosure.call(1, 2, 3)";
+        resultExpression = "myClosure.call(1, 2, 3)";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+    }
 
     /**
      * Test implicit argument type conversions (e.g. primitive casts and converting DbArrays to Java arrays)
@@ -1460,6 +1460,39 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myIntObj"});
     }
 
+    public void testUnboxAndWiden() throws Exception {
+        // ensure we can find the original method
+        String expression = "io.deephaven.db.tables.utils.DBTimeUtils.plus(myDBDateTime, myLong)";
+        String resultExpression = "io.deephaven.db.tables.utils.DBTimeUtils.plus(myDBDateTime, myLong)";
+        check(expression, resultExpression, DBDateTime.class, new String[] {"myDBDateTime", "myLong"});
+
+        // check long unbox
+        expression = "io.deephaven.db.tables.utils.DBTimeUtils.plus(myDBDateTime, myLongObj)";
+        resultExpression = "io.deephaven.db.tables.utils.DBTimeUtils.plus(myDBDateTime, myLongObj.longValue())";
+        check(expression, resultExpression, DBDateTime.class, new String[] {"myDBDateTime", "myLongObj"});
+
+        // check int widen
+        expression = "io.deephaven.db.tables.utils.DBTimeUtils.plus(myDBDateTime, myInt)";
+        resultExpression = "io.deephaven.db.tables.utils.DBTimeUtils.plus(myDBDateTime, longCast(myInt))";
+        check(expression, resultExpression, DBDateTime.class, new String[] {"myDBDateTime", "myInt"});
+
+        // check int unbox and widen
+        expression = "io.deephaven.db.tables.utils.DBTimeUtils.plus(myDBDateTime, myIntObj)";
+        resultExpression = "io.deephaven.db.tables.utils.DBTimeUtils.plus(myDBDateTime, myIntObj.longValue())";
+        check(expression, resultExpression, DBDateTime.class, new String[] {"myDBDateTime", "myIntObj"});
+
+        // check vararg widen
+        expression = "testImplicitConversion1(myFloat, myFloat)";
+        resultExpression = "testImplicitConversion1(new double[]{ doubleCast(myFloat), doubleCast(myFloat) })";
+        check(expression, resultExpression, double[].class, new String[] {"myFloat"});
+
+        // check vararg unbox and widen
+        expression = "testImplicitConversion1(myFloatObj, myFloatObj)";
+        resultExpression =
+                "testImplicitConversion1(new double[]{ myFloatObj.doubleValue(), myFloatObj.doubleValue() })";
+        check(expression, resultExpression, double[].class, new String[] {"myFloatObj"});
+    }
+
     public void testEqualsConversion() throws Exception {
         DBLanguageParser.Result result =
                 new DBLanguageParser("1==1", null, null, staticImports, null, null).getResult();
@@ -1637,7 +1670,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, DBDateTime.class, new String[] {});
     }
 
-    public void testIntToLongConverstion() throws Exception {
+    public void testIntToLongConversion() throws Exception {
         String expression = "1+1283209200466";
         String resultExpression = "plus(1, 1283209200466L)";
         check(expression, resultExpression, long.class, new String[] {});

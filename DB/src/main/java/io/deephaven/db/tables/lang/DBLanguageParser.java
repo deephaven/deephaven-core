@@ -547,15 +547,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 paramType = convertDBArray(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
             }
 
-            boolean canAssignWithoutWidening = isAssignableFrom(candidateParamTypes[i], paramType);
-
-            Class<?> maybePrimitive = ClassUtils.wrapperToPrimitive(paramType);
-            boolean canAssignViaUnbox =
-                    maybePrimitive != null && isAssignableFrom(candidateParamTypes[i], maybePrimitive);
-            boolean canAssignWithWidening = maybePrimitive != null && candidateParamTypes[i].isPrimitive()
-                    && isWideningPrimitiveConversion(maybePrimitive, candidateParamTypes[i]);
-
-            if (!canAssignWithoutWidening && !canAssignViaUnbox && !canAssignWithWidening) {
+            if (!canAssignType(candidateParamTypes[i], paramType)) {
                 return;
             }
         }
@@ -570,7 +562,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             }
 
             if (candidateParamTypes.length == paramTypes.length && paramType.isArray()) {
-                if (!isAssignableFrom(candidateParamTypes[candidateParamTypes.length - 1], paramType)) {
+                if (!canAssignType(candidateParamTypes[candidateParamTypes.length - 1], paramType)) {
                     return;
                 }
             } else {
@@ -584,7 +576,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                                 parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
                     }
 
-                    if (!isAssignableFrom(lastClass, paramType)) {
+                    if (!canAssignType(lastClass, paramType)) {
                         return;
                     }
                 }
@@ -592,6 +584,23 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         }
 
         accepted.add(candidate);
+    }
+
+    private static boolean canAssignType(final Class<?> candidateParamType, final Class<?> paramType) {
+        boolean canAssignWithoutUnbox = isAssignableFrom(candidateParamType, paramType);
+
+        if (paramType.isArray() && candidateParamType.isArray()
+                && canAssignType(candidateParamType.getComponentType(), paramType.getComponentType())) {
+            return true;
+        }
+
+        Class<?> maybePrimitive = ClassUtils.wrapperToPrimitive(paramType);
+        boolean canAssignViaUnbox = maybePrimitive != null
+                && isAssignableFrom(candidateParamType, maybePrimitive);
+        boolean canAssignWithUnboxWidening = maybePrimitive != null && candidateParamType.isPrimitive()
+                && isWideningPrimitiveConversion(maybePrimitive, candidateParamType);
+
+        return canAssignWithoutUnbox || canAssignViaUnbox || canAssignWithUnboxWidening;
     }
 
     private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2) {
@@ -629,7 +638,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         }
 
         for (int i = 0; i < e1ParamTypes.length; i++) {
-            if (!isAssignableFrom(e1ParamTypes[i], e2ParamTypes[i]) && !isDbArray(e2ParamTypes[i])) {
+            if (!canAssignType(e1ParamTypes[i], e2ParamTypes[i]) && !isDbArray(e2ParamTypes[i])) {
                 return false;
             }
         }
@@ -825,7 +834,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (executable.isVarArgs()) {
             Class<?> varArgType = argumentTypes[nArgs - 1].getComponentType();
 
-            boolean anyExpressionTypesArePrimitive = true;
+            boolean allExpressionTypesArePrimitive = true;
 
             final int nArgExpressions = expressionTypes.length;
             final int lastArgIndex = expressions.length - 1;
@@ -838,24 +847,33 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                         new NodeList<>(expressions[lastArgIndex]));
                 expressionTypes[lastArgIndex] = convertDBArray(expressionTypes[lastArgIndex],
                         parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);
-                anyExpressionTypesArePrimitive = false;
+                allExpressionTypesArePrimitive = false;
             } else {
                 for (int ei = nArgs - 1; ei < nArgExpressions; ei++) {
                     // iterate over the vararg argument expressions
-                    if (varArgType != expressionTypes[ei] && varArgType.isPrimitive()
-                            && expressionTypes[ei].isPrimitive()) {
+                    if (varArgType == expressionTypes[ei]) {
+                        continue;
+                    } else if (argumentTypes[nArgs - 1] == expressionTypes[ei]) {
+                        allExpressionTypesArePrimitive = false;
+                        continue;
+                    }
+
+                    if (varArgType.isPrimitive() && expressionTypes[ei].isPrimitive()) {
                         // cast primitives to the appropriate type
                         expressions[ei] = new CastExpr(
                                 new PrimitiveType(PrimitiveType.Primitive
                                         .valueOf(varArgType.getSimpleName().toUpperCase())),
                                 expressions[ei]);
+                    } else if (unboxArguments && varArgType.isPrimitive() && !expressionTypes[ei].isPrimitive()) {
+                        expressions[ei] = new MethodCallExpr(expressions[ei],
+                                varArgType.getSimpleName() + "Value", new NodeList<>());
+                    } else if (!expressionTypes[ei].isPrimitive()) {
+                        allExpressionTypesArePrimitive = false;
                     }
-
-                    anyExpressionTypesArePrimitive &= expressionTypes[ei].isPrimitive();
                 }
             }
 
-            if (varArgType.isPrimitive() && anyExpressionTypesArePrimitive) {
+            if (varArgType.isPrimitive() && allExpressionTypesArePrimitive) {
                 // there are ambiguous oddities with primitive varargs, so if its primitive lets just box it ourselves
                 Expression[] temp = new Expression[nArgs];
                 Expression[] varArgExpressions = new Expression[nArgExpressions - nArgs + 1];
