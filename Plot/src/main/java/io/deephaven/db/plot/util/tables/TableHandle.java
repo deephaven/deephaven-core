@@ -59,21 +59,4 @@ public class TableHandle implements Serializable {
     public void setTable(Table table) {
         this.table = table;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        TableHandle that = (TableHandle) o;
-
-        return table == that.table;
-    }
-
-    @Override
-    public int hashCode() {
-        return table.hashCode();
-    }
 }
