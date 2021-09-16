@@ -1491,6 +1491,44 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression =
                 "testImplicitConversion1(new double[]{ myFloatObj.doubleValue(), myFloatObj.doubleValue() })";
         check(expression, resultExpression, double[].class, new String[] {"myFloatObj"});
+
+        // check object array super casting
+        expression = resultExpression = "testImplicitConversionArraySuper(new Integer[]{ 1, 2, 3, 4 })";
+        check(expression, resultExpression, Number[].class, new String[] {});
+
+        // check object array super casting
+        expression = resultExpression = "testImplicitConversionNestedArraySuper(new Integer[][]{ new Integer[]{ 1 } })";
+        check(expression, resultExpression, Number[][].class, new String[] {});
+
+        // See (deephaven-core#1201): do not widen primitive array elements
+        try {
+            expression = resultExpression = "testImplicitConversion1(new float[]{ myFloat })";
+            check(expression, resultExpression, double[].class, new String[] {"myFloat"});
+            fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
+        } catch (DBLanguageParser.QueryLanguageParseException err) {
+            Assert.eqTrue(err.getMessage().contains("Cannot find method"),
+                    "err.getMessage().contains(\"Cannot find method\")");
+        }
+
+        // See (deephaven-core#1201): do not unbox array elements
+        try {
+            expression = resultExpression = "testImplicitConversion1(new Double[]{ myDoubleObj })";
+            check(expression, resultExpression, double[].class, new String[] {"myDoubleObj"});
+            fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
+        } catch (DBLanguageParser.QueryLanguageParseException err) {
+            Assert.eqTrue(err.getMessage().contains("Cannot find method"),
+                    "err.getMessage().contains(\"Cannot find method\")");
+        }
+
+        // See (deephaven-core#1201): do not unbox and widen array elements
+        try {
+            expression = resultExpression = "testImplicitConversion1(new Float[]{ myFloatObj })";
+            check(expression, resultExpression, double[].class, new String[] {"myFloatObj"});
+            fail("Should have thrown a DBLanguageParser.QueryLanguageParseException");
+        } catch (DBLanguageParser.QueryLanguageParseException err) {
+            Assert.eqTrue(err.getMessage().contains("Cannot find method"),
+                    "err.getMessage().contains(\"Cannot find method\")");
+        }
     }
 
     public void testEqualsConversion() throws Exception {
@@ -2170,6 +2208,14 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     }
 
     public static Object[] testImplicitConversion5(DbArrayBase... o) {
+        return o;
+    }
+
+    public static Number[] testImplicitConversionArraySuper(Number... o) {
+        return o;
+    }
+
+    public static Number[][] testImplicitConversionNestedArraySuper(Number[]... o) {
         return o;
     }
 

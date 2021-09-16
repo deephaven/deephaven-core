@@ -587,20 +587,17 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     private static boolean canAssignType(final Class<?> candidateParamType, final Class<?> paramType) {
-        boolean canAssignWithoutUnbox = isAssignableFrom(candidateParamType, paramType);
-
-        if (paramType.isArray() && candidateParamType.isArray()
-                && canAssignType(candidateParamType.getComponentType(), paramType.getComponentType())) {
+        if (isAssignableFrom(candidateParamType, paramType)) {
             return true;
         }
 
-        Class<?> maybePrimitive = ClassUtils.wrapperToPrimitive(paramType);
-        boolean canAssignViaUnbox = maybePrimitive != null
-                && isAssignableFrom(candidateParamType, maybePrimitive);
-        boolean canAssignWithUnboxWidening = maybePrimitive != null && candidateParamType.isPrimitive()
-                && isWideningPrimitiveConversion(maybePrimitive, candidateParamType);
+        final Class<?> maybePrimitive = ClassUtils.wrapperToPrimitive(paramType);
+        if (maybePrimitive != null && isAssignableFrom(candidateParamType, maybePrimitive)) {
+            return true;
+        }
 
-        return canAssignWithoutUnbox || canAssignViaUnbox || canAssignWithUnboxWidening;
+        return maybePrimitive != null && candidateParamType.isPrimitive()
+                && isWideningPrimitiveConversion(maybePrimitive, candidateParamType);
     }
 
     private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2) {
@@ -848,13 +845,13 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 expressionTypes[lastArgIndex] = convertDBArray(expressionTypes[lastArgIndex],
                         parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);
                 allExpressionTypesArePrimitive = false;
+            } else if (nArgExpressions == nArgs
+                    && isAssignableFrom(argumentTypes[lastArgIndex], expressionTypes[lastArgIndex])) {
+                allExpressionTypesArePrimitive = false;
             } else {
                 for (int ei = nArgs - 1; ei < nArgExpressions; ei++) {
                     // iterate over the vararg argument expressions
                     if (varArgType == expressionTypes[ei]) {
-                        continue;
-                    } else if (argumentTypes[nArgs - 1] == expressionTypes[ei]) {
-                        allExpressionTypesArePrimitive = false;
                         continue;
                     }
 
