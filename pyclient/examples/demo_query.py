@@ -4,7 +4,7 @@
 """Demo how to build and run a query on a Deephaven server."""
 import pandas as pd
 
-from examples.demo_import import import_taxi_records
+from examples.import_test_data import import_taxi_records
 from pydeephaven import Session, Table
 
 

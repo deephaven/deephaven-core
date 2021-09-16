@@ -4,7 +4,7 @@
 """ Demo how to merge tables in Deephaven."""
 import pandas as pd
 
-from examples.demo_import import import_taxi_records
+from examples.import_test_data import import_taxi_records
 from examples.demo_query import demo_query
 from examples.demo_table_ops import demo_chained_table_ops
 from pydeephaven import Session

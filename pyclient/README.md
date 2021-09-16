@@ -22,6 +22,16 @@ $ python3 setup.py bdist_wheel
 ## Run tests
 ``` shell
 $ python3 -m unittest discover tests
+
+```
+## Run examples
+``` shell
+$ python3 -m examples.demo_table_ops
+$ python3 -m examples.demo_query
+$ python3 -m examples.demo_run_script
+$ python3 -m examples.demo_merge_tables
+$ python3 -m examples.demo_asof_join
+
 ```
 ## Install
 ``` shell
