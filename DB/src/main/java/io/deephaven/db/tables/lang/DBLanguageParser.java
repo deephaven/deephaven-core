@@ -25,6 +25,7 @@ import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.DeephavenException;
+import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jpy.PyObject;
 
@@ -527,68 +528,76 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             final EXECUTABLE_TYPE candidate,
             final String name, final Class<?>[] paramTypes,
             final Class<?>[][] parameterizedTypes) {
-        if (candidate.getName().equals(name)) {
-            final Class<?>[] candidateParamTypes = candidate.getParameterTypes();
+        if (!candidate.getName().equals(name)) {
+            return;
+        }
 
-            if (candidate.isVarArgs() ? candidateParamTypes.length > paramTypes.length + 1
-                    : candidateParamTypes.length != paramTypes.length) {
+        final Class<?>[] candidateParamTypes = candidate.getParameterTypes();
+
+        if (candidate.isVarArgs() ? candidateParamTypes.length > paramTypes.length + 1
+                : candidateParamTypes.length != paramTypes.length) {
+            return;
+        }
+
+        int lengthWithoutVarArg = candidate.isVarArgs() ? candidateParamTypes.length - 1 : candidateParamTypes.length;
+        for (int i = 0; i < lengthWithoutVarArg; i++) {
+            Class<?> paramType = paramTypes[i];
+
+            if (isDbArray(paramType) && candidateParamTypes[i].isArray()) {
+                paramType = convertDBArray(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
+            }
+
+            if (!canAssignType(candidateParamTypes[i], paramType)) {
                 return;
             }
+        }
 
-            boolean acceptable = true;
+        // If the paramTypes includes 1+ varArgs check the classes match -- no need to check if there are 0 varArgs
+        if (candidate.isVarArgs() && paramTypes.length >= candidateParamTypes.length) {
+            Class<?> paramType = paramTypes[candidateParamTypes.length - 1];
 
-            for (int i = 0; i < (candidate.isVarArgs() ? candidateParamTypes.length - 1
-                    : candidateParamTypes.length); i++) {
-                Class<?> paramType = paramTypes[i];
-
-                if (isDbArray(paramType) && candidateParamTypes[i].isArray()) {
-                    paramType =
-                            convertDBArray(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
-                }
-
-                if (!isAssignableFrom(candidateParamTypes[i], paramType)) {
-                    acceptable = false;
-                    break;
-                }
+            if (isDbArray(paramType) && candidateParamTypes[candidateParamTypes.length - 1].isArray()) {
+                paramType = convertDBArray(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
+                        : parameterizedTypes[candidateParamTypes.length - 1][0]);
             }
 
-            // If the paramTypes includes 1+ varArgs check the classes match -- no need to check if there are 0 varArgs
-            if (candidate.isVarArgs() && paramTypes.length >= candidateParamTypes.length) {
-                Class<?> paramType = paramTypes[candidateParamTypes.length - 1];
-
-                if (isDbArray(paramType) && candidateParamTypes[candidateParamTypes.length - 1].isArray()) {
-                    paramType =
-                            convertDBArray(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
-                                    : parameterizedTypes[candidateParamTypes.length - 1][0]);
+            if (candidateParamTypes.length == paramTypes.length && paramType.isArray()) {
+                if (!canAssignType(candidateParamTypes[candidateParamTypes.length - 1], paramType)) {
+                    return;
                 }
+            } else {
+                final Class<?> lastClass = candidateParamTypes[candidateParamTypes.length - 1].getComponentType();
 
-                if (candidateParamTypes.length == paramTypes.length && paramType.isArray()) {
-                    if (!isAssignableFrom(candidateParamTypes[candidateParamTypes.length - 1], paramType)) {
-                        acceptable = false;
+                for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
+                    paramType = paramTypes[i];
+
+                    if (isDbArray(paramType) && lastClass.isArray()) {
+                        paramType = convertDBArray(paramType,
+                                parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
                     }
-                } else {
-                    final Class<?> lastClass = candidateParamTypes[candidateParamTypes.length - 1].getComponentType();
 
-                    for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
-                        paramType = paramTypes[i];
-
-                        if (isDbArray(paramType) && lastClass.isArray()) {
-                            paramType = convertDBArray(paramType,
-                                    parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
-                        }
-
-                        if (!isAssignableFrom(lastClass, paramType)) {
-                            acceptable = false;
-                            break;
-                        }
+                    if (!canAssignType(lastClass, paramType)) {
+                        return;
                     }
                 }
-            }
-
-            if (acceptable) {
-                accepted.add(candidate);
             }
         }
+
+        accepted.add(candidate);
+    }
+
+    private static boolean canAssignType(final Class<?> candidateParamType, final Class<?> paramType) {
+        if (isAssignableFrom(candidateParamType, paramType)) {
+            return true;
+        }
+
+        final Class<?> maybePrimitive = ClassUtils.wrapperToPrimitive(paramType);
+        if (maybePrimitive != null && isAssignableFrom(candidateParamType, maybePrimitive)) {
+            return true;
+        }
+
+        return maybePrimitive != null && candidateParamType.isPrimitive()
+                && isWideningPrimitiveConversion(maybePrimitive, candidateParamType);
     }
 
     private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2) {
@@ -626,7 +635,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         }
 
         for (int i = 0; i < e1ParamTypes.length; i++) {
-            if (!isAssignableFrom(e1ParamTypes[i], e2ParamTypes[i]) && !isDbArray(e2ParamTypes[i])) {
+            if (!canAssignType(e1ParamTypes[i], e2ParamTypes[i]) && !isDbArray(e2ParamTypes[i])) {
                 return false;
             }
         }
@@ -822,7 +831,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (executable.isVarArgs()) {
             Class<?> varArgType = argumentTypes[nArgs - 1].getComponentType();
 
-            boolean anyExpressionTypesArePrimitive = true;
+            boolean allExpressionTypesArePrimitive = true;
 
             final int nArgExpressions = expressionTypes.length;
             final int lastArgIndex = expressions.length - 1;
@@ -835,24 +844,33 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                         new NodeList<>(expressions[lastArgIndex]));
                 expressionTypes[lastArgIndex] = convertDBArray(expressionTypes[lastArgIndex],
                         parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);
-                anyExpressionTypesArePrimitive = false;
+                allExpressionTypesArePrimitive = false;
+            } else if (nArgExpressions == nArgs
+                    && isAssignableFrom(argumentTypes[lastArgIndex], expressionTypes[lastArgIndex])) {
+                allExpressionTypesArePrimitive = false;
             } else {
                 for (int ei = nArgs - 1; ei < nArgExpressions; ei++) {
                     // iterate over the vararg argument expressions
-                    if (varArgType != expressionTypes[ei] && varArgType.isPrimitive()
-                            && expressionTypes[ei].isPrimitive()) {
+                    if (varArgType == expressionTypes[ei]) {
+                        continue;
+                    }
+
+                    if (varArgType.isPrimitive() && expressionTypes[ei].isPrimitive()) {
                         // cast primitives to the appropriate type
                         expressions[ei] = new CastExpr(
                                 new PrimitiveType(PrimitiveType.Primitive
                                         .valueOf(varArgType.getSimpleName().toUpperCase())),
                                 expressions[ei]);
+                    } else if (unboxArguments && varArgType.isPrimitive() && !expressionTypes[ei].isPrimitive()) {
+                        expressions[ei] = new MethodCallExpr(expressions[ei],
+                                varArgType.getSimpleName() + "Value", new NodeList<>());
+                    } else if (!expressionTypes[ei].isPrimitive()) {
+                        allExpressionTypesArePrimitive = false;
                     }
-
-                    anyExpressionTypesArePrimitive &= expressionTypes[ei].isPrimitive();
                 }
             }
 
-            if (varArgType.isPrimitive() && anyExpressionTypesArePrimitive) {
+            if (varArgType.isPrimitive() && allExpressionTypesArePrimitive) {
                 // there are ambiguous oddities with primitive varargs, so if its primitive lets just box it ourselves
                 Expression[] temp = new Expression[nArgs];
                 Expression[] varArgExpressions = new Expression[nArgExpressions - nArgs + 1];
