@@ -36,7 +36,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ha
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
@@ -419,41 +418,40 @@ public class WorkerConnection {
                     info.notifyConnectionError(new ResponseStreamWrapper.Status() {
                         @Override
                         public double getCode() {
-                            return 14; // UNAVAILABLE
+                            return Code.Unavailable;
                         }
 
+                        @SuppressWarnings("StringConcatenationInLoop")
                         @Override
                         public String getDetails() {
-                            final TerminationNotificationResponse response = (TerminationNotificationResponse) success;
-                            if (!response.getAbnormalTermination()) {
+                            if (!success.getAbnormalTermination()) {
                                 return "Server exited normally.";
                             }
 
-                            final StringBuilder retval;
-                            if (!response.getReason().isEmpty()) {
-                                retval = new StringBuilder(response.getReason());
+                            String retval;
+                            if (!success.getReason().isEmpty()) {
+                                retval = success.getReason();
                             } else {
-                                retval = new StringBuilder("Server exited abnormally.");
+                                retval = "Server exited abnormally.";
                             }
 
-                            final JsArray<StackTrace> traces = response.getStackTracesList();
+                            final JsArray<StackTrace> traces = success.getStackTracesList();
                             for (int ii = 0; ii < traces.length; ++ii) {
                                 final StackTrace trace = traces.getAt(ii);
-                                retval.append("\n\n");
+                                retval += "\n\n";
                                 if (ii != 0) {
-                                    retval.append("Caused By: ").append(trace.getType()).append(": ")
-                                            .append(trace.getMessage());
+                                    retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
                                 } else {
-                                    retval.append(trace.getType()).append(": ").append(trace.getMessage());
+                                    retval += trace.getType() + ": " + trace.getMessage();
                                 }
 
                                 final JsArray<String> elements = trace.getElementsList();
                                 for (int jj = 0; jj < elements.length; ++jj) {
-                                    retval.append("\n").append(elements.getAt(jj));
+                                    retval += "\n" + elements.getAt(jj);
                                 }
                             }
 
-                            return retval.toString();
+                            return retval;
                         }
 
                         @Override

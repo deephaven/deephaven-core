@@ -6,9 +6,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.util.auth.AuthContext;
-import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -19,7 +19,12 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -94,16 +99,12 @@ public class SessionService {
     private static TerminationNotificationResponse.StackTrace transformToProtoBuf(@NotNull final Throwable throwable) {
         return TerminationNotificationResponse.StackTrace.newBuilder()
                 .setType(throwable.getClass().getName())
-                .setMessage(stringifyIfNull(throwable.getMessage()))
+                .setMessage(Objects.toString(throwable.getMessage()))
                 .addAllElements(Arrays.stream(throwable.getStackTrace())
                         .limit(MAX_STACK_TRACE_DEPTH)
                         .map(StackTraceElement::toString)
                         .collect(Collectors.toList()))
                 .build();
-    }
-
-    private static String stringifyIfNull(@Nullable String value) {
-        return value == null ? "null" : value;
     }
 
     public synchronized void onShutdown() {
