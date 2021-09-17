@@ -1,0 +1,30 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+Docker.registerDockerTask(project, 'buildPyClient') {
+    copyIn {
+        from('requirements.txt') {
+            into 'project'
+        }
+        from('setup.py') {
+            into 'project'
+        }
+        from('README.md') {
+            into 'project'
+        }
+        from('pydeephaven') {
+            into 'project/pydeephaven'
+        }
+    }
+    dockerfile {
+        from('docker.io/library/python:3.7.10')
+        copyFile('project', '/project')
+        workingDir('/project')
+        runCommand('python3 setup.py bdist_wheel')
+    }
+    containerOutPath = '/project/dist'
+    copyOut {
+        into 'build/wheel'
+    }
+}
