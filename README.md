@@ -30,9 +30,9 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 
 ## Run Deephaven
 
-This section is a quick start guide for running Deephaven from pre-built images.  Almost all users will want to run Deephaven using pre-built images.  It is the easiest way to deploy.  For detailed instructions, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/quickstart/launch-pre-built).
+This section is a quick start guide for running Deephaven from pre-built images.  Almost all users will want to run Deephaven using pre-built images.  It is the easiest way to deploy.  For detailed instructions, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart).
 
-Developers interested in tinkering with and modifying source code should build from the source code.  For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/how-to-guides/launch-build).
+Developers interested in tinkering with and modifying source code should build from the source code. For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/how-to-guides/launch-build).
 
 If you are not sure which of the two is right for you, use the pre-built images.
 
@@ -56,7 +56,7 @@ docker run hello-world
 
 > :warning: **On Windows, all commands must be run inside a WSL 2 terminal.**
 
-If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/quickstart/launch-pre-built/#prerequisites) for installation instructions.
+If any dependencies are missing or unsupported versions are installed, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart#prerequisites) for installation instructions.
 
 
 ### Create deployment
@@ -166,7 +166,7 @@ Once Deephaven is running, you can launch a Deephaven IDE in your web browser.  
 
 ![alt_text](docs/images/ide_startup.png "Deephaven IDE")
 
-# First Query
+# First query
 
 From the Deephaven IDE, you can perform your first query.
 
@@ -198,6 +198,7 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 
 ## Resources
+
 * [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
 * [Discussions](https://github.com/deephaven/deephaven-core/discussions)
 * [deephaven.io](https://deephaven.io)
