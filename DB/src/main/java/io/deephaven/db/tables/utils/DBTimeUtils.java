@@ -378,7 +378,7 @@ public class DBTimeUtils {
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
      *         </P>
-     *         If the second value is greater than the first value, the result will be negative.
+     *         If the first value is greater than the second value, the result will be negative.
      */
     @SuppressWarnings("WeakerAccess")
     public static long diffNanos(DBDateTime d1, DBDateTime d2) {
@@ -399,7 +399,7 @@ public class DBTimeUtils {
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
      *         </P>
-     *         If the second value is greater than the first value, the result will be negative.
+     *         If the first value is greater than the second value, the result will be negative.
      */
     public static double diffYear(DBDateTime start, DBDateTime end) {
         if (start == null || end == null) {
@@ -423,7 +423,7 @@ public class DBTimeUtils {
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
      *         </P>
-     *         If the second value is greater than the first value, the result will be negative.
+     *         If the first value is greater than the second value, the result will be negative.
      */
     @SuppressWarnings("WeakerAccess")
     public static double diffDay(DBDateTime start, DBDateTime end) {
