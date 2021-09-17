@@ -15,6 +15,7 @@ import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.VariableProvider;
 import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.figures.FigureWidgetTranslator;
+import io.deephaven.grpc_api.session.SessionCloseableObserver;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
@@ -33,13 +34,11 @@ import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.*;
-import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.io.Closeable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -402,40 +401,16 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    private class LogBufferStreamAdapter implements Closeable, LogBufferRecordListener {
-        private final SessionState session;
+    private static class LogBufferStreamAdapter extends SessionCloseableObserver<LogSubscriptionData>
+            implements LogBufferRecordListener {
         private final LogSubscriptionRequest request;
-        private final StreamObserver<LogSubscriptionData> responseObserver;
-        private boolean isClosed = false;
 
         public LogBufferStreamAdapter(
                 final SessionState session,
                 final LogSubscriptionRequest request,
                 final StreamObserver<LogSubscriptionData> responseObserver) {
-            this.session = session;
+            super(session, responseObserver);
             this.request = request;
-            this.responseObserver = responseObserver;
-            session.addOnCloseCallback(this);
-            ((ServerCallStreamObserver<LogSubscriptionData>) responseObserver).setOnCancelHandler(this::tryClose);
-        }
-
-        @Override
-        public void close() {
-            synchronized (this) {
-                if (isClosed) {
-                    return;
-                }
-                isClosed = true;
-            }
-
-            safelyExecute(() -> logBuffer.unsubscribe(this));
-            safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
-        }
-
-        private void tryClose() {
-            if (session.removeOnCloseCallback(this)) {
-                close();
-            }
         }
 
         @Override
@@ -465,9 +440,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 synchronized (responseObserver) {
                     responseObserver.onNext(payload);
                 }
-            } catch (Throwable t) {
+            } catch (Throwable ignored) {
                 // we are ignoring exceptions here deliberately, and just shutting down
-                tryClose();
+                close();
             }
         }
     }

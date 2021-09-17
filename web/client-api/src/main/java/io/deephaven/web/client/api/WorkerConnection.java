@@ -1,13 +1,20 @@
 package io.deephaven.web.client.api;
 
-import elemental2.core.*;
+import elemental2.core.JsArray;
+import elemental2.core.JsSet;
+import elemental2.core.JsWeakMap;
+import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.*;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Buffer;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.MetadataVersion;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
@@ -25,14 +32,20 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_se
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotification;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotificationRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FetchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
@@ -52,7 +65,13 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
-import io.deephaven.web.shared.data.*;
+import io.deephaven.web.shared.data.ConnectToken;
+import io.deephaven.web.shared.data.DeltaUpdates;
+import io.deephaven.web.shared.data.InitialTableDefinition;
+import io.deephaven.web.shared.data.LogItem;
+import io.deephaven.web.shared.data.TableMapHandle;
+import io.deephaven.web.shared.data.TableSnapshot;
+import io.deephaven.web.shared.data.TableSubscriptionRequest;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.ide.VariableType;
@@ -224,6 +243,8 @@ public class WorkerConnection {
                 }).then(handshakeResponse -> {
                     // start the reauth cycle
                     authUpdate(handshakeResponse);
+                    // subscribe to fatal errors
+                    subscribeToTerminationNotification();
 
                     state = State.Connected;
 
@@ -306,12 +327,13 @@ public class WorkerConnection {
                 });
     }
 
-    public void checkStatus(ResponseStreamWrapper.Status status) {
+    public boolean checkStatus(ResponseStreamWrapper.Status status) {
         // TODO provide simpler hooks to retry auth, restart the stream
         final long now = System.currentTimeMillis();
         if (status.isOk()) {
             // success, ignore
             lastSuccessResponseTime = now;
+            return true;
         } else if (status.getCode() == Code.Unauthenticated) {
             // TODO re-create session once?
             // for now treating this as fatal, UI should encourage refresh to try again
@@ -323,12 +345,16 @@ public class WorkerConnection {
             // TODO skip re-authing for now, just backoff and try again
             if (lastSuccessResponseTime == 0) {
                 lastSuccessResponseTime = now;
+                return true;
             } else if (now - lastSuccessResponseTime >= GIVE_UP_TIMEOUT_MS) {
                 // this actually seems to be a problem; likely the worker has unexpectedly exited
                 // UI should encourage refresh to try again (which will probably fail; but at least doesn't look "OK")
                 info.notifyConnectionError(status);
+            } else {
+                return true;
             }
         } // others probably are meaningful to the caller
+        return false;
     }
 
     private void startExportNotificationsStream() {
@@ -375,6 +401,65 @@ public class WorkerConnection {
                 authUpdate(success);
             });
         }, 2500);
+    }
+
+    private void subscribeToTerminationNotification() {
+        sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
+                (fail, success) -> {
+                    if (fail != null) {
+                        if (checkStatus((ResponseStreamWrapper.Status) fail)) {
+                            // restart the termination notification
+                            subscribeToTerminationNotification();
+                            return;
+                        }
+                    }
+
+                    // welp; the server is gone -- let everyone know
+                    info.notifyConnectionError(new ResponseStreamWrapper.Status() {
+                        @Override
+                        public double getCode() {
+                            return Code.Unavailable;
+                        }
+
+                        @SuppressWarnings("StringConcatenationInLoop")
+                        @Override
+                        public String getDetails() {
+                            if (!success.getAbnormalTermination()) {
+                                return "Server exited normally.";
+                            }
+
+                            String retval;
+                            if (!success.getReason().isEmpty()) {
+                                retval = success.getReason();
+                            } else {
+                                retval = "Server exited abnormally.";
+                            }
+
+                            final JsArray<StackTrace> traces = success.getStackTracesList();
+                            for (int ii = 0; ii < traces.length; ++ii) {
+                                final StackTrace trace = traces.getAt(ii);
+                                retval += "\n\n";
+                                if (ii != 0) {
+                                    retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
+                                } else {
+                                    retval += trace.getType() + ": " + trace.getMessage();
+                                }
+
+                                final JsArray<String> elements = trace.getElementsList();
+                                for (int jj = 0; jj < elements.length; ++jj) {
+                                    retval += "\n" + elements.getAt(jj);
+                                }
+                            }
+
+                            return retval;
+                        }
+
+                        @Override
+                        public BrowserHeaders getMetadata() {
+                            return new BrowserHeaders(); // nothing to offer
+                        }
+                    });
+                });
     }
 
     private void notifyLog(LogItem log) {
