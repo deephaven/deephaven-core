@@ -2,6 +2,7 @@ package io.deephaven.grpc_api.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.grpc_api.util.GrpcUtil;
@@ -28,6 +29,12 @@ import java.util.stream.Collectors;
 public class SessionService {
 
     static final long MIN_COOKIE_EXPIRE_MS = 10_000; // 10 seconds
+    private static final int MAX_STACK_TRACE_CAUSAL_DEPTH =
+            Configuration.getInstance().getIntegerForClassWithDefault(SessionService.class,
+                    "maxStackTraceCausedByDepth", 20);
+    private static final int MAX_STACK_TRACE_DEPTH =
+            Configuration.getInstance().getIntegerForClassWithDefault(SessionService.class,
+                    "maxStackTraceDepth", 50);
 
     private final Scheduler scheduler;
     private final SessionState.Factory sessionFactory;
@@ -74,7 +81,7 @@ public class SessionService {
                         .setReason(message);
 
         // TODO (core#801): revisit this error communication to properly match the API Error mode
-        while (throwable != null) {
+        for (int depth = 0; throwable != null && depth < MAX_STACK_TRACE_CAUSAL_DEPTH; ++depth) {
             builder.addStackTraces(transformToProtoBuf(throwable));
             throwable = throwable.getCause();
         }
@@ -89,7 +96,7 @@ public class SessionService {
                 .setType(throwable.getClass().getName())
                 .setMessage(stringifyIfNull(throwable.getMessage()))
                 .addAllElements(Arrays.stream(throwable.getStackTrace())
-                        .limit(50)
+                        .limit(MAX_STACK_TRACE_DEPTH)
                         .map(StackTraceElement::toString)
                         .collect(Collectors.toList()))
                 .build();
