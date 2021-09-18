@@ -34,6 +34,7 @@ import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.qst.table.TableSpec;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -104,6 +105,35 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
             throw new IllegalArgumentException("columnNames cannot be null!");
         }
         return getDefinition().getColumnNameMap().keySet().containsAll(columnNames);
+    }
+
+    /**
+     * Create a BitSet of the requested {@code columnNames}.
+     *
+     * @param columnNames The collection of column names to be checked for inclusion in this table. Must not be
+     *        {@code null}.
+     * @return the bitset
+     * @throws IllegalArgumentException if a given columnName is not found
+     */
+    @AsyncMethod
+    default BitSet getColumnsAsBitSet(final String... columnNames) {
+        if (columnNames == null) {
+            throw new IllegalArgumentException("columnNames cannot be null!");
+        }
+
+        final MutableInt nextOffset = new MutableInt();
+        final Map<String, Integer> offsetMap = getDefinition().getColumnNameMap().keySet().stream()
+                .collect(Collectors.toMap(name -> name, name -> nextOffset.getAndIncrement()));
+
+        final BitSet retVal = new BitSet(offsetMap.size());
+        for (final String columnName : columnNames) {
+            int offset = offsetMap.getOrDefault(columnName, -1);
+            if (offset == -1) {
+                throw new IllegalArgumentException("column '" + columnName + "' not found");
+            }
+            retVal.set(offset);
+        }
+        return retVal;
     }
 
     String DO_NOT_MAKE_REMOTE_ATTRIBUTE = "DoNotMakeRemote";

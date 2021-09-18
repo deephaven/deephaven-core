@@ -171,7 +171,6 @@ public class ConstructSnapshot {
         private Object startConcurrentSnapshot(@NotNull final SnapshotControl control,
                 final long beforeClockValue,
                 final boolean usingPreviousValues) {
-            Assert.assertion(!locked() && !acquiredLock, "!locked() && !acquiredLock");
             final Object enclosingAttemptState = activeConcurrentAttempt;
             activeConcurrentAttempt = new ConcurrentAttemptParameters(control, beforeClockValue, usingPreviousValues);
             ++concurrentSnapshotDepth;
@@ -734,9 +733,9 @@ public class ConstructSnapshot {
      * Make a {@link SnapshotControl} from individual function objects.
      *
      * @param usePreviousValues The {@link UsePreviousValues} to use
-     * 
+     *
      * @param snapshotConsistent The {@link SnapshotConsistent} to use
-     * 
+     *
      * @param snapshotCompletedConsistently The {@link SnapshotCompletedConsistently} to use, or null to use * {@code
      * snapshotConsistent}
      */
@@ -1036,7 +1035,7 @@ public class ConstructSnapshot {
         int numConcurrentAttempts = 0;
 
         final LivenessManager initialLivenessManager = LivenessScopeStack.peek();
-        while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS && !state.locked()) {
+        while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS) {
             ++numConcurrentAttempts;
             final long beforeClockValue = LogicalClock.DEFAULT.currentValue();
             final long attemptStart = System.currentTimeMillis();
@@ -1050,9 +1049,6 @@ public class ConstructSnapshot {
             final boolean usePrev = previousValuesRequested;
             if (LogicalClock.getState(beforeClockValue) == LogicalClock.State.Idle && usePrev) {
                 Assert.statementNeverExecuted("Previous values requested while not updating: " + beforeClockValue);
-            }
-            if (LiveTableMonitor.DEFAULT.isRefreshThread() && usePrev) {
-                Assert.statementNeverExecuted("Previous values requested from a refresh thread: " + beforeClockValue);
             }
 
             final long attemptDurationMillis;

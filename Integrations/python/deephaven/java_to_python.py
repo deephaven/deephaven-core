@@ -420,14 +420,12 @@ def columnToNumpyArray(table, columnName, convertNulls=NULL_CONVERSION.ERROR, fo
 
     """
 
-    if table.isLive():
-        table = freezeTable(table)
-
+    ConstructSnapshot = jpy.get_type("io.deephaven.db.v2.remote.ConstructSnapshot")
+    columnOfInterest = table.getColumnsAsBitSet(columnName)
+    initialSnapshotWrapper = ConstructSnapshot.constructInitialSnapshot(table, table, columnOfInterest, None)
+    columnJavaArray = initialSnapshotWrapper.dataColumns[columnOfInterest.nextSetBit(0)]
     convertNulls = NULL_CONVERSION.validateValue(convertNulls)
-
-    col = table.getColumn(columnName)
-    return convertJavaArray(col.getDirect(), convertNulls=convertNulls, forPandas=forPandas)
-
+    return convertJavaArray(columnJavaArray, convertNulls=convertNulls, forPandas=forPandas)
 
 def columnToSeries(table, columnName, convertNulls=NULL_CONVERSION.ERROR):
     """
