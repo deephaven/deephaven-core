@@ -11,6 +11,7 @@ using deephaven::client::highlevel::TableHandle;
 using deephaven::client::highlevel::SortPair;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
+using deephaven::client::utility::TableMaker;
 
 namespace deephaven {
 namespace client {
@@ -57,21 +58,20 @@ TEST_CASE("Sort demo table", "[sort]") {
 
 TEST_CASE("Sort temp table", "[sort]") {
   auto tm = TableMakerForTests::create();
-  auto table = tm.table();
 
   std::vector<int32_t> intData0{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
   std::vector<int32_t> intData1{0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7};
   std::vector<int32_t> intData2{0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3};
   std::vector<int32_t> intData3{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
 
-  TableWizard w;
-  w.addColumn("IntValue0", intData0);
-  w.addColumn("IntValue1", intData1);
-  w.addColumn("IntValue2", intData2);
-  w.addColumn("IntValue3", intData3);
+  TableMaker maker;
+  maker.addColumn("IntValue0", intData0);
+  maker.addColumn("IntValue1", intData1);
+  maker.addColumn("IntValue2", intData2);
+  maker.addColumn("IntValue3", intData3);
 
   std::string tableName("sortData");
-  auto tempTable = w.makeTable(tm.client().getManager(), tableName);
+  auto tempTable = maker.makeTable(tm.client().getManager());
 
   auto iv0 = tempTable.getNumCol("IntValue0");
   auto iv1 = tempTable.getNumCol("IntValue1");

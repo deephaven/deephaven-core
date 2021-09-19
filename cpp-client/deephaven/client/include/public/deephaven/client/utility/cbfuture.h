@@ -1,9 +1,12 @@
+/*
+ * Copyright (c) 2016-2020 Deephaven Data Labs and Patent Pending
+ */
 #pragma once
 
 #include <exception>
 #include <memory>
 #include <vector>
-#include <absl/types/optional.h>
+#include <optional>
 #include "deephaven/client/utility/callbacks.h"
 
 namespace deephaven {
@@ -89,7 +92,7 @@ private:
     return value_.has_value() || eptr_ != nullptr;
   }
 
-  absl::optional<T> value_;
+  std::optional<T> value_;
   std::vector<std::shared_ptr<SFCallback<const T&>>> callbacks_;
 };
 }

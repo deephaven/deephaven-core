@@ -104,6 +104,7 @@ public:
   arrow::flight::FlightClient *flightClient() const { return flightClient_.get(); }
 
   Ticket newTicket();
+  std::tuple<Ticket, arrow::flight::FlightDescriptor> newTicketAndFlightDescriptor();
 
   void setAuthentication(std::string metadataHeader, std::string sessionToken);
 

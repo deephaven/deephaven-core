@@ -164,7 +164,7 @@ BooleanExpression operator>(const NumericExpression &lhs, const NumericExpressio
 
 StringExpression::StringExpression(const char *value) :
     StringExpression(impl::StringExpressionImpl::createLiteral(value)) {}
-StringExpression::StringExpression(absl::string_view value) :
+StringExpression::StringExpression(std::string_view value) :
     StringExpression(impl::StringExpressionImpl::createLiteral(std::string(value.data(), value.size()))) {}
 StringExpression::StringExpression(std::string value) :
     StringExpression(impl::StringExpressionImpl::createLiteral(std::move(value))) {}
@@ -240,7 +240,7 @@ BooleanExpression operator>(const StringExpression &lhs, const StringExpression 
 
 DateTimeExpression::DateTimeExpression(const char *value) :
     DateTimeExpression(impl::DateTimeExpressionImpl::createFromLiteral(value)) {}
-DateTimeExpression::DateTimeExpression(absl::string_view value) :
+DateTimeExpression::DateTimeExpression(std::string_view value) :
     DateTimeExpression(impl::DateTimeExpressionImpl::createFromLiteral(std::string(value.data(), value.size()))) {}
 DateTimeExpression::DateTimeExpression(std::string value) :
     DateTimeExpression(impl::DateTimeExpressionImpl::createFromLiteral(std::move(value))) {}
