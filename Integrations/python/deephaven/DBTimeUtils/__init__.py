@@ -47,7 +47,7 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_, DBTimeZone, DBDateTime, DBPeriod
+    global _java_type_, DBTimeZone, DBPeriod
     if _java_type_ is not None:
         return
     # This will raise an exception if the desired object is not the classpath
