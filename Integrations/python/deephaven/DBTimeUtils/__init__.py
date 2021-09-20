@@ -27,7 +27,6 @@ import wrapt
 _java_type_ = None  # None until the first define_symbols() call
 DBTimeZone = None  #: Deephaven timezone class (io.deephaven.db.tables.utils.DBTimeZone).
 DBDateTime = None  #: Deephaven date-time class (io.deephaven.db.tables.utils.DBDateTime).
-DBPeriod = None    #: Deephaven time period class (io.deephaven.db.tables.utils.DBPeriod).
 
 SECOND = 1000000000  #: One second in nanoseconds.
 MINUTE = 60*SECOND   #: One minute in nanoseconds.
@@ -47,14 +46,13 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_, DBTimeZone, DBPeriod
+    global _java_type_, DBTimeZone
     if _java_type_ is not None:
         return
     # This will raise an exception if the desired object is not the classpath
     _java_type_ = jpy.get_type("io.deephaven.db.tables.utils.DBTimeUtils")
     DBTimeZone = jpy.get_type("io.deephaven.db.tables.utils.DBTimeZone")
     DBDateTime = jpy.get_type("io.deephaven.db.tables.utils.DBDateTime")
-    DBPeriod = jpy.get_type("io.deephaven.db.tables.utils.DBPeriod")
 
 # every module method should be decorated with @_passThrough
 @wrapt.decorator
