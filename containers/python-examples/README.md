@@ -5,7 +5,8 @@ A Docker image for Deephaven with Python development and [Deephaven Examples Rep
 
 ## Why this is needed
 
-This project will open several docker containers, including:
+This project will open several Docker containers, including:
+
  - grpc-api
  - web
  - grpc-proxy
