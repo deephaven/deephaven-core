@@ -1,11 +1,11 @@
 
 # Overview
 
-A Docker image for [Deephaven](https://deephaven.io/core/docs/tutorials/quickstart) with Python development and [Deephaven Examples Repository](https://github.com/deephaven/examples).
+A Docker image for Deephaven with Python development and [Deephaven Examples Repository](https://github.com/deephaven/examples). See the [README](https://github.com/deephaven/deephaven-core/blob/main/README.md#launch-python--java) for launch instructions.
 
 ## Why this is needed
 
-This project will open several docker containers including:
+This project will open several docker containers, including:
  - grpc-api
  - web
  - grpc-proxy
@@ -14,11 +14,11 @@ This project will open several docker containers including:
 
 ## Run a Docker-build job
 
-For full instructions to work with Deephaven see the [quickstart guide](https://deephaven.io/core/docs/tutorials/quickstart).
+For full instructions to work with Deephaven, see the [Quick start](https://deephaven.io/core/docs/tutorials/quickstart).
 
-To run these images execute the following in the directory of your choice:
+To run these images, execute the following in the directory of your choice:
 
-```
+```bash
 compose_file=https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml
 curl  -O "${compose_file}"
 
