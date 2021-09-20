@@ -7,6 +7,7 @@ from requests import get
 
 
 def download_csv(url: str, file_name=None) -> str:
+    """ download a CSV located at the supplied URL and return the file name. """
     if not file_name:
         file_name = "sample.csv"
 

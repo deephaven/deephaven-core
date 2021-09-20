@@ -11,8 +11,8 @@ from pydeephaven import Session, Table
 def run_script(dh_session: Session) -> Table:
     server_script = '''
 t2 = t.where("VendorID > 0")\
-.sort("VendorID", "fare_amount")\
-.headBy(5, "VendorID")
+        .sort("VendorID", "fare_amount")\
+        .headBy(5, "VendorID")
 '''
     dh_session.run_script(server_script)
     return dh_session.open_table("t2")
