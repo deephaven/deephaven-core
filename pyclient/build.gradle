@@ -10,7 +10,7 @@ plugins {
 }
 
 // Build the pydeephaven wheel from sources in a vanilla docker container
-Docker.registerDockerTask(project, 'buildPyClient') {
+tasks.getByName('build').dependsOn(Docker.registerDockerTask(project, 'buildPyClient') {
     copyIn {
         from('requirements.txt') {
             into 'project'
@@ -35,7 +35,7 @@ Docker.registerDockerTask(project, 'buildPyClient') {
     copyOut {
         into 'build/wheel'
     }
-}
+})
 
 // Start up a docker container for the grpc-api, then run pydeephaven test
 evaluationDependsOn(':grpc-api-server-docker')
@@ -80,7 +80,7 @@ def stopDeephavenGrpcApi = tasks.register('stopDeephavenGrpcApi', DockerRemoveCo
 //        // ignore, container might not exist
 //    }
 }
-tasks.getByName('check').dependsOn Docker.registerDockerTask(project, 'testPyClient') {
+tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyClient') {
     copyIn {
         from('pydeephaven') {
             into 'project/pydeephaven'
@@ -109,4 +109,4 @@ tasks.getByName('check').dependsOn Docker.registerDockerTask(project, 'testPyCli
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
-}
+})
