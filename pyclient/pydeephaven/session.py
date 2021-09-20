@@ -58,7 +58,7 @@ class Session:
 
         self.port = port
         if not port:
-            self.port = os.environ.get("DH_PORT", 10000)
+            self.port = int(os.environ.get("DH_PORT", 10000))
 
         self.is_connected = False
         self.session_token = None
