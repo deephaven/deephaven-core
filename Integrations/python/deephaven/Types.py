@@ -63,7 +63,7 @@ float32_array = None
 double_array = None
 float64_array = None
 string_array = None
-_type2jtype = None
+java_types = None
 
 
 def _typeFromJavaClassName(name : str):
@@ -81,7 +81,7 @@ def _defineSymbols():
         string, bigdecimal, stringset, datetime, timeperiod, \
         byte_array, short_array, int16_array, int_array, int32_array, long_array, int64_array, \
         float_array, single_array, float32_array, double_array, float64_array, string_array, \
-        _type2jtype
+        java_types
 
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
@@ -131,7 +131,7 @@ def _defineSymbols():
         float64_array = double_array
         string_array = DataType(string.arrayType())
 
-        _type2jtype = {
+        java_types = {
             bool_ : jpy.get_type('java.lang.Boolean'),
             byte : jpy.get_type('byte'),
             short : jpy.get_type('short'),
@@ -192,7 +192,7 @@ def _jclassFromType(data_type : DataType):
 def _jpyTypeFromType(data_type : DataType):
     if data_type is None:
         return None
-    jpy_type = _type2jtype.get(data_type, None)
+    jpy_type = java_types.get(data_type, None)
     if jpy_type is not None:
         return jpy_type
     jclass = _jclassFromType(data_type)
