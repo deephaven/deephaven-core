@@ -18,8 +18,7 @@ public class HealthCheckModule {
         HealthStatusManager healthStatusManager = new HealthStatusManager();
         ProcessEnvironment.getGlobalShutdownManager().registerTask(
                 ShutdownManager.OrderingCategory.FIRST,
-                healthStatusManager::enterTerminalState
-        );
+                healthStatusManager::enterTerminalState);
 
         return healthStatusManager;
     }
