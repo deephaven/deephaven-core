@@ -8,6 +8,7 @@ import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeProvider;
 import io.deephaven.qst.table.TimeProviderSystem;
 import io.deephaven.qst.table.TimeTable;
@@ -41,6 +42,12 @@ enum TableCreatorImpl implements TableCreator<Table> {
                 .of(timeTable.timeProvider());
         final DBDateTime firstTime = timeTable.startTime().map(DBDateTime::of).orElse(null);
         return TableTools.timeTable(provider, firstTime, timeTable.interval().toNanos());
+    }
+
+    @Override
+    public Table of(TicketTable ticketTable) {
+        throw new UnsupportedOperationException("Ticket tables can't be referenced in a static context;" +
+                "no access to TicketRouter nor SessionState - see deephaven-core#1172 for more details");
     }
 
     @Override

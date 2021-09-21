@@ -378,7 +378,7 @@ public class DBTimeUtils {
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
      *         </P>
-     *         If the second value is greater than the first value, the result will be negative.
+     *         If the first value is greater than the second value, the result will be negative.
      */
     @SuppressWarnings("WeakerAccess")
     public static long diffNanos(DBDateTime d1, DBDateTime d2) {
@@ -399,7 +399,7 @@ public class DBTimeUtils {
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
      *         </P>
-     *         If the second value is greater than the first value, the result will be negative.
+     *         If the first value is greater than the second value, the result will be negative.
      */
     public static double diffYear(DBDateTime start, DBDateTime end) {
         if (start == null || end == null) {
@@ -423,7 +423,7 @@ public class DBTimeUtils {
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
      *         </P>
-     *         If the second value is greater than the first value, the result will be negative.
+     *         If the first value is greater than the second value, the result will be negative.
      */
     @SuppressWarnings("WeakerAccess")
     public static double diffDay(DBDateTime start, DBDateTime end) {
@@ -1439,23 +1439,36 @@ public class DBTimeUtils {
      */
     @SuppressWarnings("WeakerAccess")
     public static DBDateTime autoEpochToTime(long epoch) {
-        if (epoch == io.deephaven.util.QueryConstants.NULL_LONG) {
-            return new DBDateTime(epoch);
-        }
+        return new DBDateTime(autoEpochToNanos(epoch));
+    }
 
-        if (Math.abs(epoch) > (TimeConstants.MICROTIME_THRESHOLD * 1000)) // Nanoseconds
-        {
-            return nanosToTime(epoch);
-        } else if (Math.abs(epoch) > TimeConstants.MICROTIME_THRESHOLD) // Microseconds
-        {
-            return microsToTime(epoch);
-        } else if (Math.abs(epoch) > TimeConstants.MICROTIME_THRESHOLD / 1000) // Milliseconds
-        {
-            return millisToTime(epoch);
-        } else // Seconds
-        {
-            return millisToTime(epoch * 1000);
+    /**
+     * Converts a long offset from Epoch value to a nanoseconds as a long. This method uses expected date ranges to
+     * infer whether the passed value is in milliseconds, microseconds, or nanoseconds. Thresholds used are
+     * {@link TimeConstants#MICROTIME_THRESHOLD} divided by 1000 for milliseconds, as-is for microseconds, and
+     * multiplied by 1000 for nanoseconds. The value is tested to see if its ABS exceeds the threshold. E.g. a value
+     * whose ABS is greater than 1000 * {@link TimeConstants#MICROTIME_THRESHOLD} will be treated as nanoseconds.
+     *
+     * @param epoch The long Epoch offset value to convert.
+     * @return null, if the input is equal to {@link QueryConstants#NULL_LONG}, otherwise a nanoseconds value
+     *         corresponding to the passed in epoch value.
+     */
+    public static long autoEpochToNanos(final long epoch) {
+        if (epoch == io.deephaven.util.QueryConstants.NULL_LONG) {
+            return epoch;
         }
+        final long absEpoch = Math.abs(epoch);
+        if (absEpoch > 1000 * TimeConstants.MICROTIME_THRESHOLD) { // Nanoseconds
+            return epoch;
+        }
+        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD) { // Microseconds
+            return 1000 * epoch;
+        }
+        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD / 1000) { // Milliseconds
+            return 1000 * 1000 * epoch;
+        }
+        // Seconds
+        return 1000 * 1000 * 1000 * epoch;
     }
 
     /**

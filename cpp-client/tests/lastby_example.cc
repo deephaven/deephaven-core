@@ -5,6 +5,8 @@
 #include "tests/test_util.h"
 #include "deephaven/client/utility/utility.h"
 
+using deephaven::client::highlevel::BooleanExpression;
+using deephaven::client::highlevel::NumericExpression;
 using deephaven::client::highlevel::TableHandleManager;
 using deephaven::client::highlevel::TableHandle;
 using deephaven::client::utility::streamf;

@@ -11,6 +11,7 @@ import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
 import java.time.Duration;
@@ -83,6 +84,11 @@ public abstract class TableHandleManagerDelegate implements TableHandleManager {
     @Override
     public final TableHandle of(TimeTable timeTable) {
         return delegate().of(timeTable);
+    }
+
+    @Override
+    public final TableHandle of(TicketTable ticketTable) {
+        return delegate().of(ticketTable);
     }
 
     @Override

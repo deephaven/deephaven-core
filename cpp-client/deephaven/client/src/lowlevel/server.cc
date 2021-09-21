@@ -54,8 +54,8 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target) {
   auto ss = SessionService::NewStub(channel);
   auto ts = TableService::NewStub(channel);
 
+  // TODO(kosak): Warn about this string conversion or do something more general.
   auto flightTarget = "grpc://" + target;
-  streamf(std::cerr, "TODO(kosak): Converting %o to %o for Arrow Flight\n", target, flightTarget);
   arrow::flight::Location location;
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);
   if (!rc1.ok()) {
@@ -95,8 +95,8 @@ Server::Server(Private,
 
 Server::~Server() = default;
 
-Ticket Server::newTicket() {
-  auto ticketId = nextFreeTicketId_++;
+namespace {
+Ticket makeNewTicket(int32_t ticketId) {
   constexpr auto ticketSize = sizeof(ticketId);
   static_assert(ticketSize == 4, "Unexpected ticket size");
   char buffer[ticketSize + 1];
@@ -106,7 +106,19 @@ Ticket Server::newTicket() {
   *result.mutable_ticket() = std::string(buffer, sizeof(buffer));
   return result;
 }
+}  // namespace
 
+Ticket Server::newTicket() {
+  auto ticketId = nextFreeTicketId_++;
+  return makeNewTicket(ticketId);
+}
+
+std::tuple<Ticket, arrow::flight::FlightDescriptor> Server::newTicketAndFlightDescriptor() {
+  auto ticketId = nextFreeTicketId_++;
+  auto ticket = makeNewTicket(ticketId);
+  auto fd = arrow::flight::FlightDescriptor::Path({"export", std::to_string(ticketId)});
+  return std::make_tuple(std::move(ticket), std::move(fd));
+}
 
 void Server::setAuthentication(std::string metadataHeader, std::string sessionToken) {
   if (haveAuth_) {
@@ -400,20 +412,17 @@ void Server::addMetadata(grpc::ClientContext *ctx) {
 }
 
 void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
-  std::cerr << "Completion queue thread waking up\n";
   while (true) {
     if (!self->processNextCompletionQueueItem()) {
       break;
     }
   }
-  std::cerr << "Completion queue thread shutting down\n";
 }
 
 bool Server::processNextCompletionQueueItem() {
   void *tag;
   bool ok;
   auto gotEvent = completionQueue_.Next(&tag, &ok);
-  // streamf(std::cerr, "gotEvent is %o, tag is %o, ok is %o\n", gotEvent, tag, ok);
   if (!gotEvent) {
     return false;
   }

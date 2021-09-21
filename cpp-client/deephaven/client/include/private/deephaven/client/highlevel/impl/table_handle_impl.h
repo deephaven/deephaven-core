@@ -62,6 +62,8 @@ class LazyState final : public deephaven::client::utility::SFCallback<io::deepha
 public:
   static std::shared_ptr<LazyState> create(std::shared_ptr<Server> server,
       std::shared_ptr<Executor> flightExecutor);
+  static std::shared_ptr<LazyState> createSatisfied(std::shared_ptr<Server> server,
+      std::shared_ptr<Executor> flightExecutor, Ticket ticket);
 
   LazyState(Private, std::shared_ptr<Server> &&server, std::shared_ptr<Executor> &&flightExecutor);
   ~LazyState() final;
@@ -106,6 +108,9 @@ class TableHandleImpl {
   using SFCallback = deephaven::client::utility::SFCallback<Args...>;
 public:
   static std::shared_ptr<internal::LazyState> createEtcCallback(const TableHandleManagerImpl *thm);
+  // Create a callback that is already satisfied by "ticket".
+  static std::shared_ptr<internal::LazyState> createSatisfiedCallback(const TableHandleManagerImpl *thm,
+      Ticket ticket);
 
   static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<TableHandleManagerImpl> thm,
       Ticket ticket, std::shared_ptr<internal::LazyState> etcCallback);

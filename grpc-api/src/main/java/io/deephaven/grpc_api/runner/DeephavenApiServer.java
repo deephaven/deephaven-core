@@ -31,7 +31,7 @@ public class DeephavenApiServer {
 
         // Close outstanding sessions to give any gRPCs closure.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
-                sessionService::closeAllSessions);
+                sessionService::onShutdown);
 
         // Finally wait for gRPC to exit now.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {

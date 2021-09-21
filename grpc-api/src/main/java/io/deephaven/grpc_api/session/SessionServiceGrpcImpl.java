@@ -199,6 +199,15 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         });
     }
 
+    @Override
+    public void terminationNotification(TerminationNotificationRequest request,
+            StreamObserver<TerminationNotificationResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = service.getCurrentSession();
+            service.addTerminationListener(session, responseObserver);
+        });
+    }
+
     @Singleton
     public static class AuthServerInterceptor implements ServerInterceptor {
         private final SessionService service;

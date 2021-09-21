@@ -25,6 +25,9 @@ class Session:
     methods for asking the server to create tables, import Arrow data into tables, merge tables, run Python scripts, and
     execute queries.
 
+    Session objects can be used in Python with statement so that whatever happens in the with statement block, they
+    are guaranteed to be closed upon exit.
+
     Attributes:
         tables (list[str]): names of the tables available in the server after running scripts
         is_alive (bool): check if the session is still alive (may refresh the session)
@@ -71,6 +74,14 @@ class Session:
 
         self._connect()
 
+    def __enter__(self):
+        if not self.is_connected:
+            self._connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     @property
     def tables(self):
         return [t for t in self._tables if self._tables[t][0] == 'Table']
@@ -104,7 +115,7 @@ class Session:
 
         return self._flight_service
 
-    def make_flight_ticket(self, ticket_no=None):
+    def make_ticket(self, ticket_no=None):
         if not ticket_no:
             ticket_no = self.get_ticket()
         ticket_bytes = ticket_no.to_bytes(4, byteorder='little', signed=True)

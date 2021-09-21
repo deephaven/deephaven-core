@@ -13,6 +13,7 @@ using deephaven::client::highlevel::TableHandle;
 using deephaven::client::highlevel::SortPair;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
+using deephaven::client::utility::TableMaker;
 
 namespace deephaven {
 namespace client {
@@ -29,16 +30,16 @@ TEST_CASE("New Table", "[newtable]") {
   std::vector<std::optional<double>> doubleData = { {}, 0.0, 1.0, -1.0, -1.79e+308, std::numeric_limits<double>::max() };
   std::vector<std::optional<std::string>> stringData = { {}, "", "A string", "Also a string", "AAAAAA", "ZZZZZZ" };
 
-  TableWizard w;
-  // w.addColumn("BoolValue", boolData);
-  w.addColumn("ByteValue", byteData);
-  w.addColumn("ShortValue", shortData);
-  w.addColumn("IntValue", intData);
-  w.addColumn("LongValue", longData);
-  w.addColumn("FloatValue", floatData);
-  w.addColumn("DoubleValue", doubleData);
-  w.addColumn("StringValue", stringData);
-  auto temp = w.makeTable(tm.client().getManager(), "newTable");
+  TableMaker maker;
+  // maker.addColumn("BoolValue", boolData);
+  maker.addColumn("ByteValue", byteData);
+  maker.addColumn("ShortValue", shortData);
+  maker.addColumn("IntValue", intData);
+  maker.addColumn("LongValue", longData);
+  maker.addColumn("FloatValue", floatData);
+  maker.addColumn("DoubleValue", doubleData);
+  maker.addColumn("StringValue", stringData);
+  auto temp = maker.makeTable(tm.client().getManager());
   std::cout << temp.stream(true) << '\n';
 }
 }  // namespace tests

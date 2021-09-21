@@ -107,8 +107,11 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
                 final int currentDestinationSize = destination.size();
                 destination.copyFromChunk(doubleChunk, offsetWithinChunk, currentDestinationSize, length);
                 destination.setSize(currentDestinationSize + length);
-                searchStartChunkIndex.setValue(chunkIndex + 1);
                 s += length;
+                if (s <= e) {
+                    // We have more of this range to gather from a subsequent chunk.
+                    searchStartChunkIndex.setValue(chunkIndex + 1);
+                }
             }
         });
     }

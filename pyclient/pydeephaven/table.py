@@ -33,13 +33,14 @@ class Table(TableInterface):
         self.schema = schema
         self.is_static = is_static
         self.size = size
-        self.cols = []
         if not schema:
             self._parse_schema(schema_header)
 
     def __del__(self):
         try:
-            if self.ticket and self.session.is_alive:
+            # only table objects that are explicitly exported have schema info and only the tickets associated with
+            # such tables should be released.
+            if self.ticket and self.schema and self.session.is_alive:
                 self.session.release(self.ticket)
         except Exception as e:
             # TODO: log the exception

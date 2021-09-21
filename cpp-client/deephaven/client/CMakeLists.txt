@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
 
-find_package(absl REQUIRED)
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
 find_package(Protobuf REQUIRED)
@@ -56,9 +55,11 @@ set(ALL_FILES
     include/private/deephaven/client/utility/executor.h
 
     src/utility/cbfuture.cc
+    src/utility/table_maker.cc
     src/utility/utility.cc
     include/public/deephaven/client/utility/callbacks.h
     include/public/deephaven/client/utility/cbfuture.h
+    include/public/deephaven/client/utility/table_maker.h
     include/public/deephaven/client/utility/utility.h
 
     proto/deephaven/proto/application.grpc.pb.cc
@@ -99,5 +100,4 @@ target_link_libraries(client PUBLIC arrow_flight_static)
 target_link_libraries(client PUBLIC arrow_static)
 target_link_libraries(client PUBLIC protobuf)
 target_link_libraries(client PUBLIC gRPC::grpc++)
-target_link_libraries(client PUBLIC absl::strings)
 target_link_libraries(client PUBLIC Threads::Threads)

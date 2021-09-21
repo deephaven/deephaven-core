@@ -185,7 +185,7 @@ class Docker {
     static TaskProvider<? extends Task> registerDockerTask(Project project, String taskName, Action<? super DockerTaskConfig> action) {
         // create instance, assign defaults
         DockerTaskConfig cfg = new DockerTaskConfig();
-        cfg.imageName = "deephaven/${taskName}:${LOCAL_BUILD_TAG}"
+        cfg.imageName = "deephaven/${taskName.replaceAll(/\B[A-Z]/) { String str -> '-' + str }.toLowerCase()}:${LOCAL_BUILD_TAG}"
 
         // ask for more configuration
         action.execute(cfg)

@@ -32,9 +32,9 @@ class AggType(Enum):
 
 
 class SortDirection(Enum):
-    UNKNOWN = 0
-    DESCENDING = 1
-    ASCENDING = 2
-    REVERSE = 3
+    UNKNOWN = table_pb2.SortDescriptor.SortDirection.UNKNOWN
+    DESCENDING = table_pb2.SortDescriptor.SortDirection.DESCENDING
+    ASCENDING = table_pb2.SortDescriptor.SortDirection.ASCENDING
+    REVERSE = table_pb2.SortDescriptor.SortDirection.REVERSE
 
 

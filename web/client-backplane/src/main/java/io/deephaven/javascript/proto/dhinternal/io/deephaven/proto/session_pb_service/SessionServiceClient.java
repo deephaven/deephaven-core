@@ -11,6 +11,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ha
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -480,6 +482,100 @@ public class SessionServiceClient {
         }
     }
 
+    @JsFunction
+    public interface TerminationNotificationCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static SessionServiceClient.TerminationNotificationCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                SessionServiceClient.TerminationNotificationCallbackFn.P0Type p0,
+                TerminationNotificationResponse p1);
+    }
+
+    @JsFunction
+    public interface TerminationNotificationMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static SessionServiceClient.TerminationNotificationMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                SessionServiceClient.TerminationNotificationMetadata_or_callbackFn.P0Type p0,
+                TerminationNotificationResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface TerminationNotificationMetadata_or_callbackUnionType {
+        @JsOverlay
+        static SessionServiceClient.TerminationNotificationMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default SessionServiceClient.TerminationNotificationMetadata_or_callbackFn asTerminationNotificationMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isTerminationNotificationMetadata_or_callbackFn() {
+            return (Object) this instanceof SessionServiceClient.TerminationNotificationMetadata_or_callbackFn;
+        }
+    }
+
     public String serviceHost;
 
     public SessionServiceClient(String serviceHost, Object options) {}
@@ -751,4 +847,56 @@ public class SessionServiceClient {
     public native UnaryResponse release(
             ReleaseRequest requestMessage,
             SessionServiceClient.ReleaseMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse terminationNotification(
+            TerminationNotificationRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            SessionServiceClient.TerminationNotificationCallbackFn callback) {
+        return terminationNotification(
+                requestMessage,
+                Js.<SessionServiceClient.TerminationNotificationMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse terminationNotification(
+            TerminationNotificationRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return terminationNotification(
+                requestMessage,
+                Js.<SessionServiceClient.TerminationNotificationMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse terminationNotification(
+            TerminationNotificationRequest requestMessage,
+            SessionServiceClient.TerminationNotificationMetadata_or_callbackFn metadata_or_callback,
+            SessionServiceClient.TerminationNotificationCallbackFn callback) {
+        return terminationNotification(
+                requestMessage,
+                Js.<SessionServiceClient.TerminationNotificationMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse terminationNotification(
+            TerminationNotificationRequest requestMessage,
+            SessionServiceClient.TerminationNotificationMetadata_or_callbackFn metadata_or_callback) {
+        return terminationNotification(
+                requestMessage,
+                Js.<SessionServiceClient.TerminationNotificationMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse terminationNotification(
+            TerminationNotificationRequest requestMessage,
+            SessionServiceClient.TerminationNotificationMetadata_or_callbackUnionType metadata_or_callback,
+            SessionServiceClient.TerminationNotificationCallbackFn callback);
+
+    public native UnaryResponse terminationNotification(
+            TerminationNotificationRequest requestMessage,
+            SessionServiceClient.TerminationNotificationMetadata_or_callbackUnionType metadata_or_callback);
 }

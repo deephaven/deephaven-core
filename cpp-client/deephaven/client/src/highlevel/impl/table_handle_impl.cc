@@ -41,8 +41,14 @@ namespace client {
 namespace highlevel {
 namespace impl {
 
-std::shared_ptr<internal::LazyState> TableHandleImpl::createEtcCallback(const TableHandleManagerImpl *managerImpl) {
-  return internal::LazyState::create(managerImpl->server(), managerImpl->flightExecutor());
+std::shared_ptr<internal::LazyState> TableHandleImpl::createEtcCallback(const TableHandleManagerImpl *thm) {
+  return internal::LazyState::create(thm->server(), thm->flightExecutor());
+}
+
+std::shared_ptr<internal::LazyState> TableHandleImpl::createSatisfiedCallback(
+    const TableHandleManagerImpl *thm, Ticket ticket) {
+  return internal::LazyState::createSatisfied(thm->server(), thm->flightExecutor(),
+      std::move(ticket));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::create(std::shared_ptr<TableHandleManagerImpl> thm,
@@ -58,9 +64,8 @@ TableHandleImpl::TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl
     managerImpl_(std::move(thm)), ticket_(std::move(ticket)), lazyState_(std::move(lazyState)) {
 }
 
-TableHandleImpl::~TableHandleImpl() {
-  std::cerr << "Tear down TableHandleImpl (need to send Release to server)\n";
-}
+// TODO(kosak): Need to actually send Release to the server
+TableHandleImpl::~TableHandleImpl() = default;
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::select(std::vector<std::string> columnSpecs) {
   auto cb = TableHandleImpl::createEtcCallback(managerImpl_.get());
@@ -403,9 +408,17 @@ void TableHandleImpl::observe() {
 
 namespace internal {
 std::shared_ptr<LazyState> LazyState::create(std::shared_ptr<Server> server,
-    std::shared_ptr<Executor> executor) {
-  auto result = std::make_shared<LazyState>(Private(), std::move(server), std::move(executor));
+    std::shared_ptr<Executor> flightExecutor) {
+  auto result = std::make_shared<LazyState>(Private(), std::move(server), std::move(flightExecutor));
   result->weakSelf_ = result;
+  return result;
+}
+
+std::shared_ptr<LazyState>
+LazyState::createSatisfied(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
+    Ticket ticket) {
+  auto result = create(std::move(server), std::move(flightExecutor));
+  result->ticketPromise_.setValue(std::move(ticket));
   return result;
 }
 

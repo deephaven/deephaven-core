@@ -28,6 +28,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
 import io.deephaven.stream.StreamToTableAdapter;
 
+import org.apache.avro.LogicalType;
+import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -168,7 +170,13 @@ public class KafkaTools {
                 columnsOut.add(ColumnDefinition.ofInt(mappedName));
                 break;
             case LONG:
-                columnsOut.add(ColumnDefinition.ofLong(mappedName));
+                final LogicalType logicalType = fieldSchema.getLogicalType();
+                if (LogicalTypes.timestampMicros().equals(logicalType) ||
+                        LogicalTypes.timestampMillis().equals(logicalType)) {
+                    columnsOut.add(ColumnDefinition.ofTime(mappedName));
+                } else {
+                    columnsOut.add(ColumnDefinition.ofLong(mappedName));
+                }
                 break;
             case FLOAT:
                 columnsOut.add(ColumnDefinition.ofFloat(mappedName));
@@ -176,34 +184,17 @@ public class KafkaTools {
             case DOUBLE:
                 columnsOut.add(ColumnDefinition.ofDouble(mappedName));
                 break;
+            case ENUM:
             case STRING:
                 columnsOut.add(ColumnDefinition.ofString(mappedName));
                 break;
             case UNION:
-                final List<Schema> unionTypes = fieldSchema.getTypes();
-                final int unionSize = unionTypes.size();
-                if (unionSize == 0) {
-                    throw new IllegalArgumentException("empty union " + fieldName);
-                }
-                if (unionSize != 2) {
-                    throw new UnsupportedOperationException(
-                            "Union " + fieldName + " with more than 2 fields not supported");
-                }
-                final Schema.Type unionType0 = unionTypes.get(0).getType();
-                final Schema.Type unionType1 = unionTypes.get(1).getType();
-                if (unionType1 == Schema.Type.NULL) {
-                    pushColumnTypesFromAvroField(
-                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType0,
-                            fieldNameToColumnName);
-                    return;
-                } else if (unionType0 == Schema.Type.NULL) {
-                    pushColumnTypesFromAvroField(
-                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType1,
-                            fieldNameToColumnName);
-                    return;
-                }
-                throw new UnsupportedOperationException(
-                        "Union " + fieldName + " not supported; only unions with NULL are supported at this time.");
+                final Schema effectiveSchema = Utils.getEffectiveSchema(fieldName, fieldSchema);
+                pushColumnTypesFromAvroField(
+                        columnsOut, mappedOut, prefix, field, fieldName, effectiveSchema, mappedName,
+                        effectiveSchema.getType(),
+                        fieldNameToColumnName);
+                return;
             case RECORD:
                 // Linearize any nesting.
                 for (final Schema.Field nestedField : field.schema().getFields()) {
@@ -215,7 +206,6 @@ public class KafkaTools {
                 }
                 return;
             case MAP:
-            case ENUM:
             case NULL:
             case ARRAY:
             case BYTES:
@@ -657,7 +647,8 @@ public class KafkaTools {
         final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
             final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
             final StreamToTableAdapter streamToTableAdapter =
-                    new StreamToTableAdapter(tableDefinition, streamPublisher, liveTableRegistrar);
+                    new StreamToTableAdapter(tableDefinition, streamPublisher, liveTableRegistrar,
+                            "Kafka-" + topic + '-' + partitionFilter);
             streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
                     streamToTableAdapter::chunkTypeForIndex);
 

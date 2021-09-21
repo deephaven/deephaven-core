@@ -35,7 +35,7 @@ class TableService:
 
     def grpc_table_op(self, table: Table, op: TableOp):
         try:
-            result_id = self.session.make_flight_ticket()
+            result_id = self.session.make_ticket()
             if table:
                 table_reference = table_pb2.TableReference(ticket=table.ticket)
             else:

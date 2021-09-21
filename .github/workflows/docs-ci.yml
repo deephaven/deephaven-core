@@ -87,7 +87,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: pythonDocs
-          arguments: --scan sphinx:pythonDocs
+          arguments: --scan sphinx:pythonDocs sphinx:pydeephavenDocs
           gradle-version: wrapper
 
       - name: Deploy Python Docs
@@ -97,6 +97,18 @@ jobs:
           switches: -avzr --delete
           path: sphinx/build/docs/
           remote_path: deephaven-core/pydoc/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+
+      - name: Deploy Client Python Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/pyclient-docs/
+          remote_path: deephaven-core/client-api/python/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}

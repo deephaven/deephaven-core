@@ -136,12 +136,13 @@ class TableInterface(ABC):
         table_op = SelectDistinctOp(column_names=column_names)
         return self.table_op_handler(table_op)
 
-    def sort(self, column_names: List[str], directions: List[SortDirection]):
+    def sort(self, column_names: List[str], directions: List[SortDirection] = []):
         """ Perform a sort operation on the table and return the result table.
 
         Args:
             column_names (List[str]): the names of the columns to be sorted on
-            directions (List[SortDirection]): the corresponding sort directions for each sort column
+            directions (List[SortDirection], optional): the corresponding sort directions for each sort column, default
+                is empty. In the absence of explicit sort directions, data will be sorted in the ascending order.
 
         Returns:
             a Table object

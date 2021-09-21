@@ -1,10 +1,8 @@
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.DeephavenException;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -22,6 +20,8 @@ import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -36,9 +36,12 @@ import java.util.Map;
  */
 public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamConsumer {
 
+    private static final Logger log = LoggerFactory.getLogger(StreamToTableAdapter.class);
+
     private final TableDefinition tableDefinition;
     private final StreamPublisher streamPublisher;
     private final LiveTableRegistrar liveTableRegistrar;
+    private final String name;
 
     private final QueryTable table;
     private final Index index;
@@ -59,11 +62,15 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
-            @NotNull final LiveTableRegistrar liveTableRegistrar) {
+            @NotNull final LiveTableRegistrar liveTableRegistrar,
+            @NotNull final String name) {
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
         this.liveTableRegistrar = liveTableRegistrar;
+        this.name = name;
         streamPublisher.register(this);
+        log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
+                .endl();
         liveTableRegistrar.addTable(this);
 
         nullColumnSources = makeNullColumnSources(tableDefinition);
@@ -221,6 +228,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     @Override
     public void close() {
+        log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
+                .endl();
         liveTableRegistrar.removeTable(this);
     }
 
@@ -229,6 +238,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         try {
             doRefresh();
         } catch (Exception e) {
+            log.error().append("Error refreshing ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
+                    .append(name).append(": ").append(e).endl();
             table.notifyListenersOnError(e, null);
             liveTableRegistrar.removeTable(this);
         }

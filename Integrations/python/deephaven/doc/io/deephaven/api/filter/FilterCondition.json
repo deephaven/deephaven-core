@@ -5,7 +5,7 @@
   "eq": ":param lhs: io.deephaven.api.value.Value\n:param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition",
   "gt": ":param lhs: io.deephaven.api.value.Value\n:param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition",
   "gte": ":param lhs: io.deephaven.api.value.Value\n:param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition",
-  "invert": "The logically inversion of {@link this}.\n\n:return: (io.deephaven.api.filter.FilterCondition) the inverted filter",
+  "invert": "The logically inversion of this.\n\n:return: (io.deephaven.api.filter.FilterCondition) the inverted filter",
   "lhs": "The left-hand side value.\n\n:return: (io.deephaven.api.value.Value) the left-hand side value",
   "lt": ":param lhs: io.deephaven.api.value.Value\n:param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition",
   "lte": ":param lhs: io.deephaven.api.value.Value\n:param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition",
