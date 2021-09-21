@@ -18,6 +18,12 @@ To get started quickly:
 3) `git clone git@github.com:<username>/deephaven-core.git`
 4) Commit changes to your own branches in your forked repository.
 
+For details on working with git on GitHub, see:
+* [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
+* [Connecting to GitHub with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) 
+* [Troubleshooting cloning errors](https://docs.github.com/en/repositories/creating-and-managing-repositories/troubleshooting-cloning-errors)
+* [Pushing commits to a remote repository](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository)
+
 Forked repositories do not have access to the same tokens/secrets as the [deephaven/deephaven-core](https://github.com/deephaven/deephaven-core) repository, so GitHub actions will fail. To disable GitHub actions in your forked repository, go to "Actions" -> "Disable Actions" in your forked repository settings (`https://github.com/<username>/deephaven-core/settings/actions`).
 
 Over time, forks will get out of sync with the upstream repository.  To stay up to date, either:
