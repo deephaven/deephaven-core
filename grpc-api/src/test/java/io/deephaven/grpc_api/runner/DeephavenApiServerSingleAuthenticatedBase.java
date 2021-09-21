@@ -28,7 +28,7 @@ public abstract class DeephavenApiServerSingleAuthenticatedBase extends Deephave
         final HandshakeResponse result =
                 channel.sessionBlocking().newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build());
         // Note: the authentication token for DeephavenApiServerTestBase is valid for 7 days,
-        // so we should only need to authenticated once :)
+        // so we should only need to authenticate once :)
         final UUID session = UUID.fromString(result.getSessionToken().toStringUtf8());
         final String sessionHeader = result.getMetadataHeader().toStringUtf8();
         final Key<String> sessionHeaderKey = Metadata.Key.of(sessionHeader, Metadata.ASCII_STRING_MARSHALLER);
