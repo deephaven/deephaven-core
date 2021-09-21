@@ -27,6 +27,7 @@ Over time, forks will get out of sync with the upstream repository.  To stay up 
 ## Building from source
 
 Follow the directions for [building and launching from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
+
 ## Creating a Pull Request
 
 Pull requests can be created through the GitHub website or through the GitHub CLI.
