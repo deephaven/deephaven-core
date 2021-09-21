@@ -182,4 +182,22 @@ public enum DBTimeZone {
 
         return allZones.toArray(new DBTimeZone[0]);
     }
+
+    /**
+     * Get the default time zone.
+     *
+     * @return the default {@link DBTimeZone}
+     */
+    public static io.deephaven.db.tables.utils.DBTimeZone getTzDefault() {
+        return TZ_DEFAULT;
+    }
+
+    /**
+     * Set the default time zone.
+     * 
+     * @param tzDefault the {@link DBTimeZone} to be used as the default.
+     */
+    public static void setTzDefault(io.deephaven.db.tables.utils.DBTimeZone tzDefault) {
+        TZ_DEFAULT = tzDefault;
+    }
 }
