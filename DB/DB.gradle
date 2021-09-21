@@ -38,7 +38,7 @@ sourceSets {
             srcDirs 'test', 'benchmark'
         }
         resources {
-            srcDirs = [ 'test-resources' ]
+            srcDirs += [ 'test-resources' ]
         }
     }
 }

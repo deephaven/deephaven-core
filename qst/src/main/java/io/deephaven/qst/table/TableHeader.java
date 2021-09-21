@@ -5,6 +5,7 @@ import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.Type;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -75,6 +76,10 @@ public abstract class TableHeader implements Iterable<ColumnHeader<?>> {
 
     public final Type<?> getHeader(String name) {
         return headers().get(name);
+    }
+
+    public Collection<String> columnNames() {
+        return headers().keySet();
     }
 
     @Override

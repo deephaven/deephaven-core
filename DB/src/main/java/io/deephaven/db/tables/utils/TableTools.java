@@ -13,6 +13,7 @@ import io.deephaven.io.CompressedFileUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.io.util.NullOutputStream;
+import io.deephaven.db.tables.utils.csv.CsvSpecs;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
@@ -29,6 +30,9 @@ import io.deephaven.db.v2.utils.*;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.progress.MinProcessStatus;
 import io.deephaven.util.progress.StatusCallback;
+
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -556,6 +560,58 @@ public class TableTools {
             table = io.deephaven.db.tables.utils.CsvHelpers.readHeaderlessCsv(is, format, progress, header);
         }
         return table;
+    }
+
+    /**
+     * Creates an in-memory table from {@code file} according to the {@code specs}.
+     *
+     * @param file the file
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(String file, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(file));
+    }
+
+    /**
+     * Creates an in-memory table from {@code file} according to the {@code specs}.
+     *
+     * @param file the file
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(File file, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(file));
+    }
+
+    /**
+     * Creates an in-memory table from {@code path} according to the {@code specs}.
+     *
+     * @param path the path
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(Path path, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(path));
+    }
+
+    /**
+     * Creates an in-memory table from {@code url} according to the {@code specs}.
+     *
+     * @param url the url
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(URL url, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(url));
     }
 
     /**

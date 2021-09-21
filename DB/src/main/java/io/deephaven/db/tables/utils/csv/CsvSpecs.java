@@ -1,0 +1,394 @@
+package io.deephaven.db.tables.utils.csv;
+
+import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.qst.array.Array;
+import io.deephaven.qst.array.ArrayBuilder;
+import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.TableHeader;
+import io.deephaven.qst.type.Type;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.immutables.value.Value.Default;
+import org.immutables.value.Value.Immutable;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+/**
+ * A specification object for parsing a CSV, or CSV-like, structure into a {@link NewTable}.
+ */
+@Immutable
+@BuildableStyle
+public abstract class CsvSpecs {
+
+    public interface Builder {
+
+        Builder header(TableHeader header);
+
+        Builder putParsers(String key, Parser<?> value);
+
+        Builder inference(InferenceSpecs inferenceSpecs);
+
+        Builder hasHeaderRow(boolean hasHeaderRow);
+
+        Builder delimiter(char delimiter);
+
+        Builder quote(char quote);
+
+        Builder trim(boolean trim);
+
+        Builder charset(Charset charset);
+
+        CsvSpecs build();
+    }
+
+    /**
+     * Creates a builder for {@link CsvSpecs}.
+     *
+     * @return the builder
+     */
+    public static Builder builder() {
+        return ImmutableCsvSpecs.builder();
+    }
+
+    /**
+     * A comma-separated-value delimited format.
+     *
+     * <p>
+     * Equivalent to {@code builder().build()}.
+     *
+     * @return the spec
+     */
+    public static CsvSpecs csv() {
+        return builder().build();
+    }
+
+    /**
+     * A tab-separated-value delimited format.
+     *
+     * <p>
+     * Equivalent to {@code builder().delimiter('\t').build()}.
+     *
+     * @return the spec
+     */
+    public static CsvSpecs tsv() {
+        return builder().delimiter('\t').build();
+    }
+
+    /**
+     * A header-less, CSV format.
+     *
+     * <p>
+     * Equivalent to {@code builder().hasHeaderRow(false).build()}.
+     *
+     * @return the spec
+     */
+    public static CsvSpecs headerless() {
+        return builder().hasHeaderRow(false).build();
+    }
+
+    /**
+     * A header-less, CSV format, with the user providing the {@code header}.
+     *
+     * <p>
+     * Equivalent to {@code builder().hasHeaderRow(false).header(header).build()}.
+     *
+     * @param header the header to use
+     * @return the spec
+     */
+    public static CsvSpecs headerless(TableHeader header) {
+        return builder().hasHeaderRow(false).header(header).build();
+    }
+
+    /**
+     * A header, when specified, hints at the parser to use.
+     *
+     * <p>
+     * To be even more explicit, callers may also use {@link #parsers()}.
+     *
+     * @return the table header
+     */
+    public abstract Optional<TableHeader> header();
+
+    /**
+     * The parsers, when specified, forgoes any type inference.
+     *
+     * @return the parsers
+     */
+    public abstract Map<String, Parser<?>> parsers();
+
+    /**
+     * The inference specifications.
+     *
+     * <p>
+     * By default, is {@link InferenceSpecs#standardTimes()}.
+     *
+     * @return the inference specifications
+     */
+    @Default
+    public InferenceSpecs inference() {
+        return InferenceSpecs.standardTimes();
+    }
+
+    /**
+     * The header row flag. If {@code true}, the column names of the output table will be inferred from the first row of
+     * the table. If {@code false}, the column names will be numbered numerically in the format "Column%d" with a
+     * 1-based index.
+     *
+     * <p>
+     * By default is {@code true}.
+     *
+     * @return the header row flag
+     */
+    @Default
+    public boolean hasHeaderRow() {
+        return true;
+    }
+
+    /**
+     * The delimiter character.
+     *
+     * <p>
+     * By default is ','.
+     *
+     * @return the delimiter character
+     */
+    @Default
+    public char delimiter() {
+        return ',';
+    }
+
+    /**
+     * The quote character.
+     *
+     * <p>
+     * By default is '"'.
+     *
+     * @return the quote character
+     */
+    @Default
+    public char quote() {
+        return '"';
+    }
+
+    /**
+     * The trim flag.
+     *
+     * <p>
+     * By default is {@code false}.
+     *
+     * @return the trim flag
+     */
+    @Default
+    public boolean trim() {
+        return false;
+    }
+
+    /**
+     * The character set.
+     *
+     * <p>
+     * By default, is UTF-8.
+     *
+     * @return the character set.
+     */
+    @Default
+    public Charset charset() {
+        return StandardCharsets.UTF_8;
+    }
+
+    private CSVFormat format() {
+        return CSVFormat.DEFAULT
+                .withIgnoreSurroundingSpaces()
+                .withDelimiter(delimiter())
+                .withQuote(quote())
+                .withTrim(trim());
+    }
+
+    /**
+     * Parses {@code file} according to the specifications of {@code this}.
+     *
+     * @param file the file
+     * @return the new table
+     * @throws IOException if an I/O exception occurs
+     */
+    public final NewTable parse(String file) throws IOException {
+        return parse(Paths.get(file));
+    }
+
+    /**
+     * Parses {@code file} according to the specifications of {@code this}.
+     *
+     * @param file the file
+     * @return the new table
+     * @throws IOException if an I/O exception occurs
+     */
+    public final NewTable parse(File file) throws IOException {
+        return parse(file.toPath());
+    }
+
+    /**
+     * Parses {@code path} according to the specifications of {@code this}.
+     *
+     * @param path the path
+     * @return the new table
+     * @throws IOException if an I/O exception occurs
+     */
+    public final NewTable parse(Path path) throws IOException {
+        try (final Reader reader = Files.newBufferedReader(path, charset())) {
+            return parse(reader);
+        }
+    }
+
+    /**
+     * Parses {@code url} according to the specifications of {@code this}.
+     *
+     * @param url the url
+     * @return the new table
+     * @throws IOException if an I/O exception occurs
+     */
+    public final NewTable parse(URL url) throws IOException {
+        try (final Reader reader = new BufferedReader(new InputStreamReader(url.openStream(), charset()))) {
+            return parse(reader);
+        }
+    }
+
+    /**
+     * Parses {@code reader} according to the specifications of {@code this}.
+     *
+     * @param reader the reader
+     * @return the new table
+     * @throws IOException if an I/O exception occurs
+     */
+    public final NewTable parse(Reader reader) throws IOException {
+        try (
+                final CSVParser csvParser = format().parse(reader)) {
+            final List<CSVRecord> records = csvParser.getRecords();
+            if (hasHeaderRow() && records.isEmpty()) {
+                throw new IllegalStateException("Expected header row, none found");
+            }
+            final List<CSVRecord> dataRecords = hasHeaderRow() ? records.subList(1, records.size()) : records;
+            if (!header().isPresent() && dataRecords.isEmpty()) {
+                throw new IllegalStateException("Unable to infer types with no TableHeader and no data");
+            }
+            final int numColumns = records.get(0).size();
+            if (numColumns == 0) {
+                throw new IllegalStateException("Unable to parse an empty CSV");
+            }
+            final Iterable<String> columnNames;
+            if (header().isPresent()) {
+                columnNames = header().get().columnNames();
+            } else if (hasHeaderRow()) {
+                columnNames = records.get(0);
+            } else {
+                columnNames = IntStream
+                        .range(0, numColumns)
+                        .mapToObj(i -> String.format("Column%d", i + 1))
+                        .collect(Collectors.toList());
+            }
+            final NewTable.Builder table = NewTable.builder();
+            int columnIndex = 0;
+            int size = -1;
+            for (String columnName : columnNames) {
+                final Parser<?> parser = parser(columnName, columnIndex, dataRecords);
+                final Array<?> array = buildArray(getColumn(columnIndex, dataRecords), parser);
+                if (size == -1) {
+                    size = array.size();
+                }
+                table.putColumns(columnName, array);
+                ++columnIndex;
+            }
+            return table.size(size).build();
+        }
+    }
+
+    private Parser<?> parser(String columnName, int columnIndex, List<CSVRecord> dataRecords) {
+        if (header().isPresent()) {
+            final Type<?> type = header().get().getHeader(columnName);
+            if (type == null) {
+                throw new IllegalArgumentException(String.format(
+                        "When specifying a header, all columns must be accounted for. Missing type for column name '%s'",
+                        columnName));
+            }
+        }
+
+        // 1. An explicit parser if set
+        final Parser<?> explicit = parsers().get(columnName);
+        if (explicit != null) {
+            final Type<?> type = header().map(t -> t.getHeader(columnName)).orElse(null);
+            if (type != null && !type.equals(explicit.type())) {
+                throw new IllegalArgumentException("Explicit parser type and column header type do not match");
+            }
+            return explicit;
+        }
+
+        final InferenceSpecs inference;
+        if (header().isPresent()) {
+            // 2. Guided inference
+            inference = inference().limitToType(header().get().getHeader(columnName));
+        } else {
+            // 3. Original inference
+            inference = inference();
+        }
+
+        final Optional<Parser<?>> p = inference.infer(getColumn(columnIndex, dataRecords));
+        if (!p.isPresent()) {
+            throw new IllegalStateException(
+                    String.format("Unable to infer type for column '%s'", columnName));
+        }
+        return p.get();
+    }
+
+    private static <T> Array<T> buildArray(Iterator<String> it, Parser<T> parser) {
+        final ArrayBuilder<T, ?, ?> builder = Array.builder(parser.type());
+        while (it.hasNext()) {
+            final T item = parser.parse(it.next());
+            builder.add(item);
+        }
+        return builder.build();
+    }
+
+    private static Iterator<String> getColumn(int index, Iterable<CSVRecord> records) {
+        return new CsvColumnIterator(index, records.iterator());
+    }
+
+    private static class CsvColumnIterator implements Iterator<String> {
+        private final int index;
+        private final Iterator<CSVRecord> it;
+
+        public CsvColumnIterator(int index, Iterator<CSVRecord> it) {
+            this.index = index;
+            this.it = Objects.requireNonNull(it);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return it.hasNext();
+        }
+
+        @Override
+        public String next() {
+            CSVRecord next = it.next();
+            String stringValue = next.get(index);
+            // treating empty string as null
+            return stringValue.isEmpty() ? null : stringValue;
+        }
+    }
+}
