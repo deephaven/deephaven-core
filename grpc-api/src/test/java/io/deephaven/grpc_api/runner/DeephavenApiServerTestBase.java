@@ -1,10 +1,13 @@
 package io.deephaven.grpc_api.runner;
 
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.util.liveness.LivenessScope;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.DeephavenChannel;
 import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.testing.GrpcCleanupRule;
@@ -25,6 +28,7 @@ public abstract class DeephavenApiServerTestBase {
     private DeephavenApiServerInProcessComponent serverComponent;
     private LogBuffer logBuffer;
     private DeephavenApiServer server;
+    private SafeCloseable scopeCloseable;
 
     @Before
     public void setUp() throws Exception {
@@ -37,7 +41,7 @@ public abstract class DeephavenApiServerTestBase {
         serverComponent = DaggerDeephavenApiServerInProcessComponent
                 .builder()
                 .withSchedulerPoolSize(4)
-                .withSessionTokenExpireTmMs(300000) // defaults to 5 min
+                .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())
                 .withOut(System.out)
                 .withErr(System.err)
                 .withAppMode(AppMode.API_ONLY)
@@ -45,10 +49,14 @@ public abstract class DeephavenApiServerTestBase {
 
         server = serverComponent.getServer();
         server.startForUnitTests();
+
+        scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
     }
 
     @After
     public void tearDown() throws Exception {
+        scopeCloseable.close();
+
         try {
             if (!server.server().shutdown().awaitTermination(5, TimeUnit.SECONDS)) {
                 throw new RuntimeException("Server not shutdown within 5 seconds");
@@ -57,6 +65,17 @@ public abstract class DeephavenApiServerTestBase {
             LogBufferGlobal.clear(logBuffer);
             LiveTableMonitor.DEFAULT.resetForUnitTests(true);
         }
+    }
+
+    /**
+     * The session token expiration, in milliseconds.
+     *
+     * @return the session token expiration, in milliseconds.
+     */
+    public long sessionTokenExpireTmMs() {
+        // Long expiration is useful for debugging sessions, and the majority of tests should not worry about
+        // re-authentication. Any test classes that need an explicit token expiration should override this method.
+        return TimeUnit.DAYS.toMillis(7);
     }
 
     public ManagedChannelBuilder<?> channelBuilder() {

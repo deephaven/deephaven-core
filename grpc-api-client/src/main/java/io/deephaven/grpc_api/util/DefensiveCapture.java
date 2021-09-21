@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api;
+package io.deephaven.grpc_api.util;
 
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import org.jetbrains.annotations.NotNull;
@@ -8,11 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
-class DefensiveCapture extends InputStream {
+public class DefensiveCapture extends InputStream {
     private DefensiveDrainable in;
     private InputStream delegate;
 
-    DefensiveCapture(DefensiveDrainable in) {
+    public DefensiveCapture(DefensiveDrainable in) {
         this.in = Objects.requireNonNull(in);
     }
 

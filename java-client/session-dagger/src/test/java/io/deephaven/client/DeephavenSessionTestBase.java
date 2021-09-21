@@ -1,17 +1,11 @@
 package io.deephaven.client;
 
 import io.deephaven.client.impl.Session;
-import io.deephaven.client.impl.TableHandle;
-import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.grpc_api.runner.DeephavenApiServerSingleUnauthenticatedBase;
 import io.deephaven.grpc_api.runner.DeephavenApiServerTestBase;
-import io.deephaven.qst.table.TableSpec;
 import io.grpc.ManagedChannel;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
-import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;

@@ -1,5 +1,6 @@
-package io.deephaven.grpc_api;
+package io.deephaven.grpc_api.util;
 
+import io.deephaven.grpc_api.util.DefensiveCapture;
 import io.grpc.Drainable;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +17,8 @@ public abstract class DefensiveDrainable extends InputStream implements Drainabl
 
     private static UnsupportedOperationException unsupportedUsagePattern() {
         return new UnsupportedOperationException(
-                "DefensiveDrainable callers should use #drainTo when applicable, or #capture if handing off to external code that needs a real InputStream.");
+                "DefensiveDrainable callers should use #drainTo when applicable,"
+                        + " or #capture if handing off to external code that needs a real InputStream.");
     }
 
     @Override

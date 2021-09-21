@@ -5,7 +5,6 @@ import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -17,19 +16,19 @@ public class OperationsTest extends DeephavenApiServerSingleAuthenticatedBase {
     @Test
     public void emptyTable() {
         ExportedTableCreationResponse response = channel.tableBlocking()
-                .emptyTable(EmptyTableRequest.newBuilder().setResultId(id1()).setSize(123).build());
-        checkResponse(response, id1(), true, 123);
+                .emptyTable(EmptyTableRequest.newBuilder().setResultId(id(1)).setSize(123).build());
+        checkResponse(response, id(1), true, 123);
     }
 
     @Test
     public void timeTable() {
         ExportedTableCreationResponse response = channel.tableBlocking()
-                .timeTable(TimeTableRequest.newBuilder().setResultId(id1()).setPeriodNanos(TimeUnit.SECONDS.toNanos(1))
+                .timeTable(TimeTableRequest.newBuilder().setResultId(id(1)).setPeriodNanos(TimeUnit.SECONDS.toNanos(1))
                         .build());
-        checkResponse(response, id1(), false, 0);
+        checkResponse(response, id(1), false, 0);
     }
 
-    // todo: exercise all operations
+    // TODO(deephaven-core#1333): Expand "integration" tests to cover all gRPC methods
 
     static void checkResponse(ExportedTableCreationResponse response, Ticket ticket, boolean isStatic, long size) {
         assertThat(response.getSuccess()).isTrue();
@@ -40,7 +39,7 @@ public class OperationsTest extends DeephavenApiServerSingleAuthenticatedBase {
         assertThat(response.getSize()).isEqualTo(size);
     }
 
-    private static Ticket id1() {
-        return ExportTicketHelper.wrapExportIdInTicket(1);
+    private static Ticket id(int exportId) {
+        return ExportTicketHelper.wrapExportIdInTicket(exportId);
     }
 }

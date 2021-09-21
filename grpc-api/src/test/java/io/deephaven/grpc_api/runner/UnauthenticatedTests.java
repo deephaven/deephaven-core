@@ -15,7 +15,7 @@ public class UnauthenticatedTests extends DeephavenApiServerSingleUnauthenticate
     @Test
     public void emptyTable() {
         checkUnauthenticated(() -> {
-            Ticket resultId = id1();
+            Ticket resultId = id(1);
             channel.tableBlocking()
                     .emptyTable(EmptyTableRequest.newBuilder().setSize(123).setResultId(resultId).build());
         });
@@ -24,17 +24,17 @@ public class UnauthenticatedTests extends DeephavenApiServerSingleUnauthenticate
     @Test
     public void timeTable() {
         checkUnauthenticated(() -> {
-            Ticket resultId = id1();
+            Ticket resultId = id(1);
             channel.tableBlocking()
                     .timeTable(TimeTableRequest.newBuilder().setPeriodNanos(TimeUnit.SECONDS.toNanos(1))
                             .setResultId(resultId).build());
         });
     }
 
-    // todo: exercise all requests unauthenticated
+    // TODO(deephaven-core#1333): Expand "integration" tests to cover all gRPC methods
 
-    private static Ticket id1() {
-        return ExportTicketHelper.wrapExportIdInTicket(1);
+    private static Ticket id(int exportId) {
+        return ExportTicketHelper.wrapExportIdInTicket(exportId);
     }
 
     static void checkUnauthenticated(Runnable r) {

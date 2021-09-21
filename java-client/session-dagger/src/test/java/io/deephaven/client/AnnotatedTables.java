@@ -130,21 +130,48 @@ public class AnnotatedTables {
     }
 
     public static Map<String, AnnotatedTable> annotatedTables() {
-        final Map<String, AnnotatedTable> map = explicitlyAnnotatedTables();
-        final Map<String, AnnotatedTable> extras = new LinkedHashMap<>(map);
-        for (Entry<String, AnnotatedTable> e : map.entrySet()) {
+        final Map<String, AnnotatedTable> explicit = explicitlyAnnotatedTables();
+
+        // Copy the explicitly annotated tables specs *as-is*.
+        final Map<String, AnnotatedTable> out = new LinkedHashMap<>(explicit);
+
+        // Create "double-dip" derivative specs
+        addDoubleDips(explicit, out);
+
+        // Commented out, excessive for normal unit testing.
+        // Potentially useful when adding new operations for deeper testing.
+        // Create "triple-dip" derivative specs
+        // addTripleDips(explicit, out);
+
+        return out;
+    }
+
+    private static void addDoubleDips(Map<String, AnnotatedTable> explicit, Map<String, AnnotatedTable> out) {
+        for (Entry<String, AnnotatedTable> e : explicit.entrySet()) {
             final String key = e.getKey();
             final AnnotatedTable value = e.getValue();
+            // Apply all of our adapters once to create a derivative table spec
             for (Entry<String, Adapter> a1 : adapters().entrySet()) {
-                extras.put(key + " + " + a1.getKey(), a1.getValue().apply(value));
+                final String doubleKey = key + " + " + a1.getKey();
+                final AnnotatedTable derivativeSpec = a1.getValue().apply(value);
+                out.put(doubleKey, derivativeSpec);
             }
-            /*
-             * for (Entry<String, Adapter> a1 : adapters().entrySet()) { for (Entry<String, Adapter> a2 :
-             * adapters().entrySet()) { extras.put(key + " + " + a1.getKey() + " + " + a2.getKey(),
-             * a2.getValue().apply(a1.getValue().apply(value))); } }
-             */
         }
-        return extras;
+    }
+
+    private static void addTripleDips(Map<String, AnnotatedTable> explicit, Map<String, AnnotatedTable> out) {
+        for (Entry<String, AnnotatedTable> e : explicit.entrySet()) {
+            final String key = e.getKey();
+            final AnnotatedTable value = e.getValue();
+            // Apply all of our adapters twice to create a derivative table spec
+            for (Entry<String, Adapter> a1 : adapters().entrySet()) {
+                for (Entry<String, Adapter> a2 : adapters().entrySet()) {
+                    final String tripleKey = key + " + " + a1.getKey() + " + " + a2.getKey();
+                    final AnnotatedTable derivativeSpec = a2.getValue().apply(a1.getValue().apply(value));
+                    out.put(tripleKey, derivativeSpec);
+                }
+            }
+        }
     }
 
     public static <T extends TableOperations<T, T>> T i32768(TableCreator<T> c) {

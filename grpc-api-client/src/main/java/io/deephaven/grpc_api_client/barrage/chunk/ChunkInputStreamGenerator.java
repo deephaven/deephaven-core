@@ -13,7 +13,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.grpc_api.DefensiveDrainable;
+import io.deephaven.grpc_api.util.DefensiveDrainable;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 

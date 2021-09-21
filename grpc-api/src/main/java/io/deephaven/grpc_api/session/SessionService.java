@@ -4,6 +4,7 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.db.tables.utils.DBTimeUtils.DBDateTimeOverflowException;
 import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.grpc.Status;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class SessionService {
@@ -47,6 +49,10 @@ public class SessionService {
             throw new IllegalArgumentException("session.tokenExpireMs is set too low. It is configured to "
                     + tokenExpireMs + "ms (minimum is " + MIN_COOKIE_EXPIRE_MS + "ms). At low levels it is difficult "
                     + "to guarantee smooth operability given a distributed system and potential clock drift");
+        }
+        final long tokenExpireNanos = TimeUnit.MILLISECONDS.toNanos(tokenExpireMs);
+        if (tokenExpireNanos == Long.MIN_VALUE || tokenExpireNanos == Long.MAX_VALUE) {
+            throw new IllegalArgumentException("session.tokenExpireMs is set too high.");
         }
 
         // Protect ourselves from rotation spam, but be loose enough that any reasonable refresh strategy works.
@@ -91,8 +97,8 @@ public class SessionService {
 
             do {
                 newUUID = UuidCreator.getRandomBased();
-                expiration = new TokenExpiration(newUUID, DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs),
-                        session);
+                final long tokenExpireNanos = TimeUnit.MILLISECONDS.toNanos(tokenExpireMs);
+                expiration = new TokenExpiration(newUUID, DBTimeUtils.plus(now, tokenExpireNanos), session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
             if (initialToken) {
