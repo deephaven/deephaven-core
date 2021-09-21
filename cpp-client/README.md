@@ -33,7 +33,7 @@ variations in the future.
 5. Get the Deephaven source
    ```
    cd ~/mysrc
-   git clone git@github.com:deephaven/deephaven-core.git
+   git clone https://github.com/deephaven/deephaven-core.git
    ```
 6. Build and start the database. Do this in a separate shell because it will take a while
    ```
@@ -82,7 +82,7 @@ variations in the future.
 11. Build and install flatbuffers
    ```
    cd ~/mysrc
-   git clone git@github.com:google/flatbuffers.git
+   git clone https://github.com/google/flatbuffers.git
    cd flatbuffers
    mkdir build && cd build
    cmake .. && make -j8 && sudo make install
