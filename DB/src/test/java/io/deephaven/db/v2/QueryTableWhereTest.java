@@ -4,7 +4,6 @@
 
 package io.deephaven.db.v2;
 
-import io.deephaven.base.SleepUtil;
 import io.deephaven.db.exceptions.QueryCancellationException;
 import io.deephaven.db.tables.SortingOrder;
 import io.deephaven.db.tables.Table;
@@ -12,7 +11,6 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.MatchPairFactory;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBPeriod;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.tables.verify.TableAssertions;
@@ -34,7 +32,6 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.NumberFormat;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -716,32 +713,25 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         }
     }
 
-    private static class SleepCounter implements IntUnaryOperator {
-        final int sleepDurationNanos;
+    private static class InterruptingCounter implements IntUnaryOperator {
         long invokes = 0;
-        CountDownLatch latch = new CountDownLatch(1);
+        boolean interrupt;
 
-        private SleepCounter(int sleepDurationNanos) {
-            this.sleepDurationNanos = sleepDurationNanos;
+        private InterruptingCounter(boolean interrupt) {
+            this.interrupt = interrupt;
         }
 
         @Override
         public int applyAsInt(int value) {
-            if (sleepDurationNanos > 0) {
-                final long start = System.nanoTime();
-                final long end = start + sleepDurationNanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < end);
-            }
-            if (++invokes == 1) {
-                latch.countDown();
+            if (++invokes == 1 && interrupt) {
+                Thread.currentThread().interrupt();
             }
             return value;
         }
 
-        void reset() {
+        void reset(boolean interrupt) {
             invokes = 0;
-            latch = new CountDownLatch(1);
+            this.interrupt = interrupt;
         }
     }
 
@@ -783,61 +773,43 @@ public class QueryTableWhereTest extends QueryTableTestBase {
     public void testInterFilterInterruption() {
         final Table tableToFilter = TableTools.emptyTable(2_000_000).update("X=i");
 
-        final SleepCounter slowCounter = new SleepCounter(2);
-        final SleepCounter fastCounter = new SleepCounter(0);
+        final InterruptingCounter firstCounter = new InterruptingCounter(false);
+        final InterruptingCounter secondCounter = new InterruptingCounter(false);
 
-        QueryScope.addParam("slowCounter", slowCounter);
-        QueryScope.addParam("fastCounter", fastCounter);
+        QueryScope.addParam("firstCounter", firstCounter);
+        QueryScope.addParam("secondCounter", secondCounter);
 
-        final long start = System.currentTimeMillis();
-        final Table filtered =
-                tableToFilter.where("slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
-        final long end = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
+        final Table filtered = tableToFilter.where(
+                "firstCounter.applyAsInt(X) % 2 == 0", "secondCounter.applyAsInt(X) % 3 == 0");
+        long end = System.currentTimeMillis();
         System.out.println("Duration: " + (end - start));
 
         assertTableEquals(tableToFilter.where("X%6==0"), filtered);
 
-        assertEquals(2_000_000, slowCounter.invokes);
-        assertEquals(1_000_000, fastCounter.invokes);
+        assertEquals(2_000_000, firstCounter.invokes);
+        assertEquals(1_000_000, secondCounter.invokes);
 
-        fastCounter.reset();
-        slowCounter.reset();
+        firstCounter.reset(true);
+        secondCounter.reset(false);
 
-        final MutableObject<Exception> caught = new MutableObject<>();
-        final Thread t = new Thread(() -> {
-            final long start1 = System.currentTimeMillis();
-            try {
-                tableToFilter.where("slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
-            } catch (Exception e) {
-                caught.setValue(e);
-            }
-            final long end1 = System.currentTimeMillis();
-            System.out.println("Duration: " + (end1 - start1));
-        });
-        t.start();
-
+        start = System.currentTimeMillis();
+        Exception caught = null;
         try {
-            if (!slowCounter.latch.await(5000, TimeUnit.MILLISECONDS)) {
-                throw new IllegalStateException("Latch never reached zero!");
-            }
-        } catch (InterruptedException ignored) {
+            tableToFilter.where("firstCounter.applyAsInt(X) % 2 == 0", "secondCounter.applyAsInt(X) % 3 == 0");
+        } catch (Exception e) {
+            caught = e;
         }
+        end = System.currentTimeMillis();
+        System.out.println("Duration: " + (end - start));
 
-        t.interrupt();
+        assertEquals(2_000_000, firstCounter.invokes);
+        assertEquals(0, secondCounter.invokes);
+        assertNotNull(caught);
+        assertEquals(QueryCancellationException.class, caught.getClass());
 
-        try {
-            t.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        assertEquals(2_000_000, slowCounter.invokes);
-        assertEquals(0, fastCounter.invokes);
-        assertNotNull(caught.getValue());
-        assertEquals(QueryCancellationException.class, caught.getValue().getClass());
-
-        QueryScope.addParam("slowCounter", null);
-        QueryScope.addParam("fastCounter", null);
+        QueryScope.addParam("firstCounter", null);
+        QueryScope.addParam("secondCounter", null);
     }
 
     @Test
