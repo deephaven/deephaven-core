@@ -24,7 +24,11 @@ Over time, forks will get out of sync with the upstream repository.  To stay up 
 * Navigate to `https://github.com/<username>/deephaven-core` and click on `Fetch upstream`, or
 * Follow these directions on [Syncing A Fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork).
 
+## Building from source
+
+Follow the directions for [building and launching from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
 ## Creating a Pull Request
+
 Pull requests can be created through the GitHub website or through the GitHub CLI.
 
 ### GitHub Web
@@ -46,5 +50,6 @@ For more information, see:
 * [CLI In Use](https://cli.github.com/manual/examples.html)
 
 ## Styleguide
+
 The [styleguide](style/README.md) is applied globally to the entire project, except for generated code that gets checked in.
 To apply the styleguide, run `./gradlew spotlessApply`.
