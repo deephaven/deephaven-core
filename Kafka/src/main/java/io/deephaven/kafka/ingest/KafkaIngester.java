@@ -279,8 +279,8 @@ public class KafkaIngester {
             final long beforePoll = System.nanoTime();
             final long nextReport = lastReportNanos + reportIntervalNanos;
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
-            boolean noMore = pollOnce(Duration.ofNanos(remainingNanos));
-            if (noMore) {
+            boolean more = pollOnce(Duration.ofNanos(remainingNanos));
+            if (!more) {
                 log.error().append(logPrefix)
                         .append("Stopping due to errors (").append(messagesWithErr)
                         .append(" messages with error out of ").append(messagesProcessed).append(" messages processed)")
@@ -308,15 +308,15 @@ public class KafkaIngester {
     /**
      *
      * @param timeout
-     * @return true if we should abort the consumer thread.
+     * @return True if we should continue processing messages; false if we should abort the consumer thread.
      */
     private boolean pollOnce(final Duration timeout) {
         final ConsumerRecords<?, ?> records;
         try {
             records = consumer.poll(timeout);
         } catch (WakeupException we) {
-            // we interpret this as a signal to stop.
-            return false;
+            // we interpret a wakeup as a signal to stop /this/ poll.
+            return true;
         } catch (Exception ex) {
             log.error().append(logPrefix).append("Exception while polling for Kafka messages:").append(ex)
                     .append(", aborting.");
@@ -346,12 +346,12 @@ public class KafkaIngester {
                     consumer.acceptFailure(ex);
                     log.error().append(logPrefix)
                             .append("Max number of errors exceeded, aborting " + this + " consumer thread.");
-                    return true;
+                    return false;
                 }
                 continue;
             }
             messagesProcessed += partitionRecords.size();
         }
-        return false;
+        return true;
     }
 }
