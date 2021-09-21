@@ -320,7 +320,7 @@ public class KafkaIngester {
         } catch (Exception ex) {
             log.error().append(logPrefix).append("Exception while polling for Kafka messages:").append(ex)
                     .append(", aborting.");
-            return false;
+            return true;
         }
 
         for (final TopicPartition topicPartition : records.partitions()) {
