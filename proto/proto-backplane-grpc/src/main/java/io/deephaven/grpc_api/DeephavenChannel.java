@@ -16,23 +16,23 @@ import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceBlockingStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceFutureStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
-import io.grpc.ManagedChannel;
+import io.grpc.Channel;
 
 import javax.inject.Inject;
 import java.util.Objects;
 
 /**
- * A Deephaven service helper for a {@link ManagedChannel managed channel}.
+ * A Deephaven service helper for a {@link Channel channel}.
  */
 public class DeephavenChannel {
-    private final ManagedChannel channel;
+    private final Channel channel;
 
     @Inject
-    public DeephavenChannel(ManagedChannel channel) {
+    public DeephavenChannel(Channel channel) {
         this.channel = Objects.requireNonNull(channel);
     }
 
-    public ManagedChannel channel() {
+    public Channel channel() {
         return channel;
     }
 

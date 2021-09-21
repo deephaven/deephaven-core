@@ -4,8 +4,8 @@ import io.grpc.MethodDescriptor;
 
 import java.io.InputStream;
 
-public class PassthroughInputStreamMarshaller implements MethodDescriptor.Marshaller<InputStream> {
-    public static final PassthroughInputStreamMarshaller INSTANCE = new PassthroughInputStreamMarshaller();
+public enum PassthroughInputStreamMarshaller implements MethodDescriptor.Marshaller<InputStream> {
+    INSTANCE;
 
     @Override
     public InputStream stream(final InputStream inputStream) {

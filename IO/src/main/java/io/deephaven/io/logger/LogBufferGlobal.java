@@ -21,4 +21,13 @@ public class LogBufferGlobal {
             return Optional.ofNullable(INSTANCE);
         }
     }
+
+    public static void clear(LogBuffer logBuffer) {
+        synchronized (LogBufferGlobal.class) {
+            if (logBuffer != INSTANCE) {
+                throw new IllegalStateException("Can only clear existing log buffer");
+            }
+            INSTANCE = null;
+        }
+    }
 }

@@ -73,11 +73,6 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
             subset.close();
         }
 
-        @Override
-        public int read() {
-            throw new UnsupportedOperationException(getClass() + " is to be used as Drainable only");
-        }
-
         protected int getRawSize() throws IOException {
             long size = 0;
             if (sendValidityBuffer()) {

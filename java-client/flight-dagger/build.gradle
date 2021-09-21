@@ -11,13 +11,25 @@ dependencies {
     implementation 'com.google.dagger:dagger:2.31.1'
     annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
 
+    implementation 'org.slf4j:slf4j-api:1.7.30'
+    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+
+    // Unable to use newer junit here because of test-libs/junit-wall-4.11.jar
+    /*
     testImplementation(platform('org.junit:junit-bom:5.7.2'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+    testImplementation 'junit:junit:4.13.2'
+    */
+
     testImplementation 'org.assertj:assertj-core:3.19.0'
+
+    testImplementation TestTools.projectDependency(project, 'grpc-api')
+    testImplementation project(':log-to-slf4j')
 }
 
 test {
-    useJUnitPlatform()
 }
 
 apply plugin: 'io.deephaven.java-publishing-conventions'

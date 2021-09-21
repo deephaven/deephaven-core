@@ -6,9 +6,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
-import io.deephaven.util.auth.AuthContext;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Singleton
@@ -65,6 +66,10 @@ public class SessionService {
             throw new IllegalArgumentException("session.tokenExpireMs is set too low. It is configured to "
                     + tokenExpireMs + "ms (minimum is " + MIN_COOKIE_EXPIRE_MS + "ms). At low levels it is difficult "
                     + "to guarantee smooth operability given a distributed system and potential clock drift");
+        }
+        final long tokenExpireNanos = TimeUnit.MILLISECONDS.toNanos(tokenExpireMs);
+        if (tokenExpireNanos == Long.MIN_VALUE || tokenExpireNanos == Long.MAX_VALUE) {
+            throw new IllegalArgumentException("session.tokenExpireMs is set too high.");
         }
 
         // Protect ourselves from rotation spam, but be loose enough that any reasonable refresh strategy works.
@@ -168,8 +173,8 @@ public class SessionService {
 
             do {
                 newUUID = UuidCreator.getRandomBased();
-                expiration = new TokenExpiration(newUUID, DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs),
-                        session);
+                final long tokenExpireNanos = TimeUnit.MILLISECONDS.toNanos(tokenExpireMs);
+                expiration = new TokenExpiration(newUUID, DBTimeUtils.plus(now, tokenExpireNanos), session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
             if (initialToken) {

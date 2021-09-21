@@ -13,13 +13,12 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.grpc_api.util.DefensiveDrainable;
 import io.deephaven.util.SafeCloseable;
-import io.grpc.Drainable;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Iterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
@@ -215,7 +214,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
         void noteLogicalBuffer(final long length);
     }
 
-    abstract class DrainableColumn extends InputStream implements Drainable {
+    abstract class DrainableColumn extends DefensiveDrainable {
         /**
          * Append the field nde to the flatbuffer payload via the supplied listener.
          * @param listener the listener to notify for each logical field node in this payload
