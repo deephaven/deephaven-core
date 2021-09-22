@@ -76,7 +76,7 @@ dependencies {
             'org.openjdk.jmh:jmh-generator-annprocess:1.21'
 
     testRuntimeOnly project(':log-to-slf4j')
-    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 }

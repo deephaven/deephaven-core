@@ -15,7 +15,7 @@ dependencies {
   }
 
   runtimeOnly project(':log-to-slf4j')
-  runtimeOnly 'org.slf4j:jcl-over-slf4j:1.7.32'
+  Classpaths.inheritSlf4j(project, 'jcl-over-slf4j', 'runtimeOnly')
   runtimeOnly project(':logback-print-stream-globals')
   runtimeOnly project(':logback-logbuffer')
   runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'

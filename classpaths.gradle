@@ -42,7 +42,7 @@ configurations {
 
     dhNumerics.extendsFrom fishNumerics, jama
     dhUtil.extendsFrom commonsCli, commonsIo, commonsCsv, commonsLang3, commonsText, fishUtil, fishStats, jdom
-    dhDb.extendsFrom fishStats, fishNumerics, jdom, commonsCsv, commonsCli, commonsLang3, jacksonDatabind, slf4jSimple
+    dhDb.extendsFrom fishStats, fishNumerics, jdom, commonsCsv, commonsCli, commonsLang3, jacksonDatabind
     dhDbTest.extendsFrom dhDb, mxj, fishDataTest
     dhPlot.extendsFrom dhDb
     dhDbTypes.extendsFrom fishBase, commonsIo
@@ -76,7 +76,6 @@ dependencies {
     mxj 'mysql:mysql-connector-mxj:5.0.12'
     junit fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
     jacksonDatabind 'com.fasterxml.jackson.core:jackson-databind:2.10.1'
-    slf4jSimple 'org.slf4j:slf4j-simple:1.7.30'
 
     // Now, all the various fish libs we depend on, with inherited dependencies matching
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip
