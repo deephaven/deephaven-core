@@ -47,6 +47,9 @@ class Classpaths {
     static final String ARROW_GROUP = 'org.apache.arrow'
     static final String ARROW_VERSION = '5.0.0'
 
+    static final String SLF4J_GROUP = 'org.slf4j'
+    static final String SLF4J_VERSION = '1.7.32'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -113,5 +116,10 @@ class Classpaths {
     static void inheritArrow(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, ARROW_GROUP, name, ARROW_VERSION)
+    }
+
+    static void inheritSlf4j(Project p, String name, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, SLF4J_GROUP, name, SLF4J_VERSION)
     }
 }

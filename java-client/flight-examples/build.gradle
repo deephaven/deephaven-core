@@ -12,7 +12,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core:3.19.0'
 
-    implementation 'org.slf4j:slf4j-api:1.7.30'
+    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
     runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 }
 
