@@ -48,7 +48,7 @@ def _defineSymbols():
     _java_type_ = jpy.get_type("io.deephaven.db.tables.utils.DBTimeUtils")
     DBTimeZone = jpy.get_type("io.deephaven.db.tables.utils.DBTimeZone")
     DBDateTime = jpy.get_type("io.deephaven.db.tables.utils.DBDateTime")
-    DBPeriod = jpy.get_type("io.deephaveb.db.tables.utils.DBPeriod")
+    DBPeriod = jpy.get_type("io.deephaven.db.tables.utils.DBPeriod")
 
 # every module method should be decorated with @_passThrough
 @wrapt.decorator
