@@ -320,6 +320,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 @NotNull WritableChunk<? super Attributes.Values> destination) {
             final WritableObjectChunk<Boolean, ? super Attributes.Values> writeable =
                     destination.asWritableObjectChunk();
+            writeable.setSize(orderedKeysSize);
             if (intersection.empty()) {
                 writeable.fillWithValue(0, orderedKeysSize, false);
                 return;
