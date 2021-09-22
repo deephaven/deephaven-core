@@ -206,9 +206,11 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         final QueryTable queryTable = getTable(500, random, columnInfo);
 
-        final EvalNugget[] en = new EvalNugget[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.wouldMatch("hasAG=Sym.contains(`G`)",
                         "BigHero6=Stringy.length()>=6 && Booly", "Mathy=(Inty+Floaty)/2 > 40")),
+                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG"),
+                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG == true")),
         };
 
         for (int i = 0; i < 100; i++) {
