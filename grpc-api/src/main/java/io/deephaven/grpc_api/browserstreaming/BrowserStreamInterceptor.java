@@ -2,7 +2,7 @@ package io.deephaven.grpc_api.browserstreaming;
 
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.*;
 

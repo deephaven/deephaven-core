@@ -7,7 +7,7 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.v2.TimeTable;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;

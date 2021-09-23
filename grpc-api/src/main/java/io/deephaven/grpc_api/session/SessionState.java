@@ -24,7 +24,7 @@ import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -57,8 +57,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
-import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.client.impl.util.GrpcUtil.safelyExecute;
+import static io.deephaven.client.impl.util.GrpcUtil.safelyExecuteLocked;
 
 /**
  * SessionState manages all exports for a single session.
@@ -938,6 +938,7 @@ public class SessionState {
 
         @Override
         protected synchronized void destroy() {
+            super.destroy();
             result = null;
         }
 

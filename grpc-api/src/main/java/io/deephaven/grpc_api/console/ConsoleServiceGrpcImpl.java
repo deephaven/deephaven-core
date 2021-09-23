@@ -20,7 +20,7 @@ import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
 import io.deephaven.grpc_api.session.TicketRouter;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
@@ -44,8 +44,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
-import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.client.impl.util.GrpcUtil.safelyExecute;
+import static io.deephaven.client.impl.util.GrpcUtil.safelyExecuteLocked;
 
 @Singleton
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {

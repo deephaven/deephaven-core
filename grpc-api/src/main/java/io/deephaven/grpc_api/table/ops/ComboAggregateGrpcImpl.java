@@ -10,7 +10,7 @@ import io.deephaven.db.v2.by.ComboAggregateFactory;
 import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.validation.ColumnExpressionValidator;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.grpc.StatusRuntimeException;

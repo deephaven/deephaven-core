@@ -6,8 +6,8 @@ package io.deephaven.grpc_api.session;
 
 import com.google.rpc.Code;
 import io.deephaven.db.tables.Table;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.BarrageUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -223,7 +223,7 @@ public class TicketRouter {
             final Flight.FlightDescriptor descriptor,
             final Flight.Ticket ticket) {
         return Flight.FlightInfo.newBuilder()
-                .setSchema(BarrageSchemaUtil.schemaBytesFromTable(table))
+                .setSchema(BarrageUtil.schemaBytesFromTable(table))
                 .setFlightDescriptor(descriptor)
                 .addEndpoint(Flight.FlightEndpoint.newBuilder()
                         .setTicket(ticket)

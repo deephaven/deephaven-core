@@ -9,7 +9,7 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.MatchPairFactory;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;

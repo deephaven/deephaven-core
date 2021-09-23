@@ -10,6 +10,12 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.client.impl.BarrageSubscriptionImpl;
+import io.deephaven.client.impl.BarrageSubscriptionOptions;
+import io.deephaven.client.impl.table.BarrageTable;
+import io.deephaven.client.impl.util.BarrageMessageConsumer;
+import io.deephaven.client.impl.util.BarrageProtoUtil;
+import io.deephaven.client.impl.util.BarrageStreamReader;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.live.LiveTableRefreshCombiner;
@@ -32,12 +38,8 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.arrow.ArrowModule;
-import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
-import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.table.BarrageTable;
-import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
@@ -74,7 +76,6 @@ import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     private static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
 
-    private Logger log;
     private TestControlledScheduler scheduler;
     private Deque<Throwable> exceptions;
     private LiveTableRefreshCombiner liveTableRegistrar;
@@ -87,7 +88,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> getStreamGeneratorFactory();
+        BarrageMessageProducer.StreamGenerator.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {
@@ -101,7 +102,6 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        log = new StreamLoggerImpl();
         liveTableRegistrar = new LiveTableRefreshCombiner();
         scheduler = new TestControlledScheduler();
         exceptions = new ArrayDeque<>();
@@ -117,7 +117,6 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     @Override
     protected void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
-        log = null;
         liveTableRegistrar = null;
         scheduler = null;
         exceptions = null;
@@ -162,7 +161,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         private final BarrageTable barrageTable;
         @ReferentialIntegrity
-        private final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer;
+        private final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer;
 
         @ReferentialIntegrity
         private final TableUpdateValidator replicatedTUV;
@@ -176,13 +175,13 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         // The replicated table's TableUpdateValidator will be confused if the table is a viewport. Instead we rely on
         // comparing the producer table to the consumer table to validate contents are correct.
         RemoteClient(final Index viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer,
+                final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer,
                 final String name) {
             this(viewport, subscribedColumns, barrageMessageProducer, name, false);
         }
 
         RemoteClient(final Index viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer,
+                final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer,
                 final String name, final boolean deferSubscription) {
             this.viewport = viewport;
             this.subscribedColumns = subscribedColumns;
@@ -192,8 +191,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             this.barrageTable = BarrageTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT,
                     barrageMessageProducer.getTableDefinition(), viewport != null);
 
-            final ChunkInputStreamGenerator.Options options = new ChunkInputStreamGenerator.Options.Builder()
-                    .setIsViewport(viewport != null)
+            final BarrageSubscriptionOptions options = new BarrageSubscriptionOptions.Builder()
                     .setUseDeephavenNulls(useDeephavenNulls)
                     .build();
             final BarrageMarshaller marshaller = new BarrageMarshaller(
@@ -220,8 +218,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         public void doSubscribe() {
             subscribed = true;
-            final ChunkInputStreamGenerator.Options options = new ChunkInputStreamGenerator.Options.Builder()
-                    .setIsViewport(viewport != null)
+            final BarrageSubscriptionOptions options = new BarrageSubscriptionOptions.Builder()
                     .setUseDeephavenNulls(useDeephavenNulls)
                     .build();
             barrageMessageProducer.addSubscription(dummyObserver, options, subscribedColumns, viewport);
@@ -336,7 +333,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         private final QueryTable originalTable;
         @ReferentialIntegrity
-        private final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer;
+        private final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer;
 
         @ReferentialIntegrity
         private final TableUpdateValidator originalTUV;
@@ -1254,12 +1251,12 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     private static class BarrageMarshaller
-            extends FlightServiceGrpcBinding.BarrageDataMarshaller<ChunkInputStreamGenerator.Options> {
-        public BarrageMarshaller(final ChunkInputStreamGenerator.Options options,
+            extends BarrageSubscriptionImpl.BarrageDataMarshaller<BarrageSubscriptionOptions> {
+        public BarrageMarshaller(final BarrageSubscriptionOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader) {
+                final BarrageMessageConsumer.StreamReader<BarrageSubscriptionOptions> streamReader) {
             super(options, columnChunkTypes, columnTypes, componentTypes, streamReader);
         }
     }

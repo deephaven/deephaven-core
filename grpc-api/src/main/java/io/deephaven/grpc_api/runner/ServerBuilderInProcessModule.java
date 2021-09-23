@@ -2,7 +2,7 @@ package io.deephaven.grpc_api.runner;
 
 import dagger.Module;
 import dagger.Provides;
-import io.deephaven.grpc_api.util.DefensiveDrainable;
+import io.deephaven.client.impl.util.DefensiveDrainable;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;

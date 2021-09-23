@@ -1,6 +1,6 @@
 package io.deephaven.grpc_api.util;
 
-import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
+import io.deephaven.client.impl.util.BarrageProtoUtil;
 import io.grpc.MethodDescriptor;
 
 import java.io.ByteArrayInputStream;

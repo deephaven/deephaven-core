@@ -35,6 +35,27 @@ public abstract class TicketTable extends TableBase {
     }
 
     /**
+     * Create a ticket table from the provided {@code fieldName}.
+     *
+     * @param fieldName the query scope field name
+     * @return the ticket table
+     */
+    public static TicketTable fromQueryScopeField(String fieldName) {
+        return of("s/" + fieldName);
+    }
+
+    /**
+     * Create a ticket table from the provided {@code appId} and {@code fieldName}.
+     *
+     * @param applicationId the application id
+     * @param fieldName the application field name
+     * @return the ticket table
+     */
+    public static TicketTable fromApplicationField(String applicationId, String fieldName) {
+        return of("a/" + applicationId + "/f/" + fieldName);
+    }
+
+    /**
      * The ticket.
      *
      * @return the ticket

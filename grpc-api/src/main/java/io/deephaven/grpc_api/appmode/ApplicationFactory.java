@@ -5,7 +5,7 @@ import io.deephaven.appmode.*;
 import io.deephaven.db.util.GroovyDeephavenSession;
 import io.deephaven.db.util.PythonDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 
 import java.nio.file.Path;
 import java.util.List;

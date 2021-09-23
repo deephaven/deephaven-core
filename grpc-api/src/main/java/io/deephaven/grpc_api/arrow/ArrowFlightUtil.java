@@ -1,8 +1,5 @@
 package io.deephaven.grpc_api.arrow;
 
-import com.google.common.io.LittleEndianDataInputStream;
-import com.google.protobuf.CodedInputStream;
-import com.google.protobuf.WireFormat;
 import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
@@ -11,11 +8,16 @@ import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSerializationOptions;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.client.impl.BarrageSubscriptionOptions;
+import io.deephaven.client.impl.chunk.ChunkInputStreamGenerator;
+import io.deephaven.client.impl.table.BarrageTable;
+import io.deephaven.client.impl.util.BarrageProtoUtil;
+import io.deephaven.client.impl.util.BarrageUtil;
+import io.deephaven.client.impl.util.FlatBufferIteratorAdapter;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.util.liveness.SingletonLivenessManager;
@@ -26,122 +28,37 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.grpc_api.util.GrpcUtil;
-import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.table.BarrageTable;
-import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
-import io.deephaven.grpc_api_client.util.FlatBufferIteratorAdapter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Queue;
 
+import static io.deephaven.client.impl.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
+
 public class ArrowFlightUtil {
-    public static final ChunkInputStreamGenerator.Options DEFAULT_SER_OPTIONS =
-            new ChunkInputStreamGenerator.Options.Builder().build();
+    private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
+
     public static final int DEFAULT_UPDATE_INTERVAL_MS =
             Configuration.getInstance().getIntegerWithDefault("barrage.updateInterval", 1000);
 
-    private static final int TAG_TYPE_BITS = 3;
     private static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
-
-    public static final int BODY_TAG =
-            (Flight.FlightData.DATA_BODY_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
-    public static final int DATA_HEADER_TAG =
-            (Flight.FlightData.DATA_HEADER_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
-    public static final int APP_METADATA_TAG =
-            (Flight.FlightData.APP_METADATA_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
-    public static final int FLIGHT_DESCRIPTOR_TAG =
-            (Flight.FlightData.FLIGHT_DESCRIPTOR_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
-
-    private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
-
-    public static final class MessageInfo {
-        /** outer-most Arrow Flight Message that indicates the msg type (i.e. schema, record batch, etc) */
-        Message header = null;
-        /** the embedded flatbuffer metadata indicating information about this batch */
-        BarrageMessageWrapper app_metadata = null;
-        /** the parsed protobuf from the flight descriptor embedded in app_metadata */
-        Flight.FlightDescriptor descriptor = null;
-        /** the payload beyond the header metadata */
-        @SuppressWarnings("UnstableApiUsage")
-        LittleEndianDataInputStream inputStream = null;
-    }
-
-    public static MessageInfo parseProtoMessage(final InputStream stream) throws IOException {
-        final MessageInfo mi = new MessageInfo();
-
-        final CodedInputStream decoder = CodedInputStream.newInstance(stream);
-
-        // if we find a body tag we stop iterating through the loop as there should be no more tags after the body
-        // and we lazily drain the payload from the decoder (so the next bytes are payload and not a tag)
-        decodeLoop: for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
-            final int size;
-            switch (tag) {
-                case DATA_HEADER_TAG:
-                    size = decoder.readRawVarint32();
-                    mi.header = Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
-                    break;
-                case APP_METADATA_TAG:
-                    size = decoder.readRawVarint32();
-                    mi.app_metadata = BarrageMessageWrapper
-                            .getRootAsBarrageMessageWrapper(ByteBuffer.wrap(decoder.readRawBytes(size)));
-                    if (mi.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC) {
-                        log.error().append("received invalid magic").endl();
-                        mi.app_metadata = null;
-                    }
-                    break;
-                case FLIGHT_DESCRIPTOR_TAG:
-                    size = decoder.readRawVarint32();
-                    final byte[] bytes = decoder.readRawBytes(size);
-                    mi.descriptor = Flight.FlightDescriptor.parseFrom(bytes);
-                    break;
-                case BODY_TAG:
-                    // at this point, we're in the body, we will read it and then break, the rest of the payload should
-                    // be the body
-                    size = decoder.readRawVarint32();
-                    // noinspection UnstableApiUsage
-                    mi.inputStream = new LittleEndianDataInputStream(
-                            new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
-                    // we do not actually remove the content from our stream; prevent reading the next tag via a labeled
-                    // break
-                    break decodeLoop;
-
-                default:
-                    log.info().append("Skipping tag: ").append(tag).endl();
-                    decoder.skipField(tag);
-            }
-        }
-
-        if (mi.header != null && mi.header.headerType() == MessageHeader.RecordBatch && mi.inputStream == null) {
-            // noinspection UnstableApiUsage
-            mi.inputStream =
-                    new LittleEndianDataInputStream(new ByteArrayInputStream(CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
-        }
-
-        return mi;
-    }
 
     /**
      * This is a stateful observer; a DoPut stream begins with its schema.
@@ -160,7 +77,7 @@ public class ArrowFlightUtil {
         private Class<?>[] columnTypes;
         private Class<?>[] componentTypes;
 
-        private ChunkInputStreamGenerator.Options options = DEFAULT_SER_OPTIONS;
+        private BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
 
         public DoPutObserver(
                 final SessionState session,
@@ -180,7 +97,7 @@ public class ArrowFlightUtil {
         @Override
         public void onNext(final InputStream request) {
             GrpcUtil.rpcWrapper(log, observer, () -> {
-                final MessageInfo mi = parseProtoMessage(request);
+                final BarrageProtoUtil.MessageInfo mi = BarrageProtoUtil.parseProtoMessage(request);
                 if (mi.descriptor != null) {
                     if (resultExportBuilder != null) {
                         throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -194,7 +111,7 @@ public class ArrowFlightUtil {
 
                 if (mi.app_metadata != null
                         && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
-                    options = ChunkInputStreamGenerator.Options.of(BarrageSerializationOptions
+                    options = BarrageSubscriptionOptions.of(BarrageSerializationOptions
                             .getRootAsBarrageSerializationOptions(mi.app_metadata.msgPayloadAsByteBuffer()));
                 }
 
@@ -332,7 +249,7 @@ public class ArrowFlightUtil {
             if (resultTable != null) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
             }
-            resultTable = BarrageTable.make(BarrageSchemaUtil.schemaToTableDefinition(header), false);
+            resultTable = BarrageTable.make(BarrageUtil.schemaToTableDefinition(header), false);
             columnChunkTypes = resultTable.getWireChunkTypes();
             columnTypes = resultTable.getWireTypes();
             componentTypes = resultTable.getWireComponentTypes();
@@ -359,7 +276,7 @@ public class ArrowFlightUtil {
         private final SessionState session;
 
         private boolean isViewport;
-        private BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> bmp;
+        private BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> bmp;
         private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
 
         private final StreamObserver<BarrageStreamGenerator.View> listener;
@@ -368,15 +285,15 @@ public class ArrowFlightUtil {
         private SessionState.ExportObject<?> onExportResolvedContinuation;
 
         private final TicketRouter ticketRouter;
-        private final BarrageMessageProducer.Operation.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> operationFactory;
-        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, ChunkInputStreamGenerator.Options> optionsAdapter;
+        private final BarrageMessageProducer.Operation.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> operationFactory;
+        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter;
 
         @AssistedInject
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
-                final BarrageMessageProducer.Operation.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> operationFactory,
+                final BarrageMessageProducer.Operation.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> operationFactory,
                 final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> listenerAdapter,
-                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, ChunkInputStreamGenerator.Options> optionsAdapter,
+                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter,
                 @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
 
             this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
@@ -396,10 +313,10 @@ public class ArrowFlightUtil {
         @Override
         public void onNext(final InputStream request) {
             GrpcUtil.rpcWrapper(log, listener, () -> {
-                MessageInfo message = parseProtoMessage(request);
+                BarrageProtoUtil.MessageInfo message = BarrageProtoUtil.parseProtoMessage(request);
                 synchronized (this) {
                     if (message.app_metadata == null
-                            || message.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC
+                            || message.app_metadata.magic() != BarrageUtil.FLATBUFFER_MAGIC
                             || message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
                         log.warn().append(myPrefix).append("received a message without app_metadata").endl();
                         return;

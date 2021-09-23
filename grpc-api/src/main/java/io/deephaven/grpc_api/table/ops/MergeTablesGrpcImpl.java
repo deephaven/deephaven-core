@@ -6,7 +6,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.grpc.StatusRuntimeException;

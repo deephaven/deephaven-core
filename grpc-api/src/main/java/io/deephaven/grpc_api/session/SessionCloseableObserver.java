@@ -5,7 +5,7 @@ import io.grpc.stub.StreamObserver;
 
 import java.io.Closeable;
 
-import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.client.impl.util.GrpcUtil.safelyExecuteLocked;
 
 public abstract class SessionCloseableObserver<T> implements Closeable {
     protected final SessionState session;

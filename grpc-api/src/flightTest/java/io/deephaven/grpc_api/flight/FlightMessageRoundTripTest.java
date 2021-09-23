@@ -15,7 +15,7 @@ import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.auth.AuthContextModule;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
+import io.deephaven.client.impl.util.BarrageUtil;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
 import io.deephaven.grpc_api.arrow.ArrowModule;
@@ -367,7 +367,7 @@ public class FlightMessageRoundTripTest {
     private void assertSchemaMatchesTable(Schema schema, Table table) {
         Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.getColumns().length,
                 "table.getColumns().length");
-        Assert.equals(BarrageSchemaUtil.schemaToTableDefinition(schema),
+        Assert.equals(BarrageUtil.schemaToTableDefinition(schema),
                 "BarrageSchemaUtil.schemaToTableDefinition(schema)",
                 table.getDefinition(), "table.getDefinition()");
     }

@@ -7,7 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.db.tables.SortPair;
 import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;

@@ -13,7 +13,7 @@ import io.deephaven.db.util.ScriptSession;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolverBase;
 import io.deephaven.grpc_api.session.TicketRouter;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.grpc_api.util.TicketRouterHelper;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import org.apache.arrow.flight.impl.Flight;

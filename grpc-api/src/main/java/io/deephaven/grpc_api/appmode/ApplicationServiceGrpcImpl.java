@@ -9,13 +9,12 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessManager;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.v2.DynamicNode;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
+import io.deephaven.client.impl.util.BarrageUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -305,7 +304,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         if (obj instanceof Table) {
             final Table table = (Table) obj;
             return FieldInfo.FieldType.newBuilder().setTable(TableInfo.newBuilder()
-                    .setSchemaHeader(BarrageSchemaUtil.schemaBytesFromTable(table))
+                    .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
                     .setIsStatic(!table.isLive())
                     .setSize(table.size())
                     .build()).build();

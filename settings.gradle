@@ -12,7 +12,7 @@ String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
         'CompilerTools', 'Generators',
         'Integrations', 'ModelFarm', 'ClientSupport',
         'BenchmarkSupport', 'DB-test', 'DbTypes', 'DbTypesImpl', 'Parquet',
-        'Kafka', 'grpc-api', 'grpc-api-client', 'table-api', 'qst']
+        'Kafka', 'grpc-api', 'table-api', 'qst']
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
@@ -104,9 +104,6 @@ project(':grpc-api-server-docker').projectDir = file('grpc-api/server/docker')
 include(':grpc-api-server-native')
 project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
 
-include(':grpc-api-client-simple')
-project(':grpc-api-client-simple').projectDir = file('grpc-api-client/simple')
-
 include(':grpc-api-client-console')
 project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
 
@@ -148,17 +145,26 @@ project(':client-session').projectDir = file('java-client/session')
 include(':client-flight')
 project(':client-flight').projectDir = file('java-client/flight')
 
+include(':client-deephaven')
+project(':client-deephaven').projectDir = file('java-client/deephaven')
+
 include(':client-session-dagger')
 project(':client-session-dagger').projectDir = file('java-client/session-dagger')
 
 include(':client-flight-dagger')
 project(':client-flight-dagger').projectDir = file('java-client/flight-dagger')
 
+include(':client-deephaven-dagger')
+project(':client-deephaven-dagger').projectDir = file('java-client/deephaven-dagger')
+
 include(':client-session-examples')
 project(':client-session-examples').projectDir = file('java-client/session-examples')
 
 include(':client-flight-examples')
 project(':client-flight-examples').projectDir = file('java-client/flight-examples')
+
+include(':client-deephaven-examples')
+project(':client-deephaven-examples').projectDir = file('java-client/deephaven-examples')
 
 include(':qst:graphviz')
 

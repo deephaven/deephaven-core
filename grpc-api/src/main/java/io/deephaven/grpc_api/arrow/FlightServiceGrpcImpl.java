@@ -8,16 +8,16 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.client.impl.BarrageSubscriptionOptions;
 import io.deephaven.db.v2.BaseTable;
 import io.deephaven.db.v2.remote.ConstructSnapshot;
 import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
+import io.deephaven.client.impl.util.BarrageUtil;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
-import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
@@ -35,8 +35,8 @@ import java.nio.ByteBuffer;
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
     // TODO NATE: pull app_metadata off of DoGet -- what about doPut? (core#412): use app_metadata to communicate
     // serialization options
-    private static final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS =
-            new ChunkInputStreamGenerator.Options.Builder().build();
+    private static final BarrageSubscriptionOptions DEFAULT_DESER_OPTIONS =
+            new BarrageSubscriptionOptions.Builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
@@ -156,9 +156,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
                         // Send Schema wrapped in Message
                         final FlatBufferBuilder builder = new FlatBufferBuilder();
-                        final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table.getDefinition(),
+                        final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
                                 table.getAttributes());
-                        builder.finish(BarrageStreamGenerator.wrapInMessage(builder, schemaOffset,
+                        builder.finish(BarrageUtil.wrapInMessage(builder, schemaOffset,
                                 org.apache.arrow.flatbuf.MessageHeader.Schema));
                         final ByteBuffer serializedMessage = builder.dataBuffer();
 

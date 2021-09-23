@@ -13,7 +13,7 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -27,7 +27,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
+import static io.deephaven.client.impl.util.GrpcUtil.safelyExecute;
 
 /**
  * Manage the lifecycle of exports that are Tables.

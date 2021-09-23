@@ -6,9 +6,9 @@ import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.client.impl.BarrageSubscriptionOptions;
 import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
-import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
 import io.grpc.BindableService;
 import io.grpc.stub.StreamObserver;
 
@@ -28,7 +28,7 @@ public abstract class ArrowModule {
 
     @Binds
     @Singleton
-    abstract BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> bindStreamGenerator(
+    abstract BarrageMessageProducer.StreamGenerator.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> bindStreamGenerator(
             BarrageStreamGenerator.Factory factory);
 
     @Provides
@@ -62,7 +62,7 @@ public abstract class ArrowModule {
     }
 
     @Provides
-    static BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, ChunkInputStreamGenerator.Options> optionsAdapter() {
-        return ChunkInputStreamGenerator.Options::of;
+    static BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter() {
+        return BarrageSubscriptionOptions::of;
     }
 }

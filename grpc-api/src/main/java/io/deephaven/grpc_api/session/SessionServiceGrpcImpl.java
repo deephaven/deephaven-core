@@ -8,7 +8,7 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.auth.AuthContextProvider;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;

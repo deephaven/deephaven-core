@@ -5,7 +5,7 @@ import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.GrpcServiceOverrideBuilder;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.StatusRuntimeException;

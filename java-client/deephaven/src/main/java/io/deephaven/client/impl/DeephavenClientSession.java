@@ -1,0 +1,100 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+package io.deephaven.client.impl;
+
+import io.deephaven.qst.table.TableSpec;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.ClientInterceptor;
+import io.grpc.ClientInterceptors;
+import io.grpc.ForwardingClientCall;
+import io.grpc.ManagedChannel;
+import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
+import org.apache.arrow.flight.FlightClient;
+import org.apache.arrow.flight.FlightGrpcUtilsExtension;
+import org.apache.arrow.memory.BufferAllocator;
+
+import java.util.Collections;
+
+public class DeephavenClientSession extends FlightSession implements BarrageSubscription.Factory {
+
+    /**
+     * The server is able to make more efficient use of resources when the same updateInterval is used across all API
+     * clients. Set this default on the server with {@code -Dbarrage.updateInterval}. Otherwise, it is recommended to
+     * sparingly use a value other than the default.
+     */
+    private static final int DEFER_UPDATE_INTERVAL_TO_SERVER = 0;
+
+    public static DeephavenClientSession of(
+            SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
+        final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
+                incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
+        return new DeephavenClientSession(session, client, channel);
+    }
+
+    private final Channel interceptedChannel;
+
+    protected DeephavenClientSession(
+            final SessionImpl session, final FlightClient client, final ManagedChannel channel) {
+        super(session, client);
+        this.interceptedChannel = ClientInterceptors.intercept(channel, new AuthInterceptor());
+    }
+
+    public Channel interceptedChannel() {
+        return interceptedChannel;
+    }
+
+    @Override
+    public BarrageSubscription subscribe(final TableSpec tableSpec, final BarrageSubscriptionOptions options)
+            throws TableHandle.TableHandleException, InterruptedException {
+        return subscribe(tableSpec, options, DEFER_UPDATE_INTERVAL_TO_SERVER);
+    }
+
+    @Override
+    public BarrageSubscription subscribe(final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+        return subscribe(tableHandle, options, DEFER_UPDATE_INTERVAL_TO_SERVER);
+    }
+
+    @Override
+    public BarrageSubscription subscribe(
+            final TableSpec tableSpec, final BarrageSubscriptionOptions options, final int updateIntervalMs)
+            throws TableHandle.TableHandleException, InterruptedException {
+        try (final TableHandle handle = session().execute(tableSpec)) {
+            return subscribe(handle, options, updateIntervalMs);
+        }
+    }
+
+    @Override
+    public BarrageSubscription subscribe(
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options, final int updateIntervalMs) {
+        final TableHandle handleForSubscription = tableHandle.newRef();
+        return new BarrageSubscriptionImpl(this, handleForSubscription.export(), options, updateIntervalMs,
+                handleForSubscription::close);
+    }
+
+    public Channel channel() {
+        return null;
+    }
+
+    private class AuthInterceptor implements ClientInterceptor {
+        @Override
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
+                final Channel channel) {
+            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
+                    channel.newCall(methodDescriptor, callOptions)) {
+                @Override
+                public void start(final Listener<RespT> responseListener, final Metadata headers) {
+                    final AuthenticationInfo localAuth = ((SessionImpl) session()).auth();
+                    headers.put(Metadata.Key.of(localAuth.sessionHeaderKey(), Metadata.ASCII_STRING_MARSHALLER),
+                            localAuth.session());
+                    super.start(responseListener, headers);
+                }
+            };
+        }
+    }
+}

@@ -5,6 +5,7 @@
 package io.deephaven.grpc_api.util;
 
 import com.google.rpc.Code;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.grpc_api.browserstreaming.BrowserStream;
 import io.deephaven.grpc_api.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.grpc_api.browserstreaming.StreamData;
@@ -195,24 +196,6 @@ public class GrpcServiceOverrideBuilder {
             return ServerInterceptors.intercept(serviceDef, browserStreamInterceptor);
         }
         return serviceDef;
-    }
-
-    public static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
-            final MethodDescriptor.MethodType methodType,
-            final String serviceName,
-            final String methodName,
-            final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
-            final MethodDescriptor.Marshaller<RespT> responseMarshaller,
-            final MethodDescriptor<?, ?> descriptor) {
-
-        return MethodDescriptor.<ReqT, RespT>newBuilder()
-                .setType(methodType)
-                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
-                .setSampledToLocalTracing(false)
-                .setRequestMarshaller(requestMarshaller)
-                .setResponseMarshaller(responseMarshaller)
-                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
-                .build();
     }
 
     @FunctionalInterface

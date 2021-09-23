@@ -9,7 +9,7 @@ import io.deephaven.db.tables.select.SelectColumnFactory;
 import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.validation.ColumnExpressionValidator;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.client.impl.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.grpc.StatusRuntimeException;

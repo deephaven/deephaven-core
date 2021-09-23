@@ -14,13 +14,12 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.client.impl.BarrageSubscriptionOptions;
+import io.deephaven.client.impl.util.DefensiveDrainable;
 import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.grpc_api.util.DefensiveDrainable;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.FieldNode;
-import org.apache.arrow.flatbuf.Message;
-import org.apache.arrow.flatbuf.MetadataVersion;
 import org.apache.arrow.flatbuf.RecordBatch;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.chunk.Attributes;
@@ -29,9 +28,9 @@ import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
-import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
+import io.deephaven.client.impl.util.BarrageUtil;
+import io.deephaven.client.impl.chunk.ChunkInputStreamGenerator;
+import io.deephaven.client.impl.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.Drainable;
@@ -52,13 +51,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static io.deephaven.grpc_api_client.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
+import static io.deephaven.client.impl.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 
 public class BarrageStreamGenerator implements
-        BarrageMessageProducer.StreamGenerator<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> {
+        BarrageMessageProducer.StreamGenerator<BarrageSubscriptionOptions, BarrageStreamGenerator.View> {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
-
-    public static final long FLATBUFFER_MAGIC = 0x6E687064;
 
     public interface View {
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
@@ -66,22 +63,23 @@ public class BarrageStreamGenerator implements
 
     @Singleton
     public static class Factory
-            implements BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, View> {
+            implements BarrageMessageProducer.StreamGenerator.Factory<BarrageSubscriptionOptions, View> {
         @Inject
         public Factory() {}
 
         @Override
-        public BarrageMessageProducer.StreamGenerator<ChunkInputStreamGenerator.Options, View> newGenerator(
+        public BarrageMessageProducer.StreamGenerator<BarrageSubscriptionOptions, View> newGenerator(
                 final BarrageMessage message) {
             return new BarrageStreamGenerator(message);
         }
 
         @Override
-        public View getSchemaView(final ChunkInputStreamGenerator.Options options, final TableDefinition table,
+        public View getSchemaView(final BarrageSubscriptionOptions options, final TableDefinition table,
                 final Map<String, Object> attributes) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
-            final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table, attributes);
-            builder.finish(wrapInMessage(builder, schemaOffset, org.apache.arrow.flatbuf.MessageHeader.Schema));
+            final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table, attributes);
+            builder.finish(BarrageUtil.wrapInMessage(builder, schemaOffset,
+                    org.apache.arrow.flatbuf.MessageHeader.Schema));
             return new SchemaView(builder.dataBuffer());
         }
     }
@@ -188,7 +186,7 @@ public class BarrageStreamGenerator implements
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
     @Override
-    public SubView getSubView(final ChunkInputStreamGenerator.Options options,
+    public SubView getSubView(final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
             @Nullable final Index viewport,
             @Nullable final Index keyspaceViewport,
@@ -204,13 +202,13 @@ public class BarrageStreamGenerator implements
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
     @Override
-    public SubView getSubView(ChunkInputStreamGenerator.Options options, boolean isInitialSnapshot) {
+    public SubView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
         return getSubView(options, isInitialSnapshot, null, null, null);
     }
 
     public static class SubView implements View {
         public final BarrageStreamGenerator generator;
-        public final ChunkInputStreamGenerator.Options options;
+        public final BarrageSubscriptionOptions options;
         public final boolean isInitialSnapshot;
         public final Index viewport;
         public final Index keyspaceViewport;
@@ -219,7 +217,7 @@ public class BarrageStreamGenerator implements
         public final boolean hasModBatch;
 
         public SubView(final BarrageStreamGenerator generator,
-                final ChunkInputStreamGenerator.Options options,
+                final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
                 @Nullable final Index viewport,
                 @Nullable final Index keyspaceViewport,
@@ -363,8 +361,8 @@ public class BarrageStreamGenerator implements
         RecordBatch.addLength(header, numRows);
         final int headerOffset = RecordBatch.endRecordBatch(header);
 
-        header.finish(wrapInMessage(header, headerOffset, org.apache.arrow.flatbuf.MessageHeader.RecordBatch,
-                size.intValue()));
+        header.finish(BarrageUtil.wrapInMessage(header, headerOffset,
+                org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.intValue()));
 
         // now create the proto header
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
@@ -387,19 +385,7 @@ public class BarrageStreamGenerator implements
         }
     }
 
-    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType) {
-        return wrapInMessage(builder, headerOffset, headerType, 0);
-    }
 
-    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType,
-            final int bodyLength) {
-        Message.startMessage(builder);
-        Message.addHeaderType(builder, headerType);
-        Message.addHeader(builder, headerOffset);
-        Message.addVersion(builder, MetadataVersion.V5);
-        Message.addBodyLength(builder, bodyLength);
-        return Message.endMessage(builder);
-    }
 
     private static int createByteVector(final FlatBufferBuilder builder, final byte[] data, final int offset,
             final int length) {
@@ -557,7 +543,7 @@ public class BarrageStreamGenerator implements
         final FlatBufferBuilder header = new FlatBufferBuilder();
         final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
         BarrageMessageWrapper.startBarrageMessageWrapper(header);
-        BarrageMessageWrapper.addMagic(header, FLATBUFFER_MAGIC);
+        BarrageMessageWrapper.addMagic(header, BarrageUtil.FLATBUFFER_MAGIC);
         BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
         BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
         header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));

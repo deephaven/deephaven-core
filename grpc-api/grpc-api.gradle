@@ -25,7 +25,7 @@ sourceSets {
 dependencies {
     compile project(':DB'),
             project(':Util'),
-            project(':grpc-api-client'),
+            project(':client-deephaven'),
             project(':proto:proto-backplane-grpc-flight'),
             project(':open-api-lang-tools'),
             project(':log-factory'),
