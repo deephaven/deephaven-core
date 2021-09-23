@@ -10,12 +10,22 @@ public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
      *
      * TODO: should we read the chunks and pass them in, or allow the key or value serializer to do that work?
      *
-     * @param outputChunk the chunk containing a serialized value
-     * @param outputChunk the output chunk
+     * @param context a context created by {@link #makeContext(int)}
+     * @param orderedKeys the keys to serialize
+     * @param previous if previous values should be used, as with key removals
+     *
+     * @return a chunk of serialized values
      */
     ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys,
             boolean previous);
 
+    /**
+     * Create a context for calling handleChunk.
+     *
+     * @param size the maximum number of rows that will be serialized for each chunk
+     *
+     * @return a Context for the KeyOrValueSerializer
+     */
     Context makeContext(int size);
 
     interface Context extends SafeCloseable {

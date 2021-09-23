@@ -62,15 +62,16 @@ public class PublishToKafka<K, V> {
             return;
         }
 
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, indexToPublish.size());
         try (final OrderedKeys.Iterator okit = indexToPublish.getOrderedKeysIterator();
                 final KeyOrValueSerializer.Context keyContext =
-                        keySerializer != null ? keySerializer.makeContext(CHUNK_SIZE) : null;
+                        keySerializer != null ? keySerializer.makeContext(chunkSize) : null;
                 final KeyOrValueSerializer.Context valueContext =
-                        publishValues && valueSerializer != null ? valueSerializer.makeContext(CHUNK_SIZE) : null;
+                        publishValues && valueSerializer != null ? valueSerializer.makeContext(chunkSize) : null;
                 final WritableObjectChunk<Future<RecordMetadata>, Attributes.Values> sendFutures =
-                        WritableObjectChunk.makeWritableChunk(CHUNK_SIZE)) {
+                        WritableObjectChunk.makeWritableChunk(chunkSize)) {
             while (okit.hasMore()) {
-                final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
 
                 final ObjectChunk<K, Attributes.Values> keyChunk;
                 if (keyContext != null) {
