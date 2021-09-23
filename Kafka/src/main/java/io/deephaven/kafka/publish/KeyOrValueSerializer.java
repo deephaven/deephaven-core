@@ -13,7 +13,8 @@ public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
      * @param outputChunk the chunk containing a serialized value
      * @param outputChunk the output chunk
      */
-    ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys, boolean previous);
+    ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys,
+            boolean previous);
 
     Context makeContext(int size);
 

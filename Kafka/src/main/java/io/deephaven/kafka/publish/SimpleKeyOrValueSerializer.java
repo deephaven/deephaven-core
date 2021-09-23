@@ -20,7 +20,7 @@ public class SimpleKeyOrValueSerializer<K> implements KeyOrValueSerializer<K> {
 
     @Override
     public ObjectChunk<K, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys, boolean previous) {
-        final SimpleContext simpleContext = (SimpleContext)context;
+        final SimpleContext simpleContext = (SimpleContext) context;
         final Chunk chunk = source.getChunk(simpleContext.getContest, orderedKeys);
         return boxer.box(chunk);
     }
