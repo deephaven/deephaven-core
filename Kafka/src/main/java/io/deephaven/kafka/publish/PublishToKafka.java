@@ -36,10 +36,10 @@ public class PublishToKafka<K, V> {
     private final PublishListener publishListener;
 
     public PublishToKafka(final Properties props,
-                   final Table table,
-                   final String topic,
-                   final KeyOrValueSerializer<K> keySerializer,
-                   final KeyOrValueSerializer<V> valueSerializer) {
+            final Table table,
+            final String topic,
+            final KeyOrValueSerializer<K> keySerializer,
+            final KeyOrValueSerializer<V> valueSerializer) {
         this.table = table;
         this.producer = new KafkaProducer<>(props);
         this.topic = topic;
@@ -48,7 +48,7 @@ public class PublishToKafka<K, V> {
 
 
         if (table.isLive()) {
-            ((DynamicTable)table.coalesce()).listenForUpdates(publishListener = new PublishListener());
+            ((DynamicTable) table.coalesce()).listenForUpdates(publishListener = new PublishListener());
         } else {
             publishListener = null;
         }
@@ -63,9 +63,12 @@ public class PublishToKafka<K, V> {
         }
 
         try (final OrderedKeys.Iterator okit = indexToPublish.getOrderedKeysIterator();
-             final KeyOrValueSerializer.Context keyContext = keySerializer != null ? keySerializer.makeContext(CHUNK_SIZE) : null;
-             final KeyOrValueSerializer.Context valueContext = publishValues && valueSerializer != null ? valueSerializer.makeContext(CHUNK_SIZE) : null;
-             final WritableObjectChunk<Future<RecordMetadata>, Attributes.Values> sendFutures = WritableObjectChunk.makeWritableChunk(CHUNK_SIZE)) {
+                final KeyOrValueSerializer.Context keyContext =
+                        keySerializer != null ? keySerializer.makeContext(CHUNK_SIZE) : null;
+                final KeyOrValueSerializer.Context valueContext =
+                        publishValues && valueSerializer != null ? valueSerializer.makeContext(CHUNK_SIZE) : null;
+                final WritableObjectChunk<Future<RecordMetadata>, Attributes.Values> sendFutures =
+                        WritableObjectChunk.makeWritableChunk(CHUNK_SIZE)) {
             while (okit.hasMore()) {
                 final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(CHUNK_SIZE);
 
@@ -85,19 +88,21 @@ public class PublishToKafka<K, V> {
 
                 sendFutures.setSize(0);
                 for (int ii = 0; ii < chunkOk.intSize(); ++ii) {
-                    final ProducerRecord<K, V> record = new ProducerRecord<>(topic, keyChunk != null ? keyChunk.get(ii) : null, valueChunk != null ? valueChunk.get(ii) : null);
+                    final ProducerRecord<K, V> record = new ProducerRecord<>(topic,
+                            keyChunk != null ? keyChunk.get(ii) : null, valueChunk != null ? valueChunk.get(ii) : null);
                     Future<RecordMetadata> x = producer.send(record);
                     sendFutures.add(x);
                 }
 
                 // TODO: this makes us jerks for doing this midstream instead of waiting all the way until the end, but
-                //  we shouldn't just forget about them either; maybe we need to keep a few chunks of futures around, or
-                //  even we should be willing to have the whole thing be futured
+                // we shouldn't just forget about them either; maybe we need to keep a few chunks of futures around, or
+                // even we should be willing to have the whole thing be futured
                 for (int ii = 0; ii < chunkOk.intSize(); ++ii) {
                     try {
                         sendFutures.get(ii).get();
                     } catch (InterruptedException e) {
-                        throw new RuntimeException("Interrupted while waiting for KafkaProducer send result", e.getCause());
+                        throw new RuntimeException("Interrupted while waiting for KafkaProducer send result",
+                                e.getCause());
                     } catch (ExecutionException e) {
                         throw new RuntimeException("Failure while sending to KafkaProducer", e.getCause());
                     }
@@ -110,7 +115,7 @@ public class PublishToKafka<K, V> {
         private final boolean isStream;
 
         private PublishListener() {
-            super("PublishToKafka", (DynamicTable)table, false);
+            super("PublishToKafka", (DynamicTable) table, false);
             this.isStream = StreamTableTools.isStream(table);
         }
 
