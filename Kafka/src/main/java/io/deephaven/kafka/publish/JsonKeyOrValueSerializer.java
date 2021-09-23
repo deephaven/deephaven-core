@@ -21,10 +21,10 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public class TableToJSONAdapter implements KeyOrValueSerializer {
-    final DynamicTable source;
-
-
+public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
+    /**
+     * Our Json object to string converter
+     */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
@@ -32,11 +32,17 @@ public class TableToJSONAdapter implements KeyOrValueSerializer {
      */
     private final ObjectNode emptyObjectNode;
 
+    /**
+     * The table we are reading from.
+     */
+    final DynamicTable source;
+
+
     protected interface ProcessFunction {
         void accept(final ObjectNode node, final String field, final long idx, final boolean isRemoval);
     }
 
-    protected class JSONFieldProcessor implements FieldProcessor {
+    protected class JSONFieldProcessor {
         protected final String[] fieldNames;
         protected final String childNodeFieldName;
         protected final ProcessFunction processFunction;
@@ -66,26 +72,18 @@ public class TableToJSONAdapter implements KeyOrValueSerializer {
         }
     }
 
-    public interface FieldValueProvider<T> {
-        T accept(long idx, boolean isRemoval);
-    }
-
-    protected interface FieldProcessor {
-
-    }
-
     protected final String nestedObjectDelimiter;
     protected final boolean outputNulls;
-    protected final Map<String, FieldProcessor> fieldProcessors = new HashMap<>();
+    protected final Map<String, JSONFieldProcessor> fieldProcessors = new HashMap<>();
 
-    public TableToJSONAdapter(final DynamicTable source,
-                                           final Map<String, String> columnsToOutputFields,
-                                           final Set<String> excludedColumns,
-                                           final boolean autoValueMapping,
-                                           final boolean ignoreMissingColumns,
-                                           final String timestampFieldName,
-                                           final String nestedObjectDelimiter,
-                                           final boolean outputNulls) {
+    public JsonKeyOrValueSerializer(final DynamicTable source,
+                                    final Map<String, String> columnsToOutputFields,
+                                    final Set<String> excludedColumns,
+                                    final boolean autoValueMapping,
+                                    final boolean ignoreMissingColumns,
+                                    final String timestampFieldName,
+                                    final String nestedObjectDelimiter,
+                                    final boolean outputNulls) {
         this.source = source;
         this.nestedObjectDelimiter = nestedObjectDelimiter;
         this.outputNulls = outputNulls;
@@ -270,7 +268,7 @@ public class TableToJSONAdapter implements KeyOrValueSerializer {
      * @param fieldName The name of the output field to populate
      * @return a function that produces a timestamp.
      */
-    private FieldProcessor makeTimestampProcessor(final String fieldName) {
+    private JSONFieldProcessor makeTimestampProcessor(final String fieldName) {
         return new JSONFieldProcessor(fieldName, (node, field, idx, isRemoval) ->
                 node.put(field, String.valueOf(DBDateTime.now().getNanos())));
     }
@@ -453,8 +451,8 @@ public class TableToJSONAdapter implements KeyOrValueSerializer {
          * When implemented in a subordinate class, create the actual factory for this adapter.
          * @return A factory for objects of this type.
          */
-        public Function<DynamicTable, ? extends TableToJSONAdapter> buildFactory() {
-            return (tbl) -> new TableToJSONAdapter(tbl,
+        public Function<DynamicTable, ? extends JsonKeyOrValueSerializer> buildFactory() {
+            return (tbl) -> new JsonKeyOrValueSerializer(tbl,
                     columnToTextField, excludedColumns, autoValueMapping, ignoreMissingColumns,
                     timestampFieldName, nestedObjectDelimiter, outputNulls);
         }
