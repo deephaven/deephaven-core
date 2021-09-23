@@ -35,7 +35,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
      */
     final DynamicTable source;
 
-    private interface FieldContext extends SafeCloseable {}
+    private interface FieldContext extends SafeCloseable {
+    }
 
     abstract class JSONFieldProcessor {
         final String fieldName;
@@ -63,7 +64,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
 
         abstract FieldContext makeContext(int size);
 
-        abstract void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean isRemoval);
+        abstract void processField(FieldContext fieldContext,
+                WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean isRemoval);
     }
 
     private class ByteFieldProcessor extends JSONFieldProcessor {
@@ -94,7 +96,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final ByteContext byteContext = (ByteContext) fieldContext;
             if (previous) {
                 byteContext.inputChunk = chunkSource.getPrevChunk(byteContext.getContext, keys).asByteChunk();
@@ -115,7 +118,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
             }
         }
     }
-    
+
     private class CharFieldProcessor extends JSONFieldProcessor {
         private final ColumnSource chunkSource;
 
@@ -144,7 +147,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final CharFieldProcessor.CharContext charContext = (CharFieldProcessor.CharContext) fieldContext;
             if (previous) {
                 charContext.inputChunk = chunkSource.getPrevChunk(charContext.getContext, keys).asCharChunk();
@@ -194,7 +198,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final ShortContext shortContext = (ShortContext) fieldContext;
             if (previous) {
                 shortContext.inputChunk = chunkSource.getPrevChunk(shortContext.getContext, keys).asShortChunk();
@@ -215,7 +220,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
             }
         }
     }
-    
+
     private class IntFieldProcessor extends JSONFieldProcessor {
         private final ColumnSource chunkSource;
 
@@ -244,7 +249,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final IntContext intContext = (IntContext) fieldContext;
             if (previous) {
                 intContext.inputChunk = chunkSource.getPrevChunk(intContext.getContext, keys).asIntChunk();
@@ -294,7 +300,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final LongContext longContext = (LongContext) fieldContext;
             if (previous) {
                 longContext.inputChunk = chunkSource.getPrevChunk(longContext.getContext, keys).asLongChunk();
@@ -315,7 +322,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
             }
         }
     }
-    
+
     private class FloatFieldProcessor extends JSONFieldProcessor {
         private final ColumnSource chunkSource;
 
@@ -344,7 +351,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final FloatContext floatContext = (FloatContext) fieldContext;
             if (previous) {
                 floatContext.inputChunk = chunkSource.getPrevChunk(floatContext.getContext, keys).asFloatChunk();
@@ -365,7 +373,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
             }
         }
     }
-    
+
     private class DoubleFieldProcessor extends JSONFieldProcessor {
         private final ColumnSource chunkSource;
 
@@ -394,7 +402,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final DoubleContext doubleContext = (DoubleContext) fieldContext;
             if (previous) {
                 doubleContext.inputChunk = chunkSource.getPrevChunk(doubleContext.getContext, keys).asDoubleChunk();
@@ -415,7 +424,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
             }
         }
     }
-    
+
     private class ToStringFieldProcessor extends JSONFieldProcessor {
         private final ColumnSource chunkSource;
 
@@ -444,7 +453,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final ToStringContext toStringContext = (ToStringContext) fieldContext;
             if (previous) {
                 toStringContext.inputChunk = chunkSource.getPrevChunk(toStringContext.getContext, keys).asObjectChunk();
@@ -494,7 +504,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean previous) {
+        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                OrderedKeys keys, boolean previous) {
             final ObjectContext objectContext = (ObjectContext) fieldContext;
             if (previous) {
                 objectContext.inputChunk = chunkSource.getPrevChunk(objectContext.getContext, keys).asObjectChunk();
@@ -562,7 +573,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
         }
 
         @Override
-        public void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean isRemoval) {
+        public void processField(FieldContext fieldContext,
+                WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean isRemoval) {
             final String nanosString = String.valueOf(DBDateTime.now().getNanos());
             for (int ii = 0; ii < jsonChunk.size(); ++ii) {
                 getChildNode(jsonChunk.get(ii)).put(childNodeFieldName, nanosString);
@@ -699,7 +711,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
 
 
         for (int ii = 0; ii < fieldProcessors.size(); ++ii) {
-            fieldProcessors.get(ii).processField(jsonContext.fieldContexts[ii], jsonContext.jsonChunk, toProcess, previous);
+            fieldProcessors.get(ii).processField(jsonContext.fieldContexts[ii], jsonContext.jsonChunk, toProcess,
+                    previous);
         }
 
         for (int position = 0; position < toProcess.intSize(); ++position) {
@@ -721,7 +734,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer {
     private final class JsonContext implements Context {
         final WritableObjectChunk<String, Attributes.Values> outputChunk;
         final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk;
-        final FieldContext [] fieldContexts;
+        final FieldContext[] fieldContexts;
 
         public JsonContext(int size) {
             this.outputChunk = WritableObjectChunk.makeWritableChunk(size);
