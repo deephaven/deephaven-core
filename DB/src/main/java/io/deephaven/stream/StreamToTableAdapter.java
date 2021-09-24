@@ -85,6 +85,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 setFlat();
                 setRefreshing(true);
                 setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
+                addParentReference(StreamToTableAdapter.this);
             }
         };
     }
