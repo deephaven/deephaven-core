@@ -1,27 +1,23 @@
 
 # Overview
 
-A Docker image for Deephaven with Groovy development. See the [README](https://github.com/deephaven/deephaven-core/blob/main/README.md#launch-groovy--java) for launch instructions.
+A Docker Compose deployment for [Deephaven](https://deephaven.io).
 
-## Why this is needed
+## Features
 
-This project will open several docker containers, including:
- - grpc-api
- - web
- - grpc-proxy
- - envoy
+- [Deephaven](https://deephaven.io)
+- [Groovy](https://groovy-lang.org/) scripting
 
-## Run a Docker-build job
+## Launch Deephaven
 
-For full instructions to work with Deephaven, see the [Quick start](https://deephaven.io/core/docs/tutorials/quickstart).
+For launch instructions, see the [README](https://github.com/deephaven/deephaven-core/#launch-groovy--java).  For full instructions to work with Deephaven, see the [Quick start](https://deephaven.io/core/docs/tutorials/quickstart).
 
-To run these images execute the following in the directory of your choice:
+To launch Deephaven, execute the following in your deployment directory:
 
 ```bash
 compose_file=https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy/docker-compose.yml
 curl  -O "${compose_file}"
 
 docker-compose pull
-
 docker-compose up -d
 ```
