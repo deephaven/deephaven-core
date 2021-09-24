@@ -10,7 +10,7 @@ A Docker Compose deployment for [Deephaven](https://deephaven.io).
 
 ## Launch Deephaven
 
-See the [README](https://github.com/deephaven/deephaven-core#launch-python-with-example-data) for launch instructions.  For full instructions to work with Deephaven, see the [Quick start](https://deephaven.io/core/docs/tutorials/quickstart).
+For launch instructions, see the [README](https://github.com/deephaven/deephaven-core#launch-python-with-example-data).  For full instructions to work with Deephaven, see the [Quick start](https://deephaven.io/core/docs/tutorials/quickstart).
 
 To launch Deephaven, execute the following in your deployment directory:
 
