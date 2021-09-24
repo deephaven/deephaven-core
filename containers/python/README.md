@@ -11,7 +11,7 @@ A Docker Compose deployment for [Deephaven](https://deephaven.io).
 
 See the [README](https://github.com/deephaven/deephaven-core/blob/main/README.md#launch-python) for launch instructions.  For full instructions to work with Deephaven, see the [Quick start](https://deephaven.io/core/docs/tutorials/quickstart).
 
-To launch Deephaven execute the following in your deployment directory:
+To launch Deephaven, execute the following in your deployment directory:
 
 ```bash
 compose_file=https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/docker-compose.yml
