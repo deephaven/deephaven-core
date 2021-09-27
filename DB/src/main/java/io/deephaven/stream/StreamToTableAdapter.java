@@ -308,7 +308,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     @SafeVarargs
     @Override
-    public final StreamConsumerResult accept(@NotNull final WritableChunk<Attributes.Values>... data) {
+    public final void accept(@NotNull final WritableChunk<Attributes.Values>... data) {
         // Accumulate data into buffered column sources
         synchronized (this) {
             if (bufferChunkSources == null) {

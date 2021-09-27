@@ -26,7 +26,6 @@ import io.deephaven.db.v2.TransformableTableMap;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
-import io.deephaven.stream.StreamConsumerResult;
 import io.deephaven.stream.StreamToTableAdapter;
 
 import org.apache.avro.LogicalType;
@@ -1084,7 +1083,7 @@ public class KafkaTools {
         }
 
         @Override
-        public StreamConsumerResult apply(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public void accept(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
                 adapter.consumeRecords(consumerRecords);
             } catch (Exception e) {
