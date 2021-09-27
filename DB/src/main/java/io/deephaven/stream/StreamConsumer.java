@@ -25,5 +25,5 @@ public interface StreamConsumer extends StreamFailureConsumer {
      *        {@link WritableChunk#size() size}.
      */
     @SuppressWarnings("unchecked") // There's no actual possibility of heap-pollution, here.
-    void accept(@NotNull WritableChunk<Values>... data);
+    StreamConsumerResult accept(@NotNull WritableChunk<Values>... data);
 }
