@@ -94,6 +94,30 @@ task createGetTicketTableScript(type: CreateStartScripts) {
             '-XX:+UseStringDeduplication' ]
 }
 
+task createDoPutNewScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.DoPutNew'
+    applicationName = 'do-put-new'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
+task createDoPutSprayScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.DoPutSpray'
+    applicationName = 'do-put-spray'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
 applicationDistribution.into('bin') {
     from(createGetSchemaScripts)
     from(createGetTsvScripts)
@@ -101,5 +125,7 @@ applicationDistribution.into('bin') {
     from(createListTablesScripts)
     from(createExcessiveScript)
     from(createGetTicketTableScript)
+    from(createDoPutNewScript)
+    from(createDoPutSprayScript)
     fileMode = 0755
 }

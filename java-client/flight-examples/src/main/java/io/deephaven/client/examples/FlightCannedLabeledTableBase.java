@@ -35,7 +35,7 @@ abstract class FlightCannedLabeledTableBase extends FlightExampleBase {
         final long end;
 
         for (LabeledValue<TableHandle> handle : manager.executeLogic(logic())) {
-            try (final FlightStream stream = flight.getStream(handle.value().export())) {
+            try (final FlightStream stream = flight.stream(handle.value())) {
                 System.out.println(handle.name());
                 System.out.println(stream.getSchema());
                 while (stream.next()) {

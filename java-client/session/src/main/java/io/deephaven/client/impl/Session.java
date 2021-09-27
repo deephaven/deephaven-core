@@ -1,9 +1,11 @@
 package io.deephaven.client.impl;
 
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.TableSpec;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 /**
  * A session represents a client-side connection to a Deephaven server.
@@ -46,13 +48,17 @@ public interface Session extends AutoCloseable, TableHandleManager {
     // ----------------------------------------------------------
 
     /**
-     * Publishes {@code export} into the global scope with {@code name}.
+     * Publishes {@code ticket} into the global scope with {@code name}.
      *
      * @param name the name, must conform to {@link javax.lang.model.SourceVersion#isName(CharSequence)}
-     * @param export the export
+     * @param ticket the ticket
      * @return the publish completable future
      */
-    CompletableFuture<Void> publish(String name, Export export);
+    CompletableFuture<Void> publish(String name, HasTicket ticket);
+
+    default CompletableFuture<Void> publish(String name, Ticket ticket) {
+        return publish(name, () -> ticket);
+    }
 
     /**
      * Closes the session.
@@ -88,4 +94,27 @@ public interface Session extends AutoCloseable, TableHandleManager {
      * @return a serial manager
      */
     TableHandleManager serial();
+
+    // ----------------------------------------------------------
+
+    /**
+     * Advanced usage, creates a new ticket for {@code this} session, but must be managed by the caller. Useful for more
+     * advanced integrations, particularly around doPut. Callers are responsible for {@link #release(Ticket) releasing}
+     * the ticket if necessary.
+     *
+     * @return the new ticket
+     * @see #release(Ticket)
+     */
+    Ticket newTicket();
+
+    /**
+     * Releases a ticket.
+     *
+     * <p>
+     * Note: this should <b>only</b> be called in combination with tickets returned from {@link #newTicket()}.
+     *
+     * @param ticket the ticket
+     * @return the future
+     */
+    CompletableFuture<Void> release(Ticket ticket);
 }

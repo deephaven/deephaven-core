@@ -8,7 +8,6 @@ import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
@@ -222,13 +221,13 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public CompletableFuture<Void> publish(String name, Export export) {
+    public CompletableFuture<Void> publish(String name, HasTicket ticket) {
         if (!SourceVersion.isName(name)) {
             throw new IllegalArgumentException("Invalid name");
         }
         PublishObserver observer = new PublishObserver();
         consoleService.bindTableToVariable(BindTableToVariableRequest.newBuilder()
-                .setVariableName(name).setTableId(export.ticket()).build(), observer);
+                .setVariableName(name).setTableId(ticket.ticket()).build(), observer);
         return observer.future;
     }
 
@@ -276,6 +275,18 @@ public final class SessionImpl extends SessionBase {
     @Override
     public TableHandleManager serial() {
         return serialManager;
+    }
+
+    @Override
+    public Ticket newTicket() {
+        return exportTicketCreator.create();
+    }
+
+    @Override
+    public CompletableFuture<Void> release(Ticket ticket) {
+        final ReleaseTicketObserver observer = new ReleaseTicketObserver();
+        sessionService.release(ReleaseRequest.newBuilder().setId(ticket).build(), observer);
+        return observer.future;
     }
 
     public long batchCount() {
@@ -561,6 +572,39 @@ public final class SessionImpl extends SessionBase {
         public void onCompleted() {
             if (!future.isDone()) {
                 future.completeExceptionally(new IllegalStateException("ConsoleCloseHandler.onNext not called"));
+            }
+        }
+    }
+
+    private static class ReleaseTicketObserver
+            implements ClientResponseObserver<ReleaseRequest, ReleaseResponse> {
+        private final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        @Override
+        public void beforeStart(
+                ClientCallStreamObserver<ReleaseRequest> requestStream) {
+            future.whenComplete((session, throwable) -> {
+                if (future.isCancelled()) {
+                    requestStream.cancel("User cancelled", null);
+                }
+            });
+        }
+
+        @Override
+        public void onNext(ReleaseResponse value) {
+            future.complete(null);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(
+                        new IllegalStateException("Observer completed without response"));
             }
         }
     }

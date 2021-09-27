@@ -1,7 +1,6 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.qst.table.TableSpec;
@@ -50,7 +49,7 @@ class PollTsv extends FlightExampleBase {
         try (final TableHandle handle = manager.execute(table)) {
             for (long i = 0; i < times; ++i) {
                 long start = System.nanoTime();
-                try (final FlightStream stream = flight.getStream(handle.export())) {
+                try (final FlightStream stream = flight.stream(handle)) {
                     if (i == 0) {
                         System.out.println(stream.getSchema());
                         System.out.println();
