@@ -282,15 +282,16 @@ public class CsvTest {
 
     public static CsvTest floatFromDouble() {
         final NewTable expected = ColumnHeader.ofFloat("Double")
-                .row((float)Double.POSITIVE_INFINITY)
+                .row((float) Double.POSITIVE_INFINITY)
                 .row(null)
-                .row((float)Double.NEGATIVE_INFINITY)
-                .row((float)Double.NaN)
-                .row((float)Double.MAX_VALUE)
-                .row((float)Double.MIN_NORMAL)
-                .row((float)Double.MIN_VALUE)
+                .row((float) Double.NEGATIVE_INFINITY)
+                .row((float) Double.NaN)
+                .row((float) Double.MAX_VALUE)
+                .row((float) Double.MIN_NORMAL)
+                .row((float) Double.MIN_VALUE)
                 .newTable();
-        return new CsvTest("floatFromDouble", "doubles.csv", CsvSpecs.builder().header(expected.header()).build(), expected);
+        return new CsvTest("floatFromDouble", "doubles.csv", CsvSpecs.builder().header(expected.header()).build(),
+                expected);
     }
 
     public static CsvTest doubleRange() {
