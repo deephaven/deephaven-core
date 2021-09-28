@@ -57,3 +57,6 @@ For more information, see:
 ## Styleguide
 The [styleguide](style/README.md) is applied globally to the entire project, except for generated code that gets checked in.
 To apply the styleguide, run `./gradlew spotlessApply`.
+
+## Deephaven Contributor License Agreement (CLA)
+The [Deephaven Contributor License Agreement (CLA)](https://github.com/deephaven/cla/blob/main/CLA.md) must be accepted before a pull request can be merged.  A bot monitors all pull requests.  Follow the instructions from the bot in the pull request comments to accept the CLA.  The Deephaven CLA and associated signatures are maintained at [https://github.com/deephaven/cla](https://github.com/deephaven/cla).
