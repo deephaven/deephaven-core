@@ -5,22 +5,6 @@
 # The CLA can be signed by commenting on the PR.
 #
 # The CLA and all signatures are maintained at:  https://github.com/deephaven/cla
-# The "main" branch of this repository must not be protected.
-#
-# To use this action:
-# 
-# 1) Copy this file to `<your_project>/.github/workflows/cla.yml`
-#
-# 2) PERSONAL_ACCESS_TOKEN
-#
-# A personal access token must be set up to allow this bot to commit to the CLA repository.  To do this:
-# a) Create a personal access token with repo scope
-# b) Manually add the token to your repository's secrets as PERSONAL_ACCESS_TOKEN
-#
-#
-# 3) allowlist
-#
-# If a GitHub username is included in the allowlist, they will not be required to sign the CLA.  This is useful for allowing bots to contribute without a CLA.
 #
 
 name: "CLA Assistant"
@@ -39,7 +23,7 @@ jobs:
         uses: cla-assistant/github-action@v2.1.3-beta
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PERSONAL_ACCESS_TOKEN : ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PERSONAL_ACCESS_TOKEN : ${{ secrets.CLA_PERSONAL_ACCESS_TOKEN }}
         with:
           path-to-document: 'https://github.com/deephaven/cla/blob/main/CLA.md'
           remote-organization-name: deephaven
