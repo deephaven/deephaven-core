@@ -80,7 +80,7 @@ static_resources:
       lb_policy: ROUND_ROBIN
       http2_protocol_options: {}
       load_assignment:
-        cluster_name: grpc-proxy
+        cluster_name: grpc-api
         endpoints:
           - lb_endpoints:
               - endpoint:
