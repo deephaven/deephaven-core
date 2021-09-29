@@ -20,11 +20,12 @@ abstract class FlightExampleBase implements Callable<Void> {
     @ArgGroup(exclusive = false)
     ConnectOptions connectOptions;
 
+    BufferAllocator bufferAllocator = new RootAllocator();
+
     protected abstract void execute(FlightSession flight) throws Exception;
 
     @Override
     public final Void call() throws Exception {
-        BufferAllocator bufferAllocator = new RootAllocator();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         ManagedChannel managedChannel = ConnectOptions.open(connectOptions);
         Runtime.getRuntime()
