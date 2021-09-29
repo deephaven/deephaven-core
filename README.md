@@ -25,6 +25,7 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 | ------------- | ------------------ | ---------------------------- |
 | Python        | Yes                | Yes                           |
 | Java / Groovy | Yes                | Yes                           |
+| C++           | No                 | Yes                          |
 | JavaScript    | No                 | Yes                          |
 | gRPC          | -                  | Yes                          |
 
