@@ -155,8 +155,17 @@ class Docker {
          */
         boolean showLogsOnSuccess;
     }
+    /**
+     * Describes relationships between this set of tasks and other external tasks.
+     */
     static class TaskDependencies {
+        /**
+         * Indicates tasks that must have been successfully completed before the container can start.
+         */
         Object dependsOn;
+        /**
+         * Indicates tasks that should run after the container has stopped.
+         */
         Object finalizedBy;
     }
 
