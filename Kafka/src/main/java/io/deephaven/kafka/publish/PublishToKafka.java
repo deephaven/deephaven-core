@@ -1,5 +1,6 @@
 package io.deephaven.kafka.publish;
 
+import com.sun.org.apache.bcel.internal.generic.RETURN;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.DynamicTable;
@@ -40,7 +41,6 @@ public class PublishToKafka<K, V> {
             final String topic,
             final KeyOrValueSerializer<K> keySerializer,
             final KeyOrValueSerializer<V> valueSerializer) {
-        this.table = table;
         this.producer = new KafkaProducer<>(props);
         this.topic = topic;
         this.keySerializer = keySerializer;
@@ -48,13 +48,24 @@ public class PublishToKafka<K, V> {
 
 
         if (table.isLive()) {
-            ((DynamicTable) table.coalesce()).listenForUpdates(publishListener = new PublishListener());
+            final DynamicTable dynTable = ((DynamicTable) table.coalesce());
+            this.table = dynTable;
+            dynTable.listenForUpdates(publishListener = new PublishListener());
         } else {
+            this.table = table;
             publishListener = null;
         }
 
         // Publish the initial table state
         publishMessages(table.getIndex(), false, true);
+    }
+
+    public void shutdown() {
+        if (!table.isLive()) {
+            return;
+        }
+        final DynamicTable dynTable = (DynamicTable) table;
+        dynTable.removeUpdateListener(publishListener);
     }
 
     private void publishMessages(ReadOnlyIndex indexToPublish, boolean usePrevious, boolean publishValues) {

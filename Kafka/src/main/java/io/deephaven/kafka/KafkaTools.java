@@ -10,8 +10,10 @@ import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
+import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTable;
@@ -19,13 +21,11 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.live.LiveTableRefreshCombiner;
 import io.deephaven.db.tables.live.LiveTableRegistrar;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.v2.LocalTableMap;
-import io.deephaven.db.v2.StreamTableTools;
-import io.deephaven.db.v2.TableMap;
-import io.deephaven.db.v2.TransformableTableMap;
+import io.deephaven.db.v2.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
+import io.deephaven.kafka.publish.*;
 import io.deephaven.stream.StreamToTableAdapter;
 
 import org.apache.avro.LogicalType;
@@ -41,6 +41,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -278,98 +279,468 @@ public class KafkaTools {
         IGNORE, SIMPLE, AVRO, JSON
     }
 
-    /**
-     * Class to specify conversion of Kafka KEY or VALUE fields to table columns.
-     */
-    public static abstract class KeyOrValueSpec {
-        /**
-         * Data format for this Spec.
-         * 
-         * @return Data format for this Spec
-         */
-        public abstract DataFormat dataFormat();
+    public static class Consume {
 
-        private static final class Ignore extends KeyOrValueSpec {
-            @Override
-            public DataFormat dataFormat() {
-                return DataFormat.IGNORE;
+        /**
+         * Class to specify conversion of Kafka KEY or VALUE fields to table columns.
+         */
+        public static abstract class KeyOrValueSpec {
+            /**
+             * Data format for this Spec.
+             *
+             * @return Data format for this Spec
+             */
+            public abstract DataFormat dataFormat();
+
+            private static final class Ignore extends KeyOrValueSpec {
+                @Override
+                public DataFormat dataFormat() {
+                    return DataFormat.IGNORE;
+                }
+            }
+
+            private static final Ignore IGNORE = new Ignore();
+
+            /**
+             * Avro spec.
+             */
+            public static final class Avro extends KeyOrValueSpec {
+                public final Schema schema;
+                public final String schemaName;
+                public final String schemaVersion;
+                public final Function<String, String> fieldNameToColumnName;  // fields mapped to null are skipped.
+
+                private Avro(final Schema schema, final Function<String, String> fieldNameToColumnName) {
+                    this.schema = schema;
+                    this.schemaName = null;
+                    this.schemaVersion = null;
+                    this.fieldNameToColumnName = fieldNameToColumnName;
+                }
+
+                private Avro(final String schemaName,
+                             final String schemaVersion,
+                             final Function<String, String> fieldNameToColumnName) {
+                    this.schema = null;
+                    this.schemaName = schemaName;
+                    this.schemaVersion = schemaVersion;
+                    this.fieldNameToColumnName = fieldNameToColumnName;
+                }
+
+                @Override
+                public DataFormat dataFormat() {
+                    return DataFormat.AVRO;
+                }
+            }
+
+            /**
+             * Single spec for unidimensional (basic Kafka encoded for one type) fields.
+             */
+            public static final class Simple extends KeyOrValueSpec {
+                public final String columnName;
+                public final Class<?> dataType;
+
+                private Simple(final String columnName, final Class<?> dataType) {
+                    this.columnName = columnName;
+                    this.dataType = dataType;
+                }
+
+                @Override
+                public DataFormat dataFormat() {
+                    return DataFormat.SIMPLE;
+                }
+            }
+
+            /**
+             * The names for the key or value columns can be provided in the properties as "key.column.name" or
+             * "value.column.name", and otherwise default to "key" or "value". The types for key or value are either
+             * specified in the properties as "key.type" or "value.type", or deduced from the serializer classes for key or
+             * value in the provided Properties object.
+             */
+            private static final Simple FROM_PROPERTIES = new Simple(null, null);
+
+            /**
+             * JSON spec.
+             */
+            public static final class Json extends KeyOrValueSpec {
+                public final ColumnDefinition<?>[] columnDefinitions;
+                public final Map<String, String> fieldNameToColumnName;
+
+                private Json(
+                        final ColumnDefinition<?>[] columnDefinitions,
+                        final Map<String, String> fieldNameToColumnName) {
+                    this.columnDefinitions = columnDefinitions;
+                    this.fieldNameToColumnName = fieldNameToColumnName;
+                }
+
+                @Override
+                public DataFormat dataFormat() {
+                    return DataFormat.JSON;
+                }
             }
         }
 
-        private static final Ignore IGNORE = new Ignore();
-
         /**
-         * Avro spec.
+         * Spec to explicitly ask
+         * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, KeyOrValueSpec, KeyOrValueSpec, TableType)
+         * consumeToTable} to ignore either key or value.
          */
-        public static final class Avro extends KeyOrValueSpec {
-            public final Schema schema;
-            public final String schemaName;
-            public final String schemaVersion;
-            public final Function<String, String> fieldNameToColumnName;
-
-            private Avro(final Schema schema, final Function<String, String> fieldNameToColumnName) {
-                this.schema = schema;
-                this.schemaName = null;
-                this.schemaVersion = null;
-                this.fieldNameToColumnName = fieldNameToColumnName;
-            }
-
-            private Avro(final String schemaName,
-                    final String schemaVersion,
-                    final Function<String, String> fieldNameToColumnName) {
-                this.schema = null;
-                this.schemaName = schemaName;
-                this.schemaVersion = schemaVersion;
-                this.fieldNameToColumnName = fieldNameToColumnName;
-            }
-
-            @Override
-            public DataFormat dataFormat() {
-                return DataFormat.AVRO;
-            }
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec ignoreSpec() {
+            return KeyOrValueSpec.IGNORE;
         }
 
         /**
-         * Single spec for unidimensional (basic Kafka encoded for one type) fields.
+         * A JSON spec from a set of column definitions.
+         *
+         * @param columnDefinitions An array of column definitions for specifying the table to be created.
+         * @param fieldNameToColumnName A mapping from JSON field names to column names provided in the definition. Fields
+         *        not included will be ignored.
+         * @return A JSON spec for the given inputs.
          */
-        public static final class Simple extends KeyOrValueSpec {
-            public final String columnName;
-            public final Class<?> dataType;
-
-            private Simple(final String columnName, final Class<?> dataType) {
-                this.columnName = columnName;
-                this.dataType = dataType;
-            }
-
-            @Override
-            public DataFormat dataFormat() {
-                return DataFormat.SIMPLE;
-            }
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec jsonSpec(
+                final ColumnDefinition<?>[] columnDefinitions,
+                final Map<String, String> fieldNameToColumnName) {
+            return new KeyOrValueSpec.Json(columnDefinitions, fieldNameToColumnName);
         }
 
         /**
-         * The names for the key or value columns can be provided in the properties as "key.column.name" or
-         * "value.column.name", and otherwise default to "key" or "value". The types for key or value are either
-         * specified in the properties as "key.type" or "value.type", or deduced from the serializer classes for key or
-         * value in the provided Properties object.
+         * A JSON spec from a set of column definitions.
+         *
+         * @param columnDefinitions An array of column definitions for specifying the table to be created. The column names
+         *        should map one to JSON fields expected; is not necessary to include all fields from the expected JSON, any
+         *        fields not included would be ignored.
+         *
+         * @return A JSON spec for the given inputs.
          */
-        private static final Simple FROM_PROPERTIES = new Simple(null, null);
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec jsonSpec(final ColumnDefinition<?>[] columnDefinitions) {
+            return jsonSpec(columnDefinitions, null);
+        }
 
-        public static final class Json extends KeyOrValueSpec {
-            public final ColumnDefinition<?>[] columnDefinitions;
-            public final Map<String, String> fieldNameToColumnName;
+        /**
+         * Avro spec from an Avro schmea.
+         *
+         * @param schema An Avro schema.
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
+         *        them; fields mapped to null are excluded.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameToColumnName) {
+            return new KeyOrValueSpec.Avro(schema, fieldNameToColumnName);
+        }
 
-            private Json(
-                    final ColumnDefinition<?>[] columnDefinitions,
-                    final Map<String, String> fieldNameToColumnName) {
-                this.columnDefinitions = columnDefinitions;
-                this.fieldNameToColumnName = fieldNameToColumnName;
+        /**
+         * Avro spec from an Avro schmea. All fields in the schema are mapped to columns of the same name.
+         *
+         * @param schema An Avro schema.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final Schema schema) {
+            return new KeyOrValueSpec.Avro(schema, Function.identity());
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param schemaVersion The version to fetch
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
+         *        them; fields mapped to null are excluded.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName,
+                                              final String schemaVersion,
+                                              final Function<String, String> fieldNameToColumnName) {
+            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, fieldNameToColumnName);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         * The version fetched would be latest.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
+         *        them; fields mapped to null are excluded.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName,
+                                              final Function<String, String> fieldNameToColumnName) {
+            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, fieldNameToColumnName);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         * All fields in the schema are mapped to columns of the same name.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param schemaVersion The version to fetch
+         * @return A spec corresponding to the schema provided
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
+            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, Function.identity());
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         * The version fetched is latest All fields in the schema are mapped to columns of the same name
+         *
+         * @param schemaName The registered name for the schema on Schema Server.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName) {
+            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, Function.identity());
+        }
+
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec simpleSpec(final String columnName, final Class<?> dataType) {
+            return new KeyOrValueSpec.Simple(columnName, dataType);
+        }
+
+        /**
+         * The types for key or value are either specified in the properties as "key.type" or "value.type", or deduced from
+         * the serializer classes for key or value in the provided Properties object.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec simpleSpec(final String columnName) {
+            return new KeyOrValueSpec.Simple(columnName, null);
+        }
+    }
+
+    public static class Produce {
+        /**
+         * Class to specify conversion of table columns to Kafka KEY or VALUE fields.
+         */
+        public static abstract class KeyOrValueSpec {
+            /**
+             * Data format for this Spec.
+             *
+             * @return Data format for this Spec
+             */
+            public abstract DataFormat dataFormat();
+
+            private static final class Ignore extends KeyOrValueSpec {
+                @Override
+                public DataFormat dataFormat() {
+                    return DataFormat.IGNORE;
+                }
             }
 
-            @Override
-            public DataFormat dataFormat() {
-                return DataFormat.JSON;
+            private static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
+
+            /**
+             * Avro spec.
+             */
+            public static final class Avro extends KeyOrValueSpec {
+                public final Schema schema;
+                public final String schemaName;
+                public final String schemaVersion;
+                public final Map<String, String> columnNameToFieldName;
+
+                private Avro(final Schema schema, final Map<String, String> columnNameToFieldName) {
+                    this.schema = schema;
+                    this.schemaName = null;
+                    this.schemaVersion = null;
+                    this.columnNameToFieldName = columnNameToFieldName;
+                }
+
+                private Avro(final String schemaName,
+                             final String schemaVersion,
+                             final Map<String, String> columnNameToFieldName) {
+                    this.schema = null;
+                    this.schemaName = schemaName;
+                    this.schemaVersion = schemaVersion;
+                    this.columnNameToFieldName = columnNameToFieldName;
+                }
+
+                @Override
+                public DataFormat dataFormat() {
+                    return DataFormat.AVRO;
+                }
             }
+
+            /**
+             * Single spec for unidimensional (basic Kafka encoded for one type) fields.
+             */
+            public static final class Simple extends KeyOrValueSpec {
+                public final String columnName;
+
+                private Simple(final String columnName) {
+                    this.columnName = columnName;
+                }
+
+                @Override
+                public DataFormat dataFormat() {
+                    return DataFormat.SIMPLE;
+                }
+            }
+
+            /**
+             * JSON spec.
+             */
+            public static final class Json extends KeyOrValueSpec {
+                public final Map<String, String> columnNameToFieldName;
+                public final String nestedObjectDelimiter;
+                public final boolean outputNulls;
+
+                private Json(
+                        final Map<String, String> columnNameToFieldName,
+                        final String nestedObjectDelimiter,
+                        final boolean outputNulls) {
+                    this.columnNameToFieldName = columnNameToFieldName;
+                    this.nestedObjectDelimiter = nestedObjectDelimiter;
+                    this.outputNulls = outputNulls;
+                }
+
+                private Json(final Map<String, String> columnNameToFieldName) {
+                    this(columnNameToFieldName, "|", false);
+                }
+
+                @Override
+                public DataFormat dataFormat() {
+                    return DataFormat.JSON;
+                }
+            }
+        }
+        /**
+         * Spec to explicitly ask
+         * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, Consume.KeyOrValueSpec, Consume.KeyOrValueSpec, TableType)
+         * consumeToTable} to ignore either key or value.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec ignoreSpec() {
+            return KeyOrValueSpec.IGNORE;
+        }
+
+        /**
+         * A JSON spec from a set of column names
+         *
+         * @param columnNameToFieldName A map including entries for each column intended to be included in the JSON output,
+         *                             mapping it to the field name to use.  If null, map all columns to fields with the same name.
+         * @param nestedObjectDelimiter A string used to separate values in composite fields.
+         * @param outputNulls If false, omit fields with a null value.
+         * @return A JSON spec for the given inputs.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec jsonSpec(
+                final Map<String, String> columnNameToFieldName,
+                final String nestedObjectDelimiter,
+                final boolean outputNulls) {
+            return new KeyOrValueSpec.Json(columnNameToFieldName, nestedObjectDelimiter, outputNulls);
+        }
+
+        /**
+         * A JSON spec from a set of column names
+         *
+         * @param columnNameToFieldName A map including entries for each column intended to be included in the JSON output,
+         *                             mapping it to the field name to use.  If null, map all columns to fields with the same name.
+         * @return A JSON spec for the given inputs.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec jsonSpec(
+                final Map<String, String> columnNameToFieldName) {
+            return new KeyOrValueSpec.Json(columnNameToFieldName);
+        }
+
+        /**
+         * Avro spec to generate Avro messages from an Avro schema.
+         *
+         * @param schema An Avro schema.
+         * @param columnNameToFieldName A mapping specifying what Avro fields to generate and what columnNames to use
+         *                              for them; if null, use all column names matching schema field names.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(
+                final Schema schema,
+                final Map<String, String> columnNameToFieldName) {
+            return new KeyOrValueSpec.Avro(schema, columnNameToFieldName);
+        }
+
+        /**
+         * Avro spec from an Avro schmea. All columns with names matching schema field names are included.
+         *
+         * @param schema An Avro schema.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final Schema schema) {
+            return new KeyOrValueSpec.Avro(schema, null);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param schemaVersion The version to fetch
+         * @param columnNameToFieldName A mapping specifying what Avro fields to generate and what columnNames to use
+         *                              for them; if null, use all column names matching schema field names.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName,
+                                                      final String schemaVersion,
+                                                      final Map<String, String> columnNameToFieldName) {
+            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, columnNameToFieldName);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         * The version fetched would be latest.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param columnNameToFieldName A mapping specifying which Avro fields to include and what column name to use for
+         *        them; if null, use all column names matching schema field names.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName,
+                                                      final Map<String, String> columnNameToFieldName) {
+            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, columnNameToFieldName);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         * All fields in the schema are mapped to columns of the same name.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param schemaVersion The version to fetch
+         * @return A spec corresponding to the schema provided, where all columns with names matching schema field names are included.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
+            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, null);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         * The version fetched is latest All fields in the schema are mapped to columns of the same name
+         *
+         * @param schemaName The registered name for the schema on Schema Server.
+         * @return A spec corresponding to the schema provided, where all columns with names matching schema field names are included.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName) {
+            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, null);
+        }
+
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec simpleSpec(final String columnName) {
+            return new KeyOrValueSpec.Simple(columnName);
         }
     }
 
@@ -446,143 +817,6 @@ public class KafkaTools {
     }
 
     /**
-     * Spec to explicitly ask
-     * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, KeyOrValueSpec, KeyOrValueSpec, TableType)
-     * consumeToTable} to ignore either key or value.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec ignoreSpec() {
-        return KeyOrValueSpec.IGNORE;
-    }
-
-    /**
-     * A JSON spec from a set of column definitions.
-     *
-     * @param columnDefinitions An array of column definitions for specifying the table to be created.
-     * @param fieldNameToColumnName A mapping from JSON field names to column names provided in the definition. Fields
-     *        not included will be ignored.
-     * @return A JSON spec for the given inputs.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec jsonSpec(
-            final ColumnDefinition<?>[] columnDefinitions,
-            final Map<String, String> fieldNameToColumnName) {
-        return new KeyOrValueSpec.Json(columnDefinitions, fieldNameToColumnName);
-    }
-
-    /**
-     * A JSON spec from a set of column definitions.
-     *
-     * @param columnDefinitions An array of column definitions for specifying the table to be created. The column names
-     *        should map one to JSON fields expected; is not necessary to include all fields from the expected JSON, any
-     *        fields not included would be ignored.
-     *
-     * @return A JSON spec for the given inputs.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec jsonSpec(final ColumnDefinition<?>[] columnDefinitions) {
-        return jsonSpec(columnDefinitions, null);
-    }
-
-    /**
-     * Avro spec from an Avro schmea.
-     *
-     * @param schema An Avro schema.
-     * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
-     *        them
-     * @return A spec corresponding to the schema provided.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameToColumnName) {
-        return new KeyOrValueSpec.Avro(schema, fieldNameToColumnName);
-    }
-
-    /**
-     * Avro spec from an Avro schmea. All fields in the schema are mapped to columns of the same name.
-     *
-     * @param schema An Avro schema.
-     * @return A spec corresponding to the schema provided.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec avroSpec(final Schema schema) {
-        return new KeyOrValueSpec.Avro(schema, Function.identity());
-    }
-
-    /**
-     * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-     * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-     *
-     * @param schemaName The registered name for the schema on Schema Server
-     * @param schemaVersion The version to fetch
-     * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
-     *        them
-     * @return A spec corresponding to the schema provided.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec avroSpec(final String schemaName,
-            final String schemaVersion,
-            final Function<String, String> fieldNameToColumnName) {
-        return new KeyOrValueSpec.Avro(schemaName, schemaVersion, fieldNameToColumnName);
-    }
-
-    /**
-     * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-     * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-     * The version fetched would be latest.
-     *
-     * @param schemaName The registered name for the schema on Schema Server
-     * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
-     *        them
-     * @return A spec corresponding to the schema provided.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec avroSpec(final String schemaName,
-            final Function<String, String> fieldNameToColumnName) {
-        return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, fieldNameToColumnName);
-    }
-
-    /**
-     * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-     * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-     * All fields in the schema are mapped to columns of the same name.
-     *
-     * @param schemaName The registered name for the schema on Schema Server
-     * @param schemaVersion The version to fetch
-     * @return A spec corresponding to the schema provided
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
-        return new KeyOrValueSpec.Avro(schemaName, schemaVersion, Function.identity());
-    }
-
-    /**
-     * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server The Properties used to
-     * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-     * The version fetched is latest All fields in the schema are mapped to columns of the same name
-     *
-     * @param schemaName The registered name for the schema on Schema Server.
-     * @return A spec corresponding to the schema provided.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec avroSpec(final String schemaName) {
-        return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, Function.identity());
-    }
-
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec simpleSpec(final String columnName, final Class<?> dataType) {
-        return new KeyOrValueSpec.Simple(columnName, dataType);
-    }
-
-    /**
-     * The types for key or value are either specified in the properties as "key.type" or "value.type", or deduced from
-     * the serializer classes for key or value in the provided Properties object.
-     */
-    @SuppressWarnings("unused")
-    public static KeyOrValueSpec simpleSpec(final String columnName) {
-        return new KeyOrValueSpec.Simple(columnName, null);
-    }
-
-    /**
      * Consume from Kafka to a Deephaven table.
      *
      * @param kafkaConsumerProperties Properties to configure this table and also to be passed to create the
@@ -601,8 +835,8 @@ public class KafkaTools {
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
             @NotNull final IntToLongFunction partitionToInitialOffset,
-            @NotNull final KeyOrValueSpec keySpec,
-            @NotNull final KeyOrValueSpec valueSpec,
+            @NotNull final Consume.KeyOrValueSpec keySpec,
+            @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final TableType resultType) {
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
         final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
@@ -706,6 +940,111 @@ public class KafkaTools {
         return result;
     }
 
+    private static void getSerializerData(
+            @NotNull final Map<String, String> columnsToFields,
+            @NotNull final Set<String> excludedColumns,
+            @NotNull final DynamicTable t,
+            @NotNull final Map<String, String> columnNameToFieldName) {
+        for (final DataColumn<?> col : t.getColumns()) {
+            final String colName = col.getName();
+            if (columnNameToFieldName == null || columnNameToFieldName.isEmpty()) {
+                columnsToFields.put(colName, colName);
+                continue;
+            }
+            final String fieldName = columnNameToFieldName.getOrDefault(colName, null);
+            if (fieldName != null) {
+                columnsToFields.put(colName, fieldName);
+            } else {
+                excludedColumns.add(colName);
+            }
+        }
+    }
+
+    private static Schema getProduceSchema(
+            @NotNull final Properties kafkaConsumerProperties,
+            @NotNull final Produce.KeyOrValueSpec.Avro avroSpec) {
+        if (avroSpec.schema != null) {
+            return avroSpec.schema;
+        } else {
+            if (!kafkaConsumerProperties.containsKey(SCHEMA_SERVER_PROPERTY)) {
+                throw new IllegalArgumentException(
+                        "Avro schema name specified and schema server url propeorty " +
+                                SCHEMA_SERVER_PROPERTY + " not found.");
+            }
+            final String schemaServiceUrl = kafkaConsumerProperties.getProperty(SCHEMA_SERVER_PROPERTY);
+            return getAvroSchema(schemaServiceUrl, avroSpec.schemaName, avroSpec.schemaVersion);
+        }
+    }
+
+    private static KeyOrValueSerializer getAvroSerializer(
+            @NotNull final DynamicTable t,
+            @NotNull final Properties kafkaConsumerProperties,
+            @NotNull final Produce.KeyOrValueSpec spec) {
+        final Produce.KeyOrValueSpec.Avro avroSpec = (Produce.KeyOrValueSpec.Avro) spec;
+        final Map<String, String> columnsToFields = new HashMap<>();
+        final Set<String> excludedColumns = new HashSet<>();
+        getSerializerData(columnsToFields, excludedColumns, t, avroSpec.columnNameToFieldName);
+        final Schema schema = getProduceSchema(kafkaConsumerProperties, avroSpec);
+        return new GenericRecordKeyOrValueSerializer(
+                t, schema, columnsToFields, excludedColumns,
+                false, true, "");
+    }
+
+    private static KeyOrValueSerializer getJsonSerializer(
+            @NotNull final DynamicTable t,
+            @NotNull final Produce.KeyOrValueSpec spec) {
+        final Produce.KeyOrValueSpec.Json jsonSpec = (Produce.KeyOrValueSpec.Json) spec;
+        final Map<String, String> columnsToFields = new HashMap<>();
+        final Set<String> excludedColumns = new HashSet<>();
+        getSerializerData(columnsToFields, excludedColumns, t, jsonSpec.columnNameToFieldName);
+        return new JsonKeyOrValueSerializer(
+                t, columnsToFields, excludedColumns,
+                false, true, "",
+                jsonSpec.nestedObjectDelimiter, jsonSpec.outputNulls);
+    }
+
+    private static KeyOrValueSerializer getSerializer(
+            @NotNull final DynamicTable t,
+            @NotNull final Properties kafkaConsumerProperties,
+            @NotNull final Produce.KeyOrValueSpec spec) {
+        switch(spec.dataFormat()) {
+            case AVRO:
+                return getAvroSerializer(t, kafkaConsumerProperties, spec);
+            case JSON:
+                final Produce.KeyOrValueSpec.Json jsonSpec = (Produce.KeyOrValueSpec.Json) spec;
+                return getJsonSerializer(t, jsonSpec);
+            case IGNORE:
+                return null;
+            case SIMPLE:
+                final Produce.KeyOrValueSpec.Simple simpleSpec = (Produce.KeyOrValueSpec.Simple) spec;
+                return new SimpleKeyOrValueSerializer(t, simpleSpec.columnName);
+            default:
+                throw new IllegalStateException("Unrecognized spec type");
+        }
+    }
+
+    public Procedure.Nullary produceFromTable(
+            @NotNull final DynamicTable t,
+            @NotNull final Properties kafkaConsumerProperties,
+            @NotNull final String topic,
+            @NotNull final Produce.KeyOrValueSpec keySpec,
+            @NotNull final Produce.KeyOrValueSpec valueSpec) {
+        final KeyOrValueSerializer keySerializer = getSerializer(t, kafkaConsumerProperties, keySpec);
+        final KeyOrValueSerializer valueSerializer = getSerializer(t, kafkaConsumerProperties, valueSpec);
+        final PublishToKafka producer =  new PublishToKafka<>(kafkaConsumerProperties, t, topic, keySerializer, valueSerializer);
+        final Procedure.Nullary shutdownCallback = new Procedure.Nullary() {
+            volatile PublishToKafka liveProducer = producer;
+            @Override public void call() {
+                if (liveProducer == null) {
+                    return;
+                }
+                liveProducer.shutdown();
+                liveProducer = null;
+            }
+        };
+        return shutdownCallback;
+    }
+
     private static class StreamTableMap extends LocalTableMap implements LiveTable {
 
         private final LiveTableRefreshCombiner refreshCombiner = new LiveTableRefreshCombiner();
@@ -731,7 +1070,7 @@ public class KafkaTools {
     }
 
     private static KeyOrValueProcessor getProcessor(
-            final KeyOrValueSpec spec,
+            final Consume.KeyOrValueSpec spec,
             final TableDefinition tableDef,
             final StreamToTableAdapter streamToTableAdapter,
             final KeyOrValueIngestData data) {
@@ -777,7 +1116,7 @@ public class KafkaTools {
             final Properties kafkaConsumerProperties,
             final List<ColumnDefinition<?>> columnDefinitions,
             final MutableInt nextColumnIndexMut,
-            final KeyOrValueSpec keyOrValueSpec) {
+            final Consume.KeyOrValueSpec keyOrValueSpec) {
         if (keyOrValueSpec.dataFormat() == DataFormat.IGNORE) {
             return null;
         }
@@ -785,7 +1124,7 @@ public class KafkaTools {
         switch (keyOrValueSpec.dataFormat()) {
             case AVRO:
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, KafkaAvroDeserializer.class.getName());
-                final KeyOrValueSpec.Avro avroSpec = (KeyOrValueSpec.Avro) keyOrValueSpec;
+                final Consume.KeyOrValueSpec.Avro avroSpec = (Consume.KeyOrValueSpec.Avro) keyOrValueSpec;
                 data.fieldNameToColumnName = new HashMap<>();
                 final Schema schema;
                 if (avroSpec.schema != null) {
@@ -806,7 +1145,7 @@ public class KafkaTools {
             case JSON:
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
                 data.toObjectChunkMapper = jsonToObjectChunkMapper;
-                final KeyOrValueSpec.Json jsonSpec = (KeyOrValueSpec.Json) keyOrValueSpec;
+                final Consume.KeyOrValueSpec.Json jsonSpec = (Consume.KeyOrValueSpec.Json) keyOrValueSpec;
                 columnDefinitions.addAll(Arrays.asList(jsonSpec.columnDefinitions));
                 // Populate out field to column name mapping from two potential sources.
                 data.fieldNameToColumnName = new HashMap<>(jsonSpec.columnDefinitions.length);
@@ -827,7 +1166,7 @@ public class KafkaTools {
                 break;
             case SIMPLE:
                 data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
-                final KeyOrValueSpec.Simple simpleSpec = (KeyOrValueSpec.Simple) keyOrValueSpec;
+                final Consume.KeyOrValueSpec.Simple simpleSpec = (Consume.KeyOrValueSpec.Simple) keyOrValueSpec;
                 final ColumnDefinition<?> colDef;
                 if (simpleSpec.dataType == null) {
                     colDef = getKeyOrValueCol(keyOrValue, kafkaConsumerProperties, simpleSpec.columnName, false);
@@ -1045,9 +1384,9 @@ public class KafkaTools {
     @SuppressWarnings("unused")
     public static final Function<String, String> DIRECT_MAPPING = Function.identity();
     @SuppressWarnings("unused")
-    public static final KeyOrValueSpec FROM_PROPERTIES = KeyOrValueSpec.FROM_PROPERTIES;
+    public static final Consume.KeyOrValueSpec FROM_PROPERTIES = Consume.KeyOrValueSpec.FROM_PROPERTIES;
     @SuppressWarnings("unused")
-    public static final KeyOrValueSpec IGNORE = KeyOrValueSpec.IGNORE;
+    public static final Consume.KeyOrValueSpec IGNORE = Consume.KeyOrValueSpec.IGNORE;
 
     //
     // For the benefit of our python integration
