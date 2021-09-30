@@ -45,6 +45,7 @@ import org.apache.arrow.flight.impl.Flight;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Iterator;
@@ -321,9 +322,12 @@ public class ArrowFlightUtil {
                         log.warn().append(myPrefix).append("received a message without app_metadata").endl();
                         return;
                     }
-                    final BarrageSubscriptionRequest subscriptionRequest =
-                            BarrageSubscriptionRequest
-                                    .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+
+                    if (message.app_metadata.msgPayloadVector() == null) {
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Subscription request not supplied");
+                    }
+                    final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
+                            .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
                     if (bmp != null) {
                         apply(subscriptionRequest);
