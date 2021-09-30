@@ -45,7 +45,7 @@ public abstract class TicketTable extends TableBase {
     }
 
     /**
-     * Create a ticket table from the provided {@code appId} and {@code fieldName}.
+     * Create a ticket table from the provided {@code applicationId} and {@code fieldName}.
      *
      * @param applicationId the application id
      * @param fieldName the application field name
