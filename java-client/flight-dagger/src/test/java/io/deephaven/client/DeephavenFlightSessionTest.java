@@ -26,7 +26,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
     public void getSchema() throws Exception {
         final TableSpec table = i32768(TableCreatorImpl.INSTANCE);
         try (final TableHandle handle = flightSession.session().execute(table)) {
-            final Schema schema = flightSession.getSchema(handle.export());
+            final Schema schema = flightSession.schema(handle.export());
             final Schema expected = new Schema(Collections.singletonList(
                     new Field("I", new FieldType(true, MinorType.INT.getType(), null, null), Collections.emptyList())));
             assertThat(metadataLess(schema)).isEqualTo(expected);
@@ -38,7 +38,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
         final TableSpec table = i32768(TableCreatorImpl.INSTANCE);
         try (
                 final TableHandle handle = flightSession.session().execute(table);
-                final FlightStream stream = flightSession.getStream(handle.export())) {
+                final FlightStream stream = flightSession.stream(handle)) {
             System.out.println(stream.getSchema());
             while (stream.next()) {
                 System.out.println(stream.getRoot().contentToTSVString());
