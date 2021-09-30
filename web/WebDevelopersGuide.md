@@ -476,8 +476,10 @@ and also will permit some changes not to inform the UI right away that they have
  Note that the filter property will immediately return the new value, but you may receive update events using the old
  filter before the new one is applied, and the `filterchanged` event fires. Reusing existing, applied filters may enable
  this to perform better on the server.  The `updated` event will also fire, but `rowadded` and `rowremoved` will not.
- * `applyCustomColumns(String[]):String[]` - Replace the current custom columns with a new set. These columns can be
- used when adding new filter and sort operations to the table, as long as they are present.
+ * `applyCustomColumns(String[]):String[]` - Deprecated, use `applyCustomColumns(CustomColumn[])` instead - Replace the current custom columns with a new set. These columns can be
+  used when adding new filter and sort operations to the table, as long as they are present.
+ * `applyCustomColumns(CustomColumn[]):CustomColumn[]` - Replace the current custom columns with a new set. These columns can be
+  used when adding new filter and sort operations to the table, as long as they are present.
  * `setViewport(Number firstRow, Number lastRow, Column[]= columns, Number= updateIntervalMs):TableViewportSubscription` - 
  If the columns parameter is not provided, all columns will be used. If the updateIntervalMs parameter is not provided, 
  a default of one second will be used. Until this is called, no data will be available. Invoking this will result in events
@@ -575,6 +577,8 @@ column.
  Column.
  * `filter():FilterValue` - Creates a new value for use in filters based on this column. Used either as a parameter to
  another filter operation, or as a builder to create a filter operation.
+ * `formatColor(String condition, String color): CustomColumnColor` - Return a `CustomColumnColor` object to apply using `applyCustomColumns` with the parameters specified.
+ * `formatRenderer(String renderer): CustomColumnRenderer` - Return a `CustomColumnRenderer` object to pass the `applyCustomColumns`  
  * `sort():Sort` - Creates a sort builder object, to be used when sorting by this column.
 
 ###### Properties
@@ -599,7 +603,23 @@ return a new Sort instance.
 ###### Properties
  * `Column column` - The column which is sorted.
  * `String direction` - The direction of this sort, either `ASC`, `DESC`, or `REVERSE`.
- * `boolean isAbs` - True if the absolute value of the column should be used when sorting; defaults to false.
+ * `boolean isAbs` - True if the absolute value of the column should be used when sorting; defaults to false. 
+
+##### Abstract Class `CustomColumn`
+ * `String method` - The type of select method to use, either `VIEW` or `SELECT`. Defaults to `VIEW`.
+
+##### Class `CustomColumnFormula` extends `CustomColumn`
+ * `String name` - The name of the custom column to create.
+ * `String formula` - The formula to use for this custom column.
+
+##### Class `CustomColumnColor` extends `CustomColumn`
+ * `String name` - The name of the column to color. Set to `null` to apply to all columns (color entire row).
+ * `String condition` - The condition in which to apply this color.
+ * `String color` - The hex representation of the color to apply.
+
+##### Class `CustomColumnRenderer` extends `CustomColumn`
+ * `String name` - The column to apply a custom renderer to.
+ * `String renderer` - The name of the renderer to use. The UI will need to know how to handle this type of renderer.
 
 ##### Class `FilterValue`
 Describes data that can be filtered, either a column reference or a literal value. Used this way, the type of a value
@@ -802,7 +822,7 @@ rows. To achieve this, request the same Totals Table again, but remove the `grou
  * `FilterCondition[] filter` - Read-only. An ordered list of Filters to apply to the table.  To update, call applyFilter().
  Note that this getter will return the new value immediately, even though it may take a little time to update on the
  server. You may listen for the `filterchanged` event to know when to update the UI.
- * `String[] customColumns` - Read-only. An ordered list of custom column formulas to add to the table, either adding
+ * `CustomColumn[] customColumns` - Read-only. An ordered list of custom column formulas to add to the table, either adding
  new columns or replacing existing ones. To update, call `applyCustomColumns()`.
 
 ###### Methods
@@ -825,8 +845,10 @@ rows. To achieve this, request the same Totals Table again, but remove the `grou
  Note that the filter property will immediately return the new value, but you may receive update events using the old
  filter before the new one is applied, and the `filterchanged` event fires. Reusing existing, applied filters may enable
  this to perform better on the server.  The `updated` event will also fire, but `rowadded` and `rowremoved` will not.
- * `applyCustomColumns(String[]):String[]` - Replace the current custom columns with a new set. These columns can be
+ * `applyCustomColumns(String[]):String[]` - Deprecated, use `applyCustomColumns(CustomColumn[])` instead - Replace the current custom columns with a new set. These columns can be
  used when adding new filter and sort operations to the table, as long as they are present.
+ * `applyCustomColumns(CustomColumn[]):CustomColumn[]` - Replace the current custom columns with a new set. These columns can be
+    used when adding new filter and sort operations to the table, as long as they are present.
  * `addEventListener(String type, function listener):Function` - Listen for events on the main connection.  Returns a
  convenience function to remove the event listener.
  * `removeEventListener(String type, function listener)` - Allow for manual "normal" event handler removal as well.
