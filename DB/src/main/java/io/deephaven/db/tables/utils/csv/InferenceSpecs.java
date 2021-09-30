@@ -163,8 +163,8 @@ public abstract class InferenceSpecs {
      *
      * <ul>
      * <li>{@link Parser#INSTANT}</li>
-     * <li>{@link Parser#INSTANT_DB}</li>
-     * <li>{@link Parser#epochMilliAndMicroParsers21stCentury(Parser)}, with {@link Parser#LONG}</li>
+     * <li>{@link Parser#INSTANT_LEGACY}</li>
+     * <li>{@link Parser#epochAny21stCentury(Parser)}, with {@link Parser#LONG}</li>
      * <li>{@link Parser#SHORT}</li>
      * <li>{@link Parser#INT}</li>
      * <li>{@link Parser#LONG}</li>
@@ -184,12 +184,14 @@ public abstract class InferenceSpecs {
      * @return the standard times inference
      */
     public static InferenceSpecs standardTimes() {
-        final List<Parser<Instant>> parsers = Parser.epochMilliAndMicroParsers21stCentury(Parser.LONG);
+        final List<Parser<Instant>> parsers = Parser.epochAny21stCentury(Parser.LONG);
         return builder().addParsers(
                 Parser.INSTANT,
-                Parser.INSTANT_DB,
+                Parser.INSTANT_LEGACY,
                 parsers.get(0),
                 parsers.get(1),
+                parsers.get(2),
+                parsers.get(3),
                 Parser.SHORT,
                 Parser.INT,
                 Parser.LONG,
@@ -247,8 +249,8 @@ public abstract class InferenceSpecs {
     }
 
     /**
-     * Finds the best parser by checking and eliminating parsers based on {@link Parser#isParsable(String)}. The
-     * returned parser will be the lowest indexed parser remaining based on the order specified in {@link #parsers()}.
+     * Finds the best parser by checking and eliminating parsers based on {@link Parser#canParse(String)}. The returned
+     * parser will be the lowest indexed parser remaining based on the order specified in {@link #parsers()}.
      *
      * <p>
      * When all {@code values} are null, the returned value will be an optional that wraps {@link #onNullParser()}.
@@ -257,13 +259,36 @@ public abstract class InferenceSpecs {
      * @return the best parser, if any
      */
     public Optional<Parser<?>> infer(Iterator<String> values) {
+        final List<Parser<?>> candidates = collect();
+        final List<Parser<?>> hasParsed = new ArrayList<>();
         boolean allNull = true;
-        final List<Parser<?>> candidates = new ArrayList<>(parsers());
         while (values.hasNext() && !candidates.isEmpty()) {
             final String item = values.next();
             if (item != null) {
                 allNull = false;
-                candidates.removeIf(parser -> !parser.isParsable(item));
+                if (candidates.size() <= 1) {
+                    break;
+                }
+                hasParsed.clear();
+                final Iterator<Parser<?>> it = candidates.iterator();
+                NEXT_PARSER: while (it.hasNext()) {
+                    final Parser<?> parser = it.next();
+                    for (Parser<?> alreadyParsed : hasParsed) {
+                        // If a more specific parser has already run, we know we don't need to check this parser.
+                        // For example, if SHORT has already successfully parsed, we don't need to check INT.
+                        // isSuperset(INT, SHORT) == true
+                        if (isSuperset(parser, alreadyParsed)) {
+                            // Note: we *don't* have to add parser to hasParsed, since superset properties are
+                            // transitive
+                            continue NEXT_PARSER;
+                        }
+                    }
+                    if (parser.canParse(item)) {
+                        hasParsed.add(parser);
+                    } else {
+                        it.remove();
+                    }
+                }
             }
         }
         if (allNull) {
@@ -277,6 +302,61 @@ public abstract class InferenceSpecs {
         if (parsers().isEmpty()) {
             throw new IllegalArgumentException("Must provide at least one parser for inference");
         }
+    }
+
+    private List<Parser<?>> collect() {
+        final List<Parser<?>> collected = new ArrayList<>();
+        for (Parser<?> candidate : parsers()) {
+            // If anything we've already collected is a superset of the candidate, discard the candidate.
+            // For example, if INT is already collected, we don't need to even consider SHORT.
+            boolean useCandidate = true;
+            for (Parser<?> actual : collected) {
+                if (isSuperset(actual, candidate)) {
+                    useCandidate = false;
+                    break;
+                }
+            }
+            if (useCandidate) {
+                collected.add(candidate);
+            }
+        }
+        return collected;
+    }
+
+    /**
+     * {@code first} is a superset of {@code second} if {@code first} will parse all the values that {@code second} will
+     * parse.
+     */
+    private static boolean isSuperset(Parser<?> first, Parser<?> second) {
+        if (first == Parser.STRING) {
+            return true;
+        }
+        if (first == Parser.DOUBLE) {
+            return second == Parser.FLOAT
+                    || second == Parser.LONG
+                    || second == Parser.INT
+                    || second == Parser.SHORT
+                    || second == Parser.BYTE;
+        }
+        if (first == Parser.FLOAT) {
+            // Note: *superset* here means will parse all the same (or more) inputs.
+            // Floats *can* parse everything that Double can parse.
+            return second == Parser.DOUBLE
+                    || second == Parser.LONG
+                    || second == Parser.INT
+                    || second == Parser.SHORT
+                    || second == Parser.BYTE;
+        }
+        if (first == Parser.LONG) {
+            return second == Parser.INT || second == Parser.SHORT || second == Parser.BYTE;
+        }
+        if (first == Parser.INT) {
+            return second == Parser.SHORT || second == Parser.BYTE;
+        }
+        if (first == Parser.SHORT) {
+            return second == Parser.BYTE;
+        }
+        return false;
     }
 
     public interface Builder {

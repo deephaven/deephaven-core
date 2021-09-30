@@ -14,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -38,8 +39,10 @@ public class CsvTest {
     public static List<CsvTest> tests() {
         return Arrays.asList(
                 timestamp(),
+                timestampSeconds(),
                 timestampMillis(),
                 timestampMicros(),
+                timestampNanos(),
                 timestampMixed(),
                 timestampDb(),
                 bools(),
@@ -76,6 +79,15 @@ public class CsvTest {
         return new CsvTest("timestamp", "timestamp.csv", CsvSpecs.csv(), expected);
     }
 
+    public static CsvTest timestampSeconds() {
+        final NewTable expected = ColumnHeader.ofInstant("Timestamp")
+                .row(TIMESTAMP_A)
+                .row(null)
+                .row(TIMESTAMP_B)
+                .newTable();
+        return new CsvTest("timestampSeconds", "timestamp-seconds.csv", CsvSpecs.csv(), expected);
+    }
+
     public static CsvTest timestampMillis() {
         final NewTable expected = ColumnHeader.ofInstant("Timestamp")
                 .row(TIMESTAMP_A)
@@ -92,6 +104,15 @@ public class CsvTest {
                 .row(TIMESTAMP_B)
                 .newTable();
         return new CsvTest("timestampMicros", "timestamp-micros.csv", CsvSpecs.csv(), expected);
+    }
+
+    public static CsvTest timestampNanos() {
+        final NewTable expected = ColumnHeader.ofInstant("Timestamp")
+                .row(TIMESTAMP_A)
+                .row(null)
+                .row(TIMESTAMP_B)
+                .newTable();
+        return new CsvTest("timestampNanos", "timestamp-nanos.csv", CsvSpecs.csv(), expected);
     }
 
     public static CsvTest timestampMixed() {
@@ -392,7 +413,7 @@ public class CsvTest {
             throw new IllegalArgumentException("Unable to find resource " + resourceName);
         }
         final NewTable actual;
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+        try (final Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
             actual = specs.parse(reader);
         } catch (ParserException e) {
             if (expected == null) {

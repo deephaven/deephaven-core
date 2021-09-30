@@ -6,27 +6,50 @@ package io.deephaven.db.tables.utils;
 
 import io.deephaven.base.Procedure;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.io.streams.BzipFileOutputStream;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.utils.csv.CsvSpecs;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.io.InputStreamFactory;
+import io.deephaven.io.streams.BzipFileOutputStream;
+import io.deephaven.io.streams.SevenZipInputStream;
+import io.deephaven.io.streams.SevenZipInputStream.Behavior;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.progress.MinProcessStatus;
 import io.deephaven.util.progress.ProgressLogger;
 import io.deephaven.util.progress.StatusCallback;
-import org.jetbrains.annotations.Nullable;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipInputStream;
 
 import static io.deephaven.db.tables.utils.NameValidator.legalizeColumnName;
 
@@ -573,6 +596,110 @@ public class CsvHelpers {
     @SuppressWarnings("WeakerAccess")
     public static QueryTable readCsv2(InputStream is) throws IOException {
         return (QueryTable) readCsvInternal(is, null, true, checkStatusCallback(null, false));
+    }
+
+    /**
+     * Opens a file, returning an input stream. Paths that end in ".zip", ".bz2", ".gz", ".7z", or ".zst" will have
+     * appropriate decompression applied. The returned stream may or may not be buffered.
+     *
+     * @param path the path
+     * @return the input stream, potentially decompressed
+     * @throws IOException if an I/O exception occurs
+     * @see Files#newInputStream(Path, OpenOption...)
+     */
+    public static InputStream open(Path path) throws IOException {
+        final String fileName = path.getFileName().toString();
+        if (fileName.endsWith(".zip")) {
+            final ZipInputStream stream = new ZipInputStream(Files.newInputStream(path));
+            stream.getNextEntry();
+            return stream;
+        }
+        if (fileName.endsWith(".bz2")) {
+            return new BZip2CompressorInputStream(Files.newInputStream(path));
+        }
+        if (fileName.endsWith(".gz")) {
+            return new GZIPInputStream(Files.newInputStream(path));
+        }
+        if (fileName.endsWith(".7z")) {
+            final SevenZipInputStream stream = new SevenZipInputStream(new InputStreamFactory() {
+                @Override
+                public InputStream createInputStream() throws IOException {
+                    return Files.newInputStream(path);
+                }
+
+                @Override
+                public String getDescription() {
+                    return path.toString();
+                }
+            });
+            stream.getNextEntry(Behavior.SKIP_WHEN_NO_STREAM);
+            return stream;
+        }
+        if (fileName.endsWith(".zst")) {
+            return new ZstdCompressorInputStream(Files.newInputStream(path));
+        }
+        return Files.newInputStream(path);
+    }
+
+    /**
+     * Creates an in-memory table from {@code file} according to the {@code specs}.
+     *
+     * <p>
+     * Paths that end in ".zip", ".bz2", ".gz", ".7z", or ".zst" will be decompressed.
+     *
+     * @param file the file
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #open(Path)
+     */
+    @ScriptApi
+    public static Table readCsv(String file, CsvSpecs specs) throws IOException {
+        return readCsv(Paths.get(file), specs);
+    }
+
+    /**
+     * Creates an in-memory table from {@code path} according to the {@code specs}.
+     *
+     * <p>
+     * Paths that end in ".zip", ".bz2", ".gz", ".7z", or ".zst" will be decompressed.
+     *
+     * @param path the path
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #open(Path)
+     */
+    @ScriptApi
+    public static Table readCsv(Path path, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(open(path)));
+    }
+
+    /**
+     * Creates an in-memory table from {@code url} according to the {@code specs}.
+     *
+     * @param url the url
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(URL url, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(url.openStream()));
+    }
+
+    /**
+     * Creates an in-memory table from {@code stream} according to the {@code specs}. The {@code stream} will be closed
+     * upon return.
+     *
+     * @param stream the stream
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(InputStream stream, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(stream));
     }
 
     /**

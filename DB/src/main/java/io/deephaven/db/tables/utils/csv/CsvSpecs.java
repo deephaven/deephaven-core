@@ -15,6 +15,7 @@ import org.immutables.value.Value.Immutable;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
@@ -42,7 +43,7 @@ public abstract class CsvSpecs {
 
         Builder header(TableHeader header);
 
-        Builder putParsers(String key, Parser<?> value);
+        Builder putParsers(String columnName, Parser<?> parser);
 
         Builder inference(InferenceSpecs inferenceSpecs);
 
@@ -128,7 +129,7 @@ public abstract class CsvSpecs {
     public abstract Optional<TableHeader> header();
 
     /**
-     * The parsers, when specified, forgoes any type inference.
+     * The parsers, where the keys are column names. Specifying a parser for a column forgoes inference for that column.
      *
      * @return the parsers
      */
@@ -151,6 +152,9 @@ public abstract class CsvSpecs {
      * The header row flag. If {@code true}, the column names of the output table will be inferred from the first row of
      * the table. If {@code false}, the column names will be numbered numerically in the format "Column%d" with a
      * 1-based index.
+     *
+     * <p>
+     * Note: if {@link #header()} is specified, it takes precedence over the column names that will be used.
      *
      * <p>
      * By default is {@code true}.
@@ -189,7 +193,7 @@ public abstract class CsvSpecs {
     }
 
     /**
-     * The trim flag.
+     * The trim flag, whether to trim leading and trailing blanks.
      *
      * <p>
      * By default is {@code false}.
@@ -223,28 +227,6 @@ public abstract class CsvSpecs {
     }
 
     /**
-     * Parses {@code file} according to the specifications of {@code this}.
-     *
-     * @param file the file
-     * @return the new table
-     * @throws IOException if an I/O exception occurs
-     */
-    public final NewTable parse(String file) throws IOException {
-        return parse(Paths.get(file));
-    }
-
-    /**
-     * Parses {@code file} according to the specifications of {@code this}.
-     *
-     * @param file the file
-     * @return the new table
-     * @throws IOException if an I/O exception occurs
-     */
-    public final NewTable parse(File file) throws IOException {
-        return parse(file.toPath());
-    }
-
-    /**
      * Parses {@code path} according to the specifications of {@code this}.
      *
      * @param path the path
@@ -252,26 +234,30 @@ public abstract class CsvSpecs {
      * @throws IOException if an I/O exception occurs
      */
     public final NewTable parse(Path path) throws IOException {
-        try (final Reader reader = Files.newBufferedReader(path, charset())) {
-            return parse(reader);
-        }
+        return parse(Files.newInputStream(path));
     }
 
     /**
-     * Parses {@code url} according to the specifications of {@code this}.
+     * Parses {@code stream} according to the specifications of {@code this}. The {@code stream} will be closed upon
+     * return.
      *
-     * @param url the url
+     * <p>
+     * Note: this implementation will buffer the {@code stream} internally.
+     *
+     * @param stream the stream
      * @return the new table
      * @throws IOException if an I/O exception occurs
      */
-    public final NewTable parse(URL url) throws IOException {
-        try (final Reader reader = new BufferedReader(new InputStreamReader(url.openStream(), charset()))) {
-            return parse(reader);
-        }
+    public final NewTable parse(InputStream stream) throws IOException {
+        return parse(new InputStreamReader(stream, charset()));
     }
 
     /**
-     * Parses {@code reader} according to the specifications of {@code this}.
+     * Parses {@code reader} according to the specifications of {@code this}. The {@code reader} will be closed upon
+     * return.
+     *
+     * <p>
+     * Note: this implementation will buffer the {@code reader} internally.
      *
      * @param reader the reader
      * @return the new table
@@ -319,20 +305,22 @@ public abstract class CsvSpecs {
         }
     }
 
-    private Parser<?> parser(String columnName, int columnIndex, List<CSVRecord> dataRecords) {
-        if (header().isPresent()) {
-            final Type<?> type = header().get().getHeader(columnName);
-            if (type == null) {
-                throw new IllegalArgumentException(String.format(
-                        "When specifying a header, all columns must be accounted for. Missing type for column name '%s'",
-                        columnName));
-            }
+    private static Type<?> type(TableHeader header, String columnName) {
+        final Type<?> type = header.getHeader(columnName);
+        if (type != null) {
+            return type;
         }
+        throw new IllegalArgumentException(String.format(
+                "When specifying a header, all columns must be accounted for. Missing type for column name '%s'",
+                columnName));
+    }
+
+    private Parser<?> parser(String columnName, int columnIndex, List<CSVRecord> dataRecords) {
+        final Type<?> type = header().map(header -> type(header, columnName)).orElse(null);
 
         // 1. An explicit parser if set
         final Parser<?> explicit = parsers().get(columnName);
         if (explicit != null) {
-            final Type<?> type = header().map(t -> t.getHeader(columnName)).orElse(null);
             if (type != null && !type.equals(explicit.type())) {
                 throw new IllegalArgumentException("Explicit parser type and column header type do not match");
             }
@@ -340,9 +328,9 @@ public abstract class CsvSpecs {
         }
 
         final InferenceSpecs inference;
-        if (header().isPresent()) {
+        if (type != null) {
             // 2. Guided inference
-            inference = inference().limitToType(header().get().getHeader(columnName));
+            inference = inference().limitToType(type);
         } else {
             // 3. Original inference
             inference = inference();

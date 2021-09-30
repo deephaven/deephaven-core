@@ -9,6 +9,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class InferenceTest {
 
     @Test
+    public void singleParserNoBackupNoItems() {
+        noInfer(InferenceSpecs.builder().addParsers(Parser.INT).onNullParser(null).build());
+    }
+
+    @Test
+    public void singleParserBackupNoItems() {
+        infer(InferenceSpecs.builder().addParsers(Parser.INT).onNullParser(Parser.DOUBLE).build(), Parser.DOUBLE);
+    }
+
+    @Test
+    public void singleParserNoBackupNullItems() {
+        noInfer(InferenceSpecs.builder().addParsers(Parser.INT).onNullParser(null).build(), null, null);
+    }
+
+    @Test
+    public void singleParserBackupNullItems() {
+        infer(InferenceSpecs.builder().addParsers(Parser.INT).onNullParser(Parser.DOUBLE).build(), Parser.DOUBLE, null,
+                null);
+    }
+
+    @Test
     public void noItems() {
         // all null defaults to string type
         infer(Parser.STRING);
@@ -116,6 +137,12 @@ public class InferenceTest {
     @Test
     public void notQuiteInstant() {
         infer(Parser.STRING, "2019-08-25T11:34:56.000Z", null, "");
+    }
+
+    @Test
+    public void shortCircuitEvenIfEventuallyIncorrect() {
+        final InferenceSpecs shortOrInt = InferenceSpecs.builder().addParsers(Parser.SHORT, Parser.INT).build();
+        infer(shortOrInt, Parser.INT, "1", "2", Integer.toString(Short.MAX_VALUE + 1), "This is not an int");
     }
 
     private static void infer(Parser<?> expected, String... values) {
