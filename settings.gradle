@@ -38,6 +38,7 @@ Map<String, String> pyMods = [
         'py36': 'py/py36',
         'py37': 'py/py37',
         'sphinx': 'sphinx',
+        'pyclient': 'pyclient',
 ]
 
 // Include our modules

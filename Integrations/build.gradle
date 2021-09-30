@@ -2,7 +2,7 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
-    id 'com.avast.gradle.docker-compose' version '0.14.9'
+    id 'com.avast.gradle.docker-compose'
 }
 
 evaluationDependsOn ':deephaven-jpy'
@@ -131,7 +131,11 @@ def runInDocker = { String name, List<String> command ->
         parentContainers = [tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
 
         imageName = 'deephaven/py-integrations:local-build'
-        network = 'integrations_default'
+
+        network = dockerCompose.projectName.toLowerCase() + '_default'
+        containerDependencies.dependsOn = dockerCompose.upTask
+        containerDependencies.finalizedBy = dockerCompose.downTask
+
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
             from 'deephaven/runtime-base:local-build'
@@ -172,13 +176,7 @@ pyFunctionalTest.configure({
 })
 tasks.getByName('check').dependsOn(pyFunctionalTest)
 
-dockerCompose.isRequiredBy(pyTest)
-dockerCompose.isRequiredBy(pyFunctionalTest)
-
+// Using Integrations/docker-compose.yml, this will start redpanda and wait until it is running before letting tests proceed.
 dockerCompose {
-    waitForTcpPortsTimeout = java.time.Duration.ofMinutes(2)
-    waitForHealthyStateTimeout = java.time.Duration.ofMinutes(1)
-    // Avoid compose project mangling: we are depending on the default
-    // name for the compose network (matching the directory name)
-    projectName=null
+    waitForTcpPortsTimeout = Duration.ofMinutes(2)
 }

@@ -72,6 +72,7 @@ class Docker {
         private Action<? super Sync> copyOut;
         private File dockerfileFile;
         private Action<? super Dockerfile> dockerfileAction;
+        private TaskDependencies containerDependencies = new TaskDependencies();
 
         /**
          * Files that need to be copied in to the image.
@@ -128,9 +129,8 @@ class Docker {
         String imageName;
 
         /**
-         * Tag to apply the network to the container.
+         * Name of the docker network which the container should be attached to.
          */
-
         String network;
 
         /**
@@ -154,6 +154,19 @@ class Docker {
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
         boolean showLogsOnSuccess;
+    }
+    /**
+     * Describes relationships between this set of tasks and other external tasks.
+     */
+    static class TaskDependencies {
+        /**
+         * Indicates tasks that must have been successfully completed before the container can start.
+         */
+        Object dependsOn;
+        /**
+         * Indicates tasks that should run after the container has stopped.
+         */
+        Object finalizedBy;
     }
 
     private static void validateImageName(String imageName) {
@@ -261,6 +274,10 @@ class Docker {
                     hostConfig.network.set(cfg.network)
                 }
 
+                if (cfg.containerDependencies.dependsOn) {
+                    dependsOn(cfg.containerDependencies.dependsOn)
+                }
+
                 targetImageId makeImage.get().getImageId()
                 containerName.set(dockerContainerName)
             }
@@ -273,6 +290,11 @@ class Docker {
                 //TODO wire this up to not even run if the container doesn't exist
                 dependsOn createContainer
                 targetContainerId dockerContainerName
+
+                if (cfg.containerDependencies.finalizedBy) {
+                    finalizedBy(cfg.containerDependencies.finalizedBy)
+                }
+
                 onError { t ->
                     // ignore, container might not exist
                 }

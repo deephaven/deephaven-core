@@ -54,11 +54,11 @@ class Session:
 
         self.host = host
         if not host:
-            self.host = os.environ.get("DHCE_HOST", "localhost")
+            self.host = os.environ.get("DH_HOST", "localhost")
 
         self.port = port
         if not port:
-            self.port = os.environ.get("DHCE_PORT", 10000)
+            self.port = int(os.environ.get("DH_PORT", 10000))
 
         self.is_connected = False
         self.session_token = None
