@@ -1817,7 +1817,7 @@ public class DoubleNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        double val = NEG_INF_DOUBLE;
+        double val = NEGATIVE_INFINITY_DOUBLE;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             double c = values.get(i);
@@ -1841,7 +1841,7 @@ public class DoubleNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        double val = NEG_INF_DOUBLE;
+        double val = NEGATIVE_INFINITY_DOUBLE;
         long count = 0;
         for (double c : values) {
             if (!(Double.isNaN(c) || DoublePrimitives.isNull(c))) {
@@ -1864,7 +1864,7 @@ public class DoubleNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        double val = NEG_INF_DOUBLE;
+        double val = NEGATIVE_INFINITY_DOUBLE;
         long count = 0;
         for (Double c : values) {
             if (!(c == null || Double.isNaN(c) || DoublePrimitives.isNull(c))) {
@@ -1887,7 +1887,7 @@ public class DoubleNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        double val = POS_INF_DOUBLE;
+        double val = MAX_DOUBLE;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             double c = values.get(i);
@@ -1911,7 +1911,7 @@ public class DoubleNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        double val = POS_INF_DOUBLE;
+        double val = MAX_DOUBLE;
         long count = 0;
         for (double c : values) {
             if (!(Double.isNaN(c) || DoublePrimitives.isNull(c))) {
@@ -1934,7 +1934,7 @@ public class DoubleNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        double val = POS_INF_DOUBLE;
+        double val = MAX_DOUBLE;
         long count = 0;
         for (Double c : values) {
             if (!(c == null || Double.isNaN(c) || DoublePrimitives.isNull(c))) {
@@ -2102,7 +2102,7 @@ public class DoubleNumericPrimitives {
             return NULL_INT;
         }
 
-        double val = NEG_INF_DOUBLE;
+        double val = NEGATIVE_INFINITY_DOUBLE;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
@@ -2152,7 +2152,7 @@ public class DoubleNumericPrimitives {
             return NULL_INT;
         }
 
-        double val = POS_INF_DOUBLE;
+        double val = MAX_DOUBLE;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
