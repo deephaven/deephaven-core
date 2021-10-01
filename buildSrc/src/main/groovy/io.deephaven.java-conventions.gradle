@@ -4,11 +4,21 @@ plugins {
 
 def archivesBaseNamePrefix = 'deephaven-'
 
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '8')
+
+if (languageLevel > compilerVersion) {
+  throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
+}
+if (languageLevel < 8) {
+  throw new IllegalArgumentException("languageLevel must be greater than or equal to 8")
+}
+
 archivesBaseName = "${archivesBaseNamePrefix}${project.name}"
 
 java {
   toolchain {
-    languageVersion = JavaLanguageVersion.of(8)
+    languageVersion = JavaLanguageVersion.of(compilerVersion)
   }
 }
 
@@ -16,8 +26,21 @@ tasks.withType(JavaCompile).configureEach {
   JavaCompile javac ->
     javac.options.fork = true
     javac.options.encoding = 'UTF-8'
-    javac.options.incremental = true
-    javac.options.compilerArgs << '-parameters'
+    //javac.options.incremental = true
+    //javac.options.compilerArgs << '-parameters'
+    if (compilerVersion >= 9) {
+      javac.options.release = languageLevel
+
+      if (languageLevel > 8) {
+        //javac.options.compilerArgs << '--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED'
+
+        //javac.options.compilerArgs << '--add-opens'
+        //javac.options.compilerArgs << 'jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'
+
+        //javac.options.compilerArgs << '--add-exports'
+        //javac.options.compilerArgs << 'jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'
+      }
+    }
 }
 
 tasks.withType(Jar).configureEach {

@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * A table handle manager that executes requests serially.
@@ -49,7 +50,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
-            results = checked(() -> TableCreator.create(manager, i -> i, i -> i, table));
+            results = TableHandleManagerSerial.checked(() -> TableCreator.<TableHandle, TableHandle>create(manager, i -> i, i -> i, table));
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;
@@ -65,7 +66,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
-            results = checked(() -> TableCreator.create(manager, i -> i, i -> i, tables));
+            results = TableHandleManagerSerial.checked(() -> TableCreator.<TableHandle, TableHandle>create(manager, i -> i, i -> i, tables));
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;
@@ -132,13 +133,13 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     @Override
     public TableHandle executeInputs(TableCreationLogic1Input logic, TableHandle t1)
             throws TableHandleException, InterruptedException {
-        return checked(() -> logic.create(t1));
+        return TableHandleManagerSerial.checked(() -> logic.create(t1));
     }
 
     @Override
     public TableHandle executeInputs(TableCreationLogic2Inputs logic, TableHandle t1, TableHandle t2)
             throws InterruptedException, TableHandleException {
-        return checked(() -> logic.create(t1, t2));
+        return TableHandleManagerSerial.checked(() -> logic.create(t1, t2));
     }
 
     interface Unchecked<T> {

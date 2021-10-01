@@ -17,8 +17,15 @@ jobs:
         id: setup-java-8
         uses: actions/setup-java@v2.2.0
         with:
-          distribution: 'zulu'
+          distribution: 'adopt-hotspot'
           java-version: '8.0.302'
+
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'adopt-hotspot'
+          java-version: '11.0.12'
 
       - name: Setup JDK 15
         id: setup-java-15
@@ -30,7 +37,7 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-15.outputs.path }}" >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-15.outputs.path }}" >> gradle.properties
 
       - name: All Javadoc
         uses: burrunan/gradle-cache-action@v1
@@ -68,8 +75,16 @@ jobs:
         id: setup-java-8
         uses: actions/setup-java@v2.2.0
         with:
-          distribution: 'zulu'
+          distribution: 'adopt-hotspot'
           java-version: '8.0.302'
+
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'adopt-hotspot'
+          java-version: '11.0.12'
+
       - name: Setup JDK 15
         id: setup-java-15
         uses: actions/setup-java@v2.2.0
@@ -80,7 +95,7 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-15.outputs.path }}" >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-15.outputs.path }}" >> gradle.properties
 
       - name: Generate Python Docs
         uses: burrunan/gradle-cache-action@v1
