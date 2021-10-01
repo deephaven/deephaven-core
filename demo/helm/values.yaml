@@ -64,7 +64,7 @@ dh:
   svcNameControl: dh-control
   #svcNameControl: dh-grpc
   frontendConfigName: dh-frontend
-  dnsName: demo.deephavencommunity.com
+  dnsName: demo.deephaven.app
   routeGrpc: dh-route-grpc
   routeWeb: dh-route-web
 

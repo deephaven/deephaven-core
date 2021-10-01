@@ -20,4 +20,4 @@ spec:
       protocol: TCP
 
   selector:
-    dh.purpose: controller
+    dh-purpose: controller

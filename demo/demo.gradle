@@ -96,6 +96,13 @@ dependencies {
     }
     // dependencies added w/o adequate replacements in quarkus (afaik)
     implementation 'io.kubernetes:client-java-extended:13.0.0'
+    testImplementation "junit:junit:4.13.2'"
+}
+
+test {
+    useJUnit()
+    // uncomment below to leave test machine alive to play with
+    systemProperty("noClean", "true") // WIP: must comment whole line to merge
 }
 
 String protoSyncName = 'protoSync'

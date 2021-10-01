@@ -11,9 +11,12 @@ services:
       #
       # To turn on debug logging, add: -Dlogback.configurationFile=logback-debug.xml
       - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+      - DH_TLS_CHAIN=/etc/ssl/internal/tls.crt
+      - DH_TLS_KEY=/etc/ssl/internal/tls.key.pk8
+
 
     expose:
-      - '8080'
+      - '8888'
 #    ports:
 #      - '5005:5005'        # For remote debugging (change if using different port)
 
@@ -21,6 +24,8 @@ services:
     # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
     volumes:
       - ./data:/data
+      - /etc/ssl/internal:/etc/ssl/internal
+      - /etc/ssl/dh:/etc/ssl/dh
 
     deploy:
       resources:
@@ -43,7 +48,7 @@ services:
   web:
     image: deephaven/web:local-build
     expose:
-      - "80"
+      - "8080"
     volumes:
       - ./data:/data
     deploy:
@@ -58,7 +63,7 @@ services:
     environment:
       - BACKEND_ADDR=grpc-api:8888
     expose:
-      - '8080'
+      - '8008'
 #      - '8443' #unused
     deploy:
       resources:
@@ -73,6 +78,9 @@ services:
     ports:
       - "${PORT}:10000"
 #      - '9090:9090' #envoy admin
+    volumes:
+      - /etc/ssl/dh:/etc/ssl/dh
+      - /etc/ssl/internal:/etc/ssl/internal
     deploy:
       resources:
         limits:

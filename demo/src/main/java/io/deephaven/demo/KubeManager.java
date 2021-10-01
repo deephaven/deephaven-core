@@ -679,7 +679,7 @@ public class KubeManager {
             5, null, null, 10, false);
         List<DhWorker> needService = new ArrayList<>();
         result.getItems().parallelStream().forEach(pod -> {
-            // add the dh.user label, once we confirm we won the label, add to our needService list.
+            // add the dh-user label, once we confirm we won the label, add to our needService list.
             DhWorker worker = null;
             try {
                 worker = setupPod(pod, ingressName);
@@ -891,7 +891,7 @@ public class KubeManager {
         final String podName = pod.getMetadata().getName();
         session.setPod(pod);
 
-        // now, also set the dh.user label on the given pod
+        // now, also set the dh-user label on the given pod
         final KubectlPatch<V1Pod> patchCmd = Kubectl.patch(V1Pod.class)
             .apiClient(apiClient)
             .namespace(DH_NAMESPACE)

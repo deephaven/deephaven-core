@@ -2,6 +2,8 @@ FROM deephaven/dhide:local-build as dhide
 
 FROM deephaven/js-out:local-build as js-out
 
+USER 0
+
 FROM nginxinc/nginx-unprivileged:1.19.7-amd64
 
 USER 0
@@ -12,8 +14,11 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y nginx-extras libnginx-mod-http-dav-ext --option=Dpkg::Options::=--force-confdef;
 
+
 RUN mkdir -p /data/notebooks; \
     chown nginx:nginx /data/notebooks; \
+    mkdir -p /data/layouts; \
+    chown nginx:nginx /data/layouts; \
     chown -R nginx:nginx /var/lib/nginx;
 
 # nginx user gets uid 101
@@ -28,3 +33,5 @@ COPY nginx.conf /etc/nginx/
 COPY 99-init-notebooks.sh /docker-entrypoint.d
 
 VOLUME /tmp
+VOLUME /data/notebooks
+VOLUME /data/layouts

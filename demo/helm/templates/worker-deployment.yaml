@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.dh.deploymentName }}
   namespace: {{ .Values.dh.namespace }}
   labels:
-    dh.purpose: worker
+    dh-purpose: worker
     {{- include "dhdemo.labels" . | nindent 4 }}
 spec:
   selector:
@@ -18,7 +18,7 @@ spec:
       {{- end }}
       labels:
         # This deployment is for workers, who will run user sessions
-        dh.purpose: worker
+        dh-purpose: worker
         {{- include "dhdemo.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -143,9 +143,6 @@ spec:
             - name: GRPC_TRACE
               value: http2_stream_state,http,http1,transport_security
           volumeMounts:
-            - name: grpc-secret
-              mountPath: /etc/ssl/grpc-secret
-              readOnly: true
             - name: gen-secret
               mountPath: /etc/ssl/dh
               readOnly: true

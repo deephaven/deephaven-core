@@ -137,7 +137,7 @@ dockerBuildImage.inputs.file grpcApiBase.outputs.files.singleFile
 // If we change how our build works in the future (so that gradle is responsible for pushing the
 // image), we can remove this extra dependency.
 dockerCreateDockerfile.dependsOn grpcApiBase
-// only use this when testing locally (requires demo.deephavencommunity.com /etc/hosts hacks when used outside of kubernetes)
+// only use this when testing locally (requires demo.deephaven.app /etc/hosts hacks when used outside of kubernetes)
 //dockerCreateDockerfile.environmentVariable("DH_TLS_CHAIN", "/etc/ssl/grpc/tls.crt")
 //dockerCreateDockerfile.environmentVariable("DH_TLS_KEY", "/etc/ssl/grpc/tls.key")
 assemble.dependsOn dockerBuildImage

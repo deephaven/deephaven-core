@@ -1,5 +1,7 @@
 package io.deephaven.demo;
 
+import io.deephaven.demo.deploy.GoogleDeploymentManager;
+import io.deephaven.demo.deploy.Machine;
 import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.extended.kubectl.Kubectl;
@@ -21,7 +23,9 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.mutiny.core.Vertx;
+import org.jboss.logging.Logger;
 
 import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
@@ -49,6 +53,8 @@ import static io.deephaven.demo.NameConstants.*;
  */
 @QuarkusMain
 public class DhDemoServer implements QuarkusApplication {
+
+    private static final Logger LOG = Logger.getLogger(DhDemoServer.class);
 
     private final Vertx vertx;
 
@@ -91,7 +97,7 @@ public class DhDemoServer implements QuarkusApplication {
 
     @Override
     public int run(final String... args) throws Exception {
-        System.out.println("Setting up Deephaven Demo Server");
+        System.out.println("Setting up Deephaven Demo Server!");
         Thread.setDefaultUncaughtExceptionHandler((thread, fail) -> {
             System.err.println(
                 "Unhandled failure on thread " + thread.getName() + " (" + thread.getId() + ")");
@@ -99,108 +105,268 @@ public class DhDemoServer implements QuarkusApplication {
         });
 
         Router router = CDI.current().select(Router.class).get();
-        KubeManager state = new KubeManager();
+//        KubeManager state = new KubeManager();
+        controller = new ClusterController(new GoogleDeploymentManager("/tmp"));
         router.get("/health").handler(rc -> {
             System.out.println("Health check! " + rc.request().uri() + " : " +
                 rc.request().headers().get("User-Agent") + " ( "
                 + rc.request().headers().get("host") + " ) ");
-            // TODO: real health check
+
+            // TODO: real health check (grpcurl is on cli, or we can use grpc client here in java)
             // TODO: handle built-in quarkus health check
-            rc.response().end("READY");
+            rc.response()
+                    .putHeader("Access-Control-Allow-Origin", "https://" + DOMAIN)
+                    .putHeader("Access-Control-Allow-Methods", "GET")
+                    .end("READY");
+        });
+        router.get("/robots.txt").handler(rc -> {
+            LOG.info("ROBOT DETECTED! " + rc.request().uri() + " : " +
+                rc.request().headers().get("User-Agent") + " ( "
+                + rc.request().headers().get("host") + " ) ");
+            rc.response()
+                    .putHeader("Access-Control-Allow-Origin", "https://" + DOMAIN)
+                    .putHeader("Access-Control-Allow-Methods", "GET")
+                    // disallow all robots...
+                    .end("User-agent: *\n" +
+                            "Disallow: /");
         });
         router.get().handler(req -> {
-            System.out.println("Handled " + req.normalizedPath());
+
+            // for now, we are temporarily skipping ssl...
+//            if (!req.request().isSSL()) {
+//                System.out.println("Redirecting non-ssl request " + req.normalizedPath());
+//                String domain = req.request().uri();
+//                String uri = domain.contains(":") ? domain : "https://" + domain;
+//                req.response()
+//                    .putHeader("Location", uri)
+//                    .setStatusCode(302)
+//                    .end("<!html><html><body>" +
+//                            "You are being redirected to a secure protocol: <a href=\"" + uri + "\">" + uri + "</a>" +
+//                            "</body></html>");
+//                return;
+//            }
+            String userAgent = req.request().headers().get("User-Agent");
+            if (userAgent.contains("SlackBot") || userAgent.contains("Nimbostratus")) {
+                LOG.info("Rejecting bot: " + userAgent);
+                req.request().headers().entries().forEach(e->{
+                    LOG.info("Header: " + e.getKey() + " = " + e.getValue());
+                });
+                req.end();
+                return;
+            }
+            LOG.info("Handling " + req.request().method() + " " + req.normalizedPath() + " from " + userAgent);
+            if (req.request().path() != null && req.request().path().endsWith("favicon.ico")) {
+                // TODO: actually serve our favicon
+                LOG.info("Skipping do-nothing favicon.ico");
+                req.response().setStatusCode(200).end();
+                return;
+            }
             Cookie cookie = req.getCookie("dh-user");
             if (cookie != null) {
                 String uname = cookie.getValue();
+                LOG.info("Handling request " + req.request().uri());
                 // verify that this cookie points to a running service, and if so, redirect to it.
-                if (state.hasValidRoute(uname)) {
-                    String uri = "https://" + uname + "." + NameConstants.DOMAIN;
-                    req.response()
-                        .putHeader("Location", uri)
-                        .setStatusCode(302)
-                        .end();
-                    return;
-                }
+
+//                if (state.hasValidRoute(uname)) {
+//                    String uri = "https://" + uname + "." + NameConstants.DOMAIN;
+//                    req.response()
+//                        .putHeader("Location", uri)
+//                        .setStatusCode(302)
+//                        .end();
+//                    return;
+//                }
             }
             // getting or creating a worker could take a while.
             // for now, we're going to let the browser window hang while we wait :'(
             // get off the vert.x event queue...
-            vertx.setTimer(1, t -> {
+            LOG.info("Sending user off thread to complete new machine request");
+            ClusterController.setTimer("Send to new machine", () -> {
 
-                DhWorker worker;
-                try {
-                    // hm... we should actually send the user a response with a token that we'll
-                    // stream events on vert.x event bus.
-                    // this will let us render a "preparing your machine" loading message, while we
-                    // do... expensive things waiting....
-                    worker = state.getWorker();
-                } catch (KubectlException | ApiException | InterruptedException e) {
-                    String unique = UUID.randomUUID().toString();
-                    String msg =
-                        "Unknown error occurred getting a worker, please report error " + unique;
-                    System.err.println(msg);
-                    e.printStackTrace();
-                    vertx.runOnContext(() -> {
-                        req.response()
-                            .setStatusCode(500)
-                            .end(msg);
-                    });
-                    return;
-                }
-                if (worker == null) {
-                    // there is something that has gone terribly wrong.
-                    vertx.runOnContext(() -> {
-                        req.response()
-                            .setStatusCode(503)
-                            .end("The server is currently overloaded, please try again!");
-                    });
-                    return;
-                }
+                // not using kube for now
+                // handleKube(req);
 
-                String uri = "https://" + worker.getDnsName();
-                // ...we should probably take the /path off the source request too...
-
-                // okay... block until this route is fully functional.
-                long deadline = System.currentTimeMillis() + 180_000; // three minutes... wayyy too
-                                                                      // long, really.
-                while (!worker.checkReady(state.getHttpClient())) {
-                    // TODO: instead of this, send a response so client can give feeback while this
-                    // happens
-                    System.out.println("Waiting for " + worker.getUserName() + " ("
-                        + worker.getPodName() + ") to be ready");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
-                    if (System.currentTimeMillis() > deadline) {
-                        vertx.runOnContext(() -> {
-                            req.response()
-                                .setStatusCode(503)
-                                .end("Waited more than three minutes for " + worker.getUserName()
-                                    + " to be ready");
-                        });
-                        return;
-                    }
-                }
-
-
-                vertx.runOnContext(() -> {
-                    req.response()
-                        .putHeader("Set-Cookie",
-                            "dh-user=" + worker.getUserName() + "; Secure; HttpOnly; Domain="
-                                + DOMAIN)
-                        .putHeader("Location", uri)
-                        .setStatusCode(302)
-                        .end();
-                });
+                LOG.info("Finding gcloud worker for user");
+                handleGcloud(req);
             });
 
         });
-        System.out.println("Ready to start serving https://" + DOMAIN);
+        LOG.info("Ready to start serving https://" + DOMAIN);
         Quarkus.waitForExit();
         return 0;
+    }
+
+    private void handleGcloud(final RoutingContext req) {
+//        if (pool == null) {
+//            pool = new GcloudWorkPool();
+//        }
+//
+//        String workerName = pool.getUnusedDomain();
+//        String uri = "https://" + workerName + "." + DOMAIN;
+        final Machine machine = controller.requestMachine();
+        String uri = "https://" + machine.getDomainName();
+        LOG.info("Sending user to " + uri);
+        // if we can reach /health immediately, the machine is ready, we should send user straight there
+        final boolean isReady = controller.isMachineReady(machine);
+
+//        req.vertx().runOnContext(c->{
+            if (isReady) {
+                req.redirect(uri);
+//                    req.response()
+//                        .setChunked(true)
+//                        .putHeader("Location", uri)
+//                        .setStatusCode(302)
+//                        .end("<!html><html><body>" +
+//                                "You are being redirected to a worker named " + machine.getHost() + " : <a href=\"" + uri + "\">" + uri + "</a>" +
+//                                "</body></html>");
+            } else {
+                // not ready... send user to interstitial page
+                req.response()
+                        .putHeader("content-type", "text/html")
+                        .putHeader("x-frame-options", "DENY")
+                        .setChunked(true)
+                        .setStatusCode(200)
+                        // ...gross, move this to a resource file and just text replace the uri into place (store text pre-split to save IO/time)...
+                        .end("<!DOCTYPE html><html><head>\n" +
+                                "<style>" +
+                                    "body {" +
+                                        "background: #1a171a; " +
+                                        "display: flex; " +
+                                        "justify-content: center; " +
+                                        "align-items: center; " +
+                                        "height: 100vh; " +
+                                        "margin 0; " +
+                                        "flex-direction: column; " +
+                                    " }\n" +
+                                    "#box {\n" +
+                                    "    margin: auto; " +
+                                    "    padding: 2em; " +
+                                    "    background: #fcfcfa; " +
+                                    "    color: #1a171a; " +
+                                    "    text-align: center; " +
+                                    "    max-width: 50em; " +
+                                    "    border: 0 solid rgba(26, 23, 26, 0.2); " +
+                                    "    border-radius: 0.3rem; " +
+                                    "    outline: 0; " +
+                                    "    font-family: \"Fira Sans\", -apple-system, blinkmacsystemfont, \"Segoe UI\", \"Roboto\", \"Helvetica Neue\", arial, sans-serif; " +
+                                    "}\n" +
+                                    "\n" +
+                                    "#box > a { " +
+                                    "    color: #8b8b90; " +
+                                    "    text-decoration: none; " +
+                                    "    transition: color 200ms cubic-bezier(0.08,0.52,0.52,1); " +
+                                    "}" +
+                                "</style>\n" +
+                                "</head><body>\n" +
+                                "<div id=box>Preparing machine <a href=\"" + uri + "\">" + uri + "</a>.</div>\n" +
+                                "<script>" +
+                                    // create a small script that will ping the /health uri until it's happy, then update our message and try to navigate to running machine
+                                    "var pid\n" +
+                                    "var wait = 800\n" +
+                                    "var request = new XMLHttpRequest();\n" +
+                                    "request.onreadystatechange = function() {\n" +
+                                    "    if (request.readyState === 4){\n" +
+                                    "        if (request.status >= 200 && request.status < 400) {\n" +
+                                    "            // we win! ...but wait 2s, to give grpc-api time to come online (or make /health smarter)\n" +
+                                    "            setTimeout(goToWorker, 2000);\n" +
+                                    "        } else {\n" +
+                                    "            pid && clearTimeout(pid);\n" +
+                                    "            pid = setTimeout(getStatus, 400);\n" +
+                                    "        }\n" +
+                                    "    }\n" +
+                                    "};\n" +
+                                    "request.onerror = function() {\n" +
+                                    "    pid && clearTimeout(pid);\n" +
+                                    "    pid = setTimeout(getStatus, (wait+=10));\n" +
+                                    "};\n" +
+                                    "function getStatus() {\n" +
+                                    "    request.open(\"GET\", '" + uri + "/health' , true);\n" +
+                                    "    request.send(null);\n" +
+                                    "}\n" +
+                                    "function goToWorker() {\n" +
+                                    "    document.getElementById('box').innerHTML = 'Your machine, <a href=\"" + uri + "\">" + uri + "</a>, is ready!';\n" +
+                                    "    window.location.href=\"" + uri + "\";\n" +
+                                    "}\n" +
+                                    "getStatus();\n" +
+                                "</script>" +
+                                "</body></html>");
+            }
+//        });
+    }
+
+    KubeManager state;
+    ClusterController controller;
+    private void handleKube(final RoutingContext req) {
+        DhWorker worker;
+        if (state == null) {
+            state = new KubeManager();
+        }
+
+        try {
+            // hm... we should actually send the user a response with a token that we'll
+            // stream events on vert.x event bus.
+            // this will let us render a "preparing your machine" loading message, while we
+            // do... expensive things waiting....
+            worker = state.getWorker();
+        } catch (KubectlException | ApiException | InterruptedException e) {
+            String unique = UUID.randomUUID().toString();
+            String msg =
+                    "Unknown error occurred getting a worker, please report error " + unique;
+            System.err.println(msg);
+            e.printStackTrace();
+            vertx.runOnContext(() -> {
+                req.response()
+                        .setStatusCode(500)
+                        .end(msg);
+            });
+            return;
+        }
+        if (worker == null) {
+            // there is something that has gone terribly wrong.
+            vertx.runOnContext(() -> {
+                req.response()
+                        .setStatusCode(503)
+                        .end("The server is currently overloaded, please try again!");
+            });
+            return;
+        }
+
+        String uri = "https://" + worker.getDnsName();
+        // ...we should probably take the /path off the source request too...
+
+        // okay... block until this route is fully functional.
+        long deadline = System.currentTimeMillis() + 180_000; // three minutes... wayyy too
+        // long, really.
+        while (!worker.checkReady(state.getHttpClient())) {
+            // TODO: instead of this, send a response so client can give feeback while this
+            // happens
+            System.out.println("Waiting for " + worker.getUserName() + " ("
+                    + worker.getPodName() + ") to be ready");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                break;
+            }
+            if (System.currentTimeMillis() > deadline) {
+                vertx.runOnContext(() -> {
+                    req.response()
+                            .setStatusCode(503)
+                            .end("Waited more than three minutes for " + worker.getUserName()
+                                    + " to be ready");
+                });
+                return;
+            }
+        }
+
+
+        vertx.runOnContext(() -> {
+            req.response()
+                    .putHeader("Set-Cookie",
+                            "dh-user=" + worker.getUserName() + "; Secure; HttpOnly; Domain="
+                                    + DOMAIN)
+                    .putHeader("Location", uri)
+                    .setStatusCode(302)
+                    .end();
+        });
     }
 
     public static String createIsolatedSession() throws ApiException, KubectlException {
@@ -327,7 +493,7 @@ public class DhDemoServer implements QuarkusApplication {
         // final List<V1Service> items = result.getItems();
         // System.out.println(items);
         //
-        // labelSel = "dh.purpose=controller";
+        // labelSel = "dh-purpose=controller";
         // final String ns = "default";
         // final String pretty = "false";
         // final V1PodList pods = api.listNamespacedPod(ns, pretty, false, conti, fieldSel,
@@ -335,7 +501,7 @@ public class DhDemoServer implements QuarkusApplication {
         // if (pods.getItems().isEmpty()) {
         // // this will never happen in the running cluster,
         // // as this controller will be finding it's own pod.
-        // throw new IllegalStateException("No pods found with dh.purpose=controller; make sure the
+        // throw new IllegalStateException("No pods found with dh-purpose=controller; make sure the
         // system is healthy!");
         // }
         //
@@ -359,8 +525,8 @@ public class DhDemoServer implements QuarkusApplication {
         // }
         // }
         // // now, alter this pod a little.
-        // podBod.getMetadata().getLabels().put("dh.purpose", "worker");
-        // podBod.getMetadata().getLabels().put("dh.user", userName);
+        // podBod.getMetadata().getLabels().put("dh-purpose", "worker");
+        // podBod.getMetadata().getLabels().put("dh-user", userName);
         // podBod.getMetadata().setGenerateName(userName+"-");
         // podBod.getMetadata().setName(userName);
         //

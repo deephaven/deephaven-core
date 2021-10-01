@@ -29,7 +29,7 @@ import static io.deephaven.demo.NameConstants.LABEL_USER;
  * This pod is labeled as
  * {@link NameConstants#LABEL_PURPOSE}={@link NameConstants#PURPOSE_CONTROLLER}
  * <p>
- * (dh.purpose = controller)
+ * (dh-purpose = controller)
  * <p>
  * and is defined in demo/helm/templates/control-deployment.yaml.
  */

@@ -45,6 +45,13 @@ There! Now you can reference grpc-api:local images in kubernets/minikube
 `<insert instructions how to shell into container through k8 pod>`
 curl -X POST localhost:9090/logging?level=trace
 
+curl -k localhost:9090/logging?router=debug -X POST && curl -k localhost:9090/logging?http=debug -X POST && curl -k localhost:9090/logging?http2=debug -X POST
+
+cd /dh && sudo docker-compose pull && sudo systemctl start dh && sudo rm -rf /deployments && sleep 2 && sudo docker cp dh_demo-server_1:/deployments /deployments && sudo systemctl stop dh && echo "Done updating controller" && cd -
+
+cd /deployments && sudo JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port=7117 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dquarkus.http.access-log.enabled=true -Dquarkus.ssl.native=false" ./run-java.sh && cd -
+
+
 minikube service --url dh-local
 
 
@@ -62,14 +69,16 @@ Step 1: install minikube OR enable Google Kubernetes Engine
 -> select Public cluster (you can get private to work, but we're using public for simplicity)
 
 
-CLUSTER_NAME=dhce-auto
 PROJECT_ID=deephaven-oss
+CLUSTER_NAME=dhce-auto
 ZONE=us-central1
 K8S_CONTEXT=gke_"$PROJECT_ID"_"$ZONE"_"$CLUSTER_NAME"
 K8S_NAMESPACE=dh
 DOCKER_VERSION=0.0.4
 
 https://console.cloud.google.com/artifacts/create-repo?project=deephaven-oss
+
+
 
 gcloud artifacts repositories create deephaven \
 --repository-format=docker \
@@ -84,12 +93,16 @@ https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?pr
 
 docker tag deephaven/grpc-proxy:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-proxy:$DOCKER_VERSION
 docker tag deephaven/grpc-api:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-api:$DOCKER_VERSION
+
 docker tag deephaven/web:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/web:$DOCKER_VERSION
+
 
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-proxy:$DOCKER_VERSION &
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-api:$DOCKER_VERSION &
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/web:$DOCKER_VERSION &
 
+docker tag deephaven/envoy:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/envoy:$DOCKER_VERSION
+docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/envoy:$DOCKER_VERSION
 
 
 # OPTIONAL: add a grpcurl container, to debug grpc:
@@ -151,7 +164,7 @@ gcloud compute firewall-rules create dh-admin --project ${PROJECT_ID} --allow tc
 Setup DNS:
 
 DNS_ZONE=dh-demo
-DOMAIN_ROOT=deephavencommunity.com
+DOMAIN_ROOT=deephaven.app
 NODE_IP=34.149.181.117
 MACHINE_NAME=demo
 
@@ -177,7 +190,7 @@ You have a custom role for the project that includes the compute.sslCertificates
 
 CERT_NAME=dh-demo-cert
 CERT_DESC="Certificate used to enable deephaven https / tls"
-DOMAINS_CSV="demo.deephavencommunity.com"
+DOMAINS_CSV="demo.deephaven.app"
 
 gcloud compute ssl-certificates create "$CERT_NAME" \
 --description="$CERT_DESC" \
@@ -256,12 +269,11 @@ openssl req -x509 -nodes -newkey rsa:4096 \
     -days 36500 \
     -subj '/CN=cluster.local/O=Company' \
     -addext 'extendedKeyUsage=serverAuth,clientAuth' \
-    -addext "subjectAltName=DNS:cluster.local,DNS:${DOMAINS_CSV:-demo.deephavencommunity.com},IP:127.0.0.1"
+    -addext "subjectAltName=DNS:cluster.local,DNS:${DOMAINS_CSV:-demo.deephaven.app},IP:127.0.0.1"
 
 kubectl create secret tls dh-grpc-secret \
 --cert="$CERT_ROOT/tls.crt" \
 --key="$CERT_ROOT/tls.key"
-
 
 
 
@@ -286,7 +298,12 @@ kubectl create secret tls dh-wildcard-cert \
     --key "$CERT_ROOT/privkey.pem"
 
 # this kubectl command to read secrets can be `curl`ed by a savvy user:
-kubectl get secret dh-wildcard-cert -o go-template='{{range $k,$v := .data}}{{"### "}}{{$k}}{{"\n"}}{{$v|base64decode}}{{"\n\n"}}{{end}}'
+secret_raw="$(kubectl get secret dh-wildcard-cert -o go-template='{{range $k,$v := .data}}{{\"### \"}}{{$k}}{{\"\n\"}}{{$v|base64decode}}{{\"\n\n\"}}{{end}}')"
+
+
+kubectl get secret dh-wildcard-cert -o go-template='{{range $k,$v := .data}}{{if eq $k "tls.key" }}{{$v|base64decode}}{{end}}{{end}}' > "$DH_SSL_DIR/tls.key"
+
+kubectl get secret dh-wildcard-cert -o go-template='{{range $k,$v := .data}}{{if eq $k "tls.crt" }}{{$v|base64decode}}{{end}}{{end}}' > "$DH_SSL_DIR/tls.crt"
 
 
 
@@ -301,7 +318,7 @@ curl -s -L https://github.com/fullstorydev/grpcurl/releases/download/v1.8.2/grpc
 WS=/dh/ws0/deephaven-core
 PROTOS="$WS/proto/proto-backplane-grpc/src/main/proto"
 curl_args="-cacert $WS/demo/certs/tls.crt  -import-path $PROTOS -proto $PROTOS/grpc/health/v1/health.proto"
-./grpcurl $curl_args demo.deephavencommunity.com:8888 grpc.health.v1.Health/Check
+./grpcurl $curl_args demo.deephaven.app:8888 grpc.health.v1.Health/Check
 
 
 PROTOS=/deployments/proto
@@ -436,3 +453,43 @@ Rename to google-svc.json and place next to the Dockerfile in demo/certs
 On a trusted machine, get your svc account json, run script, get certs, sed patch file
 
 kubectl patch secret dh-wildcard-cert --type='strategic' --patch "$(cat secret-patch.json)"
+
+
+
+deephaven.app setup:
+
+create a role (named DhControl in this example):
+https://console.cloud.google.com/iam-admin/roles/create?project=deephaven-oss
+
+grant the following:
+artifactregistry.repositories.downloadArtifacts
+container.clusters.get
+container.clusters.getCredentials
+container.clusters.list
+container.secrets.get
+
+create a service account named dh-controller:
+https://console.cloud.google.com/iam-admin/serviceaccounts?project=deephaven-oss
+
+grant that service account the IAM role you created:
+https://console.cloud.google.com/iam-admin/iam?project=deephaven-oss
+Note: you need to search for the role by the "nice name" given, not the id
+
+create a firewall rule:
+Logs: off
+Targets: specified target tags
+Tags: dh-demo
+Source filter: IP ranges
+Source IP ranges: 0.0.0.0/0  (or a different source if you are using VPN, which is preferred)
+Specified protocols and ports:
+tcp: 80,443
+
+Run GoogleDeploymentManagerTest.testMachineSetup with demo.gradle having uncommented: systemProperty("noClean", "true")
+
+This will create the machine.
+Shell into it, and run prepare-snapshot.sh
+
+
+
+
+gcloud compute images create deephaven-app-0-0-4 --source-disk=snapshot-root     --source-disk-zone=us-central1-f

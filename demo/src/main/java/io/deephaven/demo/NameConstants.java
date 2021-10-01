@@ -12,10 +12,11 @@ public class NameConstants {
 
     public static final String NAME_DEPLOYMENT = "dh-deploy";
     public static final String NAMESPACE = "default";
-    public static final String LABEL_USER = "dh.user";
-    public static final String LABEL_PURPOSE = "dh.purpose";
+    public static final String LABEL_USER = "dh-user";
+    public static final String LABEL_PURPOSE = "dh-purpose";
     public static final String PURPOSE_WORKER = "worker";
     public static final String PURPOSE_CONTROLLER = "controller";
+    public static final String PURPOSE_CREATOR = "creator";
 
     public static final String PORT_ENVOY_CLIENT_NAME = "envoy-client";
     public static final String ANNO_BACKEND_CONFIG = "beta.cloud.google.com/backend-config";
@@ -31,7 +32,6 @@ public class NameConstants {
     public static final String PROP_HELM_INSTANCES = "dh-helm-instances";
     public static final String PROP_HELM_SUBDOMAINS = "dh-helm-subdomains";
 
-    public static final String DOMAIN;
     public static final int PORT_ENVOY_CLIENT =
         Integer.parseInt(System.getProperty("dh-envoy-port", "10000"));
     public static final String DH_HELM_MODE = System.getProperty("dh-helm-mode", "controller");
@@ -45,10 +45,13 @@ public class NameConstants {
     public static final String DH_INGRESS_NAME =
         System.getProperty("dh-ingress-name", "dh-ingress");
     public static final String DH_POD_KEY = System.getProperty("dh-pod-key", "dh-pod-id");
+    public static final String SNAPSHOT_NAME = System.getProperty("DH_SNAPSHOT_NAME", "deephaven-app-0-0-4");
+    public static final String REGION = System.getProperty("dh-region", "us-central1");
+    public static final String DOMAIN;
 
     static {
         String domain = System.getenv("MY_DNS_NAME");
-        String backup = "demo.deephavencommunity.com";
+        String backup = "demo.deephaven.app";
         if (domain == null || domain.isEmpty()) {
             domain = backup;
             System.out.println("No MY_DNS_NAME env var set, defaulting to " + backup);

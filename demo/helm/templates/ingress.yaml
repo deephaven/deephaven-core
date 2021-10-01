@@ -45,7 +45,7 @@ spec:
                   number: {{ .Values.dh.portControlInternal }}
             pathType: ImplementationSpecific
             path: "/new"
-      # Define a template for default.demo.deephavencommunity.com.
+      # Define a template for default.demo.deephaven.app.
       # This is a default worker that is always initialized immediately
       # It is also loaded by the controller, who simply mutates this object
       # to create new workers once the default instance has already been taken.

@@ -20,7 +20,7 @@ certbot certonly \
   --debug \
   --noninteractive \
   -d "$DOMAINS"
-#  -d "demo.deephavencommunity.com"
+#  -d "demo.deephaven.app"
 
 
 CERTPATH=/etc/letsencrypt/live/$(echo "$DOMAINS" | cut -f1 -d',')

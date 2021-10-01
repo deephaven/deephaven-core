@@ -3,14 +3,14 @@ kind: Deployment
 metadata:
   name: {{ .Values.dh.controllerDeploymentName }}
   labels:
-    dh.purpose: controller
+    dh-purpose: controller
     {{- include "dhdemo.labels" . | nindent 4 }}
 spec:
   # We only ever want a single controller running
   replicas: 1
   selector:
     matchLabels:
-      dh.purpose: controller
+      dh-purpose: controller
       {{- include "dhdemo.selectorLabels" . | nindent 6 }}
   template:
     metadata:
@@ -20,10 +20,10 @@ spec:
       {{- end }}
       labels:
         # This deployment is for the controller,
-        # who will load it's own running pod yaml via ~ kubectl get pod --selector=dh.purpose=controller
-        # and then swap out key values, like dh.purpose,
+        # who will load it's own running pod yaml via ~ kubectl get pod --selector=dh-purpose=controller
+        # and then swap out key values, like dh-purpose,
         # and dynamically create a pod from whatever is in our runtime yaml
-        dh.purpose: controller
+        dh-purpose: controller
         {{- include "dhdemo.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
