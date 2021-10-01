@@ -63,30 +63,30 @@ idea {
         }
 }
 
-task prepareDockerForWheel(type: Sync) {
-    from 'python'
-    into layout.buildDirectory.dir('docker-legacy')
+def buildPyWheel = { String task_name, String image_name, String source_path ->
+    Docker.registerDockerTask(project, task_name) {
+        copyIn {
+            from(source_path) {
+                into '/src'
+            }
+        }
+        imageName = image_name + ":local-build"
+        dockerfile {
+            // set up the container, env vars - things that aren't likely to change
+            from 'docker.io/library/python:3.7.10 as sources'
+            arg 'DEEPHAVEN_VERSION'
+            environmentVariable 'DEEPHAVEN_VERSION', project.version
+            workingDir '/usr/src/app'
+            copyFile '/src', '.'
+            from 'sources as build'
+            runCommand '''set -eux; \\
+                      test -n "${DEEPHAVEN_VERSION}";\\
+                      python setup.py bdist_wheel'''
+        }
+    }
 }
-def buildDockerForWheel = Docker.registerDockerImage(project, 'buildDockerForWheel') {
-    dependsOn prepareDockerForWheel
-    buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
-    images.add('deephaven/deephaven-wheel:local-build')
-    target.set('build')
-    inputDir.set layout.buildDirectory.dir('docker-legacy')
-}
-
-task prepareDockerForWheel2(type: Sync) {
-    from '../pyintegration'
-    into layout.buildDirectory.dir('docker-new')
-}
-def buildDockerForWheel2 = Docker.registerDockerImage(project, 'buildDockerForWheel2') {
-    dependsOn prepareDockerForWheel2
-    buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
-    images.add('deephaven/deephaven-wheel2:local-build')
-    target.set('build')
-    inputDir.set layout.buildDirectory.dir('docker-new')
-}
-
+def buildDockerForWheel=buildPyWheel('buildDockerForWheel', 'deephaven/deephaven-wheel', '../pyintegration')
+def buildDockerForWheel2=buildPyWheel('buildDockerForWheel2', 'deephaven/deephaven2-wheel', 'python')
 
 /**
  * Produce a docker image with the prereqs to run and use deephaven python
@@ -95,12 +95,12 @@ task deephavenPythonDockerfile(type: Dockerfile) {
     destFile.set layout.buildDirectory.file('deephaven-python-docker/Dockerfile')
     from new Dockerfile.From('deephaven/deephaven-jpy-wheel:local-build').withStage('deephaven-jpy-wheel')
     from new Dockerfile.From('deephaven/deephaven-wheel:local-build').withStage('deephaven-wheel')
-    from new Dockerfile.From('deephaven/deephaven-wheel2:local-build').withStage('deephaven-wheel2')
+    from new Dockerfile.From('deephaven/deephaven2-wheel:local-build').withStage('deephaven2-wheel')
     from new Dockerfile.From('deephaven/java-and-python:local-build')
 
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-jpy-wheel'))
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel'))
-    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel2'))
+    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven2-wheel'))
 
     // liblzo2-2 below is needed for supporting LZO parquet encoding.
     runCommand('''set -eux; \\
