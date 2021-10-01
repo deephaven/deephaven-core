@@ -65,14 +65,28 @@ idea {
 
 task prepareDockerForWheel(type: Sync) {
     from 'python'
-    into layout.buildDirectory.dir('docker')
+    into layout.buildDirectory.dir('docker-legacy')
 }
 def buildDockerForWheel = Docker.registerDockerImage(project, 'buildDockerForWheel') {
     dependsOn prepareDockerForWheel
     buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/deephaven-wheel:local-build')
     target.set('build')
+    inputDir.set layout.buildDirectory.dir('docker-legacy')
 }
+
+task prepareDockerForWheel2(type: Sync) {
+    from '../pyintegration'
+    into layout.buildDirectory.dir('docker-new')
+}
+def buildDockerForWheel2 = Docker.registerDockerImage(project, 'buildDockerForWheel2') {
+    dependsOn prepareDockerForWheel2
+    buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
+    images.add('deephaven/deephaven-wheel2:local-build')
+    target.set('build')
+    inputDir.set layout.buildDirectory.dir('docker-new')
+}
+
 
 /**
  * Produce a docker image with the prereqs to run and use deephaven python
@@ -81,10 +95,12 @@ task deephavenPythonDockerfile(type: Dockerfile) {
     destFile.set layout.buildDirectory.file('deephaven-python-docker/Dockerfile')
     from new Dockerfile.From('deephaven/deephaven-jpy-wheel:local-build').withStage('deephaven-jpy-wheel')
     from new Dockerfile.From('deephaven/deephaven-wheel:local-build').withStage('deephaven-wheel')
+    from new Dockerfile.From('deephaven/deephaven-wheel2:local-build').withStage('deephaven-wheel2')
     from new Dockerfile.From('deephaven/java-and-python:local-build')
 
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-jpy-wheel'))
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel'))
+    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel2'))
 
     // liblzo2-2 below is needed for supporting LZO parquet encoding.
     runCommand('''set -eux; \\
@@ -101,6 +117,7 @@ Docker.registerDockerImage(project, 'buildDeephavenPython') {
     inputs.files dhJpyTasks.getByName('buildDockerForRuntime').outputs.files,
             dhJpyTasks.getByName('buildDockerForWheel').outputs.files,
             buildDockerForWheel.get().outputs.files,
+            buildDockerForWheel2.get().outputs.files,
             deephavenPythonDockerfile.outputs.files
 
     inputDir.set layout.buildDirectory.dir('deephaven-python-docker')
@@ -111,10 +128,10 @@ Docker.registerDockerImage(project, 'buildDeephavenPython') {
 JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
 SourceSet test = java.sourceSets.maybeCreate('test')
 
-def runInDocker = { String name, List<String> command ->
+def runInDocker = { String name, String source_path, List<String> command ->
     Docker.registerDockerTask(project, name) {
         copyIn {
-            from('python') {
+            from(source_path) {
                 into 'python'
             }
             from(test.runtimeClasspath) {
@@ -164,8 +181,9 @@ def runInDocker = { String name, List<String> command ->
         }
     }
 }
-def pyTest = runInDocker("test-py-37", ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'])
-def pyFunctionalTest = runInDocker('py-functional-test', ['/bin/bash', 'run-functional-tests.sh'])
+def pyTest = runInDocker("test-py-37", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'])
+def pyFunctionalTest = runInDocker('py-functional-test', 'python', ['/bin/bash', 'run-functional-tests.sh'])
+def pyTest2 = runInDocker('test-py-deephaven2', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'])
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
@@ -175,6 +193,11 @@ pyFunctionalTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
 tasks.getByName('check').dependsOn(pyFunctionalTest)
+
+pyTest2.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyTest2)
 
 // Using Integrations/docker-compose.yml, this will start redpanda and wait until it is running before letting tests proceed.
 dockerCompose {
