@@ -4,7 +4,7 @@ plugins {
 
 def archivesBaseNamePrefix = 'deephaven-'
 
-def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '17')
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '8')
 
 if (languageLevel > compilerVersion) {
@@ -30,16 +30,7 @@ tasks.withType(JavaCompile).configureEach {
     //javac.options.compilerArgs << '-parameters'
     if (compilerVersion >= 9) {
       javac.options.release = languageLevel
-
-      if (languageLevel > 8) {
-        //javac.options.compilerArgs << '--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED'
-
-        //javac.options.compilerArgs << '--add-opens'
-        //javac.options.compilerArgs << 'jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'
-
-        //javac.options.compilerArgs << '--add-exports'
-        //javac.options.compilerArgs << 'jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'
-      }
+      javac.options.forkOptions.jvmArgs << '--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'
     }
 }
 

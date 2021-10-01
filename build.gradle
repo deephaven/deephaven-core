@@ -131,12 +131,13 @@ allprojects {
 
 }
 
+/*
 allprojects*.tasks*.withType(JavaCompile)*.configureEach {
     JavaCompile javac ->
         javac.options.forkOptions.memoryMaximumSize = "2G"
         javac.options.fork = true
         javac.options.compilerArgs << '-parameters'
-}
+}*/
 
 subprojects {
     Project p ->
