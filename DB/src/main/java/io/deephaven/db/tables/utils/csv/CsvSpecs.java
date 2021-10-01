@@ -227,17 +227,6 @@ public abstract class CsvSpecs {
     }
 
     /**
-     * Parses {@code path} according to the specifications of {@code this}.
-     *
-     * @param path the path
-     * @return the new table
-     * @throws IOException if an I/O exception occurs
-     */
-    public final NewTable parse(Path path) throws IOException {
-        return parse(Files.newInputStream(path));
-    }
-
-    /**
      * Parses {@code stream} according to the specifications of {@code this}. The {@code stream} will be closed upon
      * return.
      *
