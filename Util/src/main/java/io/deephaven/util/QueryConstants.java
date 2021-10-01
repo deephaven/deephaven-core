@@ -9,6 +9,8 @@ public class QueryConstants {
      */
     protected QueryConstants() {}
 
+    //todo document
+
     public static final Boolean NULL_BOOLEAN = null;
     public static final char NULL_CHAR = Character.MAX_VALUE - 1;
     public static final byte NULL_BYTE = Byte.MIN_VALUE;
@@ -29,17 +31,26 @@ public class QueryConstants {
     public static final Float NULL_FLOAT_BOXED = NULL_FLOAT;
     public static final Double NULL_DOUBLE_BOXED = NULL_DOUBLE;
 
-    public static final byte POS_INF_BYTE = Byte.MAX_VALUE;
-    public static final short POS_INF_SHORT = Short.MAX_VALUE;
-    public static final int POS_INF_INT = Integer.MAX_VALUE;
-    public static final long POS_INF_LONG = Long.MAX_VALUE;
-    public static final float POS_INF_FLOAT = Float.POSITIVE_INFINITY;
-    public static final double POS_INF_DOUBLE = Double.POSITIVE_INFINITY;
+    public static final byte MAX_BYTE = Byte.MAX_VALUE;
+    public static final short MAX_SHORT = Short.MAX_VALUE;
+    public static final int MAX_INT = Integer.MAX_VALUE;
+    public static final long MAX_LONG = Long.MAX_VALUE;
+    public static final float MAX_FLOAT = Float.MAX_VALUE;
+    public static final double MAX_DOUBLE = Double.MAX_VALUE;
 
-    public static final byte NEG_INF_BYTE = Byte.MIN_VALUE;
-    public static final short NEG_INF_SHORT = Short.MIN_VALUE + 1;
-    public static final int NEG_INF_INT = Integer.MIN_VALUE + 1;
-    public static final long NEG_INF_LONG = Long.MIN_VALUE + 1;
-    public static final float NEG_INF_FLOAT = Float.NEGATIVE_INFINITY;
-    public static final double NEG_INF_DOUBLE = Double.NEGATIVE_INFINITY;
+    public static final byte MIN_BYTE = Byte.MIN_VALUE + 1;
+    public static final short MIN_SHORT = Short.MIN_VALUE + 1;
+    public static final int MIN_INT = Integer.MIN_VALUE + 1;
+    public static final long MIN_LONG = Long.MIN_VALUE + 1;
+    public static final float MIN_FLOAT = Float.valueOf("-0x1.fffffdp127");
+    public static final double MIN_DOUBLE = Double.valueOf("-0x1.ffffffffffffep1023");
+
+    public static final float POSITIVE_INFINITY_FLOAT = Float.POSITIVE_INFINITY;
+    public static final double POSITIVE_INFINITY_DOUBLE = Double.POSITIVE_INFINITY;
+
+    public static final float NEGATIVE_INFINITY_FLOAT = Float.NEGATIVE_INFINITY;
+    public static final double NEGATIVE_INFINITY_DOUBLE = Double.NEGATIVE_INFINITY;
+
+    public static final float NAN_FLOAT = Float.NaN;
+    public static final double NAN_DOUBLE = Double.NaN;
 }
