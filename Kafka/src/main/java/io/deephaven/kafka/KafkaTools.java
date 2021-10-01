@@ -308,7 +308,7 @@ public class KafkaTools {
                 public final Schema schema;
                 public final String schemaName;
                 public final String schemaVersion;
-                public final Function<String, String> fieldNameToColumnName;  // fields mapped to null are skipped.
+                public final Function<String, String> fieldNameToColumnName; // fields mapped to null are skipped.
 
                 private Avro(final Schema schema, final Function<String, String> fieldNameToColumnName) {
                     this.schema = schema;
@@ -318,8 +318,8 @@ public class KafkaTools {
                 }
 
                 private Avro(final String schemaName,
-                             final String schemaVersion,
-                             final Function<String, String> fieldNameToColumnName) {
+                        final String schemaVersion,
+                        final Function<String, String> fieldNameToColumnName) {
                     this.schema = null;
                     this.schemaName = schemaName;
                     this.schemaVersion = schemaVersion;
@@ -353,8 +353,8 @@ public class KafkaTools {
             /**
              * The names for the key or value columns can be provided in the properties as "key.column.name" or
              * "value.column.name", and otherwise default to "key" or "value". The types for key or value are either
-             * specified in the properties as "key.type" or "value.type", or deduced from the serializer classes for key or
-             * value in the provided Properties object.
+             * specified in the properties as "key.type" or "value.type", or deduced from the serializer classes for key
+             * or value in the provided Properties object.
              */
             private static final Simple FROM_PROPERTIES = new Simple(null, null);
 
@@ -393,8 +393,8 @@ public class KafkaTools {
          * A JSON spec from a set of column definitions.
          *
          * @param columnDefinitions An array of column definitions for specifying the table to be created.
-         * @param fieldNameToColumnName A mapping from JSON field names to column names provided in the definition. Fields
-         *        not included will be ignored.
+         * @param fieldNameToColumnName A mapping from JSON field names to column names provided in the definition.
+         *        Fields not included will be ignored.
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
@@ -407,9 +407,9 @@ public class KafkaTools {
         /**
          * A JSON spec from a set of column definitions.
          *
-         * @param columnDefinitions An array of column definitions for specifying the table to be created. The column names
-         *        should map one to JSON fields expected; is not necessary to include all fields from the expected JSON, any
-         *        fields not included would be ignored.
+         * @param columnDefinitions An array of column definitions for specifying the table to be created. The column
+         *        names should map one to JSON fields expected; is not necessary to include all fields from the expected
+         *        JSON, any fields not included would be ignored.
          *
          * @return A JSON spec for the given inputs.
          */
@@ -422,12 +422,13 @@ public class KafkaTools {
          * Avro spec from an Avro schmea.
          *
          * @param schema An Avro schema.
-         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
-         *        them; fields mapped to null are excluded.
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
+         *        for them; fields mapped to null are excluded.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameToColumnName) {
+        public static KeyOrValueSpec avroSpec(final Schema schema,
+                final Function<String, String> fieldNameToColumnName) {
             return new KeyOrValueSpec.Avro(schema, fieldNameToColumnName);
         }
 
@@ -444,41 +445,42 @@ public class KafkaTools {
 
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property.
          *
          * @param schemaName The registered name for the schema on Schema Server
          * @param schemaVersion The version to fetch
-         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
-         *        them; fields mapped to null are excluded.
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
+         *        for them; fields mapped to null are excluded.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName,
-                                              final String schemaVersion,
-                                              final Function<String, String> fieldNameToColumnName) {
+                final String schemaVersion,
+                final Function<String, String> fieldNameToColumnName) {
             return new KeyOrValueSpec.Avro(schemaName, schemaVersion, fieldNameToColumnName);
         }
 
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-         * The version fetched would be latest.
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property. The version fetched would be latest.
          *
          * @param schemaName The registered name for the schema on Schema Server
-         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use for
-         *        them; fields mapped to null are excluded.
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
+         *        for them; fields mapped to null are excluded.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName,
-                                              final Function<String, String> fieldNameToColumnName) {
+                final Function<String, String> fieldNameToColumnName) {
             return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, fieldNameToColumnName);
         }
 
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-         * All fields in the schema are mapped to columns of the same name.
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property. All fields in the schema are mapped to columns of the same name.
          *
          * @param schemaName The registered name for the schema on Schema Server
          * @param schemaVersion The version to fetch
@@ -491,8 +493,8 @@ public class KafkaTools {
 
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-         * The version fetched is latest All fields in the schema are mapped to columns of the same name
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property. The version fetched is latest All fields in the schema are mapped to columns of the same name
          *
          * @param schemaName The registered name for the schema on Schema Server.
          * @return A spec corresponding to the schema provided.
@@ -508,8 +510,8 @@ public class KafkaTools {
         }
 
         /**
-         * The types for key or value are either specified in the properties as "key.type" or "value.type", or deduced from
-         * the serializer classes for key or value in the provided Properties object.
+         * The types for key or value are either specified in the properties as "key.type" or "value.type", or deduced
+         * from the serializer classes for key or value in the provided Properties object.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec simpleSpec(final String columnName) {
@@ -555,8 +557,8 @@ public class KafkaTools {
                 }
 
                 private Avro(final String schemaName,
-                             final String schemaVersion,
-                             final Map<String, String> columnNameToFieldName) {
+                        final String schemaVersion,
+                        final Map<String, String> columnNameToFieldName) {
                     this.schema = null;
                     this.schemaName = schemaName;
                     this.schemaVersion = schemaVersion;
@@ -612,6 +614,7 @@ public class KafkaTools {
                 }
             }
         }
+
         /**
          * Spec to explicitly ask
          * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, Consume.KeyOrValueSpec, Consume.KeyOrValueSpec, TableType)
@@ -625,8 +628,8 @@ public class KafkaTools {
         /**
          * A JSON spec from a set of column names
          *
-         * @param columnNameToFieldName A map including entries for each column intended to be included in the JSON output,
-         *                             mapping it to the field name to use.  If null, map all columns to fields with the same name.
+         * @param columnNameToFieldName A map including entries for each column intended to be included in the JSON
+         *        output, mapping it to the field name to use. If null, map all columns to fields with the same name.
          * @param nestedObjectDelimiter A string used to separate values in composite fields.
          * @param outputNulls If false, omit fields with a null value.
          * @return A JSON spec for the given inputs.
@@ -642,8 +645,8 @@ public class KafkaTools {
         /**
          * A JSON spec from a set of column names
          *
-         * @param columnNameToFieldName A map including entries for each column intended to be included in the JSON output,
-         *                             mapping it to the field name to use.  If null, map all columns to fields with the same name.
+         * @param columnNameToFieldName A map including entries for each column intended to be included in the JSON
+         *        output, mapping it to the field name to use. If null, map all columns to fields with the same name.
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
@@ -657,7 +660,7 @@ public class KafkaTools {
          *
          * @param schema An Avro schema.
          * @param columnNameToFieldName A mapping specifying what Avro fields to generate and what columnNames to use
-         *                              for them; if null, use all column names matching schema field names.
+         *        for them; if null, use all column names matching schema field names.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
@@ -680,45 +683,47 @@ public class KafkaTools {
 
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property.
          *
          * @param schemaName The registered name for the schema on Schema Server
          * @param schemaVersion The version to fetch
          * @param columnNameToFieldName A mapping specifying what Avro fields to generate and what columnNames to use
-         *                              for them; if null, use all column names matching schema field names.
+         *        for them; if null, use all column names matching schema field names.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName,
-                                                      final String schemaVersion,
-                                                      final Map<String, String> columnNameToFieldName) {
+                final String schemaVersion,
+                final Map<String, String> columnNameToFieldName) {
             return new KeyOrValueSpec.Avro(schemaName, schemaVersion, columnNameToFieldName);
         }
 
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-         * The version fetched would be latest.
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property. The version fetched would be latest.
          *
          * @param schemaName The registered name for the schema on Schema Server
-         * @param columnNameToFieldName A mapping specifying which Avro fields to include and what column name to use for
-         *        them; if null, use all column names matching schema field names.
+         * @param columnNameToFieldName A mapping specifying which Avro fields to include and what column name to use
+         *        for them; if null, use all column names matching schema field names.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName,
-                                                      final Map<String, String> columnNameToFieldName) {
+                final Map<String, String> columnNameToFieldName) {
             return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, columnNameToFieldName);
         }
 
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-         * All fields in the schema are mapped to columns of the same name.
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property. All fields in the schema are mapped to columns of the same name.
          *
          * @param schemaName The registered name for the schema on Schema Server
          * @param schemaVersion The version to fetch
-         * @return A spec corresponding to the schema provided, where all columns with names matching schema field names are included.
+         * @return A spec corresponding to the schema provided, where all columns with names matching schema field names
+         *         are included.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
@@ -727,11 +732,12 @@ public class KafkaTools {
 
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url" property.
-         * The version fetched is latest All fields in the schema are mapped to columns of the same name
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property. The version fetched is latest All fields in the schema are mapped to columns of the same name
          *
          * @param schemaName The registered name for the schema on Schema Server.
-         * @return A spec corresponding to the schema provided, where all columns with names matching schema field names are included.
+         * @return A spec corresponding to the schema provided, where all columns with names matching schema field names
+         *         are included.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName) {
@@ -1007,7 +1013,7 @@ public class KafkaTools {
             @NotNull final DynamicTable t,
             @NotNull final Properties kafkaConsumerProperties,
             @NotNull final Produce.KeyOrValueSpec spec) {
-        switch(spec.dataFormat()) {
+        switch (spec.dataFormat()) {
             case AVRO:
                 return getAvroSerializer(t, kafkaConsumerProperties, spec);
             case JSON:
@@ -1031,10 +1037,13 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec valueSpec) {
         final KeyOrValueSerializer keySerializer = getSerializer(t, kafkaConsumerProperties, keySpec);
         final KeyOrValueSerializer valueSerializer = getSerializer(t, kafkaConsumerProperties, valueSpec);
-        final PublishToKafka producer =  new PublishToKafka<>(kafkaConsumerProperties, t, topic, keySerializer, valueSerializer);
+        final PublishToKafka producer =
+                new PublishToKafka<>(kafkaConsumerProperties, t, topic, keySerializer, valueSerializer);
         final Procedure.Nullary shutdownCallback = new Procedure.Nullary() {
             volatile PublishToKafka liveProducer = producer;
-            @Override public void call() {
+
+            @Override
+            public void call() {
                 if (liveProducer == null) {
                     return;
                 }

@@ -42,8 +42,7 @@ public class PythonStaticGenerator {
             "io.deephaven.kafka.KafkaTools.Produce,jsonSpec",
             "io.deephaven.kafka.KafkaTools.Produce,avroSpec",
             "io.deephaven.kafka.KafkaTools.Produce,simpleSpec",
-            "io.deephaven.kafka.KafkaTools.Produce,ignoreSpec"
-    );
+            "io.deephaven.kafka.KafkaTools.Produce,ignoreSpec");
     private static final List<String> skipClassDocs = Collections.emptyList();
     private static final Logger log = Logger.getLogger(PythonStaticGenerator.class.toString());
     private static final String gradleTask = ":Generators:generatePythonIntegrationStaticMethods";
