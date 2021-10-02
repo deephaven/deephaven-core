@@ -52,8 +52,6 @@ public class UpdatePerformanceLogLogger
         RowSetter<Long> EntryIntervalModified;
         RowSetter<Long> EntryIntervalShifted;
         RowSetter<Long> EntryIntervalInvocationCount;
-        RowSetter<Long> TotalMemoryFree;
-        RowSetter<Long> TotalMemoryUsed;
         RowSetter<Long> EntryIntervalAllocatedBytes;
         RowSetter<Long> EntryIntervalPoolAllocatedBytes;
 
@@ -75,8 +73,6 @@ public class UpdatePerformanceLogLogger
             EntryIntervalModified = row.getSetter("EntryIntervalModified", long.class);
             EntryIntervalShifted = row.getSetter("EntryIntervalShifted", long.class);
             EntryIntervalInvocationCount = row.getSetter("EntryIntervalInvocationCount", long.class);
-            TotalMemoryFree = row.getSetter("TotalMemoryFree", long.class);
-            TotalMemoryUsed = row.getSetter("TotalMemoryUsed", long.class);
             EntryIntervalAllocatedBytes = row.getSetter("EntryIntervalAllocatedBytes", long.class);
             EntryIntervalPoolAllocatedBytes = row.getSetter("EntryIntervalPoolAllocatedBytes", long.class);
         }
@@ -102,8 +98,6 @@ public class UpdatePerformanceLogLogger
             this.EntryIntervalModified.setLong(performanceEntry.getIntervalModified());
             this.EntryIntervalShifted.setLong(performanceEntry.getIntervalShifted());
             this.EntryIntervalInvocationCount.setLong(performanceEntry.getIntervalInvocationCount());
-            this.TotalMemoryFree.setLong(performanceEntry.getTotalFreeMemory());
-            this.TotalMemoryUsed.setLong(performanceEntry.getTotalUsedMemory());
             this.EntryIntervalAllocatedBytes.setLong(performanceEntry.getIntervalAllocatedBytes());
             this.EntryIntervalPoolAllocatedBytes.setLong(performanceEntry.getIntervalPoolAllocatedBytes());
         }
@@ -139,8 +133,6 @@ public class UpdatePerformanceLogLogger
                 .add("EntryIntervalShifted", long.class)
 
                 .add("EntryIntervalInvocationCount", long.class)
-                .add("TotalMemoryFree", long.class)
-                .add("TotalMemoryUsed", long.class)
                 .add("EntryIntervalAllocatedBytes", long.class)
                 .add("EntryIntervalPoolAllocatedBytes", long.class)
 

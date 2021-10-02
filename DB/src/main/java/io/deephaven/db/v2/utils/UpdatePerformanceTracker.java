@@ -8,11 +8,11 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.db.tablelogger.ProcessMemoryLogLogger;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 
 import io.deephaven.db.tablelogger.UpdatePerformanceLogLogger;
-import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.*;
 import io.deephaven.db.v2.QueryTable;
@@ -59,10 +59,8 @@ public class UpdatePerformanceTracker {
         if (INSTANCE == null) {
             synchronized (UpdatePerformanceTracker.class) {
                 if (INSTANCE == null) {
-                    final TableDefinition tableDefinition = UpdatePerformanceLogLogger.getTableDefinition();
                     final String processInfoId = MemoryTableLoggers.getInstance().getProcessInfo().getId().value();
-                    INSTANCE = new UpdatePerformanceTracker(processInfoId,
-                            LoggerFactory.getLogger(UpdatePerformanceTracker.class), tableDefinition);
+                    INSTANCE = new UpdatePerformanceTracker(processInfoId);
                 }
             }
         }
@@ -70,18 +68,19 @@ public class UpdatePerformanceTracker {
     }
 
     private final Logger logger;
-    private final MemoryTableLogger<UpdatePerformanceLogLogger> tableLogger;
+
+    private final MemoryTableLogger<UpdatePerformanceLogLogger> updatePerfLogger;
+    private final MemoryTableLogger<ProcessMemoryLogLogger> processMemLogger;
 
     private final AtomicInteger entryIdCounter = new AtomicInteger(1);
     private final Queue<WeakReference<Entry>> entries = new LinkedBlockingDeque<>();
 
-    private UpdatePerformanceTracker(
-            @NotNull final String processInfoId,
-            @NotNull final Logger logger,
-            @NotNull final TableDefinition logTableDefinition) {
-        this.logger = logger;
-        tableLogger = new MemoryTableLogger<>(
-                logger, new UpdatePerformanceLogLogger(processInfoId), logTableDefinition);
+    private UpdatePerformanceTracker(@NotNull final String processInfoId) {
+        logger = LoggerFactory.getLogger(UpdatePerformanceTracker.class);
+        updatePerfLogger = new MemoryTableLogger<>(
+                logger, new UpdatePerformanceLogLogger(processInfoId), UpdatePerformanceLogLogger.getTableDefinition());
+        processMemLogger = new MemoryTableLogger<>(
+                logger, new ProcessMemoryLogLogger(), ProcessMemoryLogLogger.getTableDefinition());
     }
 
     private void startThread() {
@@ -103,6 +102,7 @@ public class UpdatePerformanceTracker {
     private class Driver implements Runnable {
         @Override
         public void run() {
+            final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
             // noinspection InfiniteLoopStatement
             while (true) {
                 final long intervalStartTimeNanos = System.nanoTime();
@@ -117,6 +117,11 @@ public class UpdatePerformanceTracker {
                         () -> finishInterval(intervalStartTimeMillis,
                                 System.currentTimeMillis(),
                                 System.nanoTime() - intervalStartTimeNanos));
+                long prevTotalCollections = memSample.totalCollections;
+                long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
+                RuntimeMemory.getInstance().read(memSample);
+                final long endTimeMillis = System.currentTimeMillis();
+                logProcessMem(intervalStartTimeMillis, endTimeMillis, memSample, prevTotalCollections, prevTotalCollectionTimeMs);
             }
         }
     }
@@ -188,16 +193,8 @@ public class UpdatePerformanceTracker {
 
             if (entry.shouldLogEntryInterval()) {
                 encounteredErrorLoggingToMemory =
-                        logToMemory(intervalLevelDetails, entry, encounteredErrorLoggingToMemory);
+                        logUpdatePerf(intervalLevelDetails, entry, encounteredErrorLoggingToMemory);
             } else if (entry.intervalInvocationCount > 0) {
-                if (entry.totalUsedMemory > aggregatedSmallUpdatesEntry.totalUsedMemory) {
-                    aggregatedSmallUpdatesEntry.totalUsedMemory = entry.totalUsedMemory;
-                }
-                if (aggregatedSmallUpdatesEntry.intervalInvocationCount == 0
-                        || aggregatedSmallUpdatesEntry.totalFreeMemory > entry.totalFreeMemory) {
-                    aggregatedSmallUpdatesEntry.totalFreeMemory = entry.totalFreeMemory;
-                }
-
                 aggregatedSmallUpdatesEntry.intervalUsageNanos += entry.intervalUsageNanos;
                 aggregatedSmallUpdatesEntry.intervalInvocationCount += entry.intervalInvocationCount;
 
@@ -220,17 +217,17 @@ public class UpdatePerformanceTracker {
         }
 
         if (aggregatedSmallUpdatesEntry.intervalInvocationCount > 0) {
-            logToMemory(intervalLevelDetails, aggregatedSmallUpdatesEntry, encounteredErrorLoggingToMemory);
+            logUpdatePerf(intervalLevelDetails, aggregatedSmallUpdatesEntry, encounteredErrorLoggingToMemory);
             aggregatedSmallUpdatesEntry.reset();
         }
     }
 
-    private boolean logToMemory(final IntervalLevelDetails intervalLevelDetails,
+    private boolean logUpdatePerf(final IntervalLevelDetails intervalLevelDetails,
             final Entry entry,
             final boolean encounteredErrorLoggingToMemory) {
         if (!encounteredErrorLoggingToMemory) {
             try {
-                tableLogger.getTableLogger().log(intervalLevelDetails, entry);
+                updatePerfLogger.getTableLogger().log(intervalLevelDetails, entry);
             } catch (IOException e) {
                 // Don't want to log this more than once in a report
                 logger.error().append("Error sending UpdatePerformanceLog data to memory").append(e).endl();
@@ -238,6 +235,24 @@ public class UpdatePerformanceTracker {
             }
         }
         return false;
+    }
+
+    private void logProcessMem(
+            final long startMillis, final long endMillis,
+            final RuntimeMemory.Sample sample,
+            final long prevTotalCollections, final long prevTotalCollectionTimeMs) {
+        try {
+            processMemLogger.getTableLogger().log(
+                    startMillis,
+                    endMillis - startMillis,
+                    sample.totalMemory,
+                    sample.freeMemory,
+                    sample.totalCollections - prevTotalCollections,
+                    sample.totalCollectionTimeMs - prevTotalCollectionTimeMs);
+        } catch (IOException e) {
+            // Don't want to log this more than once in a report
+            logger.error().append("Error sending ProcessMemoryLog data to memory").append(e).endl();
+        }
     }
 
     /**
@@ -300,9 +315,6 @@ public class UpdatePerformanceTracker {
         private long startAllocatedBytes;
         private long startPoolAllocatedBytes;
 
-        private long totalFreeMemory;
-        private long totalUsedMemory;
-
         private Entry(final int id, final int evaluationNumber, final int operationNumber,
                 final String description, final String callerLine) {
             this.id = id;
@@ -361,10 +373,6 @@ public class UpdatePerformanceTracker {
             startUserCpuNanos = 0;
             startCpuNanos = 0;
             startTimeNanos = 0;
-
-            final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
-            totalFreeMemory = runtimeMemory.freeMemory();
-            totalUsedMemory = runtimeMemory.totalMemory();
         }
 
         private void reset() {
@@ -383,9 +391,6 @@ public class UpdatePerformanceTracker {
 
             intervalAllocatedBytes = 0;
             intervalPoolAllocatedBytes = 0;
-
-            totalFreeMemory = 0;
-            totalUsedMemory = 0;
         }
 
         @Override
@@ -395,21 +400,28 @@ public class UpdatePerformanceTracker {
 
         @Override
         public LogOutput append(final LogOutput logOutput) {
-            return logOutput.append("Entry{").append(", id=").append(id).append(", evaluationNumber=")
-                    .append(evaluationNumber).append(", operationNumber=").append(operationNumber)
+            return logOutput.append("Entry{")
+                    .append(", id=").append(id)
+                    .append(", evaluationNumber=").append(evaluationNumber)
+                    .append(", operationNumber=").append(operationNumber)
                     .append(", description='").append(description).append('\'').append(", callerLine='")
-                    .append(callerLine).append('\'').append(", intervalUsageNanos=").append(intervalUsageNanos)
-                    .append(", intervalInvocationCount=").append(intervalInvocationCount).append(", intervalCpuNanos=")
-                    .append(intervalCpuNanos).append(", intervalUserCpuNanos=").append(intervalUserCpuNanos)
-                    .append(", intervalAdded=").append(intervalAdded).append(", intervalRemoved=")
-                    .append(intervalRemoved).append(", intervalModified=").append(intervalModified)
-                    .append(", intervalShifted=").append(intervalShifted).append(", intervalAllocatedBytes=")
-                    .append(intervalAllocatedBytes).append(", intervalPoolAllocatedBytes=")
-                    .append(intervalPoolAllocatedBytes).append(", startCpuNanos=").append(startCpuNanos)
-                    .append(", startUserCpuNanos=").append(startUserCpuNanos).append(", startTimeNanos=")
-                    .append(startTimeNanos).append(", startAllocatedBytes=").append(startAllocatedBytes)
-                    .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes).append(", totalUsedMemory=")
-                    .append(totalUsedMemory).append(", totalFreeMemory=").append(totalFreeMemory).append('}');
+                    .append(callerLine).append('\'')
+                    .append(", intervalUsageNanos=").append(intervalUsageNanos)
+                    .append(", intervalInvocationCount=").append(intervalInvocationCount)
+                    .append(", intervalCpuNanos=").append(intervalCpuNanos)
+                    .append(", intervalUserCpuNanos=").append(intervalUserCpuNanos)
+                    .append(", intervalAdded=").append(intervalAdded)
+                    .append(", intervalRemoved=").append(intervalRemoved)
+                    .append(", intervalModified=").append(intervalModified)
+                    .append(", intervalShifted=").append(intervalShifted)
+                    .append(", intervalAllocatedBytes=").append(intervalAllocatedBytes)
+                    .append(", intervalPoolAllocatedBytes=").append(intervalPoolAllocatedBytes)
+                    .append(", startCpuNanos=").append(startCpuNanos)
+                    .append(", startUserCpuNanos=").append(startUserCpuNanos)
+                    .append(", startTimeNanos=").append(startTimeNanos)
+                    .append(", startAllocatedBytes=").append(startAllocatedBytes)
+                    .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes)
+                    .append('}');
         }
 
         public int getId() {
@@ -460,14 +472,6 @@ public class UpdatePerformanceTracker {
             return intervalShifted;
         }
 
-        public long getTotalFreeMemory() {
-            return totalFreeMemory;
-        }
-
-        public long getTotalUsedMemory() {
-            return totalUsedMemory;
-        }
-
         public long getIntervalAllocatedBytes() {
             return intervalAllocatedBytes;
         }
@@ -492,7 +496,11 @@ public class UpdatePerformanceTracker {
         }
     }
 
-    public QueryTable getQueryTable() {
-        return tableLogger.getQueryTable();
+    public QueryTable getUpdatePerformanceQueryTable() {
+        return updatePerfLogger.getQueryTable();
+    }
+
+    public QueryTable getProcessMemoryQueryTable() {
+        return processMemLogger.getQueryTable();
     }
 }

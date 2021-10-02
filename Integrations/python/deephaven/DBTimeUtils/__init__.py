@@ -432,7 +432,7 @@ def diffDay(start, end):
              Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
              date is before Epoch (negative offset), the result may be unexpected.
              
-             If the second value is greater than the first value, the result will be negative.
+             If the first value is greater than the second value, the result will be negative.
     """
     
     return _java_type_.diffDay(start, end)
@@ -453,7 +453,7 @@ def diffNanos(d1, d2):
              Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
              date is before Epoch (negative offset), the result may be unexpected.
              
-             If the second value is greater than the first value, the result will be negative.
+             If the first value is greater than the second value, the result will be negative.
     """
     
     return _java_type_.diffNanos(d1, d2)
@@ -475,7 +475,7 @@ def diffYear(start, end):
              Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
              date is before Epoch (negative offset), the result may be unexpected.
              
-             If the second value is greater than the first value, the result will be negative.
+             If the first value is greater than the second value, the result will be negative.
     """
     
     return _java_type_.diffYear(start, end)
