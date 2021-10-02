@@ -47,6 +47,8 @@ public class QueryOperationPerformanceLogLogger
         RowSetter<Long> UserCpuNanos;
         RowSetter<Long> FreeMemoryChange;
         RowSetter<Long> TotalMemoryChange;
+        RowSetter<Long> Collections;
+        RowSetter<Long> CollectionTimeMs;
         RowSetter<Long> AllocatedBytes;
         RowSetter<Long> PoolAllocatedBytes;
         RowSetter<Long> InputSizeLong;
@@ -68,6 +70,8 @@ public class QueryOperationPerformanceLogLogger
             UserCpuNanos = row.getSetter("UserCpuNanos", long.class);
             FreeMemoryChange = row.getSetter("FreeMemoryChange", long.class);
             TotalMemoryChange = row.getSetter("TotalMemoryChange", long.class);
+            Collections = row.getSetter("Collections", long.class);
+            CollectionTimeMs = row.getSetter("CollectionTimeMs", long.class);
             AllocatedBytes = row.getSetter("AllocatedBytes", long.class);
             PoolAllocatedBytes = row.getSetter("PoolAllocatedBytes", long.class);
             InputSizeLong = row.getSetter("InputSizeLong", long.class);
@@ -97,6 +101,8 @@ public class QueryOperationPerformanceLogLogger
             this.UserCpuNanos.setLong(nugget.getUserCpuNanos());
             this.FreeMemoryChange.setLong(nugget.getDiffFreeMemory());
             this.TotalMemoryChange.setLong(nugget.getDiffTotalMemory());
+            this.Collections.setLong(nugget.getDiffCollections());
+            this.CollectionTimeMs.setLong(nugget.getDiffCollectionTimeMs());
             this.AllocatedBytes.setLong(nugget.getAllocatedBytes());
             this.PoolAllocatedBytes.setLong(nugget.getPoolAllocatedBytes());
             this.InputSizeLong.setLong(nugget.getInputSize());
@@ -129,6 +135,8 @@ public class QueryOperationPerformanceLogLogger
                 .add("UserCpuNanos", long.class)
                 .add("FreeMemoryChange", long.class)
                 .add("TotalMemoryChange", long.class)
+                .add("Collections", long.class)
+                .add("CollectionTimeMs", long.class)
                 .add("AllocatedBytes", long.class)
                 .add("PoolAllocatedBytes", long.class)
                 .add("InputSizeLong", long.class)

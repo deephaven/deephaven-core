@@ -52,6 +52,12 @@ public class UpdatePerformanceLogLogger
         RowSetter<Long> EntryIntervalModified;
         RowSetter<Long> EntryIntervalShifted;
         RowSetter<Long> EntryIntervalInvocationCount;
+        RowSetter<Long> FreeMemory;
+        RowSetter<Long> TotalMemory;
+        RowSetter<Long> FreeMemoryChange;
+        RowSetter<Long> TotalMemoryChange;
+        RowSetter<Long> Collections;
+        RowSetter<Long> CollectionTimeMs;
         RowSetter<Long> EntryIntervalAllocatedBytes;
         RowSetter<Long> EntryIntervalPoolAllocatedBytes;
 
@@ -73,6 +79,12 @@ public class UpdatePerformanceLogLogger
             EntryIntervalModified = row.getSetter("EntryIntervalModified", long.class);
             EntryIntervalShifted = row.getSetter("EntryIntervalShifted", long.class);
             EntryIntervalInvocationCount = row.getSetter("EntryIntervalInvocationCount", long.class);
+            FreeMemory = row.getSetter("FreeMemory", long.class);
+            TotalMemory = row.getSetter("TotalMemory", long.class);
+            FreeMemoryChange = row.getSetter("FreeMemoryChange", long.class);
+            TotalMemoryChange = row.getSetter("TotalMemoryChange", long.class);
+            Collections = row.getSetter("Collections", long.class);
+            CollectionTimeMs = row.getSetter("CollectionTimeMs", long.class);
             EntryIntervalAllocatedBytes = row.getSetter("EntryIntervalAllocatedBytes", long.class);
             EntryIntervalPoolAllocatedBytes = row.getSetter("EntryIntervalPoolAllocatedBytes", long.class);
         }
@@ -98,6 +110,12 @@ public class UpdatePerformanceLogLogger
             this.EntryIntervalModified.setLong(performanceEntry.getIntervalModified());
             this.EntryIntervalShifted.setLong(performanceEntry.getIntervalShifted());
             this.EntryIntervalInvocationCount.setLong(performanceEntry.getIntervalInvocationCount());
+            this.FreeMemory.setLong(performanceEntry.getFreeMemory());
+            this.TotalMemory.setLong(performanceEntry.getTotalMemory());
+            this.FreeMemoryChange.setLong(performanceEntry.getDiffFreeMemory());
+            this.TotalMemoryChange.setLong(performanceEntry.getDiffTotalMemory());
+            this.Collections.setLong(performanceEntry.getDiffCollections());
+            this.CollectionTimeMs.setLong(performanceEntry.getDiffCollectionTimeMs());
             this.EntryIntervalAllocatedBytes.setLong(performanceEntry.getIntervalAllocatedBytes());
             this.EntryIntervalPoolAllocatedBytes.setLong(performanceEntry.getIntervalPoolAllocatedBytes());
         }
@@ -133,6 +151,12 @@ public class UpdatePerformanceLogLogger
                 .add("EntryIntervalShifted", long.class)
 
                 .add("EntryIntervalInvocationCount", long.class)
+                .add("FreeMemory", long.class)
+                .add("TotalMemory", long.class)
+                .add("FreeMemoryChange", long.class)
+                .add("TotalMemoryChange", long.class)
+                .add("Collections", long.class)
+                .add("CollectionTimeMs", long.class)
                 .add("EntryIntervalAllocatedBytes", long.class)
                 .add("EntryIntervalPoolAllocatedBytes", long.class)
 

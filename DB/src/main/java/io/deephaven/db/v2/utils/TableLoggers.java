@@ -10,8 +10,8 @@ public class TableLoggers {
 
     static {
         UpdatePerformanceTracker.start();
+        ProcessMemoryTracker.start();
     }
-
 
     /**
      * Return a table with update performance data.
@@ -22,7 +22,7 @@ public class TableLoggers {
      */
     @ScriptApi
     public static QueryTable updatePerformanceLog() {
-        return UpdatePerformanceTracker.getInstance().getUpdatePerformanceQueryTable();
+        return UpdatePerformanceTracker.getInstance().getQueryTable();
     }
 
     /**
@@ -73,6 +73,6 @@ public class TableLoggers {
      */
     @ScriptApi
     public static QueryTable processMemoryLog() {
-        return UpdatePerformanceTracker.getInstance().getProcessMemoryQueryTable();
+        return ProcessMemoryTracker.getInstance().getQueryTable();
     }
 }

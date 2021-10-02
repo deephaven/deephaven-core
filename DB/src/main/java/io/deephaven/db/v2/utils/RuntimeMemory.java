@@ -123,6 +123,14 @@ public class RuntimeMemory {
         void reset() {
             freeMemory = totalMemory = totalCollections = totalCollectionTimeMs = 0L;
         }
+
+        void copy(final Sample s) {
+            freeMemory = s.freeMemory;
+            totalMemory = s.totalMemory;
+            totalCollections = s.totalCollections;
+            totalCollectionTimeMs = s.totalCollectionTimeMs;
+        }
+
     }
 
     public void read(Sample buf) {
