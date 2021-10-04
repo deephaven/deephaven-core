@@ -3,6 +3,7 @@ package io.deephaven.util;
 /**
  * Constants for primitive types within the Deephaven engine.  These constants include null values, ranges of values, infinite values, and NaN values.
  */
+@SuppressWarnings("unused")
 public class QueryConstants {
     /**
      * This class should not be instantiated.
@@ -30,7 +31,6 @@ public class QueryConstants {
     /**
      * Null boxed Character value.
      */
-    @SuppressWarnings("unused")
     public static final Character NULL_CHAR_BOXED = NULL_CHAR;
 
 
@@ -45,7 +45,6 @@ public class QueryConstants {
     /**
      * Null boxed Byte value.
      */
-    @SuppressWarnings("unused")
     public static final Byte NULL_BYTE_BOXED = NULL_BYTE;
 
     /**
@@ -70,7 +69,6 @@ public class QueryConstants {
     /**
      * Null boxed Short value.
      */
-    @SuppressWarnings("unused")
     public static final Short NULL_SHORT_BOXED = NULL_SHORT;
 
     /**
