@@ -3,6 +3,9 @@
  "methods": {
   "freeMemory": "See Runtime.freeMemory().\n\n:return: long",
   "getInstance": "Return a singleton RuntimeMemory object.\n\n:return: (io.deephaven.db.v2.utils.RuntimeMemory) the RuntimeMemory singleton",
+  "getTotalCollectionTimeMs": ":return: long",
+  "read": ":param buf: io.deephaven.db.v2.utils.RuntimeMemory.Sample",
+  "totalCollections": ":return: long",
   "totalMemory": "See Runtime.totalMemory().\n\n:return: long"
  },
  "path": "io.deephaven.db.v2.utils.RuntimeMemory",
