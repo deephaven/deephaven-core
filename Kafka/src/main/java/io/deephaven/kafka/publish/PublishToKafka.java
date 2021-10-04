@@ -1,6 +1,5 @@
 package io.deephaven.kafka.publish;
 
-import com.sun.org.apache.bcel.internal.generic.RETURN;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.DynamicTable;

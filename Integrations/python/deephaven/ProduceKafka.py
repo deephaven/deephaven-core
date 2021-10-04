@@ -68,28 +68,117 @@ def produceFromTable(
         t,
         kafka_config:dict,
         topic:str,
-        key = None,
-        value = None,
+        key,
+        value,
 ):
     """
-    Consume from Kafka to a Deephaven table.
+    Produce to Kafka from a Deephaven table.
 
     :param t
     :param kafka_config: Dictionary with properties to configure the associated kafka producer.
     :param topic: The topic name
-    :param key: A specification for how to map the Key field in Kafka messages.  This should be
-       the result of calling one of the methods simple, avro or json in this module,
-       or None to obtain a single column specified in the kafka_config param via the 
-       keys 'deephaven.key.column.name' for column name and 'deephaven.key.column.type' for
-       the column type; both should have string values associated to them.
-    :param value: A specification for how to map the Value field in Kafka messages.  This should be
-       the result of calling one of the methods simple, avro or json in this module,
-       or None to obtain a single column specified in the kafka_config param via the 
-       keys 'deephaven.value.column.name' for column name and 'deephaven.value.column.type' for
-       the column type; both should have string values associated to them.
-    :param table_type: A string specifying the resulting table type: one of 'stream' (default), 'append',
-       'stream_map' or 'append_map'.
-    :return: A Deephaven live table that will update based on Kafma messages consumed for the given topic.
+    :param key: A specification for how to map table column(s) to the Key field in produced
+           Kafka messages.  This should be the result of calling one of the methods
+           simple, avro or json in this module.
+    :param value: A specification for how to map table column(s) to the Value field in produced
+           Kafka messages.  This should be the result of calling one of the methods
+           simple, avro or json in this module.
+    :return: A callback object that, when invoked, stops publishing.
+             Users should hold to this object to ensure liveleness for publishing
+             for as long as this publishing is desired, and once not desired anymore they should
+             invoke the callback.
     :raises: ValueError or TypeError if arguments provided can't be processed.
     """
-    return None
+
+    if not _isStr(topic):
+        raise ValueError("argument 'topic' has to be of str type, instead got " + topic)
+
+    if key is None:
+        raise ValueError("argument 'key' is None")
+    if value is None:
+        raise ValueError("argument 'value' is None")
+    if key is IGNORE and value is IGNORE:
+        raise ValueError(
+            "at least one argument for 'key' or 'value' must be different from IGNORE")
+
+    kafka_config = _dictToProperties(kafka_config)
+    return _java_type_.produceFromTable(kafka_config, topic, key, value)
+
+@_passThrough
+def avro(schema, schema_version:str = None, mapping:dict = None):
+    """
+    Specify an Avro schema to use when producing a Kafka stream from a Deephaven table.
+
+    :param schema:  Either an Avro schema object or a string specifying a schema name for a schema
+       registered in a Confluent compatible Schema Server.  When the latter is provided, the
+       associated kafka_config dict in the call to consumeToTable should include the key
+       'schema.registry.url' with the associated value of the Schema Server URL for fetching the schema
+       definition.
+    :param schema_version:   If a string schema name is provided, the version to fetch from schema
+       service; if not specified, a default of 'latest' is assumed.
+    :param mapping: A dict representing a string to string mapping from Deephaven table
+       column names to Avro field names.  If None, use all column names with matching Avro field names.
+    :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
+    :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
+    """
+    if mapping is not None:
+        mapping = _dictToFun(mapping, default_value=IDENTITY)
+
+    if _isStr(schema):
+        have_actual_schema = False
+        if schema_version is None:
+            schema_version = "latest"
+        elif not _isStr(schema_version):
+            raise TypeError(
+                "argument 'schema_version' should be of str type, instead got " +
+                str(schema_version) + " of type " + type(schema_version).__name__)
+    elif isinstance(schema, _avro_schema_jtype_):
+        have_actual_schema = True
+        if schema_version is not None:
+            raise Exception(
+                "argument 'schema_version' is only expected if schema is of str type")
+    else:
+        raise TypeError(
+            "'schema' argument expected to be of either " +
+            "str type or avro schema type, instead got " + str(schema))
+
+    if have_actual_schema:
+        return _consume_jtype_.avroSpec(schema, mapping)
+    else:
+        return _consume_jtype_.avroSpec(schema, schema_version, mapping)
+
+@_passThrough
+def json(mapping:dict = None):
+    """
+    Specify how to produce JSON data when producing a Kafka stream from a Deephaven table.
+
+    :param mapping:   A dict mapping column names to JSON field names.  If not present or None,
+       all table columns are included and a 1:1 mapping between JSON field names and Deephaven
+       table column names is assumed.
+    :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
+    :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
+    """
+    if mapping is None:
+        return _produce_jtype_.jsonSpec(None)
+
+    if not isinstance(mapping, dict):
+        raise TypeError(
+            "argument 'mapping' is expected to be of dict type, " +
+            "instead got " + str(mapping) + " of type " + type(mapping).__name__)
+    mapping = _dictToMap(mapping)
+    return _produce_jtype_.jsonSpec(col_defs, mapping)
+
+
+@_passThrough
+def simple(column_name:str):
+    """
+    Specify a single column when producing to a Kafka Key or Value field.
+
+    :param column_name:  A string specifying the Deephaven column name to use.
+    :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
+    :raises:  TypeError if arguments provided can't be processed.
+    """
+    if not _isStr(column_name):
+        raise TypeError(
+            "'column_name' argument needs to be of str type, instead got " + str(column_name))
+    return _produce_jtype_.simpleSpec(column_name)

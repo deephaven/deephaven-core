@@ -692,7 +692,8 @@ public class KafkaTools {
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpec(final String schemaName,
+        public static KeyOrValueSpec avroSpec(
+                final String schemaName,
                 final String schemaVersion,
                 final Map<String, String> columnNameToFieldName) {
             return new KeyOrValueSpec.Avro(schemaName, schemaVersion, columnNameToFieldName);
@@ -709,7 +710,8 @@ public class KafkaTools {
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpec(final String schemaName,
+        public static KeyOrValueSpec avroSpec(
+                final String schemaName,
                 final Map<String, String> columnNameToFieldName) {
             return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, columnNameToFieldName);
         }
