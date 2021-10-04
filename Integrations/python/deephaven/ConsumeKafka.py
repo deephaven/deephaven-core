@@ -1,16 +1,7 @@
-
-
 # -*-Python-*-
 #
 # Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-
-##############################################################################
-#               This code is auto generated. DO NOT EDIT FILE!
-# Run generatePythonIntegrationStaticMethods or
-# "./gradlew :Generators:generatePythonIntegrationStaticMethods" to generate
-##############################################################################
-
 
 import collections
 import sys
@@ -19,8 +10,8 @@ import wrapt
 
 import deephaven.Types as dh
 
-from ..conversion_utils import _isJavaType, _isStr, \
-    _typeFromName, _dictToProperties, _dictToMap, IDENTITY
+from ..conversion_utils import _isStr, \
+    _dictToProperties, _dictToMap, IDENTITY
 
 from ..Types import _jclassFromType
 
@@ -320,6 +311,7 @@ def simple(column_name:str, data_type:dh.DataType = None):
     return _consume_jtype_.simpleSpec(column_name, _jclassFromType(data_type))
 
 
+
 @_passThrough
 def streamTableToAppendTable(t):
     """
@@ -329,83 +321,3 @@ def streamTableToAppendTable(t):
     :return:  The resulting 'append' table.
     """
     return _stream_table_tools_.streamToAppendOnlyTable(t)
-@_passThrough
-def avroSchemaToColumnDefinitions(*args):
-    """
-    **Incompatible overloads text - text from the first overload:**
-    
-    Convert an Avro schema to a list of column definitions, mapping every avro field to a column of the same name.
-    
-    *Overload 1*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
-      :param mappedOut: java.util.Map<java.lang.String,java.lang.String>
-      :param schema: org.apache.avro.Schema
-      :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
-      
-    *Overload 2*  
-      :param columns: (java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>) - Column definitions for output; should be empty on entry.
-      :param schema: (org.apache.avro.Schema) - Avro schema
-      :param fieldNameToColumnName: (java.util.function.Function<java.lang.String,java.lang.String>) - An optional mapping to specify selection and naming of columns from Avro fields, or
-              null for map all fields using field name for column name.
-      
-    *Overload 3*  
-      :param columns: (java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>) - Column definitions for output; should be empty on entry.
-      :param schema: (org.apache.avro.Schema) - Avro schema
-    """
-    
-    return _java_type_.avroSchemaToColumnDefinitions(*args)
-
-
-@_passThrough
-def friendlyNameToTableType(typeName):
-    """
-    Map "Python-friendly" table type name to a KafkaTools.TableType.
-    
-    :param typeName: (java.lang.String) - The friendly name
-    :return: (io.deephaven.kafka.KafkaTools.TableType) The mapped KafkaTools.TableType
-    """
-    
-    return _java_type_.friendlyNameToTableType(typeName)
-
-
-@_passThrough
-def getAvroSchema(*args):
-    """
-    **Incompatible overloads text - text from the first overload:**
-    
-    Fetch an Avro schema from a Confluent compatible Schema Server.
-    
-    *Overload 1*  
-      :param schemaServerUrl: (java.lang.String) - The schema server URL
-      :param resourceName: (java.lang.String) - The resource name that the schema is known as in the schema server
-      :param version: (java.lang.String) - The version to fetch, or the string "latest" for the latest version.
-      :return: (org.apache.avro.Schema) An Avro schema.
-      
-    *Overload 2*  
-      :param schemaServerUrl: (java.lang.String) - The schema server URL
-      :param resourceName: (java.lang.String) - The resource name that the schema is known as in the schema server
-      :return: (org.apache.avro.Schema) An Avro schema.
-    """
-    
-    return _java_type_.getAvroSchema(*args)
-
-
-@_passThrough
-def partitionFilterFromArray(partitions):
-    """
-    :param partitions: int[]
-    :return: java.util.function.IntPredicate
-    """
-    
-    return _java_type_.partitionFilterFromArray(partitions)
-
-
-@_passThrough
-def partitionToOffsetFromParallelArrays(partitions, offsets):
-    """
-    :param partitions: int[]
-    :param offsets: long[]
-    :return: java.util.function.IntToLongFunction
-    """
-    
-    return _java_type_.partitionToOffsetFromParallelArrays(partitions, offsets)

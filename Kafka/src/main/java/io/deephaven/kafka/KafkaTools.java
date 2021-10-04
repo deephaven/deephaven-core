@@ -41,7 +41,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -1029,6 +1028,18 @@ public class KafkaTools {
         }
     }
 
+    /**
+     * Consume from Kafka to a Deephaven table.
+     *
+     * @param t  The live table used as a source of data to be sent to Kafka.
+     * @param kafkaConsumerProperties Properties to be passed to create the associated KafkaProducer.
+     * @param topic Kafka topic name
+     * @param keySpec Conversion specification for Kafka record keys from table column data.
+     * @param valueSpec Conversion specification for Kafka record values from table column data.
+     * @return a callback to stop producing and shut down the associated table listener; note a caller should
+     *         keep a reference to this return value to ensure liveliness.
+     */
+    @SuppressWarnings("unused")
     public Procedure.Nullary produceFromTable(
             @NotNull final DynamicTable t,
             @NotNull final Properties kafkaConsumerProperties,
