@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.kafka.publish.SimpleKeyOrValueSerializer",
+ "methods": {
+  "handleChunk": "Create a chunk of output values from a table and index.\n\n TODO: should we read the chunks and pass them in, or allow the key or value serializer to do that work?\n\n:param context: (io.deephaven.kafka.publish.KeyOrValueSerializer.Context) - a context created by KeyOrValueSerializer.makeContext(int)\n:param orderedKeys: (io.deephaven.db.v2.utils.OrderedKeys) - the keys to serialize\n:param previous: (boolean) - if previous values should be used, as with key removals\n:return: (io.deephaven.db.v2.sources.chunk.ObjectChunk<SimpleKeyOrValueSerializer.K,io.deephaven.db.v2.sources.chunk.Attributes.Values>) a chunk of serialized values",
+  "makeContext": "Create a context for calling handleChunk.\n\n:param size: (int) - the maximum number of rows that will be serialized for each chunk\n:return: (io.deephaven.kafka.publish.KeyOrValueSerializer.Context) a Context for the KeyOrValueSerializer"
+ },
+ "path": "io.deephaven.kafka.publish.SimpleKeyOrValueSerializer",
+ "typeName": "class"
+}
