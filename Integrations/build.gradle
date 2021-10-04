@@ -85,8 +85,9 @@ def buildPyWheel = { String taskName, String imageName, String sourcePath ->
         }
     }
 }
-def buildDockerForWheel=buildPyWheel('buildDockerForWheel', 'deephaven/deephaven-wheel', '../pyintegration')
-def buildDockerForWheel2=buildPyWheel('buildDockerForWheel2', 'deephaven/deephaven2-wheel', 'python')
+
+def buildDockerForWheel=buildPyWheel('buildDockerForWheel', 'deephaven/deephaven-wheel', 'python')
+def buildDockerForWheel2=buildPyWheel('buildDockerForWheel2', 'deephaven/deephaven2-wheel', '../pyintegration')
 
 /**
  * Produce a docker image with the prereqs to run and use deephaven python
