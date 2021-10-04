@@ -63,14 +63,14 @@ idea {
         }
 }
 
-def buildPyWheel = { String task_name, String image_name, String source_path ->
-    Docker.registerDockerTask(project, task_name) {
+def buildPyWheel = { String taskName, String imageName, String sourcePath ->
+    Docker.registerDockerTask(project, taskName) {
         copyIn {
-            from(source_path) {
-                into '/src'
+            from(sourcePath) {
+                into 'src'
             }
         }
-        imageName = image_name + ":local-build"
+        imageName = imageName + ":local-build"
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
             from 'docker.io/library/python:3.7.10 as sources'
@@ -128,10 +128,10 @@ Docker.registerDockerImage(project, 'buildDeephavenPython') {
 JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
 SourceSet test = java.sourceSets.maybeCreate('test')
 
-def runInDocker = { String name, String source_path, List<String> command ->
+def runInDocker = { String name, String sourcePath, List<String> command ->
     Docker.registerDockerTask(project, name) {
         copyIn {
-            from(source_path) {
+            from(sourcePath) {
                 into 'python'
             }
             from(test.runtimeClasspath) {
