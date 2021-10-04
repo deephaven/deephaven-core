@@ -1884,7 +1884,7 @@ public class FloatNumericPrimitives {
             return NULL_FLOAT;
         }
 
-        float val = MAX_FLOAT;
+        float val = POSITIVE_INFINITY_FLOAT;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             float c = values.get(i);
@@ -1908,7 +1908,7 @@ public class FloatNumericPrimitives {
             return NULL_FLOAT;
         }
 
-        float val = MAX_FLOAT;
+        float val = POSITIVE_INFINITY_FLOAT;
         long count = 0;
         for (float c : values) {
             if (!(Float.isNaN(c) || FloatPrimitives.isNull(c))) {
@@ -1931,7 +1931,7 @@ public class FloatNumericPrimitives {
             return NULL_FLOAT;
         }
 
-        float val = MAX_FLOAT;
+        float val = POSITIVE_INFINITY_FLOAT;
         long count = 0;
         for (Float c : values) {
             if (!(c == null || Float.isNaN(c) || FloatPrimitives.isNull(c))) {
@@ -2149,7 +2149,7 @@ public class FloatNumericPrimitives {
             return NULL_INT;
         }
 
-        float val = MAX_FLOAT;
+        float val = POSITIVE_INFINITY_FLOAT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
