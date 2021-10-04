@@ -577,7 +577,9 @@ column.
  Column.
  * `filter():FilterValue` - Creates a new value for use in filters based on this column. Used either as a parameter to
  another filter operation, or as a builder to create a filter operation.
- * `formatColor(String condition, String color): CustomColumnColor` - Return a `CustomColumnColor` object to apply using `applyCustomColumns` with the parameters specified.
+ * `formatColor(String condition, String color, String type = 'BACKGROUND'): CustomColumnColor` - Return a `CustomColumnColor` object to apply using `applyCustomColumns` with the parameters specified.
+ * `formatNumber(String condition, String numberFormat): CustomColumnNumberFormat` - Return a `CustomColumnNumberFormat` object to apply using `applyCustomColumns` with the parameters specified.
+ * `formatDate(String condition, String dateFormat): CustomColumnDateFormat` - Return a `CustomColumnDateFormat` object to apply using `applyCustomColumns` with the parameters specified.
  * `formatRenderer(String renderer): CustomColumnRenderer` - Return a `CustomColumnRenderer` object to pass the `applyCustomColumns`  
  * `sort():Sort` - Creates a sort builder object, to be used when sorting by this column.
 
@@ -609,13 +611,22 @@ return a new Sort instance.
  * `String method` - The type of select method to use, either `VIEW` or `SELECT`. Defaults to `VIEW`.
 
 ##### Class `CustomColumnFormula` extends `CustomColumn`
- * `String name` - The name of the custom column to create.
- * `String formula` - The formula to use for this custom column.
+* `String name` - The name of the custom column to create.
+* `String formula` - The formula to use for this custom column.
 
 ##### Class `CustomColumnColor` extends `CustomColumn`
  * `String name` - The name of the column to color. Set to `null` to apply to all columns (color entire row).
  * `String condition` - The condition in which to apply this color.
- * `String color` - The hex representation of the color to apply.
+ * `String color` - The hex representation of the color to apply, or case-insensitive CSS color module name (see https://drafts.csswg.org/css-color/#named-colors)
+ * `String type` - The type of cell color formatting, `BACKGROUND` or `FOREGROUND`.
+
+##### Class `CustomColumnDateFormat` extends `CustomColumn`
+ * `String name` - The name of the column to apply date formatting.
+ * `String dateFormat` - Any of the [Java DateFormat](https://docs.oracle.com/javase/7/docs/api/java/text/DateFormat.html) strings.
+
+##### Class `CustomColumnNumberFormat` extends `CustomColumn`
+ * `String name` - The name of the column to apply number formatting.
+ * `String numberFormat` - Any of the [Java DecimalFormat](https://docs.oracle.com/javase/7/docs/api/java/text/DecimalFormat.html) strings.
 
 ##### Class `CustomColumnRenderer` extends `CustomColumn`
  * `String name` - The column to apply a custom renderer to.
