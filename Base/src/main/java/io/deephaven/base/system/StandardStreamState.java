@@ -42,16 +42,16 @@ public class StandardStreamState {
         if (!outReceivers.isEmpty()) {
             PrintStream out = adapt(outReceivers);
             if (out != System.out) {
+                System.out.println("# New System.out configured");
                 System.setOut(out);
-                out.println("# New System.out configured");
             }
         }
 
         if (!errReceivers.isEmpty()) {
             PrintStream err = adapt(errReceivers);
             if (err != System.err) {
+                System.err.println("# New System.err configured");
                 System.setErr(err);
-                err.println("# New System.err configured");
             }
         }
     }
