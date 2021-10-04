@@ -46,7 +46,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
         @Override
         public int nullCount() {
-            if (options.useDeephavenNulls) {
+            if (options.useDeephavenNulls()) {
                 return 0;
             }
             if (cachedNullCount == -1) {
@@ -151,9 +151,9 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             return chunk;
         }
 
-        final int numValidityLongs = options.useDeephavenNulls ? 0 : (nodeInfo.numElements + 63) / 64;
+        final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
         try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
-            if (options.useDeephavenNulls && validityBuffer != 0) {
+            if (options.useDeephavenNulls() && validityBuffer != 0) {
                 throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
             }
             int jj = 0;
@@ -175,7 +175,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 throw new IllegalStateException("payload buffer is too short for expected number of elements");
             }
 
-            if (options.useDeephavenNulls) {
+            if (options.useDeephavenNulls()) {
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     chunk.set(ii, is.readLong());
                 }

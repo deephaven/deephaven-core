@@ -88,11 +88,11 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                    return VarListChunkInputStreamGenerator.extractChunkFromInputStream(options, type, fieldNodeIter, bufferInfoIter, is) ;
                 }
 
-                if (options.columnConversionMode.equals(BarrageSubscriptionOptions.ColumnConversionMode.Stringify)) {
+                if (options.columnConversionMode().equals(BarrageSubscriptionOptions.ColumnConversionMode.Stringify)) {
                     return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter, bufferInfoIter,
                             (buf, off, len) -> new String(buf, off, len, Charsets.UTF_8));
                 } else {
-                    throw new UnsupportedOperationException("Do not yet support column conversion mode: " + options.columnConversionMode);
+                    throw new UnsupportedOperationException("Do not yet support column conversion mode: " + options.columnConversionMode());
                 }
             default:
                 throw new UnsupportedOperationException();

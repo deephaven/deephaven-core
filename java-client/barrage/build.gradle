@@ -22,6 +22,9 @@ dependencies {
     Classpaths.inheritArrow(project, 'arrow-vector', 'compile')
     Classpaths.inheritArrow(project, 'arrow-format', 'compile')
 
+    annotationProcessor 'org.immutables:value:2.8.1'
+    compileOnly project(':util-immutables')
+
     testCompile TestTools.projectDependency(project, 'DB'),
             TestTools.projectDependency(project, 'Util')
 

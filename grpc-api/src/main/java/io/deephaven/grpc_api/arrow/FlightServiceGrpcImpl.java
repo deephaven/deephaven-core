@@ -33,10 +33,8 @@ import java.nio.ByteBuffer;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
-    // TODO NATE: pull app_metadata off of DoGet -- what about doPut? (core#412): use app_metadata to communicate
-    // serialization options
     private static final BarrageSubscriptionOptions DEFAULT_DESER_OPTIONS =
-            new BarrageSubscriptionOptions.Builder().build();
+            BarrageSubscriptionOptions.builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 

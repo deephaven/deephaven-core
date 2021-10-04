@@ -11,9 +11,7 @@ import com.google.protobuf.WireFormat;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.client.impl.BarrageSubscriptionOptions;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.internal.log.LoggerFactory;
@@ -32,7 +30,7 @@ import java.nio.ByteBuffer;
 
 public class BarrageProtoUtil {
     public static final BarrageSubscriptionOptions DEFAULT_SER_OPTIONS =
-            new BarrageSubscriptionOptions.Builder().build();
+            BarrageSubscriptionOptions.builder().build();
     private static final int TAG_TYPE_BITS = 3;
 
     public static final int BODY_TAG =
