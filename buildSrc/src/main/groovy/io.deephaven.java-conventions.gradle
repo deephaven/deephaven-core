@@ -27,7 +27,7 @@ tasks.withType(JavaCompile).configureEach {
     javac.options.fork = true
     javac.options.encoding = 'UTF-8'
     //javac.options.incremental = true
-    //javac.options.compilerArgs << '-parameters'
+    javac.options.compilerArgs << '-parameters'
     if (compilerVersion >= 9) {
       javac.options.release = languageLevel
       javac.options.forkOptions.jvmArgs << '--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'
