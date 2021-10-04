@@ -1,7 +1,8 @@
 package io.deephaven.util;
 
 /**
- * Constants for primitive types within the Deephaven engine.  These constants include null values, ranges of values, infinite values, and NaN values.
+ * Constants for primitive types within the Deephaven engine. These constants include null values, ranges of values,
+ * infinite values, and NaN values.
  */
 @SuppressWarnings("unused")
 public class QueryConstants {
@@ -65,7 +66,7 @@ public class QueryConstants {
      * Null short value.
      */
     public static final short NULL_SHORT = Short.MIN_VALUE;
-    
+
     /**
      * Null boxed Short value.
      */
