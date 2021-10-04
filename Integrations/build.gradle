@@ -63,14 +63,14 @@ idea {
         }
 }
 
-def buildPyWheel = { String taskName, String imageName, String sourcePath ->
+def buildPyWheel = { String taskName, String imgName, String sourcePath ->
     Docker.registerDockerTask(project, taskName) {
         copyIn {
             from(sourcePath) {
                 into 'src'
             }
         }
-        imageName = imageName + ":local-build"
+        imageName = imgName + ":local-build"
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
             from 'docker.io/library/python:3.7.10 as sources'
