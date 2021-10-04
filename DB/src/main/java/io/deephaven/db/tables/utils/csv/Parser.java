@@ -71,14 +71,22 @@ public class Parser<T> {
     public static final Parser<Long> LONG = new Parser<>(Type.longType(), Long::parseLong);
 
     /**
-     * A parser that delegates to {@link Float#parseFloat(String)}.
+     * A parser that delegates non-trimmable strings to {@link Float#parseFloat(String)}.
+     *
+     * <p>
+     * Note: if the string is trimmable, the parsing fails. This is to remain consistent with the parsing of integral
+     * values.
      */
-    public static final Parser<Float> FLOAT = new Parser<>(Type.floatType(), Float::parseFloat);
+    public static final Parser<Float> FLOAT = new Parser<>(Type.floatType(), Parser::parseFloat);
 
     /**
-     * A parser that delegates to {@link Double#parseDouble(String)}.
+     * A parser that delegates non-trimmable strings to {@link Double#parseDouble(String)}.
+     *
+     * <p>
+     * Note: if the string is trimmable, the parsing fails. This is to remain consistent with the parsing of integral
+     * values.
      */
-    public static final Parser<Double> DOUBLE = new Parser<>(Type.doubleType(), Double::parseDouble);
+    public static final Parser<Double> DOUBLE = new Parser<>(Type.doubleType(), Parser::parseDouble);
 
     /**
      * A parser that delegates to {@link Instant#parse(CharSequence)}.
@@ -290,6 +298,24 @@ public class Parser<T> {
             throw new ParserException(value, "Value is not a char");
         }
         return value.charAt(0);
+    }
+
+    private static float parseFloat(String value) {
+        if (isTrimmable(value)) {
+            throw new ParserException(value, "Not parsing floats that are trimmable");
+        }
+        return Float.parseFloat(value);
+    }
+
+    private static double parseDouble(String value) {
+        if (isTrimmable(value)) {
+            throw new ParserException(value, "Not parsing doubles that are trimmable");
+        }
+        return Double.parseDouble(value);
+    }
+
+    private static boolean isTrimmable(String value) {
+        return !value.isEmpty() && (value.charAt(0) <= ' ' || value.charAt(value.length() - 1) <= ' ');
     }
 
     private static Instant parseAsDateFormat(String value) {

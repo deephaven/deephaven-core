@@ -12,18 +12,12 @@ import org.apache.commons.csv.CSVRecord;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +46,8 @@ public abstract class CsvSpecs {
         Builder delimiter(char delimiter);
 
         Builder quote(char quote);
+
+        Builder ignoreSurroundingSpaces(boolean ignoreSurroundingSpaces);
 
         Builder trim(boolean trim);
 
@@ -192,8 +188,22 @@ public abstract class CsvSpecs {
         return '"';
     }
 
+
     /**
-     * The trim flag, whether to trim leading and trailing blanks.
+     * The ignore surrounding spaces flag, whether to trim leading and trailing blanks from non-quoted values.
+     *
+     * <p>
+     * By default is {@code true}
+     *
+     * @return the ignore surrounding spaces flag
+     */
+    @Default
+    public boolean ignoreSurroundingSpaces() {
+        return true;
+    }
+
+    /**
+     * The trim flag, whether to trim leading and trailing blanks from inside quoted values.
      *
      * <p>
      * By default is {@code false}.
@@ -220,7 +230,7 @@ public abstract class CsvSpecs {
 
     private CSVFormat format() {
         return CSVFormat.DEFAULT
-                .withIgnoreSurroundingSpaces()
+                .withIgnoreSurroundingSpaces(ignoreSurroundingSpaces())
                 .withDelimiter(delimiter())
                 .withQuote(quote())
                 .withTrim(trim());
