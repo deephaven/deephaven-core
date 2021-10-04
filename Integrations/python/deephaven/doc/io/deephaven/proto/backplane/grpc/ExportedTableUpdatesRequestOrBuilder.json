@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequestOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequestOrBuilder",
+ "typeName": "interface"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.SessionMiddleware",
+ "methods": {
+  "onCallStarted": ":param info: org.apache.arrow.flight.CallInfo\n:return: org.apache.arrow.flight.FlightClientMiddleware"
+ },
+ "path": "io.deephaven.client.impl.SessionMiddleware",
+ "typeName": "class"
+}
