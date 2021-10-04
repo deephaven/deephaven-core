@@ -10,10 +10,10 @@ import wrapt
 
 import deephaven.Types as dh
 
-from ..conversion_utils import _isStr, \
+from deephaven.conversion_utils import _isStr, \
     _dictToProperties, _dictToMap, IDENTITY
 
-from ..Types import _jclassFromType
+from deephaven.Types import _jclassFromType
 
 # None until the first _defineSymbols() call
 _java_type_ = None
@@ -284,7 +284,7 @@ def json(col_defs, mapping:dict = None):
     except Exception as e:
         raise Exception("could not create column definitions from " + str(col_defs)) from e
     if mapping is None:
-        return _java_type_.jsonSpec(col_defs)
+        return _consume_jtype_.jsonSpec(col_defs)
     if not isinstance(mapping, dict):
         raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
@@ -307,7 +307,7 @@ def simple(column_name:str, data_type:dh.DataType = None):
         raise TypeError(
             "'column_name' argument needs to be of str type, instead got " + str(column_name))
     if data_type is None:
-        return _java_type_.simpleSpec(column_name)
+        return _consume_jtype_.simpleSpec(column_name)
     return _consume_jtype_.simpleSpec(column_name, _jclassFromType(data_type))
 
 

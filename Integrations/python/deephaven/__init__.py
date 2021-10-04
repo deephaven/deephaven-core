@@ -83,8 +83,9 @@ from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJa
 from . import Calendars as cals, \
     ComboAggregateFactory as caf, \
     DBTimeUtils as dbtu, \
-    KafkaTools as kt, \
     MovingAverages as mavg, \
+    ConsumeKafka as ck, \
+    ProduceKafka as pk, \
     npy, \
     Plot as plt, \
     ParquetTools as pt, \

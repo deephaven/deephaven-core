@@ -10,7 +10,7 @@ import wrapt
 
 import deephaven.Types as dh
 
-from ..conversion_utils import _isJavaType, _isStr, \
+from deephaven.conversion_utils import _isJavaType, _isStr, \
     _typeFromName, _dictToProperties, _dictToMap, IDENTITY
 
 # None until the first _defineSymbols() call
@@ -29,8 +29,7 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_,  _avro_schema_jtype_, _produce_jtype_, \
-        IGNORE,
+    global _java_type_,  _avro_schema_jtype_, _produce_jtype_, IGNORE
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
