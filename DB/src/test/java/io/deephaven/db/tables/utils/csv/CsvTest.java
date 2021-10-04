@@ -67,7 +67,14 @@ public class CsvTest {
                 languageExample(),
                 languageExampleTsv(),
                 languageExampleHeaderless(),
-                languageExampleHeaderlessExplicit());
+                languageExampleHeaderlessExplicit(),
+                whitespaceNoQuotes(),
+                whitespaceNoQuotesLiteral(),
+                whitespaceOutside(),
+                whitespaceInsideDefault(),
+                whitespaceInsideTrim(),
+                whitespaceInsideAndOutsideDefault(),
+                whitespaceInsideAndOutsideTrim());
     }
 
     public static CsvTest timestamp() {
@@ -363,6 +370,104 @@ public class CsvTest {
         final NewTable expected = languageCreatorTypeTable();
         final CsvSpecs specs = CsvSpecs.headerless(expected.header());
         return new CsvTest("languageExampleHeaderlessExplicit", "language-example-headerless.csv", specs, expected);
+    }
+
+    public static CsvTest whitespaceNoQuotes() {
+        final NewTable expected = ColumnHeader.of(
+                ColumnHeader.ofString("Sym"),
+                ColumnHeader.ofString("Type"),
+                ColumnHeader.ofDouble("Price"),
+                ColumnHeader.ofShort("SecurityId"))
+                .row("GOOG", "Dividend", 0.25, (short) 200)
+                .row("T", "Dividend", 0.15, (short) 300)
+                .row("Z", "Dividend", 0.18, (short) 500)
+                .newTable();
+        final CsvSpecs specs = CsvSpecs.csv();
+        return new CsvTest("whitespaceNoQuotes", "whitespace-no-quotes.csv", specs, expected);
+    }
+
+    public static CsvTest whitespaceNoQuotesLiteral() {
+        final NewTable expected = ColumnHeader.of(
+                ColumnHeader.ofString("Sym"),
+                ColumnHeader.ofString("Type"),
+                ColumnHeader.ofString("Price"),
+                ColumnHeader.ofString("SecurityId"))
+                .row("GOOG", " Dividend", " 0.25", " 200")
+                .row("T", " Dividend", " 0.15", " 300")
+                .row(" Z", " Dividend", " 0.18", " 500")
+                .newTable();
+        final CsvSpecs specs = CsvSpecs.builder().ignoreSurroundingSpaces(false).build();
+        return new CsvTest("whitespaceNoQuotesLiteral", "whitespace-no-quotes.csv", specs, expected);
+    }
+
+    public static CsvTest whitespaceOutside() {
+        final NewTable expected = ColumnHeader.of(
+                ColumnHeader.ofString("Sym"),
+                ColumnHeader.ofString("Type"),
+                ColumnHeader.ofDouble("Price"),
+                ColumnHeader.ofShort("SecurityId"))
+                .row("GOOG", "Dividend", 0.25, (short) 200)
+                .row("T", "Dividend", 0.15, (short) 300)
+                .row("Z", "Dividend", 0.18, (short) 500)
+                .newTable();
+        final CsvSpecs specs = CsvSpecs.csv();
+        return new CsvTest("whitespaceOutside", "whitespace-outside.csv", specs, expected);
+    }
+
+    public static CsvTest whitespaceInsideDefault() {
+        final NewTable expected = ColumnHeader.of(
+                ColumnHeader.ofString("Sym"),
+                ColumnHeader.ofString("Type"),
+                ColumnHeader.ofString("Price"),
+                ColumnHeader.ofString("SecurityId"))
+                .row("GOOG", " Dividend", " 0.25", " 200")
+                .row("T", " Dividend", " 0.15", " 300")
+                .row(" Z", " Dividend", " 0.18", " 500")
+                .newTable();
+        final CsvSpecs specs = CsvSpecs.csv();
+        return new CsvTest("whitespaceInsideDefault", "whitespace-inside.csv", specs, expected);
+    }
+
+    public static CsvTest whitespaceInsideTrim() {
+        final NewTable expected = ColumnHeader.of(
+                ColumnHeader.ofString("Sym"),
+                ColumnHeader.ofString("Type"),
+                ColumnHeader.ofDouble("Price"),
+                ColumnHeader.ofShort("SecurityId"))
+                .row("GOOG", "Dividend", 0.25, (short) 200)
+                .row("T", "Dividend", 0.15, (short) 300)
+                .row("Z", "Dividend", 0.18, (short) 500)
+                .newTable();
+        final CsvSpecs specs = CsvSpecs.builder().trim(true).build();
+        return new CsvTest("whitespaceInsideTrim", "whitespace-inside.csv", specs, expected);
+    }
+
+    public static CsvTest whitespaceInsideAndOutsideDefault() {
+        final NewTable expected = ColumnHeader.of(
+                ColumnHeader.ofString("Sym"),
+                ColumnHeader.ofString("Type"),
+                ColumnHeader.ofString("Price"),
+                ColumnHeader.ofString("SecurityId"))
+                .row("GOOG", " Dividend", " 0.25", " 200")
+                .row("T", " Dividend", " 0.15", " 300")
+                .row(" Z", " Dividend", " 0.18", " 500")
+                .newTable();
+        final CsvSpecs specs = CsvSpecs.csv();
+        return new CsvTest("whitespaceInsideAndOutsideDefault", "whitespace-inside-and-outside.csv", specs, expected);
+    }
+
+    public static CsvTest whitespaceInsideAndOutsideTrim() {
+        final NewTable expected = ColumnHeader.of(
+                ColumnHeader.ofString("Sym"),
+                ColumnHeader.ofString("Type"),
+                ColumnHeader.ofDouble("Price"),
+                ColumnHeader.ofShort("SecurityId"))
+                .row("GOOG", "Dividend", 0.25, (short) 200)
+                .row("T", "Dividend", 0.15, (short) 300)
+                .row("Z", "Dividend", 0.18, (short) 500)
+                .newTable();
+        final CsvSpecs specs = CsvSpecs.builder().trim(true).build();
+        return new CsvTest("whitespaceInsideAndOutsideTrim", "whitespace-inside-and-outside.csv", specs, expected);
     }
 
     private static NewTable languageCreatorTypeTable() {

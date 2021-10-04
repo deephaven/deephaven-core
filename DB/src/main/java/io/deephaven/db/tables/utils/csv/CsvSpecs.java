@@ -114,6 +114,19 @@ public abstract class CsvSpecs {
         return builder().hasHeaderRow(false).header(header).build();
     }
 
+    public static CsvSpecs fromLegacyFormat(String format) {
+        if (format == null || "TRIM".equals(format)) {
+            return CsvSpecs.csv();
+        } else if (format.length() == 1) {
+            return CsvSpecs.builder().delimiter(format.charAt(0)).build();
+        } else if ("DEFAULT".equals(format)) {
+            return CsvSpecs.builder().ignoreSurroundingSpaces(false).build();
+        } else if ("TDF".equals(format)) {
+            return CsvSpecs.tsv();
+        }
+        return null;
+    }
+
     /**
      * A header, when specified, hints at the parser to use.
      *
