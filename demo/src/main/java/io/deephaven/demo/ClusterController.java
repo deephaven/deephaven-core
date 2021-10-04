@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import static io.deephaven.demo.NameConstants.*;
 import static io.deephaven.demo.deploy.GoogleDeploymentManager.*;
@@ -469,12 +470,8 @@ public class ClusterController {
         return TimeUnit.MINUTES.toMillis(45);
     }
 
-    private void setupDns(final Machine machine) throws IOException, InterruptedException, TimeoutException {
-        ClusterMap derived = new ClusterMap();
-        derived.setClusterName("dns-for-" + machine.getHost());
-        derived.setLocalDir(manager.getLocalDir() + File.separator + machine.getHost());
-        derived.setAllNodes(Collections.singletonList(machine));
-        manager.assignDns(derived);
+    private void setupDns(final Machine machine) {
+        manager.assignDns(Stream.of(machine));
     }
 
     public Collection<IpMapping> requestNewIps(int numIps) {

@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.demo.NameConstants.*;
 import static io.deephaven.demo.deploy.Execute.execute;
@@ -80,13 +81,13 @@ public class GoogleDeploymentManager implements DeploymentManager {
     }
 
     @Override
-    public void assignDns(ClusterMap map) {
+    public void assignDns(Stream<Machine> nodes) {
 
         // first, query if a DNS record already exists.
         List<Machine> changed = new ArrayList<>();
         Set<Machine> changedMachines = new ConcurrentHashSet<>();
         dns.tx(tx -> {
-            map.getAllNodes().forEach( node -> {
+            nodes.forEach( node -> {
                 String expectedIp = node.getIp();
                 final DomainMapping mapping = node.getDomainInUse() == null ? new DomainMapping(node.getHost(), DOMAIN) : node.getDomainInUse();
                 try {
@@ -125,7 +126,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             turnOn(node);
         } else {
             if (!createNew(node)) {
-                throw new IllegalStateException("Machine $node.host ($node.domainName) does not exist, and createNew() failed to make the machine.");
+                throw new IllegalStateException("Machine " + node.getHost() + " (" + node.getDomainName() + ") does not exist, and createNew() failed to make the machine.");
             }
             if (node.getIp() != null && node.getIp().indexOf('.') == -1 && node.getIp().indexOf(':') != -1) {
                 // we had a named IP address (normal)... null it out so we replace it w/ the resolved real/current IP
@@ -152,14 +153,14 @@ public class GoogleDeploymentManager implements DeploymentManager {
     }
 
     @Override
-    public void destroyCluster(ClusterMap map, String diskPrefix) throws IOException {
+    public void destroyCluster(Collection<Machine> allNodes, String diskPrefix) throws IOException {
         // delete the vms, snapshots and dns records.
-        LOG.warn("Destroying node: " + map.getAllNodes().stream().map(Machine::getHost).collect(Collectors.joining(" ")));
+        LOG.warn("Destroying node: " + allNodes.stream().map(Machine::getHost).collect(Collectors.joining(" ")));
         LOG.info("\n\nYou may see some errors below about missing resources like snapshots or disks.\n" +
 "Ignore them, unless you don't see the \"Done cleanup\" message, below.\n\n");
-        FileUtils.deleteDirectory(new File(map.getLocalDir()));
+        FileUtils.deleteDirectory(new File(localDir));
         dns.tx(tx -> {
-            map.getAllNodes().parallelStream().forEach (node -> {
+            allNodes.parallelStream().forEach (node -> {
                 try {
                     gcloud(false, "instances", "delete", "-q", node.getHost());
                 } catch (IOException | InterruptedException e) {
@@ -200,8 +201,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
             List<String> snapshotNames = new ArrayList<>();
             map.getAllNodes().forEach(node -> {
                 // on new machines, disk name matches node.host; on old ones, it has a "disk-" prefix
-                snapshotArgs.add("$diskPrefix$node.host");
-                snapshotNames.add("$node.host-$snapshotName");
+                snapshotArgs.add(diskPrefix + node.getHost());
+                snapshotNames.add(node.getHost() + "-" + snapshotName);
             });
             snapshotArgs.add("--snapshot-names");
             snapshotArgs.add(String.join(",", snapshotNames));
@@ -212,7 +213,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 }
                 List<String> deleteArgs = new ArrayList<>(Arrays.asList("gcloud", "compute", "snapshots", "delete", "--quiet"));
                 map.getAllNodes().forEach(node ->
-                    deleteArgs.add("$node.host-$snapshotName")
+                    deleteArgs.add(node.getHost() + "-" + snapshotName)
                 );
                 execute(deleteArgs);
                 result = execute(snapshotArgs);
@@ -255,7 +256,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     }
                     System.out.println("Waiting for " + node.getHost() + " to report it is stopped");
             if (System.currentTimeMillis() > timeout) {
-                throw new IllegalStateException("Waited 30 seconds, but $node.host does not report a TERMINATED status running gcloud compute instances list --filter=name=($node.host)");
+                throw new IllegalStateException("Waited 30 seconds, but " + node.getHost() + " does not report a TERMINATED status running gcloud compute instances list --filter=name=($node.host)");
             }
         }
         try {
@@ -297,7 +298,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         if (node.isSshIsReady()) {
             return;
         }
-        System.out.println("Waiting for ssh to respond on $node.domainName");
+        LOG.info("Waiting for ssh to respond on " + node.getDomainName());
         // now, wait until the instance is responding to ssh.
         long minutes = 9;
         final long startMillis = System.currentTimeMillis();

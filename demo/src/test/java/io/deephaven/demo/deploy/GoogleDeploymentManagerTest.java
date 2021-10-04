@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -27,26 +28,22 @@ public class GoogleDeploymentManagerTest {
 
     @Test
     public void testMachineSetup() throws IOException, InterruptedException, TimeoutException {
-        final ClusterMap map = new ClusterMap();
-        map.setClusterName(NameGen.newName());
-        map.setLocalDir(tmp.newFolder("deploy").getAbsolutePath());
-        GoogleDeploymentManager deploy = new GoogleDeploymentManager(map.getLocalDir());
+        String workDir = tmp.newFolder("deploy").getAbsolutePath();
+        GoogleDeploymentManager deploy = new GoogleDeploymentManager(workDir);
 
         ClusterController ctrl = new ClusterController(deploy);
 
         Machine machine = ctrl.requestMachine();
 
-
         final Machine testNode = new Machine();
         testNode.setHost("controller3");
         testNode.setController(true);
         testNode.setDomainName("ctrl.demo.deephaven.app");
-        map.setAllNodes(Collections.singletonList(testNode));
         if (!deploy.checkExists(testNode)) {
             deploy.createNew(testNode);
         }
         deploy.turnOn(testNode);
-        deploy.assignDns(map);
+        deploy.assignDns(Stream.of(testNode));
         final String ipAddr = deploy.getDnsIp(testNode);
         Assert.assertNotNull(ipAddr);
         Assert.assertNotEquals("", ipAddr);
@@ -59,7 +56,7 @@ public class GoogleDeploymentManagerTest {
             );
         } else {
             System.out.println("You did not set sysprop -DnoClean=true, so deleting " + testNode.getHost());
-            deploy.destroyCluster(map, "");
+            deploy.destroyCluster(Collections.singletonList(testNode), "");
         }
     }
 }

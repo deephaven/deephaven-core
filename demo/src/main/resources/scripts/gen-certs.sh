@@ -287,48 +287,47 @@ chmod a+r "${KEY_FILE}.pk8"
 # gross... figure out something that makes envoy happy
 chmod a+r "${KEY_FILE}"
 
-if [[ -n "$MY_POD_IP" ]]; then
-    exit 0
+if [[ -z "$MY_POD_IP" ]]; then
+  if [ "$DEPLOY_GOOGLE" = y ]; then
+    if (( KEY_LENGTH == 2048 )); then
+        PROJECT_ID="${PROJECT_ID:-deephaven-oss}"
+        GCLOUD_CERT_NAME="${GCLOUD_CERT_NAME:-deephaven-app-cert}"
+        # push certificate to gcloud (for load balancer to find)
+        gcloud compute ssl-certificates delete \
+            --project="${PROJECT_ID}" \
+            -q \
+            "${GCLOUD_CERT_NAME}" \
+            2> /dev/null || true
+        gcloud compute ssl-certificates create "${GCLOUD_CERT_NAME}" \
+          --certificate="${CERT_FILE}" \
+          --private-key="${KEY_FILE}" \
+          --global
+
+        gcloud compute ssl-certificates delete \
+            --project="${PROJECT_ID}" \
+            --region="${REGION}" \
+            -q \
+            "${GCLOUD_CERT_NAME}-us-central" \
+            2> /dev/null || true
+        gcloud compute ssl-certificates create "${GCLOUD_CERT_NAME}-us-central" \
+          --certificate="${CERT_FILE}" \
+          --private-key="${KEY_FILE}" \
+          --region "${REGION}"
+
+
+        # push certificate to kubernetes (for containers to consume)
+        kubectl delete secret "${GCLOUD_CERT_NAME}" 2> /dev/null || true
+        kubectl create secret tls "${GCLOUD_CERT_NAME}" \
+          --cert="$CERT_FILE" \
+          --key="${KEY_FILE}"
+        kubectl create secret opaque deephaven-app-ca --file="ca.crt"
+        # hm, stash the ca+ca-key too?
+        # ...if we do it, we should only do it when we created them
+    else
+      echo "KEY_LENGTH = $KEY_LENGTH, but deployment to google requires 2048 bit keys"
+    fi
+  fi
 fi
 
-if (( KEY_LENGTH != 2048 )); then
-    echo "KEY_LENGTH = $KEY_LENGTH, but deployment to google requires 2048 bit keys"
-    exit 0
-fi
 
-if [ "$DEPLOY_GOOGLE" = y ]; then
-    PROJECT_ID="${PROJECT_ID:-deephaven-oss}"
-    GCLOUD_CERT_NAME="${GCLOUD_CERT_NAME:-deephaven-app-cert}"
-    # push certificate to gcloud (for load balancer to find)
-    gcloud compute ssl-certificates delete \
-        --project="${PROJECT_ID}" \
-        -q \
-        "${GCLOUD_CERT_NAME}" \
-        2> /dev/null || true
-    gcloud compute ssl-certificates create "${GCLOUD_CERT_NAME}" \
-      --certificate="${CERT_FILE}" \
-      --private-key="${KEY_FILE}" \
-      --global
-
-    gcloud compute ssl-certificates delete \
-        --project="${PROJECT_ID}" \
-        --region="${REGION}" \
-        -q \
-        "${GCLOUD_CERT_NAME}-us-central" \
-        2> /dev/null || true
-    gcloud compute ssl-certificates create "${GCLOUD_CERT_NAME}-us-central" \
-      --certificate="${CERT_FILE}" \
-      --private-key="${KEY_FILE}" \
-      --region "${REGION}"
-
-
-    # push certificate to kubernetes (for containers to consume)
-    kubectl delete secret "${GCLOUD_CERT_NAME}" 2> /dev/null || true
-    kubectl create secret tls "${GCLOUD_CERT_NAME}" \
-      --cert="$CERT_FILE" \
-      --key="${KEY_FILE}"
-    kubectl create secret opaque deephaven-app-ca --file="ca.crt"
-    # hm, stash the ca+ca-key too?
-    # ...if we do it, we should only do it when we created them
-fi
 

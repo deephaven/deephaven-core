@@ -208,16 +208,8 @@ public class DhDemoServer implements QuarkusApplication {
         // if we can reach /health immediately, the machine is ready, we should send user straight there
         final boolean isReady = controller.isMachineReady(machine);
 
-//        req.vertx().runOnContext(c->{
             if (isReady) {
                 req.redirect(uri);
-//                    req.response()
-//                        .setChunked(true)
-//                        .putHeader("Location", uri)
-//                        .setStatusCode(302)
-//                        .end("<!html><html><body>" +
-//                                "You are being redirected to a worker named " + machine.getHost() + " : <a href=\"" + uri + "\">" + uri + "</a>" +
-//                                "</body></html>");
             } else {
                 // not ready... send user to interstitial page
                 req.response()
