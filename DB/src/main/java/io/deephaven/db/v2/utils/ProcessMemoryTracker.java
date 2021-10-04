@@ -32,7 +32,7 @@ public class ProcessMemoryTracker {
 
     private ProcessMemoryTracker() {
         logger = LoggerFactory.getLogger(UpdatePerformanceTracker.class);
-       processMemLogger = new MemoryTableLogger<>(
+        processMemLogger = new MemoryTableLogger<>(
                 logger, new ProcessMemoryLogLogger(), ProcessMemoryLogLogger.getTableDefinition());
     }
 
@@ -69,7 +69,8 @@ public class ProcessMemoryTracker {
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
                 final long endTimeMillis = System.currentTimeMillis();
-                logProcessMem(intervalStartTimeMillis, endTimeMillis, memSample, prevTotalCollections, prevTotalCollectionTimeMs);
+                logProcessMem(intervalStartTimeMillis, endTimeMillis, memSample, prevTotalCollections,
+                        prevTotalCollectionTimeMs);
             }
         }
     }
