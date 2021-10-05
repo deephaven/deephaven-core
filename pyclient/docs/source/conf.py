@@ -118,7 +118,7 @@ def make_rst_tree(package, tree):
             pn = ".".join(p)
             toctree += "%s%s <%s>\n"%(" "*4,k,pn)
 
-    rst = "%s\n%s\n\n%s\n.. automodule:: %s\n    :members:\n    :show-inheritance:\n    :undoc-members:\n\n"%(package_name,"="*len(package_name),toctree,package_name)
+    rst = "%s\n%s\n\n%s\n.. automodule:: %s\n    :members:\n    :show-inheritance:\n    :special-members: __init__\n    :undoc-members:\n\n"%(package_name,"="*len(package_name),toctree,package_name)
 
     if len(package) > 0:
         filename = f"code/{package_name}.rst"
