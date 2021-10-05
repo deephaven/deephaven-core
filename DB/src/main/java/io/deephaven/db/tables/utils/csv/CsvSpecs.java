@@ -1,6 +1,7 @@
 package io.deephaven.db.tables.utils.csv;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.ArrayBuilder;
 import io.deephaven.qst.table.NewTable;
@@ -11,6 +12,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,11 +20,14 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -294,13 +299,14 @@ public abstract class CsvSpecs {
             if (header().isPresent()) {
                 columnNames = header().get().columnNames();
             } else if (hasHeaderRow()) {
-                columnNames = records.get(0);
+                columnNames = legalizeColumnNames(records.get(0));
             } else {
                 columnNames = IntStream
                         .range(0, numColumns)
                         .mapToObj(i -> String.format("Column%d", i + 1))
                         .collect(Collectors.toList());
             }
+
             final NewTable.Builder table = NewTable.builder();
             int columnIndex = 0;
             int size = -1;
@@ -315,6 +321,15 @@ public abstract class CsvSpecs {
             }
             return table.size(size).build();
         }
+    }
+
+    private static List<String> legalizeColumnNames(CSVRecord record) {
+        final Set<String> taken = new HashSet<>(record.size());
+        final List<String> out = new ArrayList<>(record.size());
+        for (String name : record) {
+            out.add(NameValidator.legalizeColumnName(name, (s) -> s.replaceAll("[- ]", "_"), taken));
+        }
+        return out;
     }
 
     private static Type<?> type(TableHeader header, String columnName) {

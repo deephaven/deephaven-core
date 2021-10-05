@@ -19,17 +19,8 @@ import java.io.Serializable;
 public abstract class ColumnName
         implements Selectable, Value, Expression, Pair, JoinMatch, JoinAddition, Serializable {
 
-    public static boolean isValidColumnName(String name) {
-        try {
-            NameValidator.validateColumnName(name);
-            return true;
-        } catch (NameValidator.InvalidNameException e) {
-            return false;
-        }
-    }
-
     public static boolean isValidParsedColumnName(String value) {
-        return isValidColumnName(value.trim());
+        return NameValidator.isValidColumnName(value.trim());
     }
 
     public static ColumnName of(String name) {
