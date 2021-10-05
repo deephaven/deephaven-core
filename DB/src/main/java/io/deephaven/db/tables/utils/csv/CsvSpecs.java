@@ -312,7 +312,7 @@ public abstract class CsvSpecs {
             int size = -1;
             for (String columnName : columnNames) {
                 final Parser<?> parser = parser(columnName, columnIndex, dataRecords);
-                final Array<?> array = buildArray(getColumn(columnIndex, dataRecords), parser);
+                final Array<?> array = buildArray(getColumn(columnIndex, dataRecords), parser, dataRecords.size());
                 if (size == -1) {
                     size = array.size();
                 }
@@ -371,8 +371,8 @@ public abstract class CsvSpecs {
         return p.get();
     }
 
-    private static <T> Array<T> buildArray(Iterator<String> it, Parser<T> parser) {
-        final ArrayBuilder<T, ?, ?> builder = Array.builder(parser.type());
+    private static <T> Array<T> buildArray(Iterator<String> it, Parser<T> parser, int size) {
+        final ArrayBuilder<T, ?, ?> builder = Array.builder(parser.type(), size);
         while (it.hasNext()) {
             final T item = parser.parse(it.next());
             builder.add(item);
