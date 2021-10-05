@@ -118,7 +118,7 @@ def make_rst_tree(package, tree):
             pn = ".".join(p)
             toctree += "%s%s <%s>\n"%(" "*4,k,pn)
 
-    rst = "%s\n%s\n\n%s\n.. automodule:: %s\n    :members:\n    :undoc-members:\n\n"%(package_name,"="*len(package_name),toctree,package_name)
+    rst = "%s\n%s\n\n%s\n.. automodule:: %s\n    :members:\n    :show-inheritance:\n    :undoc-members:\n\n"%(package_name,"="*len(package_name),toctree,package_name)
 
     if len(package) > 0:
         filename = f"code/{package_name}.rst"
@@ -158,9 +158,9 @@ def make_rst_modules(package_roots):
 
 import pydeephaven
 package_roots = [pydeephaven]
+package_excludes = ['._', 'proto']
 pn = glob_package_names(package_roots)
-# remove private modules
-pn = [p for p in pn if not '._' in p]
+pn = [p for p in pn if not any(exclude in p for exclude in package_excludes)]
 pt = package_tree(pn)
 
 if os.path.exists("code"):

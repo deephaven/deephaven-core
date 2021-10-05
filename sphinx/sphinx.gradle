@@ -8,12 +8,22 @@ description = 'Generates docs for the python libraries provided in Deephaven Cor
 
 evaluationDependsOn ':Integrations'
 
+tasks.register('copyPyClientWhl', Copy) {
+    dependsOn ':pyclient:buildPyClient'
+    from "$rootDir/pyclient/build/wheel/"
+    into layout.buildDirectory.file('sphinx-image/wheel/')
+}
+
 def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
+    dependsOn 'copyPyClientWhl'
+
     destFile.set layout.buildDirectory.file('sphinx-image/Dockerfile')
     from 'deephaven/runtime-base:local-build'
 
+    copyFile "./wheel", "/wheel"
+
     runCommand '''set -eux; \\ 
-                  pip3 install sphinx==3.5.4 sphinx-autodoc-typehints==1.12.0 pyarrow==5.0.0 protobuf==3.17.3 grpcio==1.39.0 bitstring==3.1.9
+                  pip3 install sphinx==3.5.4 sphinx-autodoc-typehints==1.12.0 pyarrow==5.0.0 protobuf==3.17.3 grpcio==1.39.0 bitstring==3.1.9 /wheel/*.whl
                   '''
 }
 def sphinxImage = Docker.registerDockerImage(project, 'sphinx') {
