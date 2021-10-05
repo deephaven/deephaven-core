@@ -1,0 +1,24 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'base'
+    id 'com.bmuschko.docker-remote-api'
+}
+
+def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
+
+task prepareDocker(type: Sync) {
+    from 'src/main/docker/Dockerfile'
+    from('src/main/layouts'){
+        into 'layouts'
+    }
+    into dockerfileDir
+}
+
+task buildDocker(type: DockerBuildImage) {
+    dependsOn prepareDocker, project(':web-client-ide').tasks.findByName('buildDocker')
+    inputDir.set(dockerfileDir)
+    images.add('deephaven/demo-web:local-build')
+}
+
+assemble.dependsOn buildDocker

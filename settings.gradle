@@ -177,6 +177,10 @@ include(':application-mode')
 
 include(':util-immutables')
 project(':util-immutables').projectDir = file('Util/util-immutables')
+
+include(':demo-web')
+project(':demo-web').projectDir = file('demo/web')
+
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {

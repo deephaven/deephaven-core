@@ -152,10 +152,10 @@ def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
 
 def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
     DockerTagImage t ->
-        t.imageId = 'deephaven/web:local-build'
+        t.imageId = 'deephaven/demo-web:local-build'
         t.repository = webRepository
         t.tag = webTag
-        t.dependsOn project(':web-client-ide').tasks.findByName('buildDocker')
+        t.dependsOn project(':demo-web').tasks.findByName('buildDocker')
 }
 
 tasks.register('pushAll', DockerPushImage) {
