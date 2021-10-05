@@ -1,4 +1,11 @@
-.. toctree::
-   :maxdepth: 4
 
-   pydeephaven
+Python Modules
+##############
+
+Deephaven python modules.
+
+.. toctree::
+    :glob:
+
+
+    ./code/pydeephaven
