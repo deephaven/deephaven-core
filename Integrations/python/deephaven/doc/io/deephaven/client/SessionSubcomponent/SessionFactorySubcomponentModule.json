@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.client.SessionSubcomponent$SessionFactorySubcomponentModule",
+ "methods": {},
+ "path": "io.deephaven.client.SessionSubcomponent.SessionFactorySubcomponentModule",
+ "typeName": "interface"
+}

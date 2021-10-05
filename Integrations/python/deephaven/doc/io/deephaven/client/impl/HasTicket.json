@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.HasTicket",
+ "methods": {
+  "ticket": "The ticket.\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) the ticket"
+ },
+ "path": "io.deephaven.client.impl.HasTicket",
+ "typeName": "interface"
+}

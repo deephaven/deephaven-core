@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.FetchTableMapResponseOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.grpc.FetchTableMapResponseOrBuilder",
+ "typeName": "interface"
+}

@@ -118,6 +118,18 @@ task createDoPutSprayScript(type: CreateStartScripts) {
             '-XX:+UseStringDeduplication' ]
 }
 
+task createDoPutTableScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.DoPutTable'
+    applicationName = 'do-put-table'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
 applicationDistribution.into('bin') {
     from(createGetSchemaScripts)
     from(createGetTsvScripts)
@@ -127,5 +139,6 @@ applicationDistribution.into('bin') {
     from(createGetTicketTableScript)
     from(createDoPutNewScript)
     from(createDoPutSprayScript)
+    from(createDoPutTableScript)
     fileMode = 0755
 }

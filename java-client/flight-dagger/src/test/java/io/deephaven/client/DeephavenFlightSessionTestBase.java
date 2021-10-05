@@ -15,8 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class DeephavenFlightSessionTestBase extends DeephavenApiServerTestBase {
 
-    private BufferAllocator bufferAllocator;
-    private ScheduledExecutorService sessionScheduler;
+    BufferAllocator bufferAllocator;
+    ScheduledExecutorService sessionScheduler;
     FlightSession flightSession;
 
     @Override

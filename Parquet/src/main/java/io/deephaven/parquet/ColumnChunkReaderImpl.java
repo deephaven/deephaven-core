@@ -247,7 +247,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final Supplier<Dictionary> pageDictionarySupplier =
                         (encoding == PLAIN_DICTIONARY || encoding == RLE_DICTIONARY)
                                 ? dictionarySupplier
-                                : null;
+                                : () -> NULL_DICTIONARY;
                 return new ColumnPageReaderImpl(
                         channelsProvider, decompressor::get, pageDictionarySupplier,
                         path, getFilePath(), fieldTypes,
