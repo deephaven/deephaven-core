@@ -9,10 +9,13 @@ plugins {
     id 'io.quarkus' apply false
     id 'com.bmuschko.docker-remote-api'
 }
+
 if (canQuarkus) {
     plugins.apply 'io.quarkus'
 }
 
+evaluationDependsOn ':demo-grpc-api'
+evaluationDependsOn ':demo-web'
 
 java {
     toolchain {
@@ -144,10 +147,10 @@ def webTag = project.version
 
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
-        t.imageId = 'deephaven/grpc-api:local-build'
+        t.imageId = 'deephaven/demo-grpc-api:local-build'
         t.repository = grpcApiRepository
         t.tag = grpcApiTag
-        t.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
+        t.dependsOn project(':demo-grpc-api').tasks.findByName('buildDocker')
 }
 
 def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
