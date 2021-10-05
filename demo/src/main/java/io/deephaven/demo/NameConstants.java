@@ -45,8 +45,10 @@ public class NameConstants {
     public static final String DH_INGRESS_NAME =
         System.getProperty("dh-ingress-name", "dh-ingress");
     public static final String DH_POD_KEY = System.getProperty("dh-pod-key", "dh-pod-id");
-    public static final String SNAPSHOT_NAME = System.getProperty("DH_SNAPSHOT_NAME", "deephaven-app-0-0-4");
     public static final String REGION = System.getProperty("dh-region", "us-central1");
+    public static final String VERSION = System.getProperty("dh-version", "0.0.5");
+    public static final String VERSION_MANGLE = VERSION.replaceAll("[.]", "-");
+    public static final String SNAPSHOT_NAME = System.getProperty("DH_SNAPSHOT_NAME", "deephaven-app-" + VERSION_MANGLE);
     public static final String DOMAIN;
 
     static {

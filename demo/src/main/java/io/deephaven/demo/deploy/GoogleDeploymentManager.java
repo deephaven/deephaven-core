@@ -128,7 +128,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             if (!createNew(node)) {
                 throw new IllegalStateException("Machine " + node.getHost() + " (" + node.getDomainName() + ") does not exist, and createNew() failed to make the machine.");
             }
-            if (node.getIp() != null && node.getIp().indexOf('.') == -1 && node.getIp().indexOf(':') != -1) {
+            if (node.getIp() != null && node.getIp().indexOf('.') == -1 && node.getIp().indexOf(':') == -1) {
                 // we had a named IP address (normal)... null it out so we replace it w/ the resolved real/current IP
                 node.setIp(null);
             }
@@ -174,7 +174,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     LOG.error("Unknown error deleting dns entry for " + node.getHost() + " @ " + node.getIp(), e);
                     return;
                 }
-                List<String> deleteArgs = Arrays.asList("gcloud", "compute", "snapshots", "delete", "--quiet");
+                List<String> deleteArgs = new ArrayList<>(Arrays.asList("gcloud", "compute", "snapshots", "delete", "--quiet"));
                 deleteArgs.add(node.getHost() + "-clean");
                 deleteArgs.add(node.getHost() + "-finished");
                 try {
@@ -295,14 +295,18 @@ public class GoogleDeploymentManager implements DeploymentManager {
 
     @Override
     public void waitForSsh(Machine node) {
+        waitForSsh(node, TimeUnit.MINUTES.toMillis(2), TimeUnit.MINUTES.toMillis(9));
+    }
+
+    public void waitForSsh(Machine node, long rebootTimeoutMillis, long totalTimeoutMillis) {
         if (node.isSshIsReady()) {
             return;
         }
         LOG.info("Waiting for ssh to respond on " + node.getDomainName());
         // now, wait until the instance is responding to ssh.
-        long minutes = 9;
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(totalTimeoutMillis);
         final long startMillis = System.currentTimeMillis();
-        long limitMillis = startMillis + TimeUnit.MINUTES.toMillis(minutes);
+        final long endMillis = startMillis + totalTimeoutMillis;
         Throwable last_fail;
         boolean printOnce = true;
         boolean rebootLeft = true;
@@ -310,13 +314,13 @@ public class GoogleDeploymentManager implements DeploymentManager {
         while (true) {
             try {
                 Execute.ExecutionResult result;
-                if (rebootLeft && System.currentTimeMillis() - startMillis > TimeUnit.MINUTES.toMillis(2)) {
+                if (rebootLeft && System.currentTimeMillis() - startMillis > rebootTimeoutMillis) {
                     rebootLeft = false;
-                    System.out.println("\nWaited more than two minutes for DNS; rebooting instance " + node.getHost());
+                    System.out.println("\nWaited more than " + TimeUnit.MILLISECONDS.toSeconds(rebootTimeoutMillis) + " minutes for DNS; rebooting instance " + node.getHost());
                     turnOff(node);
                     turnOn(node);
                 }
-                boolean allowFail = System.currentTimeMillis() < limitMillis;
+                boolean allowFail = System.currentTimeMillis() < endMillis;
                 // wait until we can connect to host with ssh
                 result = Execute.sshQuiet( node.getDomainName(), allowFail, "echo ready");
                 if (result.code != 0) {
@@ -324,7 +328,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                         printOnce = false;
                         LOG.warn("ssh either not ready, or fatally misconfigured:");
                         warnResult(result);
-                        LOG.warn("We will continue to loop for " + TimeUnit.MILLISECONDS.toSeconds(limitMillis - System.currentTimeMillis()) + " seconds");
+                        LOG.warn("We will continue to loop for " + TimeUnit.MILLISECONDS.toSeconds(totalTimeoutMillis) + " seconds");
                     }
                     throw new RuntimeException("ssh not ready yet");
                 }
@@ -341,7 +345,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 }
                 System.out.print('.');
             }
-            if (System.currentTimeMillis() > limitMillis) {
+            if (System.currentTimeMillis() > endMillis) {
                 last_fail.printStackTrace();
                 throw new IllegalStateException("Restarted instance " + node.getHost() + ", but took more than " + minutes + " minutes for ssh to work.");
             }
@@ -493,19 +497,22 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("ubuntu-2004-focal-v20210129");
             cmds.add("--image-project");
             cmds.add("ubuntu-os-cloud");
-            // stick our prepare-worker.sh script in here
-            final String prepareSnapshotPath = "/scripts/prepare-" + (machine.isController() ? "controller" : "worker") + ".sh";
-            final InputStream prepareSnapshotScript = GoogleDeploymentManager.class.getResourceAsStream(prepareSnapshotPath);
-            if (prepareSnapshotScript == null) {
-                System.err.println("No " + prepareSnapshotPath + " found in classloader, bailing!");
-                System.exit(98);
+            // stick our prepare-worker.sh or prepare-controller.sh script into desired location.
+            final String scriptName = "prepare-" + (machine.isController() ? "controller" : "worker") + ".sh";
+            if (!new File(localDir, scriptName).exists()) {
+                final String prepareSnapshotPath = "/scripts/" + scriptName;
+                final InputStream prepareSnapshotScript = GoogleDeploymentManager.class.getResourceAsStream(prepareSnapshotPath);
+                if (prepareSnapshotScript == null) {
+                    System.err.println("No " + prepareSnapshotPath + " found in classloader, bailing!");
+                    System.exit(98);
+                }
+                final File scriptFile = new File(localDir, scriptName);
+                final CharSink dest = Files.asCharSink(scriptFile, StandardCharsets.UTF_8);
+                dest.writeFrom(new InputStreamReader(prepareSnapshotScript));
+                scriptFile.setExecutable(true);
             }
-            final File scriptFile = new File(localDir, "prepare-worker.sh");
-            final CharSink dest = Files.asCharSink(scriptFile, StandardCharsets.UTF_8);
-            dest.writeFrom(new InputStreamReader(prepareSnapshotScript));
-            scriptFile.setExecutable(true);
             // set the startup script as the machine startup-script
-            cmds.add("--metadata-from-file=startup-script=" + scriptFile.getAbsolutePath());
+            cmds.add("--metadata-from-file=startup-script=" + new File(localDir, scriptName).getAbsolutePath());
         } else if (machine.isController()) {
             cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_CONTROLLER);
             cmds.add("--tags=dh-demo,dh-controller");

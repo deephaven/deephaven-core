@@ -29,7 +29,7 @@ services:
       service: grpc-proxy
     depends_on:
       grpc-api:
-        condition: service_healthy
+        condition: "service_healthy"
 
   envoy:
     # A reverse proxy configured for no SSL on localhost. It fronts the requests

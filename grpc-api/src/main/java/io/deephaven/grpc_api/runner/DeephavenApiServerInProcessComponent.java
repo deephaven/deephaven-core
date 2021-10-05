@@ -3,6 +3,7 @@ package io.deephaven.grpc_api.runner;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.grpc_api.appmode.AppMode;
+import io.deephaven.grpc_api.healthcheck.HealthCheckModule;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -19,7 +20,8 @@ import java.util.concurrent.TimeUnit;
 @Singleton
 @Component(modules = {
         DeephavenApiServerModule.class,
-        ServerBuilderInProcessModule.class
+        ServerBuilderInProcessModule.class,
+        HealthCheckModule.class
 })
 public interface DeephavenApiServerInProcessComponent {
 

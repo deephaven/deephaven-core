@@ -56,10 +56,13 @@ public interface DeephavenApiServerComponent {
 
     static void startMain(PrintStream out, PrintStream err, final Configuration config)
             throws IOException, InterruptedException, ClassNotFoundException {
+        final int port = config.getIntegerWithDefault("grpc-api.port", 8888);
+        final Logger log = LoggerFactory.getLogger(DeephavenApiServerComponent.class);
+        log.info().append("grpc-api port is: ").append(port).endl();
         final DeephavenApiServerComponent injector = DaggerDeephavenApiServerComponent
                 .builder()
                 .withSchedulerPoolSize(4)
-                .withPort(config.getIntegerWithDefault("grpc-api.port", 8888))
+                .withPort(port)
                 .withSessionTokenExpireTmMs(300000) // defaults to 5 min
                 .withOut(out)
                 .withErr(err)

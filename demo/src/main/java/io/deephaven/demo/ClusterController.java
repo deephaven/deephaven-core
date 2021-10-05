@@ -52,9 +52,12 @@ public class ClusterController {
         this(new GoogleDeploymentManager("/tmp"));
     }
     public ClusterController(@NotNull final GoogleDeploymentManager manager) {
+        this(manager, true);
+    }
+    public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadMachines) {
         this.manager = manager;
         this.client = new OkHttpClient();
-        latch = new CountDownLatch(4);
+        latch = new CountDownLatch(loadMachines ? 4 : 2);
         if (manager == null) {
             throw new NullPointerException("Manager cannot be null");
         }
@@ -62,24 +65,28 @@ public class ClusterController {
         this.domains = new DomainPool();
         this.machines = new MachinePool();
 
+        // always load IPs... we want them in cases when we manually create named machines
         setTimer("Load Unused IPs", this::loadIpsUnused);
-        setTimer("Load Machines", this::loadMachines);
         setTimer("Load Used IPs", this::loadIpsUsed);
-        setTimer("Load Domains", this::loadDomains);
-        setTimer("Wait until loaded", ()->{
-            waitUntilReady();
-            // a little extra delay: give user a chance to request a machine before we possibly clean it up!
-            setTimer("Refresh state", ()-> {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                checkState();
-                monitorLoop();
+        if (loadMachines) {
+            // don't load machines or start any other controller threads if we are manually creating machines (ImageDeployer)
+            setTimer("Load Machines", this::loadMachines);
+            setTimer("Load Domains", this::loadDomains);
+            setTimer("Wait until loaded", ()->{
+                waitUntilReady();
+                // a little extra delay: give user a chance to request a machine before we possibly clean it up!
+                setTimer("Refresh state", ()-> {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                    checkState();
+                    monitorLoop();
+                });
             });
-        });
+        }
     }
 
     public static void setTimer(String name, Runnable r) {
@@ -474,6 +481,10 @@ public class ClusterController {
         manager.assignDns(Stream.of(machine));
     }
 
+    public IpMapping requestIp() {
+        waitUntilReady();
+        return ips.getUnusedIp(this);
+    }
     public Collection<IpMapping> requestNewIps(int numIps) {
         final List<IpMapping> list = new ArrayList<>();
 

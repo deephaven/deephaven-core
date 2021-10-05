@@ -11,8 +11,8 @@ services:
       #
       # To turn on debug logging, add: -Dlogback.configurationFile=logback-debug.xml
       - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
-      - DH_TLS_CHAIN=/etc/ssl/internal/tls.crt
-      - DH_TLS_KEY=/etc/ssl/internal/tls.key.pk8
+      #- DH_TLS_CHAIN=/etc/ssl/internal/tls.crt
+      #- DH_TLS_KEY=/etc/ssl/internal/tls.key.pk8
 
 
     expose:
@@ -24,8 +24,8 @@ services:
     # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
     volumes:
       - ./data:/data
-      - /etc/ssl/internal:/etc/ssl/internal
-      - /etc/ssl/dh:/etc/ssl/dh
+      #- /etc/ssl/internal:/etc/ssl/internal
+      #- /etc/ssl/dh:/etc/ssl/dh
 
     deploy:
       resources:
@@ -78,9 +78,9 @@ services:
     ports:
       - "${PORT}:10000"
 #      - '9090:9090' #envoy admin
-    volumes:
-      - /etc/ssl/dh:/etc/ssl/dh
-      - /etc/ssl/internal:/etc/ssl/internal
+    #volumes:
+    #  - /etc/ssl/dh:/etc/ssl/dh
+    #  - /etc/ssl/internal:/etc/ssl/internal
     deploy:
       resources:
         limits:

@@ -1,10 +1,16 @@
 package io.deephaven.demo.deploy;
 
+import io.deephaven.demo.ClusterController;
+import io.deephaven.demo.NameConstants;
 import org.apache.commons.io.IOUtils;
 import org.jboss.logging.Logger;
 
 import java.io.*;
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
+import static io.deephaven.demo.NameConstants.SNAPSHOT_NAME;
 
 /**
  * ImageDeployer:
@@ -26,9 +32,24 @@ public class ImageDeployer {
 
     private void deploy(final String version, String machinePrefix) throws IOException, InterruptedException {
         final String localDir = System.getProperty("java.io.tmpdir", "/tmp") + "/dh_deploy_" + version;
-        concatScripts(localDir, "prepare-worker.sh", "gen-certs.sh", "prepare-worker.sh");
-        concatScripts(localDir, "prepare-controller.sh", "gen-certs.sh", "prepare-controller.sh");
+        concatScripts(localDir, "prepare-worker.sh",
+                "script-header.sh",
+                "setup-docker.sh",
+                "get-credentials.sh",
+                "gen-certs.sh",
+                "prepare-worker.sh",
+                "pull-images.sh",
+                "finish-setup.sh");
+        concatScripts(localDir, "prepare-controller.sh",
+                "script-header.sh",
+                "setup-docker.sh",
+                "get-credentials.sh",
+                "gen-certs.sh",
+                "prepare-controller.sh",
+                "pull-images.sh",
+                "finish-setup.sh");
         GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
+        ClusterController ctrl = new ClusterController(manager, false);
         String prefix = machinePrefix + (machinePrefix.isEmpty() || machinePrefix.endsWith("-") ? "" : "-");
         String workerBox = prefix + "worker"; //ancestor-worker
         String controllerBox = prefix + "controller"; // ancestor=controller
@@ -38,21 +59,31 @@ public class ImageDeployer {
         GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", controllerBox);
 
         LOG.info("Creating new worker template box");
+        final IpMapping ip = ctrl.requestIp();
         Machine worker = new Machine(workerBox);
+        worker.setIp(ip.getName());
         worker.setSnapshotCreate(true);
         // The manager itself has code to select our prepare-worker.sh script as machine startup script
         manager.createMachine(worker);
         manager.assignDns(Stream.of(worker));
-        manager.waitForSsh(worker);
-        LOG.info("Worker is ready to be tested and converted to an image. You can test this machine here:" +
+        manager.waitForSsh(worker, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
+
+        LOG.info("Worker is ready to be tested and converted to an image. You can test this machine here:\n" +
                 "Web: https://" + worker.getDomainName() + "\n" +
                 "ssh " + worker.getDomainName() + " # Only if you've opened port 22, which you should NOT on public internet\n" +
                 "gcloud compute ssh " + worker.getHost() + " --project " + GoogleDeploymentManager.getGoogleProject());
 
         // TODO wait until we can reach /health, do some other kind of testing
-
-//        manager.turnOff(worker);
         // TODO: turn it back on, wait again until /health works, to verify that iptables rules are persisting across restarts
+
+
+        manager.turnOff(worker);
+        GoogleDeploymentManager.gcloud(true, false,"images", "delete", "-q", SNAPSHOT_NAME);
+        GoogleDeploymentManager.gcloud(false, false,"images", "create", SNAPSHOT_NAME,
+                "--source-disk", worker.getHost(), "--source-disk-zone", GoogleDeploymentManager.getGoogleZone());
+
+        manager.destroyCluster(Collections.singletonList(worker), "");
+        LOG.info("Done creating new worker image " + SNAPSHOT_NAME);
 
 
     }
@@ -60,8 +91,16 @@ public class ImageDeployer {
     private void concatScripts(final String into, final String outputFilename, final String ... scripts) throws IOException {
         final File outFile = new File(into, outputFilename);
         outFile.getParentFile().mkdirs();
-        outFile.delete();
-        try (final FileOutputStream out = new FileOutputStream(outFile)) {
+        if (outFile.isFile()) {
+            if (!outFile.delete()) {
+                throw new IllegalStateException("Unable to delete file " + outFile);
+            }
+        }
+        if (!outFile.createNewFile()) {
+            throw new IllegalStateException("Unable to create new file: " + outFile);
+        }
+
+        try (final FileOutputStream out = new FileOutputStream(outFile, true)) {
             for (String script : scripts) {
                 try(final InputStream in = ImageDeployer.class.getResourceAsStream("/scripts/" + script)) {
                     if (in == null) {
@@ -72,6 +111,7 @@ public class ImageDeployer {
                     for (int r;
                          (r = in.read(bytes, 0, num)) > 0;
                     ) {
+                        LOG.infof("Wrote %s bytes from scripts/%s to %s", r, script, outputFilename);
                         out.write(bytes, 0, r);
                     }
                     out.write('\n');

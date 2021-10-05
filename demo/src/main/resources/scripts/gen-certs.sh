@@ -288,7 +288,7 @@ chmod a+r "${KEY_FILE}.pk8"
 chmod a+r "${KEY_FILE}"
 
 if [[ -z "$MY_POD_IP" ]]; then
-  if [ "$DEPLOY_GOOGLE" = y ]; then
+  if [ "${DEPLOY_GOOGLE:-n}" = y ]; then
     if (( KEY_LENGTH == 2048 )); then
         PROJECT_ID="${PROJECT_ID:-deephaven-oss}"
         GCLOUD_CERT_NAME="${GCLOUD_CERT_NAME:-deephaven-app-cert}"

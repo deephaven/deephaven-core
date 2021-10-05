@@ -188,6 +188,6 @@ public class Machine {
     }
 
     public DomainMapping domain() {
-        return domainInUse == null ? new DomainMapping(host, domainName.replace(host + ".", "")) : domainInUse;
+        return domainInUse == null ? new DomainMapping(host, getDomainName().replace(host + ".", "")) : domainInUse;
     }
 }

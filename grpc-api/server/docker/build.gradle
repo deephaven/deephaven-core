@@ -123,7 +123,7 @@ docker {
     // will not attempt to start). If the server is running but trying to shut down, failure will
     // occur within about 9s, as the port will connect correctly, but respond that it isn't
     // available.
-    instruction('HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8080 -connect-timeout=10s || exit 1')
+    instruction('HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8888 -connect-timeout=10s ${EXTRA_HEALTH_ARGS} || exit 1')
   }
 }
 
