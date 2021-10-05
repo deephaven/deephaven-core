@@ -181,6 +181,9 @@ project(':util-immutables').projectDir = file('Util/util-immutables')
 include(':demo-web')
 project(':demo-web').projectDir = file('demo/web')
 
+include(':demo-grpc-api')
+project(':demo-grpc-api').projectDir = file('demo/grpc-api')
+
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {

@@ -1,0 +1,37 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+evaluationDependsOn ':grpc-api-server-docker'
+
+dependencies {
+    // To be provided by the DH environment
+    //compileOnly 'io.deephaven:deephaven-table-api:0.5.0'
+    //compileOnly 'io.deephaven:deephaven-qst:0.5.0'
+}
+
+def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    it.from 'src/main/docker/Dockerfile'
+    it.from('src/main/app.d') {
+        into 'app.d'
+    }
+    it.from(configurations.runtimeClasspath) {
+        into 'libs'
+    }
+    it.from(jar) {
+        into 'libs'
+    }
+    it.into dockerfileDir
+}
+
+def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
+    it.dependsOn prepareDocker, project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
+    it.inputDir.set(dockerfileDir)
+    it.images.add('deephaven/demo-grpc-api:local-build')
+}
+
+assemble.dependsOn buildDocker
