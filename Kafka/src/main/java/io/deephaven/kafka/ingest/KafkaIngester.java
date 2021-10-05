@@ -25,20 +25,8 @@ import java.util.function.IntPredicate;
 import java.util.function.IntToLongFunction;
 
 /**
- * An ingester that replicates a Apache Kafka topic to a Deephaven Table Writer.
- *
- * <p>
- * Each KafkaIngester is assigned a topic and a subset of Kafka partitions. Each Kafka partition is mapped to a
- * Deephaven internal partition. The column partition can be set through the constructor, or defaults to
- * {@link DBTimeUtils#currentDateNy()}.
- * </p>
- *
- * <p>
- * Automatic partition assignment and rebalancing are not supported. Each Kafka ingester instance must uniquely control
- * its checkpoint record, which is incompatible with rebalancing.
- * </p>
- *
- * 
+ * An ingester that consumes an Apache Kafka topic and a subset of its partitions via one or more
+ * {@link KafkaStreamConsumer stream consumers}.
  */
 public class KafkaIngester {
     private static final int REPORT_INTERVAL_MS = Configuration.getInstance().getIntegerForClassWithDefault(
@@ -79,8 +67,6 @@ public class KafkaIngester {
 
     /**
      * A predicate for handling a range of partitions.
-     *
-     *
      */
     public static class PartitionRange implements IntPredicate {
         final int startInclusive;
@@ -110,8 +96,6 @@ public class KafkaIngester {
 
     /**
      * A predicate for handling a single partition.
-     *
-     * 
      */
     public static class SinglePartition extends PartitionRange {
         /**
@@ -126,8 +110,6 @@ public class KafkaIngester {
 
     /**
      * A predicate for evenly distributing partitions among a set of ingesters.
-     *
-     * 
      */
     public static class PartitionRoundRobin implements IntPredicate {
         final int consumerIndex;
