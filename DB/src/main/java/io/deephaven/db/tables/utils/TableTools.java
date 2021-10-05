@@ -57,6 +57,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
+import java.nio.file.Path;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -397,8 +398,10 @@ public class TableTools {
      * @param is an InputStream providing access to the CSV data.
      * @return a Deephaven DynamicTable object
      * @throws IOException if the InputStream cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(InputStream)}
      */
     @ScriptApi
+    @Deprecated
     public static DynamicTable readCsv(InputStream is) throws IOException {
         return (DynamicTable) CsvHelpers.readCsv(is);
     }
@@ -411,8 +414,10 @@ public class TableTools {
      * @param separator a char to use as the delimiter value when parsing the file.
      * @return a Deephaven DynamicTable object
      * @throws IOException if the InputStream cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(InputStream, char)}
      */
     @ScriptApi
+    @Deprecated
     public static DynamicTable readCsv(InputStream is, final char separator) throws IOException {
         return (DynamicTable) CsvHelpers.readCsv(is, separator);
     }
@@ -424,10 +429,12 @@ public class TableTools {
      * @param filePath the fully-qualified path to a CSV file to be read.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(String)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(String filePath) throws IOException {
-        return CsvHelpers.readCsv(filePath, CsvSpecs.csv());
+        return CsvHelpers.readCsv(filePath);
     }
 
     /**
@@ -439,8 +446,10 @@ public class TableTools {
      *        use as a delimiter.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(String filePath, String format) throws IOException {
         return CsvHelpers.readCsv(filePath, CsvSpecs.fromLegacyFormat(format));
     }
@@ -452,10 +461,12 @@ public class TableTools {
      * @param file a file object providing access to the CSV file to be read.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(Path)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(File file) throws IOException {
-        return CsvHelpers.readCsv(file.toPath(), CsvSpecs.csv());
+        return CsvHelpers.readCsv(file.toPath());
     }
 
     /**
@@ -464,6 +475,7 @@ public class TableTools {
      * @param filePath the fully-qualified path to a CSV file to be read.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(String, CsvSpecs)}
      */
     @ScriptApi
     @Deprecated
@@ -478,8 +490,10 @@ public class TableTools {
      * @param header Column names to use for the resultant table.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(String, CsvSpecs)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readHeaderlessCsv(String filePath, Collection<String> header) throws IOException {
         final List<Selectable> views = new ArrayList<>();
         int index = 0;
@@ -497,8 +511,10 @@ public class TableTools {
      * @param header Column names to use for the resultant table.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(String, CsvSpecs)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readHeaderlessCsv(String filePath, String... header) throws IOException {
         return readHeaderlessCsv(filePath, Arrays.asList(header));
     }

@@ -10,14 +10,8 @@ import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.csv.CsvSpecs;
 import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.io.InputStreamFactory;
 import io.deephaven.io.streams.BzipFileOutputStream;
-import io.deephaven.io.streams.SevenZipInputStream;
-import io.deephaven.io.streams.SevenZipInputStream.Behavior;
 import io.deephaven.util.annotations.ScriptApi;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
-import org.apache.tools.tar.TarInputStream;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedWriter;
@@ -26,13 +20,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipInputStream;
 
 /**
  * Utilities for reading and writing CSV files to and from {@link Table}s
@@ -428,10 +418,16 @@ public class CsvHelpers {
      *        use as a delimiter.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
+     * @deprecated See {@link #readCsv(InputStream, CsvSpecs)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(InputStream is, final String format) throws IOException {
-        return readCsv(is, CsvSpecs.fromLegacyFormat(format));
+        final CsvSpecs specs = CsvSpecs.fromLegacyFormat(format);
+        if (specs == null) {
+            throw new IllegalArgumentException(String.format("Unable to map legacy format '%s' into CsvSpecs", format));
+        }
+        return readCsv(is, specs);
     }
 
     /**
@@ -442,8 +438,10 @@ public class CsvHelpers {
      * @param separator a char to use as the delimiter value when parsing the file.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
+     * @deprecated See {@link #readCsv(InputStream, CsvSpecs)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(InputStream is, final char separator) throws IOException {
         return InMemoryTable.from(CsvSpecs.builder().delimiter(separator).build().parse(is));
     }
@@ -452,9 +450,13 @@ public class CsvHelpers {
      * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
      * inferred from the data.
      *
+     * <p>
+     * Equivalent to {@code readCsv(is, CsvSpecs.csv())}
+     *
      * @param is an InputStream providing access to the CSV data.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
+     * @see #readCsv(InputStream, CsvSpecs)
      */
     @ScriptApi
     public static Table readCsv(InputStream is) throws IOException {
@@ -462,72 +464,73 @@ public class CsvHelpers {
     }
 
     /**
-     * Opens a file, returning an input stream. Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z",
-     * ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst", or ".tar" will have appropriate decompression applied. The
-     * returned stream may or may not be buffered.
+     * Returns a memory table created by importing CSV data.
      *
-     * @param path the path
-     * @return the input stream, potentially decompressed
+     * <p>
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(file, CsvSpecs.csv())}.
+     *
+     * @param file the file
+     * @return the table
      * @throws IOException if an I/O exception occurs
-     * @see Files#newInputStream(Path, OpenOption...)
+     * @see #readCsv(String, CsvSpecs)
      */
-    public static InputStream open(Path path) throws IOException {
-        final String fileName = path.getFileName().toString();
-        if (fileName.endsWith(".zip")) {
-            final ZipInputStream in = new ZipInputStream(Files.newInputStream(path));
-            in.getNextEntry();
-            return fileName.endsWith(".tar.zip") ? untar(in) : in;
-        }
-        if (fileName.endsWith(".bz2")) {
-            final BZip2CompressorInputStream in = new BZip2CompressorInputStream(Files.newInputStream(path));
-            return fileName.endsWith(".tar.bz2") ? untar(in) : in;
-        }
-        if (fileName.endsWith(".gz")) {
-            final GZIPInputStream in = new GZIPInputStream(Files.newInputStream(path));
-            return fileName.endsWith(".tar.gz") ? untar(in) : in;
-        }
-        if (fileName.endsWith(".7z")) {
-            final SevenZipInputStream in = new SevenZipInputStream(new InputStreamFactory() {
-                @Override
-                public InputStream createInputStream() throws IOException {
-                    return Files.newInputStream(path);
-                }
-
-                @Override
-                public String getDescription() {
-                    return path.toString();
-                }
-            });
-            in.getNextEntry(Behavior.SKIP_WHEN_NO_STREAM);
-            return fileName.endsWith(".tar.7z") ? untar(in) : in;
-        }
-        if (fileName.endsWith(".zst")) {
-            final ZstdCompressorInputStream in = new ZstdCompressorInputStream(Files.newInputStream(path));
-            return fileName.endsWith(".tar.zst") ? untar(in) : in;
-        }
-        if (fileName.endsWith(".tar")) {
-            return untar(Files.newInputStream(path));
-        }
-        return Files.newInputStream(path);
+    @ScriptApi
+    public static Table readCsv(String file) throws IOException {
+        return readCsv(file, CsvSpecs.csv());
     }
 
-    private static TarInputStream untar(InputStream in) throws IOException {
-        final TarInputStream tarInputStream = new TarInputStream(in);
-        tarInputStream.getNextEntry();
-        return tarInputStream;
+    /**
+     * Returns a memory table created by importing CSV data.
+     *
+     * <p>
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(path, CsvSpecs.csv())}.
+     *
+     * @param path the file path
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(Path, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(Path path) throws IOException {
+        return readCsv(path, CsvSpecs.csv());
+    }
+
+    /**
+     * Returns a memory table created by importing CSV data.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(url, CsvSpecs.csv())}.
+     *
+     * @param url the url
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(URL, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(URL url) throws IOException {
+        return readCsv(url, CsvSpecs.csv());
     }
 
     /**
      * Creates an in-memory table from {@code file} according to the {@code specs}.
      *
      * <p>
-     * Paths that end in ".zip", ".bz2", ".gz", ".7z", or ".zst" will be decompressed.
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
      *
      * @param file the file
      * @param specs the csv specs
      * @return the table
      * @throws IOException if an I/O exception occurs
-     * @see #open(Path)
+     * @see PathUtil#open(Path)
      */
     @ScriptApi
     public static Table readCsv(String file, CsvSpecs specs) throws IOException {
@@ -538,17 +541,18 @@ public class CsvHelpers {
      * Creates an in-memory table from {@code path} according to the {@code specs}.
      *
      * <p>
-     * Paths that end in ".zip", ".bz2", ".gz", ".7z", or ".zst" will be decompressed.
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
      *
      * @param path the path
      * @param specs the csv specs
      * @return the table
      * @throws IOException if an I/O exception occurs
-     * @see #open(Path)
+     * @see PathUtil#open(Path)
      */
     @ScriptApi
     public static Table readCsv(Path path, CsvSpecs specs) throws IOException {
-        return InMemoryTable.from(specs.parse(open(path)));
+        return InMemoryTable.from(specs.parse(PathUtil.open(path)));
     }
 
     /**
