@@ -71,6 +71,7 @@ add_module_names = False
 import pydeephaven
 package_roots = [pydeephaven]
 package_excludes = ['._', 'proto']
+docs_title = "Deephaven Python Client API modules."
 
 #########################################################################################################################################################################
 
@@ -137,11 +138,11 @@ def make_rst_tree(package, tree):
         make_rst_tree(p, v)
 
 
-_rst_modules = '''
+_rst_modules = f'''
 Python Modules
 ##############
 
-Deephaven Python Client API modules.
+{docs_title}
 
 .. toctree::
     :glob:

@@ -19,12 +19,16 @@
 project = 'Deephaven'
 copyright = '2021, Deephaven Data Labs'
 author = 'Deephaven Data Labs'
+
+# The full version, including alpha/beta/rc tags
+#release = '0.0.1'
+
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx.ext.viewcode', "sphinx_autodoc_typehints"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -63,6 +67,15 @@ html_theme_options = {
 add_module_names = False
 
 #########################################################################################################################################################################
+
+import deephaven
+import jpy
+package_roots = [jpy, deephaven]
+package_excludes = ['._']
+docs_title = "Deephaven python modules."
+
+#########################################################################################################################################################################
+
 
 import os
 import shutil
@@ -112,7 +125,7 @@ def make_rst_tree(package, tree):
             pn = ".".join(p)
             toctree += "%s%s <%s>\n"%(" "*4,k,pn)
 
-    rst = "%s\n%s\n\n%s\n.. automodule:: %s\n    :members:\n    :undoc-members:\n\n"%(package_name,"="*len(package_name),toctree,package_name)
+    rst = "%s\n%s\n\n%s\n.. automodule:: %s\n    :members:\n    :show-inheritance:\n    :special-members: __init__\n    :undoc-members:\n\n"%(package_name,"="*len(package_name),toctree,package_name)
 
     if len(package) > 0:
         filename = f"code/{package_name}.rst"
@@ -126,11 +139,11 @@ def make_rst_tree(package, tree):
         make_rst_tree(p, v)
 
 
-_rst_modules = '''
+_rst_modules = f'''
 Python Modules
 ##############
 
-Deephaven python modules.
+{docs_title}
 
 .. toctree::
     :glob:
@@ -150,12 +163,8 @@ def make_rst_modules(package_roots):
 
 
 
-import deephaven
-import jpy
-package_roots = [jpy, deephaven]
 pn = glob_package_names(package_roots)
-# remove private modules
-pn = [p for p in pn if not '._' in p]
+pn = [p for p in pn if not any(exclude in p for exclude in package_excludes)]
 pt = package_tree(pn)
 
 if os.path.exists("code"):
