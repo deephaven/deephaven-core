@@ -1,3 +1,5 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
+import com.bmuschko.gradle.docker.tasks.image.DockerTagImage
 import org.gradle.internal.jvm.Jvm
 static boolean getCanQuarkus() { Jvm.current().javaVersion.isJava11Compatible() }
 
@@ -5,6 +7,7 @@ plugins {
     id 'java'
     id 'application'
     id 'io.quarkus' apply false
+    id 'com.bmuschko.docker-remote-api'
 }
 if (canQuarkus) {
     plugins.apply 'io.quarkus'
@@ -131,4 +134,32 @@ if (canQuarkus) {
             buildImage = "quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11"
         }
     }
+}
+
+def grpcApiRepository = project.property('grpcApiRepository')
+def grpcApiTag = project.version
+
+def webRepository = project.property('webRepository')
+def webTag = project.version
+
+def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
+    DockerTagImage t ->
+        t.imageId = 'deephaven/grpc-api:local-build'
+        t.repository = grpcApiRepository
+        t.tag = grpcApiTag
+        t.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
+}
+
+def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
+    DockerTagImage t ->
+        t.imageId = 'deephaven/web:local-build'
+        t.repository = webRepository
+        t.tag = webTag
+        t.dependsOn project(':web-client-ide').tasks.findByName('buildDocker')
+}
+
+tasks.register('pushAll', DockerPushImage) {
+    DockerPushImage p ->
+        p.images = [ "${grpcApiRepository}:${grpcApiTag}", "${webRepository}:${webTag}" ]
+        p.dependsOn tagGrpcApiTask, tagWebTask
 }
