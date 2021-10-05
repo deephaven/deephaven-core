@@ -6,12 +6,16 @@ def archivesBaseNamePrefix = 'deephaven-'
 
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '17')
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '8')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '8')
 
 if (languageLevel > compilerVersion) {
   throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
 }
 if (languageLevel < 8) {
   throw new IllegalArgumentException("languageLevel must be greater than or equal to 8")
+}
+if (runtimeVersion < languageLevel) {
+  throw new IllegalArgumentException("runtimeVersion must be greater than or equal to languageLevel")
 }
 
 archivesBaseName = "${archivesBaseNamePrefix}${project.name}"
@@ -28,9 +32,33 @@ tasks.withType(JavaCompile).configureEach {
     javac.options.encoding = 'UTF-8'
     //javac.options.incremental = true
     javac.options.compilerArgs << '-parameters'
+
+
     if (compilerVersion >= 9) {
       javac.options.release = languageLevel
+
+      // This is for annotation processing
       javac.options.forkOptions.jvmArgs << '--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'
+      //javac.options.forkOptions.jvmArgs << '--add-opens=java.base/java.nio=ALL-UNNAMED'
+
+      if (languageLevel >= 9) {
+        // This is for runtime
+        //javac.options.compilerArgs << '--add-opens=java.base/java.nio=ALL-UNNAMED'
+      }
+    }
+}
+
+tasks.withType(JavaExec).configureEach {
+  JavaExec exec ->
+    exec.javaLauncher = javaToolchains.launcherFor {
+      languageVersion = JavaLanguageVersion.of(runtimeVersion)
+    }
+}
+
+tasks.withType(Test).configureEach {
+  Test test ->
+    test.javaLauncher = javaToolchains.launcherFor {
+      languageVersion = JavaLanguageVersion.of(runtimeVersion)
     }
 }
 
