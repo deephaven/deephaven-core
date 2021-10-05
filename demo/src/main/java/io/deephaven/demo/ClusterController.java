@@ -15,6 +15,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -89,6 +90,15 @@ public class ClusterController {
         }
     }
 
+    public static void setTimer(String name, Callable<?> r) {
+        setTimer(name, ()-> {
+            try {
+                r.call();
+            } catch (Exception e) {
+                LOG.error("Error on thread " + name, e);
+            }
+        });
+    }
     public static void setTimer(String name, Runnable r) {
         new Thread(name) {
             @Override
@@ -544,4 +554,44 @@ public class ClusterController {
         return manager;
     }
 
+    public void waitUntilHealthy(final Machine machine) throws IOException, InterruptedException {
+        final String key = "finished code: ";
+        final String failed = "ran out of tries";
+        final Execute.ExecutionResult result = Execute.ssh(true, machine.getDomainName(), //"bash", "-c",
+//        GoogleDeploymentManager.gcloud(false, true, "ssh", machine.getHost(),
+//                "--command",
+                        "function watch_logs() {\n" +
+                        "  echo Watching log file /var/log/vm-startup.log\n" +
+                        "  while ! test -f /var/log/vm-startup.log ; do sleep 1 ; done\n" +
+                        "  tail -f /var/log/vm-startup.log\n" +
+                        "}\n" +
+                        "function wait_til_ready() {\n" +
+                        "  # we sleep 1 per try, so 720 tries > 12 minutes after ssh is online\n" +
+                        "  local tries=720\n" +
+                        "  echo waiting for localhost:10000 to be responsive\n" +
+                        "  watch_logs &\n" +
+                        "  pid=$!\n" +
+                        "  while (( tries > 0 )) && ! curl -k https://localhost:10000/health &> /dev/null; do\n" +
+                        "    tries=$((tries-1))\n" +
+                        "    (( tries%10 )) || echo \"start-monitor tries remaining: $tries\"\n" +
+                        "    sleep 1\n" +
+                        "  done\n" +
+                        "  kill $pid\n" +
+                        "  if (( tries > 0 )); then\n" +
+                        "    echo \"localhost:10000 is responsive; $(hostname) is alive!\"\n" +
+                        "  else\n" +
+                        "    echo Tried 720 times to reach https://localhost:10000/health but " + failed + "\n" +
+                        "  fi\n" +
+                        "} ; TIMEFORMAT='wait_til_ready exited after: %3Rs' ; time wait_til_ready ; code=$? ; " +
+                        "echo " + key + "${code} ; echo ; sleep 1 ; kill $PPID "
+        );
+        int realCodeLoc = result.out.lastIndexOf(key);
+        if (result.out.contains(failed)) {
+            throw new IllegalStateException("wait_til_ready failed:\n\n" + result.out);
+        }
+        String code = result.out.substring(realCodeLoc + key.length(), result.out.indexOf('\n', realCodeLoc + key.length()));
+        if (!"0".equals(code)) {
+            throw new IllegalStateException("wait_til_ready returned code " + code);
+        }
+    }
 }

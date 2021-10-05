@@ -17,10 +17,12 @@ interface DeploymentManager {
     void createMachine(Machine machine) throws IOException, InterruptedException;
     void destroyCluster(Collection<Machine> allNodes, String diskPrefix) throws IOException;
     boolean turnOn(Machine node) throws IOException, InterruptedException;
+    boolean turnOff(Machine worker) throws IOException, InterruptedException;
 
     void createSnapshot(String snapshotName, ClusterMap map, boolean forceCreate, String prefix) throws IOException, InterruptedException;
     void restoreSnapshot(String snapshotName, ClusterMap map, boolean restart, String prefix);
     Collection<String> findMissingSnapshots(String snapshotName, ClusterMap map);
     void waitForSsh(Machine node);
+
 }
 

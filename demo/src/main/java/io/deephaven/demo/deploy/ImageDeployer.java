@@ -1,11 +1,12 @@
 package io.deephaven.demo.deploy;
 
 import io.deephaven.demo.ClusterController;
-import io.deephaven.demo.NameConstants;
-import org.apache.commons.io.IOUtils;
 import org.jboss.logging.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -55,37 +56,73 @@ public class ImageDeployer {
         String controllerBox = prefix + "controller"; // ancestor=controller
 
         LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
+        // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
+        ClusterController.setTimer("Delete " + controllerBox, ()->
+            GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", controllerBox)
+        );
+        // no need to offthread, the next "expensive" operation we do is to create a clean box.
+        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
         GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", workerBox);
-        GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", controllerBox);
+
 
         LOG.info("Creating new worker template box");
-        final IpMapping ip = ctrl.requestIp();
+        final IpMapping workerIp = ctrl.requestIp();
         Machine worker = new Machine(workerBox);
-        worker.setIp(ip.getName());
+        worker.setIp(workerIp.getName());
         worker.setSnapshotCreate(true);
         // The manager itself has code to select our prepare-worker.sh script as machine startup script
         manager.createMachine(worker);
         manager.assignDns(Stream.of(worker));
+        // even if we're just going to shut the machine down, wait until ssh is responsive
         manager.waitForSsh(worker, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
+        // wait until we can reach /health, so we know the system setup is complete and the server is in a running state.
+        ctrl.waitUntilHealthy(worker);
+        // TODO: have a test to turn machine off and on, wait again until /health works, to verify that iptables rules are persisting across restarts
 
-        LOG.info("Worker is ready to be tested and converted to an image. You can test this machine here:\n" +
-                "Web: https://" + worker.getDomainName() + "\n" +
-                "ssh " + worker.getDomainName() + " # Only if you've opened port 22, which you should NOT on public internet\n" +
-                "gcloud compute ssh " + worker.getHost() + " --project " + GoogleDeploymentManager.getGoogleProject());
+        finishDeploy("Worker", worker, manager);
 
-        // TODO wait until we can reach /health, do some other kind of testing
-        // TODO: turn it back on, wait again until /health works, to verify that iptables rules are persisting across restarts
+        // worker is done, do the controller
+        LOG.info("Creating new controller template box");
+        final IpMapping controllerIp = ctrl.requestIp();
+        Machine controller = new Machine(controllerBox);
+        controller.setIp(controllerIp.getName());
+        // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
+        controller.setController(true);
+        controller.setSnapshotCreate(true);
+        manager.createMachine(controller);
+        manager.assignDns(Stream.of(controller));
+        manager.waitForSsh(controller, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
+        ctrl.waitUntilHealthy(controller);
 
+        finishDeploy("Controller", controller, manager);
 
-        manager.turnOff(worker);
-        GoogleDeploymentManager.gcloud(true, false,"images", "delete", "-q", SNAPSHOT_NAME);
-        GoogleDeploymentManager.gcloud(false, false,"images", "create", SNAPSHOT_NAME,
-                "--source-disk", worker.getHost(), "--source-disk-zone", GoogleDeploymentManager.getGoogleZone());
+    }
 
-        manager.destroyCluster(Collections.singletonList(worker), "");
-        LOG.info("Done creating new worker image " + SNAPSHOT_NAME);
+    private void finishDeploy(final String type, final Machine machine, final DeploymentManager manager) throws IOException, InterruptedException {
+        boolean doDeploy = "true".equals(System.getProperty("deployImage"));
+        LOG.info("Finishing deploy for " + machine);
+        final String typeLower = type.toLowerCase();
+        final String typeUpper = type.toUpperCase();
+        String snapName = SNAPSHOT_NAME + "-" + type;
+        if (doDeploy) {
+            LOG.infof("Creating new %s image %s", typeLower, snapName);
+            manager.turnOff(machine);
+            GoogleDeploymentManager.gcloud(true, false,"images", "delete", "-q", snapName);
+            GoogleDeploymentManager.gcloud(false, false,"images", "create", snapName,
+                    "--source-disk", machine.getHost(), "--source-disk-zone", GoogleDeploymentManager.getGoogleZone());
+            LOG.infof("Done creating new %s image %s", typeLower, snapName);
 
-
+            LOG.infof("Destroying VM %s", machine);
+            manager.destroyCluster(Collections.singletonList(machine), "");
+        } else {
+            LOG.warnf("NOT DEPLOYING %s IMAGE, to deploy, set -DdeployImage=true", typeUpper);
+            if (LOG.isInfoEnabled()) {
+                LOG.info(type + " is ready to be tested and converted to an image. You can test this machine here:\n" +
+                        "Web: https://" + machine.getDomainName() + "\n" +
+                        "ssh " + machine.getDomainName() + " # Only if you've opened port 22, which you should NOT do on public internet\n" +
+                        "gcloud compute ssh " + machine.getHost() + " --project " + GoogleDeploymentManager.getGoogleProject());
+            }
+        }
     }
 
     private void concatScripts(final String into, final String outputFilename, final String ... scripts) throws IOException {

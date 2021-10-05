@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -295,6 +294,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
 
     @Override
     public void waitForSsh(Machine node) {
+        // note: the TTL for our DNS records is 300s, or 5 minutes.  Thus, we'll wait at least 9 minutes the update to propagate
         waitForSsh(node, TimeUnit.MINUTES.toMillis(2), TimeUnit.MINUTES.toMillis(9));
     }
 
@@ -326,7 +326,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 if (result.code != 0) {
                     if (printOnce) {
                         printOnce = false;
-                        LOG.warn("ssh either not ready, or fatally misconfigured:");
+                        LOG.warn("ssh either not ready, or fatally misconfigured for " + node.getDomainName() + ":");
                         warnResult(result);
                         LOG.warn("We will continue to loop for " + TimeUnit.MILLISECONDS.toSeconds(totalTimeoutMillis) + " seconds");
                     }
@@ -497,6 +497,10 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("ubuntu-2004-focal-v20210129");
             cmds.add("--image-project");
             cmds.add("ubuntu-os-cloud");
+            if (!machine.isController()) {
+                // non-controller machines attach the demo-data disk, so we can mount it into worker container
+                cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
+            }
             // stick our prepare-worker.sh or prepare-controller.sh script into desired location.
             final String scriptName = "prepare-" + (machine.isController() ? "controller" : "worker") + ".sh";
             if (!new File(localDir, scriptName).exists()) {
@@ -530,6 +534,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_WORKER);
             cmds.add("--tags=dh-demo,dh-worker");
             cmds.add("--service-account");
+            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
             cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");
             cmds.add("--metadata=startup-script=while ! curl -k https://localhost:10000/health &> /dev/null; do echo 'Waiting for dh stack to come up'; done ; sudo iptables -A PREROUTING -t nat -p tcp --dport 443 -j REDIRECT --to-port 10000 ; sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 10000");
             cmds.add("--image");
@@ -573,7 +578,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         return true;
     }
 
-    boolean turnOff(Machine node) throws IOException, InterruptedException {
+    public boolean turnOff(Machine node) throws IOException, InterruptedException {
         // Turn off a given node
         Execute.ExecutionResult res = execute(
                 "gcloud", "compute", "instances", "stop", node.getHost(),

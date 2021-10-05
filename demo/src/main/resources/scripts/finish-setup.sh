@@ -1,6 +1,6 @@
 SERVICENAME="${SERVICENAME:-dh}"
 DH_DIR="${DH_DIR:-/dh}"
-PORT="${PORT:10000}"
+PORT="${PORT:-10000}"
 docker_compose="$(command -v docker-compose)"
 
 # Create a systemd service that autostarts & manages a docker-compose instance in the current directory (default is /dh)

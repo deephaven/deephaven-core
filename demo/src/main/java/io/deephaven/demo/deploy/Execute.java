@@ -194,12 +194,25 @@ result.err);
         return thread;
     }
 
-    static ExecutionResult ssh(boolean canFail, String machine, String... command) throws IOException, InterruptedException {
+    public static ExecutionResult ssh(boolean canFail, String machine, String... command) throws IOException, InterruptedException {
         if (!machine.contains("@")) {
-            machine = "adminUser" + "@" + machine;
+            String sshUser = System.getProperty("sshUser", "");
+            if (!sshUser.isEmpty()) {
+                machine = sshUser + "@" + machine;
+            }
         }
-        List<String> args = Arrays.asList("ssh", "-i", getAdminSshKey(), "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", machine);
-
+        List<String> args = new ArrayList<>(Arrays.asList("ssh", "-i", getAdminSshKey(),
+                "-o", "IdentitiesOnly=yes",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "UserKnownHostsFile=/dev/null",
+                "-o", "RequestTTY=no",
+                "-o", "BatchMode=yes",
+                "-o", "ServerAliveInterval=10",
+//                "-o", "PermitLocalCommand=yes",
+//                "-o", "LocalCommand=echo local done",
+//                "-o", "LogLevel=DEBUG2",
+                machine));
+        args.addAll(Arrays.asList(command));
         return canFail ? execute(args, getSshEnvMap()) : executeNoFail(args, getSshEnvMap());
     }
 

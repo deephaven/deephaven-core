@@ -16,6 +16,24 @@ function log() {
   echo "$SCRIPT_NAME -- $H_NAME -- $(date) $*"
 }
 
+# TODO: validate certificates are not expired
+
+[[ "active" == $(systemctl is-active dh) ]] && {
+    log "dh service is active, waiting for server to startup"
+    # we'll wait up to 100 seconds before giving up and re-initializing system
+    tries=100
+    while ! (( tries-- )) && ! curl -k https://localhost:10000 &> /dev/null; do
+        echo -n '.'
+        (( tries % 10 )) || echo
+        sleep 1
+    done
+    (( tries )) && {
+        log "Server is running on port 10000, exiting early"
+        exit 0
+    }
+    log "Server did not come up on port 10000 after 100 tries"
+}
+
 MY_UNAME="${MY_UNAME:-$(id -un)}"
 MY_GNAME="${MY_GNAME:-$(id -gn)}"
 
