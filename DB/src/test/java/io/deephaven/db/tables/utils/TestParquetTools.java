@@ -57,7 +57,7 @@ public class TestParquetTools {
                 new String[] {"StringKeys", "GroupedInts"},
                 new Object[] {
                         new String[] {"key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"},
-                        new int[] {1, 1, 2, 2, 2, 3, 3, 3, 3}
+                        new short[] {1, 1, 2, 2, 2, 3, 3, 3, 3}
                 });
         emptyTable = new InMemoryTable(
                 new String[] {"Column1", "Column2"},
@@ -330,7 +330,7 @@ public class TestParquetTools {
         allColumns.add(
                 ColumnDefinition.fromGenericType("Date", String.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         allColumns.add(
-                ColumnDefinition.fromGenericType("Num", int.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+                ColumnDefinition.fromGenericType("Num", short.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         allColumns.addAll(table1.getDefinition().getColumnList());
         final TableDefinition partitionedDefinition = new TableDefinition(allColumns);
 
@@ -338,9 +338,9 @@ public class TestParquetTools {
                 KeyValuePartitionLayout.forParquet(testRootFile, 2), ParquetInstructions.EMPTY);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
-                table1.updateView("Date=`2021-07-20`", "Num=100"),
-                table1.updateView("Date=`2021-07-20`", "Num=200"),
-                table1.updateView("Date=`2021-07-21`", "Num=300")).moveUpColumns("Date", "Num");
+                table1.updateView("Date=`2021-07-20`", "Num=(short)100"),
+                table1.updateView("Date=`2021-07-20`", "Num=(short)200"),
+                table1.updateView("Date=`2021-07-21`", "Num=(short)300")).moveUpColumns("Date", "Num");
         TstUtils.assertTableEquals(expected, result);
     }
 }
