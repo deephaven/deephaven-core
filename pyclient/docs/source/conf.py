@@ -28,9 +28,7 @@ release = '0.0.1'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon']
-#TODO: extensions = ['sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc',
-#              "sphinx_autodoc_typehints"]
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx.ext.viewcode', "sphinx_autodoc_typehints"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -38,7 +36,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["proto"]
+exclude_patterns = []
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -69,6 +67,13 @@ html_theme_options = {
 add_module_names = False
 
 #########################################################################################################################################################################
+
+import pydeephaven
+package_roots = [pydeephaven]
+package_excludes = ['._', 'proto']
+
+#########################################################################################################################################################################
+
 
 import os
 import shutil
@@ -156,9 +161,6 @@ def make_rst_modules(package_roots):
 
 
 
-import pydeephaven
-package_roots = [pydeephaven]
-package_excludes = ['._', 'proto']
 pn = glob_package_names(package_roots)
 pn = [p for p in pn if not any(exclude in p for exclude in package_excludes)]
 pt = package_tree(pn)

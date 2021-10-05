@@ -16,16 +16,12 @@ Deephaven Python Client (pydeephaven) is a Python API built on top of Deephaven�
 Because Deephaven data servers and Deephaven clients including pydeephaven exchange data in the Apache Arrow format, pydeephaven is able to leverage ‘pyarrow’ - the Python bindings of Arrow (https://arrow.apache.org/docs/python/) for data representation and integration with other data analytic tools such as NumPy, Pandas, etc.
 
 Examples:
-
-.. code-block:: python
-
-    from pydeephaven import Session
-    from pyarrow import csv
-    session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
-    table1 = session.import_table(csv.read_csv("data1.csv"))
-    table2 = session.import_table(csv.read_csv("data2.csv"))
-    joined_table = table1.join(table2, keys=["key_col_1", "key_col_2"], columns_to_add=["data_col1"])
-    df = joined_table.snapshot().to_pandas()
-    print(df)
-    session.close()
-
+    >>> from pydeephaven import Session
+    >>> from pyarrow import csv
+    >>> session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
+    >>> table1 = session.import_table(csv.read_csv("data1.csv"))
+    >>> table2 = session.import_table(csv.read_csv("data2.csv"))
+    >>> joined_table = table1.join(table2, keys=["key_col_1", "key_col_2"], columns_to_add=["data_col1"])
+    >>> df = joined_table.snapshot().to_pandas()
+    >>> print(df)
+    >>> session.close()
