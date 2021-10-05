@@ -622,10 +622,10 @@ return a new Sort instance.
  * `String type` - The type of cell color formatting, `BACKGROUND` or `FOREGROUND`.
 
 ##### Class `CustomColumnDateFormat` extends `CustomColumn`
- * `String dateFormat` - Any of the [Java DateFormat](https://docs.oracle.com/javase/7/docs/api/java/text/DateFormat.html) strings.
+ * `String dateFormat` - Any of the [Java DateFormat](https://docs.oracle.com/javase/7/docs/api/java/text/DateFormat.html) strings. See `dh.i18n.DateTimeFormat` for how to format the result.
 
 ##### Class `CustomColumnNumberFormat` extends `CustomColumn`
- * `String numberFormat` - Any of the [Java DecimalFormat](https://docs.oracle.com/javase/7/docs/api/java/text/DecimalFormat.html) strings.
+ * `String numberFormat` - Any of the [Java DecimalFormat](https://docs.oracle.com/javase/7/docs/api/java/text/DecimalFormat.html) strings. See `dh.i18n.NumberFormat` for how to format the result.
 
 ##### Class `CustomColumnRenderer` extends `CustomColumn`
  * `String renderer` - The name of the renderer to use. The UI will need to know how to handle this type of renderer.
