@@ -65,6 +65,7 @@ html_theme_options = {
 
 # A boolean that decides whether module names are prepended to all object names (for object types where a “module” of some kind is defined), e.g. for py:function directives. Default is True.
 add_module_names = False
+autodoc_typehints = 'none'
 
 #########################################################################################################################################################################
 

@@ -8,11 +8,17 @@ from pydeephaven.proto import table_pb2
 
 
 class MatchRule(Enum):
-    LESS_THAN_EQUAL = table_pb2.AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
-    LESS_THAN = table_pb2.AsOfJoinTablesRequest.MatchRule.LESS_THAN
-    GREATER_THAN_EQUAL = table_pb2.AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
-    GREATER_THAN = table_pb2.AsOfJoinTablesRequest.MatchRule.GREATER_THAN
+    """ A enum defining the match rules for the as-of and reverse-as-of joins."""
 
+    """"""
+    LESS_THAN_EQUAL = table_pb2.AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
+    """"""
+    LESS_THAN = table_pb2.AsOfJoinTablesRequest.MatchRule.LESS_THAN
+    """"""
+    GREATER_THAN_EQUAL = table_pb2.AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
+    """"""
+    GREATER_THAN = table_pb2.AsOfJoinTablesRequest.MatchRule.GREATER_THAN
+    """"""
 
 class AggType(Enum):
     SUM = table_pb2.ComboAggregateRequest.AggType.SUM
@@ -32,9 +38,14 @@ class AggType(Enum):
 
 
 class SortDirection(Enum):
+    """A enum defining the sorting orders."""
     UNKNOWN = table_pb2.SortDescriptor.SortDirection.UNKNOWN
+    """"""
     DESCENDING = table_pb2.SortDescriptor.SortDirection.DESCENDING
+    """"""
     ASCENDING = table_pb2.SortDescriptor.SortDirection.ASCENDING
+    """"""
     REVERSE = table_pb2.SortDescriptor.SortDirection.REVERSE
+    """"""
 
 

@@ -56,9 +56,9 @@ class SessionTestCase(BaseTestCase):
         session = Session()
         pa_table = csv.read_csv(self.csv_file)
         table1 = session.import_table(pa_table)
-        table2 = table1.group_by(column_names=["a", "c"]).ungroup(column_names=["b", "d", "e"])
+        table2 = table1.group_by(by=["a", "c"]).ungroup(cols=["b", "d", "e"])
         table3 = table1.where(["a % 2 > 0 && b % 3 == 1"])
-        result_table = session.merge_tables(tables=[table1, table2, table3], key_column="a")
+        result_table = session.merge_tables(tables=[table1, table2, table3], order_by="a")
 
         self.assertTrue(result_table.size > table1.size)
         self.assertTrue(result_table.size > table2.size)
@@ -78,7 +78,7 @@ class SessionTestCase(BaseTestCase):
             tables.append(table1)
 
         for i, table in enumerate(tables[:-1]):
-            j_table = table.natural_join(tables[i + 1], keys=["a", "b", "c", "d", "e"])
+            j_table = table.natural_join(tables[i + 1], on=["a", "b", "c", "d", "e"])
             self.assertEqual(table.size, j_table.size)
 
         for session in sessions:

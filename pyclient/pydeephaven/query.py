@@ -1,10 +1,10 @@
 #
 #  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-
+from pydeephaven import Table
 from pydeephaven._table_ops import *
 from pydeephaven.dherror import DHError
-from pydeephaven._table_interface import TableInterface
+from pydeephaven.table_interface import TableInterface
 
 
 class Query(TableInterface):
@@ -31,13 +31,10 @@ class Query(TableInterface):
     def exec(self):
         """ Execute the query on the server and return the result table.
 
-        Args:
-
         Returns:
-            self
+            a Table object
 
         Raises:
-            
-
+            DHError
         """
         return self.session.table_service.batch(self._ops)
