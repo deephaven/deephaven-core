@@ -120,10 +120,12 @@ public abstract class CsvSpecs {
     }
 
     public static CsvSpecs fromLegacyFormat(String format) {
-        if (format == null || "TRIM".equals(format)) {
+        if (format == null) {
             return CsvSpecs.csv();
         } else if (format.length() == 1) {
             return CsvSpecs.builder().delimiter(format.charAt(0)).build();
+        } else if ("TRIM".equals(format)) {
+            return CsvSpecs.builder().trim(true).build();
         } else if ("DEFAULT".equals(format)) {
             return CsvSpecs.builder().ignoreSurroundingSpaces(false).build();
         } else if ("TDF".equals(format)) {

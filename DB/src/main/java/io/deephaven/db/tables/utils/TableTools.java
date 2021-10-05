@@ -496,7 +496,8 @@ public class TableTools {
     @Deprecated
     public static Table readHeaderlessCsv(String filePath, Collection<String> header) throws IOException {
         final List<Selectable> views = new ArrayList<>();
-        int index = 0;
+        // CsvSpecs.headerless() column names are 1-based index
+        int index = 1;
         for (String h : header) {
             views.add(Selectable.of(ColumnName.of(h), ColumnName.of(String.format("Column%d", index))));
             ++index;
@@ -520,7 +521,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -535,7 +536,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -551,7 +552,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -564,7 +565,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -579,7 +580,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param out the stream to write to
@@ -592,7 +593,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param out the stream to write to
@@ -609,7 +610,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -625,7 +626,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -642,7 +643,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -660,7 +661,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written
@@ -677,7 +678,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written
@@ -694,7 +695,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written

@@ -35,7 +35,143 @@ public class CsvHelpers {
     public final static boolean NULLS_AS_EMPTY_DEFAULT = true;
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(is, CsvSpecs.csv())}
+     *
+     * @param is an InputStream providing access to the CSV data.
+     * @return a Deephaven Table object
+     * @throws IOException if the InputStream cannot be read
+     * @see #readCsv(InputStream, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(InputStream is) throws IOException {
+        return readCsv(is, CsvSpecs.csv());
+    }
+
+    /**
+     * Returns a memory table created by importing CSV data.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(url, CsvSpecs.csv())}.
+     *
+     * @param url the url
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(URL, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(URL url) throws IOException {
+        return readCsv(url, CsvSpecs.csv());
+    }
+
+    /**
+     * Returns a memory table created by importing CSV data.
+     *
+     * <p>
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(file, CsvSpecs.csv())}.
+     *
+     * @param file the file
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(String, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(String file) throws IOException {
+        return readCsv(file, CsvSpecs.csv());
+    }
+
+    /**
+     * Returns a memory table created by importing CSV data.
+     *
+     * <p>
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(path, CsvSpecs.csv())}.
+     *
+     * @param path the file path
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(Path, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(Path path) throws IOException {
+        return readCsv(path, CsvSpecs.csv());
+    }
+
+    /**
+     * Creates an in-memory table from {@code stream} according to the {@code specs}. The {@code stream} will be closed
+     * upon return.
+     *
+     * @param stream the stream
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(InputStream stream, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(stream));
+    }
+
+    /**
+     * Creates an in-memory table from {@code url} according to the {@code specs}.
+     *
+     * @param url the url
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(URL url, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(url.openStream()));
+    }
+
+    /**
+     * Creates an in-memory table from {@code file} according to the {@code specs}.
+     *
+     * <p>
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
+     *
+     * @param file the file
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see PathUtil#open(Path)
+     */
+    @ScriptApi
+    public static Table readCsv(String file, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(PathUtil.open(Paths.get(file))));
+    }
+
+    /**
+     * Creates an in-memory table from {@code path} according to the {@code specs}.
+     *
+     * <p>
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
+     *
+     * @param path the path
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see PathUtil#open(Path)
+     */
+    @ScriptApi
+    public static Table readCsv(Path path, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(PathUtil.open(path)));
+    }
+
+    /**
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -53,7 +189,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -73,7 +209,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -97,7 +233,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out BufferedWriter used to write the CSV
@@ -116,7 +252,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out BufferedWriter used to write the CSV
@@ -248,7 +384,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -263,7 +399,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -279,7 +415,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -296,7 +432,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -315,7 +451,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -444,141 +580,5 @@ public class CsvHelpers {
     @Deprecated
     public static Table readCsv(InputStream is, final char separator) throws IOException {
         return InMemoryTable.from(CsvSpecs.builder().delimiter(separator).build().parse(is));
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * <p>
-     * Equivalent to {@code readCsv(is, CsvSpecs.csv())}
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
-     * @see #readCsv(InputStream, CsvSpecs)
-     */
-    @ScriptApi
-    public static Table readCsv(InputStream is) throws IOException {
-        return readCsv(is, CsvSpecs.csv());
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data.
-     *
-     * <p>
-     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
-     * or ".tar" will be decompressed.
-     *
-     * <p>
-     * Equivalent to {@code readCsv(file, CsvSpecs.csv())}.
-     *
-     * @param file the file
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     * @see #readCsv(String, CsvSpecs)
-     */
-    @ScriptApi
-    public static Table readCsv(String file) throws IOException {
-        return readCsv(file, CsvSpecs.csv());
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data.
-     *
-     * <p>
-     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
-     * or ".tar" will be decompressed.
-     *
-     * <p>
-     * Equivalent to {@code readCsv(path, CsvSpecs.csv())}.
-     *
-     * @param path the file path
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     * @see #readCsv(Path, CsvSpecs)
-     */
-    @ScriptApi
-    public static Table readCsv(Path path) throws IOException {
-        return readCsv(path, CsvSpecs.csv());
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data.
-     *
-     * <p>
-     * Equivalent to {@code readCsv(url, CsvSpecs.csv())}.
-     *
-     * @param url the url
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     * @see #readCsv(URL, CsvSpecs)
-     */
-    @ScriptApi
-    public static Table readCsv(URL url) throws IOException {
-        return readCsv(url, CsvSpecs.csv());
-    }
-
-    /**
-     * Creates an in-memory table from {@code file} according to the {@code specs}.
-     *
-     * <p>
-     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
-     * or ".tar" will be decompressed.
-     *
-     * @param file the file
-     * @param specs the csv specs
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     * @see PathUtil#open(Path)
-     */
-    @ScriptApi
-    public static Table readCsv(String file, CsvSpecs specs) throws IOException {
-        return readCsv(Paths.get(file), specs);
-    }
-
-    /**
-     * Creates an in-memory table from {@code path} according to the {@code specs}.
-     *
-     * <p>
-     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
-     * or ".tar" will be decompressed.
-     *
-     * @param path the path
-     * @param specs the csv specs
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     * @see PathUtil#open(Path)
-     */
-    @ScriptApi
-    public static Table readCsv(Path path, CsvSpecs specs) throws IOException {
-        return InMemoryTable.from(specs.parse(PathUtil.open(path)));
-    }
-
-    /**
-     * Creates an in-memory table from {@code url} according to the {@code specs}.
-     *
-     * @param url the url
-     * @param specs the csv specs
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     */
-    @ScriptApi
-    public static Table readCsv(URL url, CsvSpecs specs) throws IOException {
-        return InMemoryTable.from(specs.parse(url.openStream()));
-    }
-
-    /**
-     * Creates an in-memory table from {@code stream} according to the {@code specs}. The {@code stream} will be closed
-     * upon return.
-     *
-     * @param stream the stream
-     * @param specs the csv specs
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     */
-    @ScriptApi
-    public static Table readCsv(InputStream stream, CsvSpecs specs) throws IOException {
-        return InMemoryTable.from(specs.parse(stream));
     }
 }
