@@ -5,6 +5,8 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
+evaluationDependsOn ':web-client-ide'
+
 def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
 
 task prepareDocker(type: Sync) {
