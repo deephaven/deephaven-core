@@ -9,18 +9,18 @@ evaluationDependsOn ':web-client-ide'
 
 def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
 
-task prepareDocker(type: Sync) {
-    from 'src/main/docker/Dockerfile'
-    from('src/main/layouts'){
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    it.from 'src/main/docker/Dockerfile'
+    it.from('src/main/layouts') {
         into 'layouts'
     }
-    into dockerfileDir
+    it.into dockerfileDir
 }
 
-task buildDocker(type: DockerBuildImage) {
-    dependsOn prepareDocker, project(':web-client-ide').tasks.findByName('buildDocker')
-    inputDir.set(dockerfileDir)
-    images.add('deephaven/demo-web:local-build')
+def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
+    it.dependsOn prepareDocker, project(':web-client-ide').tasks.findByName('buildDocker')
+    it.inputDir.set(dockerfileDir)
+    it.images.add('deephaven/demo-web:local-build')
 }
 
 assemble.dependsOn buildDocker
