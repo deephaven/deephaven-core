@@ -21,7 +21,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -448,7 +447,6 @@ public class TestStreamToTableAdapter {
 
         @Override
         public void register(@NotNull StreamConsumer consumer) {
-
         }
 
         @Override

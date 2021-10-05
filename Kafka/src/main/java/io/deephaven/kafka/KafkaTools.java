@@ -5,7 +5,6 @@
 package io.deephaven.kafka;
 
 import gnu.trove.map.hash.TIntLongHashMap;
-
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.deephaven.UncheckedDeephavenException;
@@ -27,26 +26,26 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
 import io.deephaven.stream.StreamToTableAdapter;
-
+import io.deephaven.util.annotations.ScriptApi;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
-
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.impl.client.HttpClients;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
@@ -433,6 +432,7 @@ public class KafkaTools {
      * @param typeName The friendly name
      * @return The mapped {@link TableType}
      */
+    @ScriptApi
     public static TableType friendlyNameToTableType(@NotNull final String typeName) {
         // @formatter:off
         switch (typeName) {
@@ -672,6 +672,7 @@ public class KafkaTools {
                             valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper));
         };
 
+        final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
         final UnaryOperator<Table> tableConversion =
                 resultType.isAppend ? StreamTableTools::streamToAppendOnlyTable : UnaryOperator.identity();
         final Table result;
@@ -681,6 +682,8 @@ public class KafkaTools {
             partitionToConsumer = (final int partition) -> {
                 final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
                         adapterFactory.get();
+                partitionAdapterPair.getFirst().setShutdownCallback(
+                        () -> kafkaIngesterHolder.getValue().shutdownPartition(partition));
                 final Table partitionTable = tableConversion.apply(partitionAdapterPair.getFirst().table());
                 streamTableMap.enqueueUpdate(() -> Assert.eqNull(streamTableMap.put(partition, partitionTable),
                         "streamTableMap.put(partition, partitionTable)"));
@@ -690,8 +693,10 @@ public class KafkaTools {
             final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair =
                     adapterFactory.get();
             result = tableConversion.apply(singleAdapterPair.getFirst().table());
-            partitionToConsumer = (final int partition) -> new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(),
-                    singleAdapterPair.getFirst());
+            partitionToConsumer = (final int partition) -> {
+                singleAdapterPair.getFirst().setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdown());
+                return new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
+            };
         }
 
         final KafkaIngester ingester = new KafkaIngester(
@@ -701,6 +706,7 @@ public class KafkaTools {
                 partitionFilter,
                 partitionToConsumer,
                 partitionToInitialOffset);
+        kafkaIngesterHolder.setValue(ingester);
         ingester.start();
 
         return result;
