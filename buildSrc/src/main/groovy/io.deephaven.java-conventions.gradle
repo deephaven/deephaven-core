@@ -48,6 +48,14 @@ tasks.withType(JavaCompile).configureEach {
     }
 }
 
+tasks.withType(GroovyCompile).configureEach {
+  // Note: the groovy compiler doesn't seem to like 17, or actually take into account the release option.
+  javaLauncher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(languageLevel)
+  }
+  //options.release = languageLevel
+}
+
 tasks.withType(JavaExec).configureEach {
   JavaExec exec ->
     exec.javaLauncher = javaToolchains.launcherFor {
