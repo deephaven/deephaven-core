@@ -263,21 +263,6 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 localShutdownCallback.run();
             }
         }
-        // CODE REVIEW DISCUSSION: SHOULD WE ATTEMPT THIS CLEANUP? I THINK NOT.
-        // synchronized (this) {
-        // for (int ii = 0; ii < switchSources.length; ++ii) {
-        // switchSources[ii].setNewCurrent((ColumnSource) nullColumnSources[ii]);
-        // }
-        // if (bufferChunkSources != null) {
-        // Arrays.stream(bufferChunkSources).forEach(ChunkColumnSource::clear);
-        // }
-        // if (currentChunkSources != null) {
-        // Arrays.stream(currentChunkSources).forEach(ChunkColumnSource::clear);
-        // }
-        // if (prevChunkSources != null) {
-        // Arrays.stream(prevChunkSources).forEach(ChunkColumnSource::clear);
-        // }
-        // }
     }
 
     @Override
