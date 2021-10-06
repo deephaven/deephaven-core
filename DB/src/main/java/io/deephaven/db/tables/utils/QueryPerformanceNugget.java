@@ -43,8 +43,6 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private final long startTimeNanos;
     private final long startCpuNanos;
     private final long startUserCpuNanos;
-    private final RuntimeMemory.Sample startMemorySample = new RuntimeMemory.Sample();
-    private final RuntimeMemory.Sample endMemorySample = new RuntimeMemory.Sample();
     private final long startAllocatedBytes;
     private final long startPoolAllocatedBytes;
     private volatile QueryState state;
@@ -56,6 +54,9 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private long diffPoolAllocatedBytes;
     private long diffCollections;
     private long diffCollectionTimeMs;
+
+    private final RuntimeMemory.Sample startMemorySample;
+    private final RuntimeMemory.Sample endMemorySample;
 
     private boolean shouldLogMeAndStackParents;
 
@@ -80,6 +81,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      */
     QueryPerformanceNugget(final int evaluationNumber, final int depth,
             final String description, final boolean isUser, final long inputSize) {
+        startMemorySample = new RuntimeMemory.Sample();
+        endMemorySample = new RuntimeMemory.Sample();
         this.evaluationNumber = evaluationNumber;
         this.depth = depth;
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
@@ -113,6 +116,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * Construct a "dummy" nugget, which will never gather any information or be recorded.
      */
     private QueryPerformanceNugget() {
+        startMemorySample = new RuntimeMemory.Sample();
+        endMemorySample = new RuntimeMemory.Sample();
         evaluationNumber = NULL_INT;
         depth = 0;
         description = null;

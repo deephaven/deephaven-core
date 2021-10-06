@@ -48,7 +48,7 @@ public class QueryPerformanceLogLogger
         RowSetter<Long> FreeMemoryChange;
         RowSetter<Long> TotalMemoryChange;
         RowSetter<Long> Collections;
-        RowSetter<Long> CollectionTimeMs;
+        RowSetter<Long> CollectionTimeNanos;
         RowSetter<Long> AllocatedBytes;
         RowSetter<Long> PoolAllocatedBytes;
         RowSetter<Boolean> WasInterrupted;
@@ -68,7 +68,7 @@ public class QueryPerformanceLogLogger
             FreeMemoryChange = row.getSetter("FreeMemoryChange", long.class);
             TotalMemoryChange = row.getSetter("TotalMemoryChange", long.class);
             Collections = row.getSetter("Collections", long.class);
-            CollectionTimeMs = row.getSetter("CollectionTimeMs", long.class);
+            CollectionTimeNanos = row.getSetter("CollectionTimeNanos", long.class);
             AllocatedBytes = row.getSetter("AllocatedBytes", long.class);
             PoolAllocatedBytes = row.getSetter("PoolAllocatedBytes", long.class);
             WasInterrupted = row.getSetter("WasInterrupted", Boolean.class);
@@ -98,7 +98,7 @@ public class QueryPerformanceLogLogger
             this.FreeMemoryChange.setLong(nugget.getDiffFreeMemory());
             this.TotalMemoryChange.setLong(nugget.getDiffTotalMemory());
             this.Collections.setLong(nugget.getDiffCollections());
-            this.CollectionTimeMs.setLong(nugget.getDiffCollectionTimeMs());
+            this.CollectionTimeNanos.setLong(1000L * 1000L * nugget.getDiffCollectionTimeMs());
             this.AllocatedBytes.setLong(nugget.getAllocatedBytes());
             this.PoolAllocatedBytes.setLong(nugget.getPoolAllocatedBytes());
             this.WasInterrupted.setBoolean(nugget.wasInterrupted());
@@ -129,7 +129,7 @@ public class QueryPerformanceLogLogger
                 .add("FreeMemoryChange", long.class)
                 .add("TotalMemoryChange", long.class)
                 .add("Collections", long.class)
-                .add("CollectionTimeMs", long.class)
+                .add("CollectionTimeNanos", long.class)
                 .add("AllocatedBytes", long.class)
                 .add("PoolAllocatedBytes", long.class)
                 .add("WasInterrupted", Boolean.class)

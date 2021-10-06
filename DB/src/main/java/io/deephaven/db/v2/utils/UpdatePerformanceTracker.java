@@ -90,13 +90,11 @@ public class UpdatePerformanceTracker {
         driverThread.start();
     }
 
-    public static void start() {
-        synchronized (UpdatePerformanceTracker.class) {
-            if (started) {
-                return;
-            }
-            started = true;
+    public static synchronized void start() {
+        if (started) {
+            return;
         }
+        started = true;
         getInstance().startThread();
     }
 
@@ -194,9 +192,11 @@ public class UpdatePerformanceTracker {
             } else if (entry.intervalInvocationCount > 0) {
                 if (entry.startTimeNanos > maxStartTimeNanos) {
                     aggregatedSmallUpdatesEntry.endMemSample.copy(entry.endMemSample);
+                    maxStartTimeNanos = entry.startTimeNanos;
                 }
                 if (entry.startTimeNanos < minStartTimeNanos) {
                     aggregatedSmallUpdatesEntry.startMemSample.copy(entry.startMemSample);
+                    minStartTimeNanos = entry.startTimeNanos;
                 }
 
                 aggregatedSmallUpdatesEntry.intervalUsageNanos += entry.intervalUsageNanos;
@@ -301,8 +301,8 @@ public class UpdatePerformanceTracker {
         private long startAllocatedBytes;
         private long startPoolAllocatedBytes;
 
-        private RuntimeMemory.Sample startMemSample;
-        private RuntimeMemory.Sample endMemSample;
+        private final RuntimeMemory.Sample startMemSample;
+        private final RuntimeMemory.Sample endMemSample;
 
         private Entry(final int id, final int evaluationNumber, final int operationNumber,
                 final String description, final String callerLine) {
@@ -347,6 +347,7 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateEnd() {
+            RuntimeMemory.getInstance().read(endMemSample);
             intervalUserCpuNanos = plus(intervalUserCpuNanos,
                     minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
             intervalCpuNanos =
@@ -365,8 +366,6 @@ public class UpdatePerformanceTracker {
             startUserCpuNanos = 0;
             startCpuNanos = 0;
             startTimeNanos = 0;
-
-            RuntimeMemory.getInstance().read(endMemSample);
         }
 
         private void reset() {
@@ -400,8 +399,8 @@ public class UpdatePerformanceTracker {
             return logOutput.append("Entry{").append(", id=").append(id)
                     .append(", evaluationNumber=").append(evaluationNumber)
                     .append(", operationNumber=").append(operationNumber)
-                    .append(", description='").append(description).append('\'').append(", callerLine='")
-                    .append(callerLine).append('\'')
+                    .append(", description='").append(description).append('\'')
+                    .append(", callerLine='").append(callerLine).append('\'')
                     .append(", intervalUsageNanos=").append(intervalUsageNanos)
                     .append(", intervalInvocationCount=").append(intervalInvocationCount)
                     .append(", intervalCpuNanos=").append(intervalCpuNanos)
@@ -422,7 +421,7 @@ public class UpdatePerformanceTracker {
                     .append(", totalMemoryChange=").append(getDiffTotalMemory())
                     .append(", freeMemoryChange=").append(getDiffFreeMemory())
                     .append(", collections=").append(getDiffCollections())
-                    .append(", collectionTimeMs=").append(getDiffCollectionTimeMs())
+                    .append(", collectionTimeNanos=").append(getDiffCollectionTimeNanos())
                     .append('}');
         }
 
@@ -494,8 +493,8 @@ public class UpdatePerformanceTracker {
             return endMemSample.totalCollections - startMemSample.totalCollections;
         }
 
-        public long getDiffCollectionTimeMs() {
-            return endMemSample.totalCollectionTimeMs - startMemSample.totalCollectionTimeMs;
+        public long getDiffCollectionTimeNanos() {
+            return 1000L * 1000L * (endMemSample.totalCollectionTimeMs - startMemSample.totalCollectionTimeMs);
         }
 
         public long getIntervalAllocatedBytes() {

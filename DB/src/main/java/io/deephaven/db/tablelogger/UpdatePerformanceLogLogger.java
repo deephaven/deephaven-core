@@ -57,7 +57,7 @@ public class UpdatePerformanceLogLogger
         RowSetter<Long> FreeMemoryChange;
         RowSetter<Long> TotalMemoryChange;
         RowSetter<Long> Collections;
-        RowSetter<Long> CollectionTimeMs;
+        RowSetter<Long> CollectionTimeNanos;
         RowSetter<Long> EntryIntervalAllocatedBytes;
         RowSetter<Long> EntryIntervalPoolAllocatedBytes;
 
@@ -84,7 +84,7 @@ public class UpdatePerformanceLogLogger
             FreeMemoryChange = row.getSetter("FreeMemoryChange", long.class);
             TotalMemoryChange = row.getSetter("TotalMemoryChange", long.class);
             Collections = row.getSetter("Collections", long.class);
-            CollectionTimeMs = row.getSetter("CollectionTimeMs", long.class);
+            CollectionTimeNanos = row.getSetter("CollectionTimeNanos", long.class);
             EntryIntervalAllocatedBytes = row.getSetter("EntryIntervalAllocatedBytes", long.class);
             EntryIntervalPoolAllocatedBytes = row.getSetter("EntryIntervalPoolAllocatedBytes", long.class);
         }
@@ -115,7 +115,7 @@ public class UpdatePerformanceLogLogger
             this.FreeMemoryChange.setLong(performanceEntry.getDiffFreeMemory());
             this.TotalMemoryChange.setLong(performanceEntry.getDiffTotalMemory());
             this.Collections.setLong(performanceEntry.getDiffCollections());
-            this.CollectionTimeMs.setLong(performanceEntry.getDiffCollectionTimeMs());
+            this.CollectionTimeNanos.setLong(performanceEntry.getDiffCollectionTimeNanos());
             this.EntryIntervalAllocatedBytes.setLong(performanceEntry.getIntervalAllocatedBytes());
             this.EntryIntervalPoolAllocatedBytes.setLong(performanceEntry.getIntervalPoolAllocatedBytes());
         }
@@ -156,7 +156,7 @@ public class UpdatePerformanceLogLogger
                 .add("FreeMemoryChange", long.class)
                 .add("TotalMemoryChange", long.class)
                 .add("Collections", long.class)
-                .add("CollectionTimeMs", long.class)
+                .add("CollectionTimeNanos", long.class)
                 .add("EntryIntervalAllocatedBytes", long.class)
                 .add("EntryIntervalPoolAllocatedBytes", long.class)
 

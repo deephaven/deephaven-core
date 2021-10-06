@@ -31,7 +31,7 @@ public class ProcessMemoryTracker {
     private final MemoryTableLogger<ProcessMemoryLogLogger> processMemLogger;
 
     private ProcessMemoryTracker() {
-        logger = LoggerFactory.getLogger(UpdatePerformanceTracker.class);
+        logger = LoggerFactory.getLogger(ProcessMemoryTracker.class);
         processMemLogger = new MemoryTableLogger<>(
                 logger, new ProcessMemoryLogLogger(), ProcessMemoryLogLogger.getTableDefinition());
     }
@@ -42,13 +42,11 @@ public class ProcessMemoryTracker {
         driverThread.start();
     }
 
-    public static void start() {
-        synchronized (UpdatePerformanceTracker.class) {
-            if (started) {
-                return;
-            }
-            started = true;
+    public static synchronized void start() {
+        if (started) {
+            return;
         }
+        started = true;
         getInstance().startThread();
     }
 
