@@ -99,6 +99,7 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
                       doxygen
                       ''')
     }
+    parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
     containerOutPath = '/project/doc/doxygenoutput'
     copyOut {
         into "$buildDir/cppClientDoxygen"
@@ -119,7 +120,7 @@ makePyDocTask('pydeephavenDocs', 'pydeephaven', [
 ], "$buildDir/pyclient-docs")
 
 
-makePyDocTask('cppClientDocs', 'cpp-client', [
+def cppClientDocs = makePyDocTask('cppClientDocs', 'cpp-client', [
         ("$buildDir/cppClientDoxygen".toString()):'source/doxygenoutput',
         ("$rootDir/cpp-client/doc".toString()):'source',
         ("$rootDir/cpp-client/deephaven".toString()):'deephaven',
@@ -132,5 +133,5 @@ makePyDocTask('cppExamplesDocs', 'cpp-examples', [
         ("$rootDir/cpp-examples/doc".toString()):'source',
         ("$buildDir/cppClientDocs".toString()):'cpp'
 ], "$buildDir/cppExamplesDocs") {
-    //TODO declare dependency once updated to latest
+    it.containerDependencies.dependsOn = cppClientDocs
 }
