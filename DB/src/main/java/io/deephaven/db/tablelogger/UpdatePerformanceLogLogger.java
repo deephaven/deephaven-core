@@ -54,8 +54,6 @@ public class UpdatePerformanceLogLogger
         RowSetter<Long> EntryIntervalInvocationCount;
         RowSetter<Long> FreeMemory;
         RowSetter<Long> TotalMemory;
-        RowSetter<Long> FreeMemoryChange;
-        RowSetter<Long> TotalMemoryChange;
         RowSetter<Long> Collections;
         RowSetter<Long> CollectionTimeNanos;
         RowSetter<Long> EntryIntervalAllocatedBytes;
@@ -81,8 +79,6 @@ public class UpdatePerformanceLogLogger
             EntryIntervalInvocationCount = row.getSetter("EntryIntervalInvocationCount", long.class);
             FreeMemory = row.getSetter("FreeMemory", long.class);
             TotalMemory = row.getSetter("TotalMemory", long.class);
-            FreeMemoryChange = row.getSetter("FreeMemoryChange", long.class);
-            TotalMemoryChange = row.getSetter("TotalMemoryChange", long.class);
             Collections = row.getSetter("Collections", long.class);
             CollectionTimeNanos = row.getSetter("CollectionTimeNanos", long.class);
             EntryIntervalAllocatedBytes = row.getSetter("EntryIntervalAllocatedBytes", long.class);
@@ -112,8 +108,6 @@ public class UpdatePerformanceLogLogger
             this.EntryIntervalInvocationCount.setLong(performanceEntry.getIntervalInvocationCount());
             this.FreeMemory.setLong(performanceEntry.getFreeMemory());
             this.TotalMemory.setLong(performanceEntry.getTotalMemory());
-            this.FreeMemoryChange.setLong(performanceEntry.getDiffFreeMemory());
-            this.TotalMemoryChange.setLong(performanceEntry.getDiffTotalMemory());
             this.Collections.setLong(performanceEntry.getDiffCollections());
             this.CollectionTimeNanos.setLong(performanceEntry.getDiffCollectionTimeNanos());
             this.EntryIntervalAllocatedBytes.setLong(performanceEntry.getIntervalAllocatedBytes());
@@ -153,8 +147,6 @@ public class UpdatePerformanceLogLogger
                 .add("EntryIntervalInvocationCount", long.class)
                 .add("FreeMemory", long.class)
                 .add("TotalMemory", long.class)
-                .add("FreeMemoryChange", long.class)
-                .add("TotalMemoryChange", long.class)
                 .add("Collections", long.class)
                 .add("CollectionTimeNanos", long.class)
                 .add("EntryIntervalAllocatedBytes", long.class)

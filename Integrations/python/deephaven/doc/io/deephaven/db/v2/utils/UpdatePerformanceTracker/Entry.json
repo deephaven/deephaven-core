@@ -4,7 +4,7 @@
   "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
   "getCallerLine": ":return: java.lang.String",
   "getDescription": ":return: java.lang.String",
-  "getDiffCollectionTimeMs": ":return: long",
+  "getDiffCollectionTimeNanos": ":return: long",
   "getDiffCollections": ":return: long",
   "getDiffFreeMemory": ":return: long",
   "getDiffTotalMemory": ":return: long",

@@ -9,7 +9,6 @@ import io.deephaven.util.annotations.ScriptApi;
 public class TableLoggers {
 
     static {
-        UpdatePerformanceTracker.start();
         ProcessMemoryTracker.start();
     }
 
@@ -74,5 +73,13 @@ public class TableLoggers {
     @ScriptApi
     public static QueryTable processMemoryLog() {
         return ProcessMemoryTracker.getInstance().getQueryTable();
+    }
+
+    /**
+     * Start collecting data for query update performance.
+     */
+    @ScriptApi
+    public static void startUpdatePerformanceLog() {
+        UpdatePerformanceTracker.start();
     }
 }
