@@ -475,9 +475,11 @@ public class QueryTableSelectUpdateTest {
         final Table updated = joined.update("LRI=LI*RI", "Str=Long.toString(LRI)");
 
         System.gc();
-        System.gc();
-        final long startUsedMemory =
-                RuntimeMemory.getInstance().totalMemory() - RuntimeMemory.getInstance().freeMemory();
+        System.gc();   // What I tell you two times is true (Snark or not).
+        final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
+        RuntimeMemory.getInstance().read(sample);
+
+        final long startUsedMemory = sample.totalMemory - sample.freeMemory;
 
         for (int step = 0; step < 10000; ++step) {
             final int fstep = step;
@@ -497,8 +499,9 @@ public class QueryTableSelectUpdateTest {
             });
 
             System.gc();
-            final long totalMemory = RuntimeMemory.getInstance().totalMemory();
-            final long freeMemory = RuntimeMemory.getInstance().freeMemory();
+            RuntimeMemory.getInstance().read(sample);
+            final long totalMemory = sample.totalMemory;
+            final long freeMemory = sample.freeMemory;
             final long usedMemory = totalMemory - freeMemory;
             final long deltaUsed = usedMemory - startUsedMemory;
             System.out.println("Step = " + step + ", " + deltaUsed + "(" + usedMemory + "total) used, " + freeMemory
