@@ -301,11 +301,8 @@ public class UpdatePerformanceTracker {
         private long startAllocatedBytes;
         private long startPoolAllocatedBytes;
 
-        private long minFreeMemory;
-        private long maxTotalMemory;
-
-        private long collections;
-        private long collectionTimeMs;
+        private final RuntimeMemory.Sample startMemSample;
+        private final RuntimeMemory.Sample endMemSample;
 
         private Entry(final int id, final int evaluationNumber, final int operationNumber,
                 final String description, final String callerLine) {
@@ -314,6 +311,8 @@ public class UpdatePerformanceTracker {
             this.operationNumber = operationNumber;
             this.description = description;
             this.callerLine = callerLine;
+            startMemSample = new RuntimeMemory.Sample();
+            endMemSample = new RuntimeMemory.Sample();
         }
 
         public final void onUpdateStart() {
@@ -325,6 +324,7 @@ public class UpdatePerformanceTracker {
             startUserCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
             startCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
             startTimeNanos = System.nanoTime();
+            RuntimeMemory.getInstance().read(startMemSample);
         }
 
         public final void onUpdateStart(final Index added, final Index removed, final Index modified,
@@ -347,6 +347,7 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateEnd() {
+            RuntimeMemory.getInstance().read(endMemSample);
             intervalUserCpuNanos = plus(intervalUserCpuNanos,
                     minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
             intervalCpuNanos =
