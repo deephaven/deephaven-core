@@ -184,6 +184,9 @@ project(':demo-web').projectDir = file('demo/web')
 include(':demo-grpc-api')
 project(':demo-grpc-api').projectDir = file('demo/grpc-api')
 
+include(':demo-envoy')
+project(':demo-envoy').projectDir = file('demo/envoy')
+
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {

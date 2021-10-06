@@ -1,0 +1,22 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'base'
+    id 'com.bmuschko.docker-remote-api'
+}
+
+def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    it.from 'src/main/docker/Dockerfile'
+    it.from 'src/main/config/envoy.yaml'
+    it.into dockerfileDir
+}
+
+def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
+    it.dependsOn prepareDocker
+    it.inputDir.set(dockerfileDir)
+    it.images.add('deephaven/demo-envoy:local-build')
+}
+
+assemble.dependsOn buildDocker
