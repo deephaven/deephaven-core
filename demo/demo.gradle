@@ -181,7 +181,7 @@ String envoyTag = project.version
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
         def demoGrpcApi = project(':demo-grpc-api')
-        t.imageId.set demoGrpcApi.property('imageId')
+        t.imageId.set demoGrpcApi.property('imageId') as String
         t.repository.set grpcApiRepository
         t.tag.set grpcApiTag
         t.force.set true
@@ -191,7 +191,7 @@ def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
 def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
     DockerTagImage t ->
         def demoWeb = project(':demo-web')
-        t.imageId.set demoWeb.property('imageId')
+        t.imageId.set demoWeb.property('imageId') as String
         t.repository.set webRepository
         t.tag.set webTag
         t.force.set true
@@ -201,7 +201,7 @@ def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
 def tagEnvoy = tasks.register('tagEnvoy', DockerTagImage) {
     DockerTagImage t ->
         def demoEnvoy = project(':demo-envoy')
-        t.imageId.set demoEnvoy.property('imageId')
+        t.imageId.set demoEnvoy.property('imageId') as String
         t.repository.set envoyRepository
         t.tag.set envoyTag
         t.force.set true
