@@ -16,7 +16,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
     it.dependsOn prepareDocker
     it.inputDir.set(dockerfileDir)
-    it.images.add('deephaven/demo-envoy:local-build')
+    it.images.add((String)project.property('imageId'))
 }
 
 assemble.dependsOn buildDocker

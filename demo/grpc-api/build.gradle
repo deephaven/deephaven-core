@@ -31,7 +31,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
     it.dependsOn prepareDocker, project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
     it.inputDir.set(dockerfileDir)
-    it.images.add('deephaven/demo-grpc-api:local-build')
+    it.images.add((String)project.property('imageId'))
 }
 
 assemble.dependsOn buildDocker

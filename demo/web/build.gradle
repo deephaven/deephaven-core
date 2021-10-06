@@ -24,7 +24,7 @@ def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
     it.dependsOn prepareDocker, project(':web-client-ide').tasks.findByName('buildDocker')
     it.inputDir.set(dockerfileDir)
     it.buildArgs
-    it.images.add('deephaven/demo-web:local-build')
+    it.images.add((String)project.property('imageId'))
 }
 
 assemble.dependsOn buildDocker

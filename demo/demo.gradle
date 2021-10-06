@@ -180,28 +180,32 @@ def envoyTag = project.version
 
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
-        t.imageId.set "deephaven/demo-grpc-api:local-build"
+        def demoGrpcApi = project(':demo-grpc-api')
+        t.imageId.set demoGrpcApi.property('imageId')
         t.repository.set grpcApiRepository
         t.tag.set grpcApiTag
         t.force.set true
-        t.dependsOn project(':demo-grpc-api').tasks.findByName('buildDocker')
+        t.dependsOn demoGrpcApi.tasks.findByName('buildDocker')
 }
 
 def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
     DockerTagImage t ->
-        t.imageId.set "deephaven/demo-web:local-build"
+        def demoWeb = project(':demo-web')
+        t.imageId.set demoWeb.property('imageId')
         t.repository.set webRepository
         t.tag.set webTag
         t.force.set true
-        t.dependsOn project(':demo-web').tasks.findByName('buildDocker')
+        t.dependsOn demoWeb.tasks.findByName('buildDocker')
 }
 
 def tagEnvoy = tasks.register('tagEnvoy', DockerTagImage) {
     DockerTagImage t ->
-        t.imageId = 'deephaven/demo-envoy:local-build'
-        t.repository = envoyRepository
-        t.tag = envoyTag
-        t.dependsOn project(':demo-envoy').tasks.findByName('buildDocker')
+        def demoEnvoy = project(':demo-envoy')
+        t.imageId.set demoEnvoy.property('imageId')
+        t.repository.set envoyRepository
+        t.tag.set envoyTag
+        t.force.set true
+        t.dependsOn demoEnvoy.tasks.findByName('buildDocker')
 }
 
 def tagAll = tasks.register('tagAll') {
