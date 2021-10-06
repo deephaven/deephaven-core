@@ -8,7 +8,8 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.hash.KeyedIntObjectHashMap;
+import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.io.logger.Logger;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -19,7 +20,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.IntToLongFunction;
@@ -39,6 +42,13 @@ public class KafkaIngester {
     private final String topic;
     private final String partitionDescription;
     private final TIntObjectHashMap<KafkaStreamConsumer> streamConsumers = new TIntObjectHashMap<>();
+    private final KeyedIntObjectHashMap<TopicPartition> assignedPartitions =
+            new KeyedIntObjectHashMap<>(new KeyedIntObjectKey.BasicStrict<TopicPartition>() {
+                @Override
+                public int getIntKey(@NotNull final TopicPartition topicPartition) {
+                    return topicPartition.partition();
+                }
+            });
     private final String logPrefix;
     private long messagesProcessed = 0;
     private long messagesWithErr = 0;
@@ -190,32 +200,19 @@ public class KafkaIngester {
             final IntToLongFunction partitionToInitialSeekOffset) {
         this.log = log;
         this.topic = topic;
-        this.partitionDescription = partitionFilter.toString();
-        this.logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
+        partitionDescription = partitionFilter.toString();
+        logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
         kafkaConsumer = new KafkaConsumer(props);
 
-        final Set<TopicPartition> partitionsToAssign = new HashSet<>();
         kafkaConsumer.partitionsFor(topic).stream().filter(pi -> partitionFilter.test(pi.partition()))
                 .map(pi -> new TopicPartition(topic, pi.partition()))
                 .forEach(tp -> {
-                    partitionsToAssign.add(tp);
+                    assignedPartitions.add(tp);
                     streamConsumers.put(tp.partition(), partitionToStreamConsumer.apply(tp.partition()));
                 });
+        assign();
 
-        kafkaConsumer.assign(partitionsToAssign);
-
-        final Set<TopicPartition> assignments = kafkaConsumer.assignment();
-        if (assignments.size() <= 0) {
-            throw new UncheckedDeephavenException("Empty partition assignments");
-        }
-        log.info().append(logPrefix).append("Partition Assignments: ").append(assignments.toString()).endl();
-
-        if (assignments.size() != partitionsToAssign.size()) {
-            throw new UncheckedDeephavenException(logPrefix + "Partition assignments do not match request: assignments="
-                    + assignments + ", request=" + partitionsToAssign);
-        }
-
-        for (final TopicPartition topicPartition : assignments) {
+        for (final TopicPartition topicPartition : assignedPartitions) {
             final long seekOffset = partitionToInitialSeekOffset.applyAsLong(topicPartition.partition());
             if (seekOffset == SEEK_TO_BEGINNING) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to beginning.")
@@ -230,6 +227,15 @@ public class KafkaIngester {
                         .append(seekOffset).append(".").endl();
                 kafkaConsumer.seek(topicPartition, seekOffset);
             }
+        }
+    }
+
+    private void assign() {
+        synchronized (assignedPartitions) {
+            kafkaConsumer.assign(assignedPartitions.values());
+            log.info().append(logPrefix).append("Partition Assignments: ")
+                    .append(assignedPartitions.values().toString())
+                    .endl();
         }
     }
 
@@ -355,11 +361,17 @@ public class KafkaIngester {
         }
         final boolean becameEmpty;
         synchronized (streamConsumers) {
-            becameEmpty = streamConsumers.remove(partition) != null && streamConsumers.isEmpty();
+            if (streamConsumers.remove(partition) == null) {
+                return;
+            }
+            becameEmpty = streamConsumers.isEmpty();
         }
+        assignedPartitions.remove(partition);
         if (becameEmpty) {
             done = true;
             kafkaConsumer.wakeup();
+        } else {
+            assign();
         }
     }
 }
