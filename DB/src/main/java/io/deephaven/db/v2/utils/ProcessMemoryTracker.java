@@ -67,7 +67,11 @@ public class ProcessMemoryTracker {
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
                 final long endTimeMillis = System.currentTimeMillis();
-                logProcessMem(intervalStartTimeMillis, endTimeMillis, memSample, prevTotalCollections,
+                logProcessMem(
+                        intervalStartTimeMillis,
+                        endTimeMillis,
+                        memSample,
+                        prevTotalCollections,
                         prevTotalCollectionTimeMs);
             }
         }
@@ -80,11 +84,11 @@ public class ProcessMemoryTracker {
         try {
             processMemLogger.getTableLogger().log(
                     startMillis,
-                    endMillis - startMillis,
+                    1000L * 1000L * (endMillis - startMillis),
                     sample.totalMemory,
                     sample.freeMemory,
                     sample.totalCollections - prevTotalCollections,
-                    sample.totalCollectionTimeMs - prevTotalCollectionTimeMs);
+                    1000L * 1000L * (sample.totalCollectionTimeMs - prevTotalCollectionTimeMs));
         } catch (IOException e) {
             // Don't want to log this more than once in a report
             logger.error().append("Error sending ProcessMemoryLog data to memory").append(e).endl();

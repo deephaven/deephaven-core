@@ -475,7 +475,7 @@ public class QueryTableSelectUpdateTest {
         final Table updated = joined.update("LRI=LI*RI", "Str=Long.toString(LRI)");
 
         System.gc();
-        System.gc();   // What I tell you two times is true (Snark or not).
+        System.gc(); // What I tell you two times is true (Snark or not).
         final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
         RuntimeMemory.getInstance().read(sample);
 
