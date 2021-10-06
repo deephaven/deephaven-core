@@ -10,7 +10,6 @@ evaluationDependsOn ':Integrations'
 evaluationDependsOn ':pyclient'
 
 def copyPyClientWhl = tasks.register('copyPyClientWhl', Sync) {
-    dependsOn ':pyclient:buildPyClient'
     from project(':pyclient').tasks.named('buildPyClient').get().outputs.files
     into layout.buildDirectory.file('sphinx-image/wheel/')
 }
@@ -25,6 +24,7 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
                   pip3 install sphinx==3.5.4 sphinx-autodoc-typehints==1.12.0 pyarrow==5.0.0 protobuf==3.17.3 grpcio==1.39.0 bitstring==3.1.9 /wheel/*.whl
                   '''
 }
+
 def sphinxImage = Docker.registerDockerImage(project, 'sphinx') {
     inputs.files sphinxDockerfile.get().outputs.files
     inputs.files copyPyClientWhl.get().outputs.files
