@@ -12,7 +12,6 @@ import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableLoggerImpl2;
 import io.deephaven.tablelogger.WritableRowContainer;
-import io.deephaven.util.QueryConstants;
 
 import java.io.IOException;
 
@@ -35,15 +34,6 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
                 final long intervalCollection, final long intervalCollectionTimeMs) throws IOException;
     }
 
-    private static float pct(final long intervalCollectionTimeNanos, final long intervalDurationNanos) {
-        if (intervalDurationNanos == 0) {
-            return QueryConstants.NULL_FLOAT;
-        }
-        final float pct = (float) (intervalCollectionTimeNanos * 100.0 / intervalDurationNanos);
-        // The samples are not perfect; let's not confuse our users.
-        return Math.min(pct, 1.0F);
-    }
-
     class DirectSetter extends TableLoggerImpl2.BaseSetter implements ISetter {
         RowSetter<DBDateTime> IntervalStartTime;
         RowSetter<Long> IntervalDurationNanos;
@@ -60,7 +50,6 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
             FreeMemory = row.getSetter("FreeMemory", long.class);
             IntervalCollections = row.getSetter("IntervalCollections", long.class);
             IntervalCollectionTimeNanos = row.getSetter("IntervalCollectionTimeNanos", long.class);
-            IntervalCollectionTimePercent = row.getSetter("IntervalCollectionTimePercent", float.class);
         }
 
         @Override
@@ -76,7 +65,6 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
             this.FreeMemory.set(freeMemory);
             this.IntervalCollections.set(intervalCollections);
             this.IntervalCollectionTimeNanos.set(intervalCollectionTimeNanos);
-            this.IntervalCollectionTimePercent.set(pct(intervalCollectionTimeNanos, intervalDurationNanos));
         }
     }
 
@@ -95,8 +83,7 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
                 .add("TotalMemory", long.class)
                 .add("FreeMemory", long.class)
                 .add("IntervalCollections", long.class)
-                .add("IntervalCollectionTimeNanos", long.class)
-                .add("IntervalCollectionTimePercent", float.class);
+                .add("IntervalCollectionTimeNanos", long.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
     }

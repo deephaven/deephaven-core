@@ -2,6 +2,7 @@ package io.deephaven.db.v2.utils;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tablelogger.ProcessMemoryLogLogger;
+import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -67,12 +68,14 @@ public class ProcessMemoryTracker {
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
                 final long endTimeMillis = System.currentTimeMillis();
-                logProcessMem(
+                LiveTableMonitor.DEFAULT.sharedLock().doLocked(
+                        () -> logProcessMem(
                         intervalStartTimeMillis,
                         endTimeMillis,
                         memSample,
                         prevTotalCollections,
-                        prevTotalCollectionTimeMs);
+                        prevTotalCollectionTimeMs)
+                );
             }
         }
     }

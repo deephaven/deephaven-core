@@ -52,8 +52,8 @@ public class UpdatePerformanceLogLogger
         RowSetter<Long> EntryIntervalModified;
         RowSetter<Long> EntryIntervalShifted;
         RowSetter<Long> EntryIntervalInvocationCount;
-        RowSetter<Long> FreeMemory;
-        RowSetter<Long> TotalMemory;
+        RowSetter<Long> MinFreeMemory;
+        RowSetter<Long> MaxTotalMemory;
         RowSetter<Long> Collections;
         RowSetter<Long> CollectionTimeNanos;
         RowSetter<Long> EntryIntervalAllocatedBytes;
@@ -77,8 +77,8 @@ public class UpdatePerformanceLogLogger
             EntryIntervalModified = row.getSetter("EntryIntervalModified", long.class);
             EntryIntervalShifted = row.getSetter("EntryIntervalShifted", long.class);
             EntryIntervalInvocationCount = row.getSetter("EntryIntervalInvocationCount", long.class);
-            FreeMemory = row.getSetter("FreeMemory", long.class);
-            TotalMemory = row.getSetter("TotalMemory", long.class);
+            MinFreeMemory = row.getSetter("MinFreeMemory", long.class);
+            MaxTotalMemory = row.getSetter("MaxTotalMemory", long.class);
             Collections = row.getSetter("Collections", long.class);
             CollectionTimeNanos = row.getSetter("CollectionTimeNanos", long.class);
             EntryIntervalAllocatedBytes = row.getSetter("EntryIntervalAllocatedBytes", long.class);
@@ -106,8 +106,8 @@ public class UpdatePerformanceLogLogger
             this.EntryIntervalModified.setLong(performanceEntry.getIntervalModified());
             this.EntryIntervalShifted.setLong(performanceEntry.getIntervalShifted());
             this.EntryIntervalInvocationCount.setLong(performanceEntry.getIntervalInvocationCount());
-            this.FreeMemory.setLong(performanceEntry.getFreeMemory());
-            this.TotalMemory.setLong(performanceEntry.getTotalMemory());
+            this.MinFreeMemory.setLong(performanceEntry.getFreeMemory());
+            this.MaxTotalMemory.setLong(performanceEntry.getTotalMemory());
             this.Collections.setLong(performanceEntry.getDiffCollections());
             this.CollectionTimeNanos.setLong(performanceEntry.getDiffCollectionTimeNanos());
             this.EntryIntervalAllocatedBytes.setLong(performanceEntry.getIntervalAllocatedBytes());
@@ -145,8 +145,8 @@ public class UpdatePerformanceLogLogger
                 .add("EntryIntervalShifted", long.class)
 
                 .add("EntryIntervalInvocationCount", long.class)
-                .add("FreeMemory", long.class)
-                .add("TotalMemory", long.class)
+                .add("MinFreeMemory", long.class)
+                .add("MaxTotalMemory", long.class)
                 .add("Collections", long.class)
                 .add("CollectionTimeNanos", long.class)
                 .add("EntryIntervalAllocatedBytes", long.class)

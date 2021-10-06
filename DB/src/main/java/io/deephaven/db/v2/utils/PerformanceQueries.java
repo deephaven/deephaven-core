@@ -2,6 +2,7 @@ package io.deephaven.db.v2.utils;
 
 import io.deephaven.db.tables.Table;
 
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.HashMap;
@@ -152,6 +153,7 @@ public class PerformanceQueries {
      * @param evaluationNumber evaluation number
      * @return map of query update performance tables.
      */
+    @ScriptApi
     public static Map<String, Table> queryUpdatePerformanceMap(final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
         final Table qup = queryUpdatePerformance(evaluationNumber);
@@ -213,10 +215,46 @@ public class PerformanceQueries {
         return resultMap;
     }
 
+    public static float approxPct(final long v0, final long v1) {
+        if (v1 == 0) {
+            return QueryConstants.NULL_FLOAT;
+        }
+        final float pct = (float) (v0 * 100.0 / v1);
+        // The samples are not perfect; let's not confuse our users.
+        return Math.min(pct, 1.0F);
+    }
+
+    /**
+     * A user friendly view with basic memory and GC data samples for the current engine process.
+     *
+     * @return a view on ProcessMemoryLog.
+     */
+    @ScriptApi
+    public static Table processMemory() {
+        final Table pml = TableLoggers.processMemoryLog();
+        Table pm = pml.updateView(
+                "IntervalDurationSeconds = IntervalDurationNanos / (1000L * 1000L * 1000L)",
+                "TotalMemoryMiB = (int) Math.ceil(TotalMemory / (1024*1024.0))",
+                "FreeMemoryMiB = (int) Math.ceil(FreeMemory / (1024*1024.0))",
+                "GcTimePercent = io.deephaven.db.v2.utils.PerformanceQueries.approxPct(IntervalCollectionTimeNanos, IntervalDurationNanos)")
+                .view("IntervalStartTime", "IntervalDurationSeconds", "TotalMemoryMb", "FreeMemoryMb", "GcTimePercent");
+        pm = formatColumnsAsPct(pm, "GcTimePercent");
+        pm = formatColumnsAsMills(pm, "IntervalDurationSeconds");
+        return pm;
+    }
+
     private static Table formatColumnsAsPct(final Table t, final String... cols) {
         final String[] formats = new String[cols.length];
         for (int i = 0; i < cols.length; ++i) {
-            formats[i] = cols[i] + "=Decimal(`#0.##%`)";
+            formats[i] = cols[i] + "=Decimal(`#0.00%`)";
+        }
+        return t.formatColumns(formats);
+    }
+
+    private static Table formatColumnsAsMills(final Table t, final String... cols) {
+        final String[] formats = new String[cols.length];
+        for (int i = 0; i < cols.length; ++i) {
+            formats[i] = cols[i] + "=Decimal(`#0.000`)";
         }
         return t.formatColumns(formats);
     }
