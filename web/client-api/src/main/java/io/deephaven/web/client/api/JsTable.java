@@ -403,14 +403,20 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     @JsMethod
     @SuppressWarnings("unusable-by-js")
-    public JsArray<String> applyCustomColumns(String[] customColumns) {
+    public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
+        String[] customColumnStrings = Arrays.stream(customColumns).map(obj -> {
+            if (obj instanceof String || obj instanceof CustomColumn) {
+                return obj.toString();
+            }
 
-        final List<CustomColumnDescriptor> newCustomColumns = CustomColumnDescriptor.from(customColumns);
+            return (new CustomColumn((JsPropertyMap<Object>)obj)).toString();
+        }).toArray(String[]::new);
+        final List<CustomColumnDescriptor> newCustomColumns = CustomColumnDescriptor.from(customColumnStrings);
 
         // take a look at the current custom columns so we can return it
         final ClientTableState current = state();
         List<CustomColumnDescriptor> currentCustomColumns = current.getCustomColumns();
-        final List<String> returnMe = current.getCustomColumnsString();
+        final List<CustomColumn> returnMe = current.getCustomColumnsObject();
         if (!currentCustomColumns.equals(newCustomColumns)) {
             if (batchDepth > 0) {
                 // when batching, just record what the user requested, but don't compute anything
@@ -431,8 +437,18 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsProperty
-    public JsArray<JsString> getCustomColumns() {
-        return Js.cast(JsItr.slice(state().getCustomColumnsString()));
+    public JsArray<CustomColumn> getCustomColumns() {
+        return Js.cast(JsItr.slice(state().getCustomColumnsObject()));
+    }
+
+    @JsMethod
+    public CustomColumn formatRowColor(String expression) {
+        return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    }
+
+    @JsMethod
+    public CustomColumn createCustomColumn(String name, String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_NEW, expression);
     }
 
     /**

@@ -134,6 +134,21 @@ public class Column {
     }
 
     @JsMethod
+    public CustomColumn formatColor(String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    }
+
+    @JsMethod
+    public CustomColumn formatNumber(String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_NUMBER, expression);
+    }
+
+    @JsMethod
+    public CustomColumn formatDate(String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_DATE, expression);
+    }
+
+    @JsMethod
     @Override
     public String toString() {
         return "Column{" +

@@ -116,7 +116,7 @@ public class JsTotalsTable {
     }
 
     @JsMethod
-    public JsArray<String> applyCustomColumns(String[] customColumns) {
+    public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
         return wrappedTable.applyCustomColumns(customColumns);
     }
 
@@ -140,7 +140,7 @@ public class JsTotalsTable {
     }
 
     @JsProperty
-    public JsArray<JsString> getCustomColumns() {
+    public JsArray<CustomColumn> getCustomColumns() {
         return wrappedTable.getCustomColumns();
     }
 

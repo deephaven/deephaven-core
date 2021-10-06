@@ -480,7 +480,7 @@ and also will permit some changes not to inform the UI right away that they have
   used when adding new filter and sort operations to the table, as long as they are present.
  * `applyCustomColumns(CustomColumn[]):CustomColumn[]` - Replace the current custom columns with a new set. These columns can be
   used when adding new filter and sort operations to the table, as long as they are present.
- * `createCustomColumn(String name, String formula): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the parameters specified.
+ * `createCustomColumn(String name, String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
  * `setViewport(Number firstRow, Number lastRow, Column[]= columns, Number= updateIntervalMs):TableViewportSubscription` - 
  If the columns parameter is not provided, all columns will be used. If the updateIntervalMs parameter is not provided, 
  a default of one second will be used. Until this is called, no data will be available. Invoking this will result in events
@@ -610,6 +610,7 @@ return a new Sort instance.
 
 ##### Class `CustomColumn`
 * `String name` - The name of the column to use.
+* `String type` - Type of custom column. One of `FORMAT_COLOR`, `FORMAT_NUMBER`, `FORMAT_DATE`, or `NEW`.
 * `String expression` - The expression to evaluate this custom column.
 
 ##### Class `FilterValue`
