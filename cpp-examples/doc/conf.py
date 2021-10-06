@@ -27,18 +27,14 @@ author = 'Deephaven Data Labs'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [ 'breathe', 'sphinx.ext.intersphinx' ]
+extensions = [ 'sphinx.ext.intersphinx' ]
 
 intersphinx_mapping = {
     'dhclient': (
-        'http://client.virtual-uk.com/',
-        'http://client.virtual-uk.com/objects.inv'
+        '../cpp/',
+        '../cpp/objects.inv'
     )
 }
-
-breathe_projects = { "Deephaven C++ Client": "./doxygenoutput/xml" }
-breathe_default_project = "Deephaven C++ Client"
-
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
