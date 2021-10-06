@@ -56,6 +56,16 @@ minikube service --url dh-local
 
 
 
+DEBUGGING:
+sudo docker run --rm -it --entrypoint bash us-central1-docker.pkg.dev/deephaven-oss/deephaven/demo-server:0.5.0
+
+
+created new json service key:
+https://console.cloud.google.com/iam-admin/serviceaccounts/details/113408456843581678161/keys?authuser=2&project=deephaven-oss
+upload to kubernetes:
+mv ~/Downloads/deephaven-oss-dbdeef90ff00.json ~/Downloads/deephaven-svc-act.json
+kubectl create secret generic dh-svc-act --from-file \
+"~/Downloads/deephaven-svc-act.json"
 
 
 

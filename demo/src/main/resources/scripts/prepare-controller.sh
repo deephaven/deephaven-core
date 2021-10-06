@@ -1,3 +1,21 @@
+
+DH_DIR="${DH_DIR:-/dh}"
+# TODO: move DH_SVC to a more secure location, like a small ramdrive
+export DH_SVC="${DH_SVC:-$DH_DIR/svc}"
+
+grep -c DH_SVC "$DH_DIR/.env" || echo "
+DH_SVC=$DH_SVC
+" | sudo tee -a "$DH_DIR/.env" > /dev/null
+
+test -d "$DH_SVC/act" || sudo mkdir -p "$DH_SVC/act"
+test -f "$DH_SVC/act/svc-act.json" ||
+    { kubectl get secret dh-svc-act -o go-template='{{index .data "deephaven-svc-act.json" | base64decode}}' | sudo tee "$DH_SVC/act/deephaven-svc-act.json" > /dev/null ; }
+
+echo "
+[auth]
+credential_file_override = /certs/deephaven-svc-act.json
+" > "$DH_SVC/config"
+
 # While we _should_ get docker-compose.yml from github via curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml
 # the version there isn't parameterized like this one, as we want to replace the docker repo with our demo-specific one
 test -f "$DH_DIR/docker-compose.yml" || cat << 'EOF' > "$DH_DIR/docker-compose.yml"
@@ -11,8 +29,11 @@ services:
     volumes:
       # TODO: reduce this to /root/.config/gcloud and whatever other minimal tools we need.
       - /root/.config:/root/.config
+      - ${DH_SVC:-/dh/svc}/config:/root/gcloud
+      - ${DH_SVC:-/dh/svc}/act:/certs
     environment:
       - JAVA_TOOL_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
+      - CLOUDSDK_CONFIG=/config/gcloud
 
   envoy:
     image: envoyproxy/envoy:v1.18.3

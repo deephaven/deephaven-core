@@ -38,7 +38,19 @@ ARG RUN_JAVA_VERSION=1.3.8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 # Install java and the run-java script
 # Also set up permissions for user `1001`
-RUN microdnf install curl tar which python2 gzip bash hostname openssl ca-certificates ${JAVA_PACKAGE} \
+RUN microdnf install  \
+      curl  \
+      tar  \
+      which  \
+      python2  \
+      gzip \
+      bash  \
+      hostname  \
+      openssl  \
+      gcc \
+      git \
+      gnupg \
+      ca-certificates ${JAVA_PACKAGE} \
     && microdnf update \
     && microdnf clean all \
     && mkdir /deployments \
@@ -53,24 +65,30 @@ RUN microdnf install curl tar which python2 gzip bash hostname openssl ca-certif
 RUN curl -sSL https://sdk.cloud.google.com | bash
 
 ENV PATH $PATH:/root/google-cloud-sdk/bin
-ENV CLOUD_SDK_CONFIG=/root/.config
+ENV CLOUDSDK_CONFIG=/root/.config
 # Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
-ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port=7117 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Dquarkus.log.level=DEBUG -Dquarkus.http.port=7117 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 RUN echo " \
-CLOUD_SDK_CONFIG=/root/.config \
-" > /etc/environment
+CLOUDSDK_CONFIG=/root/.config/gcloud \
+" > /etc/environment ;
+
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY --chown=1001 build/quarkus-app/lib/ /deployments/lib/
 COPY --chown=1001 build/quarkus-app/*.jar /deployments/
 COPY --chown=1001 build/quarkus-app/app/ /deployments/app/
 COPY --chown=1001 build/quarkus-app/quarkus/ /deployments/quarkus/
 COPY --chown=1001 build/protoSync /deployments/proto/
+COPY --chown=1001 build/launchScript /deployments/launch/
 
-RUN mkdir -p /.config/gcloud/logs && chown -R 1001:1001 /.config/gcloud
+RUN mkdir -p /root/.config/gcloud/logs #&& chown -R 1001:1001 /root/.config/gcloud
 
 RUN echo "mode=jvm" > /server-mode
+#RUN cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 
 EXPOSE 7117
-USER 1001
-ENTRYPOINT [ "/deployments/run-java.sh" ]
+# For now, we're going to run as root as gcloud doesn't blow up when we do.
+# This seems to be related to either ssl ca certs (see above) or readonly gcloud config directories
+#USER 1001
+ENTRYPOINT [ "/deployments/launch/demo-start.sh" ]
+#ENTRYPOINT [ "/deployments/run-java.sh" ]
 

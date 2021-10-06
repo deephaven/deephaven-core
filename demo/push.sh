@@ -11,7 +11,7 @@ while [ -n "$dir" ]; do
     docker rmi us-central1-docker.pkg.dev/deephaven-oss/deephaven/web:0.5.0 &>/dev/null
 
     export WEB_VERSION=${WEB_VERSION:-0.1.4-markdownnotebooks.103}
-    "$dir/gradlew" pushAll quarkusBuild \
+    "$dir/gradlew" quarkusBuild pushAll \
         -i \
         -PdockerPath=deephaven-oss/deephaven \
         -PwebVersion=$WEB_VERSION \

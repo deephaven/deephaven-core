@@ -160,7 +160,9 @@ result.err);
                 runningProc = new ArrayList<>();
                 Runtime.getRuntime().addShutdownHook(
                         new Thread(()-> runningProc.removeIf(p-> {
-                            p.destroyForcibly();
+                            if (p != null) {
+                                p.destroyForcibly();
+                            }
                             return true;
                         }))
                 );

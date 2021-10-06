@@ -111,6 +111,32 @@ test {
     systemProperty("noClean", "true") // WIP: must comment whole line to merge
 }
 
+String launchScript = 'launchScript'
+tasks.register(launchScript).configure{
+    Task t ->
+        final String startScript = """#!/bin/bash
+test -f /certs/deephaven-svc-act.json && gcloud auth activate-service-account --key-file=/certs/deephaven-svc-act.json
+gcloud config set core/disable_usage_reporting true
+gcloud config set component_manager/disable_update_check true
+gcloud config set project deephaven-oss
+# cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+export JAVA_OPTIONS="-Dquarkus.log.level=DEBUG -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port=7117 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+cd /deployments
+cat /deployments/run-java.sh
+./run-java.sh --debug
+"""
+        File protoOut = new File(buildDir, launchScript)
+        t.outputs.dir(protoOut)
+        t.inputs.property("startScript", startScript)
+        t.doLast {
+            protoOut.mkdirs()
+            File demoStart = new File(protoOut, 'demo-start.sh')
+            demoStart.text = startScript
+            demoStart.setExecutable(true, false)
+        }
+
+}
+
 String protoSyncName = 'protoSync'
 tasks.register(protoSyncName, Sync).configure{
     Sync t ->
@@ -131,7 +157,7 @@ if (canQuarkus) {
 
     quarkusBuild {
         // don't realize the task just to put this dependsOn in place
-        dependsOn "$project.path:$protoSyncName"
+        dependsOn "$project.path:$protoSyncName", "$project.path:$launchScript"
         nativeArgs {
             containerBuild = true
             buildImage = "quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11"

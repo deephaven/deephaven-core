@@ -182,8 +182,8 @@ public class DhDemoServer implements QuarkusApplication {
             // getting or creating a worker could take a while.
             // for now, we're going to let the browser window hang while we wait :'(
             // get off the vert.x event queue...
-            LOG.info("Sending user off thread to complete new machine request");
-            ClusterController.setTimer("Send to new machine", () -> {
+            LOG.info("Sending user off-thread to complete new machine request.");
+            ClusterController.setTimer("Claim New Machine", () -> {
 
                 // not using kube for now
                 // handleKube(req);
@@ -193,7 +193,7 @@ public class DhDemoServer implements QuarkusApplication {
             });
 
         });
-        LOG.info("Ready to start serving https://" + DOMAIN);
+        LOG.info("Serving controller on https://" + DOMAIN);
         Quarkus.waitForExit();
         return 0;
     }
@@ -207,7 +207,7 @@ public class DhDemoServer implements QuarkusApplication {
 //        String uri = "https://" + workerName + "." + DOMAIN;
         final Machine machine = controller.requestMachine();
         String uri = "https://" + machine.getDomainName();
-        LOG.info("Sending user to " + uri);
+        LOG.infof("Sending user to %s", uri);
         // if we can reach /health immediately, the machine is ready, we should send user straight there
         final boolean isDev = "true".equals(System.getProperty("devMode"));
         final boolean isReady = controller.isMachineReady(machine.getDomainName());

@@ -43,7 +43,9 @@ public class IpPool {
 
     public void addIpUnused(IpMapping ip) {
         allIps.put(ip.getName(), ip);
-        allIps.put(ip.getIp(), ip);
+        if (ip.getIp() != null) {
+            allIps.put(ip.getIp(), ip);
+        }
         unused.add(ip);
     }
 
