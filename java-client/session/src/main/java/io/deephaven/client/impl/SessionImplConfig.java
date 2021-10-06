@@ -83,6 +83,8 @@ public abstract class SessionImplConfig {
 
         Builder mixinStacktrace(boolean mixinStacktrace);
 
+        Builder executeTimeout(Duration executeTimeout);
+
         Builder closeTimeout(Duration closeTimeout);
 
         SessionImplConfig build();
