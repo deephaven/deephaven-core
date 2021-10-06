@@ -99,11 +99,11 @@ public class ImageDeployer {
     }
 
     private void finishDeploy(final String type, final Machine machine, final DeploymentManager manager) throws IOException, InterruptedException {
-        boolean doDeploy = "true".equals(System.getProperty("deployImage"));
+        boolean doDeploy = "true".equals(System.getProperty("deployImage")) || "true".equals(System.getenv("DEPLOY_IMAGE"));
         LOG.info("Finishing deploy for " + machine);
         final String typeLower = type.toLowerCase();
         final String typeUpper = type.toUpperCase();
-        String snapName = SNAPSHOT_NAME + "-" + type;
+        String snapName = SNAPSHOT_NAME + "-" + typeLower;
         if (doDeploy) {
             LOG.infof("Creating new %s image %s", typeLower, snapName);
             manager.turnOff(machine);
@@ -115,7 +115,7 @@ public class ImageDeployer {
             LOG.infof("Destroying VM %s", machine);
             manager.destroyCluster(Collections.singletonList(machine), "");
         } else {
-            LOG.warnf("NOT DEPLOYING %s IMAGE, to deploy, set -DdeployImage=true", typeUpper);
+            LOG.warnf("NOT DEPLOYING %s IMAGE, to deploy, set -DdeployImage=true or env DEPLOY_IMAGE=true", typeUpper);
             if (LOG.isInfoEnabled()) {
                 LOG.info(type + " is ready to be tested and converted to an image. You can test this machine here:\n" +
                         "Web: https://" + machine.getDomainName() + "\n" +

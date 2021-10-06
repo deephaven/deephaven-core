@@ -139,25 +139,31 @@ if (canQuarkus) {
     }
 }
 
-def grpcApiRepository = project.property('grpcApiRepository')
-def grpcApiTag = project.version
+def dockerPath = project.findProperty('dockerPath') ?: 'deephaven'
+def dockerVersion = project.findProperty('dockerVersion') ?: 'local-build'
 
-def webRepository = project.property('webRepository')
-def webTag = project.version
+String grpcApiRepository = project.property('grpcApiRepository')
+String grpcApiTag = project.version
+
+String webRepository = project.property('webRepository')
+String webTag = project.version
+
 
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
-        t.imageId = 'deephaven/demo-grpc-api:local-build'
-        t.repository = grpcApiRepository
-        t.tag = grpcApiTag
+        t.imageId.set "deephaven/demo-grpc-api:local-build"
+        t.repository.set grpcApiRepository
+        t.tag.set grpcApiTag
+        t.force.set true
         t.dependsOn project(':demo-grpc-api').tasks.findByName('buildDocker')
 }
 
 def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
     DockerTagImage t ->
-        t.imageId = 'deephaven/demo-web:local-build'
-        t.repository = webRepository
-        t.tag = webTag
+        t.imageId.set "deephaven/demo-web:local-build"
+        t.repository.set webRepository
+        t.tag.set webTag
+        t.force.set true
         t.dependsOn project(':demo-web').tasks.findByName('buildDocker')
 }
 

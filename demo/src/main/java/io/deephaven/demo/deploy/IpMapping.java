@@ -3,6 +3,8 @@ package io.deephaven.demo.deploy;
 import io.smallrye.common.constraint.NotNull;
 import io.smallrye.common.constraint.Nullable;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -12,12 +14,14 @@ import java.util.Optional;
  * <p> Represents a *named* IP address, identified / hashed by {@link #getName()} only.
  * <p> This lets us create these object before we've actually allocated any IP address resources.
  */
-public class IpMapping {
+public class IpMapping implements Comparable<IpMapping> {
 
+    private static final Clock UTC_CLOCK = Clock.systemUTC();
     private String ip;
     private String name;
     private volatile IpState state;
     private volatile Optional<Machine> instance;
+    private volatile Instant lastUsed;
 
     public IpMapping(@NotNull String name, @Nullable String ip) {
         this.name = name;
@@ -27,6 +31,7 @@ public class IpMapping {
         this.ip = ip;
         this.state = IpState.Unverified;
         this.instance = Optional.empty();
+        this.lastUsed = Instant.now(UTC_CLOCK);
     }
 
     @Nullable
@@ -84,6 +89,9 @@ public class IpMapping {
 
     public void setInstance(final Machine node) {
         this.instance = Optional.ofNullable(node);
+        if (node != null) {
+            lastUsed = Instant.now(UTC_CLOCK);
+        }
     }
 
     public void setState(@NotNull final IpState state) {
@@ -91,6 +99,15 @@ public class IpMapping {
     }
 
     public boolean isRunningFor(final Machine node) {
-        return getState() == IpState.Running && instance.orElse(null) == node;
+        return node != null && getState() == IpState.Running && instance.orElse(null) == node;
+    }
+
+    @Override
+    public int compareTo(IpMapping other) {
+        if (name.equals(other.name)) {
+            // only consider name, not IP. IP will get reused.
+            return 0;
+        }
+        return lastUsed.compareTo(other.lastUsed);
     }
 }

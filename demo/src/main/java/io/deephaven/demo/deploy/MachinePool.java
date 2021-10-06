@@ -97,4 +97,8 @@ public class MachinePool {
         }
         return unused < poolBuffer || total < poolSize;
     }
+
+    public int getNumberMachines() {
+        return machines.size();
+    }
 }

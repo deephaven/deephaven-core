@@ -5,11 +5,12 @@ export ZONE="${ZONE:-us-central1}"
 export PROJECT_ID="${PROJECT_ID:-deephaven-oss}"
 export REPO="${REPO:-${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven}"
 export DH_DIR="${DH_DIR:-/dh}"
-# Create an .env file for docker-compose to read our variables from
+# Create an .env file for docker-compose to read our variables from.
 echo "
 VERSION=$VERSION
 REPO=$REPO
 TYPE=$TYPE
+DOMAIN=${DOMAIN:-${FIRST_DOMAIN:-demo.deephaven.app}}
 " > "$DH_DIR/.env"
 
 # Run docker-compose pull in a new shell, so it uses newly-created docker group

@@ -361,6 +361,14 @@ public class GoogleDeploymentManager implements DeploymentManager {
     public static Execute.ExecutionResult gcloud(boolean allowFail, String ... args) throws IOException, InterruptedException {
         return gcloud(allowFail, true, args);
     }
+    public static Execute.ExecutionResult gcloudQuiet(boolean allowFail, boolean hasZone, String ... args) throws IOException, InterruptedException {
+        Execute.quietMode.set(true);
+        try {
+            return gcloud(allowFail, hasZone, args);
+        } finally {
+            Execute.quietMode.set(false);
+        }
+    }
     public static Execute.ExecutionResult gcloud(boolean allowFail, boolean hasZone, String ... args) throws IOException, InterruptedException {
         List<String> all = new ArrayList<>();
         all.add("gcloud");
@@ -483,6 +491,10 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add(ip);
             LOG.info("Giving machine " + machine.getHost() + " the IP address " + ip);
         }
+        if (!machine.isController()) {
+            // non-controller machines attach the demo-data disk, so we can mount it into worker container
+            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
+        }
         // apply node-role specific cli arguments
         if (machine.isSnapshotCreate()) {
             cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_CREATOR);
@@ -497,10 +509,6 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("ubuntu-2004-focal-v20210129");
             cmds.add("--image-project");
             cmds.add("ubuntu-os-cloud");
-            if (!machine.isController()) {
-                // non-controller machines attach the demo-data disk, so we can mount it into worker container
-                cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
-            }
             // stick our prepare-worker.sh or prepare-controller.sh script into desired location.
             final String scriptName = "prepare-" + (machine.isController() ? "controller" : "worker") + ".sh";
             if (!new File(localDir, scriptName).exists()) {
@@ -524,21 +532,20 @@ public class GoogleDeploymentManager implements DeploymentManager {
             // hm... the dh-controller permissions are actually only needed by snapshotCreate machines.
             // We could reduce this, but the controller does NOT allow running any user code, so :shrug:
             cmds.add("dh-controller@" + getGoogleProject() + ".iam.gserviceaccount.com");
-            // controller starts from a prepared source snapshot
-            cmds.add("--source-snapshot");
-            cmds.add(NameConstants.SNAPSHOT_NAME);
+            // controller starts from a prepared source image
+            cmds.add("--image");
+            cmds.add(NameConstants.SNAPSHOT_NAME + "-controller");
             cmds.add("--scopes");
             cmds.add("https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/cloud-platform");
-            // TODO: use --metadata=startup-script= to change the systemd service to only run the controller, not anything else
         } else {
             cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_WORKER);
             cmds.add("--tags=dh-demo,dh-worker");
             cmds.add("--service-account");
-            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
             cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");
+            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
             cmds.add("--metadata=startup-script=while ! curl -k https://localhost:10000/health &> /dev/null; do echo 'Waiting for dh stack to come up'; done ; sudo iptables -A PREROUTING -t nat -p tcp --dport 443 -j REDIRECT --to-port 10000 ; sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 10000");
             cmds.add("--image");
-            cmds.add(NameConstants.SNAPSHOT_NAME);
+            cmds.add(NameConstants.SNAPSHOT_NAME + "-worker");
         }
         Execute.ExecutionResult res = execute(cmds);
         // TODO: use a privileged service account for setup, and then remove the service account when creating an actual worker from the snapshot

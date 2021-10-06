@@ -1,6 +1,7 @@
 DH_DIR="${DH_DIR:-/dh}"
 # While we _should_ get docker-compose.yml from github via curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml
 # the version there isn't parameterized like this one, as we want to replace the docker repo with our demo-specific one
+# Note: 'EOF' causes variables in the heredoc to NOT be expanded. Starting w/ EOF will expand contained variables.
 cat << 'EOF' > "$DH_DIR/docker-compose.yml"
 version: "3.4"
 
@@ -18,7 +19,6 @@ services:
       - JAVA_TOOL_OPTIONS=-Xmx2g -Ddeephaven.console.type=${TYPE:-python}
       - DH_TLS_CHAIN=/etc/ssl/internal/tls.crt
       - DH_TLS_KEY=/etc/ssl/internal/tls.key.pk8
-      - EXTRA_HEALTH_ARGS="-tls -tls-no-verify"
 
   demo-server:
     image: ${REPO:-ghcr.io/deephaven}/demo-server:${VERSION:-latest}
@@ -30,7 +30,7 @@ services:
       grpc-api:
         condition: service_healthy
     environment:
-      - JAVA_TOOL_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${FIRST_DOMAIN:-demo.deephaven.app}"
+      - JAVA_TOOL_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
 
   web:
     image: ${REPO:-ghcr.io/deephaven}/web:${VERSION:-latest}

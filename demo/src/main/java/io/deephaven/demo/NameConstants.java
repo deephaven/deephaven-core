@@ -50,6 +50,7 @@ public class NameConstants {
     public static final String VERSION_MANGLE = VERSION.replaceAll("[.]", "-");
     public static final String SNAPSHOT_NAME = System.getProperty("DH_SNAPSHOT_NAME", "deephaven-app-" + VERSION_MANGLE);
     public static final String DOMAIN;
+    public static final String COOKIE_NAME = "dh-user";
 
     static {
         String domain = System.getenv("MY_DNS_NAME");

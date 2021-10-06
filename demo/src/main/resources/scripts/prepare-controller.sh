@@ -9,9 +9,10 @@ services:
     expose:
       - '7117'
     volumes:
-      - /root/.config/gcloud:/root/.config/gcloud
+      # TODO: reduce this to /root/.config/gcloud and whatever other minimal tools we need.
+      - /root/.config:/root/.config
     environment:
-      - JAVA_TOOL_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${FIRST_DOMAIN:-demo.deephaven.app}"
+      - JAVA_TOOL_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
 
   envoy:
     image: envoyproxy/envoy:v1.18.3

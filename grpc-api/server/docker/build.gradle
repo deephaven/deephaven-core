@@ -107,6 +107,7 @@ docker {
     copyFile("licenses/", '/')
     copyFile('health_probe/', '/health')
 
+
     volume("/data")
     volume("/cache")
 
@@ -123,7 +124,9 @@ docker {
     // will not attempt to start). If the server is running but trying to shut down, failure will
     // occur within about 9s, as the port will connect correctly, but respond that it isn't
     // available.
-    instruction('HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8888 -connect-timeout=10s ${EXTRA_HEALTH_ARGS} || exit 1')
+    final String extraHealthArgs = findProperty('extraHealthArgs') ?: ''
+    inputs.property("extraHealth", extraHealthArgs)
+    instruction('HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8888 -connect-timeout=10s ' + extraHealthArgs + ' || exit 1')
   }
 }
 

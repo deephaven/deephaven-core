@@ -241,25 +241,71 @@ public class ClusterController {
         });
     }
 
+    /**
+     * The maximum number of machines to allow at one time (prevents creating new machines)
+     * @return 150 during business hours, 75 otherwise.
+     */
+    private int getMaxPoolSize() {
+        String poolSize = System.getenv("MAX_POOL_SIZE");
+        if (poolSize != null) {
+            return Integer.parseInt(poolSize);
+        }
+        poolSize = System.getProperty("dh-maxPoolSize");
+        if (poolSize != null) {
+            return Integer.parseInt(poolSize);
+        }
+        if (isPeakHours()) {
+            return 150;
+        }
+        return 75;
+    }
+
+    /**
+     * @return The number of warm machines to keep around. Default is 15 during business hours, 5 otherwise.
+     */
     private int getPoolBuffer() {
+        String poolSize = System.getenv("POOL_BUFFER");
+        if (poolSize != null) {
+            return Integer.parseInt(poolSize);
+        }
+        poolSize = System.getProperty("dh-poolBuffer");
+        if (poolSize != null) {
+            return Integer.parseInt(poolSize);
+        }
+        if (isPeakHours()) {
+            return 15;
+        }
         return 5;
     }
 
+    /**
+     * @return The desired size of the "always on" pool of machines.
+     * During business hours, we keep 20 machines always available, only 5 afterhours.
+     * We start adding new machines to keep at least {@link #getPoolBuffer()} (15 biz | 5 afterhours) machines available.
+     */
     private int getPoolSize() {
         String poolSize = System.getenv("POOL_SIZE");
         if (poolSize != null) {
             return Integer.parseInt(poolSize);
         }
-        LocalTime time = LocalTime.now(TZ_NY);
-        if (time.isAfter(BIZ_START) && time.isBefore(BIZ_END)) {
-            return 30;
+        poolSize = System.getProperty("dh-poolSize");
+        if (poolSize != null) {
+            return Integer.parseInt(poolSize);
+        }
+        if (isPeakHours()) {
+            return 20;
         }
         return 5;
     }
 
+    private boolean isPeakHours() {
+        LocalTime time = LocalTime.now(TZ_NY);
+        return time.isAfter(BIZ_START) && time.isBefore(BIZ_END);
+    }
+
     private void loadMachines() {
         try {
-            final Execute.ExecutionResult result = gcloud(true, false, "instances", "list",
+            final Execute.ExecutionResult result = gcloudQuiet(true, false, "instances", "list",
                     "--filter", "labels." + LABEL_PURPOSE + "=" + PURPOSE_WORKER,
                     "--format", "csv[box,no-heading](name,hostname,status,networkInterfaces[0].accessConfigs[0].natIP)",
                     // we'll do paging if we actually see activity this high
@@ -329,7 +375,7 @@ public class ClusterController {
     private void loadIpsUnused() {
         String[] ipBits = null;
         try {
-            Execute.ExecutionResult result = gcloud(true, false, "addresses", "list",
+            Execute.ExecutionResult result = gcloudQuiet(true, false, "addresses", "list",
                     "--filter", "region:" + REGION + " AND status:reserved",
                     "--format", "csv[box,no-heading](name,ADDRESS)",
                     "-q"
@@ -344,6 +390,7 @@ public class ClusterController {
                 IpMapping ip = new IpMapping(name, addr);
                 ips.addIpUnused(ip);
             }
+            LOG.info("Found " + ips.getNumUnused() + " unused IP addresses");
         } catch (Exception e) {
             System.err.println("Unable to load IPs! Last seen item: " + (ipBits == null ? null : Arrays.asList(ipBits)));
             e.printStackTrace();
@@ -354,7 +401,7 @@ public class ClusterController {
     private void loadIpsUsed() {
         String[] ipBits = null;
         try {
-            Execute.ExecutionResult result = gcloud(true, false, "addresses", "list",
+            Execute.ExecutionResult result = gcloudQuiet(true, false, "addresses", "list",
                    // TODO: label our addresses so we can filter more correctly:
                     "--filter", "region:" + REGION + " AND status:in_use",
                     "--format", "csv[box,no-heading](name,ADDRESS)",
@@ -371,6 +418,7 @@ public class ClusterController {
                 IpMapping ip = new IpMapping(name, addr);
                 ips.addIpUsed(ip);
             }
+            LOG.info("Found " + ips.getNumUsed() + " used IP addresses");
         } catch (Exception e) {
             System.err.println("Unable to load IPs! Last seen item: " + (ipBits == null ? null : Arrays.asList(ipBits)));
             e.printStackTrace();
@@ -398,7 +446,7 @@ public class ClusterController {
         Optional<Machine> machine = machines.maybeGetMachine(manager);
         if (machine.isPresent()) {
             final Machine mach = machine.get();
-            final IpMapping ip = ips.reserveIp(this, mach);
+            final IpMapping ip = ips.reserveIp(this, mach, null);
             moveToRunningState(mach, ip, true);
             LOG.info("Sending user to pre-existing machine " + mach);
             return mach;
@@ -418,6 +466,18 @@ public class ClusterController {
         return machine;
     }
 
+    void reloadMetadata(Machine machine) {
+        // unless this machine is currently running a metadata reload, start one.
+
+    }
+
+    /**
+     * Handles all the work to make sure a worker we believe to be runnable is actually online and correctly routed to DNS.
+     *
+     * @param machine The machine to turn on
+     * @param ip An ip address to use for this machine
+     * @param reserve Whether or not to actually claim the machine, or just turn it on and let it idle.
+     */
     void moveToRunningState(final Machine machine, final IpMapping ip, final boolean reserve) {
         LOG.info("Moving machine " + machine.getDomainName() + " to a running state");
         if (reserve) {
@@ -434,7 +494,7 @@ public class ClusterController {
                 result = gcloud(true,"instances",
                         "describe", machine.getHost(),
                         "-q",
-                        "--format=csv[box,no-heading](labels." + LABEL_PURPOSE + ",networkInterfaces[0].accessConfigs[0].natIP)");
+                        "--format=csv[box,no-heading](labels." + LABEL_PURPOSE + ",networkInterfaces[0].accessConfigs[0].natIP)");// add ,status, and turn offline machines on
                 String data = result.out.trim();
                 if (!data.startsWith(purpose + ",")) {
                     LOG.warn("Instance " + machine.getHost() + " had label '" + data.split(",")[0] + "' instead of " + purpose + "; fixing....");
@@ -442,7 +502,11 @@ public class ClusterController {
                     if (result.code != 0) {
                         // check if this was a "not found" message
                         if (result.out.contains("not found")) {
-                            // yikes! the machine doesn't exist... create one w/ the specified ip address
+                            // yikes! the machine doesn't exist... create one w/ the specified ip address (by name, so it is stable!)
+                            if (machines.getNumberMachines() > getMaxPoolSize()) {
+                                LOG.error("Refusing to create more than " + getMaxPoolSize() + " machines (currently " + machines.getNumberMachines() + ")");
+                            }
+                            machine.setIp(ip.getName());
                             manager.createMachine(machine);
                             result.code = 0;
                         }
@@ -474,7 +538,7 @@ public class ClusterController {
                 LOG.warn("DNS does not resolve correctly for " + machine.getDomainName() + " @ " + machine.getIp() + "; setting up DNS records");
                 // machine is NOT alive, glue on some ad-hoc DNS
                 try {
-                    setupDns(machine);
+                    setupDns(machine, ip);
                 } catch (Exception e) {
                     LOG.error("Unable to setup DNS for machine " + machine, e);
                 }
@@ -487,8 +551,26 @@ public class ClusterController {
         return TimeUnit.MINUTES.toMillis(45);
     }
 
-    private void setupDns(final Machine machine) {
+    private void setupDns(final Machine machine, final IpMapping ip) {
+        final String machineIp = machine.getIp();
+        if (machineIp == null || machineIp.isEmpty()) {
+            final IpMapping mapping = ips.reserveIp(this, machine, ip);
+            ensureAccessConfig(machine, mapping);
+            machine.setIp(mapping.getIp());
+        } else {
+            if (machineIp.indexOf('.') == -1 && machineIp.indexOf(':') == -1) {
+                final IpMapping mapping = ips.reserveIp(this, machine, ip);
+                // TODO: make sure this ip mapping is the correct access-config:
+                //    https://cloud.google.com/compute/docs/ip-addresses/reserve-static-external-ip-address#IP_assign
+                ensureAccessConfig(machine, mapping);
+                machine.setIp(mapping.getIp());
+            }
+        }
+
         manager.assignDns(Stream.of(machine));
+    }
+
+    private void ensureAccessConfig(final Machine machine, final IpMapping mapping) {
     }
 
     public IpMapping requestIp() {
@@ -534,8 +616,8 @@ public class ClusterController {
         }
     }
 
-    public boolean isMachineReady(final Machine machine) {
-        String uri = "https://" + machine.getDomainName() + "/health";
+    public boolean isMachineReady(final String domainName) {
+        String uri = "https://" + domainName + "/health";
         final Request req = new Request.Builder().get()
                 .url(uri)
                 .build();

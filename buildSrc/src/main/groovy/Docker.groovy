@@ -150,6 +150,11 @@ class Docker {
         List<String> entrypoint;
 
         /**
+         * Optional set of environment variables to set on the container.
+         */
+        Map<String, String> envVars;
+
+        /**
          * Logs are always printed from the build task when it runs, but entrypoint logs are only printed
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
@@ -198,7 +203,8 @@ class Docker {
     static TaskProvider<? extends Task> registerDockerTask(Project project, String taskName, Action<? super DockerTaskConfig> action) {
         // create instance, assign defaults
         DockerTaskConfig cfg = new DockerTaskConfig();
-        cfg.imageName = "deephaven/${taskName.replaceAll(/\B[A-Z]/) { String str -> '-' + str }.toLowerCase()}:${LOCAL_BUILD_TAG}"
+        // Change taskNameFormat into deephaven/task-name-format
+        cfg.imageName = "deephaven/${taskName.replaceAll(/\B[A-Z]/, /-$0/).toLowerCase()}:${LOCAL_BUILD_TAG}"
 
         // ask for more configuration
         action.execute(cfg)
@@ -276,6 +282,9 @@ class Docker {
 
                 if (cfg.containerDependencies.dependsOn) {
                     dependsOn(cfg.containerDependencies.dependsOn)
+                }
+                if (cfg.envVars) {
+                    cfg.envVars.forEach createContainer.&withEnvVar
                 }
 
                 targetImageId makeImage.get().getImageId()

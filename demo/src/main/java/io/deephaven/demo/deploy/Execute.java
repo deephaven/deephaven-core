@@ -20,6 +20,7 @@ public class Execute {
 
     static Consumer<CharSequence> DO_NOTHING = c -> {
     };
+    static ThreadLocal<Boolean> quietMode = new ThreadLocal<>();
 
     static Map<String, String> getSshEnvMap() {
         final Map<String, String> map = new HashMap<>();
@@ -93,11 +94,12 @@ result.err);
         if (env == null) {
             env = new HashMap<>();
         }
+        boolean quiet = Boolean.TRUE.equals(quietMode.get());
         if (logOut == null) {
-            logOut = toLogger(System.out);
+            logOut = quiet ? DO_NOTHING : toLogger(System.out);
         }
         if (logErr == null) {
-            logErr = toLogger(System.err);
+            logErr = quiet ? DO_NOTHING : toLogger(System.err);
         }
         if (cmd.stream().filter(Objects::isNull).findFirst().isPresent()) {
             String msg = "Cannot pass null arguments: " + cmd;

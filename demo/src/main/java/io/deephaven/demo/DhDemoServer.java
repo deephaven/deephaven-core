@@ -112,7 +112,9 @@ public class DhDemoServer implements QuarkusApplication {
                 rc.request().headers().get("User-Agent") + " ( "
                 + rc.request().headers().get("host") + " ) ");
 
-            // TODO: real health check (grpcurl is on cli, or we can use grpc client here in java)
+            // TODO: real health check
+            //    for workers, grpcurl is on cli, or we can use grpc client here in java
+            //    for controllers, we should check if we have fresh metadata and no fatal errors.
             // TODO: handle built-in quarkus health check
             rc.response()
                     .putHeader("Access-Control-Allow-Origin", "https://" + DOMAIN)
@@ -146,7 +148,8 @@ public class DhDemoServer implements QuarkusApplication {
 //                return;
 //            }
             String userAgent = req.request().headers().get("User-Agent");
-            if (userAgent.contains("SlackBot") || userAgent.contains("Nimbostratus")) {
+            // We've seen Nimbostratus and SlackBot in logs; pre-emptively using "Bot" to cover more than SlackBot
+            if (userAgent.contains("Bot") || userAgent.contains("Nimbostratus")) {
                 LOG.info("Rejecting bot: " + userAgent);
                 req.request().headers().entries().forEach(e->{
                     LOG.info("Header: " + e.getKey() + " = " + e.getValue());
@@ -161,20 +164,20 @@ public class DhDemoServer implements QuarkusApplication {
                 req.response().setStatusCode(200).end();
                 return;
             }
-            Cookie cookie = req.getCookie("dh-user");
+            Cookie cookie = req.getCookie(NameConstants.COOKIE_NAME);
             if (cookie != null) {
                 String uname = cookie.getValue();
                 LOG.info("Handling request " + req.request().uri());
                 // verify that this cookie points to a running service, and if so, redirect to it.
 
-//                if (state.hasValidRoute(uname)) {
-//                    String uri = "https://" + uname + "." + NameConstants.DOMAIN;
-//                    req.response()
-//                        .putHeader("Location", uri)
-//                        .setStatusCode(302)
-//                        .end();
-//                    return;
-//                }
+                if (controller.isMachineReady(uname)) {
+                    if (!uname.contains(".")) {
+                        uname = uname + "." + DOMAIN;
+                    }
+                    String uri = "https://" + uname;
+                    req.redirect(uri);
+                    return;
+                }
             }
             // getting or creating a worker could take a while.
             // for now, we're going to let the browser window hang while we wait :'(
@@ -206,15 +209,17 @@ public class DhDemoServer implements QuarkusApplication {
         String uri = "https://" + machine.getDomainName();
         LOG.info("Sending user to " + uri);
         // if we can reach /health immediately, the machine is ready, we should send user straight there
-        final boolean isReady = controller.isMachineReady(machine);
-
-            if (isReady) {
+        final boolean isDev = "true".equals(System.getProperty("devMode"));
+        final boolean isReady = controller.isMachineReady(machine.getDomainName());
+            if (isDev && isReady) {
+                // devMode can skip cookies
                 req.redirect(uri);
             } else {
-                // not ready... send user to interstitial page
+                // always send user to interstitial page, so we can record our cookie before sending them along to their machine.
                 req.response()
                         .putHeader("content-type", "text/html")
                         .putHeader("x-frame-options", "DENY")
+                        .putHeader("Set-Cookie", COOKIE_NAME + "=" + machine.getHost() + "; Max-Age=2400; domain=" + DOMAIN + "; secure; HttpOnly")
                         .setChunked(true)
                         .setStatusCode(200)
                         // ...gross, move this to a resource file and just text replace the uri into place (store text pre-split to save IO/time)...
@@ -518,7 +523,7 @@ public class DhDemoServer implements QuarkusApplication {
         // }
         // // now, alter this pod a little.
         // podBod.getMetadata().getLabels().put("dh-purpose", "worker");
-        // podBod.getMetadata().getLabels().put("dh-user", userName);
+        // podBod.getMetadata().getLabels().put(NameConstants.COOKIE_NAME, userName);
         // podBod.getMetadata().setGenerateName(userName+"-");
         // podBod.getMetadata().setName(userName);
         //

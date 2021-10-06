@@ -32,12 +32,15 @@ sudo systemctl enable "${SERVICENAME}.service"
 # Start systemd service now, which will run docker-compose up -d
 sudo systemctl start "${SERVICENAME}.service"
 
-log "Waiting for server to respond on port $PORT"
+set +o xtrace
+log "Waiting for server $(hostname) to respond on port $PORT"
+tries=600
 while ! curl -k https://localhost:$PORT/ide/ &> /dev/null; do
     echo -n '.'
     sleep 1
 done
-log "Server is responding on port $PORT; redirecting 443 and 80 to $PORT"
+log "Server $(hostname) is responding on port $PORT; redirecting 443 and 80 to $PORT"
+set -o xtrace
 
 # setup iptables to redirect 443 and 80 to envoy
 if ! systemctl is-enabled netfilter-persistent; then

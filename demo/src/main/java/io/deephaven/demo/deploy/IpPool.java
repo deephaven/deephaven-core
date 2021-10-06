@@ -2,9 +2,11 @@ package io.deephaven.demo.deploy;
 
 // this package name is intentional. it works better w/ quarkus native compiler
 import io.deephaven.demo.ClusterController;
-import io.vertx.core.impl.ConcurrentHashSet;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * IpPool:
@@ -29,23 +31,25 @@ import java.util.*;
  * <p>
  */
 public class IpPool {
-    private final Set<IpMapping> allIps;
-    private final Set<IpMapping> used;
-    private final Set<IpMapping> unused;
+    private final ConcurrentMap<String, IpMapping> allIps;
+    private final SortedSet<IpMapping> used;
+    private final SortedSet<IpMapping> unused;
 
     public IpPool() {
-        allIps = new ConcurrentHashSet<>();
-        used = new ConcurrentHashSet<>();
-        unused = new ConcurrentHashSet<>();
+        allIps = new ConcurrentHashMap<>();
+        used = new ConcurrentSkipListSet<>(IpMapping::compareTo);
+        unused = new ConcurrentSkipListSet<>(IpMapping::compareTo);
     }
 
     public void addIpUnused(IpMapping ip) {
-        allIps.add(ip);
+        allIps.put(ip.getName(), ip);
+        allIps.put(ip.getIp(), ip);
         unused.add(ip);
     }
 
     public void addIpUsed(IpMapping ip) {
-        allIps.add(ip);
+        allIps.put(ip.getName(), ip);
+        allIps.put(ip.getIp(), ip);
         used.add(ip);
     }
 
@@ -54,23 +58,31 @@ public class IpPool {
         synchronized (unused) {
             if (unused.isEmpty()) {
                 // uh-oh! no more IPs... ask for at least one new IP, scaling up by square root of total IPs allocated
-                final Collection<IpMapping> newIps = ctrl.requestNewIps((int) (1 + Math.sqrt(allIps.size())));
-                unused.addAll(newIps);
-                allIps.addAll(newIps);
+                ctrl.requestNewIps((int) (1 + Math.sqrt(allIps.size())))
+                        .forEach(this::addIpUnused);
             }
             final Iterator<IpMapping> itr = unused.iterator();
             ip = itr.next();
             itr.remove();
+            used.add(ip);
         }
         return ip;
     }
 
-    public IpMapping reserveIp(ClusterController ctrl, Machine node) {
-        final IpMapping ip = getUnusedIp(ctrl);
+    public IpMapping reserveIp(ClusterController ctrl, Machine node, IpMapping backup) {
+        final String nodeIp = node.getIp();
+        IpMapping ip = allIps.get(nodeIp);
+        if (ip == null) {
+            ip = backup;
+        }
+        if (ip == null) {
+            ip = getUnusedIp(ctrl);
+        }
         boolean alreadyRunning = ip.isRunningFor(node);
         changeState(ip, alreadyRunning ? IpState.Running : IpState.Claimed);
         ip.setInstance(node);
         used.add(ip);
+        unused.remove(ip);
         return ip;
     }
 
@@ -79,4 +91,11 @@ public class IpPool {
         ip.setState(state);
     }
 
+    public int getNumUnused() {
+        return unused.size();
+    }
+
+    public int getNumUsed() {
+        return used.size();
+    }
 }
