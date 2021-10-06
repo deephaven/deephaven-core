@@ -480,7 +480,7 @@ and also will permit some changes not to inform the UI right away that they have
   used when adding new filter and sort operations to the table, as long as they are present.
  * `applyCustomColumns(CustomColumn[]):CustomColumn[]` - Replace the current custom columns with a new set. These columns can be
   used when adding new filter and sort operations to the table, as long as they are present.
- * `createCustomColumn(String name, String formula, String method = 'VIEW'): CustomColumnFormula` - Return a `CustomColumnFormat` object to apply using `applyCustomColumns` with the parameters specified.
+ * `createCustomColumn(String name, String formula): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the parameters specified.
  * `setViewport(Number firstRow, Number lastRow, Column[]= columns, Number= updateIntervalMs):TableViewportSubscription` - 
  If the columns parameter is not provided, all columns will be used. If the updateIntervalMs parameter is not provided, 
  a default of one second will be used. Until this is called, no data will be available. Invoking this will result in events
@@ -507,7 +507,7 @@ and also will permit some changes not to inform the UI right away that they have
  * `findColumn(String named):Column` - Retrieve a column by the given name.  You should prefer to always retrieve
  a new Column instance instead of caching a returned value.
  * `findColumns(String[] named):Column[]` - Retrieve multiple columns specified by the given names.
- * `formatRowColor(String color, String condition = '', String type = 'BACKGROUND'): CustomColumnColor` - Format entire rows matching the specified condition. Return a `CustomColumnColor` object to apply using `applyCustomColumns` with the parameters specified.
+ * `formatRowColor(String expression): CustomColumn` - Format entire rows colors using the expression specified. Returns a `CustomColumn` object to apply using `applyCustomColumns` with the parameters specified.
  * `inputTable():Promise<InputTable>` - If .hasInputTable is true, you may call this method to gain access to an
  InputTable object which can be used to mutate the data within the table.  If the table is not an Input Table, the
  promise will be immediately rejected.
@@ -579,10 +579,9 @@ column.
  Column.
  * `filter():FilterValue` - Creates a new value for use in filters based on this column. Used either as a parameter to
  another filter operation, or as a builder to create a filter operation.
- * `formatColor(String color, String condition = '', String type = 'BACKGROUND'): CustomColumnColor` - Return a `CustomColumnColor` object to apply using `applyCustomColumns` with the parameters specified.
- * `formatNumber(String numberFormat, String condition = ''): CustomColumnNumberFormat` - Return a `CustomColumnNumberFormat` object to apply using `applyCustomColumns` with the parameters specified.
- * `formatDate(String dateFormat, String condition = ''): CustomColumnDateFormat` - Return a `CustomColumnDateFormat` object to apply using `applyCustomColumns` with the parameters specified.
- * `formatRenderer(String renderer): CustomColumnRenderer` - Return a `CustomColumnRenderer` object to pass the `applyCustomColumns`  
+ * `formatColor(String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+ * `formatNumber(String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+ * `formatDate(String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
  * `sort():Sort` - Creates a sort builder object, to be used when sorting by this column.
 
 ###### Properties
@@ -609,26 +608,9 @@ return a new Sort instance.
  * `String direction` - The direction of this sort, either `ASC`, `DESC`, or `REVERSE`.
  * `boolean isAbs` - True if the absolute value of the column should be used when sorting; defaults to false. 
 
-##### Abstract Class `CustomColumn`
-* `String name` - The name of the column to use. For styling, this is the column the style is applied to. For `CustomColumnFormula`, this is the name of the new column to create. 
-
-##### Class `CustomColumnFormula` extends `CustomColumn`
-* `String formula` - The formula to use for this custom column.
-* `String method` - The type of select method to use, either `VIEW` or `SELECT`. Defaults to `VIEW`.
-
-##### Class `CustomColumnColor` extends `CustomColumn`
- * `String condition` - The condition in which to apply this color.
- * `String color` - The hex representation of the color to apply, or case-insensitive CSS color module name (see https://drafts.csswg.org/css-color/#named-colors)
- * `String type` - The type of cell color formatting, `BACKGROUND` or `FOREGROUND`.
-
-##### Class `CustomColumnDateFormat` extends `CustomColumn`
- * `String dateFormat` - Any of the [Java DateFormat](https://docs.oracle.com/javase/7/docs/api/java/text/DateFormat.html) strings. See `dh.i18n.DateTimeFormat` for how to format the result.
-
-##### Class `CustomColumnNumberFormat` extends `CustomColumn`
- * `String numberFormat` - Any of the [Java DecimalFormat](https://docs.oracle.com/javase/7/docs/api/java/text/DecimalFormat.html) strings. See `dh.i18n.NumberFormat` for how to format the result.
-
-##### Class `CustomColumnRenderer` extends `CustomColumn`
- * `String renderer` - The name of the renderer to use. The UI will need to know how to handle this type of renderer.
+##### Class `CustomColumn`
+* `String name` - The name of the column to use.
+* `String expression` - The expression to evaluate this custom column.
 
 ##### Class `FilterValue`
 Describes data that can be filtered, either a column reference or a literal value. Used this way, the type of a value
