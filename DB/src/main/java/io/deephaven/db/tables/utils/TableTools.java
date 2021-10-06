@@ -4,45 +4,83 @@
 
 package io.deephaven.db.tables.utils;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.io.CompressedFileUtil;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.streams.BzipFileOutputStream;
-import io.deephaven.io.util.NullOutputStream;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.tables.utils.csv.CsvSpecs;
 import io.deephaven.db.util.caching.C14nUtil;
-import io.deephaven.db.v2.*;
+import io.deephaven.db.v2.DynamicTable;
+import io.deephaven.db.v2.QueryTable;
+import io.deephaven.db.v2.TimeTable;
 import io.deephaven.db.v2.replay.Replayer;
 import io.deephaven.db.v2.replay.ReplayerInterface;
-import io.deephaven.db.v2.sources.*;
-import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
+import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.ReinterpretUtilities;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
-import io.deephaven.db.v2.utils.*;
+import io.deephaven.db.v2.sources.chunk.ByteChunk;
+import io.deephaven.db.v2.sources.chunk.CharChunk;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.db.v2.sources.chunk.DoubleChunk;
+import io.deephaven.db.v2.sources.chunk.FloatChunk;
+import io.deephaven.db.v2.sources.chunk.IntChunk;
+import io.deephaven.db.v2.sources.chunk.LongChunk;
+import io.deephaven.db.v2.sources.chunk.ObjectChunk;
+import io.deephaven.db.v2.sources.chunk.ShortChunk;
+import io.deephaven.db.v2.utils.ColumnHolder;
+import io.deephaven.db.v2.utils.Index;
+import io.deephaven.db.v2.utils.MergeSortedHelper;
+import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.db.v2.utils.TimeProvider;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.io.streams.BzipFileOutputStream;
+import io.deephaven.io.util.NullOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.util.progress.MinProcessStatus;
-import io.deephaven.util.progress.StatusCallback;
+import io.deephaven.util.process.ProcessEnvironment;
+
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.lang.reflect.Array;
+import java.nio.file.Path;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jetbrains.annotations.Nullable;
-
-import java.io.*;
-import java.lang.reflect.Array;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import static io.deephaven.db.tables.utils.CsvHelpers.NULLS_AS_EMPTY_DEFAULT;
 
 /**
  * Tools for working with tables. This includes methods to examine tables, combine them, convert them to and from CSV
@@ -360,10 +398,12 @@ public class TableTools {
      * @param is an InputStream providing access to the CSV data.
      * @return a Deephaven DynamicTable object
      * @throws IOException if the InputStream cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(InputStream)}
      */
     @ScriptApi
+    @Deprecated
     public static DynamicTable readCsv(InputStream is) throws IOException {
-        return CsvHelpers.readCsv2(is);
+        return (DynamicTable) CsvHelpers.readCsv(is);
     }
 
     /**
@@ -374,10 +414,12 @@ public class TableTools {
      * @param separator a char to use as the delimiter value when parsing the file.
      * @return a Deephaven DynamicTable object
      * @throws IOException if the InputStream cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(InputStream, char)}
      */
     @ScriptApi
+    @Deprecated
     public static DynamicTable readCsv(InputStream is, final char separator) throws IOException {
-        return CsvHelpers.readCsv2(is, separator);
+        return (DynamicTable) CsvHelpers.readCsv(is, separator);
     }
 
     /**
@@ -387,10 +429,12 @@ public class TableTools {
      * @param filePath the fully-qualified path to a CSV file to be read.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(String)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(String filePath) throws IOException {
-        return readCsv(new File(filePath));
+        return CsvHelpers.readCsv(filePath);
     }
 
     /**
@@ -402,28 +446,12 @@ public class TableTools {
      *        use as a delimiter.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(String filePath, String format) throws IOException {
-        return readCsv(new File(filePath), format, new MinProcessStatus());
-    }
-
-    /**
-     * Returns a memory table created from importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param filePath the fully-qualified path to a CSV file to be read.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-     *        use as a delimiter.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @return a Deephaven Table object
-     * @throws IOException if the file cannot be read
-     */
-    @ScriptApi
-    public static Table readCsv(String filePath, String format, StatusCallback progress) throws IOException {
-        return readCsv(new File(filePath), format, progress);
+        return CsvHelpers.readCsv(filePath, CsvSpecs.fromLegacyFormat(format));
     }
 
     /**
@@ -433,48 +461,12 @@ public class TableTools {
      * @param file a file object providing access to the CSV file to be read.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(Path)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(File file) throws IOException {
-        return readCsv(file, null, new MinProcessStatus());
-    }
-
-    /**
-     * Returns a memory table created from importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param file a file object providing access to the CSV file to be read.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @return a Deephaven Table object
-     * @throws IOException if the file cannot be read
-     */
-    @ScriptApi
-    public static Table readCsv(File file, StatusCallback progress) throws IOException {
-        return readCsv(file, null, progress);
-    }
-
-    /**
-     * Returns a memory table created from importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param file a file object providing access to the CSV file to be read.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-     *        use as a delimiter.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @return a Deephaven Table object
-     * @throws IOException if the file cannot be read
-     */
-    @ScriptApi
-    public static Table readCsv(File file, String format, StatusCallback progress) throws IOException {
-        Table table;
-        try (final InputStream is = CompressedFileUtil.openPossiblyCompressedFile(file.getAbsolutePath())) {
-            table = io.deephaven.db.tables.utils.CsvHelpers.readCsv(is, format, progress);
-        }
-        return table;
+        return CsvHelpers.readCsv(file.toPath());
     }
 
     /**
@@ -483,10 +475,12 @@ public class TableTools {
      * @param filePath the fully-qualified path to a CSV file to be read.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(String, CsvSpecs)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readHeaderlessCsv(String filePath) throws IOException {
-        return readHeaderlessCsv(new File(filePath), null, null, null);
+        return CsvHelpers.readCsv(filePath, CsvSpecs.headerless());
     }
 
     /**
@@ -496,70 +490,38 @@ public class TableTools {
      * @param header Column names to use for the resultant table.
      * @return a Deephaven Table object
      * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(String, CsvSpecs)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readHeaderlessCsv(String filePath, Collection<String> header) throws IOException {
-        return readHeaderlessCsv(new File(filePath), null, null, header);
-    }
-
-    /**
-     * Returns a memory table created from importing CSV data. Column data types are inferred from the data.
-     *
-     * @param filePath the fully-qualified path to a CSV file to be read.
-     * @param header Column names to use for the resultant table.
-     * @return a Deephaven Table object
-     * @throws IOException if the file cannot be read
-     */
-    @ScriptApi
-    public static Table readHeaderlessCsv(String filePath, String... header) throws IOException {
-        return readHeaderlessCsv(new File(filePath), null, null, Arrays.asList(header));
-    }
-
-    /**
-     * Returns a memory table created from importing CSV data. Column data types are inferred from the data.
-     *
-     * @param filePath the fully-qualified path to a CSV file to be read.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-     *        use as a delimiter.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @param header Column names to use for the resultant table.
-     * @return a Deephaven Table object
-     * @throws IOException if the file cannot be read
-     */
-    @ScriptApi
-    public static Table readHeaderlessCsv(String filePath, String format, StatusCallback progress,
-            Collection<String> header) throws IOException {
-        return readHeaderlessCsv(new File(filePath), format, progress, header);
-    }
-
-    /**
-     * Returns a memory table created from importing CSV data. Column data types are inferred from the data.
-     *
-     * @param file a file object providing access to the CSV file to be read.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-     *        use as a delimiter.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @param header Column names to use for the resultant table, or null if column names should be automatically
-     *        generated.
-     * @return a Deephaven Table object
-     * @throws IOException if the file cannot be read
-     */
-    @ScriptApi
-    public static Table readHeaderlessCsv(File file, String format, StatusCallback progress,
-            @Nullable Collection<String> header) throws IOException {
-        Table table;
-        try (final InputStream is = CompressedFileUtil.openPossiblyCompressedFile(file.getAbsolutePath())) {
-            table = io.deephaven.db.tables.utils.CsvHelpers.readHeaderlessCsv(is, format, progress, header);
+        final List<Selectable> views = new ArrayList<>();
+        // CsvSpecs.headerless() column names are 1-based index
+        int index = 1;
+        for (String h : header) {
+            views.add(Selectable.of(ColumnName.of(h), ColumnName.of(String.format("Column%d", index))));
+            ++index;
         }
-        return table;
+        return CsvHelpers.readCsv(filePath, CsvSpecs.headerless()).view(views);
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Returns a memory table created from importing CSV data. Column data types are inferred from the data.
+     *
+     * @param filePath the fully-qualified path to a CSV file to be read.
+     * @param header Column names to use for the resultant table.
+     * @return a Deephaven Table object
+     * @throws IOException if the file cannot be read
+     * @deprecated See {@link CsvHelpers#readCsv(String, CsvSpecs)}
+     */
+    @ScriptApi
+    @Deprecated
+    public static Table readHeaderlessCsv(String filePath, String... header) throws IOException {
+        return readHeaderlessCsv(filePath, Arrays.asList(header));
+    }
+
+    /**
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -570,11 +532,11 @@ public class TableTools {
     @ScriptApi
     public static void writeCsv(Table source, boolean compressed, String destPath, String... columns)
             throws IOException {
-        writeCsv(source, compressed, destPath, false, columns);
+        writeCsv(source, compressed, destPath, NULLS_AS_EMPTY_DEFAULT, columns);
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -590,7 +552,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -599,11 +561,11 @@ public class TableTools {
      */
     @ScriptApi
     public static void writeCsv(Table source, String destPath, String... columns) throws IOException {
-        writeCsv(source, destPath, false, columns);
+        writeCsv(source, destPath, NULLS_AS_EMPTY_DEFAULT, columns);
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -618,7 +580,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param out the stream to write to
@@ -627,11 +589,11 @@ public class TableTools {
      */
     @ScriptApi
     public static void writeCsv(Table source, PrintStream out, String... columns) throws IOException {
-        writeCsv(source, out, false, columns);
+        writeCsv(source, out, NULLS_AS_EMPTY_DEFAULT, columns);
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param out the stream to write to
@@ -648,7 +610,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -660,11 +622,11 @@ public class TableTools {
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
             String... columns) throws IOException {
-        CsvHelpers.writeCsv(source, destPath, compressed, timeZone, null, false, ',', columns);
+        CsvHelpers.writeCsv(source, destPath, compressed, timeZone, null, NULLS_AS_EMPTY_DEFAULT, ',', columns);
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -681,7 +643,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -699,7 +661,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written
@@ -712,11 +674,11 @@ public class TableTools {
     @ScriptApi
     public static void writeCsv(Table[] sources, String destPath, boolean compressed, DBTimeZone timeZone,
             String tableSeparator, String... columns) throws IOException {
-        writeCsv(sources, destPath, compressed, timeZone, tableSeparator, false, columns);
+        writeCsv(sources, destPath, compressed, timeZone, tableSeparator, NULLS_AS_EMPTY_DEFAULT, columns);
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written
@@ -733,7 +695,7 @@ public class TableTools {
     }
 
     /**
-     * Writes a DB table out as a CSV.
+     * Writes a table out as a CSV.
      *
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written

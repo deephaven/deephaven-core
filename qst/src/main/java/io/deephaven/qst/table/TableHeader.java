@@ -1,10 +1,13 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.Type;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -77,6 +80,10 @@ public abstract class TableHeader implements Iterable<ColumnHeader<?>> {
         return headers().get(name);
     }
 
+    public Collection<String> columnNames() {
+        return headers().keySet();
+    }
+
     @Override
     public final Iterator<ColumnHeader<?>> iterator() {
         return new ColumnHeaderIterator(headers().entrySet().iterator());
@@ -115,6 +122,13 @@ public abstract class TableHeader implements Iterable<ColumnHeader<?>> {
         @Override
         public ColumnHeader<?> next() {
             return adapt(it.next());
+        }
+    }
+
+    @Check
+    final void checkNames() {
+        for (String name : headers().keySet()) {
+            NameValidator.validateColumnName(name);
         }
     }
 }
