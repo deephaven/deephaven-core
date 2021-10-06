@@ -1,0 +1,102 @@
+[
+  {
+    "type": "column",
+    "isClosable": true,
+    "reorderEnabled": true,
+    "title": "",
+    "content": [
+      {
+        "type": "row",
+        "isClosable": true,
+        "reorderEnabled": true,
+        "title": "",
+        "height": 50,
+        "content": [
+          {
+            "type": "stack",
+            "isClosable": true,
+            "reorderEnabled": true,
+            "title": "",
+            "width": 75,
+            "activeItemIndex": 0,
+            "content": [
+              {
+                "type": "react-component",
+                "component": "ConsolePanel",
+                "title": "Console",
+                "isClosable": false,
+                "id": "WrBNx4MFn",
+                "props": {
+                  "metadata": {},
+                  "panelState": { "consoleSettings": {}, "itemIds": [] }
+                },
+                "componentName": "lm-react-component",
+                "reorderEnabled": true,
+                "componentState": null
+              },
+              {
+                "component": "LogPanel",
+                "isClosable": false,
+                "title": "Log",
+                "type": "react-component",
+                "props": {},
+                "id": "7oMOI3Q21J",
+                "componentName": "lm-react-component",
+                "reorderEnabled": true,
+                "componentState": null
+              }
+            ]
+          },
+          {
+            "type": "stack",
+            "width": 25,
+            "isClosable": true,
+            "reorderEnabled": true,
+            "title": "",
+            "activeItemIndex": 0,
+            "content": [
+              {
+                "type": "react-component",
+                "component": "CommandHistoryPanel",
+                "title": "Command History",
+                "isClosable": false,
+                "id": "0UpaT-zNY1",
+                "props": { "metadata": {}, "panelState": {} },
+                "componentName": "lm-react-component",
+                "reorderEnabled": true,
+                "componentState": null
+              },
+              {
+                "type": "react-component",
+                "component": "FileExplorerPanel",
+                "title": "File Explorer",
+                "isClosable": false,
+                "id": "K6M6OlfTw2",
+                "props": {},
+                "componentName": "lm-react-component",
+                "reorderEnabled": true,
+                "componentState": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "row",
+        "isClosable": true,
+        "reorderEnabled": true,
+        "title": "",
+        "height": 50,
+        "content": [
+          {
+            "type": "stack",
+            "title": "Notebooks",
+            "isClosable": true,
+            "reorderEnabled": true,
+            "width": 100
+          }
+        ]
+      }
+    ]
+  }
+]
