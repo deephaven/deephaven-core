@@ -8,7 +8,7 @@ Docker.registerDockerTask(project, 'ideClient') {
     }
     containerOutPath = '/usr/src/app/package/build'
     imageName = 'deephaven/dhide:local-build'
-    envVars = ["WEB_VERSION" : findProperty('webVersion') ?: project.version.toString()]
+    buildArgs = [ 'WEB_VERSION' : project.property('webVersion') ]
     copyOut {
         into "${buildDir}/dhide"
     }

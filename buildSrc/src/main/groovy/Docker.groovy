@@ -155,6 +155,11 @@ class Docker {
         Map<String, String> envVars;
 
         /**
+         * Optional set of args to set during build process.
+         */
+        Map<String, String> buildArgs;
+
+        /**
          * Logs are always printed from the build task when it runs, but entrypoint logs are only printed
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
@@ -257,9 +262,14 @@ class Docker {
                 // is updated
                 inputs.files cfg.parentContainers.each { t -> t.outputs.files }
 
+
                 // specify tag, if provided
                 if (cfg.imageName) {
                     images.add(cfg.imageName)
+                }
+
+                if (cfg.buildArgs) {
+                    buildArgs.set(cfg.buildArgs)
                 }
             }
         }
@@ -286,6 +296,7 @@ class Docker {
                 if (cfg.envVars) {
                     cfg.envVars.forEach createContainer.&withEnvVar
                 }
+
 
                 targetImageId makeImage.get().getImageId()
                 containerName.set(dockerContainerName)
