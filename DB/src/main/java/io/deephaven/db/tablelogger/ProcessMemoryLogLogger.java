@@ -96,8 +96,7 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
                 .add("FreeMemory", long.class)
                 .add("IntervalCollections", long.class)
                 .add("IntervalCollectionTimeNanos", long.class)
-                .add("IntervalCollectionTimePercent", float.class)
-                ;
+                .add("IntervalCollectionTimePercent", float.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
     }
