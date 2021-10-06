@@ -446,8 +446,7 @@ public class TestStreamToTableAdapter {
         private boolean fail;
 
         @Override
-        public void register(@NotNull StreamConsumer consumer) {
-        }
+        public void register(@NotNull StreamConsumer consumer) {}
 
         @Override
         public void flush() {

@@ -255,7 +255,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 return;
             }
             alive = false;
-            log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
+            log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
+                    .append(name)
                     .endl();
             liveTableRegistrar.removeTable(this);
             final Runnable localShutdownCallback = shutdownCallback;
