@@ -16,6 +16,7 @@ if (canQuarkus) {
 
 evaluationDependsOn ':demo-grpc-api'
 evaluationDependsOn ':demo-web'
+evaluationDependsOn ':demo-envoy'
 
 java {
     toolchain {
@@ -174,9 +175,8 @@ String grpcApiTag = project.version
 String webRepository = project.property('webRepository')
 String webTag = project.version
 
-
-def envoyRepository = project.property('envoyRepository')
-def envoyTag = project.version
+String envoyRepository = project.property('envoyRepository')
+String envoyTag = project.version
 
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
