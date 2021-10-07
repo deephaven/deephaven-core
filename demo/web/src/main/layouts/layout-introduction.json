@@ -10,15 +10,16 @@
         "isClosable": true,
         "reorderEnabled": true,
         "title": "",
-        "height": 50,
+        "height": 47.16666666666667,
         "content": [
           {
             "type": "stack",
+            "header": {},
             "isClosable": true,
             "reorderEnabled": true,
             "title": "",
-            "width": 75,
             "activeItemIndex": 0,
+            "width": 78.29181494661923,
             "content": [
               {
                 "type": "react-component",
@@ -28,7 +29,14 @@
                 "id": "WrBNx4MFn",
                 "props": {
                   "metadata": {},
-                  "panelState": { "consoleSettings": {}, "itemIds": [] }
+                  "panelState": {
+                    "consoleSettings": {
+                      "isAutoLaunchPanelsEnabled": true,
+                      "isPrintStdOutEnabled": true,
+                      "isClosePanelsOnDisconnectEnabled": true
+                    },
+                    "itemIds": []
+                  }
                 },
                 "componentName": "lm-react-component",
                 "reorderEnabled": true,
@@ -49,23 +57,14 @@
           },
           {
             "type": "stack",
-            "width": 25,
+            "header": {},
             "isClosable": true,
             "reorderEnabled": true,
             "title": "",
             "activeItemIndex": 0,
+            "width": 21.70818505338078,
+            "height": 47.16666666666667,
             "content": [
-              {
-                "type": "react-component",
-                "component": "CommandHistoryPanel",
-                "title": "Command History",
-                "isClosable": false,
-                "id": "0UpaT-zNY1",
-                "props": { "metadata": {}, "panelState": {} },
-                "componentName": "lm-react-component",
-                "reorderEnabled": true,
-                "componentState": null
-              },
               {
                 "type": "react-component",
                 "component": "FileExplorerPanel",
@@ -73,6 +72,17 @@
                 "isClosable": false,
                 "id": "K6M6OlfTw2",
                 "props": {},
+                "componentName": "lm-react-component",
+                "reorderEnabled": true,
+                "componentState": null
+              },
+              {
+                "type": "react-component",
+                "component": "CommandHistoryPanel",
+                "title": "Command History",
+                "isClosable": false,
+                "id": "0UpaT-zNY1",
+                "props": { "metadata": {}, "panelState": {} },
                 "componentName": "lm-react-component",
                 "reorderEnabled": true,
                 "componentState": null
@@ -86,14 +96,42 @@
         "isClosable": true,
         "reorderEnabled": true,
         "title": "",
-        "height": 50,
+        "height": 52.83333333333333,
         "content": [
           {
             "type": "stack",
-            "title": "Notebooks",
+            "header": {},
             "isClosable": true,
             "reorderEnabled": true,
-            "width": 100
+            "title": "",
+            "activeItemIndex": 0,
+            "width": 51.74377224199288,
+            "content": [
+              {
+                "type": "react-component",
+                "component": "MarkdownNotebookPanel",
+                "props": {
+                  "metadata": {
+                    "id": "/01 Basic Streams.md",
+                    "itemName": "/01 Basic Streams.md"
+                  }
+                },
+                "title": "01 Basic Streams.md",
+                "id": "1HQswO4ZV",
+                "componentName": "lm-react-component",
+                "isClosable": true,
+                "reorderEnabled": true,
+                "componentState": null
+              }
+            ]
+          },
+          {
+            "type": "stack",
+            "isClosable": true,
+            "reorderEnabled": true,
+            "title": "",
+            "width": 48.25622775800712,
+            "activeItemIndex": 0
           }
         ]
       }
