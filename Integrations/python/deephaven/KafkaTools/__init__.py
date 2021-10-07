@@ -89,8 +89,8 @@ def _custom_avroSchemaToColumnDefinitions(schema, mapping:dict = None):
     if mapping is None:
         return _java_type_.avroSchemaToColumnDefinitions(schema)
 
-    field_names = jpy.array('java.lang.String', mapping.keys())
-    column_names = jpy.array('java.lang.String', mapping.values())
+    field_names = jpy.array('java.lang.String', list(mapping.keys()))
+    column_names = jpy.array('java.lang.String', list(mapping.values()))
     mapping = _java_type_.fieldNameMappingFromParallelArrays(field_names, column_names)
     return _java_type_.avroSchemaToColumnDefinitions(schema, mapping)
 
@@ -166,8 +166,8 @@ def consumeToTable(
         offsets = ALL_PARTITIONS_DONT_SEEK
     elif isinstance(offsets, dict):
         try:
-            partitions_array = jpy.array('int', offsets.keys())
-            offsets_array = jpy.array('long', offsets.values())
+            partitions_array = jpy.array('int', list(offsets.keys()))
+            offsets_array = jpy.array('long', list(offsets.values()))
             offsets = _java_type_.partitionToOffsetFromParallelArrays(partitions_array, offsets_array)
         except Exception as e:
             raise ValueError(
