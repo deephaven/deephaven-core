@@ -781,32 +781,7 @@ def readCsv(*args):
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
       
     *Overload 5*  
-      :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-              use as a delimiter.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
-              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-              logger.
-      :return: (io.deephaven.db.tables.Table) a Deephaven Table object
-      
-    *Overload 6*  
       :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :return: (io.deephaven.db.tables.Table) a Deephaven Table object
-      
-    *Overload 7*  
-      :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
-              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-              logger.
-      :return: (io.deephaven.db.tables.Table) a Deephaven Table object
-      
-    *Overload 8*  
-      :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-              use as a delimiter.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
-              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-              logger.
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
     """
     
@@ -830,27 +805,6 @@ def readHeaderlessCsv(*args):
     *Overload 3*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
       :param header: (java.lang.String...) - Column names to use for the resultant table.
-      :return: (io.deephaven.db.tables.Table) a Deephaven Table object
-      
-    *Overload 4*  
-      :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-              use as a delimiter.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
-              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-              logger.
-      :param header: (java.util.Collection<java.lang.String>) - Column names to use for the resultant table.
-      :return: (io.deephaven.db.tables.Table) a Deephaven Table object
-      
-    *Overload 5*  
-      :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-              use as a delimiter.
-      :param progress: (io.deephaven.util.progress.StatusCallback) - a StatusCallback object that can be used to log progress details or update a progress bar. If
-              passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-              logger.
-      :param header: (java.util.Collection<java.lang.String>) - Column names to use for the resultant table, or null if column names should be automatically
-              generated.
       :return: (io.deephaven.db.tables.Table) a Deephaven Table object
     """
     
@@ -1148,7 +1102,7 @@ def typeFromName(dataTypeStr):
 @_passThrough
 def writeCsv(*args):
     """
-    Writes a DB table out as a CSV.
+    Writes a table out as a CSV.
     
     *Overload 1*  
       :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported

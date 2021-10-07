@@ -2,6 +2,7 @@ package io.deephaven.db.v2.utils;
 
 import io.deephaven.db.tables.Table;
 
+import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 
@@ -215,13 +216,13 @@ public class PerformanceQueries {
         return resultMap;
     }
 
-    public static float approxPct(final long v0, final long v1) {
+    public static float approxRatio(final long v0, final long v1) {
         if (v1 == 0) {
             return QueryConstants.NULL_FLOAT;
         }
-        final float pct = (float) (100.0 * v0 / v1);
+        final float pct = v0 / (float)  v1;
         // The samples are not perfect; let's not confuse our users.
-        return Math.min(pct, 100.0F);
+        return Math.min(pct, 1.0F);
     }
 
     /**
@@ -231,19 +232,30 @@ public class PerformanceQueries {
      */
     @ScriptApi
     public static Table processMemory() {
-        final Table pml = TableLoggers.processMemoryLog();
-        Table pm = pml.view(
-                "IntervalStartTime",
-                "IntervalDurationSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
-                "TotalMemoryMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
-                "FreeMemoryMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))",
-                "GcTimePercent = io.deephaven.db.v2.utils.PerformanceQueries.approxPct(IntervalCollectionTimeNanos, IntervalDurationNanos)");
+        final long maxMemoryBytes = RuntimeMemory.getInstance().getMaxMemory();
+        final int maxMemoryMiB = (int) Math.ceil(maxMemoryBytes / (1024 * 1024.0));
+        final Table maxMem = TableTools.newTable(TableTools.intCol("MaxMemMiB", maxMemoryMiB));
+        final Table pml = TableLoggers.processMemoryLog().naturalJoin(maxMem, "");
+        Table pm = pml.updateView(
+                "TotalMemMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
+                "FreeMemMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))");
+        pm = pm.view(
+                "IntervalStart = IntervalStartTime",
+                "IntervalSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
+                "AvailMemMiB = MaxMemMiB - TotalMemMiB + FreeMemMiB",
+                "MaxMemMiB",
+                "AvailMemRatio = AvailMemMiB/MaxMemMiB",
+                "GcTimeRatio = io.deephaven.db.v2.utils.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)");
         pm = pm.formatColumns(
-                "GcTimePercent=Decimal(`#0.0%`)",
-                "GcTimePercent=(GcTimePercent >= 75.0) ? PALE_RED : " +
-                        "((GcTimePercent >= 50.0) ? PALE_REDPURPLE : " +
-                        "((GcTimePercent > 5.0) ? PALE_PURPLE : NO_FORMATTING))",
-                "IntervalDurationSeconds=Decimal(`#0.000`)");
+                "AvailMemRatio=Decimal(`#0.0%`)",
+                "AvailMemRatio=(AvailMemRatio < 0.05) ? PALE_RED : " +
+                        "((AvailMemRatio < 0.10) ? PALE_REDPURPLE : " +
+                        "((AvailMemRatio < 0.20) ? PALE_PURPLE : NO_FORMATTING))",
+                "GcTimeRatio=Decimal(`#0.0%`)",
+                "GcTimeRatio=(GcTimeRatio >= 0.75) ? PALE_RED : " +
+                        "((GcTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
+                        "((GcTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
+                "IntervalSeconds=Decimal(`#0.000`)");
         return pm;
     }
 

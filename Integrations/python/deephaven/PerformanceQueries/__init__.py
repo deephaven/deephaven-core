@@ -58,14 +58,14 @@ except Exception as e:
 
 
 @_passThrough
-def approxPct(v0, v1):
+def approxRatio(v0, v1):
     """
     :param v0: long
     :param v1: long
     :return: float
     """
     
-    return _java_type_.approxPct(v0, v1)
+    return _java_type_.approxRatio(v0, v1)
 
 
 @_passThrough
