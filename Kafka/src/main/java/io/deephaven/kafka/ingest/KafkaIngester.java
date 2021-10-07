@@ -54,6 +54,7 @@ public class KafkaIngester {
     private long messagesWithErr = 0;
     private long lastProcessed = 0;
 
+    private volatile boolean needsAssignment;
     private volatile boolean done;
 
     /**
@@ -264,6 +265,10 @@ public class KafkaIngester {
         long lastReportNanos = System.nanoTime();
         final DecimalFormat rateFormat = new DecimalFormat("#.0000");
         while (!done) {
+            while (needsAssignment) {
+                needsAssignment = false;
+                assign();
+            }
             final long beforePoll = System.nanoTime();
             final long nextReport = lastReportNanos + reportIntervalNanos;
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
@@ -288,9 +293,8 @@ public class KafkaIngester {
                 lastProcessed = messagesProcessed;
             }
         }
-        log.info().append(logPrefix).append("Closing Kafka consumer.").endl();
+        log.info().append(logPrefix).append("Closing Kafka consumer").endl();
         kafkaConsumer.close();
-        throw new UncheckedDeephavenException("Kafka stream was closed.");
     }
 
     /**
@@ -369,9 +373,9 @@ public class KafkaIngester {
         assignedPartitions.remove(partition);
         if (becameEmpty) {
             done = true;
-            kafkaConsumer.wakeup();
         } else {
-            assign();
+            needsAssignment = true;
         }
+        kafkaConsumer.wakeup();
     }
 }
