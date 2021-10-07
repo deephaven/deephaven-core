@@ -2,6 +2,7 @@ package io.deephaven.db.v2.utils;
 
 import io.deephaven.db.tables.Table;
 
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.HashMap;
@@ -152,6 +153,7 @@ public class PerformanceQueries {
      * @param evaluationNumber evaluation number
      * @return map of query update performance tables.
      */
+    @ScriptApi
     public static Map<String, Table> queryUpdatePerformanceMap(final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
         final Table qup = queryUpdatePerformance(evaluationNumber);
@@ -213,10 +215,42 @@ public class PerformanceQueries {
         return resultMap;
     }
 
+    public static float approxPct(final long v0, final long v1) {
+        if (v1 == 0) {
+            return QueryConstants.NULL_FLOAT;
+        }
+        final float pct = (float) (100.0 * v0 / v1);
+        // The samples are not perfect; let's not confuse our users.
+        return Math.min(pct, 100.0F);
+    }
+
+    /**
+     * A user friendly view with basic memory and GC data samples for the current engine process.
+     *
+     * @return a view on ProcessMemoryLog.
+     */
+    @ScriptApi
+    public static Table processMemory() {
+        final Table pml = TableLoggers.processMemoryLog();
+        Table pm = pml.view(
+                "IntervalStartTime",
+                "IntervalDurationSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
+                "TotalMemoryMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
+                "FreeMemoryMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))",
+                "GcTimePercent = io.deephaven.db.v2.utils.PerformanceQueries.approxPct(IntervalCollectionTimeNanos, IntervalDurationNanos)");
+        pm = pm.formatColumns(
+                "GcTimePercent=Decimal(`#0.0%`)",
+                "GcTimePercent=(GcTimePercent >= 75.0) ? PALE_RED : " +
+                        "((GcTimePercent >= 50.0) ? PALE_REDPURPLE : " +
+                        "((GcTimePercent > 5.0) ? PALE_PURPLE : NO_FORMATTING))",
+                "IntervalDurationSeconds=Decimal(`#0.000`)");
+        return pm;
+    }
+
     private static Table formatColumnsAsPct(final Table t, final String... cols) {
         final String[] formats = new String[cols.length];
         for (int i = 0; i < cols.length; ++i) {
-            formats[i] = cols[i] + "=Decimal(`#0.##%`)";
+            formats[i] = cols[i] + "=Decimal(`#0.0%`)";
         }
         return t.formatColumns(formats);
     }

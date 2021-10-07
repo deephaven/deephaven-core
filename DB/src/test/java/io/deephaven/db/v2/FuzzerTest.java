@@ -272,12 +272,14 @@ public class FuzzerTest {
 
         final long loopStart = System.currentTimeMillis();
         final TimeTable timeTable = (TimeTable) session.getVariable("tt");
+        final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
         for (int step = 0; step < stepsToRun; ++step) {
             final int fstep = step;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(timeTable::refresh);
 
-            final long totalMemory = RuntimeMemory.getInstance().totalMemory();
-            final long freeMemory = RuntimeMemory.getInstance().freeMemory();
+            RuntimeMemory.getInstance().read(sample);
+            final long totalMemory = sample.totalMemory;
+            final long freeMemory = sample.freeMemory;
             final long usedMemory = totalMemory - freeMemory;
 
             // noinspection unchecked,OptionalGetWithoutIsPresent

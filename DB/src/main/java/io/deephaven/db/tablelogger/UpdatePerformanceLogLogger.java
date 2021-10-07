@@ -52,8 +52,10 @@ public class UpdatePerformanceLogLogger
         RowSetter<Long> EntryIntervalModified;
         RowSetter<Long> EntryIntervalShifted;
         RowSetter<Long> EntryIntervalInvocationCount;
-        RowSetter<Long> TotalMemoryFree;
-        RowSetter<Long> TotalMemoryUsed;
+        RowSetter<Long> MinFreeMemory;
+        RowSetter<Long> MaxTotalMemory;
+        RowSetter<Long> Collections;
+        RowSetter<Long> CollectionTimeNanos;
         RowSetter<Long> EntryIntervalAllocatedBytes;
         RowSetter<Long> EntryIntervalPoolAllocatedBytes;
 
@@ -75,8 +77,10 @@ public class UpdatePerformanceLogLogger
             EntryIntervalModified = row.getSetter("EntryIntervalModified", long.class);
             EntryIntervalShifted = row.getSetter("EntryIntervalShifted", long.class);
             EntryIntervalInvocationCount = row.getSetter("EntryIntervalInvocationCount", long.class);
-            TotalMemoryFree = row.getSetter("TotalMemoryFree", long.class);
-            TotalMemoryUsed = row.getSetter("TotalMemoryUsed", long.class);
+            MinFreeMemory = row.getSetter("MinFreeMemory", long.class);
+            MaxTotalMemory = row.getSetter("MaxTotalMemory", long.class);
+            Collections = row.getSetter("Collections", long.class);
+            CollectionTimeNanos = row.getSetter("CollectionTimeNanos", long.class);
             EntryIntervalAllocatedBytes = row.getSetter("EntryIntervalAllocatedBytes", long.class);
             EntryIntervalPoolAllocatedBytes = row.getSetter("EntryIntervalPoolAllocatedBytes", long.class);
         }
@@ -102,8 +106,10 @@ public class UpdatePerformanceLogLogger
             this.EntryIntervalModified.setLong(performanceEntry.getIntervalModified());
             this.EntryIntervalShifted.setLong(performanceEntry.getIntervalShifted());
             this.EntryIntervalInvocationCount.setLong(performanceEntry.getIntervalInvocationCount());
-            this.TotalMemoryFree.setLong(performanceEntry.getTotalFreeMemory());
-            this.TotalMemoryUsed.setLong(performanceEntry.getTotalUsedMemory());
+            this.MinFreeMemory.setLong(performanceEntry.getMinFreeMemory());
+            this.MaxTotalMemory.setLong(performanceEntry.getMaxTotalMemory());
+            this.Collections.setLong(performanceEntry.getCollections());
+            this.CollectionTimeNanos.setLong(performanceEntry.getCollectionTimeNanos());
             this.EntryIntervalAllocatedBytes.setLong(performanceEntry.getIntervalAllocatedBytes());
             this.EntryIntervalPoolAllocatedBytes.setLong(performanceEntry.getIntervalPoolAllocatedBytes());
         }
@@ -139,8 +145,10 @@ public class UpdatePerformanceLogLogger
                 .add("EntryIntervalShifted", long.class)
 
                 .add("EntryIntervalInvocationCount", long.class)
-                .add("TotalMemoryFree", long.class)
-                .add("TotalMemoryUsed", long.class)
+                .add("MinFreeMemory", long.class)
+                .add("MaxTotalMemory", long.class)
+                .add("Collections", long.class)
+                .add("CollectionTimeNanos", long.class)
                 .add("EntryIntervalAllocatedBytes", long.class)
                 .add("EntryIntervalPoolAllocatedBytes", long.class)
 

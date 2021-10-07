@@ -58,6 +58,17 @@ except Exception as e:
 
 
 @_passThrough
+def approxPct(v0, v1):
+    """
+    :param v0: long
+    :param v1: long
+    :return: float
+    """
+    
+    return _java_type_.approxPct(v0, v1)
+
+
+@_passThrough
 def processInfo(processInfoId, type, key):
     """
     Gets the information for a process.
@@ -69,6 +80,17 @@ def processInfo(processInfoId, type, key):
     """
     
     return _java_type_.processInfo(processInfoId, type, key)
+
+
+@_passThrough
+def processMemory():
+    """
+    A user friendly view with basic memory and GC data samples for the current engine process.
+    
+    :return: (io.deephaven.db.tables.Table) a view on ProcessMemoryLog.
+    """
+    
+    return _java_type_.processMemory()
 
 
 @_passThrough

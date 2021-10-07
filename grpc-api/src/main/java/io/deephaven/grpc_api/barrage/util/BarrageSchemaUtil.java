@@ -165,10 +165,12 @@ public class BarrageSchemaUtil {
             // wire up style and format column references
             if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_FORMAT_NAME)) {
                 putMetadata(extraMetadata, "styleColumn", colName + ColumnFormattingValues.TABLE_FORMAT_NAME);
-            } else if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME)) {
+            }
+            if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME)) {
                 putMetadata(extraMetadata, "numberFormatColumn",
                         colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME);
-            } else if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME)) {
+            }
+            if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME)) {
                 putMetadata(extraMetadata, "dateFormatColumn", colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
             }
 

@@ -112,12 +112,13 @@ public class MemoryTableLoggers {
         return statsLogger;
     }
 
-    public static void maybeStartStatsCollection() {
+    public static boolean maybeStartStatsCollection() {
         if (!MemoryTableLoggers.STATS_LOGGING_ENABLED) {
-            return;
+            return false;
         }
         final boolean fdStatsLoggingEnabled = Configuration.getInstance().getBooleanWithDefault(
                 "fdStatsLoggingEnabled", false);
         Driver.start(new RealTimeClock(), MemoryTableLoggers.getInstance().getStatsLogger(), fdStatsLoggingEnabled);
+        return true;
     }
 }
