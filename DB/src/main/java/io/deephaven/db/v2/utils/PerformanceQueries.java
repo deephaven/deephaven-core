@@ -237,13 +237,13 @@ public class PerformanceQueries {
                 "TotalMemoryMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
                 "FreeMemoryMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))",
                 "GcTimePercent = io.deephaven.db.v2.utils.PerformanceQueries.approxPct(IntervalCollectionTimeNanos, IntervalDurationNanos)")
-                .view("IntervalStartTime", "IntervalDurationSeconds", "TotalMemoryMiB", "FreeMemoryMiB", "GcTimePercent");
+                .view("IntervalStartTime", "IntervalDurationSeconds", "TotalMemoryMiB", "FreeMemoryMiB",
+                        "GcTimePercent");
         pm = pm.formatColumns(
                 "GcTimePercent=Decimal(`#0.0%`)",
                 "GcTimePercent=(GcTimePercent >= 75.0) ? PALE_RED : " +
                         "((GcTimePercent >= 50.0) ? PALE_PURPLE : " +
-                        "((GcTimePercent < 5.0) ? NO_FORMATTING : PALE_REDPURPLE))"
-        );
+                        "((GcTimePercent < 5.0) ? NO_FORMATTING : PALE_REDPURPLE))");
         pm = formatColumnsAsMills(pm, "IntervalDurationSeconds");
         return pm;
     }

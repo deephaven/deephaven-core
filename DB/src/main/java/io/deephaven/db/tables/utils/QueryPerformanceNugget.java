@@ -116,8 +116,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * Construct a "dummy" nugget, which will never gather any information or be recorded.
      */
     private QueryPerformanceNugget() {
-        startMemorySample = new RuntimeMemory.Sample();
-        endMemorySample = new RuntimeMemory.Sample();
+        startMemorySample = null;
+        endMemorySample = null;
         evaluationNumber = NULL_INT;
         depth = 0;
         description = null;

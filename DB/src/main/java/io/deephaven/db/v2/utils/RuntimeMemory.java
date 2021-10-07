@@ -68,7 +68,6 @@ public class RuntimeMemory {
     }
 
     private volatile Snapshot currSnapshot;
-    private Snapshot nextSnapshot;
 
     /** The runtime provided max memory (at startup, because it should not change). */
     private final long maxMemory;
@@ -86,10 +85,7 @@ public class RuntimeMemory {
         commaFormat.setGroupingUsed(true);
 
         currSnapshot = new Snapshot();
-        nextSnapshot = new Snapshot();
         currSnapshot.nextLog = System.currentTimeMillis() + logInterval;
-        currSnapshot.totalCollections = 0;
-        currSnapshot.totalCollectionTimeMs = 0;
         // Technically these /could/ change any time; we assume they don't.
         gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
     }
@@ -154,30 +150,37 @@ public class RuntimeMemory {
         final long now = System.currentTimeMillis();
         Snapshot snapshot = currSnapshot;
         if (now >= snapshot.nextCheck) {
-            snapshot = nextSnapshot;
-            snapshot.lastFreeMemory = runtime.freeMemory();
-            snapshot.lastTotalMemory = runtime.totalMemory();
-            snapshot.nextCheck = now + cacheInterval;
-            long collections = 0;
-            long collectionsMs = 0;
-            for (final GarbageCollectorMXBean gcBean : gcBeans) {
-                collections += gcBean.getCollectionCount();
-                collectionsMs += gcBean.getCollectionTime();
+            synchronized (this) {
+                if (now >= currSnapshot.nextCheck) {
+                    snapshot = new Snapshot();
+                    snapshot.lastFreeMemory = runtime.freeMemory();
+                    snapshot.lastTotalMemory = runtime.totalMemory();
+                    snapshot.nextCheck = now + cacheInterval;
+                    long collections = 0;
+                    long collectionsMs = 0;
+                    for (final GarbageCollectorMXBean gcBean : gcBeans) {
+                        collections += gcBean.getCollectionCount();
+                        collectionsMs += gcBean.getCollectionTime();
+                    }
+                    snapshot.totalCollections = collections;
+                    snapshot.totalCollectionTimeMs = collectionsMs;
+                    currSnapshot = snapshot;
+                }
             }
-            snapshot.totalCollections = collections;
-            snapshot.totalCollectionTimeMs = collectionsMs;
-            nextSnapshot = currSnapshot;
-            currSnapshot = snapshot;
         }
         buf.freeMemory = snapshot.lastFreeMemory;
         buf.totalMemory = snapshot.lastTotalMemory;
         buf.totalCollections = snapshot.totalCollections;
         buf.totalCollectionTimeMs = snapshot.totalCollectionTimeMs;
         if (logInterval > 0 && now >= snapshot.nextLog) {
-            log.info().append("Jvm Heap: ").append(commaFormat.format(buf.freeMemory)).append(" Free / ")
-                    .append(commaFormat.format(buf.totalMemory)).append(" Total (")
-                    .append(commaFormat.format(maxMemory)).append(" Max)").endl();
-            currSnapshot.nextLog = now + logInterval;
+            synchronized (this) {
+                if (now >= currSnapshot.nextLog) {
+                    log.info().append("Jvm Heap: ").append(commaFormat.format(buf.freeMemory)).append(" Free / ")
+                            .append(commaFormat.format(buf.totalMemory)).append(" Total (")
+                            .append(commaFormat.format(maxMemory)).append(" Max)").endl();
+                    currSnapshot.nextLog = now + logInterval;
+                }
+            }
         }
     }
 
