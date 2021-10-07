@@ -29,6 +29,8 @@ public class Machine {
     private boolean online;
     private DomainMapping domainInUse;
     private final LinkedList<DomainMapping> allDomains = new LinkedList<>();
+    private String version;
+    private String lease;
 
     public Machine() {
     }
@@ -189,5 +191,21 @@ public class Machine {
 
     public DomainMapping domain() {
         return domainInUse == null ? new DomainMapping(host, getDomainName().replace(host + ".", "")) : domainInUse;
+    }
+
+    public void setVersion(final String version) {
+        this.version = version;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setLease(final String lease) {
+        this.lease = lease;
+    }
+
+    public String getLease() {
+        return lease;
     }
 }

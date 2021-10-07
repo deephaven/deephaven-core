@@ -170,10 +170,10 @@ public class DhDemoServer implements QuarkusApplication {
                 LOG.info("Handling request " + req.request().uri());
                 // verify that this cookie points to a running service, and if so, redirect to it.
 
+                if (!uname.contains(".")) {
+                    uname = uname + "." + DOMAIN;
+                }
                 if (controller.isMachineReady(uname)) {
-                    if (!uname.contains(".")) {
-                        uname = uname + "." + DOMAIN;
-                    }
                     String uri = "https://" + uname;
                     req.redirect(uri);
                     return;

@@ -16,7 +16,7 @@ services:
       - /etc/ssl/dh:/etc/ssl/dh
       - /etc/ssl/internal:/etc/ssl/internal
     environment:
-      - JAVA_TOOL_OPTIONS=-Xmx2g -Ddeephaven.console.type=${TYPE:-python}
+      - JAVA_TOOL_OPTIONS=-Xmx12g -Ddeephaven.console.type=${TYPE:-python}
       - DH_TLS_CHAIN=/etc/ssl/internal/tls.crt
       - DH_TLS_KEY=/etc/ssl/internal/tls.key.pk8
 
@@ -30,7 +30,7 @@ services:
       grpc-api:
         condition: service_healthy
     environment:
-      - JAVA_TOOL_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
+      - JAVA_OPTIONS="-Xmx2g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
 
   web:
     image: ${REPO:-ghcr.io/deephaven}/web:${VERSION:-latest}

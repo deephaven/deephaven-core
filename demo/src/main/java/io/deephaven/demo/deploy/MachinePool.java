@@ -84,11 +84,14 @@ public class MachinePool {
         return machines.parallelStream();
     }
 
-    public void remove(final Machine machine) {
+    public void removeMachine(final Machine machine) {
         machines.remove(machine);
     }
 
-    public boolean needsMoreMachines(final int poolBuffer, final int poolSize) {
+    public boolean needsMoreMachines(final int poolBuffer, final int poolSize, final int maxPoolSize) {
+        if (machines.size() >= maxPoolSize) {
+            return false;
+        }
         int unused = 0, total = 0;
         for (Machine machine : machines) {
             total++;

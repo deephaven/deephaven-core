@@ -493,7 +493,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         }
         if (!machine.isController()) {
             // non-controller machines attach the demo-data disk, so we can mount it into worker container
-            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
+//            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
         }
         // apply node-role specific cli arguments
         if (machine.isSnapshotCreate()) {
@@ -538,7 +538,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("--scopes");
             cmds.add("https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/cloud-platform");
         } else {
-            cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_WORKER);
+            cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_WORKER + "," + LABEL_VERSION + "=" + VERSION_MANGLE);
             cmds.add("--tags=dh-demo,dh-worker");
             cmds.add("--service-account");
             cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");

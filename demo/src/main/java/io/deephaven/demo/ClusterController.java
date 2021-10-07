@@ -9,7 +9,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.jboss.logging.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -18,7 +17,6 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import static io.deephaven.demo.NameConstants.*;
@@ -226,12 +224,17 @@ public class ClusterController {
         machine.setOnline(false);
         setTimer("Decommission " + machine.getHost(), ()-> {
             try {
+                boolean validVersion = isValidVersion(machine);
                 // TODO: ping the machine and have a procedure that warns the user this is going to happen:
                 //  also, we should be hooking up a new DNS name to the machine and deleting the one that is in use
-                gcloud("instances", "stop", "-q", machine.getHost());
-                manager.replaceDNS(machine);
-                machine.setInUse(false);
-                if (machines.needsMoreMachines(getPoolBuffer(), getPoolSize())) {
+                gcloud("instances", validVersion ? "stop" : "delete", "-q", machine.getHost());
+                if (validVersion) {
+                    manager.replaceDNS(machine);
+                    machine.setInUse(false);
+                } else {
+                    machine.setInUse(true);
+                }
+                if (machines.needsMoreMachines(getPoolBuffer(), getPoolSize(), getMaxPoolSize())) {
                     requestMachine();
                 }
             } catch (IOException | InterruptedException e) {
@@ -307,7 +310,7 @@ public class ClusterController {
         try {
             final Execute.ExecutionResult result = gcloudQuiet(true, false, "instances", "list",
                     "--filter", "labels." + LABEL_PURPOSE + "=" + PURPOSE_WORKER,
-                    "--format", "csv[box,no-heading](name,hostname,status,networkInterfaces[0].accessConfigs[0].natIP)",
+                    "--format", getMachineFormatFlag(),
                     // we'll do paging if we actually see activity this high
                     "--page-size", "500",
                     "-q"
@@ -329,7 +332,7 @@ public class ClusterController {
                         continue;
                     }
                     String[] bits = line.split(",");
-                    Machine mach = new Machine(bits[0]);
+                    Machine mach = new Machine(bits[getIndexName()]);
                     // nasty chunk of code I'm uncommenting whenever I want to nuke all workers to use a new worker image... needs a main() somewhere
 //                    setTimer("blart", ()->
 //                            {
@@ -343,21 +346,36 @@ public class ClusterController {
 //                            }
 //                            );
 //                    if ("".length() == 0) continue;
-                    if (bits[1].length() > 0) {
+                    if (bits.length < getIndexLength()) {
+                        LOG.error("UNEXPECTED MACHINE METADATA FORMAT: " + line);
+                        continue;
+                    }
+                    if (bits[getIndexHostname()].length() > 0) {
                         // hmmm.... we really shouldn't be using custom hostname... it's stuck to machine on creation
                         // for now, we'll just prefer a non-null DomainMapping object, if one is assigned to this instance
-                        mach.setDomainName(bits[1]);
+                        mach.setDomainName(bits[getIndexHostname()]);
                     }
-                    if (bits[2].length() > 0) {
-                        mach.setOnline("RUNNING".equals(bits[2]));
+                    if (bits[getIndexStatus()].length() > 0) {
+                        mach.setOnline("RUNNING".equals(bits[getIndexIp()]));
                         if (mach.isOnline()) {
                             online++;
                         }
                     }
-                    if (bits.length == 4 && bits[3].length() > 0) {
-                        mach.setIp(bits[3]);
+                    if (bits[getIndexIp()].length() > 0) {
+                        mach.setIp(bits[getIndexIp()]);
                     }
-                    machines.addMachine(mach);
+                    if (bits[getIndexLease()].length() > 0) {
+                        mach.setLease(bits[getIndexLease()]);
+                    }
+                    if (bits[getIndexVersion()].length() > 0) {
+                        mach.setVersion(bits[getIndexVersion()]);
+                    }
+                    if (isValidVersion(mach)) {
+                        machines.addMachine(mach);
+                    } else {
+                        turnOff(mach);
+                        machines.removeMachine(mach);
+                    }
                 }
                 LOG.infof("Found %s running machines", online);
             }
@@ -367,6 +385,33 @@ public class ClusterController {
         }
         latch.countDown();
     }
+
+    private boolean isValidVersion(final Machine machine) {
+        return VERSION_MANGLE.equals(machine.getVersion());
+    }
+
+    private String getMachineFormatFlag() {
+        return "csv[box,no-heading](" +
+                "name," +
+                "hostname," +
+                "labels." + LABEL_USER + "," +
+                "networkInterfaces[0].accessConfigs[0].natIP," +
+                "labels." + LABEL_PURPOSE + "," +
+                "labels." + LABEL_LEASE + "," +
+                "labels." + LABEL_VERSION + "," +
+                "status" +
+        ")";
+    }
+    private int getIndexName() { return 0; }
+    private int getIndexHostname() { return 1; }
+    private int getIndexUser() { return 2; }
+    private int getIndexIp() { return 3; }
+    private int getIndexPurpose() { return 4; }
+    private int getIndexLease() { return 5; }
+    private int getIndexVersion() { return 6; }
+    private int getIndexStatus() { return 7; }
+    // STOP! Make sure that new indices are added above, and that getIndexLength(), below, is the total number of indices
+    private int getIndexLength() { return 8; }
 
     private void loadDomains() {
         latch.countDown();
@@ -494,10 +539,12 @@ public class ClusterController {
                 result = gcloud(true,"instances",
                         "describe", machine.getHost(),
                         "-q",
-                        "--format=csv[box,no-heading](labels." + LABEL_PURPOSE + ",networkInterfaces[0].accessConfigs[0].natIP)");// add ,status, and turn offline machines on
+                        "--format", getMachineFormatFlag());// add ,status, and turn offline machines on
                 String data = result.out.trim();
-                if (!data.startsWith(purpose + ",")) {
-                    LOG.warn("Instance " + machine.getHost() + " had label '" + data.split(",")[0] + "' instead of " + purpose + "; fixing....");
+                final String[] items = data.split(",");
+                if (!data.contains("," + purpose + ",")) {
+
+                    LOG.warn("Instance " + machine.getHost() + " had label '" + items[items.length - 1] + "' instead of " + purpose + "; fixing....");
                     result = gcloud(true,"instances", "add-labels", machine.getHost(), "--labels=" + LABEL_PURPOSE + "=" + purpose);
                     if (result.code != 0) {
                         // check if this was a "not found" message
@@ -519,13 +566,9 @@ public class ClusterController {
                         return;
                     }
                 }
-                if (!data.endsWith("," + myIp)) {
-                    LOG.warn("Replacing " + myIp + " with " + data.split(",")[1]);
-                    if (data.contains(",")) {
-                        machine.setIp(data.split(",")[1]);
-                    } else {
-                        LOG.error("Unexpected result: " + result.out);
-                    }
+                if (!data.contains("," + myIp + ",")) {
+                    LOG.warn("Replacing " + myIp + " with " + items[getIndexIp()]);
+                    machine.setIp(items[getIndexIp()]);
                 }
             } catch (Exception e) {
                 LOG.error("Unable to move machine to running state: " + machine + " ip: " + ip, e);
