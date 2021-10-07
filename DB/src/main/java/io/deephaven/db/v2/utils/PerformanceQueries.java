@@ -220,7 +220,7 @@ public class PerformanceQueries {
         if (v1 == 0 || v0 == QueryConstants.NULL_LONG || v1 == QueryConstants.NULL_LONG) {
             return QueryConstants.NULL_FLOAT;
         }
-        final float pct = v0 / (float)  v1;
+        final float pct = v0 / (float) v1;
         // The samples are not perfect; let's not confuse our users.
         return Math.min(pct, 1.0F);
     }
