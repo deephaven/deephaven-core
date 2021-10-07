@@ -7,7 +7,7 @@ from __future__ import annotations
 import pyarrow
 
 from pydeephaven.dherror import DHError
-from pydeephaven.table_interface import TableInterface
+from pydeephaven._table_interface import TableInterface
 
 
 class Table(TableInterface):

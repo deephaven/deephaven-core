@@ -12,7 +12,8 @@ from pydeephaven.combo_agg import ComboAggregation
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
     ExactJoinOp, LeftJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp
-from pydeephaven.constants import MatchRule, AggType, SortDirection
+from pydeephaven.constants import MatchRule, SortDirection
+from pydeephaven._constants import AggType
 
 
 class TableInterface(ABC):
@@ -319,7 +320,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def head_by(self, num_rows: int, by: List[str]):
-        """ Perform a head-by operation on the table and return the result table.
+        """ Perform a head-by aggregation on the table and return the result table.
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
@@ -335,7 +336,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def tail_by(self, num_rows: int, by: List[str]):
-        """ Perform a tail-by operation on the table and return the result table.
+        """ Perform a tail-by aggregation on the table and return the result table.
 
         Args:
             num_rows (int): the number of rows at the end of each group
@@ -390,7 +391,6 @@ class TableInterface(ABC):
         """ Perform First-by aggregation on the table and return the result table which contains the first row of each
         distinct group.
 
-
         Args:
             by (List[str], optional): the group-by column names, default is empty
 
@@ -406,7 +406,6 @@ class TableInterface(ABC):
     def last_by(self, by: List[str] = []):
         """ Perform last-by aggregation on the table and return the result table which contains the last row of each
         distinct group.
-
 
         Args:
             by (List[str], optional): the group-by column names, default is empty
@@ -424,7 +423,6 @@ class TableInterface(ABC):
         """ Perform sum-by aggregation on the table and return the result table. Columns not used in the grouping
         must be of numeric types.
 
-
         Args:
             by (List[str]): the group-by column names
 
@@ -440,7 +438,6 @@ class TableInterface(ABC):
     def avg_by(self, by: List[str] = []):
         """ Perform avg-by aggregation on the table and return the result table. Columns not used in the grouping must
         be of numeric types.
-
 
         Args:
             by (List[str], optional): the group-by column names, default is empty
@@ -458,7 +455,6 @@ class TableInterface(ABC):
         """ Perform std-by aggregation on the table and return the result table. Columns not used in the grouping
         must be of numeric types.
 
-
         Args:
             by (List[str]): the group-by column names
 
@@ -474,7 +470,6 @@ class TableInterface(ABC):
     def var_by(self, by: List[str] = []):
         """ Perform var-by aggregation on the table and return the result table. Columns not used in the grouping
         must be of numeric types.
-
 
         Args:
             by (List[str], optional): the group-by column names, default is empty
@@ -492,7 +487,6 @@ class TableInterface(ABC):
         """ Perform median-by aggregation on the table and return the result table. Columns not used in the grouping
         must be of numeric types.
 
-
         Args:
             by (List[str], optional): the group-by column names, default is empty
 
@@ -508,7 +502,6 @@ class TableInterface(ABC):
     def min_by(self, by: List[str] = []):
         """ Perform min-by aggregation on the table and return the result table. Columns not used in the grouping
         must be of numeric types.
-
 
         Args:
             by (List[str], optional): the group-by column names, default is empty
@@ -526,7 +519,6 @@ class TableInterface(ABC):
         """ Perform max-by aggregation on the table and return the result table. Columns not used in the grouping
         must be of numeric types.
 
-
         Args:
             by (List[str], optional): the group-by column names, default is empty
 
@@ -540,9 +532,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def count_by(self, col: str, by: List[str] = []):
-        """ Perform count-by operation on the table and return the result table. The count of each group is stored in
+        """ Perform count-by aggregation on the table and return the result table. The count of each group is stored in
         a new column named after the 'col' parameter.
-
 
         Args:
             col (str): the name of the column to store the counts

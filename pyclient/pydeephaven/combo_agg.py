@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
-from pydeephaven.constants import AggType
+from pydeephaven._constants import AggType
 from pydeephaven.proto import table_pb2
 
 

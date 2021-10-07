@@ -237,12 +237,12 @@ class Session:
         with self._r_lock:
             self.console_service.bind_table(table=table, variable_name=name)
 
-    def time_table(self, period: int = 1000000000, start_time: int = None) -> Table:
+    def time_table(self, period: int, start_time: int = None) -> Table:
         """ Create a time table on the server.
 
         Args:
-            period (int): the interval (in nano seconds) at which the time table ticks (adds a row), default is 1 second
-            start_time (int): the start time for the time table in nano seconds, default is None (meaning now)
+            period (int): the interval (in nano seconds) at which the time table ticks (adds a row)
+            start_time (int, optional): the start time for the time table in nano seconds, default is None (meaning now)
 
         Returns:
             a Table object
@@ -290,7 +290,7 @@ class Session:
 
         Args:
             tables (list[Table]): the list of Table objects to merge
-            order_by (str): Optional, if specified the resultant table will be sorted on this column
+            order_by (str, optional): if specified the resultant table will be sorted on this column
 
         Returns:
             a Table object

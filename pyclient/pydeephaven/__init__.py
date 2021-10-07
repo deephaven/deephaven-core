@@ -27,8 +27,6 @@ from .session import Session
 from .dherror import DHError
 from .combo_agg import ComboAggregation
 from .constants import SortDirection, MatchRule
-from .table_interface import TableInterface
 from .query import Query
 
 __version__ = "0.5.0"
-# __all__ = ["Session", "Query", "TableInterface", "ComboAggregation", "MatchRule", "SortDirection"]
