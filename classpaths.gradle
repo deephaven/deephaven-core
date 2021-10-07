@@ -1,11 +1,7 @@
 apply plugin: 'base'
 
-JavaVersion currentJavaVersion = JavaVersion.current()
-boolean is8 = currentJavaVersion.isJava8()
-
 ext {
-    // changing groovy version is dangerous for customer PQ stability; only upgrade is user is also upgrading java version >8
-    GROOVY_VERSION = is8 ? '2.3.6' : '2.5.10'
+    GROOVY_VERSION = '3.0.9'
 }
 
 configurations {

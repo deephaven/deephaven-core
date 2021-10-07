@@ -36,10 +36,9 @@ def runtimeLauncher = javaToolchains.launcherFor {
   languageVersion = JavaLanguageVersion.of(runtimeVersion)
 } as Provider<JavaLauncher>
 
-// Note: even with source / target set, it doesn't seem like we can compile properly with 17.
-// May need newer version of groovy?
 def groovyCompilerLauncher = javaToolchains.launcherFor {
-  //languageVersion = JavaLanguageVersion.of(compilerVersion)
+  // See notes in GroovyCompile section below.
+  // languageVersion = JavaLanguageVersion.of(compilerVersion)
   languageVersion = JavaLanguageVersion.of(8)
 } as Provider<JavaLauncher>
 
@@ -67,10 +66,15 @@ tasks.withType(Test).configureEach {
 tasks.withType(GroovyCompile).configureEach {
   javaLauncher.set groovyCompilerLauncher
 
-  // The release option doesn't seem to get picked up
-  //options.release.set 8
-  setSourceCompatibility('8')
-  setTargetCompatibility('8')
+  // Instead of using the below code, which is rather hacky, we'll set the groovy compiler to 8.
+  // In general, it seems like groovy toolchain support is a bit lacking in fit and finish.
+
+//  // The release option doesn't seem to get picked up.
+//  // WARNING: The below breaks when not using strings with the following error:
+//  // The new Java toolchain feature cannot be used at the project level in combination with source and/or target
+//  // compatibility.
+//  setSourceCompatibility(String.valueOf(languageLevel))
+//  setTargetCompatibility(String.valueOf(languageLevel))
 }
 
 tasks.withType(Jar).configureEach {
