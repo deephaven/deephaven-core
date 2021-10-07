@@ -16,7 +16,7 @@ services:
       - /etc/ssl/dh:/etc/ssl/dh
       - /etc/ssl/internal:/etc/ssl/internal
     environment:
-      - JAVA_TOOL_OPTIONS=-Xmx2g -Ddeephaven.console.type=${TYPE:-python}
+      - JAVA_TOOL_OPTIONS=-Xmx2g -Ddeephaven.console.type=${TYPE:-python} -Ddeephaven.application.dir=/app.d
       - DH_TLS_CHAIN=/etc/ssl/internal/tls.crt
       - DH_TLS_KEY=/etc/ssl/internal/tls.key.pk8
 
