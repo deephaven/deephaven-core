@@ -18,6 +18,8 @@ import io.deephaven.util.process.ShutdownManager;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import picocli.CommandLine;
 
+import java.util.concurrent.CountDownLatch;
+
 abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
     static class Mode {
@@ -36,7 +38,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
     @Override
     protected void execute(final BarrageSession client) throws Exception {
 
-        final BarrageSubscriptionOptions options = new BarrageSubscriptionOptions.Builder().build();
+        final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
 
         final TableHandleManager manager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
@@ -44,7 +46,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSubscription subscription = client.subscribe(handle, options)) {
             final BarrageTable table = subscription.entireTable();
-            final MutableBoolean shuttingDown = new MutableBoolean();
+            final CountDownLatch countDownLatch = new CountDownLatch(1);
 
             table.listenForUpdates(new InstrumentedShiftAwareListener("example-listener") {
                 @Override
@@ -52,7 +54,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                         final UpdatePerformanceTracker.Entry sourceEntry) {
                     System.out.println("exiting due to onFailureInternal:");
                     originalException.printStackTrace();
-                    shuttingDown.setTrue();
+                    countDownLatch.countDown();
                 }
 
                 @Override
@@ -62,11 +64,9 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                 }
             });
             ProcessEnvironment.getGlobalShutdownManager().registerTask(
-                    ShutdownManager.OrderingCategory.FIRST, shuttingDown::setTrue);
-            while (!shuttingDown.booleanValue()) {
-                // noinspection BusyWait
-                Thread.sleep(1000);
-            }
+                    ShutdownManager.OrderingCategory.FIRST, countDownLatch::countDown);
+
+            countDownLatch.await();
         }
     }
 }

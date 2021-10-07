@@ -38,10 +38,10 @@ import java.util.function.IntFunction;
 public class BarrageColumnRoundTripTest extends LiveTableTestCase {
 
     private static final BarrageSubscriptionOptions OPT_DEFAULT_DH_NULLS =
-            new BarrageSubscriptionOptions.Builder()
-                    .setUseDeephavenNulls(true)
+            BarrageSubscriptionOptions.builder()
+                    .useDeephavenNulls(true)
                     .build();
-    private static final BarrageSubscriptionOptions OPT_DEFAULT = new BarrageSubscriptionOptions.Builder()
+    private static final BarrageSubscriptionOptions OPT_DEFAULT = BarrageSubscriptionOptions.builder()
             .build();
 
     private static final BarrageSubscriptionOptions[] options = new BarrageSubscriptionOptions[] {

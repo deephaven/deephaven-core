@@ -191,8 +191,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             this.barrageTable = BarrageTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT,
                     barrageMessageProducer.getTableDefinition(), viewport != null);
 
-            final BarrageSubscriptionOptions options = new BarrageSubscriptionOptions.Builder()
-                    .setUseDeephavenNulls(useDeephavenNulls)
+            final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
+                    .useDeephavenNulls(useDeephavenNulls)
                     .build();
             final BarrageMarshaller marshaller = new BarrageMarshaller(
                     options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
@@ -218,8 +218,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         public void doSubscribe() {
             subscribed = true;
-            final BarrageSubscriptionOptions options = new BarrageSubscriptionOptions.Builder()
-                    .setUseDeephavenNulls(useDeephavenNulls)
+            final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
+                    .useDeephavenNulls(useDeephavenNulls)
                     .build();
             barrageMessageProducer.addSubscription(dummyObserver, options, subscribedColumns, viewport);
         }
