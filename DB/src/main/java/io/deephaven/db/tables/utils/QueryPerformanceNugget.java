@@ -43,8 +43,6 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private final long startTimeNanos;
     private final long startCpuNanos;
     private final long startUserCpuNanos;
-    private final long startFreeMemory;
-    private final long startTotalMemory;
     private final long startAllocatedBytes;
     private final long startPoolAllocatedBytes;
     private volatile QueryState state;
@@ -52,12 +50,13 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private Long totalTimeNanos;
     private long diffCpuNanos;
     private long diffUserCpuNanos;
-    private long totalFreeMemory;
-    private long totalUsedMemory;
-    private long diffFreeMemory;
-    private long diffTotalMemory;
     private long diffAllocatedBytes;
     private long diffPoolAllocatedBytes;
+    private long diffCollections;
+    private long diffCollectionTimeMs;
+
+    private final RuntimeMemory.Sample startMemorySample;
+    private final RuntimeMemory.Sample endMemorySample;
 
     private boolean shouldLogMeAndStackParents;
 
@@ -82,6 +81,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      */
     QueryPerformanceNugget(final int evaluationNumber, final int depth,
             final String description, final boolean isUser, final long inputSize) {
+        startMemorySample = new RuntimeMemory.Sample();
+        endMemorySample = new RuntimeMemory.Sample();
         this.evaluationNumber = evaluationNumber;
         this.depth = depth;
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
@@ -94,8 +95,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         this.inputSize = inputSize;
 
         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
-        startFreeMemory = runtimeMemory.freeMemory();
-        startTotalMemory = runtimeMemory.totalMemory();
+        runtimeMemory.read(startMemorySample);
 
         startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
         startPoolAllocatedBytes = QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread();
@@ -116,14 +116,13 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * Construct a "dummy" nugget, which will never gather any information or be recorded.
      */
     private QueryPerformanceNugget() {
+        startMemorySample = null;
+        endMemorySample = null;
         evaluationNumber = NULL_INT;
         depth = 0;
         description = null;
         isUser = false;
         inputSize = NULL_LONG;
-
-        startFreeMemory = NULL_LONG;
-        startTotalMemory = NULL_LONG;
 
         startAllocatedBytes = NULL_LONG;
         startPoolAllocatedBytes = NULL_LONG;
@@ -150,7 +149,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @param recorder The recorder to notify
      * @return if the nugget passes logging thresholds.
      */
-    public boolean done(QueryPerformanceRecorder recorder) {
+    public boolean done(final QueryPerformanceRecorder recorder) {
         return close(QueryState.FINISHED, recorder);
     }
 
@@ -165,7 +164,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     }
 
     @SuppressWarnings("WeakerAccess")
-    public boolean abort(QueryPerformanceRecorder recorder) {
+    public boolean abort(final QueryPerformanceRecorder recorder) {
         return close(QueryState.INTERRUPTED, recorder);
     }
 
@@ -178,7 +177,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @param recorderToNotify The {@link QueryPerformanceRecorder} to notify this nugget is closing.
      * @return If the nugget passes criteria for logging.
      */
-    private boolean close(QueryState closingState, QueryPerformanceRecorder recorderToNotify) {
+    private boolean close(final QueryState closingState, final QueryPerformanceRecorder recorderToNotify) {
         final long currentThreadUserTime = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
         final long currentThreadCpuTime = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
         if (state != QueryState.RUNNING) {
@@ -196,10 +195,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
             totalTimeNanos = System.nanoTime() - startTimeNanos;
 
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
-            totalFreeMemory = runtimeMemory.freeMemory();
-            totalUsedMemory = runtimeMemory.totalMemory();
-            diffFreeMemory = totalFreeMemory - startFreeMemory;
-            diffTotalMemory = totalUsedMemory - startTotalMemory;
+            runtimeMemory.read(endMemorySample);
 
             diffPoolAllocatedBytes =
                     minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes);
@@ -283,28 +279,43 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @return free memory at completion
      */
     public long getEndFreeMemory() {
-        return totalFreeMemory;
+        return endMemorySample.freeMemory;
     }
 
     /**
      * @return total memory used at completion
      */
     public long getEndTotalMemory() {
-        return totalUsedMemory;
+        return endMemorySample.totalMemory;
     }
 
     /**
      * @return free memory difference between time of completion and creation
      */
     public long getDiffFreeMemory() {
-        return diffFreeMemory;
+        return endMemorySample.freeMemory - startMemorySample.freeMemory;
     }
 
     /**
      * @return total (allocated high water mark) memory difference between time of completion and creation
      */
     public long getDiffTotalMemory() {
-        return diffTotalMemory;
+        return endMemorySample.totalMemory - startMemorySample.totalMemory;
+    }
+
+    /**
+     * @return Number of garbage collections between time of completion and creation
+     */
+    public long getDiffCollections() {
+        return endMemorySample.totalCollections - startMemorySample.totalCollections;
+    }
+
+    /**
+     * @return Time spent in garbage collection, in milliseconds, between time of completion and creation
+     */
+    public long getDiffCollectionTimeNanos() {
+        return DBTimeUtils
+                .millisToNanos(endMemorySample.totalCollectionTimeMs - startMemorySample.totalCollectionTimeMs);
     }
 
     /**
