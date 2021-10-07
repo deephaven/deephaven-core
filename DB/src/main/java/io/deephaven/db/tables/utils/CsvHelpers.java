@@ -19,6 +19,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,24 +36,47 @@ public class CsvHelpers {
     public final static boolean NULLS_AS_EMPTY_DEFAULT = true;
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
+     * Creates an in-memory table from {@code path} by importing CSV data.
      *
      * <p>
-     * Equivalent to {@code readCsv(is, CsvSpecs.csv())}
+     * If {@code path} is a non-file {@link URL}, the CSV will be parsed via {@link #readCsv(URL, CsvSpecs)}.
      *
-     * @param is an InputStream providing access to the CSV data.
+     * <p>
+     * Otherwise, the {@code path} will be parsed via {@link #readCsv(Path, CsvSpecs)}, which will apply decompression
+     * based on the {@code path}.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(path, CsvSpecs.csv())}.
+     *
+     * @param path the path
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(String, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(String path) throws IOException {
+        return readCsv(path, CsvSpecs.csv());
+    }
+
+    /**
+     * Creates an in-memory table from {@code stream} by importing CSV data. The {@code stream} will be closed upon
+     * return.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(stream, CsvSpecs.csv())}
+     *
+     * @param stream an InputStream providing access to the CSV data.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
      * @see #readCsv(InputStream, CsvSpecs)
      */
     @ScriptApi
-    public static Table readCsv(InputStream is) throws IOException {
-        return readCsv(is, CsvSpecs.csv());
+    public static Table readCsv(InputStream stream) throws IOException {
+        return readCsv(stream, CsvSpecs.csv());
     }
 
     /**
-     * Returns a memory table created by importing CSV data.
+     * Creates an in-memory table from {@code url} by importing CSV data.
      *
      * <p>
      * Equivalent to {@code readCsv(url, CsvSpecs.csv())}.
@@ -68,27 +92,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data.
-     *
-     * <p>
-     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
-     * or ".tar" will be decompressed.
-     *
-     * <p>
-     * Equivalent to {@code readCsv(file, CsvSpecs.csv())}.
-     *
-     * @param file the file
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     * @see #readCsv(String, CsvSpecs)
-     */
-    @ScriptApi
-    public static Table readCsv(String file) throws IOException {
-        return readCsv(file, CsvSpecs.csv());
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data.
+     * Creates an in-memory table from {@code path} by importing CSV data.
      *
      * <p>
      * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
@@ -108,8 +112,42 @@ public class CsvHelpers {
     }
 
     /**
-     * Creates an in-memory table from {@code stream} according to the {@code specs}. The {@code stream} will be closed
-     * upon return.
+     * Creates an in-memory table from {@code path} by importing CSV data according to the {@code specs}.
+     *
+     * <p>
+     * If {@code path} is a non-file {@link URL}, the CSV will be parsed via {@link #readCsv(URL, CsvSpecs)}.
+     *
+     * <p>
+     * Otherwise, the {@code path} will be parsed via {@link #readCsv(Path, CsvSpecs)}, which will apply decompression
+     * based on the {@code path}.
+     *
+     * @param path the path
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(URL, CsvSpecs)
+     * @see #readCsv(Path, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(String path, CsvSpecs specs) throws IOException {
+        URL: {
+            final URL url;
+            try {
+                url = new URL(path);
+            } catch (MalformedURLException e) {
+                break URL;
+            }
+            if (isStandardFile(url)) {
+                return readCsv(Paths.get(url.getPath()), specs);
+            }
+            return readCsv(url, specs);
+        }
+        return readCsv(Paths.get(path), specs);
+    }
+
+    /**
+     * Creates an in-memory table from {@code stream} by importing CSV data according to the {@code specs}. The
+     * {@code stream} will be closed upon return.
      *
      * @param stream the stream
      * @param specs the csv specs
@@ -122,7 +160,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Creates an in-memory table from {@code url} according to the {@code specs}.
+     * Creates an in-memory table from {@code url} by importing CSV data according to the {@code specs}.
      *
      * @param url the url
      * @param specs the csv specs
@@ -135,29 +173,11 @@ public class CsvHelpers {
     }
 
     /**
-     * Creates an in-memory table from {@code file} according to the {@code specs}.
+     * Creates an in-memory table from {@code path} by importing CSV data according to the {@code specs}.
      *
      * <p>
-     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
-     * or ".tar" will be decompressed.
-     *
-     * @param file the file
-     * @param specs the csv specs
-     * @return the table
-     * @throws IOException if an I/O exception occurs
-     * @see PathUtil#open(Path)
-     */
-    @ScriptApi
-    public static Table readCsv(String file, CsvSpecs specs) throws IOException {
-        return InMemoryTable.from(specs.parse(PathUtil.open(Paths.get(file))));
-    }
-
-    /**
-     * Creates an in-memory table from {@code path} according to the {@code specs}.
-     *
-     * <p>
-     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
-     * or ".tar" will be decompressed.
+     * A {@code path} that ends in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz",
+     * ".7z", ".zst", or ".tar" will be decompressed.
      *
      * @param path the path
      * @param specs the csv specs
@@ -580,5 +600,10 @@ public class CsvHelpers {
     @Deprecated
     public static Table readCsv(InputStream is, final char separator) throws IOException {
         return InMemoryTable.from(CsvSpecs.builder().delimiter(separator).build().parse(is));
+    }
+
+    private static boolean isStandardFile(URL url) {
+        return "file".equals(url.getProtocol()) && url.getAuthority() == null && url.getQuery() == null
+                && url.getRef() == null;
     }
 }
