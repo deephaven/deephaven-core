@@ -118,15 +118,6 @@ def queryPerformanceLog():
 
 
 @_passThrough
-def startUpdatePerformanceLog():
-    """
-    Start collecting data for query update performance.
-    """
-    
-    return _java_type_.startUpdatePerformanceLog()
-
-
-@_passThrough
 def updatePerformanceLog():
     """
     Return a table with update performance data.

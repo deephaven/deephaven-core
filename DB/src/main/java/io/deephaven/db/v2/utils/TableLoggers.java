@@ -7,11 +7,6 @@ import io.deephaven.util.annotations.ScriptApi;
  * Tools to obtain internal, Deephaven logs as tables. These tables include query logs and performance logs.
  */
 public class TableLoggers {
-
-    static {
-        ProcessMemoryTracker.start();
-    }
-
     /**
      * Return a table with update performance data.
      *
@@ -73,13 +68,5 @@ public class TableLoggers {
     @ScriptApi
     public static QueryTable processMemoryLog() {
         return ProcessMemoryTracker.getInstance().getQueryTable();
-    }
-
-    /**
-     * Start collecting data for query update performance.
-     */
-    @ScriptApi
-    public static void startUpdatePerformanceLog() {
-        UpdatePerformanceTracker.start();
     }
 }
