@@ -30,6 +30,7 @@ dependencies {
 
     Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':log-to-slf4j')
 
     testImplementation(platform('org.junit:junit-bom:5.7.2'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
