@@ -102,7 +102,7 @@ public class QueryOperationPerformanceLogLogger
             this.FreeMemoryChange.setLong(nugget.getDiffFreeMemory());
             this.TotalMemoryChange.setLong(nugget.getDiffTotalMemory());
             this.Collections.setLong(nugget.getDiffCollections());
-            this.CollectionTimeNanos.setLong(1000L * 1000L * nugget.getDiffCollectionTimeMs());
+            this.CollectionTimeNanos.setLong(nugget.getDiffCollectionTimeNanos());
             this.AllocatedBytes.setLong(nugget.getAllocatedBytes());
             this.PoolAllocatedBytes.setLong(nugget.getPoolAllocatedBytes());
             this.InputSizeLong.setLong(nugget.getInputSize());
