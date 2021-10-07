@@ -36,7 +36,7 @@ else:
 
 Deephaven empowers you to build analytics and applications for all sorts of data-driven use cases.
 
-We hope you find it relevant for challenging, enterprise-grade needs, but let’s start with the fun stuff.
+We hope you find it relevant for challenging, enterprise-grade needs, but let's start with the fun stuff.
 
 You can quickly see streaming data in a UI and do table operations -- interactively exploring data in real-time as it changes.
 
@@ -69,7 +69,7 @@ trades_stream = trades_stream.reverse()
 ```
 
 
-You have likely observed Deephaven’ `First_Fundamental_Concept`:  _Tables and streams are a single abstraction_.  Event streams, feeds, [soon] CDC, and other dynamic source and derived data are simply represented as incremental updates to a table.  (If you’re interested in "the how", please read the [table-update-model](https://deephaven.io/core/docs/conceptual/table-update-model/).)
+You have likely observed Deephaven's `First_Fundamental_Concept`:  _Tables and streams are a single abstraction_.  Event streams, feeds, [soon] CDC, and other dynamic source and derived data are simply represented as incremental updates to a table.  (If you're interested in "the how", please read the [table-update-model](https://deephaven.io/core/docs/conceptual/table-update-model/).)
 
 You can readily see that this table grows as  greater volumes of data are inherited from the Kafka feed.
 
@@ -78,12 +78,12 @@ row_count = trades_stream.countBy("Tot_Rows")
 ```
 
 
-The script above illuminates Deephaven’s `Second_Fundamental_Concept`:  Data flows from one named table (`trades_stream`, in this example) to its dependents (`row_count`).  This is both easy to script and powerful to use.  Developers call this a directed acyclic graph [link].  If you flip back and forth between `trades_stream` and `row_count` you’ll see that both are continuing to update.  (Or pull them side-by-side to one another.)
+The script above illuminates Deephaven's `Second_Fundamental_Concept`:  Data flows from one named table (`trades_stream`, in this example) to its dependents (`row_count`).  This is both easy to script and powerful to use.  Developers call this a directed acyclic graph [link].  If you flip back and forth between `trades_stream` and `row_count` you'll see that both are continuing to update.  (Or pull them side-by-side to one another.)
 
 **Updating, materialized views** just magically happen!
 
 As you might expect, a named table can have multiple dependencies.
-After you run the following command, you’ll see that all three of your tables are now updating.
+After you run the following command, you'll see that all three of your tables are now updating.
 
 ```python
 row_count_by_instrument = trades_stream.countBy("Tot_Rows", "Instrument")\
@@ -101,7 +101,7 @@ row_count_by_instrument = trades_stream_cleaner.countBy("Tot_Rows", "Instrument"
 ```
 
 
-Counts are informative, but often you’ll be interested in other aggregations.  The script below shows both how to [bin data by time](https://deephaven.io/core/docs/reference/cheat-sheets/datetime-cheat-sheet/#downsampling-temporal-data-via-time-binning) and [do multiple aggregations](https://deephaven.io/core/docs/how-to-guides/combined-aggregations/)
+Counts are informative, but often you'll be interested in other aggregations.  The script below shows both how to [bin data by time](https://deephaven.io/core/docs/reference/cheat-sheets/datetime-cheat-sheet/#downsampling-temporal-data-via-time-binning) and [do multiple aggregations](https://deephaven.io/core/docs/how-to-guides/combined-aggregations/)
 
 ```python
 from deephaven import ComboAggregateFactory as caf
@@ -132,7 +132,7 @@ multi_agg_row_0 = multi_agg.whereIn(top_instrument, "Instrument")\
 ```
 
 
-[Joining streams](https://deephaven.io/core/docs/how-to-guides/joins-overview/) is one of Deephaven’s superpowers .  Deephaven supports high-performance joins that are both relational in nature ...
+[Joining streams](https://deephaven.io/core/docs/how-to-guides/joins-overview/) is one of Deephaven's superpowers .  Deephaven supports high-performance joins that are both relational in nature ...
 
 ```python
 join_eth_btc = multi_agg_eth.view("TimeBin", "Eth_Avg_Price = Avg_Price")\
