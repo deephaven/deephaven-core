@@ -20,11 +20,12 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
 
     @Override
     public void refresh() {
-        final Index added;
+        final Index.RandomBuilder builder;
         synchronized (this) {
-            added = additionsBuilder.getIndex();
+            builder = additionsBuilder;
             additionsBuilder = Index.FACTORY.getRandomBuilder();
         }
+        final Index added = builder.getIndex();
         getIndex().insert(added);
         if (added.size() > 0) {
             notifyListeners(added, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());

@@ -10,8 +10,6 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.v2.utils.ProcessMemoryTracker;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
@@ -582,8 +580,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * @implNote Must not be in {@link #enableUnitTestMode() unit test} mode.
      */
     public void start() {
-        UpdatePerformanceTracker.start();
-        ProcessMemoryTracker.start();
         Assert.eqFalse(unitTestMode, "unitTestMode");
         Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
         synchronized (refreshThread) {

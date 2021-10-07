@@ -316,6 +316,10 @@ public class UpdatePerformanceTracker {
             this.callerLine = callerLine;
             startSample = new RuntimeMemory.Sample();
             endSample = new RuntimeMemory.Sample();
+            maxTotalMemory = 0;
+            minFreeMemory = Long.MAX_VALUE;
+            collections = 0;
+            collectionTimeMs = 0;
         }
 
         public final void onUpdateStart() {
@@ -352,10 +356,10 @@ public class UpdatePerformanceTracker {
 
         public final void onUpdateEnd() {
             RuntimeMemory.getInstance().read(endSample);
-            maxTotalMemory = Math.max(startSample.totalMemory, endSample.totalMemory);
-            minFreeMemory = Math.min(startSample.freeMemory, endSample.freeMemory);
-            collections = endSample.totalCollections - startSample.totalCollections;
-            collectionTimeMs = endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
+            maxTotalMemory = Math.max(maxTotalMemory, Math.max(startSample.totalMemory, endSample.totalMemory));
+            minFreeMemory = Math.min(minFreeMemory, Math.min(startSample.freeMemory, endSample.freeMemory));
+            collections += endSample.totalCollections - startSample.totalCollections;
+            collectionTimeMs += endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
             intervalUserCpuNanos = plus(intervalUserCpuNanos,
                     minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
             intervalCpuNanos =
@@ -392,6 +396,11 @@ public class UpdatePerformanceTracker {
 
             intervalAllocatedBytes = 0;
             intervalPoolAllocatedBytes = 0;
+
+            maxTotalMemory = 0;
+            minFreeMemory = Long.MAX_VALUE;
+            collections = 0;
+            collectionTimeMs = 0;
         }
 
         @Override

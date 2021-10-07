@@ -232,19 +232,18 @@ public class PerformanceQueries {
     @ScriptApi
     public static Table processMemory() {
         final Table pml = TableLoggers.processMemoryLog();
-        Table pm = pml.updateView(
+        Table pm = pml.view(
+                "IntervalStartTime",
                 "IntervalDurationSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
                 "TotalMemoryMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
                 "FreeMemoryMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))",
-                "GcTimePercent = io.deephaven.db.v2.utils.PerformanceQueries.approxPct(IntervalCollectionTimeNanos, IntervalDurationNanos)")
-                .view("IntervalStartTime", "IntervalDurationSeconds", "TotalMemoryMiB", "FreeMemoryMiB",
-                        "GcTimePercent");
+                "GcTimePercent = io.deephaven.db.v2.utils.PerformanceQueries.approxPct(IntervalCollectionTimeNanos, IntervalDurationNanos)");
         pm = pm.formatColumns(
                 "GcTimePercent=Decimal(`#0.0%`)",
                 "GcTimePercent=(GcTimePercent >= 75.0) ? PALE_RED : " +
-                        "((GcTimePercent >= 50.0) ? PALE_PURPLE : " +
-                        "((GcTimePercent < 5.0) ? NO_FORMATTING : PALE_REDPURPLE))");
-        pm = formatColumnsAsMills(pm, "IntervalDurationSeconds");
+                        "((GcTimePercent >= 50.0) ? PALE_REDPURPLE : " +
+                        "((GcTimePercent > 5.0) ? PALE_PURPLE : NO_FORMATTING))",
+                "IntervalDurationSeconds=Decimal(`#0.000`)");
         return pm;
     }
 
@@ -252,14 +251,6 @@ public class PerformanceQueries {
         final String[] formats = new String[cols.length];
         for (int i = 0; i < cols.length; ++i) {
             formats[i] = cols[i] + "=Decimal(`#0.0%`)";
-        }
-        return t.formatColumns(formats);
-    }
-
-    private static Table formatColumnsAsMills(final Table t, final String... cols) {
-        final String[] formats = new String[cols.length];
-        for (int i = 0; i < cols.length; ++i) {
-            formats[i] = cols[i] + "=Decimal(`#0.000`)";
         }
         return t.formatColumns(formats);
     }
