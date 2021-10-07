@@ -60,6 +60,9 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     // a list of failures that have occurred
     private List<Exception> enqueuedFailure;
 
+    private volatile Runnable shutdownCallback;
+    private volatile boolean alive = true;
+
     public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final LiveTableRegistrar liveTableRegistrar,
@@ -85,8 +88,24 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 setFlat();
                 setRefreshing(true);
                 setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
+                addParentReference(StreamToTableAdapter.this);
+            }
+
+            @Override
+            public void destroy() {
+                StreamToTableAdapter.this.close();
             }
         };
+    }
+
+    /**
+     * Set a callback to be invoked when this StreamToTableAdapter will no longer deliver new data to downstream
+     * consumers.
+     *
+     * @param shutdownCallback The callback
+     */
+    public void setShutdownCallback(Runnable shutdownCallback) {
+        this.shutdownCallback = shutdownCallback;
     }
 
     /**
@@ -228,9 +247,23 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     @Override
     public void close() {
-        log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
-                .endl();
-        liveTableRegistrar.removeTable(this);
+        if (!alive) {
+            return;
+        }
+        synchronized (this) {
+            if (!alive) {
+                return;
+            }
+            alive = false;
+            log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
+                    .append(name)
+                    .endl();
+            liveTableRegistrar.removeTable(this);
+            final Runnable localShutdownCallback = shutdownCallback;
+            if (localShutdownCallback != null) {
+                localShutdownCallback.run();
+            }
+        }
     }
 
     @Override
@@ -303,6 +336,9 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     @SafeVarargs
     @Override
     public final void accept(@NotNull final WritableChunk<Attributes.Values>... data) {
+        if (!alive) {
+            return;
+        }
         // Accumulate data into buffered column sources
         synchronized (this) {
             if (bufferChunkSources == null) {
@@ -324,11 +360,15 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     @Override
     public void acceptFailure(@NotNull Exception cause) {
+        if (!alive) {
+            return;
+        }
         synchronized (this) {
             if (enqueuedFailure == null) {
                 enqueuedFailure = new ArrayList<>();
             }
             enqueuedFailure.add(cause);
         }
+        close();
     }
 }
