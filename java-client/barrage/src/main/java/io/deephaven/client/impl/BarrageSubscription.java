@@ -5,6 +5,7 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.table.BarrageTable;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.qst.table.TableSpec;
 
@@ -23,6 +24,17 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
          */
         BarrageSubscription subscribe(TableSpec tableSpec, BarrageSubscriptionOptions options)
                 throws TableHandle.TableHandleException, InterruptedException;
+        /**
+         * Sources a barrage subscription from a {@link TableSpec}.
+         *
+         * @param tableDefinition the expected table definition
+         * @param tableSpec the tableSpec to resolve and then subscribe to
+         * @param options the options configuring the details of this subscription
+         * @return the {@code BarrageSubscription}
+         */
+        BarrageSubscription subscribe(
+                TableDefinition tableDefinition, TableSpec tableSpec, BarrageSubscriptionOptions options)
+                throws TableHandle.TableHandleException, InterruptedException;
 
         /**
          * Sources a barrage subscription from a {@link TableHandle}. A new reference of the handle is created. The
@@ -33,6 +45,18 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
          * @return the {@code BarrageSubscription}
          */
         BarrageSubscription subscribe(TableHandle tableHandle, BarrageSubscriptionOptions options);
+
+        /**
+         * Sources a barrage subscription from a {@link TableHandle}. A new reference of the handle is created. The
+         * original {@code tableHandle} is still owned by the caller.
+         *
+         * @param tableDefinition the expected table definition
+         * @param tableHandle the table handle to subscribe to
+         * @param options the options configuring the details of this subscription
+         * @return the {@code BarrageSubscription}
+         */
+        BarrageSubscription subscribe(
+                TableDefinition tableDefinition, TableHandle tableHandle, BarrageSubscriptionOptions options);
     }
 
     /**

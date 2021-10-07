@@ -60,11 +60,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * @param session the deephaven session that this export belongs to
      * @param export the export to subscribe to
      * @param options the transport level options for this subscription
+     * @param tableDefinition the expected table definition
      * @param performRelease a callback that is invoked when this subscription is closed/destroyed/garbage-collected
      */
     public BarrageSubscriptionImpl(
             final BarrageSession session, final Export export, final BarrageSubscriptionOptions options,
-            @Nullable final Runnable performRelease) {
+            final TableDefinition tableDefinition, @Nullable final Runnable performRelease) {
         super(false);
 
         this.logName = ExportTicketHelper.toReadableString(export.ticket(), "export.ticket()");
@@ -72,11 +73,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         this.performRelease = performRelease;
         this.export = export;
 
-        // fetch the schema and convert to table definition
-        final Schema schema = session.schema(export);
-        final TableDefinition definition = BarrageUtil.schemaToTableDefinition(schema);
-
-        resultTable = BarrageTable.make(definition, false);
+        resultTable = BarrageTable.make(tableDefinition, false);
         resultTable.addParentReference(this);
 
         final MethodDescriptor<Flight.FlightData, BarrageMessage> subscribeDescriptor =
@@ -176,6 +173,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     private void cleanup() {
         this.connected = false;
+        this.export.close();
         resultTable = null;
         if (performRelease != null) {
             performRelease.run();
