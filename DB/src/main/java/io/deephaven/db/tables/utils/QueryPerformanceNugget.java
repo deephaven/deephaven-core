@@ -314,7 +314,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @return Time spent in garbage collection, in milliseconds, between time of completion and creation
      */
     public long getDiffCollectionTimeNanos() {
-        return DBTimeUtils.millisToNanos(endMemorySample.totalCollectionTimeMs - startMemorySample.totalCollectionTimeMs);
+        return DBTimeUtils
+                .millisToNanos(endMemorySample.totalCollectionTimeMs - startMemorySample.totalCollectionTimeMs);
     }
 
     /**
