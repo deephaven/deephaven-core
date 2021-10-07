@@ -6,7 +6,6 @@ package io.deephaven.client.impl;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.barrage.flatbuf.BarrageSerializationOptions;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -22,21 +21,21 @@ public abstract class BarrageSubscriptionOptions {
         return ImmutableBarrageSubscriptionOptions.builder();
     }
 
-    public static BarrageSubscriptionOptions of(final BarrageSerializationOptions options) {
+    public static BarrageSubscriptionOptions of(final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options) {
+        if (options == null) {
+            return builder().build();
+        }
         final byte mode = options.columnConversionMode();
         return builder()
                 .useDeephavenNulls(options.useDeephavenNulls())
                 .columnConversionMode(conversionModeFbToEnum(mode))
-                .updateIntervalMs(options.update)
+                .minUpdateIntervalMs(options.minUpdateIntervalMs())
+                .batchSize(options.batchSize())
                 .build();
     }
 
     public static BarrageSubscriptionOptions of(final BarrageSubscriptionRequest subscriptionRequest) {
-        final byte mode = subscriptionRequest.serializationOptions().columnConversionMode();
-        return builder()
-                .useDeephavenNulls(subscriptionRequest.serializationOptions().useDeephavenNulls())
-                .columnConversionMode(conversionModeFbToEnum(mode))
-                .build();
+        return of(subscriptionRequest.subscriptionOptions());
     }
 
     /**
@@ -68,7 +67,15 @@ public abstract class BarrageSubscriptionOptions {
      * @return the update interval to subscribe for
      */
     @Default
-    public int updateIntervalMs() {
+    public int minUpdateIntervalMs() {
+        return 0;
+    }
+
+    /**
+     * @return the preferred batch size if specified
+     */
+    @Default
+    public int batchSize() {
         return 0;
     }
 
@@ -78,8 +85,9 @@ public abstract class BarrageSubscriptionOptions {
     }
 
     public int appendTo(FlatBufferBuilder builder) {
-        return BarrageSerializationOptions.createBarrageSerializationOptions(
-                builder, conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls());
+        return io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions.createBarrageSubscriptionOptions(
+                builder, conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(), minUpdateIntervalMs(),
+                batchSize());
     }
 
     private static ColumnConversionMode conversionModeFbToEnum(final byte mode) {
@@ -114,7 +122,9 @@ public abstract class BarrageSubscriptionOptions {
 
         Builder columnConversionMode(ColumnConversionMode columnConversionMode);
 
-        Builder updateIntervalMs(int updateIntervalMs);
+        Builder minUpdateIntervalMs(int minUpdateIntervalMs);
+
+        Builder batchSize(int batchSize);
 
         BarrageSubscriptionOptions build();
     }

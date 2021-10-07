@@ -45,30 +45,19 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
     }
 
     @Override
-    public BarrageSubscription subscribe(final TableSpec tableSpec, final BarrageSubscriptionOptions options)
-            throws TableHandle.TableHandleException, InterruptedException {
-        return subscribe(tableSpec, options, DEFER_UPDATE_INTERVAL_TO_SERVER);
-    }
-
-    @Override
-    public BarrageSubscription subscribe(final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
-        return subscribe(tableHandle, options, DEFER_UPDATE_INTERVAL_TO_SERVER);
-    }
-
-    @Override
     public BarrageSubscription subscribe(
-            final TableSpec tableSpec, final BarrageSubscriptionOptions options, final int updateIntervalMs)
+            final TableSpec tableSpec, final BarrageSubscriptionOptions options)
             throws TableHandle.TableHandleException, InterruptedException {
         try (final TableHandle handle = session().execute(tableSpec)) {
-            return subscribe(handle, options, updateIntervalMs);
+            return subscribe(handle, options);
         }
     }
 
     @Override
     public BarrageSubscription subscribe(
-            final TableHandle tableHandle, final BarrageSubscriptionOptions options, final int updateIntervalMs) {
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
         final TableHandle handleForSubscription = tableHandle.newRef();
-        return new BarrageSubscriptionImpl(this, handleForSubscription.export(), options, updateIntervalMs,
+        return new BarrageSubscriptionImpl(this, handleForSubscription.export(), options,
                 handleForSubscription::close);
     }
 

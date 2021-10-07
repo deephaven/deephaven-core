@@ -441,7 +441,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
     public boolean addSubscription(final StreamObserver<MessageView> listener,
             final Options options,
-            final BitSet columnsToSubscribe,
+            final @Nullable BitSet columnsToSubscribe,
             final @Nullable Index initialViewport) {
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)

@@ -518,7 +518,7 @@ public class BarrageStreamGenerator implements
             modOffsets.add(BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
         }
 
-        BarrageUpdateMetadata.startNodesVector(metadata, modOffsets.size());
+        BarrageUpdateMetadata.startModColumnNodesVector(metadata, modOffsets.size());
         modOffsets.forEachDescending(offset -> {
             metadata.addOffset(offset);
             return true;
@@ -537,7 +537,7 @@ public class BarrageStreamGenerator implements
         BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
         BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
         BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
-        BarrageUpdateMetadata.addNodes(metadata, nodesOffset);
+        BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
         metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
 
         final FlatBufferBuilder header = new FlatBufferBuilder();

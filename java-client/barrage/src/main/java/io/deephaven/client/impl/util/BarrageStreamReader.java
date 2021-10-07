@@ -120,7 +120,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                             msg.modColumnData[ci].type = columnTypes[ci];
                             msg.modColumnData[ci].componentType = componentTypes[ci];
 
-                            final BarrageModColumnMetadata mcd = metadata.nodes(ci);
+                            final BarrageModColumnMetadata mcd = metadata.modColumnNodes(ci);
                             msg.modColumnData[ci].rowsModified = extractIndex(mcd.modifiedRowsAsByteBuffer());
                         }
                     }

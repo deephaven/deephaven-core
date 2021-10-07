@@ -8,7 +8,6 @@ import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageSerializationOptions;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.client.impl.BarrageSubscriptionOptions;
 import io.deephaven.client.impl.chunk.ChunkInputStreamGenerator;
@@ -45,7 +44,6 @@ import org.apache.arrow.flight.impl.Flight;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Iterator;
@@ -56,8 +54,8 @@ import static io.deephaven.client.impl.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
-    public static final int DEFAULT_UPDATE_INTERVAL_MS =
-            Configuration.getInstance().getIntegerWithDefault("barrage.updateInterval", 1000);
+    public static final int DEFAULT_MIN_UPDATE_INTERVAL_MS =
+            Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
     private static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
 
@@ -112,8 +110,8 @@ public class ArrowFlightUtil {
 
                 if (mi.app_metadata != null
                         && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
-                    options = BarrageSubscriptionOptions.of(BarrageSerializationOptions
-                            .getRootAsBarrageSerializationOptions(mi.app_metadata.msgPayloadAsByteBuffer()));
+                    options = BarrageSubscriptionOptions.of(BarrageSubscriptionRequest
+                            .getRootAsBarrageSubscriptionRequest(mi.app_metadata.msgPayloadAsByteBuffer()));
                 }
 
                 if (mi.header == null) {
@@ -376,11 +374,13 @@ public class ArrowFlightUtil {
             final Object export = parent.get();
             if (export instanceof QueryTable) {
                 final QueryTable table = (QueryTable) export;
-                long updateIntervalMs = subscriptionRequest.updateIntervalMs();
-                if (updateIntervalMs == 0) {
-                    updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
+                final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options =
+                        subscriptionRequest.subscriptionOptions();
+                long minUpdateIntervalMs = options == null ? 0 : options.minUpdateIntervalMs();
+                if (minUpdateIntervalMs == 0) {
+                    minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
                 }
-                bmp = table.getResult(operationFactory.create(table, updateIntervalMs));
+                bmp = table.getResult(operationFactory.create(table, minUpdateIntervalMs));
                 if (bmp.isRefreshing()) {
                     manage(bmp);
                 }

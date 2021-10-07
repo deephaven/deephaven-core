@@ -44,7 +44,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
 
     private final String logName;
-    private final int updateIntervalMs;
     private final Export export;
     private final BarrageSubscriptionOptions options;
     private final ClientCall<Flight.FlightData, BarrageMessage> call;
@@ -61,16 +60,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * @param session the deephaven session that this export belongs to
      * @param export the export to subscribe to
      * @param options the transport level options for this subscription
-     * @param updateIntervalMs the requested update interval; typically unspecified to conform to server config
      * @param performRelease a callback that is invoked when this subscription is closed/destroyed/garbage-collected
      */
     public BarrageSubscriptionImpl(
             final BarrageSession session, final Export export, final BarrageSubscriptionOptions options,
-            final int updateIntervalMs, @Nullable final Runnable performRelease) {
+            @Nullable final Runnable performRelease) {
         super(false);
 
         this.logName = ExportTicketHelper.toReadableString(export.ticket(), "export.ticket()");
-        this.updateIntervalMs = updateIntervalMs;
         this.options = options;
         this.performRelease = performRelease;
         this.export = export;
@@ -217,8 +214,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
         BarrageSubscriptionRequest.addColumns(metadata, colOffset);
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
-        BarrageSubscriptionRequest.addSerializationOptions(metadata, optOffset);
-        BarrageSubscriptionRequest.addUpdateIntervalMs(metadata, updateIntervalMs);
+        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
         BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
         metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
 
@@ -228,10 +224,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 wrapper,
                 BarrageUtil.FLATBUFFER_MAGIC,
                 BarrageMessageType.BarrageSubscriptionRequest,
-                innerOffset,
-                0, // no ticket
-                0, // no sequence
-                false // don't half-close
+                innerOffset
         ));
         return wrapper.dataBuffer();
     }

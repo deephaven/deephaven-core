@@ -25,17 +25,6 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
                 throws TableHandle.TableHandleException, InterruptedException;
 
         /**
-         * Sources a barrage subscription from a {@link TableSpec}.
-         *
-         * @param tableSpec the tableSpec to resolve and then subscribe to
-         * @param options the options configuring the details of this subscription
-         * @param updateIntervalMs the requested update interval; typically unspecified to conform to server config
-         * @return the {@code BarrageSubscription}
-         */
-        BarrageSubscription subscribe(TableSpec tableSpec, BarrageSubscriptionOptions options, int updateIntervalMs)
-                throws TableHandle.TableHandleException, InterruptedException;
-
-        /**
          * Sources a barrage subscription from a {@link TableHandle}. A new reference of the handle is created. The
          * original {@code tableHandle} is still owned by the caller.
          *
@@ -44,18 +33,6 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
          * @return the {@code BarrageSubscription}
          */
         BarrageSubscription subscribe(TableHandle tableHandle, BarrageSubscriptionOptions options);
-
-        /**
-         * Sources a barrage subscription from a {@link TableHandle}. A new reference of the handle is created. The
-         * original {@code tableHandle} is still owned by the caller.
-         *
-         * @param tableHandle the table handle to subscribe to
-         * @param options the options configuring the details of this subscription
-         * @param updateIntervalMs the requested update interval; typically unspecified to conform to server config
-         * @return the {@code BarrageSubscription}
-         */
-        BarrageSubscription subscribe(
-                TableHandle tableHandle, BarrageSubscriptionOptions options, int updateIntervalMs);
     }
 
     /**
