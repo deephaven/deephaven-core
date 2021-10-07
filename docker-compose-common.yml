@@ -2,7 +2,7 @@ version: "3.4"
 
 services:
   grpc-api:
-    image: deephaven/grpc-api:local-build
+    image: deephaven/demo-grpc-api:local-build
 
     environment:
       # https://bugs.openjdk.java.net/browse/JDK-8230305
@@ -46,7 +46,7 @@ services:
       - SYS_PTRACE
 
   web:
-    image: deephaven/web:local-build
+    image: deephaven/demo-web:local-build
     expose:
       - "8080"
     volumes:
