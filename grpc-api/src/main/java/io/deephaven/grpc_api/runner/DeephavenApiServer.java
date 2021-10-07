@@ -3,6 +3,8 @@ package io.deephaven.grpc_api.runner;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.util.AbstractScriptSession;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
+import io.deephaven.db.v2.utils.ProcessMemoryTracker;
+import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.appmode.ApplicationInjector;
 import io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
@@ -97,6 +99,9 @@ public class DeephavenApiServer {
 
         log.info().append("Starting server...").endl();
         server.start();
+
+        UpdatePerformanceTracker.start();
+        ProcessMemoryTracker.start();
     }
 
     void startForUnitTests() throws IOException {
