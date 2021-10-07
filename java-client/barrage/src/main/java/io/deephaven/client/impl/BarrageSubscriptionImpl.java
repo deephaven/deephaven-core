@@ -222,8 +222,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 wrapper,
                 BarrageUtil.FLATBUFFER_MAGIC,
                 BarrageMessageType.BarrageSubscriptionRequest,
-                innerOffset
-        ));
+                innerOffset));
         return wrapper.dataBuffer();
     }
 

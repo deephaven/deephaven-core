@@ -50,17 +50,17 @@ public abstract class BarrageSubscriptionOptions {
 
     /**
      * By default, we should not specify anything; the server will use whatever it is configured with. If multiple
-     * subscriptions exist on a table (via the same client or via multiple clients) then the server will re-use
-     * state needed to perform barrage-acrobatics for both of them. This greatly reduces the burden each client
-     * adds to the server's workload. If a given table does want a shorter interval, consider using that shorter
-     * interval for all subscriptions to that table.
+     * subscriptions exist on a table (via the same client or via multiple clients) then the server will re-use state
+     * needed to perform barrage-acrobatics for both of them. This greatly reduces the burden each client adds to the
+     * server's workload. If a given table does want a shorter interval, consider using that shorter interval for all
+     * subscriptions to that table.
      *
      * The default interval can be set on the server with the flag
      * {@code io.deephaven.grpc_api.arrow.ArrowFlightUtil#DEFAULT_UPDATE_INTERVAL_MS}, or
      * {@code -Dbarrage.updateInterval=1000}.
      *
-     * Related, when shortining the updateInterval, you typically want to ensure your LTM cycle is short enough
-     * to update that quickly, too. This can be done on the server with the flag
+     * Related, when shortining the updateInterval, you typically want to ensure your LTM cycle is short enough to
+     * update that quickly, too. This can be done on the server with the flag
      * {@code io.deephaven.db.tables.live.LiveTableMonitor#defaultTargetCycleTime}, or
      * {@code -DLiveTableMonitor.targetcycletime=1000}.
      *

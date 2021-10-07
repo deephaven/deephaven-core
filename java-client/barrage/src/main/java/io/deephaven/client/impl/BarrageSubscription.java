@@ -24,6 +24,7 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
          */
         BarrageSubscription subscribe(TableSpec tableSpec, BarrageSubscriptionOptions options)
                 throws TableHandle.TableHandleException, InterruptedException;
+
         /**
          * Sources a barrage subscription from a {@link TableSpec}.
          *
