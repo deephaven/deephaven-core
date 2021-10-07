@@ -217,7 +217,7 @@ public class PerformanceQueries {
     }
 
     public static float approxRatio(final long v0, final long v1) {
-        if (v1 == 0) {
+        if (v1 == 0 || v0 == QueryConstants.NULL_LONG || v1 == QueryConstants.NULL_LONG) {
             return QueryConstants.NULL_FLOAT;
         }
         final float pct = v0 / (float)  v1;
