@@ -176,6 +176,23 @@ public class TestChunkColumnSource {
     }
 
     @Test
+    public void testGetEmpty() {
+        try (final WritableCharChunk<Attributes.Values> charChunk1 = WritableCharChunk.makeWritableChunk(1024)) {
+            for (int ii = 0; ii < 1024; ++ii) {
+                charChunk1.set(ii, (char) (1024 + ii));
+            }
+
+            final CharChunkColumnSource columnSource = new CharChunkColumnSource();
+            columnSource.addChunk(charChunk1);
+
+            try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(1024)) {
+                final Chunk<? extends Attributes.Values> values = columnSource.getChunk(getContext, OrderedKeys.EMPTY);
+                TestCase.assertEquals(0, values.size());
+            }
+        }
+    }
+
+    @Test
     public void testShared() {
         final WritableLongChunk<Attributes.Values> longChunk1 = WritableLongChunk.makeWritableChunk(1024);
         final WritableLongChunk<Attributes.Values> longChunk2 = WritableLongChunk.makeWritableChunk(1024);
