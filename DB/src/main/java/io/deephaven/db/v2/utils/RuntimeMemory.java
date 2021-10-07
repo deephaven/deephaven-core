@@ -164,6 +164,7 @@ public class RuntimeMemory {
                     }
                     snapshot.totalCollections = collections;
                     snapshot.totalCollectionTimeMs = collectionsMs;
+                    snapshot.nextLog = currSnapshot.nextLog;
                     currSnapshot = snapshot;
                 }
             }
