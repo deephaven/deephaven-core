@@ -111,7 +111,7 @@ public class UpdatePerformanceTracker {
                     // should log, but no logger handy
                     // ignore
                 }
-                LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(
+                LiveTableMonitor.DEFAULT.sharedLock().doLocked(
                         () -> finishInterval(intervalStartTimeMillis,
                                 System.currentTimeMillis(),
                                 System.nanoTime() - intervalStartTimeNanos));
@@ -176,8 +176,6 @@ public class UpdatePerformanceTracker {
 
         boolean encounteredErrorLoggingToMemory = false;
 
-        long maxStartTimeNanos = 0;
-        long minStartTimeNanos = Long.MAX_VALUE;
         for (final Iterator<WeakReference<Entry>> it = entries.iterator(); it.hasNext();) {
             final WeakReference<Entry> entryReference = it.next();
             final Entry entry = entryReference == null ? null : entryReference.get();
@@ -190,15 +188,15 @@ public class UpdatePerformanceTracker {
                 encounteredErrorLoggingToMemory =
                         logToMemory(intervalLevelDetails, entry, encounteredErrorLoggingToMemory);
             } else if (entry.intervalInvocationCount > 0) {
-                if (entry.startTimeNanos > maxStartTimeNanos) {
-                    aggregatedSmallUpdatesEntry.endMemSample.copy(entry.endMemSample);
-                    maxStartTimeNanos = entry.startTimeNanos;
+                if (entry.maxTotalMemory > aggregatedSmallUpdatesEntry.maxTotalMemory) {
+                    aggregatedSmallUpdatesEntry.maxTotalMemory = entry.maxTotalMemory;
                 }
-                if (entry.startTimeNanos < minStartTimeNanos) {
-                    aggregatedSmallUpdatesEntry.startMemSample.copy(entry.startMemSample);
-                    minStartTimeNanos = entry.startTimeNanos;
+                if (entry.minFreeMemory < aggregatedSmallUpdatesEntry.minFreeMemory) {
+                    aggregatedSmallUpdatesEntry.minFreeMemory = entry.minFreeMemory;
                 }
 
+                aggregatedSmallUpdatesEntry.collections += entry.collections;
+                aggregatedSmallUpdatesEntry.collectionTimeMs += entry.collectionTimeMs;
                 aggregatedSmallUpdatesEntry.intervalUsageNanos += entry.intervalUsageNanos;
                 aggregatedSmallUpdatesEntry.intervalInvocationCount += entry.intervalInvocationCount;
 
@@ -301,8 +299,13 @@ public class UpdatePerformanceTracker {
         private long startAllocatedBytes;
         private long startPoolAllocatedBytes;
 
-        private final RuntimeMemory.Sample startMemSample;
-        private final RuntimeMemory.Sample endMemSample;
+        private long maxTotalMemory;
+        private long minFreeMemory;
+        private long collections;
+        private long collectionTimeMs;
+
+        private RuntimeMemory.Sample startSample;
+        private RuntimeMemory.Sample endSample;
 
         private Entry(final int id, final int evaluationNumber, final int operationNumber,
                 final String description, final String callerLine) {
@@ -311,8 +314,8 @@ public class UpdatePerformanceTracker {
             this.operationNumber = operationNumber;
             this.description = description;
             this.callerLine = callerLine;
-            startMemSample = new RuntimeMemory.Sample();
-            endMemSample = new RuntimeMemory.Sample();
+            startSample = new RuntimeMemory.Sample();
+            endSample = new RuntimeMemory.Sample();
         }
 
         public final void onUpdateStart() {
@@ -324,7 +327,8 @@ public class UpdatePerformanceTracker {
             startUserCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
             startCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
             startTimeNanos = System.nanoTime();
-            RuntimeMemory.getInstance().read(startMemSample);
+
+            RuntimeMemory.getInstance().read(startSample);
         }
 
         public final void onUpdateStart(final Index added, final Index removed, final Index modified,
@@ -347,7 +351,11 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateEnd() {
-            RuntimeMemory.getInstance().read(endMemSample);
+            RuntimeMemory.getInstance().read(endSample);
+            maxTotalMemory = Math.max(startSample.totalMemory, endSample.totalMemory);
+            minFreeMemory = Math.min(startSample.freeMemory, endSample.freeMemory);
+            collections = endSample.totalCollections - startSample.totalCollections;
+            collectionTimeMs = endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
             intervalUserCpuNanos = plus(intervalUserCpuNanos,
                     minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
             intervalCpuNanos =
@@ -413,10 +421,10 @@ public class UpdatePerformanceTracker {
                     .append(", startTimeNanos=").append(startTimeNanos)
                     .append(", startAllocatedBytes=").append(startAllocatedBytes)
                     .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes)
-                    .append(", totalMemory=").append(endMemSample.totalMemory)
-                    .append(", freeMemory=").append(endMemSample.freeMemory)
-                    .append(", collections=").append(getDiffCollections())
-                    .append(", collectionTimeNanos=").append(getDiffCollectionTimeNanos())
+                    .append(", maxTotalMemory=").append(maxTotalMemory)
+                    .append(", minFreeMemory=").append(minFreeMemory)
+                    .append(", collections=").append(collections)
+                    .append(", collectionTimeNanos=").append(DBTimeUtils.millisToNanos(collectionTimeMs))
                     .append('}');
         }
 
@@ -468,20 +476,20 @@ public class UpdatePerformanceTracker {
             return intervalShifted;
         }
 
-        public long getFreeMemory() {
-            return endMemSample.freeMemory;
+        public long getMinFreeMemory() {
+            return (minFreeMemory == Long.MAX_VALUE) ? QueryConstants.NULL_LONG : minFreeMemory;
         }
 
-        public long getTotalMemory() {
-            return endMemSample.totalMemory;
+        public long getMaxTotalMemory() {
+            return (maxTotalMemory == 0) ? QueryConstants.NULL_LONG : maxTotalMemory;
         }
 
-        public long getDiffCollections() {
-            return endMemSample.totalCollections - startMemSample.totalCollections;
+        public long getCollections() {
+            return collections;
         }
 
-        public long getDiffCollectionTimeNanos() {
-            return 1000L * 1000L * (endMemSample.totalCollectionTimeMs - startMemSample.totalCollectionTimeMs);
+        public long getCollectionTimeNanos() {
+            return DBTimeUtils.millisToNanos(collectionTimeMs);
         }
 
         public long getIntervalAllocatedBytes() {

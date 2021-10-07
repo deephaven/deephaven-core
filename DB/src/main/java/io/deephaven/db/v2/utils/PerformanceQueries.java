@@ -219,9 +219,9 @@ public class PerformanceQueries {
         if (v1 == 0) {
             return QueryConstants.NULL_FLOAT;
         }
-        final float pct = (float) (v0 * 100.0 / v1);
+        final float pct = (float) (100.0 * v0 / v1);
         // The samples are not perfect; let's not confuse our users.
-        return Math.min(pct, 1.0F);
+        return Math.min(pct, 100.0F);
     }
 
     /**
@@ -233,12 +233,17 @@ public class PerformanceQueries {
     public static Table processMemory() {
         final Table pml = TableLoggers.processMemoryLog();
         Table pm = pml.updateView(
-                "IntervalDurationSeconds = IntervalDurationNanos / (1000L * 1000L * 1000L)",
-                "TotalMemoryMiB = (int) Math.ceil(TotalMemory / (1024*1024.0))",
-                "FreeMemoryMiB = (int) Math.ceil(FreeMemory / (1024*1024.0))",
+                "IntervalDurationSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
+                "TotalMemoryMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
+                "FreeMemoryMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))",
                 "GcTimePercent = io.deephaven.db.v2.utils.PerformanceQueries.approxPct(IntervalCollectionTimeNanos, IntervalDurationNanos)")
-                .view("IntervalStartTime", "IntervalDurationSeconds", "TotalMemoryMb", "FreeMemoryMb", "GcTimePercent");
-        pm = formatColumnsAsPct(pm, "GcTimePercent");
+                .view("IntervalStartTime", "IntervalDurationSeconds", "TotalMemoryMiB", "FreeMemoryMiB", "GcTimePercent");
+        pm = pm.formatColumns(
+                "GcTimePercent=Decimal(`#0.0%`)",
+                "GcTimePercent=(GcTimePercent >= 75.0) ? PALE_RED : " +
+                        "((GcTimePercent >= 50.0) ? PALE_PURPLE : " +
+                        "((GcTimePercent < 5.0) ? NO_FORMATTING : PALE_REDPURPLE))"
+        );
         pm = formatColumnsAsMills(pm, "IntervalDurationSeconds");
         return pm;
     }
@@ -246,7 +251,7 @@ public class PerformanceQueries {
     private static Table formatColumnsAsPct(final Table t, final String... cols) {
         final String[] formats = new String[cols.length];
         for (int i = 0; i < cols.length; ++i) {
-            formats[i] = cols[i] + "=Decimal(`#0.00%`)";
+            formats[i] = cols[i] + "=Decimal(`#0.0%`)";
         }
         return t.formatColumns(formats);
     }

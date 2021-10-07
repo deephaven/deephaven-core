@@ -68,14 +68,12 @@ public class ProcessMemoryTracker {
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
                 final long endTimeMillis = System.currentTimeMillis();
-                LiveTableMonitor.DEFAULT.sharedLock().doLocked(
-                        () -> logProcessMem(
-                        intervalStartTimeMillis,
-                        endTimeMillis,
-                        memSample,
-                        prevTotalCollections,
-                        prevTotalCollectionTimeMs)
-                );
+                logProcessMem(
+                                        intervalStartTimeMillis,
+                                        endTimeMillis,
+                                        memSample,
+                                        prevTotalCollections,
+                                        prevTotalCollectionTimeMs);
             }
         }
     }

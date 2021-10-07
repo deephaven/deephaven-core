@@ -106,10 +106,10 @@ public class UpdatePerformanceLogLogger
             this.EntryIntervalModified.setLong(performanceEntry.getIntervalModified());
             this.EntryIntervalShifted.setLong(performanceEntry.getIntervalShifted());
             this.EntryIntervalInvocationCount.setLong(performanceEntry.getIntervalInvocationCount());
-            this.MinFreeMemory.setLong(performanceEntry.getFreeMemory());
-            this.MaxTotalMemory.setLong(performanceEntry.getTotalMemory());
-            this.Collections.setLong(performanceEntry.getDiffCollections());
-            this.CollectionTimeNanos.setLong(performanceEntry.getDiffCollectionTimeNanos());
+            this.MinFreeMemory.setLong(performanceEntry.getMinFreeMemory());
+            this.MaxTotalMemory.setLong(performanceEntry.getMaxTotalMemory());
+            this.Collections.setLong(performanceEntry.getCollections());
+            this.CollectionTimeNanos.setLong(performanceEntry.getCollectionTimeNanos());
             this.EntryIntervalAllocatedBytes.setLong(performanceEntry.getIntervalAllocatedBytes());
             this.EntryIntervalPoolAllocatedBytes.setLong(performanceEntry.getIntervalPoolAllocatedBytes());
         }
