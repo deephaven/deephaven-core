@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation project(':client-session-dagger')
+    implementation project(':java-client-session-dagger')
 
     implementation 'info.picocli:picocli:4.6.1'
 

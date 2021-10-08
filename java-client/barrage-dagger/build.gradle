@@ -5,8 +5,8 @@ plugins {
 description = 'The Deephaven engine library plus client'
 
 dependencies {
-    api project(':client-barrage')
-    api project(':client-flight-dagger')
+    api project(':java-client-barrage')
+    api project(':java-client-flight-dagger')
 
     implementation 'com.google.dagger:dagger:2.31.1'
     annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'

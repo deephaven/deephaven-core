@@ -139,32 +139,32 @@ include(':envoy')
 
 include(':grpc-proxy')
 
-include(':client-session')
-project(':client-session').projectDir = file('java-client/session')
+include(':java-client-session')
+project(':java-client-session').projectDir = file('java-client/session')
 
-include(':client-flight')
-project(':client-flight').projectDir = file('java-client/flight')
+include(':java-client-flight')
+project(':java-client-flight').projectDir = file('java-client/flight')
 
-include(':client-barrage')
-project(':client-barrage').projectDir = file('java-client/barrage')
+include(':java-client-barrage')
+project(':java-client-barrage').projectDir = file('java-client/barrage')
 
-include(':client-session-dagger')
-project(':client-session-dagger').projectDir = file('java-client/session-dagger')
+include(':java-client-session-dagger')
+project(':java-client-session-dagger').projectDir = file('java-client/session-dagger')
 
-include(':client-flight-dagger')
-project(':client-flight-dagger').projectDir = file('java-client/flight-dagger')
+include(':java-client-flight-dagger')
+project(':java-client-flight-dagger').projectDir = file('java-client/flight-dagger')
 
-include(':client-barrage-dagger')
-project(':client-barrage-dagger').projectDir = file('java-client/barrage-dagger')
+include(':java-client-barrage-dagger')
+project(':java-client-barrage-dagger').projectDir = file('java-client/barrage-dagger')
 
-include(':client-session-examples')
-project(':client-session-examples').projectDir = file('java-client/session-examples')
+include(':java-client-session-examples')
+project(':java-client-session-examples').projectDir = file('java-client/session-examples')
 
-include(':client-flight-examples')
-project(':client-flight-examples').projectDir = file('java-client/flight-examples')
+include(':java-client-flight-examples')
+project(':java-client-flight-examples').projectDir = file('java-client/flight-examples')
 
-include(':client-barrage-examples')
-project(':client-barrage-examples').projectDir = file('java-client/barrage-examples')
+include(':java-client-barrage-examples')
+project(':java-client-barrage-examples').projectDir = file('java-client/barrage-examples')
 
 include(':qst:graphviz')
 

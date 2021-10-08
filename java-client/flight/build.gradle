@@ -5,7 +5,7 @@ plugins {
 description = 'The Deephaven client flight library'
 
 dependencies {
-    api project(':client-session')
+    api project(':java-client-session')
     implementation project(':proto:proto-backplane-grpc-flight')
 
     Classpaths.inheritArrow(project, 'flight-core', 'api')

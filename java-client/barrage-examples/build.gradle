@@ -4,8 +4,8 @@ plugins {
 }
 
 dependencies {
-    implementation project(':client-barrage-dagger')
-    implementation project(':client-flight-examples')
+    implementation project(':java-client-barrage-dagger')
+    implementation project(':java-client-flight-examples')
 
     implementation 'info.picocli:picocli:4.6.1'
 

@@ -10,7 +10,7 @@ configurations {
 description = 'The Deephaven engine library plus client'
 
 dependencies {
-    api project(':client-flight')
+    api project(':java-client-flight')
     api project(':Base')
     api project(':DB')
     api project(':Util')
