@@ -186,8 +186,8 @@ my_table = None
 \
 \
 \
-For some cases, stream tables rock.
+[Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
 
 ```python
-print("It's a long way to the top, if you wanna rock n roll.")
+print("Go to https://deephaven.io/core/docs/tutorials/quickstart/ to download pre-built Docker images.")
 ```
