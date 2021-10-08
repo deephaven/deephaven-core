@@ -128,11 +128,11 @@ row_count_append = trades_append.countBy("RowCount").updateView("Table_Type = `a
 \
 \
 \
-Touch the table tab called `agg_append` to see the Trade\*Count and Total*Size by Exchange and Instrument (over the last 1 mm-ish trades).
+Touch the table tab called `agg_append` to see the Trade\*Count and Total\*Size by Exchange and Instrument (over the last 1 mm-ish trades).
 \
 \
 \
-For comparison, repeat the exercise, changing only the `table_type` parameter of the Kafka integration to be **\*stream*** (instead of \_**append**\_).
+For comparison, repeat the exercise, changing only the `table_type` parameter of the Kafka integration to be **\*stream\*** (instead of \_**append**\_).
 
 Note the `dropStream()` syntax.
 

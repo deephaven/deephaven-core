@@ -4,7 +4,7 @@
 Deephaven empowers you to work with updating and dynamic data - in real-time. However, frequently you will want to simultaneously manipulate or incorporate batch data into your applications and analytics.
 
 This matters:  
-You can use the same methods, operations, and API calls for static tables as you do for streaming updates. If you're interested, here is [an article](https://deephaven.io/core/docs/conceptual/table-update-model/) the “how”,
+You can use the same methods, operations, and API calls for static tables as you do for streaming updates. If you're interested, here is [an article](https://deephaven.io/core/docs/conceptual/table-update-model/) the "how",
 
 Below you’ll do calculations and aggregations on stream and batch data using identical methods and functions. Then you'll merge and join the two, without any need to track which is which.
 \
