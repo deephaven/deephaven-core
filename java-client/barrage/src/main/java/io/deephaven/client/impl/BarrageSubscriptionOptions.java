@@ -57,10 +57,10 @@ public abstract class BarrageSubscriptionOptions {
      *
      * The default interval can be set on the server with the flag
      * {@code io.deephaven.grpc_api.arrow.ArrowFlightUtil#DEFAULT_UPDATE_INTERVAL_MS}, or
-     * {@code -Dbarrage.updateInterval=1000}.
+     * {@code -Dbarrage.minUpdateInterval=1000}.
      *
-     * Related, when shortining the updateInterval, you typically want to ensure your LTM cycle is short enough to
-     * update that quickly, too. This can be done on the server with the flag
+     * Related, when shortening the minUpdateInterval, you typically want to shorten the server's LTM cycle enough to
+     * update at least as quickly. This can be done on the server with the flag
      * {@code io.deephaven.db.tables.live.LiveTableMonitor#defaultTargetCycleTime}, or
      * {@code -DLiveTableMonitor.targetcycletime=1000}.
      *

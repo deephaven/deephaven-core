@@ -27,7 +27,7 @@ public class FlightServiceGrpcBinding implements BindableService {
 
     @Override
     public ServerServiceDefinition bindService() {
-        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService(), FlightServiceGrpc.SERVICE_NAME)
+        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService())
                 .onServerStreamingOverride(delegate::doGetCustom, FlightServiceGrpc.getDoGetMethod(),
                         ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance()),
                         PassthroughInputStreamMarshaller.INSTANCE)

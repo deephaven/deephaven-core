@@ -5,7 +5,6 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.db.v2.utils.AbstractIndexUpdateNotification;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class InstrumentedShiftAwareListener extends InstrumentedListenerBase implements ShiftAwareListener {
@@ -38,4 +37,3 @@ public abstract class InstrumentedShiftAwareListener extends InstrumentedListene
         }
     }
 }
-

@@ -48,7 +48,7 @@ public class GrpcServiceOverrideBuilder {
         this.baseDefinition = baseDefinition;
     }
 
-    public static GrpcServiceOverrideBuilder newBuilder(ServerServiceDefinition baseDefinition, String serviceName) {
+    public static GrpcServiceOverrideBuilder newBuilder(ServerServiceDefinition baseDefinition) {
         return new GrpcServiceOverrideBuilder(baseDefinition);
     }
 
