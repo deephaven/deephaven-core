@@ -25,6 +25,10 @@ tasks.register('cleanDocker', DockerRemoveImage) {
         buildDocker.get().imageIdFile.get().getAsFile().delete()
     }
     it.imageId.set project.property('imageId') as String
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
 }
 
 assemble.dependsOn buildDocker

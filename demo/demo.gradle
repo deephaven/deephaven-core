@@ -215,14 +215,26 @@ def tagAll = tasks.register('tagAll') {
 
 def untagGrpcApi = tasks.register('untagGrpcApi', DockerRemoveImage) {
     it.imageId.set "${grpcApiRepository}:${grpcApiTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
 }
 
 def untagWeb = tasks.register('untagWeb', DockerRemoveImage) {
     it.imageId.set "${webRepository}:${webTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
 }
 
 def untagEnvoy = tasks.register('untagEnvoy', DockerRemoveImage) {
     it.imageId.set "${envoyRepository}:${envoyTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
 }
 
 tasks.register('cleanDocker') {
