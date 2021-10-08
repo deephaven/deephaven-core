@@ -15,6 +15,9 @@ dependencies {
 }
 
 def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
+def imageIdFile = project.layout.buildDirectory.file('.docker/imageId.txt').get().asFile
+def imageId = imageIdFile.exists() ? imageIdFile.text : null
+def image = project.property('image') as String
 
 def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     it.from 'src/main/docker/Dockerfile'
@@ -30,21 +33,28 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     it.into dockerfileDir
 }
 
-def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
+def buildImage = project.tasks.register('buildImage', DockerBuildImage) {
     it.dependsOn prepareDocker, project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
-    it.inputDir.set(dockerfileDir)
-    it.images.add((String)project.property('imageId'))
+    it.inputDir.set dockerfileDir
+    it.imageIdFile.set imageIdFile
+    it.images.add(image)
 }
 
-project.tasks.register('cleanDocker', DockerRemoveImage) {
-    it.doFirst {
-        buildDocker.get().imageIdFile.get().getAsFile().delete()
-    }
-    it.imageId.set project.property('imageId') as String
+def deleteImage = project.tasks.register('deleteImage', DockerRemoveImage) {
+    it.onlyIf { imageId != null }
+    it.imageId.set imageId
+    it.force.set true
     it.onError { exception ->
         if (!exception.message.contains('No such image'))
             throw exception
     }
+    it.doLast {
+        imageIdFile.delete()
+    }
 }
 
-assemble.dependsOn buildDocker
+project.tasks.register('cleanDocker') {
+    it.dependsOn deleteImage
+}
+
+assemble.dependsOn buildImage
