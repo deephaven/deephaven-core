@@ -1,13 +1,15 @@
-### Stream and table are one thing!
+# Unified Abstraction for Streams and Tables
 
-Deephaven empowers you to work with updating and dynamic data -- in real-time. However, frequently you will want to simultaneously manipulate or incorporate batch, static, or historical data.
+\
+Deephaven empowers you to work with updating and dynamic data - in real-time. However, frequently you will want to simultaneously manipulate or incorporate batch data into your applications and analytics.
 
 This matters:  
-You can use the same methods, operations, and API calls for batch, static tables as you do for real-time, streaming updates. If interested, see article on [the "how"](https://deephaven.io/core/docs/conceptual/table-update-model/).
+You can use the same methods, operations, and API calls for static tables as you do for streaming updates. If you're interested, here is [an article](https://deephaven.io/core/docs/conceptual/table-update-model/) the "how",
 
-Below you’ll do calculations and aggregations on stream and batch data using identical methods and functions. Then you'll merge and join batch and streaming data, without any need to track which is which.
-
-First hook up a Kafka stream. (This is the same script from Notebook 1.) Here is our guide, [How to Connect to Kafka](https://deephaven.io/core/docs/how-to-guides/kafka-stream/).
+Below you’ll do calculations and aggregations on stream and batch data using identical methods and functions. Then you'll merge and join the two, without any need to track which is which.
+\
+\
+First, hook up a Kafka stream. (This is the same script from the first notebook.) Our [how-to guide](https://deephaven.io/core/docs/how-to-guides/kafka-stream/) provides detail on the integration.
 
 ```python
 from deephaven import KafkaTools as kt
@@ -25,20 +27,29 @@ def get_trades_stream():
 trades_stream = get_trades_stream()
 ```
 
+\
+\
+\
 You can select columns and reverse the table to make it nicer and more exciting to look at.
 
 ```python
 trades_stream_view = trades_stream.view("KafkaTimestamp", "Instrument", "Exchange", "Price", "Size").reverse()
 ```
 
+\
+\
+\
 Now read in a CSV of batch data sourced on 09/22/2021.
 
 ```python
-# TODO: this is a placeholder for real csv() upload.)
+# note this is a placeholder for real csv() upload.)
 # from deephaven import readCsv
 trades_batch_view = trades_stream_view.tail(1000)
 ```
 
+\
+\
+\
 You can easily examine the table schemas, noting the columns are identically named and typed.
 
 ```python
@@ -46,30 +57,39 @@ schema_stream = trades_stream_view.getMeta()
 schema_batch  = trades_batch_view.getMeta()
 ```
 
+\
+\
+\
 That was the first example of using the same table operation (or API call) on different tables -- one with streaming, updating data, the other with static.
-
+\
+\
 The following scripts will demonstrate much the same with two examples:
-Decorating each of the two tables with a date-time transformation. You could add math, logic, or other manipulations [this way](https://deephaven.io/core/docs/how-to-guides/use-select-view-update/).
-Doing aggregations by defining a Python function on a table object, then calling that function using each of the two tables -- updating and batch.
 
-Again the methods are identical.
+1. A table decoration, specifically a new column with a date-time transformation. You could add math, logic, or other manipulations [this way](https://deephaven.io/core/docs/how-to-guides/use-select-view-update/).
+2. A table aggregation via a Python function call.
+   \
+   In both cases, the same method is applied to the static and updating tables.
 
 ```python
-# methods and operations are identical between the updating table and the static one
+# the table decoration
 from deephaven.DBTimeUtils import formatDate
+
 add_column_streaming = trades_stream_view.updateView("Date = formatDate(KafkaTimestamp, TZ_NY)")
 add_column_batch     = trades_batch_view .updateView("Date = formatDate(KafkaTimestamp, TZ_NY)")
 
-# another example:  do aggs on streams and batch
+# the table aggregation
 from deephaven import ComboAggregateFactory as caf
 agg_streaming = add_column_streaming.by(caf.AggCombo(caf.AggFirst("Price"), caf.AggAvg("Avg_Price = Price")), "Date", "Exchange", "Instrument")
 agg_batch     = add_column_batch    .by(caf.AggCombo(caf.AggFirst("Price"), caf.AggAvg("Avg_Price = Price")), "Date", "Exchange", "Instrument")
 ```
 
-You can easily [merge tables](https://deephaven.io/core/docs/how-to-guides/merge-tables/#merge-tables) without worrying about whether the tables are real-time and updating or not.
+\
+\
+\
+You can [merge tables](https://deephaven.io/core/docs/how-to-guides/merge-tables/#merge-tables) without worrying about whether the tables are real-time and updating or not.
 
 The two tables simply need to have the same schema. You already inspected that above.
-The scripts below, respectively, merge the raw tables together, then the two aggregated views.
+Below you'll merge the two raw tables (with each other), then the two aggregations.
 
 ```python
 from deephaven.TableTools import merge
@@ -79,12 +99,14 @@ merge_aggs = merge(agg_streaming, agg_batch)\
   .formatColumnWhere("Date", "Date = currentDateNy()", "IVORY")
 ```
 
+\
+\
+\
 You’ll likely want to bring data together from different tables with joins, not just by merging tables.
 
-You can use Deephaven for **time-series and relational** joins on static tables, real-time updating tables, and derived tables that inherit both characteristics.
-
-Here is more information on [how to choose and use joins](https://deephaven.io/core/docs/how-to-guides/joins-overview/)
-
+You can use Deephaven for **time-series and relational** joins on static tables, real-time updating tables, and derived tables of either type. Here is information on [how to choose and use joins](https://deephaven.io/core/docs/how-to-guides/joins-overview/).
+\
+\
 Please note that you do not have to think about whether a named_table happens to be updating (stream-like) or static (batch-like). The methods are common between the two.
 
 ```python
@@ -93,4 +115,13 @@ join_stream_batch = agg_streaming.renameColumns("Price_Streaming = Price", "Avg_
   .formatColumns("Date = `IVORY`")\
   .formatColumns("Date_Batch = `SKYBLUE`")\
   .updateView("Avg_Price_Change = Avg_Price_Streaming - Avg_Price_Batch")
+```
+
+\
+\
+\
+Batch and stream together. Yeah, baby.
+
+```python
+print("Side by side on my piano keyboard, oh Lord, why don't we?")
 ```
