@@ -52,8 +52,6 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private long diffUserCpuNanos;
     private long diffAllocatedBytes;
     private long diffPoolAllocatedBytes;
-    private long diffCollections;
-    private long diffCollectionTimeMs;
 
     private final RuntimeMemory.Sample startMemorySample;
     private final RuntimeMemory.Sample endMemorySample;
