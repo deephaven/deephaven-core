@@ -25,7 +25,7 @@ class Table(TableInterface):
     def table_op_handler(self, table_op):
         return self.session.table_service.grpc_table_op(self, table_op)
 
-    def __init__(self, session=None, ticket=None, schema_header=b'', size=None, is_static=None, schema=None):
+    def __init__(self, session, ticket, schema_header=b'', size=None, is_static=None, schema=None):
         if not session or not session.is_alive:
             raise DHError("Must be associated with a active session")
         self.session = session
@@ -53,13 +53,8 @@ class Table(TableInterface):
     def close(self) -> None:
         """ Close the table reference on the server.
 
-        Args:
-
-        Returns:
-
         Raises:
             DHError
-
         """
         self.session.release(self.ticket)
         self.ticket = None
@@ -74,13 +69,10 @@ class Table(TableInterface):
     def snapshot(self) -> pyarrow.Table:
         """ Take a snapshot of the table and return a pyarrow Table.
 
-        Args:
-
         Returns:
             a pyarrow.Table
 
         Raises:
             DHError
-
         """
         return self.session.flight_service.snapshot_table(self)

@@ -42,7 +42,7 @@ $ pip3 install dist/pydeephaven-0.5.1-py3-none-any.whl
 ```python    
     >>> from pydeephaven import Session
     >>> session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
-    >>> table1 = session.time_table(period=1000000).update(column_specs=["Col1 = i % 2"])
+    >>> table1 = session.time_table(period=1000000).update(formulas=["Col1 = i % 2"])
     >>> df = table1.snapshot().to_pandas()
     >>> print(df)
                         Timestamp  Col1
