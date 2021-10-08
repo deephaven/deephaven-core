@@ -350,10 +350,10 @@ tasks.register 'allJavadoc', Javadoc, {
                 ':grpc-api',
                 ':qst',
                 ':table-api',
-                ':client-session',
-                ':client-session-dagger',
-                ':client-flight',
-                ':client-flight-dagger',
+                ':java-client-session',
+                ':java-client-session-dagger',
+                ':java-client-flight',
+                ':java-client-flight-dagger',
                 ':proto:proto-backplane-grpc',
                 ':proto:proto-backplane-grpc-flight'
         ]
