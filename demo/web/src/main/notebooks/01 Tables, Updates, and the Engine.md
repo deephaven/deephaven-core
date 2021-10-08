@@ -1,38 +1,4 @@
-### This is the Deephaven IDE.
-
-This is the Deephaven IDE. It is a REPL experience for exploring data. Some people also use it to develop applications, but there are other workflows for that [TODO: link].
-
-You can write scripts in the Console or string them together in a Deephaven Notebook like this one.
-
-This is a Python experience.
-
-```python
-print("hello world")
-```
-\
-\
-\
-Yes, real Python.
-
-```python
-# see if 407 is a prime number
-num = 407
-
-if num > 1:
-   # check for factors
-   for i in range(2,num):
-       if (num % i) == 0:
-           print(num,"is not a prime number")
-           print(i,"times",num//i,"is",num)
-           break
-   else:
-       print(num,"is a prime number")
-
-# if input number is <= 1, it is not prime
-else:
-   print(num,"is not a prime number")
-
-```
+# The Deephaven Engine, Tables, and Updates
 
 Deephaven empowers you to build analytics and applications for all sorts of data-driven use cases.
 
