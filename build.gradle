@@ -404,8 +404,8 @@ tasks.register('prepareCompose') {
             project(':web-client-ide').tasks.findByName('buildDocker'),
             project(':envoy').tasks.findByName('buildDocker'),
             project(':grpc-proxy').tasks.findByName('buildDocker'),
-            project(':demo-grpc-api').tasks.findByName('buildDocker'),
-            project(':demo-web').tasks.findByName('buildDocker')
+            project(':demo-grpc-api').tasks.findByName('buildImage'),
+            project(':demo-web').tasks.findByName('buildImage')
 }
 
 tasks.register('smoke') {
