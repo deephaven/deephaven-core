@@ -1,4 +1,6 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerInspectImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
@@ -32,6 +34,13 @@ def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
     it.dependsOn prepareDocker, project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
     it.inputDir.set(dockerfileDir)
     it.images.add((String)project.property('imageId'))
+}
+
+project.tasks.register('cleanDocker', DockerRemoveImage) {
+    it.doFirst {
+        buildDocker.get().imageIdFile.get().getAsFile().delete()
+    }
+    it.imageId.set project.property('imageId') as String
 }
 
 assemble.dependsOn buildDocker

@@ -1,4 +1,5 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 
 plugins {
     id 'base'
@@ -25,6 +26,13 @@ def buildDocker = project.tasks.register('buildDocker', DockerBuildImage) {
     it.inputDir.set(dockerfileDir)
     it.buildArgs
     it.images.add((String)project.property('imageId'))
+}
+
+project.tasks.register('cleanDocker', DockerRemoveImage) {
+    it.doFirst {
+        buildDocker.get().imageIdFile.get().getAsFile().delete()
+    }
+    it.imageId.set project.property('imageId') as String
 }
 
 assemble.dependsOn buildDocker

@@ -1,4 +1,5 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 import com.bmuschko.gradle.docker.tasks.image.DockerTagImage
 import org.gradle.internal.jvm.Jvm
 static boolean getCanQuarkus() { Jvm.current().javaVersion.isJava11Compatible() }
@@ -210,6 +211,22 @@ def tagEnvoy = tasks.register('tagEnvoy', DockerTagImage) {
 
 def tagAll = tasks.register('tagAll') {
     it.dependsOn tagGrpcApiTask, tagWebTask, tagEnvoy
+}
+
+def untagGrpcApi = tasks.register('untagGrpcApi', DockerRemoveImage) {
+    it.imageId.set "${grpcApiRepository}:${grpcApiTag}"
+}
+
+def untagWeb = tasks.register('untagWeb', DockerRemoveImage) {
+    it.imageId.set "${webRepository}:${webTag}"
+}
+
+def untagEnvoy = tasks.register('untagEnvoy', DockerRemoveImage) {
+    it.imageId.set "${envoyRepository}:${envoyTag}"
+}
+
+tasks.register('cleanDocker') {
+    it.dependsOn untagGrpcApi, untagWeb, untagEnvoy
 }
 
 tasks.register('pushAll', DockerPushImage) {
