@@ -33,7 +33,9 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 }
 
 def buildImage = project.tasks.register('buildImage', DockerBuildImage) {
-    it.dependsOn prepareDocker, project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
+    def grpcApiImage = project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
+    it.dependsOn prepareDocker, grpcApiImage
+    it.inputs.files grpcApiImage.outputs.files
     it.inputDir.set dockerfileDir
     it.imageIdFile.set imageIdFile
     it.images.add(image)
