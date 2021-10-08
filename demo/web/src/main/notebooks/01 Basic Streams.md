@@ -50,7 +50,7 @@ def get_trades_stream():
         'io.deephaven.crypto.kafka.TradesTopic',
         key = kt.IGNORE,
         value = kt.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
-        offsets=kt.ALL_PARTITIONS_DONT_SEEK,
+        offsets=kt.ALL_PARTITIONS_SEEK_TO_END,
         table_type='append')
 
 trades_stream = get_trades_stream()
