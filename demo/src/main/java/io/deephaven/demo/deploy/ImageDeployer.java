@@ -77,7 +77,7 @@ public class ImageDeployer {
 
         LOG.info("Creating new worker template box");
         final IpMapping workerIp = ctrl.requestIp();
-        Machine worker = new Machine(workerBox);
+        Machine worker = ctrl.findMachine(workerBox, true);
         worker.setIp(workerIp.getName());
         worker.setSnapshotCreate(true);
         // The manager itself has code to select our prepare-worker.sh script as machine startup script
@@ -94,7 +94,7 @@ public class ImageDeployer {
         // worker is done, do the controller
         LOG.info("Creating new controller template box");
         final IpMapping controllerIp = ctrl.requestIp();
-        Machine controller = new Machine(controllerBox);
+        Machine controller = ctrl.findMachine(controllerBox, true);
         controller.setIp(controllerIp.getName());
         // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
         controller.setController(true);
@@ -106,7 +106,7 @@ public class ImageDeployer {
 
         finishDeploy("Controller", controller, manager);
 
-        Machine newCtrl = new Machine("controller-" + VERSION_MANGLE);
+        Machine newCtrl = ctrl.findMachine("controller-" + VERSION_MANGLE, true);
         newCtrl.setIp(ctrl.requestIp().getName());
         newCtrl.setController(true);
         manager.createMachine(newCtrl);

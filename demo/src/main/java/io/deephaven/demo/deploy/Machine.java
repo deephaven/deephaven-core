@@ -1,12 +1,17 @@
 package io.deephaven.demo.deploy;
 
+import io.deephaven.demo.ClusterController;
 import io.deephaven.demo.NameConstants;
 import io.deephaven.demo.NameGen;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Objects;
+
+import static io.deephaven.demo.NameConstants.*;
 
 /**
  * DhNode:
@@ -15,6 +20,7 @@ import java.util.Objects;
  * Created by James X. Nelson (James@WeTheInter.net) on 20/09/2021 @ 5:13 p.m..
  */
 public class Machine {
+
     private String host;
     private String domainName;
     private String ip;
@@ -30,7 +36,7 @@ public class Machine {
     private DomainMapping domainInUse;
     private final LinkedList<DomainMapping> allDomains = new LinkedList<>();
     private String version;
-    private String lease;
+    private long mark;
 
     public Machine() {
     }
@@ -138,7 +144,7 @@ public class Machine {
         this.inUse = inUse;
     }
 
-    public void setExpiry(final long expiry) {
+    /* Purposely not public, see caller for details */ void setExpiry(final long expiry) {
         this.expiry = expiry;
     }
 
@@ -201,11 +207,17 @@ public class Machine {
         return version;
     }
 
-    public void setLease(final String lease) {
-        this.lease = lease;
+    public void setMark(final long mark) {
+        this.mark = mark;
     }
 
-    public String getLease() {
-        return lease;
+    public long getMark() {
+        return mark;
+    }
+
+    public String getPurpose() {
+        return isSnapshotCreate() ? isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER :
+                isController() ? PURPOSE_CONTROLLER : PURPOSE_WORKER;
+
     }
 }

@@ -3,6 +3,7 @@ package io.deephaven.demo.deploy;
 import io.deephaven.demo.ClusterController;
 import io.deephaven.demo.NameGen;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -19,13 +20,40 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * GoogleDeploymentManagerTest:
  * <p>
  * <p>
- * Created by James X. Nelson (James@WeTheInter.net) on 21/09/2021 @ 3:51 p.m..
  */
 public class GoogleDeploymentManagerTest {
 
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder();
 
+    @Ignore // don't run "create a VM" on regular unit tests... hook this up to be nightly-only
+    @Test
+    public void testGetWorker() throws IOException, InterruptedException {
+        String workDir = tmp.newFolder("deploy").getAbsolutePath();
+        GoogleDeploymentManager deploy = new GoogleDeploymentManager(workDir);
+
+        ClusterController ctrl = new ClusterController(deploy);
+
+        long beforeRequest = System.currentTimeMillis();
+        Machine machine = ctrl.requestMachine();
+        long beforeHealthy = System.currentTimeMillis();
+        ctrl.waitUntilHealthy(machine);
+        long afterHealthy = System.currentTimeMillis();
+        // we survived! The machine is working!
+
+        // TODO: use this machine to do some testing of live system.  Perhaps better moved to a @ClassRule?
+
+        // NOW DESTROY IT! :-)
+        ctrl.getDeploymentManager().destroyCluster(machine);
+        long afterDestroy = System.currentTimeMillis();
+
+        System.out.println("Waited " + TimeUnit.MILLISECONDS.toSeconds(beforeHealthy - beforeRequest) + "s to get " + machine);
+        System.out.println("Waited " + TimeUnit.MILLISECONDS.toSeconds(afterHealthy - beforeHealthy) + "s until seeing a healthy " + machine);
+        System.out.println("Waited " + TimeUnit.MILLISECONDS.toSeconds(afterDestroy - afterHealthy) + "s to destroy " + machine);
+
+    }
+
+    @Ignore // Uncomment this to use this method to play with "create a machine" semantics
     @Test
     public void testMachineSetup() throws IOException, InterruptedException, TimeoutException {
         String workDir = tmp.newFolder("deploy").getAbsolutePath();
@@ -33,12 +61,10 @@ public class GoogleDeploymentManagerTest {
 
         ClusterController ctrl = new ClusterController(deploy);
 
-        Machine machine = ctrl.requestMachine();
-
         final Machine testNode = new Machine();
-        testNode.setHost("controller3");
-        testNode.setController(true);
-        testNode.setDomainName("ctrl.demo.deephaven.app");
+        testNode.setHost("controller-test"); // you can change this to whatever machine name you want
+//        testNode.setController(true); // feel free to use this to get a controller to test.
+        testNode.setDomainName(testNode.getHost() + ".demo.deephaven.app");
         if (!deploy.checkExists(testNode)) {
             deploy.createNew(testNode);
         }

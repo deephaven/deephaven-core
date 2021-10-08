@@ -51,6 +51,7 @@ public class IpPool {
         if (ip.getIp() != null) {
             allIps.put(ip.getIp(), ip);
         }
+        used.remove(ip);
         unused.add(ip);
     }
 
@@ -58,6 +59,7 @@ public class IpPool {
         ip.setState(IpState.Claimed);
         allIps.put(ip.getName(), ip);
         allIps.put(ip.getIp(), ip);
+        unused.remove(ip);
         used.add(ip);
     }
 
@@ -111,9 +113,13 @@ public class IpPool {
         }
         boolean alreadyRunning = ip.isRunningFor(node);
         changeState(ip, alreadyRunning ? IpState.Running : IpState.Claimed);
+
+        // must remove ip from both sets before we call setInstance, which updates timestamp
+        used.remove(ip);
+        unused.remove(ip);
+
         ip.setInstance(node);
         used.add(ip);
-        unused.remove(ip);
         return ip;
     }
 
@@ -128,5 +134,11 @@ public class IpPool {
 
     public int getNumUsed() {
         return used.size();
+    }
+
+    public IpMapping updateOrCreate(final String name, final String addr) {
+        final IpMapping ip = allIps.computeIfAbsent(name, n -> new IpMapping(name, addr));
+        ip.setIp(addr);
+        return ip;
     }
 }

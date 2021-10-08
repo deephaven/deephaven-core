@@ -175,8 +175,11 @@ public class DhDemoServer implements QuarkusApplication {
                 }
                 if (controller.isMachineReady(uname)) {
                     String uri = "https://" + uname;
-                    req.redirect(uri);
-                    return;
+                    // if you re-visit the main url, we'll renew your 45 minute lease then send you back
+                    if (controller.renewLease(uname)) {
+                        req.redirect(uri);
+                        return;
+                    }
                 }
             }
             // getting or creating a worker could take a while.

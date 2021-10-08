@@ -67,7 +67,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
     static String getGoogleZone() {
         String envZone = System.getenv("DH_GOOGLE_ZONE");
         if (envZone == null) {
-            envZone = "us-central1-a";
+            envZone = "us-central1-f";
         }
         return envZone;
     }
@@ -434,7 +434,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
      gcloud compute instances create $host \
      --image centos-7-v20200910 \
      --image-project centos-cloud \
-     --zone us-central1-a \
+     --zone us-central1-f \
      --boot-disk-size 20G \
      --boot-disk-type pd-standard \
      --boot-disk-device-name $host \
@@ -497,7 +497,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
         }
         // apply node-role specific cli arguments
         if (machine.isSnapshotCreate()) {
-            cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_CREATOR);
+            final String simpleType = machine.isController() ? "controller" : "worker";
+            cmds.add("--labels=" + LABEL_PURPOSE + "=" + (machine.isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER) );
             cmds.add("--tags=dh-demo,dh-creator");
             cmds.add("--service-account");
             cmds.add("dh-controller@" + getGoogleProject() + ".iam.gserviceaccount.com");
@@ -510,7 +511,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("--image-project");
             cmds.add("ubuntu-os-cloud");
             // stick our prepare-worker.sh or prepare-controller.sh script into desired location.
-            final String scriptName = "prepare-" + (machine.isController() ? "controller" : "worker") + ".sh";
+            final String scriptName = "prepare-" + simpleType + ".sh";
             if (!new File(localDir, scriptName).exists()) {
                 final String prepareSnapshotPath = "/scripts/" + scriptName;
                 final InputStream prepareSnapshotScript = GoogleDeploymentManager.class.getResourceAsStream(prepareSnapshotPath);

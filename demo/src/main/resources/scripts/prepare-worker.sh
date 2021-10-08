@@ -168,7 +168,7 @@ static_resources:
       lb_policy: ROUND_ROBIN
       http2_protocol_options: {}
       common_http_protocol_options:
-        max_stream_duration: 3000s
+        max_stream_duration: 0s
       load_assignment:
         cluster_name: grpc-api
         endpoints:

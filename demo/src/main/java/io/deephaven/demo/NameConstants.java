@@ -18,7 +18,8 @@ public class NameConstants {
     public static final String LABEL_VERSION = "dh-version";
     public static final String PURPOSE_WORKER = "worker";
     public static final String PURPOSE_CONTROLLER = "controller";
-    public static final String PURPOSE_CREATOR = "creator";
+    public static final String PURPOSE_CREATOR_CONTROLLER = "creator-" + PURPOSE_CONTROLLER;
+    public static final String PURPOSE_CREATOR_WORKER = "creator-" + PURPOSE_WORKER;
 
     public static final String PORT_ENVOY_CLIENT_NAME = "envoy-client";
     public static final String ANNO_BACKEND_CONFIG = "beta.cloud.google.com/backend-config";
