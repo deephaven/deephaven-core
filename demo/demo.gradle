@@ -1,4 +1,5 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 import com.bmuschko.gradle.docker.tasks.image.DockerTagImage
 import org.gradle.internal.jvm.Jvm
 static boolean getCanQuarkus() { Jvm.current().javaVersion.isJava11Compatible() }
@@ -181,35 +182,63 @@ String envoyTag = project.version
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
         def demoGrpcApi = project(':demo-grpc-api')
-        t.imageId.set demoGrpcApi.property('imageId') as String
+        t.imageId.set demoGrpcApi.property('image') as String
         t.repository.set grpcApiRepository
         t.tag.set grpcApiTag
         t.force.set true
-        t.dependsOn demoGrpcApi.tasks.findByName('buildDocker')
+        t.dependsOn demoGrpcApi.tasks.findByName('buildImage')
 }
 
 def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
     DockerTagImage t ->
         def demoWeb = project(':demo-web')
-        t.imageId.set demoWeb.property('imageId') as String
+        t.imageId.set demoWeb.property('image') as String
         t.repository.set webRepository
         t.tag.set webTag
         t.force.set true
-        t.dependsOn demoWeb.tasks.findByName('buildDocker')
+        t.dependsOn demoWeb.tasks.findByName('buildImage')
 }
 
 def tagEnvoy = tasks.register('tagEnvoy', DockerTagImage) {
     DockerTagImage t ->
         def demoEnvoy = project(':demo-envoy')
-        t.imageId.set demoEnvoy.property('imageId') as String
+        t.imageId.set demoEnvoy.property('image') as String
         t.repository.set envoyRepository
         t.tag.set envoyTag
         t.force.set true
-        t.dependsOn demoEnvoy.tasks.findByName('buildDocker')
+        t.dependsOn demoEnvoy.tasks.findByName('buildImage')
 }
 
 def tagAll = tasks.register('tagAll') {
     it.dependsOn tagGrpcApiTask, tagWebTask, tagEnvoy
+}
+
+def untagGrpcApi = tasks.register('untagGrpcApi', DockerRemoveImage) {
+    it.imageId.set "${grpcApiRepository}:${grpcApiTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+}
+
+def untagWeb = tasks.register('untagWeb', DockerRemoveImage) {
+    it.imageId.set "${webRepository}:${webTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+}
+
+def untagEnvoy = tasks.register('untagEnvoy', DockerRemoveImage) {
+    it.imageId.set "${envoyRepository}:${envoyTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+}
+
+tasks.register('cleanDocker') {
+    it.dependsOn untagGrpcApi, untagWeb, untagEnvoy
 }
 
 tasks.register('pushAll', DockerPushImage) {
