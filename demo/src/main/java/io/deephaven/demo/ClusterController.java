@@ -227,11 +227,16 @@ public class ClusterController {
                 boolean validVersion = isValidVersion(machine);
                 // TODO: ping the machine and have a procedure that warns the user this is going to happen:
                 //  also, we should be hooking up a new DNS name to the machine and deleting the one that is in use
-                gcloud("instances", validVersion ? "stop" : "delete", "-q", machine.getHost());
                 if (validVersion) {
+                    gcloud("instances", "stop", "-q", machine.getHost());
                     manager.replaceDNS(machine);
                     machine.setInUse(false);
                 } else {
+                    if (machine.getVersion() == null || VERSION.compareTo(machine.getVersion()) > 0) {
+                        // only delete versions older than ourselves. we don't want an old controller to touch new machines,
+                        // but we do want new controllers to delete old machines!
+                        gcloud("instances", validVersion ? "stop" : "delete", "-q", machine.getHost());
+                    }
                     machine.setInUse(true);
                 }
                 if (machines.needsMoreMachines(getPoolBuffer(), getPoolSize(), getMaxPoolSize())) {
@@ -700,7 +705,9 @@ public class ClusterController {
                         "  echo waiting for localhost:10000 to be responsive\n" +
                         "  watch_logs &\n" +
                         "  pid=$!\n" +
-                        "  while (( tries > 0 )) && ! curl -k https://localhost:10000/health &> /dev/null; do\n" +
+                        "  while (( tries > 0 )) && \n" +
+                                "! grep -q InitialDeephavenSetupComplete /var/log/vm-startup.log 2> /dev/null && \n" +
+                                "! curl -k https://localhost:10000/health &> /dev/null; do\n" +
                         "    tries=$((tries-1))\n" +
                         "    (( tries%10 )) || echo \"start-monitor tries remaining: $tries\"\n" +
                         "    sleep 1\n" +
@@ -713,7 +720,7 @@ public class ClusterController {
                         "  fi\n" +
                         "} ; TIMEFORMAT='\n" +
                         "wait_til_ready exited after: %3Rs' ; time wait_til_ready ; code=$? ; " +
-                        "echo " + key + "${code} ; echo ; sleep 1 ; kill $PPID "
+                        "echo " + key + "${code}'\n' ; echo ; sleep 1 ; kill $PPID "
         );
         int realCodeLoc = result.out.lastIndexOf(key);
         if (result.out.contains(failed)) {

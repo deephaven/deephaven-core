@@ -67,7 +67,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
     static String getGoogleZone() {
         String envZone = System.getenv("DH_GOOGLE_ZONE");
         if (envZone == null) {
-            envZone = "us-central1-f";
+            envZone = "us-central1-a";
         }
         return envZone;
     }
@@ -434,7 +434,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
      gcloud compute instances create $host \
      --image centos-7-v20200910 \
      --image-project centos-cloud \
-     --zone us-central1-f \
+     --zone us-central1-a \
      --boot-disk-size 20G \
      --boot-disk-type pd-standard \
      --boot-disk-device-name $host \
@@ -542,7 +542,6 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("--tags=dh-demo,dh-worker");
             cmds.add("--service-account");
             cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");
-            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
             cmds.add("--metadata=startup-script=while ! curl -k https://localhost:10000/health &> /dev/null; do echo 'Waiting for dh stack to come up'; done ; sudo iptables -A PREROUTING -t nat -p tcp --dport 443 -j REDIRECT --to-port 10000 ; sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 10000");
             cmds.add("--image");
             cmds.add(NameConstants.SNAPSHOT_NAME + "-worker");
@@ -589,7 +588,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         // Turn off a given node
         Execute.ExecutionResult res = execute(
                 "gcloud", "compute", "instances", "stop", node.getHost(),
-                "--zone", "us-central1-f");
+                "--zone", getGoogleZone());
         if (res.code != 0) {
             throw new IllegalStateException("Failed to turn off node " + node.getHost() + "\n" + res.err);
         }

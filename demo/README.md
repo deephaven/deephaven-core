@@ -502,4 +502,4 @@ Shell into it, and run prepare-snapshot.sh
 
 
 
-gcloud compute images create deephaven-app-0-0-4 --source-disk=snapshot-root     --source-disk-zone=us-central1-f
+gcloud compute images create deephaven-app-0-0-4 --source-disk=snapshot-root     --source-disk-zone=us-central1-a

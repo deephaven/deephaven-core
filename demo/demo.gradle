@@ -148,9 +148,6 @@ tasks.register(protoSyncName, Sync).configure{
                 protos.directory && t.from(protos)
         }
 }
-gradle.projectsEvaluated {
-    println tasks.names
-}
 // TODO: forcibly test that a few toolchains can compile + run our code...
 
 if (canQuarkus) {
@@ -164,9 +161,6 @@ if (canQuarkus) {
         }
     }
 }
-
-def dockerPath = project.findProperty('dockerPath') ?: 'deephaven'
-def dockerVersion = project.findProperty('dockerVersion') ?: 'local-build'
 
 String grpcApiRepository = project.property('grpcApiRepository')
 String grpcApiTag = project.version
@@ -242,7 +236,15 @@ tasks.register('cleanDocker') {
 
 tasks.register('pushAll', DockerPushImage) {
     DockerPushImage p ->
-        p.images = [ "${grpcApiRepository}:${grpcApiTag}", "${webRepository}:${webTag}", "${envoyRepository}:${envoyTag}" ]
+        p.images.set([ "${grpcApiRepository}:${grpcApiTag}", "${webRepository}:${webTag}", "${envoyRepository}:${envoyTag}" ] as Set)
         p.dependsOn tagAll
 }
 
+tasks.register('deployDemo', JavaExec) {
+    JavaExec exe ->
+        exe.dependsOn('pushAll', 'quarkusBuild')
+        exe.main('io.deephaven.demo.deploy.ImageDeployer')
+        exe.classpath(sourceSets.main.runtimeClasspath)
+        exe.systemProperty('deployImage', 'true')
+        exe.systemProperty('dh-version', version)
+}

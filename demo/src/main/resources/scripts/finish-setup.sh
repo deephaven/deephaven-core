@@ -58,3 +58,5 @@ sudo ip6tables-save | sudo tee /etc/iptables/rules.v6 > /dev/null
 sudo netfilter-persistent save
 
 log "System setup of $(hostname) complete!"
+# Do not change this message, it must be the very last thing in the log file
+log "InitialDeephavenSetupComplete"

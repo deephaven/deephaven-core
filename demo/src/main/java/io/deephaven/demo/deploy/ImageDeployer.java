@@ -12,8 +12,7 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static io.deephaven.demo.NameConstants.SNAPSHOT_NAME;
-import static io.deephaven.demo.NameConstants.VERSION_MANGLE;
+import static io.deephaven.demo.NameConstants.*;
 
 /**
  * ImageDeployer:
@@ -37,6 +36,7 @@ public class ImageDeployer {
         final String localDir = System.getProperty("java.io.tmpdir", "/tmp") + "/dh_deploy_" + version;
         concatScripts(localDir, "prepare-worker.sh",
                 "script-header.sh",
+                "VERSION",
                 "setup-docker.sh",
                 "get-credentials.sh",
                 "gen-certs.sh",
@@ -45,6 +45,7 @@ public class ImageDeployer {
                 "finish-setup.sh");
         concatScripts(localDir, "prepare-controller.sh",
                 "script-header.sh",
+                "VERSION",
                 "setup-docker.sh",
                 "get-credentials.sh",
                 "gen-certs.sh",
@@ -56,6 +57,12 @@ public class ImageDeployer {
         String prefix = machinePrefix + (machinePrefix.isEmpty() || machinePrefix.endsWith("-") ? "" : "-");
         String workerBox = prefix + "worker"; //ancestor-worker
         String controllerBox = prefix + "controller"; // ancestor=controller
+
+        // for now, we are NOT going to allow stomping images.
+        final Execute.ExecutionResult result = GoogleDeploymentManager.gcloudQuiet(true, false, "images", "describe", SNAPSHOT_NAME + "-worker");
+        if (result.code == 0) {
+            throw new IllegalStateException("Snapshot " + SNAPSHOT_NAME + "-worker already exists; please bump your version!");
+        }
 
         LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
         // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
@@ -149,6 +156,12 @@ public class ImageDeployer {
 
         try (final FileOutputStream out = new FileOutputStream(outFile, true)) {
             for (String script : scripts) {
+                // Gradle sends us the version via sysprop, and we pass that along to startup script here:
+                if ("VERSION".equals(script)) {
+                    byte[] versionBytes = ("VERSION=" + VERSION + "\n").getBytes();
+                    out.write(versionBytes, 0, versionBytes.length);
+                    continue;
+                }
                 try(final InputStream in = ImageDeployer.class.getResourceAsStream("/scripts/" + script)) {
                     if (in == null) {
                         throw new NullPointerException("No scripts/" + script + " file");

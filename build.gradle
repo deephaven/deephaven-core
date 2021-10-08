@@ -71,7 +71,9 @@ idea {
                 'lib/thirdparty', 'lib/external', // jars we copy around
                 'py/venvs', 'py/installs',  // generated python installs / venvs
                 'web/.cache', // generated web files
-                'build'
+                'build',
+                'node_modules',
+                'packages'
         ) as Set
     }
 }
