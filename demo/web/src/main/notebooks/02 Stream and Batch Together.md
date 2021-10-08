@@ -120,8 +120,8 @@ join_stream_batch = agg_streaming.renameColumns("Price_Streaming = Price", "Avg_
 \
 \
 \
-Batch and stream together. Yeah, baby.
+[The next notebook](03%20Kafka%20Streamvs%20Append.md) demonstrates the value of different Kafka integrations.
 
 ```python
-print("Side by side on my piano keyboard, oh Lord, why don't we?")
+print("When is streaming smarter than appending?  Find out next.")
 ```
