@@ -63,6 +63,8 @@ public class ClusterController {
         this.domains = new DomainPool();
         this.machines = new MachinePool();
 
+        // TODO: check DNS record for DOMAIN, and decide if we are the Leader, and only the Leader shuts off / deletes machines
+
         // always load IPs... we want them in cases when we manually create named machines
         setTimer("Load Unused IPs", this::loadIpsUnusedInitial);
         setTimer("Load Used IPs", this::loadIpsUsedInitial);
@@ -450,7 +452,7 @@ public class ClusterController {
         }
         if (isValidVersion(mach)) {
             machines.addMachine(mach);
-        } else {
+        } else if (!mach.isInUse()){
             turnOff(mach);
             machines.removeMachine(mach);
         }
