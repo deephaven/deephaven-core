@@ -427,6 +427,9 @@ public class ClusterController {
     }
 
     private Machine updateMachineFromCsv(final String line) {
+        if (line.contains("Google API")) {
+            return null;
+        }
         String[] bits = line.split(",");
         final String name = bits[getIndexName()];
 
