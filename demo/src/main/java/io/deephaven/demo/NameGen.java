@@ -567,8 +567,6 @@ public class NameGen {
             "philosophical",
             "photographic",
             "physical",
-            "pink",
-            "plain",
             "planned",
             "plausible",
             "pleasant",

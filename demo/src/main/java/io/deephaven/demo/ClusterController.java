@@ -380,7 +380,14 @@ public class ClusterController {
             long mark = System.currentTimeMillis();
             final Execute.ExecutionResult result;
             result = gcloudQuiet(true, false, "instances", "list",
-                    "--filter", "labels." + LABEL_PURPOSE + "=" + PURPOSE_WORKER,
+                    "--filter",
+                        // so annoying... google prints a warning about = operator changing;
+                        // for whatever terrible reason, key<=val && key>=val is how to express key=val,
+                        // because key=val is deprecated form of contains(), see `gcloud topic filters`
+                        "labels." + LABEL_PURPOSE + "<=" + PURPOSE_WORKER +
+                        " && " +
+                        "labels." + LABEL_PURPOSE + ">=" + PURPOSE_WORKER
+                    ,
                     "--format", getMachineFormatFlag(),
                     "--page-size", Integer.toString(getMaxPoolSize() * 2),
                     "-q"

@@ -149,7 +149,7 @@ public class DhDemoServer implements QuarkusApplication {
 //            }
             String userAgent = req.request().headers().get("User-Agent");
             // We've seen Nimbostratus and SlackBot in logs; pre-emptively using "Bot" to cover more than SlackBot
-            if (userAgent.contains("Bot") || userAgent.contains("Nimbostratus")) {
+            if (userAgent == null || userAgent.contains("Bot") || userAgent.contains("Nimbostratus")) {
                 LOG.info("Rejecting bot: " + userAgent);
                 req.request().headers().entries().forEach(e->{
                     LOG.info("Header: " + e.getKey() + " = " + e.getValue());
