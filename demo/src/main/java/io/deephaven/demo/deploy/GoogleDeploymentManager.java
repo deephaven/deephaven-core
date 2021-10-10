@@ -5,14 +5,10 @@ import com.google.common.io.Files;
 import io.deephaven.demo.ClusterController;
 import io.deephaven.demo.NameConstants;
 import io.deephaven.demo.NameGen;
-import io.vertx.core.impl.ConcurrentHashSet;
 import org.apache.commons.io.FileUtils;
 import org.jboss.logging.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -80,16 +76,36 @@ public class GoogleDeploymentManager implements DeploymentManager {
         this.localDir = localDir;
         dns = new GoogleDnsManager(new File(localDir, "dns"));
         ips = new IpPool();
+        try {
+            concatScripts(localDir, "prepare-worker.sh",
+                    "script-header.sh",
+                    "VERSION",
+                    "setup-docker.sh",
+                    "get-credentials.sh",
+                    "gen-certs.sh",
+                    "prepare-worker.sh",
+                    "pull-images.sh",
+                    "finish-setup.sh");
+            concatScripts(localDir, "prepare-controller.sh",
+                    "script-header.sh",
+                    "VERSION",
+                    "setup-docker.sh",
+                    "get-credentials.sh",
+                    "gen-certs.sh",
+                    "prepare-controller.sh",
+                    "pull-images.sh",
+                    "finish-setup.sh");
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to create script in " + localDir, e);
+        }
     }
 
     @Override
     public void assignDns(final ClusterController ctrl, Stream<Machine> nodes) {
 
         // first, query if a DNS record already exists.
-        List<Machine> changed = new ArrayList<>();
-        Set<Machine> changedMachines = new ConcurrentHashSet<>();
         dns.tx(tx -> {
-            nodes.forEach( node -> {
+            nodes.collect(Collectors.toList()).forEach(node -> {
                 IpMapping nodeIp = node.getIp();
                 final DomainMapping mapping = node.getDomainInUse() == null ? new DomainMapping(node.getHost(), DOMAIN) : node.getDomainInUse();
                 try {
@@ -110,15 +126,13 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 } catch(UnknownHostException ignored) {
                     // no dns record exists.  Add one to our DNS transaction (opening a new one if not already in progress)
                 } catch (IOException | InterruptedException e) {
-                    LOG.errorf("IO error trying the get IP address for %s", node.getDomainName(), e);
+                    LOG.errorf(e, "IO error trying the get IP address for %s", node.getDomainName());
                 }
-                changed.add(node);
                 try {
                     tx.addRecord(mapping, nodeIp.getIp());
                 } catch (IOException | InterruptedException e) {
                     LOG.error("Unknown error trying to add dns entry for " + node.getHost(), e);
                 }
-                changed.add(node);
             });
         });
     }
@@ -160,7 +174,6 @@ public class GoogleDeploymentManager implements DeploymentManager {
         LOG.warn("Destroying node: " + allNodes.stream().map(Machine::getHost).collect(Collectors.joining(" ")));
         LOG.info("\n\nYou may see some errors below about missing resources like snapshots or disks.\n" +
 "Ignore them, unless you don't see the \"Done cleanup\" message, below.\n\n");
-        FileUtils.deleteDirectory(new File(localDir));
         dns.tx(tx -> {
             allNodes.parallelStream().forEach (node -> {
                 try {
@@ -197,6 +210,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 }
             });
         });
+        FileUtils.deleteDirectory(new File(localDir));
         LOG.info("\n\nDone cleanup.  You may resume taking errors seriously.\n\n");
     }
 
@@ -524,20 +538,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("ubuntu-os-cloud");
             // stick our prepare-worker.sh or prepare-controller.sh script into desired location.
             final String scriptName = "prepare-" + simpleType + ".sh";
-            if (!new File(localDir, scriptName).exists()) {
-                final String prepareSnapshotPath = "/scripts/" + scriptName;
-                final InputStream prepareSnapshotScript = GoogleDeploymentManager.class.getResourceAsStream(prepareSnapshotPath);
-                if (prepareSnapshotScript == null) {
-                    System.err.println("No " + prepareSnapshotPath + " found in classloader, bailing!");
-                    System.exit(98);
-                }
-                final File scriptFile = new File(localDir, scriptName);
-                final CharSink dest = Files.asCharSink(scriptFile, StandardCharsets.UTF_8);
-                dest.writeFrom(new InputStreamReader(prepareSnapshotScript));
-                scriptFile.setExecutable(true);
-            }
-            // set the startup script as the machine startup-script
-            cmds.add("--metadata-from-file=startup-script=" + new File(localDir, scriptName).getAbsolutePath());
+            addStartupScript(cmds, scriptName);
         } else if (machine.isController()) {
             cmds.add("--labels=" +
                     LABEL_PURPOSE + "=" + PURPOSE_CONTROLLER
@@ -548,8 +549,17 @@ public class GoogleDeploymentManager implements DeploymentManager {
             // We could reduce this, but the controller does NOT allow running any user code, so :shrug:
             cmds.add("dh-controller@" + getGoogleProject() + ".iam.gserviceaccount.com");
             // controller starts from a prepared source image
-            cmds.add("--image");
-            cmds.add(NameConstants.SNAPSHOT_NAME + "-controller");
+            if (machine.isUseImage()) {
+                cmds.add("--image");
+                cmds.add(NameConstants.SNAPSHOT_NAME + "-controller");
+            } else {
+                cmds.add("--image");
+                cmds.add("ubuntu-2004-focal-v20210129");
+                cmds.add("--image-project");
+                cmds.add("ubuntu-os-cloud");
+                final String scriptName = "prepare-controller.sh";
+                addStartupScript(cmds, scriptName);
+            }
             cmds.add("--scopes");
             cmds.add("https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/cloud-platform");
         } else {
@@ -560,10 +570,23 @@ public class GoogleDeploymentManager implements DeploymentManager {
             );
             cmds.add("--tags=dh-demo,dh-worker");
             cmds.add("--service-account");
-            cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");
-            cmds.add("--metadata=startup-script=while ! curl -k https://localhost:10000/health &> /dev/null; do echo 'Waiting for dh stack to come up'; done ; sudo iptables -A PREROUTING -t nat -p tcp --dport 443 -j REDIRECT --to-port 10000 ; sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 10000");
-            cmds.add("--image");
-            cmds.add(NameConstants.SNAPSHOT_NAME + "-worker");
+            if (machine.isUseImage()) {
+                cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");
+                cmds.add("--image");
+                cmds.add(NameConstants.SNAPSHOT_NAME + "-worker");
+//                cmds.add("--metadata=startup-script=while ! curl -k https://localhost:10000/health &> /dev/null; do echo 'Waiting for dh stack to come up'; done ; sudo iptables -A PREROUTING -t nat -p tcp --dport 443 -j REDIRECT --to-port 10000 ; sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 10000");
+            } else {
+                // can't setup a worker w/o extended permissions. This should only be used for testing new worker scripts
+                cmds.add("dh-controller@" + getGoogleProject() + ".iam.gserviceaccount.com");
+                cmds.add("--image");
+                cmds.add("ubuntu-2004-focal-v20210129");
+                cmds.add("--image-project");
+                cmds.add("ubuntu-os-cloud");
+                final String scriptName = "prepare-worker.sh";
+                addStartupScript(cmds, scriptName);
+                cmds.add("--scopes");
+                cmds.add("https://www.googleapis.com/auth/cloud-platform");
+            }
         }
         Execute.ExecutionResult res = execute(cmds);
         // TODO: use a privileged service account for setup, and then remove the service account when creating an actual worker from the snapshot
@@ -573,8 +596,37 @@ public class GoogleDeploymentManager implements DeploymentManager {
             warnResult(res);
             throw new IllegalStateException("Failed to create node " + machine.getHost());
         }
+        if (!machine.isController()) {
+            ClusterController.setTimer("Attach Data Disk", ()->{
+                try {
+                    gcloud(false,
+                            "instances", "attach-disk", machine.getHost(),
+                            "--disk", "demo-data", "--mode=ro", "--device-name=large-data");
+                } catch (IOException | InterruptedException e) {
+                    LOG.error("Failed to attach disk demo-data to instance " + machine.getHost(), e);
+                }
+            });
+        }
+
         // Parse out the IP address of this machine?
         return true;
+    }
+
+    private void addStartupScript(final List<String> cmds, final String scriptName) throws IOException {
+        if (!new File(localDir, scriptName).exists()) {
+            final String prepareSnapshotPath = "/scripts/" + scriptName;
+            final InputStream prepareSnapshotScript = GoogleDeploymentManager.class.getResourceAsStream(prepareSnapshotPath);
+            if (prepareSnapshotScript == null) {
+                System.err.println("No " + prepareSnapshotPath + " found in classloader, bailing!");
+                System.exit(98);
+            }
+            final File scriptFile = new File(localDir, scriptName);
+            final CharSink dest = Files.asCharSink(scriptFile, StandardCharsets.UTF_8);
+            dest.writeFrom(new InputStreamReader(prepareSnapshotScript));
+            scriptFile.setExecutable(true);
+        }
+        // set the startup script as the machine startup-script
+        cmds.add("--metadata-from-file=startup-script=" + new File(localDir, scriptName).getAbsolutePath());
     }
 
     @Override
@@ -793,6 +845,45 @@ public class GoogleDeploymentManager implements DeploymentManager {
 
     public IpPool getIpPool() {
         return ips;
+    }
+
+    private void concatScripts(final String into, final String outputFilename, final String ... scripts) throws IOException {
+        final File outFile = new File(into, outputFilename);
+        outFile.getParentFile().mkdirs();
+        if (outFile.isFile()) {
+            if (!outFile.delete()) {
+                throw new IllegalStateException("Unable to delete file " + outFile);
+            }
+        }
+        if (!outFile.createNewFile()) {
+            throw new IllegalStateException("Unable to create new file: " + outFile);
+        }
+        LOG.info("Creating script file://" + outFile);
+        try (final FileOutputStream out = new FileOutputStream(outFile, true)) {
+            for (String script : scripts) {
+                // Gradle sends us the version via sysprop, and we pass that along to startup script here:
+                if ("VERSION".equals(script)) {
+                    byte[] versionBytes = ("VERSION=" + VERSION + "\n").getBytes();
+                    out.write(versionBytes, 0, versionBytes.length);
+                    continue;
+                }
+                try (final InputStream in = ImageDeployer.class.getResourceAsStream("/scripts/" + script)) {
+                    if (in == null) {
+                        throw new NullPointerException("No scripts/" + script + " file");
+                    }
+                    int num = Math.max(4096, in.available());
+                    final byte[] bytes = new byte[num];
+                    for (int r;
+                         (r = in.read(bytes, 0, num)) > 0;
+                    ) {
+                        LOG.infof("Wrote %s bytes from scripts/%s to %s", r, script, outputFilename);
+                        out.write(bytes, 0, r);
+                    }
+                    out.write('\n');
+                }
+            }
+        }
+
     }
 }
 

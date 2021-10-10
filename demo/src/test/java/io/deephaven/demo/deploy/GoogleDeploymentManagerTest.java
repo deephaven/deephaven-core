@@ -56,17 +56,18 @@ public class GoogleDeploymentManagerTest {
         String workDir = tmp.newFolder("deploy").getAbsolutePath();
         GoogleDeploymentManager deploy = new GoogleDeploymentManager(workDir);
 
-        ClusterController ctrl = new ClusterController(deploy);
+        ClusterController ctrl = new ClusterController(deploy, false);
 
+        Machine.useImages = false;
         // you can change this machine name to whatever machine name you want
-        final Machine testNode = new Machine("controller-test", ctrl.requestIp());
+        final Machine testNode = ctrl.requestMachine("test-jxn", true);
 //        testNode.setController(true); // feel free to use this to get a controller to test.
         testNode.setDomainName(testNode.getHost() + ".demo.deephaven.app");
         if (!deploy.checkExists(testNode)) {
             deploy.createNew(testNode);
         }
         deploy.turnOn(testNode);
-        deploy.assignDns(ctrl, Stream.of(testNode));
+        deploy.waitForDns(Collections.singletonList(testNode), GoogleDeploymentManager.DNS_GOOGLE);
         final String ipAddr = deploy.getDnsIp(testNode);
         Assert.assertNotNull(ipAddr);
         Assert.assertNotEquals("", ipAddr);

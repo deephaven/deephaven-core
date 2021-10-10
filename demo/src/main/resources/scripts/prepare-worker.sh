@@ -1,4 +1,5 @@
 DH_DIR="${DH_DIR:-/dh}"
+DATA_DIR="${DATA_DIR:-$DH_DIR/data}"
 # While we _should_ get docker-compose.yml from github via curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml
 # the version there isn't parameterized like this one, as we want to replace the docker repo with our demo-specific one
 # Note: 'EOF' causes variables in the heredoc to NOT be expanded. Starting w/ EOF will expand contained variables.
@@ -225,3 +226,12 @@ static_resources:
                       address: demo-server
                       port_value: 7117
 EOF
+
+data_device=/dev/disk/by-id/google-large-data
+grep -q "$data_device" /etc/fstab || {
+    echo "
+$data_device $DATA_DIR/large  ext4 ro,nosuid,nodev,nofail,noload 0 0
+" | sudo tee -a /etc/fstab > /dev/null
+}
+test -d "$DATA_DIR/large" || sudo mkdir "$DATA_DIR/large"
+df -h | grep -q "$DATA_DIR/large" || sudo mount -a

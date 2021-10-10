@@ -248,8 +248,8 @@ public class ClusterController {
                 }
                 if (next.isInUse()) {
                     final long millis = next.getExpiry() - System.currentTimeMillis();
-                    final long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
-                    LOG.infof("%s expires in %s minutes", next.getHost(), minutes);
+                    final long minutes = TimeUnit.MILLISECONDS.toMinutes(millis); // rounds off millis
+                    LOG.infof("%s expires in %s minutes", next.getHost(), 1 + minutes); // +1 b/c we rounded down already
                     if (millis > getSessionTtl()) {
                         // this should not happen once we get all existing machine labels fixed up
                         LOG.errorf("%s has an expiry (%s minutes) greater than session TTL (%s minutes)!", next.getHost(), minutes, TimeUnit.MILLISECONDS.toMinutes(getSessionTtl()));
@@ -594,7 +594,7 @@ public class ClusterController {
     }
 
     private void loadIpsUsedInitial() {
-        loadIpsUnused();
+        loadIpsUsed();
         latch.countDown();
     }
     private void loadIpsUsed() {
@@ -926,8 +926,8 @@ public class ClusterController {
                         "    echo Tried 720 times to reach https://localhost:10000/health but " + failed + "\n" +
                         "  fi\n" +
                         "} ; TIMEFORMAT='\n" +
-                        "wait_til_ready exited after: %3Rs' ; time wait_til_ready ; code=$? ; " +
-                        "echo " + key + "${code}'\n' ; echo ; sleep 1 ; kill $PPID "
+                        "wait_til_ready exited after: %3Rs\n' ; time wait_til_ready ; code=$? ; " +
+                        "sleep 1 ; echo '\n'" + key + "${code}'\n' ; echo ; sleep 1 ; kill $PPID "
         );
         int realCodeLoc = result.out.lastIndexOf(key);
         if (result.out.contains(failed)) {

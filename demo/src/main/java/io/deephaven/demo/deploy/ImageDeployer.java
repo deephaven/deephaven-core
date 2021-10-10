@@ -33,24 +33,6 @@ public class ImageDeployer {
 
     private void deploy(final String version, String machinePrefix) throws IOException, InterruptedException {
         final String localDir = System.getProperty("java.io.tmpdir", "/tmp") + "/dh_deploy_" + version;
-        concatScripts(localDir, "prepare-worker.sh",
-                "script-header.sh",
-                "VERSION",
-                "setup-docker.sh",
-                "get-credentials.sh",
-                "gen-certs.sh",
-                "prepare-worker.sh",
-                "pull-images.sh",
-                "finish-setup.sh");
-        concatScripts(localDir, "prepare-controller.sh",
-                "script-header.sh",
-                "VERSION",
-                "setup-docker.sh",
-                "get-credentials.sh",
-                "gen-certs.sh",
-                "prepare-controller.sh",
-                "pull-images.sh",
-                "finish-setup.sh");
         GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
         ClusterController ctrl = new ClusterController(manager, false);
         String prefix = machinePrefix + (machinePrefix.isEmpty() || machinePrefix.endsWith("-") ? "" : "-");
@@ -137,46 +119,6 @@ public class ImageDeployer {
                         "gcloud compute ssh " + machine.getHost() + " --project " + GoogleDeploymentManager.getGoogleProject());
             }
         }
-    }
-
-    private void concatScripts(final String into, final String outputFilename, final String ... scripts) throws IOException {
-        final File outFile = new File(into, outputFilename);
-        outFile.getParentFile().mkdirs();
-        if (outFile.isFile()) {
-            if (!outFile.delete()) {
-                throw new IllegalStateException("Unable to delete file " + outFile);
-            }
-        }
-        if (!outFile.createNewFile()) {
-            throw new IllegalStateException("Unable to create new file: " + outFile);
-        }
-
-        try (final FileOutputStream out = new FileOutputStream(outFile, true)) {
-            for (String script : scripts) {
-                // Gradle sends us the version via sysprop, and we pass that along to startup script here:
-                if ("VERSION".equals(script)) {
-                    byte[] versionBytes = ("VERSION=" + VERSION + "\n").getBytes();
-                    out.write(versionBytes, 0, versionBytes.length);
-                    continue;
-                }
-                try(final InputStream in = ImageDeployer.class.getResourceAsStream("/scripts/" + script)) {
-                    if (in == null) {
-                        throw new NullPointerException("No scripts/" + script + " file");
-                    }
-                    int num = Math.max(4096, in.available());
-                    final byte[] bytes = new byte[num];
-                    for (int r;
-                         (r = in.read(bytes, 0, num)) > 0;
-                    ) {
-                        LOG.infof("Wrote %s bytes from scripts/%s to %s", r, script, outputFilename);
-                        out.write(bytes, 0, r);
-                    }
-                    out.write('\n');
-                }
-            }
-        }
-
-
     }
 
 }

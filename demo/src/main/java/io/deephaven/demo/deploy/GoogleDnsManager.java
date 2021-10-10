@@ -61,6 +61,7 @@ public class GoogleDnsManager {
     }
 
     protected void commitTx() {
+        LOG.info("Committing DNS transaction");
         dnsThread.updateAndGet(t-> {
             if (t != null) {
                 t.start();
@@ -85,9 +86,13 @@ public class GoogleDnsManager {
             }
         }
         return new DnsChange() {
+            int d = depth;
             @Override
             public void addRecord(final DomainMapping domain, final String ip) throws IOException, InterruptedException {
-                ensureDnsTx(dnsDir, depth);
+                ensureDnsTx(dnsDir, d);
+                d++;
+
+                LOG.infof("Adding dns entry %s w/ ip %s", domain, ip);
                 dnsExec(dnsDir, Arrays.asList(
                         "gcloud", "dns", "record-sets", "transaction", "add", ip, "--project=" + getGoogleProject(),
                         "--name=" + domain.getDomainQualified() + ".", "--type=A", "--ttl=300", "--zone=" + getDnsZone()
@@ -96,7 +101,8 @@ public class GoogleDnsManager {
 
             @Override
             public void removeRecord(final DomainMapping domain, final String oldIp) throws IOException, InterruptedException {
-                ensureDnsTx(dnsDir, depth);
+                ensureDnsTx(dnsDir, d);
+                d++;
                 String dom = domain.getDomainQualified();
                 Execute.ExecutionResult result = Execute.executeNoFail(
                         "gcloud", "dns", "record-sets", "list", "--project=" + getGoogleProject(),
@@ -118,6 +124,7 @@ public class GoogleDnsManager {
             private void ensureDnsTx(final File dnsDir, final int depth) throws IOException, InterruptedException {
                 dnsThread.updateAndGet(is-> {
                     if (is == null) {
+                        LOG.info("Preparing dnsThread to commit DNS transaction");
                         assert depth == 0 : "Created dnsThread when depth != 0 (instead: " + depth + ")";
                         return new Thread("DNS Update Thread") {
                             @Override
@@ -130,8 +137,9 @@ public class GoogleDnsManager {
                                 }
                             }
                         };
+                    } else {
+                        assert depth != 0 : "Reused dnsThread when depth == 0";
                     }
-                    assert depth != 0 : "Reused dnsThread when depth == 0";
                     return is;
                 });
                 if (!dnsDir.isDirectory()) {
@@ -161,7 +169,9 @@ public class GoogleDnsManager {
                     for (File file : files) {
                         LOG.info("Leftover DNS file " + file.getAbsolutePath());
                         LOG.info(FileUtils.readFileToString(file, StandardCharsets.UTF_8));
-                        if (!file.delete()) {
+                        if (file.delete()) {
+                            LOG.info("Deleted " + file);
+                        } else {
                             LOG.warn("Unable to delete file " + file + "; isFile? " + file.isFile());
                         }
                     }
@@ -205,11 +215,13 @@ public class GoogleDnsManager {
             }
             LOG.error("Done listing dns files; printing error", e);
         } finally {
+            LOG.info("Cleaning out DNS directory " + dnsDir);
             FileUtils.deleteDirectory(dnsDir);
         }
     }
 
     private void dnsExec(final File dnsDir, final List<String> cmdList) throws IOException, InterruptedException {
+        LOG.infof("Running DNS execution in %s (exists? %s)", dnsDir, dnsDir.exists());
         synchronized (txDepth) {
             Execute.executeNoFail(cmdList, new HashMap<>(), dnsDir, null, null, null);
         }

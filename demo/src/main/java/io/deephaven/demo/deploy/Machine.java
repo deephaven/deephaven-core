@@ -18,6 +18,8 @@ import static io.deephaven.demo.NameConstants.*;
  */
 public class Machine {
 
+    static boolean useImages = true;
+
     private String host;
     private String domainName;
     private IpMapping ip;
@@ -34,10 +36,12 @@ public class Machine {
     private final LinkedList<DomainMapping> allDomains = new LinkedList<>();
     private String version;
     private long mark;
+    private boolean useImage;
 
     public Machine(@NotNull final String host, IpMapping ip) {
         this.host = host;
         this.ip = ip;
+        this.useImage = useImages;
     }
 
     public String getHost() {
@@ -49,7 +53,7 @@ public class Machine {
     }
 
     public String getDomainName() {
-        return domainInUse == null ? domainName == null ? getHost() + "." + NameConstants.DOMAIN : domainName : domainInUse.getDomainQualified();
+        return domainInUse == null ? domainName == null ? getHost() + "." + DOMAIN : domainName : domainInUse.getDomainQualified();
     }
 
     public void setDomainName(final String domainName) {
@@ -167,7 +171,7 @@ public class Machine {
         }
         if (oldest == null) {
             // create a new domain...
-            final String domainRoot = this.domainInUse == null ? NameConstants.DOMAIN : domainInUse.getDomainRoot();
+            final String domainRoot = this.domainInUse == null ? DOMAIN : domainInUse.getDomainRoot();
             DomainMapping domain = new DomainMapping(NameGen.newName(), domainRoot);
             setDomainInUse(domain);
             manager.dns().tx(tx->tx.addRecord(domain, getIpAddress()));
@@ -219,5 +223,13 @@ public class Machine {
         return isSnapshotCreate() ? isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER :
                 isController() ? PURPOSE_CONTROLLER : PURPOSE_WORKER;
 
+    }
+
+    public void setUseImage(final boolean useImage) {
+        this.useImage = useImage;
+    }
+
+    public boolean isUseImage() {
+        return useImage;
     }
 }
