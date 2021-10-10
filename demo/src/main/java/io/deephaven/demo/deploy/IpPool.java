@@ -4,6 +4,7 @@ package io.deephaven.demo.deploy;
 import io.deephaven.demo.ClusterController;
 import org.jboss.logging.Logger;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -75,7 +76,7 @@ public class IpPool {
                 ip = itr.next();
                 if (ip.getState() == IpState.Unverified) {
                     // schedule unverified IP to be checked for existence
-                    checkIpState(ctrl, ip);
+                    checkIpState(ip);
                 } else {
                     itr.remove();
                     used.add(ip);
@@ -87,7 +88,7 @@ public class IpPool {
         return ip;
     }
 
-    private void checkIpState(final ClusterController ctrl, final IpMapping ip) {
+    private void checkIpState(final IpMapping ip) {
         ClusterController.setTimer("Check IP " + ip.getName(), ()-> {
             final Execute.ExecutionResult result = GoogleDeploymentManager.gcloud(true, false, "addresses", "describe", ip.getName());
             if (result.code != 0) {
@@ -102,25 +103,21 @@ public class IpPool {
         });
     }
 
-    public IpMapping reserveIp(ClusterController ctrl, Machine node, IpMapping backup) {
-        final String nodeIp = node.getIp();
-        IpMapping ip = allIps.get(nodeIp);
-        if (ip == null) {
-            ip = backup;
+    public IpMapping reserveIp(ClusterController ctrl, Machine node) {
+        IpMapping nodeIp = node.getIp();
+        if (nodeIp == null) {
+            nodeIp = getUnusedIp(ctrl);
+            node.setIp(nodeIp);
         }
-        if (ip == null) {
-            ip = getUnusedIp(ctrl);
-        }
-        boolean alreadyRunning = ip.isRunningFor(node);
-        changeState(ip, alreadyRunning ? IpState.Running : IpState.Claimed);
+        boolean alreadyRunning = nodeIp.isRunningFor(node);
+        changeState(nodeIp, alreadyRunning ? IpState.Running : IpState.Claimed);
 
         // must remove ip from both sets before we call setInstance, which updates timestamp
-        used.remove(ip);
-        unused.remove(ip);
-
-        ip.setInstance(node);
-        used.add(ip);
-        return ip;
+        used.remove(nodeIp);
+        unused.remove(nodeIp);
+        nodeIp.setInstance(node);
+        used.add(nodeIp);
+        return nodeIp;
     }
 
     private void changeState(final IpMapping ip, final IpState state) {
@@ -140,5 +137,25 @@ public class IpPool {
         final IpMapping ip = allIps.computeIfAbsent(name, n -> new IpMapping(name, addr));
         ip.setIp(addr);
         return ip;
+    }
+
+    public IpMapping findByIp(final String ipAddr) {
+        IpMapping ip = allIps.get(ipAddr);
+        if (ip == null) {
+            final Execute.ExecutionResult ipLookup;
+            try {
+                ipLookup = GoogleDeploymentManager.gcloud(true, false,
+                        "addresses", "list", "-q",
+                        "--filter", "address = " + ipAddr,
+                        "--format", "csv[box,no-heading](NAME)");
+                if (ipLookup.code == 0) {
+                    String name = ipLookup.out.trim();
+                    return updateOrCreate(name, ipAddr);
+                }
+            } catch (IOException | InterruptedException e) {
+                LOG.errorf("Could not lookup ip %s");
+            }
+        }
+        return null;
     }
 }

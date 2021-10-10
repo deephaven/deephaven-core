@@ -79,7 +79,7 @@ public class IpMapping implements Comparable<IpMapping> {
                 "ip='" + ip + '\'' +
                 ", name='" + name + '\'' +
                 ", state=" + state +
-                ", instance=" + instance.orElse(null) +
+                ", instance=" + instance.map(Machine::getHost).orElse(null) +
                 '}';
     }
 

@@ -2,18 +2,13 @@ package io.deephaven.demo.deploy;
 
 import io.deephaven.demo.ClusterController;
 import io.deephaven.demo.NameGen;
-import io.vertx.core.impl.ConcurrentHashSet;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
-
-import static io.deephaven.demo.NameConstants.LABEL_LEASE;
-import static io.deephaven.demo.NameConstants.LABEL_PURPOSE;
 
 /**
  * MachinePool:
@@ -41,20 +36,17 @@ public class MachinePool {
     private final Map<String, Machine> machinesByName = new ConcurrentHashMap<>();
     private final Set<Machine> machines = new ConcurrentSkipListSet<>(CMP);
 
-    public Machine createMachine(final GoogleDeploymentManager manager, final String name, final IpMapping ip) {
+    public Machine createMachine(final ClusterController ctrl, final String name) {
+        GoogleDeploymentManager manager = ctrl.getDeploymentManager();
+        final IpPool ips = manager.getIpPool();
         final String newName = name == null || name.isEmpty() ? NameGen.newName() : name;
-        final Machine machine = getOrCreate(newName);
-        if (ip != null) {
-            // important: setting the --address ip-name will create a machine with a stable IP address across restarts
-            //            settings the --address 1.2.3.4 to an IP will a) fail b/c IP is used by our gcloud address name, and b) change on restart
-            machine.setIp(ip.getName());
+        final Machine machine = getOrCreate(newName, ctrl, null);
+        if (machine.getIp() == null) {
+            machine.setIp(ips.reserveIp(ctrl, machine));
         }
         try {
-            manager.createMachine(machine);
+            manager.createMachine(machine, ips);
             machines.add(machine);
-            if (machine.getIp() == null && ip != null && ip.getIp() != null) {
-                machine.setIp(ip.getIp());
-            }
         } catch (IOException | InterruptedException e) {
             String msg = "Failed to create machine " + name;
             System.err.println(msg);
@@ -128,10 +120,12 @@ public class MachinePool {
     public Machine findByName(final String name) {
         return machinesByName.get(name);
     }
-    public Machine getOrCreate(final String name) {
+    public Machine getOrCreate(final String name, final ClusterController ctrl, final IpMapping ip) {
         return machinesByName.computeIfAbsent(name, missing-> {
-            final Machine machine = new Machine(missing);
+            final Machine machine = new Machine(missing, ip == null ? ctrl.requestIp() : ip);
             machines.add(machine);
+            final IpPool ips = ctrl.getDeploymentManager().getIpPool();
+            ips.reserveIp(ctrl, machine);
             return machine;
         });
     }

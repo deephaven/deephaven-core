@@ -8,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -76,13 +75,11 @@ public class ImageDeployer {
 
 
         LOG.info("Creating new worker template box");
-        final IpMapping workerIp = ctrl.requestIp();
         Machine worker = ctrl.findMachine(workerBox, true);
-        worker.setIp(workerIp.getName());
         worker.setSnapshotCreate(true);
         // The manager itself has code to select our prepare-worker.sh script as machine startup script
-        manager.createMachine(worker);
-        manager.assignDns(Stream.of(worker));
+        manager.createMachine(worker, manager.getIpPool());
+        manager.assignDns(ctrl, Stream.of(worker));
         // even if we're just going to shut the machine down, wait until ssh is responsive
         manager.waitForSsh(worker, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
         // wait until we can reach /health, so we know the system setup is complete and the server is in a running state.
@@ -93,24 +90,24 @@ public class ImageDeployer {
 
         // worker is done, do the controller
         LOG.info("Creating new controller template box");
-        final IpMapping controllerIp = ctrl.requestIp();
         Machine controller = ctrl.findMachine(controllerBox, true);
-        controller.setIp(controllerIp.getName());
         // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
         controller.setController(true);
         controller.setSnapshotCreate(true);
-        manager.createMachine(controller);
-        manager.assignDns(Stream.of(controller));
+        manager.createMachine(controller, manager.getIpPool());
+        manager.assignDns(ctrl, Stream.of(controller));
         manager.waitForSsh(controller, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
         ctrl.waitUntilHealthy(controller);
 
         finishDeploy("Controller", controller, manager);
 
         Machine newCtrl = ctrl.findMachine("controller-" + VERSION_MANGLE, true);
-        newCtrl.setIp(ctrl.requestIp().getName());
+        if (newCtrl.getIp() == null) {
+            newCtrl.setIp(ctrl.requestIp());
+        }
         newCtrl.setController(true);
-        manager.createMachine(newCtrl);
-        manager.assignDns(Stream.of(newCtrl));
+        manager.createMachine(newCtrl, manager.getIpPool());
+        manager.assignDns(ctrl, Stream.of(newCtrl));
 
         LOG.infof("Destroying VMs %s and %s", worker, controller);
         manager.destroyCluster(Arrays.asList(worker, controller), "");

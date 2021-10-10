@@ -1,7 +1,6 @@
 package io.deephaven.demo.deploy;
 
 import io.deephaven.demo.ClusterController;
-import io.deephaven.demo.NameGen;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -13,8 +12,6 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * GoogleDeploymentManagerTest:
@@ -61,15 +58,15 @@ public class GoogleDeploymentManagerTest {
 
         ClusterController ctrl = new ClusterController(deploy);
 
-        final Machine testNode = new Machine();
-        testNode.setHost("controller-test"); // you can change this to whatever machine name you want
+        // you can change this machine name to whatever machine name you want
+        final Machine testNode = new Machine("controller-test", ctrl.requestIp());
 //        testNode.setController(true); // feel free to use this to get a controller to test.
         testNode.setDomainName(testNode.getHost() + ".demo.deephaven.app");
         if (!deploy.checkExists(testNode)) {
             deploy.createNew(testNode);
         }
         deploy.turnOn(testNode);
-        deploy.assignDns(Stream.of(testNode));
+        deploy.assignDns(ctrl, Stream.of(testNode));
         final String ipAddr = deploy.getDnsIp(testNode);
         Assert.assertNotNull(ipAddr);
         Assert.assertNotEquals("", ipAddr);

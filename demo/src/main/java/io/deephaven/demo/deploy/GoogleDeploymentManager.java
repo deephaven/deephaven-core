@@ -2,6 +2,7 @@ package io.deephaven.demo.deploy;
 
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
+import io.deephaven.demo.ClusterController;
 import io.deephaven.demo.NameConstants;
 import io.deephaven.demo.NameGen;
 import io.vertx.core.impl.ConcurrentHashSet;
@@ -45,6 +46,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
      */
     public static final String DNS_QUAD9 = "9.9.9.9";
     private final String localDir;
+    private final IpPool ips;
     boolean createdNewMachine;
 
     private final GoogleDnsManager dns;
@@ -77,22 +79,26 @@ public class GoogleDeploymentManager implements DeploymentManager {
     public GoogleDeploymentManager(String localDir) {
         this.localDir = localDir;
         dns = new GoogleDnsManager(new File(localDir, "dns"));
+        ips = new IpPool();
     }
 
     @Override
-    public void assignDns(Stream<Machine> nodes) {
+    public void assignDns(final ClusterController ctrl, Stream<Machine> nodes) {
 
         // first, query if a DNS record already exists.
         List<Machine> changed = new ArrayList<>();
         Set<Machine> changedMachines = new ConcurrentHashSet<>();
         dns.tx(tx -> {
             nodes.forEach( node -> {
-                String expectedIp = node.getIp();
+                IpMapping nodeIp = node.getIp();
                 final DomainMapping mapping = node.getDomainInUse() == null ? new DomainMapping(node.getHost(), DOMAIN) : node.getDomainInUse();
                 try {
                     String resolved = getDnsIp(node);
+                    if (nodeIp.getIp() == null) {
+                        ctrl.waitUntilIpsCreated();
+                    }
                     // if the record exists, make sure it matches the expected IP address.
-                    if (resolved != null && resolved.equals(expectedIp)) {
+                    if (resolved != null && resolved.equals(nodeIp.getIp())) {
                         // record exists and is correct, do nothing for this node.
                         return;
                     }
@@ -108,7 +114,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 }
                 changed.add(node);
                 try {
-                    tx.addRecord(mapping, node.getIp());
+                    tx.addRecord(mapping, nodeIp.getIp());
                 } catch (IOException | InterruptedException e) {
                     LOG.error("Unknown error trying to add dns entry for " + node.getHost(), e);
                 }
@@ -118,7 +124,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
     }
 
     @Override
-    public void createMachine(Machine node) throws IOException, InterruptedException {
+    public void createMachine(Machine node, final IpPool ips) throws IOException, InterruptedException {
         // first, query if the machine already exists.
         boolean exists = checkExists(node);
         if (exists) {
@@ -127,17 +133,14 @@ public class GoogleDeploymentManager implements DeploymentManager {
             if (!createNew(node)) {
                 throw new IllegalStateException("Machine " + node.getHost() + " (" + node.getDomainName() + ") does not exist, and createNew() failed to make the machine.");
             }
-            if (node.getIp() != null && node.getIp().indexOf('.') == -1 && node.getIp().indexOf(':') == -1) {
-                // we had a named IP address (normal)... null it out so we replace it w/ the resolved real/current IP
-                node.setIp(null);
-            }
         }
         node.setOnline(true);
 
-        if (node.getIp() == null || node.getIp().isEmpty()) {
+        if (node.getIp() == null) {
             try {
                 String ip = getGcloudIp(node);
-                node.setIp(ip);
+                IpMapping ipMap = ips.findByIp(ip);
+                node.setIp(ipMap);
             } catch(IOException | InterruptedException ignored){}
         }
 
@@ -168,7 +171,11 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     return;
                 }
                 try {
-                    tx.removeRecord(node.domain(), node.getIp());
+                    String ip = node.getIpAddress();
+                    if (ip == null) {
+                        ip = getGcloudIp(node);
+                    }
+                    tx.removeRecord(node.domain(), ip);
                 } catch (IOException | InterruptedException e) {
                     LOG.error("Unknown error deleting dns entry for " + node.getHost() + " @ " + node.getIp(), e);
                     return;
@@ -389,7 +396,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
     public Collection<String> findMissingSnapshots(String snapshotName, ClusterMap map) {
         return map.getAllNodes().parallelStream().filter(it->{
                 String snapName = it.getHost() + "-" + snapshotName;
-            Execute.ExecutionResult result = null;
+            Execute.ExecutionResult result;
             try {
                 result = execute(
                 "gcloud", "compute", "snapshots", "list", "--project", getGoogleProject(), "--filter", "name <= " + snapName + " AND name >= " + snapName
@@ -485,12 +492,14 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 "--hostname=" + machine.getDomainName(),
                 "--machine-type", machine.getMachineType()
         ));
-        String ip = machine.getIp();
-        if (ip != null) {
-            cmds.add("--address");
-            cmds.add(ip);
-            LOG.info("Giving machine " + machine.getHost() + " the IP address " + ip);
+        IpMapping ip = machine.getIp();
+        if (ip == null) {
+            throw new NullPointerException("Cannot create a machine with a null IpMapping; bad machine: " + machine);
         }
+        cmds.add("--address");
+        cmds.add(ip.getName());
+        LOG.info("Giving machine " + machine.getHost() + " the IP address " + ip);
+
         if (!machine.isController()) {
             // non-controller machines attach the demo-data disk, so we can mount it into worker container
 //            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
@@ -498,7 +507,10 @@ public class GoogleDeploymentManager implements DeploymentManager {
         // apply node-role specific cli arguments
         if (machine.isSnapshotCreate()) {
             final String simpleType = machine.isController() ? "controller" : "worker";
-            cmds.add("--labels=" + LABEL_PURPOSE + "=" + (machine.isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER) );
+            cmds.add("--labels=" +
+                    LABEL_PURPOSE + "=" + (machine.isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER)
+                    + ","  + LABEL_IP_NAME + "=" + ip.getName()
+            );
             cmds.add("--tags=dh-demo,dh-creator");
             cmds.add("--service-account");
             cmds.add("dh-controller@" + getGoogleProject() + ".iam.gserviceaccount.com");
@@ -527,7 +539,9 @@ public class GoogleDeploymentManager implements DeploymentManager {
             // set the startup script as the machine startup-script
             cmds.add("--metadata-from-file=startup-script=" + new File(localDir, scriptName).getAbsolutePath());
         } else if (machine.isController()) {
-            cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_CONTROLLER);
+            cmds.add("--labels=" +
+                    LABEL_PURPOSE + "=" + PURPOSE_CONTROLLER
+                    + "," + LABEL_IP_NAME + "=" + ip.getName());
             cmds.add("--tags=dh-demo,dh-controller");
             cmds.add("--service-account");
             // hm... the dh-controller permissions are actually only needed by snapshotCreate machines.
@@ -539,7 +553,11 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("--scopes");
             cmds.add("https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/cloud-platform");
         } else {
-            cmds.add("--labels=" + LABEL_PURPOSE + "=" + PURPOSE_WORKER + "," + LABEL_VERSION + "=" + VERSION_MANGLE);
+            cmds.add("--labels=" +
+                    LABEL_PURPOSE + "=" + PURPOSE_WORKER
+                    + "," + LABEL_VERSION + "=" + VERSION_MANGLE
+                    + "," + LABEL_IP_NAME + "=" + ip.getName()
+            );
             cmds.add("--tags=dh-demo,dh-worker");
             cmds.add("--service-account");
             cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");
@@ -567,19 +585,20 @@ public class GoogleDeploymentManager implements DeploymentManager {
             // hm... we should check if the stderr message is complaining about a machine w/o a boot disk, so we know to try a snapshot restore
             throw new IllegalStateException("Failed to turn on node " + node.getHost() + "\n" + res.err);
         }
-        // Try to parse out the external IP address of the machine
-        String externalIp = "external IP is ";
-        int ind = res.out.indexOf(externalIp);
-        if (ind != -1) {
-            String ip = res.out.substring(ind + externalIp.length()).split("\n")[0];
-            node.setIp(ip);
-        }
-
-        if (node.getIp() == null || node.getIp().isEmpty()) {
-            try {
-                String ip = getGcloudIp(node);
-                node.setIp(ip);
-            } catch(IOException | InterruptedException ignored){}
+        IpMapping nodeIp = node.getIp();
+        if (nodeIp == null || nodeIp.getIp() == null) {
+            // Try to parse out the external IP address of the machine
+            String externalIp = "external IP is ";
+            int ind = res.out.indexOf(externalIp);
+            if (ind != -1) {
+                String ip = res.out.substring(ind + externalIp.length()).split("\n")[0];
+                if (nodeIp == null) {
+                    nodeIp = ips.findByIp(ip);
+                    node.setIp(nodeIp);
+                } else {
+                    nodeIp.setIp(ip);
+                }
+            }
         }
 
         return true;
@@ -648,7 +667,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
                             System.out.println(newErr);
                             System.out.print("Waiting for DNS to update to expected value (" + waitFor.getIp() + ") from DNS server " + dnsServer);
                         }
-                        if (!resolvedIp.equals(waitFor.getIp().trim())) {
+                        final IpMapping ip = waitFor.getIp();
+                        if (ip == null || !resolvedIp.equals(ip.getIp().trim())) {
                             Thread.sleep(1500);
                         }
                     } else {
@@ -671,7 +691,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
 //                resolvedIp = "";
             } finally {}
 
-            if (resolvedIp == null || !resolvedIp.trim().equals(waitFor.getIp().trim())) {
+            if (resolvedIp == null || waitFor.getIp() == null || waitFor.getIp().getIp() == null || !resolvedIp.trim().equals(waitFor.getIp().getIp().trim())) {
                 changed.add(waitFor);
             }
             if (System.currentTimeMillis() > deadline) {
@@ -747,24 +767,32 @@ public class GoogleDeploymentManager implements DeploymentManager {
      * Whenever we delete a DNS record, create a new one to take its place, so there's always a fresh address.
      * @param machine
      */
-    public void replaceDNS(final Machine machine) throws IOException, InterruptedException {
+    public void replaceDNS(final ClusterController ctrl, final Machine machine) throws IOException, InterruptedException {
         final DomainMapping domain = machine.getDomainInUse();
         String newName = NameGen.newName();
         dns.tx(tx -> {
             String domainRoot = DOMAIN;
+            final IpMapping machineIp = machine.getIp();
+            if (machineIp.getIp() == null) {
+                ctrl.waitUntilIpsCreated();
+            }
             if (domain != null) {
                 // throw this domain away!
-                tx.removeRecord(machine.domain(), machine.getIp());
+                tx.removeRecord(machine.domain(), machineIp.getIp());
                 domainRoot = domain.getDomainRoot();
             }
             DomainMapping newDomain = new DomainMapping(newName, domainRoot);
             machine.setDomainInUse(newDomain);
-            tx.addRecord(machine.domain(), machine.getIp());
+            tx.addRecord(machine.domain(), machineIp.getIp());
         });
     }
 
     public GoogleDnsManager dns() {
         return dns;
+    }
+
+    public IpPool getIpPool() {
+        return ips;
     }
 }
 

@@ -1,14 +1,11 @@
 package io.deephaven.demo.deploy;
 
-import io.deephaven.demo.ClusterController;
 import io.deephaven.demo.NameConstants;
 import io.deephaven.demo.NameGen;
+import io.smallrye.common.constraint.NotNull;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Objects;
 
 import static io.deephaven.demo.NameConstants.*;
@@ -23,7 +20,7 @@ public class Machine {
 
     private String host;
     private String domainName;
-    private String ip;
+    private IpMapping ip;
     private boolean sshIsReady;
     private boolean controller;
     private String machineType;
@@ -38,10 +35,9 @@ public class Machine {
     private String version;
     private long mark;
 
-    public Machine() {
-    }
-    public Machine(final String host) {
+    public Machine(@NotNull final String host, IpMapping ip) {
         this.host = host;
+        this.ip = ip;
     }
 
     public String getHost() {
@@ -60,12 +56,12 @@ public class Machine {
         this.domainName = domainName;
     }
 
-    public String getIp() {
+    public IpMapping getIp() {
         return ip;
     }
 
-    public void setIp(final String ip) {
-        this.ip = ip == null ? null : ip.trim();
+    public void setIp(final IpMapping ip) {
+        this.ip = ip;
     }
 
     public boolean isSshIsReady() {
@@ -174,10 +170,14 @@ public class Machine {
             final String domainRoot = this.domainInUse == null ? NameConstants.DOMAIN : domainInUse.getDomainRoot();
             DomainMapping domain = new DomainMapping(NameGen.newName(), domainRoot);
             setDomainInUse(domain);
-            manager.dns().tx(tx->tx.addRecord(domain, getIp()));
+            manager.dns().tx(tx->tx.addRecord(domain, getIpAddress()));
             return domain;
         }
         return oldest;
+    }
+
+    public String getIpAddress() {
+        return ip == null ? null : ip.getIp();
     }
 
     public void addAvailableDomain(DomainMapping available) {

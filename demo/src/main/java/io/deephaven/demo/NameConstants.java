@@ -14,6 +14,7 @@ public class NameConstants {
     public static final String NAMESPACE = "default";
     public static final String LABEL_USER = "dh-user";
     public static final String LABEL_PURPOSE = "dh-purpose";
+    public static final String LABEL_IP_NAME = "dh-ip";
     public static final String LABEL_LEASE = "dh-lease";
     public static final String LABEL_VERSION = "dh-version";
     public static final String PURPOSE_WORKER = "worker";

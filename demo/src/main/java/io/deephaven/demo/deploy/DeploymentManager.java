@@ -1,5 +1,7 @@
 package io.deephaven.demo.deploy;
 
+import io.deephaven.demo.ClusterController;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,8 +16,8 @@ import java.util.stream.Stream;
  */
 interface DeploymentManager {
 
-    void assignDns(Stream<Machine> map) throws IOException, InterruptedException, TimeoutException;
-    void createMachine(Machine machine) throws IOException, InterruptedException;
+    void assignDns(final ClusterController ctrl, Stream<Machine> nodes) throws IOException, InterruptedException, TimeoutException;
+    void createMachine(Machine node, final IpPool ips) throws IOException, InterruptedException;
     default void destroyCluster(Machine machine) throws IOException {
         destroyCluster(Collections.singleton(machine), "");
     }
