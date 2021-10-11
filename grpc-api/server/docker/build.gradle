@@ -1,4 +1,5 @@
 import io.deephaven.tools.License
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 
 plugins {
   id 'java'
@@ -22,6 +23,7 @@ dependencies {
 }
 
 def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+def imageName = project.property('grpc-api-docker.imageName')
 
 docker {
 
@@ -30,7 +32,7 @@ docker {
 
   javaApplication {
     mainClassName = 'io.deephaven.grpc_api.runner.Main'
-    images = [ "${project.property('grpc-api-docker.imageName')}" ]
+    images = [ imageName ]
     baseImage = project.property('grpc-api-docker.baseImage')
     maintainer = 'Devin Smith "devinsmith@deephaven.io"'
     ports = [ 8080 ]
@@ -108,3 +110,28 @@ dockerCreateDockerfile.dependsOn grpcApiBase
 
 assemble.dependsOn dockerBuildImage
 dockerBuildImage.outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
+
+// Create a simple file for docker/build-push-action to reference, tag, and publish
+tasks.register('publishDockerfile', Dockerfile) {
+  def input = dockerBuildImage.imageIdFile
+  def output = layout.buildDirectory.file('publish/Dockerfile')
+
+  it.inputs.file input
+  it.outputs.file output
+
+  it.destFile.set output
+  it.from new Dockerfile.From(imageName)
+}
+
+// TODO(deephaven-core#xyz)
+// Note: the below would be *better*, but docker/build-push-action currently errors out when trying to reference the sha
+/*
+tasks.register('publishDockerfile') {
+  def input = dockerBuildImage.imageIdFile
+  def output = layout.buildDirectory.file('publish/Dockerfile')
+  it.inputs.file input
+  it.outputs.file output
+  it.doLast {
+    output.get().asFile.write("FROM ${input.get().asFile.text}")
+  }
+}*/
