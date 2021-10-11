@@ -19,7 +19,7 @@ def imageId = imageIdFile.exists() ? imageIdFile.text : null
 def image = project.property('image') as String
 
 def prepareDocker = project.tasks.register('prepareDocker', Sync) {
-    it.from 'src/main/docker/Dockerfile'
+    it.from 'src/main/docker'
     it.from('src/main/app.d') {
         into 'app.d'
     }
