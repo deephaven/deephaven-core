@@ -50,6 +50,10 @@ class Classpaths {
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '1.7.32'
 
+    static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
+    static final String FLATBUFFER_NAME = 'flatbuffers-java'
+    static final String FLATBUFFER_VERSION = '1.12.0'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -116,6 +120,11 @@ class Classpaths {
     static void inheritArrow(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, ARROW_GROUP, name, ARROW_VERSION)
+    }
+
+    static void inheritFlatbuffer(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, FLATBUFFER_GROUP, FLATBUFFER_NAME, FLATBUFFER_VERSION)
     }
 
     static void inheritSlf4j(Project p, String name, String configName) {

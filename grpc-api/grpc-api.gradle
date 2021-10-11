@@ -29,8 +29,9 @@ dependencies {
             project(':proto:proto-backplane-grpc-flight'),
             project(':open-api-lang-tools'),
             project(':log-factory'),
-            project(':application-mode'),
-            "com.google.flatbuffers:flatbuffers-java:1.12.0"
+            project(':application-mode')
+
+    Classpaths.inheritFlatbuffer(project, 'compile')
 
     compile 'com.google.dagger:dagger:2.31.1'
     annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
