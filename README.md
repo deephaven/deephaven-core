@@ -1,5 +1,7 @@
 # Deephaven Community Core
 
+[![Join the chat at https://gitter.im/deephaven/deephaven](https://badges.gitter.im/deephaven/deephaven.svg)](https://gitter.im/deephaven/deephaven?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ![Deephaven Data Labs Logo](docs/images/Deephaven_GH_Logo.svg)
 
 Deephaven Community Core is a real-time, time-series, column-oriented analytics engine
