@@ -112,3 +112,25 @@ jobs:
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+      - name: Deploy Client C++ Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/cppClientDocs/
+          remote_path: deephaven-core/client-api/cpp/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+      - name: Deploy Client C++ Example Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/cppExampleDocs/
+          remote_path: deephaven-core/client-api/cpp-examples/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
