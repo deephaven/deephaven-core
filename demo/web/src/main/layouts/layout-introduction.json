@@ -112,11 +112,11 @@
                 "component": "MarkdownNotebookPanel",
                 "props": {
                   "metadata": {
-                    "id": "/01 Basic Streams.md",
-                    "itemName": "/01 Basic Streams.md"
+                    "id": "/00 The Deephaven IDE.md",
+                    "itemName": "/00 The Deephaven IDE.md"
                   }
                 },
-                "title": "01 Basic Streams.md",
+                "title": "00 The Deephaven IDE.md",
                 "id": "1HQswO4ZV",
                 "componentName": "lm-react-component",
                 "isClosable": true,
