@@ -25,13 +25,6 @@ import java.util.Collections;
 
 public class BarrageSession extends FlightSession implements BarrageSubscription.Factory {
 
-    /**
-     * The server is able to make more efficient use of resources when the same updateInterval is used across all API
-     * clients. Set this default on the server with {@code -Dbarrage.updateInterval}. Otherwise, it is recommended to
-     * sparingly use a value other than the default.
-     */
-    private static final int DEFER_UPDATE_INTERVAL_TO_SERVER = 0;
-
     public static BarrageSession of(
             SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
         final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(

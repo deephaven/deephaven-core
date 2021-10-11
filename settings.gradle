@@ -139,6 +139,9 @@ include(':envoy')
 
 include(':grpc-proxy')
 
+include(':engine-barrage')
+project(':engine-barrage').projectDir = file('engine/barrage')
+
 include(':java-client-session')
 project(':java-client-session').projectDir = file('java-client/session')
 
