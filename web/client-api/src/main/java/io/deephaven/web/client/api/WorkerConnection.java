@@ -890,8 +890,7 @@ public class WorkerConnection {
                     createMessage(schema, MessageHeader.Schema, Schema.endSchema(schema), 0, 0);
             schemaMessage.setDataHeader(schemaMessagePayload);
 
-            Uint8Array rpcTicket = config.newTicketRaw();
-            schemaMessage.setAppMetadata(BarrageUtils.barrageMessage(rpcTicket, 0, false));
+            schemaMessage.setAppMetadata(BarrageUtils.emptyMessage());
             schemaMessage.setFlightDescriptor(cts.getHandle().makeFlightDescriptor());
 
             // we wait for any errors in this response to pass to the caller, but success is determined by the eventual
@@ -920,7 +919,7 @@ public class WorkerConnection {
                 }
             });
             FlightData bodyMessage = new FlightData();
-            bodyMessage.setAppMetadata(BarrageUtils.barrageMessage(rpcTicket, 1, true));
+            bodyMessage.setAppMetadata(BarrageUtils.emptyMessage());
 
             Builder bodyData = new Builder(1024);
 
@@ -1230,21 +1229,20 @@ public class WorkerConnection {
                     viewportOffset = BarrageSubscriptionRequest.createViewportVector(subscriptionReq, serializeRanges(
                             vps.stream().map(TableSubscriptionRequest::getRows).collect(Collectors.toSet())));
                 }
-                double serializationOptionsOffset = BarrageSerializationOptions
-                        .createBarrageSerializationOptions(subscriptionReq, ColumnConversionMode.Stringify, true);
+                //TODO #188 support minUpdateIntervalMs
+                double serializationOptionsOffset = BarrageSubscriptionOptions
+                        .createBarrageSubscriptionOptions(subscriptionReq, ColumnConversionMode.Stringify, true, 1000, 0);
                 double tableTicketOffset =
                         BarrageSubscriptionRequest.createTicketVector(subscriptionReq, state.getHandle().getTicket());
                 BarrageSubscriptionRequest.startBarrageSubscriptionRequest(subscriptionReq);
                 BarrageSubscriptionRequest.addColumns(subscriptionReq, columnsOffset);
-                BarrageSubscriptionRequest.addSerializationOptions(subscriptionReq, serializationOptionsOffset);
-                // BarrageSubscriptionRequest.addUpdateIntervalMs();//TODO #188 support this
+                BarrageSubscriptionRequest.addSubscriptionOptions(subscriptionReq, serializationOptionsOffset);
                 BarrageSubscriptionRequest.addViewport(subscriptionReq, viewportOffset);
                 BarrageSubscriptionRequest.addTicket(subscriptionReq, tableTicketOffset);
                 subscriptionReq.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(subscriptionReq));
 
                 FlightData request = new FlightData();
-                request.setAppMetadata(BarrageUtils.barrageMessage(subscriptionReq,
-                        BarrageMessageType.BarrageSubscriptionRequest, new Uint8Array(0), 0, false));
+                request.setAppMetadata(BarrageUtils.wrapMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest));
 
                 BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                         headers -> flightServiceClient.doExchange(headers),
