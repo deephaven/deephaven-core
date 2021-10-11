@@ -25,7 +25,9 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 }
 
 def buildImage = project.tasks.register('buildImage', DockerBuildImage) {
-    it.dependsOn prepareDocker, project(':web-client-ide').tasks.findByName('buildDocker')
+    def webImage = project(':web-client-ide').tasks.findByName('buildDocker')
+    it.dependsOn prepareDocker, webImage
+    it.outputs.files webImage.outputs.files
     it.inputDir.set dockerfileDir
     it.imageIdFile.set imageIdFile
     it.images.add(image)
