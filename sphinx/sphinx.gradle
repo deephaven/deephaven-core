@@ -88,13 +88,13 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
         // share the common base image to keep it simple
         from 'deephaven/runtime-base:local-build'
 
-        runCommand('''set -eax; \\
+        runCommand('''set -eux; \\
                       apt-get -y install doxygen graphviz
                       ''')
 
         copyFile('.', '/project')
 
-        runCommand('''set -eax; \\
+        runCommand('''set -eux; \\
                       cd /project/doc; \\
                       doxygen
                       ''')
