@@ -9,10 +9,11 @@ import jsinterop.annotations.JsType;
         namespace = JsPackage.GLOBAL)
 public class BarrageMessageType {
     public static int BarrageSerializationOptions,
-            BarrageSubscriptionRequest,
-            BarrageUpdateMetadata,
-            NewSessionRequest,
-            None,
-            RefreshSessionRequest,
-            SessionInfoResponse;
+    BarrageSubscriptionRequest,
+    BarrageUpdateMetadata,
+    DoGetRequest,
+    NewSessionRequest,
+    None,
+    RefreshSessionRequest,
+    SessionInfoResponse;
 }

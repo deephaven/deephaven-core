@@ -12,13 +12,13 @@ import jsinterop.base.Js;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest",
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.DoGetRequest",
         namespace = JsPackage.GLOBAL)
-public class BarrageSubscriptionRequest {
+public class DoGetRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateColumnsVectorDataUnionType {
         @JsOverlay
-        static BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType of(Object o) {
+        static DoGetRequest.CreateColumnsVectorDataUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -56,7 +56,7 @@ public class BarrageSubscriptionRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateTicketVectorDataUnionType {
         @JsOverlay
-        static BarrageSubscriptionRequest.CreateTicketVectorDataUnionType of(Object o) {
+        static DoGetRequest.CreateTicketVectorDataUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -94,7 +94,7 @@ public class BarrageSubscriptionRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateViewportVectorDataUnionType {
         @JsOverlay
-        static BarrageSubscriptionRequest.CreateViewportVectorDataUnionType of(Object o) {
+        static DoGetRequest.CreateViewportVectorDataUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -140,30 +140,27 @@ public class BarrageSubscriptionRequest {
 
     @Deprecated
     public static native double createColumnsVector(
-            Builder builder, BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType data);
+            Builder builder, DoGetRequest.CreateColumnsVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createColumnsVector(Builder builder, Int8Array data) {
         return createColumnsVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createColumnsVector(Builder builder, JsArray<Double> data) {
         return createColumnsVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createColumnsVector(Builder builder, Uint8Array data) {
         return createColumnsVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -174,30 +171,27 @@ public class BarrageSubscriptionRequest {
 
     @Deprecated
     public static native double createTicketVector(
-            Builder builder, BarrageSubscriptionRequest.CreateTicketVectorDataUnionType data);
+            Builder builder, DoGetRequest.CreateTicketVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createTicketVector(Builder builder, Int8Array data) {
         return createTicketVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createTicketVector(Builder builder, JsArray<Double> data) {
         return createTicketVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createTicketVector(Builder builder, Uint8Array data) {
         return createTicketVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -208,30 +202,27 @@ public class BarrageSubscriptionRequest {
 
     @Deprecated
     public static native double createViewportVector(
-            Builder builder, BarrageSubscriptionRequest.CreateViewportVectorDataUnionType data);
+            Builder builder, DoGetRequest.CreateViewportVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createViewportVector(Builder builder, Int8Array data) {
         return createViewportVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createViewportVector(Builder builder, JsArray<Double> data) {
         return createViewportVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createViewportVector(Builder builder, Uint8Array data) {
         return createViewportVector(
-                builder,
-                Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<DoGetRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -240,23 +231,20 @@ public class BarrageSubscriptionRequest {
         return createViewportVector(builder, Js.<JsArray<Double>>uncheckedCast(data));
     }
 
-    public static native double endBarrageSubscriptionRequest(Builder builder);
+    public static native double endDoGetRequest(Builder builder);
 
-    public static native BarrageSubscriptionRequest getRootAsBarrageSubscriptionRequest(
-            ByteBuffer bb, BarrageSubscriptionRequest obj);
+    public static native DoGetRequest getRootAsDoGetRequest(ByteBuffer bb, DoGetRequest obj);
 
-    public static native BarrageSubscriptionRequest getRootAsBarrageSubscriptionRequest(
-            ByteBuffer bb);
+    public static native DoGetRequest getRootAsDoGetRequest(ByteBuffer bb);
 
-    public static native BarrageSubscriptionRequest getSizePrefixedRootAsBarrageSubscriptionRequest(
-            ByteBuffer bb, BarrageSubscriptionRequest obj);
+    public static native DoGetRequest getSizePrefixedRootAsDoGetRequest(
+            ByteBuffer bb, DoGetRequest obj);
 
-    public static native BarrageSubscriptionRequest getSizePrefixedRootAsBarrageSubscriptionRequest(
-            ByteBuffer bb);
-
-    public static native void startBarrageSubscriptionRequest(Builder builder);
+    public static native DoGetRequest getSizePrefixedRootAsDoGetRequest(ByteBuffer bb);
 
     public static native void startColumnsVector(Builder builder, double numElems);
+
+    public static native void startDoGetRequest(Builder builder);
 
     public static native void startTicketVector(Builder builder, double numElems);
 
@@ -265,7 +253,7 @@ public class BarrageSubscriptionRequest {
     public ByteBuffer bb;
     public double bb_pos;
 
-    public native BarrageSubscriptionRequest __init(double i, ByteBuffer bb);
+    public native DoGetRequest __init(double i, ByteBuffer bb);
 
     public native double columns(double index);
 
