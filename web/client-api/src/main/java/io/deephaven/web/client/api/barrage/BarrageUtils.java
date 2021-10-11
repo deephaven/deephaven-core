@@ -37,7 +37,8 @@ public class BarrageUtils {
         // This deprecation is incorrect, tsickle didn't understand that only one overload is deprecated
         // noinspection deprecation
         double messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.asUint8Array());
-        double offset = BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, MAGIC, messageType, messageOffset);
+        double offset =
+                BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, MAGIC, messageType, messageOffset);
         outerBuilder.finish(offset);
         return outerBuilder.asUint8Array();
     }

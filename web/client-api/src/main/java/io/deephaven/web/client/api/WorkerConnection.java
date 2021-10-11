@@ -1229,9 +1229,10 @@ public class WorkerConnection {
                     viewportOffset = BarrageSubscriptionRequest.createViewportVector(subscriptionReq, serializeRanges(
                             vps.stream().map(TableSubscriptionRequest::getRows).collect(Collectors.toSet())));
                 }
-                //TODO #188 support minUpdateIntervalMs
+                // TODO #188 support minUpdateIntervalMs
                 double serializationOptionsOffset = BarrageSubscriptionOptions
-                        .createBarrageSubscriptionOptions(subscriptionReq, ColumnConversionMode.Stringify, true, 1000, 0);
+                        .createBarrageSubscriptionOptions(subscriptionReq, ColumnConversionMode.Stringify, true, 1000,
+                                0);
                 double tableTicketOffset =
                         BarrageSubscriptionRequest.createTicketVector(subscriptionReq, state.getHandle().getTicket());
                 BarrageSubscriptionRequest.startBarrageSubscriptionRequest(subscriptionReq);
@@ -1242,7 +1243,8 @@ public class WorkerConnection {
                 subscriptionReq.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(subscriptionReq));
 
                 FlightData request = new FlightData();
-                request.setAppMetadata(BarrageUtils.wrapMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest));
+                request.setAppMetadata(
+                        BarrageUtils.wrapMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest));
 
                 BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                         headers -> flightServiceClient.doExchange(headers),
