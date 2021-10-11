@@ -16,12 +16,16 @@ People often use it for building server-side data-driven applications.
 This console is Python experience.
 
 ```python
-print("hello world")
+print("Hello world!")
 
 def some_fcn(some_input):
-    return 10 * input_num
+    return 10 * some_input
 
-print(some_input(3.3))
+some_input = 3.3
+x = some_fcn(some_input)
+
+print(x)
+print(type(x))
 ```
 \
 \
