@@ -398,7 +398,8 @@ public class ArrowFlightUtil {
             GrpcUtil.rpcWrapper(log, listener, () -> {
                 MessageInfo message = parseProtoMessage(request);
                 synchronized (this) {
-                    if (message.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC
+                    if (message.app_metadata == null
+                            || message.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC
                             || message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
                         log.warn().append(myPrefix).append("received a message without app_metadata").endl();
                         return;
