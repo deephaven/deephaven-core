@@ -19,12 +19,12 @@ dependencies {
 
     Classpaths.inheritFlatbuffer(project, 'api')
 
-    Classpaths.inheritArrow(project, 'arrow-vector', 'compile')
-    Classpaths.inheritArrow(project, 'arrow-format', 'compile')
+    Classpaths.inheritArrow(project, 'arrow-vector', 'api')
+    Classpaths.inheritArrow(project, 'arrow-format', 'api')
 
     Classpaths.inheritImmutables(project)
 
-    testCompile TestTools.projectDependency(project, 'DB'),
+    testImplementation TestTools.projectDependency(project, 'DB'),
             TestTools.projectDependency(project, 'Util')
 
     Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
