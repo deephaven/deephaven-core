@@ -19,7 +19,7 @@ TableHandle makeTable(const TableHandleManager &manager) {
   std::vector<double> prices{101.1, 102.2, 103.3, 104.4};
   tm.addColumn("Symbol", symbols);
   tm.addColumn("Price", prices);
-  return tm.makeTable(manager, "myTable");
+  return tm.makeTable(manager);
 }
 
 void dumpSymbolColumn(const TableHandle &tableHandle) {
