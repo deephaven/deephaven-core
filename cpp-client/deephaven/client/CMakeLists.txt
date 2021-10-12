@@ -98,6 +98,6 @@ target_include_directories(client PRIVATE "./proto")
 
 target_link_libraries(client PUBLIC arrow_flight_static)
 target_link_libraries(client PUBLIC arrow_static)
-target_link_libraries(client PUBLIC protobuf)
+target_link_libraries(client PUBLIC protobuf::libprotobuf)
 target_link_libraries(client PUBLIC gRPC::grpc++)
 target_link_libraries(client PUBLIC Threads::Threads)
