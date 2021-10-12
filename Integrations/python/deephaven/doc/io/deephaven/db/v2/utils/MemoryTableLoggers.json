@@ -8,7 +8,8 @@
   "getQoplLogger": ":return: io.deephaven.db.tablelogger.QueryOperationPerformanceLogLogger",
   "getQoplLoggerQueryTable": ":return: io.deephaven.db.v2.QueryTable",
   "getQplLogger": ":return: io.deephaven.db.tablelogger.QueryPerformanceLogLogger",
-  "getQplLoggerQueryTable": ":return: io.deephaven.db.v2.QueryTable"
+  "getQplLoggerQueryTable": ":return: io.deephaven.db.v2.QueryTable",
+  "maybeStartStatsCollection": ":return: boolean"
  },
  "path": "io.deephaven.db.v2.utils.MemoryTableLoggers",
  "typeName": "class"

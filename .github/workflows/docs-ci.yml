@@ -129,3 +129,52 @@ jobs:
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+
+  cppdoc:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup JDK 8
+        id: setup-java-8
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'zulu'
+          java-version: '8.0.302'
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }}" >> gradle.properties
+
+      - name: Generate C++ Docs
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: cppDocs
+          arguments: --scan sphinx:cppClientDocs sphinx:cppExamplesDocs
+          gradle-version: wrapper
+
+      - name: Deploy Client C++ Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/cppClientDocs/
+          remote_path: deephaven-core/client-api/cpp/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+
+      - name: Deploy Client C++ Example Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/cppExamplesDocs/
+          remote_path: deephaven-core/client-api/cpp-examples/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}

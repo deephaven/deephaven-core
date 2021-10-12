@@ -90,13 +90,11 @@ public class UpdatePerformanceTracker {
         driverThread.start();
     }
 
-    public static void start() {
-        synchronized (UpdatePerformanceTracker.class) {
-            if (started) {
-                return;
-            }
-            started = true;
+    public static synchronized void start() {
+        if (started) {
+            return;
         }
+        started = true;
         getInstance().startThread();
     }
 
@@ -113,7 +111,7 @@ public class UpdatePerformanceTracker {
                     // should log, but no logger handy
                     // ignore
                 }
-                LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(
+                LiveTableMonitor.DEFAULT.sharedLock().doLocked(
                         () -> finishInterval(intervalStartTimeMillis,
                                 System.currentTimeMillis(),
                                 System.nanoTime() - intervalStartTimeNanos));
@@ -190,14 +188,15 @@ public class UpdatePerformanceTracker {
                 encounteredErrorLoggingToMemory =
                         logToMemory(intervalLevelDetails, entry, encounteredErrorLoggingToMemory);
             } else if (entry.intervalInvocationCount > 0) {
-                if (entry.totalUsedMemory > aggregatedSmallUpdatesEntry.totalUsedMemory) {
-                    aggregatedSmallUpdatesEntry.totalUsedMemory = entry.totalUsedMemory;
+                if (entry.maxTotalMemory > aggregatedSmallUpdatesEntry.maxTotalMemory) {
+                    aggregatedSmallUpdatesEntry.maxTotalMemory = entry.maxTotalMemory;
                 }
-                if (aggregatedSmallUpdatesEntry.intervalInvocationCount == 0
-                        || aggregatedSmallUpdatesEntry.totalFreeMemory > entry.totalFreeMemory) {
-                    aggregatedSmallUpdatesEntry.totalFreeMemory = entry.totalFreeMemory;
+                if (entry.minFreeMemory < aggregatedSmallUpdatesEntry.minFreeMemory) {
+                    aggregatedSmallUpdatesEntry.minFreeMemory = entry.minFreeMemory;
                 }
 
+                aggregatedSmallUpdatesEntry.collections += entry.collections;
+                aggregatedSmallUpdatesEntry.collectionTimeMs += entry.collectionTimeMs;
                 aggregatedSmallUpdatesEntry.intervalUsageNanos += entry.intervalUsageNanos;
                 aggregatedSmallUpdatesEntry.intervalInvocationCount += entry.intervalInvocationCount;
 
@@ -300,8 +299,13 @@ public class UpdatePerformanceTracker {
         private long startAllocatedBytes;
         private long startPoolAllocatedBytes;
 
-        private long totalFreeMemory;
-        private long totalUsedMemory;
+        private long maxTotalMemory;
+        private long minFreeMemory;
+        private long collections;
+        private long collectionTimeMs;
+
+        private RuntimeMemory.Sample startSample;
+        private RuntimeMemory.Sample endSample;
 
         private Entry(final int id, final int evaluationNumber, final int operationNumber,
                 final String description, final String callerLine) {
@@ -310,6 +314,12 @@ public class UpdatePerformanceTracker {
             this.operationNumber = operationNumber;
             this.description = description;
             this.callerLine = callerLine;
+            startSample = new RuntimeMemory.Sample();
+            endSample = new RuntimeMemory.Sample();
+            maxTotalMemory = 0;
+            minFreeMemory = Long.MAX_VALUE;
+            collections = 0;
+            collectionTimeMs = 0;
         }
 
         public final void onUpdateStart() {
@@ -321,6 +331,8 @@ public class UpdatePerformanceTracker {
             startUserCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
             startCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
             startTimeNanos = System.nanoTime();
+
+            RuntimeMemory.getInstance().read(startSample);
         }
 
         public final void onUpdateStart(final Index added, final Index removed, final Index modified,
@@ -343,6 +355,11 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateEnd() {
+            RuntimeMemory.getInstance().read(endSample);
+            maxTotalMemory = Math.max(maxTotalMemory, Math.max(startSample.totalMemory, endSample.totalMemory));
+            minFreeMemory = Math.min(minFreeMemory, Math.min(startSample.freeMemory, endSample.freeMemory));
+            collections += endSample.totalCollections - startSample.totalCollections;
+            collectionTimeMs += endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
             intervalUserCpuNanos = plus(intervalUserCpuNanos,
                     minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
             intervalCpuNanos =
@@ -361,10 +378,6 @@ public class UpdatePerformanceTracker {
             startUserCpuNanos = 0;
             startCpuNanos = 0;
             startTimeNanos = 0;
-
-            final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
-            totalFreeMemory = runtimeMemory.freeMemory();
-            totalUsedMemory = runtimeMemory.totalMemory();
         }
 
         private void reset() {
@@ -384,8 +397,10 @@ public class UpdatePerformanceTracker {
             intervalAllocatedBytes = 0;
             intervalPoolAllocatedBytes = 0;
 
-            totalFreeMemory = 0;
-            totalUsedMemory = 0;
+            maxTotalMemory = 0;
+            minFreeMemory = Long.MAX_VALUE;
+            collections = 0;
+            collectionTimeMs = 0;
         }
 
         @Override
@@ -395,21 +410,31 @@ public class UpdatePerformanceTracker {
 
         @Override
         public LogOutput append(final LogOutput logOutput) {
-            return logOutput.append("Entry{").append(", id=").append(id).append(", evaluationNumber=")
-                    .append(evaluationNumber).append(", operationNumber=").append(operationNumber)
-                    .append(", description='").append(description).append('\'').append(", callerLine='")
-                    .append(callerLine).append('\'').append(", intervalUsageNanos=").append(intervalUsageNanos)
-                    .append(", intervalInvocationCount=").append(intervalInvocationCount).append(", intervalCpuNanos=")
-                    .append(intervalCpuNanos).append(", intervalUserCpuNanos=").append(intervalUserCpuNanos)
-                    .append(", intervalAdded=").append(intervalAdded).append(", intervalRemoved=")
-                    .append(intervalRemoved).append(", intervalModified=").append(intervalModified)
-                    .append(", intervalShifted=").append(intervalShifted).append(", intervalAllocatedBytes=")
-                    .append(intervalAllocatedBytes).append(", intervalPoolAllocatedBytes=")
-                    .append(intervalPoolAllocatedBytes).append(", startCpuNanos=").append(startCpuNanos)
-                    .append(", startUserCpuNanos=").append(startUserCpuNanos).append(", startTimeNanos=")
-                    .append(startTimeNanos).append(", startAllocatedBytes=").append(startAllocatedBytes)
-                    .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes).append(", totalUsedMemory=")
-                    .append(totalUsedMemory).append(", totalFreeMemory=").append(totalFreeMemory).append('}');
+            return logOutput.append("Entry{").append(", id=").append(id)
+                    .append(", evaluationNumber=").append(evaluationNumber)
+                    .append(", operationNumber=").append(operationNumber)
+                    .append(", description='").append(description).append('\'')
+                    .append(", callerLine='").append(callerLine).append('\'')
+                    .append(", intervalUsageNanos=").append(intervalUsageNanos)
+                    .append(", intervalInvocationCount=").append(intervalInvocationCount)
+                    .append(", intervalCpuNanos=").append(intervalCpuNanos)
+                    .append(", intervalUserCpuNanos=").append(intervalUserCpuNanos)
+                    .append(", intervalAdded=").append(intervalAdded)
+                    .append(", intervalRemoved=").append(intervalRemoved)
+                    .append(", intervalModified=").append(intervalModified)
+                    .append(", intervalShifted=").append(intervalShifted)
+                    .append(", intervalAllocatedBytes=").append(intervalAllocatedBytes)
+                    .append(", intervalPoolAllocatedBytes=").append(intervalPoolAllocatedBytes)
+                    .append(", startCpuNanos=").append(startCpuNanos)
+                    .append(", startUserCpuNanos=").append(startUserCpuNanos)
+                    .append(", startTimeNanos=").append(startTimeNanos)
+                    .append(", startAllocatedBytes=").append(startAllocatedBytes)
+                    .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes)
+                    .append(", maxTotalMemory=").append(maxTotalMemory)
+                    .append(", minFreeMemory=").append(minFreeMemory)
+                    .append(", collections=").append(collections)
+                    .append(", collectionTimeNanos=").append(DBTimeUtils.millisToNanos(collectionTimeMs))
+                    .append('}');
         }
 
         public int getId() {
@@ -460,12 +485,20 @@ public class UpdatePerformanceTracker {
             return intervalShifted;
         }
 
-        public long getTotalFreeMemory() {
-            return totalFreeMemory;
+        public long getMinFreeMemory() {
+            return (minFreeMemory == Long.MAX_VALUE) ? QueryConstants.NULL_LONG : minFreeMemory;
         }
 
-        public long getTotalUsedMemory() {
-            return totalUsedMemory;
+        public long getMaxTotalMemory() {
+            return (maxTotalMemory == 0) ? QueryConstants.NULL_LONG : maxTotalMemory;
+        }
+
+        public long getCollections() {
+            return collections;
+        }
+
+        public long getCollectionTimeNanos() {
+            return DBTimeUtils.millisToNanos(collectionTimeMs);
         }
 
         public long getIntervalAllocatedBytes() {

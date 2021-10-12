@@ -22,7 +22,7 @@ def main():
     with Session(host="localhost", port=10000) as dh_session:
         taxi_data_table = import_taxi_records(dh_session)
         variable_name = "t"
-        dh_session.bind_table(taxi_data_table, variable_name)
+        dh_session.bind_table(variable_name, taxi_data_table)
 
         bottom_5_fares_table = run_script(dh_session=dh_session)
         snapshot_data = bottom_5_fares_table.snapshot()

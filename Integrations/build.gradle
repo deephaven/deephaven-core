@@ -83,6 +83,10 @@ def buildPyWheel = { String taskName, String imgName, String sourcePath ->
                       test -n "${DEEPHAVEN_VERSION}";\\
                       python setup.py bdist_wheel'''
         }
+        containerOutPath='/usr/src/app/dist'
+        copyOut {
+            into 'build/wheel' + taskName
+        }
     }
 }
 

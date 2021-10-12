@@ -8,6 +8,8 @@
   "getCallerLine": ":return: java.lang.String",
   "getCpuNanos": "Get nanoseconds of CPU time attributed to the instrumented operation.\n\n:return: (long) The nanoseconds of CPU time attributed to the instrumented operation, or QueryConstants.NULL_LONG\n         if not enabled/supported.",
   "getDepth": ":return: int",
+  "getDiffCollectionTimeNanos": ":return: (long) Time spent in garbage collection, in milliseconds, between time of completion and creation",
+  "getDiffCollections": ":return: (long) Number of garbage collections between time of completion and creation",
   "getDiffFreeMemory": ":return: (long) free memory difference between time of completion and creation",
   "getDiffTotalMemory": ":return: (long) total (allocated high water mark) memory difference between time of completion and creation",
   "getEndFreeMemory": ":return: (long) free memory at completion",

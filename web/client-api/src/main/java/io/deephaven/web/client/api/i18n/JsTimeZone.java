@@ -6,11 +6,19 @@ import com.google.gwt.i18n.client.constants.TimeZoneConstants;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import java.util.HashMap;
+import java.util.Map;
 
 @JsType(name = "TimeZone", namespace = "dh.i18n")
 public class JsTimeZone {
+    // Cache the time zones that are parsed so we don't need to recalculate them
+    private static final Map<String, JsTimeZone> timeZoneCache = new HashMap<>();
 
     public static JsTimeZone getTimeZone(String tzCode) {
+        return timeZoneCache.computeIfAbsent(tzCode, ignored -> createTimeZone(tzCode));
+    }
+
+    private static JsTimeZone createTimeZone(String tzCode) {
         if (tzCode.equals("UTC") || tzCode.equals("GMT") || tzCode.equals("Etc/GMT") || tzCode.equals("Z")) {
             return new JsTimeZone(TimeZone.createTimeZone(0));
         }

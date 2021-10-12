@@ -8,56 +8,54 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.hash.KeyedIntObjectHashMap;
+import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.db.tables.utils.DBTimeUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
+import java.util.function.IntToLongFunction;
 
 /**
- * An ingester that replicates a Apache Kafka topic to a Deephaven Table Writer.
- *
- * <p>
- * Each KafkaIngester is assigned a topic and a subset of Kafka partitions. Each Kafka partition is mapped to a
- * Deephaven internal partition. The column partition can be set through the constructor, or defaults to
- * {@link DBTimeUtils#currentDateNy()}.
- * </p>
- *
- * <p>
- * Automatic partition assignment and rebalancing are not supported. Each Kafka ingester instance must uniquely control
- * its checkpoint record, which is incompatible with rebalancing.
- * </p>
- *
- * 
+ * An ingester that consumes an Apache Kafka topic and a subset of its partitions via one or more
+ * {@link KafkaStreamConsumer stream consumers}.
  */
 public class KafkaIngester {
     private static final int REPORT_INTERVAL_MS = Configuration.getInstance().getIntegerForClassWithDefault(
             KafkaIngester.class, "reportIntervalMs", 60_000);
     private static final long MAX_ERRS = Configuration.getInstance().getLongForClassWithDefault(
             KafkaIngester.class, "maxErrs", 500);
-    private final KafkaConsumer<?, ?> consumer;
+    private final KafkaConsumer<?, ?> kafkaConsumer;
     @NotNull
     private final Logger log;
     private final String topic;
     private final String partitionDescription;
-    private final IntFunction<KafkaStreamConsumer> partitionToConsumer;
-    private final TIntObjectHashMap<KafkaStreamConsumer> consumers = new TIntObjectHashMap<>();
-    private final Set<KafkaStreamConsumer> uniqueConsumers = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final TIntObjectHashMap<KafkaStreamConsumer> streamConsumers = new TIntObjectHashMap<>();
+    private final KeyedIntObjectHashMap<TopicPartition> assignedPartitions =
+            new KeyedIntObjectHashMap<>(new KeyedIntObjectKey.BasicStrict<TopicPartition>() {
+                @Override
+                public int getIntKey(@NotNull final TopicPartition topicPartition) {
+                    return topicPartition.partition();
+                }
+            });
     private final String logPrefix;
     private long messagesProcessed = 0;
     private long messagesWithErr = 0;
     private long lastProcessed = 0;
-    private final Set<TopicPartition> openPartitions = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    private volatile boolean needsAssignment;
+    private volatile boolean done;
 
     /**
      * Constant predicate that returns true for all partitions. This is the default, each and every partition that
@@ -80,8 +78,6 @@ public class KafkaIngester {
 
     /**
      * A predicate for handling a range of partitions.
-     *
-     * 
      */
     public static class PartitionRange implements IntPredicate {
         final int startInclusive;
@@ -111,8 +107,6 @@ public class KafkaIngester {
 
     /**
      * A predicate for handling a single partition.
-     *
-     * 
      */
     public static class SinglePartition extends PartitionRange {
         /**
@@ -127,8 +121,6 @@ public class KafkaIngester {
 
     /**
      * A predicate for evenly distributing partitions among a set of ingesters.
-     *
-     * 
      */
     public static class PartitionRoundRobin implements IntPredicate {
         final int consumerIndex;
@@ -161,19 +153,22 @@ public class KafkaIngester {
     /**
      * Creates a Kafka ingester for all partitions of a given topic.
      *
-     * @param log a log for output
-     * @param props the properties used to create the {@link KafkaConsumer}
-     * @param topic the topic to replicate
-     * @param partitionToConsumer a function implementing a mapping from partition to its consumer of records.
-     * @param partitionToInitialSeekOffset a function implementing a mapping from partition to its intial seek offset,
+     * @param log A log for output
+     * @param props The properties used to create the {@link KafkaConsumer}
+     * @param topic The topic to replicate
+     * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
+     *        function will be invoked once per partition at construction; implementations should internally defer
+     *        resource allocation until first call to {@link KafkaStreamConsumer#accept(Object)} or
+     *        {@link KafkaStreamConsumer#acceptFailure(Exception)} if appropriate.
+     * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
      */
     public KafkaIngester(final Logger log,
             final Properties props,
             final String topic,
-            final IntFunction<KafkaStreamConsumer> partitionToConsumer,
+            final IntFunction<KafkaStreamConsumer> partitionToStreamConsumer,
             final IntToLongFunction partitionToInitialSeekOffset) {
-        this(log, props, topic, ALL_PARTITIONS, partitionToConsumer, partitionToInitialSeekOffset);
+        this(log, props, topic, ALL_PARTITIONS, partitionToStreamConsumer, partitionToInitialSeekOffset);
     }
 
     public static long SEEK_TO_BEGINNING = -1;
@@ -186,12 +181,15 @@ public class KafkaIngester {
     /**
      * Creates a Kafka ingester for the given topic.
      * 
-     * @param log a log for output
-     * @param props the properties used to create the {@link KafkaConsumer}
-     * @param topic the topic to replicate
-     * @param partitionFilter a predicate indicating which partitions we should replicate
-     * @param partitionToConsumer a function implementing a mapping from partition to its consumer of records.
-     * @param partitionToInitialSeekOffset a function implementing a mapping from partition to its intial seek offset,
+     * @param log A log for output
+     * @param props The properties used to create the {@link KafkaConsumer}
+     * @param topic The topic to replicate
+     * @param partitionFilter A predicate indicating which partitions we should replicate
+     * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
+     *        function will be invoked once per partition at construction; implementations should internally defer
+     *        resource allocation until first call to {@link KafkaStreamConsumer#accept(Object)} or
+     *        {@link KafkaStreamConsumer#acceptFailure(Exception)} if appropriate.
+     * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
      */
     @SuppressWarnings("rawtypes")
@@ -199,47 +197,46 @@ public class KafkaIngester {
             final Properties props,
             final String topic,
             final IntPredicate partitionFilter,
-            final IntFunction<KafkaStreamConsumer> partitionToConsumer,
+            final IntFunction<KafkaStreamConsumer> partitionToStreamConsumer,
             final IntToLongFunction partitionToInitialSeekOffset) {
         this.log = log;
         this.topic = topic;
-        this.partitionDescription = partitionFilter.toString();
-        this.partitionToConsumer = partitionToConsumer;
-        this.logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
-        consumer = new KafkaConsumer(props);
+        partitionDescription = partitionFilter.toString();
+        logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
+        kafkaConsumer = new KafkaConsumer(props);
 
-        final List<PartitionInfo> partitions = consumer.partitionsFor(topic);
-        partitions.stream().filter(pi -> partitionFilter.test(pi.partition()))
-                .map(pi -> new TopicPartition(topic, pi.partition())).forEach(openPartitions::add);
+        kafkaConsumer.partitionsFor(topic).stream().filter(pi -> partitionFilter.test(pi.partition()))
+                .map(pi -> new TopicPartition(topic, pi.partition()))
+                .forEach(tp -> {
+                    assignedPartitions.add(tp);
+                    streamConsumers.put(tp.partition(), partitionToStreamConsumer.apply(tp.partition()));
+                });
+        assign();
 
-        consumer.assign(openPartitions);
-
-        final Set<TopicPartition> assignments = consumer.assignment();
-        if (assignments.size() <= 0) {
-            throw new UncheckedDeephavenException("Empty partition assignments");
-        }
-        log.info().append(logPrefix).append("Partition Assignments: ").append(assignments.toString()).endl();
-
-        if (assignments.size() != openPartitions.size()) {
-            throw new UncheckedDeephavenException(logPrefix + "Partition assignments do not match request: assignments="
-                    + assignments + ", request=" + openPartitions);
-        }
-
-        for (final TopicPartition topicPartition : assignments) {
+        for (final TopicPartition topicPartition : assignedPartitions) {
             final long seekOffset = partitionToInitialSeekOffset.applyAsLong(topicPartition.partition());
             if (seekOffset == SEEK_TO_BEGINNING) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to beginning.")
                         .append(seekOffset).endl();
-                consumer.seekToBeginning(Collections.singletonList(topicPartition));
+                kafkaConsumer.seekToBeginning(Collections.singletonList(topicPartition));
             } else if (seekOffset == SEEK_TO_END) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to end.")
                         .append(seekOffset).endl();
-                consumer.seekToEnd(Collections.singletonList(topicPartition));
+                kafkaConsumer.seekToEnd(Collections.singletonList(topicPartition));
             } else if (seekOffset != DONT_SEEK) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to offset ")
                         .append(seekOffset).append(".").endl();
-                consumer.seek(topicPartition, seekOffset);
+                kafkaConsumer.seek(topicPartition, seekOffset);
             }
+        }
+    }
+
+    private void assign() {
+        synchronized (assignedPartitions) {
+            kafkaConsumer.assign(assignedPartitions.values());
+            log.info().append(logPrefix).append("Partition Assignments: ")
+                    .append(assignedPartitions.values().toString())
+                    .endl();
         }
     }
 
@@ -266,15 +263,11 @@ public class KafkaIngester {
     private void consumerLoop() {
         final long reportIntervalNanos = REPORT_INTERVAL_MS * 1_000_000L;
         long lastReportNanos = System.nanoTime();
-        final int expectedPartitionCount = openPartitions.size();
         final DecimalFormat rateFormat = new DecimalFormat("#.0000");
-        while (true) {
-            final int currentPartitionSize = openPartitions.size();
-            if (currentPartitionSize != expectedPartitionCount) {
-                log.error().append(logPrefix)
-                        .append("Stopping due to partition size change to ").append(currentPartitionSize)
-                        .append(".").endl();
-                break;
+        while (!done) {
+            while (needsAssignment) {
+                needsAssignment = false;
+                assign();
             }
             final long beforePoll = System.nanoTime();
             final long nextReport = lastReportNanos + reportIntervalNanos;
@@ -300,20 +293,18 @@ public class KafkaIngester {
                 lastProcessed = messagesProcessed;
             }
         }
-        log.info().append(logPrefix).append("Closing Kafka consumer.").endl();
-        consumer.close();
-        throw new UncheckedDeephavenException("Kafka stream was closed.");
+        log.info().append(logPrefix).append("Closing Kafka consumer").endl();
+        kafkaConsumer.close();
     }
 
     /**
-     *
-     * @param timeout
+     * @param timeout Poll timeout duration
      * @return True if we should continue processing messages; false if we should abort the consumer thread.
      */
     private boolean pollOnce(final Duration timeout) {
         final ConsumerRecords<?, ?> records;
         try {
-            records = consumer.poll(timeout);
+            records = kafkaConsumer.poll(timeout);
         } catch (WakeupException we) {
             // we interpret a wakeup as a signal to stop /this/ poll.
             return true;
@@ -326,24 +317,26 @@ public class KafkaIngester {
         for (final TopicPartition topicPartition : records.partitions()) {
             final int partition = topicPartition.partition();
 
-            KafkaStreamConsumer consumer;
-            consumer = consumers.get(partition);
-            if (consumer == null) {
-                consumer = partitionToConsumer.apply(partition);
-                uniqueConsumers.add(consumer);
-                consumers.put(partition, consumer);
+            final KafkaStreamConsumer streamConsumer;
+            synchronized (streamConsumers) {
+                streamConsumer = streamConsumers.get(partition);
+            }
+            if (streamConsumer == null) {
+                continue;
             }
 
-
             final List<? extends ConsumerRecord<?, ?>> partitionRecords = records.records(topicPartition);
+            if (partitionRecords.isEmpty()) {
+                continue;
+            }
 
             try {
-                consumer.accept(partitionRecords);
+                streamConsumer.accept(partitionRecords);
             } catch (Exception ex) {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex);
                 if (messagesWithErr > MAX_ERRS) {
-                    consumer.acceptFailure(ex);
+                    streamConsumer.acceptFailure(ex);
                     log.error().append(logPrefix)
                             .append("Max number of errors exceeded, aborting " + this + " consumer thread.");
                     return false;
@@ -353,5 +346,36 @@ public class KafkaIngester {
             messagesProcessed += partitionRecords.size();
         }
         return true;
+    }
+
+    public void shutdown() {
+        if (done) {
+            return;
+        }
+        synchronized (streamConsumers) {
+            streamConsumers.clear();
+        }
+        done = true;
+        kafkaConsumer.wakeup();
+    }
+
+    public void shutdownPartition(final int partition) {
+        if (done) {
+            return;
+        }
+        final boolean becameEmpty;
+        synchronized (streamConsumers) {
+            if (streamConsumers.remove(partition) == null) {
+                return;
+            }
+            becameEmpty = streamConsumers.isEmpty();
+        }
+        assignedPartitions.remove(partition);
+        if (becameEmpty) {
+            done = true;
+        } else {
+            needsAssignment = true;
+        }
+        kafkaConsumer.wakeup();
     }
 }

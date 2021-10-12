@@ -43,7 +43,7 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'furo'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -65,6 +65,8 @@ html_theme_options = {
 
 # A boolean that decides whether module names are prepended to all object names (for object types where a “module” of some kind is defined), e.g. for py:function directives. Default is True.
 add_module_names = False
+# if we allow sphinx to generate type hints for signatures (default), it would make the generated doc cluttered and hard to read
+autodoc_typehints = 'none'
 
 #########################################################################################################################################################################
 

@@ -12,8 +12,8 @@ def demo_query(dh_session: Session, taxi_data_table: Table) -> Table:
     # create a query and execute it on the DH server
     query = (dh_session.query(taxi_data_table)
              .where(filters=["VendorID > 0"])
-             .sort(column_names=["VendorID", "fare_amount"])
-             .tail_by(num_rows=5, column_names=["VendorID"]))
+             .sort(order_by=["VendorID", "fare_amount"])
+             .tail_by(num_rows=5, by=["VendorID"]))
     return query.exec()
 
 

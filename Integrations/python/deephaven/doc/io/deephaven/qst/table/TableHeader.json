@@ -2,6 +2,7 @@
  "className": "io.deephaven.qst.table.TableHeader",
  "methods": {
   "builder": ":return: io.deephaven.qst.table.TableHeader.Builder",
+  "columnNames": ":return: java.util.Collection<java.lang.String>",
   "empty": ":return: io.deephaven.qst.table.TableHeader",
   "forEach": ":param action: java.util.function.Consumer<? superio.deephaven.qst.column.header.ColumnHeader<?>>",
   "getHeader": ":param name: java.lang.String\n:return: io.deephaven.qst.type.Type<?>",
