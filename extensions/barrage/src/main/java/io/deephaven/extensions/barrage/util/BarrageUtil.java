@@ -437,7 +437,7 @@ public class BarrageUtil {
             putMetadata(metadata, "description", description);
         }
         if (inputTable != null) {
-            putMetadata(metadata, "inputtable.isKey", Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
+            putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
         }
 
         return arrowFieldFor(name, type, componentType, metadata);
