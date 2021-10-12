@@ -178,6 +178,11 @@ service TableService {
    */
   rpc RunChartDownsample(RunChartDownsampleRequest) returns (ExportedTableCreationResponse) {}
 
+  /**
+   *
+   */
+  rpc CreateInputTable(CreateInputTableRequest) returns (ExportedTableCreationResponse) {}
+
   /*
    * Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
    * requiring them to be exported and managed by the client. The server will automatically release any tables when they
@@ -579,6 +584,31 @@ message RunChartDownsampleRequest {
   repeated string y_column_names = 6;
 }
 
+message CreateInputTableRequest {
+  enum InputTableKind {
+    // Creates an in-memory append-only table - rows cannot be modified or deleted.
+    APPEND_ONLY = 0;
+    // Creates an in-memory table that supports updates and deletes by keys.
+    KEYED_ARRAY_BACKED = 1;
+  }
+
+  Ticket result_id = 1;
+  oneof definition {
+    // Optional, either this or schema must be specified, not both.
+    TableReference source_table_id = 2;
+    // Schema as described in Arrow Message.fbs::Message. Optional, either this or source_table_id must be specified.
+    bytes schema = 3;
+  }
+
+  // Specifies what type of input table to create.
+  // TODO consider replacing with string type, or oneof?
+  InputTableKind kind = 4;
+
+  repeated string key_columns = 5;
+
+  //TODO support enum columns using some arrow format?
+}
+
 message BatchTableRequest {
   repeated Operation ops = 1;
 
@@ -614,6 +644,7 @@ message BatchTableRequest {
       FetchTableRequest fetch_table = 28;
       FetchPandasTableRequest fetch_pandas_table = 29;
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
+      CreateInputTableRequest create_input_table = 31;
     }
   }
 }
