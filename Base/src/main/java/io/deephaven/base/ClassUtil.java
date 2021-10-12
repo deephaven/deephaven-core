@@ -4,6 +4,7 @@
 
 package io.deephaven.base;
 
+import org.apache.commons.lang3.ClassUtils;
 import org.apache.log4j.Logger;
 
 import java.lang.reflect.Array;
@@ -11,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class ClassUtil {
     public static String getBaseName(final String s) {
@@ -42,40 +44,27 @@ public final class ClassUtil {
         return c;
     }
 
-    private static final Map<String, Class<?>> classMap = new HashMap<>();
-    public static Map<String, Class<?>> primitives = new HashMap<>();
-
-    static {
-        primitives.put("boolean", boolean.class);
-        primitives.put("int", int.class);
-        primitives.put("double", double.class);
-        primitives.put("long", long.class);
-        primitives.put("byte", byte.class);
-        primitives.put("short", short.class);
-        primitives.put("char", char.class);
-        primitives.put("float", float.class);
-    }
+    private static final Map<String, Class<?>> classMap = new ConcurrentHashMap<>();
 
     private static Class<?> getJavaType(String selectedType) throws ClassNotFoundException {
-        int arrayCount = 0;
-        while (selectedType.endsWith("[]")) {
-            selectedType = selectedType.substring(0, selectedType.length() - 2);
-            ++arrayCount;
-        }
-        Class<?> result = primitives.get(selectedType);
-        if (result == null && selectedType.startsWith("java.lang.")) {
-            result = primitives.get(selectedType.substring("java.lang.".length()));
-        }
-        if (result == null) {
-            result = Class.forName(selectedType.split("<")[0]);
-        }
-        if (arrayCount > 0) {
-            final int[] dimensions = new int[arrayCount];
-            result = Array.newInstance(result, dimensions).getClass();
-        }
-        return result;
+        // Given string might have generics, remove those before delegating to
+        // commons-lang3 for lookup implementation. Greedily match from first
+        // '<' to last '>' and remove all, so that the two types of array
+        // notation are retained.
+        String noGenerics = selectedType.replaceAll("<.*>", "");
+
+        return ClassUtils.getClass(noGenerics, false);
     }
 
+    /**
+     * Finds and caches Class instances based on name. This implementation can handle the strings
+     * created by {@link Class#getName()} and {@link Class#getCanonicalName()}, and some mixture
+     * of the two. JNI names are not supported.
+     *
+     * @param name the name of the class to lookup.
+     * @return A class instance
+     * @throws ClassNotFoundException if the class cannot be found
+     */
     public static Class<?> lookupClass(final String name) throws ClassNotFoundException {
         Class<?> result = classMap.get(name);
         if (result == null) {
@@ -83,12 +72,15 @@ public final class ClassUtil {
                 result = getJavaType(name);
                 classMap.put(name, result);
             } catch (ClassNotFoundException e) {
-                classMap.put(name, ClassUtil.class);
+                // Note that this prevents some runtime fix to the classpath and retrying
+                classMap.put(name, FailedToResolve.class);
                 throw e;
             }
-        } else if (result == ClassUtil.class) {
+        } else if (result == FailedToResolve.class) {
             throw new ClassNotFoundException(name);
         }
         return result;
     }
+
+    private static class FailedToResolve {}
 }

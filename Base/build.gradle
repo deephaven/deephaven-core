@@ -1,6 +1,8 @@
 dependencies {
     compile depLog4j, depTrove3, depAnnotations, depCommonsCompress
 
+    compile depCommonsLang3
+
     compile 'io.deephaven:hash:0.1.0'
 
     testCompile fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
