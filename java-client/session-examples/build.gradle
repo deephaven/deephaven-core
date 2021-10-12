@@ -12,7 +12,7 @@ dependencies {
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+    Classpaths.inheritLogbackClassic(project)
 }
 
 test {

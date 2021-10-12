@@ -74,6 +74,10 @@ class Classpaths {
     static final String ASSERTJ_NAME = 'assertj-core'
     static final String ASSERTJ_VERSION = '3.19.0'
 
+    static final String LOGBACK_GROUP = 'ch.qos.logback'
+    static final String LOGBACK_NAME = 'logback-classic'
+    static final String LOGBACK_VERSION = '1.2.3'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -172,6 +176,11 @@ class Classpaths {
     static void inheritAssertJ(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, ASSERTJ_GROUP, ASSERTJ_NAME, ASSERTJ_VERSION)
+    }
+
+    static void inheritLogbackClassic(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, LOGBACK_GROUP, LOGBACK_NAME, LOGBACK_VERSION)
     }
 
     static void inheritSlf4j(Project p, String name, String configName) {
