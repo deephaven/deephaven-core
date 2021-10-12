@@ -4,7 +4,7 @@
 # Tested on Ubuntu 20.04
 #
 
-set -ex
+set -eux
 
 NCPUS=$(cat /proc/cpuinfo | grep '^processor' | wc -l)
 
@@ -51,7 +51,7 @@ echo "*** Building gflags"
 cd $MYSRC/gflags
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release  -DCMAKE_INSTALL_PREFIX=${PFX}/gflags ..
-make -j$NCPU
+make -j$NCPUS
 make install
 
 ### absl
@@ -60,7 +60,7 @@ echo "*** Building abseil"
 cd $MYSRC/abseil-cpp
 mkdir -p cmake/build && cd cmake/build
 cmake -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_BUILD_TYPE=Release  -DCMAKE_INSTALL_PREFIX=${PFX}/abseil  ../..
-make -j$NCPU
+make -j$NCPUS
 make install
 cd ../..
 
@@ -70,7 +70,7 @@ echo "*** Building flatbuffers"
 cd $MYSRC/flatbuffers
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release  -DCMAKE_INSTALL_PREFIX=${PFX}/flatbuffers ..
-make -j$NCPU
+make -j$NCPUS
 make install
 
 echo
@@ -79,7 +79,7 @@ echo "*** Building c-ares"
 cd $MYSRC/c-ares
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release  -DCMAKE_INSTALL_PREFIX=${PFX}/cares ..
-make -j$NCPU
+make -j$NCPUS
 make install
 
 ### zlib
@@ -88,7 +88,7 @@ echo "*** Building zlib"
 cd $MYSRC/zlib
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release  -DCMAKE_INSTALL_PREFIX=${PFX}/zlib ..
-make -j$NCPU
+make -j$NCPUS
 make install
 
 ### grpc
@@ -97,7 +97,7 @@ echo "*** Building grpc"
 cd $MYSRC/grpc
 mkdir -p cmake/build && cd cmake/build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE  -DCMAKE_INSTALL_PREFIX=${PFX}/grpc -DgRPC_INSTALL=ON -DgRPC_ABSL_PROVIDER=package -DgRPC_CARES_PROVIDER=package -DgRPC_PROTOBUF_PROVIDER=package -DgRPC_RE2_PROVIDER=package -DgRPC_SSL_PROVIDER=package -DgRPC_ZLIB_PROVIDER=package ../..
-make -j$NCPU
+make -j$NCPUS
 make install
 
 ### arrow
@@ -107,6 +107,6 @@ export CPATH=${PFX}/abseil/include:$CPATH
 cd $MYSRC/apache-arrow-5.0.0/cpp
 mkdir build && cd build
 cmake -DARROW_BUILD_STATIC=ON -DARROW_FLIGHT=ON -DCMAKE_BUILD_TYPE=Release  -DCMAKE_INSTALL_PREFIX=${PFX}/arrow ..
-make -j$NCPU
+make -j$NCPUS
 make install
 
