@@ -189,6 +189,93 @@ public class BatchTableRequest {
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface CreateInputTableFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface GetSchemaUnionType {
+                    @JsOverlay
+                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType of(
+                            Object o) {
+                        return Js.cast(o);
+                    }
+
+                    @JsOverlay
+                    default String asString() {
+                        return Js.asString(this);
+                    }
+
+                    @JsOverlay
+                    default Uint8Array asUint8Array() {
+                        return Js.cast(this);
+                    }
+
+                    @JsOverlay
+                    default boolean isString() {
+                        return (Object) this instanceof String;
+                    }
+
+                    @JsOverlay
+                    default boolean isUint8Array() {
+                        return (Object) this instanceof Uint8Array;
+                    }
+                }
+
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getKeyColumnsList();
+
+                @JsProperty
+                double getKind();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType getSchema();
+
+                @JsProperty
+                Object getSourceTableId();
+
+                @JsProperty
+                void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                @JsOverlay
+                default void setKeyColumnsList(String[] keyColumnsList) {
+                    setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                }
+
+                @JsProperty
+                void setKind(double kind);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSchema(
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType schema);
+
+                @JsOverlay
+                default void setSchema(String schema) {
+                    setSchema(
+                            Js.<BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType>uncheckedCast(
+                                    schema));
+                }
+
+                @JsOverlay
+                default void setSchema(Uint8Array schema) {
+                    setSchema(
+                            Js.<BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType>uncheckedCast(
+                                    schema));
+                }
+
+                @JsProperty
+                void setSourceTableId(Object sourceTableId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface CrossJoinFieldType {
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType.OpsListFieldType.CrossJoinFieldType create() {
@@ -1459,6 +1546,9 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType getComboAggregate();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType getCreateInputTable();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.CrossJoinFieldType getCrossJoin();
 
             @JsProperty
@@ -1550,6 +1640,10 @@ public class BatchTableRequest {
             @JsProperty
             void setComboAggregate(
                     BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType comboAggregate);
+
+            @JsProperty
+            void setCreateInputTable(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType createInputTable);
 
             @JsProperty
             void setCrossJoin(
@@ -1838,6 +1932,93 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface CreateInputTableFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface GetSchemaUnionType {
+                    @JsOverlay
+                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType of(
+                            Object o) {
+                        return Js.cast(o);
+                    }
+
+                    @JsOverlay
+                    default String asString() {
+                        return Js.asString(this);
+                    }
+
+                    @JsOverlay
+                    default Uint8Array asUint8Array() {
+                        return Js.cast(this);
+                    }
+
+                    @JsOverlay
+                    default boolean isString() {
+                        return (Object) this instanceof String;
+                    }
+
+                    @JsOverlay
+                    default boolean isUint8Array() {
+                        return (Object) this instanceof Uint8Array;
+                    }
+                }
+
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getKeyColumnsList();
+
+                @JsProperty
+                double getKind();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType getSchema();
+
+                @JsProperty
+                Object getSourceTableId();
+
+                @JsProperty
+                void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                @JsOverlay
+                default void setKeyColumnsList(String[] keyColumnsList) {
+                    setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                }
+
+                @JsProperty
+                void setKind(double kind);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSchema(
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType schema);
+
+                @JsOverlay
+                default void setSchema(String schema) {
+                    setSchema(
+                            Js.<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType>uncheckedCast(
+                                    schema));
+                }
+
+                @JsOverlay
+                default void setSchema(Uint8Array schema) {
+                    setSchema(
+                            Js.<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.GetSchemaUnionType>uncheckedCast(
+                                    schema));
+                }
+
+                @JsProperty
+                void setSourceTableId(Object sourceTableId);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -3111,6 +3292,9 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType getComboAggregate();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType getCreateInputTable();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CrossJoinFieldType getCrossJoin();
 
             @JsProperty
@@ -3202,6 +3386,10 @@ public class BatchTableRequest {
             @JsProperty
             void setComboAggregate(
                     BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType comboAggregate);
+
+            @JsProperty
+            void setCreateInputTable(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType createInputTable);
 
             @JsProperty
             void setCrossJoin(
