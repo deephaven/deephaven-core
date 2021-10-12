@@ -8,12 +8,11 @@ dependencies {
     api project(':java-client-barrage')
     api project(':java-client-flight-dagger')
 
-    implementation 'com.google.dagger:dagger:2.31.1'
-    annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
+    Classpaths.inheritDagger(project)
 
-    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.19.0'
 
     testImplementation project(':log-to-slf4j')
 }

@@ -13,14 +13,13 @@ dependencies {
     api project(':java-client-flight')
     api project(':engine-barrage')
 
-    annotationProcessor 'org.immutables:value:2.8.1'
-    compileOnly project(':util-immutables')
+    Classpaths.inheritImmutables(project)
 
     Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
     testRuntimeOnly project(':log-to-slf4j')
 
-    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.19.0'
 }
