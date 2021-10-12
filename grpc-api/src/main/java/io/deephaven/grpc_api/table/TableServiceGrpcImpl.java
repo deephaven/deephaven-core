@@ -6,13 +6,13 @@ package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
 import io.deephaven.db.tables.Table;
-import io.deephaven.client.impl.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.table.ops.GrpcTableOperation;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.client.impl.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
@@ -54,8 +54,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.deephaven.client.impl.util.GrpcUtil.safelyExecute;
-import static io.deephaven.client.impl.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 
 public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase {
 

@@ -4,7 +4,8 @@
 
 package io.deephaven.client.impl;
 
-import io.deephaven.client.impl.table.BarrageTable;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.qst.table.TableSpec;

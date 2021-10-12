@@ -41,10 +41,10 @@ dependencies {
     compile project(':ClientSupport')
 
     if ('true' == project.findProperty('extensions.classgraph.enabled')) {
-        runtimeOnly project(':classgraph-extension')
+        runtimeOnly project(':extensions-classgraph')
     }
     if ('true' == project.findProperty('extensions.suanshu.enabled')) {
-        runtimeOnly project(':suanshu-extension')
+        runtimeOnly project(':extensions-suanshu')
     }
 
     testCompile TestTools.projectDependency(project, 'DB'),

@@ -6,8 +6,8 @@ package io.deephaven.grpc_api.session;
 
 import com.google.rpc.Code;
 import io.deephaven.db.tables.Table;
-import io.deephaven.client.impl.util.BarrageUtil;
-import io.deephaven.client.impl.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.hash.KeyedObjectHashMap;

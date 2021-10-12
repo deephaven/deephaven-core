@@ -7,11 +7,11 @@ configurations {
     testCompile.extendsFrom irisDbTest
 }
 
-description = 'The Deephaven Engine library plus client'
+description = 'The Deephaven Barrage Client'
 
 dependencies {
     api project(':java-client-flight')
-    api project(':engine-barrage')
+    api project(':extensions-barrage')
 
     Classpaths.inheritImmutables(project)
 

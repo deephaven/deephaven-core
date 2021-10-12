@@ -6,7 +6,7 @@ import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.client.impl.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.grpc.BindableService;

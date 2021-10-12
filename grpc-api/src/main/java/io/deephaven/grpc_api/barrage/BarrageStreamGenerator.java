@@ -14,8 +14,8 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.client.impl.BarrageSubscriptionOptions;
-import io.deephaven.client.impl.util.DefensiveDrainable;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
 import org.apache.arrow.flatbuf.Buffer;
@@ -28,9 +28,9 @@ import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.client.impl.util.BarrageUtil;
-import io.deephaven.client.impl.chunk.ChunkInputStreamGenerator;
-import io.deephaven.client.impl.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.Drainable;
@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static io.deephaven.client.impl.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
+import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 
 public class BarrageStreamGenerator implements
         BarrageMessageProducer.StreamGenerator<BarrageSubscriptionOptions, BarrageStreamGenerator.View> {

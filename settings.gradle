@@ -107,11 +107,14 @@ project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
 include(':grpc-api-client-console')
 project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
 
-include(':classgraph-extension')
-project(':classgraph-extension').projectDir = file('extensions/classgraph')
+include(':extensions-barrage')
+project(':extensions-barrage').projectDir = file('extensions/barrage')
 
-include(':suanshu-extension')
-project(':suanshu-extension').projectDir = file('extensions/suanshu')
+include(':extensions-classgraph')
+project(':extensions-classgraph').projectDir = file('extensions/classgraph')
+
+include(':extensions-suanshu')
+project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
 include(':Internals')
 
@@ -138,9 +141,6 @@ include(':ParquetHadoop')
 include(':envoy')
 
 include(':grpc-proxy')
-
-include(':engine-barrage')
-project(':engine-barrage').projectDir = file('engine/barrage')
 
 include(':java-client-session')
 project(':java-client-session').projectDir = file('java-client/session')

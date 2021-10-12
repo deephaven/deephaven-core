@@ -5,7 +5,7 @@
 package io.deephaven.grpc_api.util;
 
 import com.google.rpc.Code;
-import io.deephaven.client.impl.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.browserstreaming.BrowserStream;
 import io.deephaven.grpc_api.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.grpc_api.browserstreaming.StreamData;

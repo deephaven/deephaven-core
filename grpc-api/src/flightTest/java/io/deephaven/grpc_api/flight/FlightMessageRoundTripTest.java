@@ -15,7 +15,7 @@ import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.auth.AuthContextModule;
-import io.deephaven.client.impl.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
 import io.deephaven.grpc_api.arrow.ArrowModule;

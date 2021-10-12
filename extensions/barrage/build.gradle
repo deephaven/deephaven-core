@@ -1,0 +1,61 @@
+plugins {
+    id 'java-library'
+}
+
+configurations {
+    compile.extendsFrom irisDb
+    testCompile.extendsFrom irisDbTest
+}
+
+description = 'An extension integrating Barrage with Deephavens Table Model'
+
+dependencies {
+    api project(':Base')
+    api project(':DB')
+    api project(':Util')
+    api project(':proto:proto-backplane-grpc-flight')
+    api project(':log-factory')
+    api "io.deephaven.barrage:barrage-format:0.3.0"
+
+    Classpaths.inheritFlatbuffer(project, 'api')
+
+    Classpaths.inheritArrow(project, 'arrow-vector', 'compile')
+    Classpaths.inheritArrow(project, 'arrow-format', 'compile')
+
+    Classpaths.inheritImmutables(project)
+
+    testCompile TestTools.projectDependency(project, 'DB'),
+            TestTools.projectDependency(project, 'Util')
+
+    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':log-to-slf4j')
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+def createMainExecTask = {
+    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
+        task.workingDir "$rootDir"
+        task.classpath = sourceSets.main.runtimeClasspath
+        task.main = mainClass
+        return
+    })
+}
+
+createMainExecTask('replicateBarrageUtils', 'io.deephaven.extensions.barrage.chunk.ReplicateBarrageUtils')
+
+task replicate {
+    dependsOn 'replicateBarrageUtils'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*ChunkInputStreamGenerator.java',
+                '**/*ArrayExpansionKernel.java'
+        )
+    }
+}

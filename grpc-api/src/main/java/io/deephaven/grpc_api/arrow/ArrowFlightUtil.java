@@ -9,13 +9,13 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.client.impl.BarrageSubscriptionOptions;
-import io.deephaven.client.impl.chunk.ChunkInputStreamGenerator;
-import io.deephaven.client.impl.table.BarrageTable;
-import io.deephaven.client.impl.util.BarrageProtoUtil;
-import io.deephaven.client.impl.util.BarrageUtil;
-import io.deephaven.client.impl.util.FlatBufferIteratorAdapter;
-import io.deephaven.client.impl.util.GrpcUtil;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.table.BarrageTable;
+import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.LongSizedDataStructure;
@@ -49,7 +49,7 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Queue;
 
-import static io.deephaven.client.impl.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
+import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);

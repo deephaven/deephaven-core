@@ -1,11 +1,11 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.BarrageSubscription;
-import io.deephaven.client.impl.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
-import io.deephaven.client.impl.table.BarrageTable;
+import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.db.v2.InstrumentedShiftAwareListener;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.qst.TableCreationLogic;
@@ -15,7 +15,6 @@ import io.deephaven.util.process.ProcessEnvironment;
  */
 
 import io.deephaven.util.process.ShutdownManager;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import picocli.CommandLine;
 
 import java.util.concurrent.CountDownLatch;
