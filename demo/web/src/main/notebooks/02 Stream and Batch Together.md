@@ -120,7 +120,7 @@ join_stream_batch = agg_streaming.renameColumns("Price_Streaming = Price", "Avg_
 \
 \
 \
-[The next notebook](03%20Kafka%20Streamvs%20Append.md) demonstrates the value of different Kafka integrations.
+[The next notebook](03%20Kafka%20Stream%20vs%20Append.md) demonstrates the value of different Kafka integrations.
 
 ```python
 print("When is streaming smarter than appending?  Find out next.")
