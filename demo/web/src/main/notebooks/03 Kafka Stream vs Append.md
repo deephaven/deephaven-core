@@ -139,7 +139,8 @@ Note the `dropStream()` syntax.
 ```python
 trades_stream = get_trades(offsets={ 0: offset_variable }, table_type='stream')
 agg_stream = trades_agg(trades_stream)
-row_count_stream = trades_stream.dropStream().countBy("RowCount")
+row_count_stream = trades_stream.dropStream()\
+.countBy("RowCount").updateView("Table_Type = `stream`")
 ```
 
 \
