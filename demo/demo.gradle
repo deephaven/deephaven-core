@@ -52,6 +52,7 @@ repositories {
 }
 
 dependencies {
+    implementation project(':Base')
     if (canQuarkus) {
 
         String quarkusGroup = findProperty('quarkusPlatformGroupId')

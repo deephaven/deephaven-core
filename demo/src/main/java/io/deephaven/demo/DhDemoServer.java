@@ -164,30 +164,30 @@ public class DhDemoServer implements QuarkusApplication {
                 req.response().setStatusCode(200).end();
                 return;
             }
-            Cookie cookie = req.getCookie(NameConstants.COOKIE_NAME);
-            if (cookie != null) {
-                String uname = cookie.getValue();
-                LOG.info("Handling request " + req.request().uri());
-                // verify that this cookie points to a running service, and if so, redirect to it.
-
-                if (!uname.contains(".")) {
-                    uname = uname + "." + DOMAIN;
-                }
-                if (controller.isMachineReady(uname)) {
-                    String uri = "https://" + uname;
-                    // if you re-visit the main url, we'll renew your 45 minute lease then send you back
-                    if (controller.renewLease(uname)) {
-                        req.redirect(uri);
-                        return;
-                    }
-                }
-            }
             // getting or creating a worker could take a while.
             // for now, we're going to let the browser window hang while we wait :'(
             // get off the vert.x event queue...
             LOG.info("Sending user off-thread to complete new machine request.");
-            ClusterController.setTimer("Claim New Machine", () -> {
+            Cookie cookie = req.getCookie(NameConstants.COOKIE_NAME);
+            ClusterController.setTimer("Claim Machine", () -> {
 
+                if (cookie != null) {
+                    String uname = cookie.getValue();
+                    LOG.info("Handling request " + req.request().uri() + " w/ cookie " + uname);
+                    // verify that this cookie points to a running service, and if so, redirect to it.
+
+                    if (!uname.contains(".")) {
+                        uname = uname + "." + DOMAIN;
+                    }
+                    if (controller.isMachineReady(uname)) {
+                        String uri = "https://" + uname;
+                        // if you re-visit the main url, we'll renew your 45 minute lease then send you back
+                        if (controller.renewLease(uname)) {
+                            req.redirect(uri);
+                            return;
+                        }
+                    }
+                }
                 // not using kube for now
                 // handleKube(req);
 
@@ -202,19 +202,12 @@ public class DhDemoServer implements QuarkusApplication {
     }
 
     private void handleGcloud(final RoutingContext req) {
-//        if (pool == null) {
-//            pool = new GcloudWorkPool();
-//        }
-//
-//        String workerName = pool.getUnusedDomain();
-//        String uri = "https://" + workerName + "." + DOMAIN;
         final Machine machine = controller.requestMachine();
         String uri = "https://" + machine.getDomainName();
         LOG.infof("Sending user to %s", uri);
         // if we can reach /health immediately, the machine is ready, we should send user straight there
         final boolean isDev = "true".equals(System.getProperty("devMode"));
-        final boolean isReady = controller.isMachineReady(machine.getDomainName());
-            if (isDev && isReady) {
+            if (isDev && controller.isMachineReady(machine.getDomainName())) {
                 // devMode can skip cookies
                 req.redirect(uri);
             } else {

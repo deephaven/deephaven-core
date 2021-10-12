@@ -1,5 +1,6 @@
 package io.deephaven.demo;
 
+import io.deephaven.base.Lazy;
 import io.deephaven.demo.deploy.*;
 import io.smallrye.common.constraint.NotNull;
 import io.vertx.core.impl.ConcurrentHashSet;
@@ -38,10 +39,10 @@ public class ClusterController {
 
     private final GoogleDeploymentManager manager;
     private final IpPool ips;
-    private final DomainPool domains;
     private final MachinePool machines;
     private final CountDownLatch latch;
     private final OkHttpClient client;
+    private final Lazy<Boolean> leader;
     private static ZoneId TZ_NY = ZoneOffset.of("-6");
     private static LocalTime BIZ_START = LocalTime.of(6, 0);
     // We are using NY timezone, but want to cover all N.A. business hours, so our end is 9pm NY
@@ -56,23 +57,39 @@ public class ClusterController {
     public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadMachines) {
         this.manager = manager;
         this.client = new OkHttpClient();
-        latch = new CountDownLatch(loadMachines ? 4 : 2);
+        latch = new CountDownLatch(loadMachines ? 4 : 3);
         if (manager == null) {
             throw new NullPointerException("Manager cannot be null");
         }
         this.ips = manager.getIpPool();
-        this.domains = new DomainPool();
         this.machines = new MachinePool();
 
-        // TODO: check DNS record for DOMAIN, and decide if we are the Leader, and only the Leader shuts off / deletes machines
-
+        // use a Lazy to see if we are the leader
+        leader = new Lazy<>(()->{
+            try {
+                final Execute.ExecutionResult result = Execute.execute("bash", "-c",
+                        "[[ $(dig +short " + DOMAIN + ") == $(dig +short $(hostname)." + DOMAIN + ") ]] && echo leader || echo not");
+                return "leader".equals(result.out.trim());
+            } catch (IOException | InterruptedException e) {
+                LOG.error("Unable to tell if we are leader", e);
+                return false;
+            }
+        });
+        // resolve the leader off-thread, since there's no need to block now
+        setTimer("Leader Check", ()-> {
+            if (leader.get()) {
+                LOG.info("We are the leader!");
+            } else {
+                LOG.info("We are not the leader.");
+            }
+        });
         // always load IPs... we want them in cases when we manually create named machines
         setTimer("Load Used IPs", this::loadIpsUsedInitial); // load used first, so we can figure out machine IPs
         setTimer("Load Unused IPs", this::loadIpsUnusedInitial);
+        setTimer("Load Domains", this::loadDomainsInitial);
         if (loadMachines) {
             // don't load machines or start any other controller threads if we are manually creating machines (ImageDeployer)
             setTimer("Load Machines", this::loadMachinesInitial);
-            setTimer("Load Domains", this::loadDomains);
             setTimer("Wait until loaded", ()->{
                 waitUntilReady();
                 // a little extra delay: give user a chance to request a machine before we possibly clean it up!
@@ -184,7 +201,6 @@ public class ClusterController {
             if (machine.isInUse()) {
                 if (machine.getExpiry() > 0 && machine.getExpiry() < System.currentTimeMillis()) {
                     // machine is past expiry... lets turn this box off, unless it's version is old, in which case, delete it
-
                     turnOff(machine);
                 }
             }
@@ -276,27 +292,37 @@ public class ClusterController {
     }
 
     private void turnOff(final Machine machine) {
-        // get off the fork-join pool to do IO:
         machine.setOnline(false);
+        boolean validVersion = isValidVersion(machine);
+        if (!validVersion) {
+            LOG.infof("Machine %s had incorrect version %s", machine, machine.getVersion());
+            // immediately remove this machine from rotation, so we don't consider it beyond the scope of this method.
+            machines.removeMachine(machine);
+            // declare the machine as in-use, so any methods with a reference to it won't try to use it.
+            machine.setInUse(true);
+        }
+        // get off the fork-join pool to do IO:
         setTimer("Decommission " + machine.getHost(), ()-> {
             try {
-                boolean validVersion = isValidVersion(machine);
                 // TODO: ping the machine and have a procedure that warns the user this is going to happen:
                 //  also, we should be hooking up a new DNS name to the machine and deleting the one that is in use
                 if (validVersion) {
                     gcloud(true, "instances", "stop", "-q", machine.getHost());
                     machine.setInUse(false);
                     machine.setOnline(false);
+                    // setup new DNS for next user
                     manager.replaceDNS(this, machine);
+                    // put the machine back in the pool
+                    machines.addMachine(machine);
                 } else {
-                    if (machine.getVersion() == null || VERSION.compareTo(machine.getVersion()) > 0) {
+                    // only the leader gets to delete instances.
+                    if (leader.get()) {
                         // only delete versions older than ourselves. we don't want an old controller to touch new machines,
                         // but we do want new controllers to delete old machines!
                         gcloud( true, "instances", "delete", "-q", machine.getHost());
                     }
-                    // mark as "in use" b/c it should not be used anymore
+                    // mark as "in use" b/c it should not be used anymore (it was already removed from the map)
                     machine.setInUse(true);
-                    machines.removeMachine(machine);
                 }
                 if (machines.needsMoreMachines(getPoolBuffer(), getPoolSize(), getMaxPoolSize())) {
                     requestMachine(NameGen.newName(), false);
@@ -394,14 +420,14 @@ public class ClusterController {
                     "-q"
             );
             rawOut = result.out;
-            final String[] lines = result.out.split("\n");
-            if (result.out.contains("not present")) {
+            final String[] lines = rawOut.split("\n");
+            if (rawOut.contains("not present")) {
                 // empty, no parsing...
-                System.out.println("0 active workers found");
+                LOG.info("0 active workers found");
             } else {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("Got " + lines.length + " active workers:");
-                    LOG.trace(result.out);
+                    LOG.trace(rawOut);
                 } else {
                     LOG.info("Got " + lines.length + " total workers (use trace logging to see response)");
                 }
@@ -471,9 +497,8 @@ public class ClusterController {
             e.printStackTrace();
         }
         if (bits[getIndexHostname()].length() > 0) {
-            // hmmm.... we really shouldn't be using custom hostname... it's stuck to machine on creation
-            // for now, we'll just prefer a non-null DomainMapping object, if one is assigned to this instance
-            mach.setDomainName(bits[getIndexHostname()]);
+            // we aren't really setting a string field, rather we're selecting an existing DomainMapping from the object.
+            mach.setDomainName(bits[getIndexHostname()].trim());
         }
         if (bits[getIndexStatus()].length() > 0) {
             mach.setOnline("RUNNING".equals(bits[getIndexStatus()]));
@@ -528,14 +553,14 @@ public class ClusterController {
     }
 
     private boolean isValidVersion(final Machine machine) {
-        return VERSION_MANGLE.equals(machine.getVersion());
+        return machine.getVersion() != null && VERSION_MANGLE.equals(machine.getVersion());
     }
 
     private String getMachineFormatFlag() {
         return "csv[box,no-heading](" +
                 // if you change the order of these arguments, please update the getIndex*() methods below too.
                 "name," +
-                "hostname," +
+                "labels." + LABEL_DOMAIN + "," +
                 "labels." + LABEL_USER + "," +
                 "networkInterfaces[0].accessConfigs[0].natIP," +
                 "labels." + LABEL_PURPOSE + "," +
@@ -560,8 +585,38 @@ public class ClusterController {
     // STOP MORE: The last item in this list should be never-empty, or semantics around length-checking the split() csv line may fail.
     private int getIndexLength() { return 9; }
 
-    private void loadDomains() {
+    private void loadDomainsInitial() {
+        loadDomains();
         latch.countDown();
+        ClusterController.setTimer("Cleanup DNS", ()->{
+            waitUntilReady();
+            waitUntilIpsCreated();
+            // now! map all our known domains to known IP addresses, and delete anything left hanging
+            cleanupDNS();
+        });
+    }
+
+
+    private void loadDomains() {
+        try {
+            final DomainPool domains = manager.getDomainPool();
+            long mark = domains.markAll();
+            Collection<DomainMapping> liveDomains = manager.getAllDNS(false, domains);
+            domains.sweep(mark);
+        } catch (IOException | InterruptedException e) {
+            LOG.error("Error loading domains", e);
+        }
+    }
+
+    private void cleanupDNS() {
+        try {
+            final DomainPool domainPool = manager.getDomainPool();
+            Collection<DomainMapping> domains = manager.getAllDNS(true, domainPool);
+
+        } catch (IOException | InterruptedException e) {
+            LOG.error("Error loading domains", e);
+        }
+
     }
 
     private void loadIpsUnusedInitial() {
@@ -650,7 +705,6 @@ public class ClusterController {
         Optional<Machine> machine = machines.maybeGetMachine(manager);
         if (machine.isPresent()) {
             final Machine mach = machine.get();
-            final IpMapping ip = ips.reserveIp(this, mach);
             moveToRunningState(mach, reserve);
             LOG.info("Sending user to pre-existing machine " + mach);
             return mach;
@@ -709,9 +763,7 @@ public class ClusterController {
                     result.out = "not found"; // this is also found in the real "no machine found" message.
                 } else {
                     result = gcloud(true, "instances", "add-labels", machine.getHost(),
-                            "--labels="
-                                    + LABEL_PURPOSE + "=" + purpose + ","
-                                    + LABEL_LEASE + "=" + toTime(machine.getExpiry())
+                            "--labels=" + LABEL_LEASE + "=" + toTime(machine.getExpiry())
                     );
                 }
                 if (result.code != 0) {
@@ -736,7 +788,6 @@ public class ClusterController {
 
                 assert updated == machine : "Somehow get " + updated + " from pool using supplied " + machine;
 
-                final String[] items = data.split(",");
                 if (machine.isController()) {
                     LOG.warn("Instance " + machine.getHost() + " had label '" + machine.getPurpose() + "' instead of " + purpose + "; forgetting this instance");
                     machines.removeMachine(machine);
@@ -879,6 +930,7 @@ public class ClusterController {
         String uri = "https://" + domainName + "/health";
         final Request req = new Request.Builder().get()
                 .url(uri)
+                .addHeader("User-Agent", "DeephavenBot")
                 .build();
         final Response response;
         try {

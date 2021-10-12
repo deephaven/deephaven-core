@@ -60,7 +60,7 @@ public class MachinePool {
     }
 
     public Optional<Machine> maybeGetMachine(final GoogleDeploymentManager manager) {
-        Machine candidate = null;
+        List<Machine> candidates = new ArrayList<>();
         synchronized (machines) {
             for (Machine next : machines) {
                 if (!next.isInUse()) {
@@ -69,25 +69,21 @@ public class MachinePool {
                         next.setInUse(true);
                         return Optional.of(next);
                     }
-                    candidate = next;
+                    candidates.add(next);
                 }
             }
-        }
-        if (candidate != null) {
-            candidate.setInUse(true);
-            LOG.warn("Sending user a machine we must turn on: " + candidate);
-            try {
-                if (!candidate.isOnline()) {
-                    candidate.setOnline(true);
-                    manager.turnOn(candidate);
-                }
-            } catch (IOException | InterruptedException e) {
-                String msg = "Unable to turn on machine " + candidate;
-                LOG.error(msg, e);
-                throw new IllegalStateException(msg, e);
+            while (!candidates.isEmpty()) {
+                final Machine candidate = candidates.remove(candidates.size() - 1);
+                candidate.setInUse(true);
+                // hm... if synchronized is not enough,
+                // here is where we should try to claim a candidate through a contention-breaking set-label operation...
+                // we don't _really_ want that, though, since there is code that calls us which does not want to publicly reserve a machine.
+
+                LOG.warn("Sending user a machine we must turn on: " + candidate);
+                return Optional.of(candidate);
             }
         }
-        return Optional.ofNullable(candidate);
+        return Optional.empty();
     }
 
     public Stream<Machine> getAllMachines() {

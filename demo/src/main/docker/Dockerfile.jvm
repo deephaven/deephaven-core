@@ -50,6 +50,7 @@ RUN microdnf install  \
       gcc \
       git \
       gnupg \
+      bind-utils \
       ca-certificates ${JAVA_PACKAGE} \
     && microdnf update \
     && microdnf clean all \

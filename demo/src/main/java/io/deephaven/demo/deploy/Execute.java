@@ -81,16 +81,22 @@ result.err);
         return result;
     }
 
-    static ExecutionResult execute(String ... cmd) throws IOException, InterruptedException {
+    public static ExecutionResult execute(String ... cmd) throws IOException, InterruptedException {
         return execute(Arrays.asList(cmd));
     }
-    static ExecutionResult execute(List<String> cmd) throws IOException, InterruptedException {
+    public static ExecutionResult executeQuiet(String ... cmd) throws IOException, InterruptedException {
+        return execute(Arrays.asList(cmd), null, null, null, DO_NOTHING, DO_NOTHING);
+    }
+    public static ExecutionResult execute(List<String> cmd) throws IOException, InterruptedException {
         return execute(cmd, new HashMap<>());
     }
-    static ExecutionResult execute(List<String> cmd, Map<String, String> env) throws IOException, InterruptedException {
+    public static ExecutionResult executeQuiet(List<String> cmd) throws IOException, InterruptedException {
+        return execute(cmd, null, null, null, DO_NOTHING, DO_NOTHING);
+    }
+    public static ExecutionResult execute(List<String> cmd, Map<String, String> env) throws IOException, InterruptedException {
         return execute(cmd, env, null, null, null, null);
     }
-    static ExecutionResult execute(List<String> cmd, Map<String, String> env, File workDir, File saveTo, Consumer<CharSequence> logOut, Consumer<CharSequence> logErr) throws IOException, InterruptedException {
+    public static ExecutionResult execute(List<String> cmd, Map<String, String> env, File workDir, File saveTo, Consumer<CharSequence> logOut, Consumer<CharSequence> logErr) throws IOException, InterruptedException {
         if (env == null) {
             env = new HashMap<>();
         }

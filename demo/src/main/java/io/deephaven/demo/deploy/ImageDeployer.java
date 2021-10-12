@@ -3,10 +3,7 @@ package io.deephaven.demo.deploy;
 import io.deephaven.demo.ClusterController;
 import org.jboss.logging.Logger;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -48,11 +45,14 @@ public class ImageDeployer {
         LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
         // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
         ClusterController.setTimer("Delete " + controllerBox, ()-> {
-            GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", controllerBox);
+            GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q",
+//                    "controller-" + VERSION_MANGLE
+                    controllerBox
+            );
             return "";
         });
-        // no need to offthread, the next "expensive" operation we do is to create a clean box.
-        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
+//        // no need to offthread, the next "expensive" operation we do is to create a clean box.
+//        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
         GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", workerBox);
 
 

@@ -1,5 +1,8 @@
 package io.deephaven.demo.deploy;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * DomainPool:
  * <p>
@@ -9,4 +12,20 @@ package io.deephaven.demo.deploy;
  */
 public class DomainPool {
 
+    private final Map<String, DomainMapping> allDomains = new ConcurrentHashMap<>();
+
+    public long markAll() {
+        long mark = System.currentTimeMillis();
+        allDomains.values().forEach(d->d.setMark(mark));
+        return mark;
+    }
+
+    public void sweep(final long mark) {
+        allDomains.entrySet().removeIf(next -> next.getValue().getMark() < mark);
+    }
+
+    public DomainMapping getOrCreate(final String subdomain, final String domainRoot) {
+        return allDomains.computeIfAbsent(subdomain + "." + domainRoot, missing->
+                new DomainMapping(subdomain, domainRoot));
+    }
 }

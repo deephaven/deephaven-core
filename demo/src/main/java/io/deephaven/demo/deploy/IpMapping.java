@@ -2,11 +2,11 @@ package io.deephaven.demo.deploy;
 
 import io.smallrye.common.constraint.NotNull;
 import io.smallrye.common.constraint.Nullable;
+import org.jboss.logging.Logger;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * IpMapping:
@@ -16,12 +16,16 @@ import java.util.Optional;
  */
 public class IpMapping implements Comparable<IpMapping> {
 
+    private static final Logger LOG = Logger.getLogger(IpMapping.class);
+
     private static final Clock UTC_CLOCK = Clock.systemUTC();
     private String ip;
     private String name;
+    private final Set<DomainMapping> domains = new LinkedHashSet();
     private volatile IpState state;
     private volatile Optional<Machine> instance;
     private volatile Instant lastUsed;
+    private DomainMapping currentDomain;
 
     public IpMapping(@NotNull String name, @Nullable String ip) {
         this.name = name;
@@ -109,5 +113,57 @@ public class IpMapping implements Comparable<IpMapping> {
             return 0;
         }
         return lastUsed.compareTo(other.lastUsed);
+    }
+
+    public DomainMapping getCurrentDomain() {
+        if (currentDomain == null) {
+            synchronized (domains) {
+                // double-checked lock
+                if (currentDomain == null) {
+                    final Iterator<DomainMapping> itr = domains.iterator();
+                    if (!itr.hasNext()) {
+                        return null;
+                    }
+                    currentDomain = itr.next();
+                    itr.remove();
+                }
+            }
+        }
+        return currentDomain;
+    }
+
+    public void expireDomain() {
+        synchronized (domains) {
+            if (currentDomain != null) {
+                domains.remove(currentDomain);
+                currentDomain = null;
+            }
+        }
+    }
+
+    public void addDomainMapping(final DomainMapping domain) {
+        synchronized (domains) {
+            domains.add(domain);
+        }
+    }
+
+    public void selectDomain(final String domainName) {
+        if (domainName.isEmpty()) {
+            return;
+        }
+        for (Iterator<DomainMapping> itr = domains.iterator(); itr.hasNext();) {
+            final DomainMapping next = itr.next();
+            if (domainName.equals(next.getDomainQualified())) {
+                currentDomain = next;
+                itr.remove();
+                return;
+            }
+        }
+        LOG.warnf("Tried to select invalid hostname %s", domainName);
+
+    }
+
+    public int getDomainsAvailable() {
+        return domains.size();
     }
 }

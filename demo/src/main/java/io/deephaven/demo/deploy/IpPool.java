@@ -142,6 +142,9 @@ public class IpPool {
     public IpMapping findByIp(final String ipAddr) {
         IpMapping ip = allIps.get(ipAddr);
         if (ip == null) {
+            if ("false".equals(System.getenv("ALLOW_ADDRESS_LOOKUP"))) {
+                return null;
+            }
             final Execute.ExecutionResult ipLookup;
             try {
                 ipLookup = GoogleDeploymentManager.gcloud(true, false,
@@ -156,6 +159,6 @@ public class IpPool {
                 LOG.errorf("Could not lookup ip %s");
             }
         }
-        return null;
+        return ip;
     }
 }

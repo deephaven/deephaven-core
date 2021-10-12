@@ -12,8 +12,10 @@ import java.io.*;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,6 +45,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
     public static final String DNS_QUAD9 = "9.9.9.9";
     private final String localDir;
     private final IpPool ips;
+    private final DomainPool domains;
     boolean createdNewMachine;
 
     private final GoogleDnsManager dns;
@@ -70,12 +73,21 @@ public class GoogleDeploymentManager implements DeploymentManager {
         return envZone;
     }
 
+    static String getLargeDiskId() {
+        String largeDisk = System.getenv("DH_LARGE_DISK");
+        if (largeDisk == null) {
+            largeDisk = "demo-data-b";
+        }
+        return largeDisk;
+    }
+
     static final long DNS_CHECK_MILLIS = 360_000; // wait up to five minutes for DNS to resolve
 
     public GoogleDeploymentManager(String localDir) {
         this.localDir = localDir;
         dns = new GoogleDnsManager(new File(localDir, "dns"));
         ips = new IpPool();
+        domains = new DomainPool();
         try {
             concatScripts(localDir, "prepare-worker.sh",
                     "script-header.sh",
@@ -107,7 +119,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         dns.tx(tx -> {
             nodes.collect(Collectors.toList()).forEach(node -> {
                 IpMapping nodeIp = node.getIp();
-                final DomainMapping mapping = node.getDomainInUse() == null ? new DomainMapping(node.getHost(), DOMAIN) : node.getDomainInUse();
+                final DomainMapping mapping = node.domain() == null ? node.useNewDomain(ctrl) : node.domain();
                 try {
                     String resolved = getDnsIp(node);
                     if (nodeIp.getIp() == null) {
@@ -316,7 +328,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
     @Override
     public void waitForSsh(Machine node) {
         // note: the TTL for our DNS records is 300s, or 5 minutes.  Thus, we'll wait at least 9 minutes the update to propagate
-        waitForSsh(node, TimeUnit.MINUTES.toMillis(2), TimeUnit.MINUTES.toMillis(9));
+        waitForSsh(node, TimeUnit.MINUTES.toMillis(3), TimeUnit.MINUTES.toMillis(9));
     }
 
     public void waitForSsh(Machine node, long rebootTimeoutMillis, long totalTimeoutMillis) {
@@ -516,7 +528,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
 
         if (!machine.isController()) {
             // non-controller machines attach the demo-data disk, so we can mount it into worker container
-//            cmds.add("--disk=device-name=demo-data,mode=ro,name=demo-data,scope=zonal");
+//            cmds.add("--disk=device-name=large-data,mode=ro,name=" + getLargeDiskId() + ",scope=zonal");
         }
         // apply node-role specific cli arguments
         if (machine.isSnapshotCreate()) {
@@ -601,14 +613,13 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 try {
                     gcloud(false,
                             "instances", "attach-disk", machine.getHost(),
-                            "--disk", "demo-data", "--mode=ro", "--device-name=large-data");
+                            "--disk", getLargeDiskId(), "--mode=ro", "--device-name=large-data");
                 } catch (IOException | InterruptedException e) {
-                    LOG.error("Failed to attach disk demo-data to instance " + machine.getHost(), e);
+                    LOG.errorf(e, "Failed to attach disk %s to instance %s", getLargeDiskId(), machine.getHost());
                 }
             });
         }
 
-        // Parse out the IP address of this machine?
         return true;
     }
 
@@ -820,22 +831,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
      * @param machine
      */
     public void replaceDNS(final ClusterController ctrl, final Machine machine) throws IOException, InterruptedException {
-        final DomainMapping domain = machine.getDomainInUse();
-        String newName = NameGen.newName();
         dns.tx(tx -> {
-            String domainRoot = DOMAIN;
-            final IpMapping machineIp = machine.getIp();
-            if (machineIp.getIp() == null) {
-                ctrl.waitUntilIpsCreated();
-            }
-            if (domain != null) {
-                // throw this domain away!
-                tx.removeRecord(machine.domain(), machineIp.getIp());
-                domainRoot = domain.getDomainRoot();
-            }
-            DomainMapping newDomain = new DomainMapping(newName, domainRoot);
-            machine.setDomainInUse(newDomain);
-            tx.addRecord(machine.domain(), machineIp.getIp());
+            machine.useNewDomain(ctrl);
         });
     }
 
@@ -884,6 +881,117 @@ public class GoogleDeploymentManager implements DeploymentManager {
             }
         }
 
+    }
+
+    public Collection<DomainMapping> getAllDNS(boolean checkOutdated, final DomainPool domains) throws IOException, InterruptedException {
+        Execute.ExecutionResult result = Execute.executeQuiet(Arrays.asList(
+                "gcloud", "dns", "record-sets", "list", "--project=" + getGoogleProject(),
+                 "--zone=" + getDnsZone(), "--format=csv[box,no-heading](name,type,rrdatas[0])"
+        ));
+
+        Map<DomainMapping, String> valid = new ConcurrentHashMap<>();
+        Map<DomainMapping, String> invalid = new ConcurrentHashMap<>();
+        AtomicInteger pending = new AtomicInteger();
+        if (result.code == 0) {
+            for (String line : result.out.split("\n")) {
+                final String[] items = line.split(",");
+                if (items.length == 3) {
+                    if (!"A".equals(items[1].trim())) {
+                        continue;
+                    }
+                    if ((DOMAIN + ".").equals(items[0])) {
+                        // skip the root domain
+                        continue;
+                    }
+                    // skip any domain patterns that we probably shouldn't touch!
+                    switch (items[0].split("-")[0]) {
+                        case "controller":
+                        case "demo":
+                        case "dh":
+                        case "generate":
+                        case "generator":
+                        case "ancestor":
+                        case "jxn":
+                        case "devin":
+                        case "pete":
+                        case "colin":
+                        case "dladner":
+                            continue;
+                    }
+                    String simpleName = items[0].split("[.]")[0];
+                    String domainRoot = DOMAIN.equals(items[0]) ? DOMAIN :
+                            items[0].replace(simpleName + ".", "");
+                    if (domainRoot.endsWith(".")) {
+                        domainRoot = domainRoot.substring(0, domainRoot.length() - 1);
+                    }
+                    DomainMapping domain = domains.getOrCreate(simpleName, domainRoot);
+                    pending.incrementAndGet();
+                    ClusterController.setTimer("Find address for " + items[2], ()->{
+                        final IpMapping ownerIp = ips.findByIp(items[2]);
+                        if (ownerIp == null) {
+                            invalid.put(domain, items[2]);
+                        } else {
+                            valid.put(domain, items[2]);
+                            ownerIp.addDomainMapping(domain);
+                        }
+                        pending.decrementAndGet();
+                        synchronized (pending) {
+                            pending.notifyAll();
+                        }
+                    });
+                } else {
+                    LOG.error("Malformed DNS response line: " + line);
+                }
+            }
+            long deadline = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(2);
+            while (pending.get() > 0) {
+                synchronized (pending) {
+                    pending.wait(1000);
+                }
+                if (System.currentTimeMillis() > deadline) {
+                    LOG.error("Took more than 2 minutes to read DNS... something is wrong!");
+                    break;
+                }
+            }
+            LOG.infof("Found %s valid domains (use trace logging to see more)", valid.size());
+            LOG.infof("Found %s invalid domains (use trace logging to see more)", invalid.size());
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("\n\nVALID DNS RECORDS:\n" +
+                        valid.keySet().stream().map(DomainMapping::toString).collect(Collectors.joining("\n")));
+                LOG.trace("\n\nINVALID DNS RECORDS:\n" +
+                        invalid.entrySet().stream().map(e->
+                                e.getKey() + " -> " + e.getValue()).collect(Collectors.joining("\n")));
+            }
+            if (checkOutdated) {
+                // this check is expensive, we only do it once
+                // badNames are domains that have words we no longer want in a domain name.
+                final Set<String> badNames = checkOutdated ? NameGen.findInvalid(valid.keySet().stream()
+                        .map(DomainMapping::getName)
+                        .collect(Collectors.toList())) : Collections.emptySet();
+                for (Iterator<Map.Entry<DomainMapping, String>> itr = valid.entrySet().iterator();
+                     itr.hasNext();) {
+                    final Map.Entry<DomainMapping, String> maybe = itr.next();
+                    if (badNames.contains(maybe.getKey().getName())) {
+                        itr.remove();
+                        invalid.put(maybe.getKey(), maybe.getValue());
+                    }
+                }
+            }
+
+            if (!invalid.isEmpty()) {
+                dns().tx(tx -> {
+                    for (Map.Entry<DomainMapping, String> item : invalid.entrySet()) {
+                        tx.removeRecord(item.getKey(), item.getValue());
+                    }
+                });
+            }
+
+        }
+        return valid.keySet();
+    }
+
+    public DomainPool getDomainPool() {
+        return domains;
     }
 }
 

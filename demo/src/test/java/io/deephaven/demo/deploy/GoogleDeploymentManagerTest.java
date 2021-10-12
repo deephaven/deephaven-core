@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
 
 /**
  * GoogleDeploymentManagerTest:
@@ -62,7 +61,6 @@ public class GoogleDeploymentManagerTest {
         // you can change this machine name to whatever machine name you want
         final Machine testNode = ctrl.requestMachine("test-jxn", true);
 //        testNode.setController(true); // feel free to use this to get a controller to test.
-        testNode.setDomainName(testNode.getHost() + ".demo.deephaven.app");
         if (!deploy.checkExists(testNode)) {
             deploy.createNew(testNode);
         }

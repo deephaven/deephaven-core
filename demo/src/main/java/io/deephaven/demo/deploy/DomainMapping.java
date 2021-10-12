@@ -13,8 +13,10 @@ import java.util.Objects;
  * <p> References the {@link IpMapping} which backs our DNS A record to a real IP address.
  */
 public class DomainMapping {
+
     private final String name;
     private final String domainRoot;
+    private volatile long mark;
 
     public DomainMapping(final String name, final String domainRoot) {
         this.name = name;
@@ -49,5 +51,13 @@ public class DomainMapping {
     @Override
     public String toString() {
         return getDomainQualified();
+    }
+
+    public long getMark() {
+        return mark;
+    }
+
+    public void setMark(final long mark) {
+        this.mark = mark;
     }
 }

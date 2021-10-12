@@ -3,8 +3,8 @@ package io.deephaven.demo;
 import io.vertx.core.impl.ConcurrentHashSet;
 
 import java.security.SecureRandom;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -41,7 +41,6 @@ public class NameGen {
             "advisory",
             "aesthetic",
             "aggregate",
-            "aggressive",
             "agreed",
             "agricultural",
             "alien",
@@ -63,14 +62,12 @@ public class NameGen {
             "appropriate",
             "approved",
             "architectural",
-            "armed",
             "artificial",
             "artistic",
             "asleep",
             "assistant",
             "associated",
             "astonishing",
-            "atomic",
             "attempted",
             "attractive",
             "automatic",
@@ -78,20 +75,13 @@ public class NameGen {
             "available",
             "awake",
             "aware",
-            "awful",
-            "awkward",
             "back",
             "balanced",
-            "basic",
             "beautiful",
             "beneficial",
             "big",
             "binding",
             "biological",
-            "bitter",
-            "blank",
-            "blonde",
-            "bodily",
             "bold",
             "brave",
             "brief",
@@ -188,11 +178,9 @@ public class NameGen {
             "delightful",
             "democratic",
             "departmental",
-            "dependent",
             "depending",
             "desirable",
             "desired",
-            "desperate",
             "detailed",
             "determined",
             "developed",
@@ -200,12 +188,10 @@ public class NameGen {
             "devoted",
             "different",
             "differential",
-            "difficult",
             "digital",
             "diplomatic",
             "direct",
             "disciplinary",
-            "distant",
             "distinct",
             "distinctive",
             "distinguished",
@@ -409,13 +395,11 @@ public class NameGen {
             "interactive",
             "interested",
             "interesting",
-            "interim",
             "interior",
             "intermediate",
             "international",
             "invisible",
             "involved",
-            "joint",
             "judicial",
             "junior",
             "just",
@@ -662,12 +646,10 @@ public class NameGen {
             "rich",
             "right",
             "rising",
-            "rival",
             "round",
             "royal",
             "ruling",
             "running",
-            "sacred",
             "safe",
             "satisfactory",
             "satisfied",
@@ -1256,14 +1238,12 @@ public class NameGen {
             "cleaner",
             "clearance",
             "clearing",
-            "clergy",
             "clerk",
             "client",
             "cliff",
             "climate",
             "climb",
             "climber",
-            "clinic",
             "clock",
             "closure",
             "cloth",
@@ -1558,9 +1538,7 @@ public class NameGen {
             "doctor",
             "document",
             "documentation",
-            "dog",
             "doing",
-            "doll",
             "dollar",
             "dolphin",
             "domain",
@@ -1843,7 +1821,6 @@ public class NameGen {
             "gallery",
             "gallon",
             "game",
-            "gang",
             "gap",
             "garage",
             "garden",
@@ -1935,7 +1912,6 @@ public class NameGen {
             "harvest",
             "hat",
             "hay",
-            "head",
             "heading",
             "headline",
             "headmaster",
@@ -3103,14 +3079,11 @@ public class NameGen {
             "shower",
             "shrub",
             "side",
-            "siege",
-            "sigh",
             "sight",
             "sign",
             "signal",
             "signature",
             "significance",
-            "silence",
             "silk",
             "silver",
             "similarity",
@@ -3650,6 +3623,10 @@ public class NameGen {
         return newName(rnd.nextInt(), rnd.nextInt());
     }
 
+    public static void reserveName(String name) {
+        usedNames.add(name);
+    }
+
     public static String newName(int adjInd, int nounInd) {
         int myAdj = Math.abs(adjInd) % ADJECTIVES.length;
         int myNoun = Math.abs(nounInd) % NOUNS.length;
@@ -3660,5 +3637,29 @@ public class NameGen {
         return name;
     }
 
+    public static Set<String> findInvalid(Collection<String> source) {
+        Set<String> results = new ConcurrentHashSet<>();
+        Set<String> starts = new HashSet<>(Arrays.asList(ADJECTIVES));
+        Set<String> ends = new HashSet<>(Arrays.asList(NOUNS));
+        source.parallelStream().forEach(item-> {
+            String[] bits = item.split("-");
+            if (bits.length == 2) {
+                if (!starts.contains(bits[0]) || !ends.contains(bits[1])) {
+                    results.add(item);
+                }
+            } else if (bits.length == 3) {
+                if (!(
+                    (starts.contains(bits[0] + "-" + bits[1]) && ends.contains(bits[2]) )
+                    || (starts.contains(bits[0]) && ends.contains(bits[1] + "-" + bits[2]) )
+                )) {
+                    results.add(item);
+                }
+            } else if (!"controller".equals(bits[0])) {
+
+                System.err.println("Generated name of unexpected format: " + item);
+            }
+        });
+        return results;
+    }
 
 }

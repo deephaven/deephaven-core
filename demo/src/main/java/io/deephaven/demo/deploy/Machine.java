@@ -1,11 +1,11 @@
 package io.deephaven.demo.deploy;
 
-import io.deephaven.demo.NameConstants;
+import io.deephaven.demo.ClusterController;
 import io.deephaven.demo.NameGen;
 import io.smallrye.common.constraint.NotNull;
+import org.jboss.logging.Logger;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.Objects;
 
 import static io.deephaven.demo.NameConstants.*;
@@ -18,10 +18,10 @@ import static io.deephaven.demo.NameConstants.*;
  */
 public class Machine {
 
+    private static final Logger LOG = Logger.getLogger(Machine.class);
     static boolean useImages = true;
 
     private String host;
-    private String domainName;
     private IpMapping ip;
     private boolean sshIsReady;
     private boolean controller;
@@ -32,8 +32,6 @@ public class Machine {
     private boolean inUse;
     private long expiry;
     private boolean online;
-    private DomainMapping domainInUse;
-    private final LinkedList<DomainMapping> allDomains = new LinkedList<>();
     private String version;
     private long mark;
     private boolean useImage;
@@ -53,11 +51,12 @@ public class Machine {
     }
 
     public String getDomainName() {
-        return domainInUse == null ? domainName == null ? getHost() + "." + DOMAIN : domainName : domainInUse.getDomainQualified();
+        final DomainMapping dns = domain();
+        return dns == null ? getHost() + "." + DOMAIN : dns.getDomainQualified();
     }
 
     public void setDomainName(final String domainName) {
-        this.domainName = domainName;
+        this.ip.selectDomain(domainName);
     }
 
     public IpMapping getIp() {
@@ -132,7 +131,8 @@ public class Machine {
     @Override
     public String toString() {
         return "Machine{" +
-                getDomainName() + "@ip: " + ip +
+                getHost() +" : " +
+                getDomainName() + " @ " + ip +
                 '}';
     }
 
@@ -160,47 +160,61 @@ public class Machine {
         this.online = online;
     }
 
-    public DomainMapping getDomainInUse() {
-        return domainInUse;
+    public DomainMapping useNewDomain(ClusterController ctrl) {
+        final DomainMapping previous = ip.getCurrentDomain();
+        final GoogleDnsManager dns = ctrl.getDeploymentManager().dns();
+        dns.tx(tx -> {
+            if (previous != null) {
+                tx.removeRecord(previous, getIpAddressBlocking(ctrl));
+            }
+            ip.expireDomain();
+            DomainMapping current = ip.getCurrentDomain();
+            final DomainPool domainPool = ctrl.getDeploymentManager().getDomainPool();
+            if (current == null) {
+                // create a new domain...
+                final String domainRoot = previous == null ? DOMAIN : previous.getDomainRoot();
+                current = domainPool.getOrCreate(NameGen.newName(), domainRoot);
+                ip.addDomainMapping(current);
+                final DomainMapping toAdd = current;
+                tx.addRecord(toAdd, getIpAddressBlocking(ctrl));
+            }
+            // off-thread the "set label on machine pointing to current hostname"
+            final String domainRoot = current.getDomainRoot();
+            ClusterController.setTimer("Set " + getHost() + " domain to " + domain(), ()-> {
+                try {
+                    GoogleDeploymentManager.gcloud(true, "instances", "add-labels", getHost(),
+                            "--labels=" + LABEL_DOMAIN + "=" + domain().getDomainQualified());
+                    // if our IP is running low on DNS names, we should preemptively make a few here.
+                    if (ip.getDomainsAvailable() < 5) {
+                        LOG.infof("IP %s only has %s domains available; adding more", ip, ip.getDomainsAvailable());
+                        dns.tx(t->{
+                            while (ip.getDomainsAvailable() < 5) {
+                                final DomainMapping domain = domainPool.getOrCreate(NameGen.newName(), domainRoot);
+                                ip.addDomainMapping(domain);
+                                tx.addRecord(domain, ip.getIp());
+                            }
+                        });
+                    }
+                } catch (IOException | InterruptedException e) {
+                    LOG.errorf("Unable to label machine %s with domain %s", getHost(), domain());
+                }
+            });
+        });
+        return ip.getCurrentDomain();
     }
 
-    public DomainMapping useNewDomain(GoogleDeploymentManager manager) throws IOException, InterruptedException {
-        final DomainMapping oldest;
-        synchronized (allDomains) {
-            oldest = this.allDomains.pollFirst();
+    public String getIpAddressBlocking(final ClusterController ctrl) {
+        if (ip != null && ip.getIp() == null) {
+            ctrl.waitUntilIpsCreated();
         }
-        if (oldest == null) {
-            // create a new domain...
-            final String domainRoot = this.domainInUse == null ? DOMAIN : domainInUse.getDomainRoot();
-            DomainMapping domain = new DomainMapping(NameGen.newName(), domainRoot);
-            setDomainInUse(domain);
-            manager.dns().tx(tx->tx.addRecord(domain, getIpAddress()));
-            return domain;
-        }
-        return oldest;
+        return getIpAddress();
     }
-
     public String getIpAddress() {
         return ip == null ? null : ip.getIp();
     }
 
-    public void addAvailableDomain(DomainMapping available) {
-        synchronized (this.allDomains) {
-            this.allDomains.add(available);
-        }
-    }
-
-    public void setDomainInUse(final DomainMapping domainInUse) {
-        this.domainInUse = domainInUse;
-        synchronized (allDomains) {
-            if (!this.allDomains.contains(domainInUse)) {
-                this.allDomains.add(domainInUse);
-            }
-        }
-    }
-
     public DomainMapping domain() {
-        return domainInUse == null ? new DomainMapping(host, getDomainName().replace(host + ".", "")) : domainInUse;
+        return ip.getCurrentDomain();
     }
 
     public void setVersion(final String version) {
