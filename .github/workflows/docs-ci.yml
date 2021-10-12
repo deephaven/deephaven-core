@@ -86,7 +86,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: pythonDocs
-          arguments: --scan sphinx:pythonDocs sphinx:pydeephavenDocs
+          arguments: --scan sphinx:pythonDocs sphinx:pydeephavenDocs sphinx:cppClientDocs sphinx:cppExamplesDocs
           gradle-version: wrapper
 
       - name: Deploy Python Docs
@@ -128,7 +128,7 @@ jobs:
         uses: burnett01/rsync-deployments@4.1
         with:
           switches: -avzr --delete
-          path: sphinx/build/cppExampleDocs/
+          path: sphinx/build/cppExamplesDocs/
           remote_path: deephaven-core/client-api/cpp-examples/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
