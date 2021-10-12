@@ -480,7 +480,6 @@ and also will permit some changes not to inform the UI right away that they have
   used when adding new filter and sort operations to the table, as long as they are present.
  * `applyCustomColumns(CustomColumn[]):CustomColumn[]` - Replace the current custom columns with a new set. These columns can be
   used when adding new filter and sort operations to the table, as long as they are present.
- * `createCustomColumn(String name, String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
  * `setViewport(Number firstRow, Number lastRow, Column[]= columns, Number= updateIntervalMs):TableViewportSubscription` - 
  If the columns parameter is not provided, all columns will be used. If the updateIntervalMs parameter is not provided, 
  a default of one second will be used. Until this is called, no data will be available. Invoking this will result in events
@@ -507,7 +506,6 @@ and also will permit some changes not to inform the UI right away that they have
  * `findColumn(String named):Column` - Retrieve a column by the given name.  You should prefer to always retrieve
  a new Column instance instead of caching a returned value.
  * `findColumns(String[] named):Column[]` - Retrieve multiple columns specified by the given names.
- * `formatRowColor(String expression): CustomColumn` - Format entire rows colors using the expression specified. Returns a `CustomColumn` object to apply using `applyCustomColumns` with the parameters specified.
  * `inputTable():Promise<InputTable>` - If .hasInputTable is true, you may call this method to gain access to an
  InputTable object which can be used to mutate the data within the table.  If the table is not an Input Table, the
  promise will be immediately rejected.
@@ -573,6 +571,10 @@ and also will permit some changes not to inform the UI right away that they have
 ##### Class `Column`
 Describes the structure of the column, and if desired can be used to get access to the data to be rendered in this
 column.
+
+###### Static functions
+ * `formatRowColor(String expression): CustomColumn` - Format entire rows colors using the expression specified. Returns a `CustomColumn` object to apply to a table using `applyCustomColumns` with the parameters specified.
+ * `createCustomColumn(String name, String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
 
 ###### Methods
  * `get(Row):Any` - Returns the value for this column in the given row. Type will be consistent with the type of the

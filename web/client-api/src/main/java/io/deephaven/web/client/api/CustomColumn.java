@@ -1,6 +1,7 @@
 package io.deephaven.web.client.api;
 
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.JsPropertyMap;
 
@@ -94,6 +95,12 @@ public class CustomColumn {
         return expression;
     }
 
+    @JsMethod
+    public String valueOf() {
+        return toString();
+    }
+
+    @JsMethod
     @Override
     public String toString() {
         return "" + name + getNameSuffix(type) + "=" + expression;

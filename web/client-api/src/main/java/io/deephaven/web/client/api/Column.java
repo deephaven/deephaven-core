@@ -33,6 +33,16 @@ public class Column {
 
     private String description;
 
+    @JsMethod(namespace = "dh.Column")
+    public static CustomColumn formatRowColor(String expression) {
+        return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    }
+
+    @JsMethod(namespace = "dh.Column")
+    public static CustomColumn createCustomColumn(String name, String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_NEW, expression);
+    }
+
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
             boolean isPartitionColumn, Integer formatStringColumnIndex, String description) {
         this.jsIndex = jsIndex;

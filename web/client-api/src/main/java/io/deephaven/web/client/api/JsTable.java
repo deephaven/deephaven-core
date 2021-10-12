@@ -441,16 +441,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         return Js.cast(JsItr.slice(state().getCustomColumnsObject()));
     }
 
-    @JsMethod
-    public CustomColumn formatRowColor(String expression) {
-        return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression);
-    }
-
-    @JsMethod
-    public CustomColumn createCustomColumn(String name, String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_NEW, expression);
-    }
-
     /**
      * Overload for Java (since JS just omits the optional params)
      */
