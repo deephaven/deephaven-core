@@ -50,6 +50,7 @@ bigdecimal = None
 stringset = None
 datetime = None
 timeperiod = None
+dateformat = None
 byte_array = None
 short_array = None
 int16_array = None
@@ -78,7 +79,7 @@ def _defineSymbols():
         _qst_column_, _qst_newtable_, _qst_type_, _table_, \
         DataType, bool_, byte, short, int16, char, int_, int32, long_, int64, \
         float_, single, float32, double, float64, \
-        string, bigdecimal, stringset, datetime, timeperiod, \
+        string, bigdecimal, stringset, datetime, timeperiod, dateformat, \
         byte_array, short_array, int16_array, int_array, int32_array, long_array, int64_array, \
         float_array, single_array, float32_array, double_array, float64_array, string_array, \
         _type2jtype
@@ -115,6 +116,8 @@ def _defineSymbols():
         stringset =  _typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
         datetime = _typeFromJavaClassName('io.deephaven.db.tables.utils.DBDateTime')
         timeperiod = _typeFromJavaClassName('io.deephaven.db.tables.utils.DBPeriod')
+
+        dateformat = jpy.get_type("java.text.SimpleDateFormat")
 
         # Array types.
         byte_array = DataType(byte.arrayType())
