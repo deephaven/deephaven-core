@@ -39,7 +39,24 @@ trades_stream_view = trades_stream.view("KafkaTimestamp", "Instrument", "Exchang
 \
 \
 \
-Now read in a CSV of batch data sourced on 09/22/2021.
+[Apache Parquet](https://parquet.apache.org/) is a popular columnar storage format.  Deephaven has [a rich Parquet integration](https://deephaven.io/core/docs/how-to-guides/parquet-partitioned/) that takes advantage of Parquet's drectory features and codecs to support sophisticated use cases.
+\
+\
+The simple script below reads in a 10 billion row, one column table.  
+Feel free to scroll around at 
+
+```python
+from deephaven.ParquetTools as pt
+source = pt.readTable("/data/large/misc/10b-x.snappy.parquet")\
+  .restrictSortTo()
+# Allowing users to sort 10 bb rows in the UI is not best practice.
+```
+
+\
+\
+\
+Let's return to our crypto data.
+Read in a CSV of batch crypto data sourced on 09/22/2021.
 
 ```python
 from deephaven.TableTools import readCsv
