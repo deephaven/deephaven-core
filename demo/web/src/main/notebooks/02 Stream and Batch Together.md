@@ -47,11 +47,17 @@ Feel free to scroll around at
 
 ```python
 from deephaven.ParquetTools as pt
-source = pt.readTable("/data/large/misc/10b-x.snappy.parquet")\
+t_parquet = pt.readTable("/data/large/misc/10b-x.snappy.parquet")\
   .restrictSortTo()
 # Allowing users to sort 10 bb rows in the UI is not best practice.
 ```
-
+\
+\
+\
+You can see the row count by hovering on the column header or running this script.
+```python
+t_parquet_row_count = t_parquet.countBy("Row_Count")
+```
 \
 \
 \
