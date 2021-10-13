@@ -1165,6 +1165,17 @@ public class WorkerConnection {
 
         for (ClientTableState state : statesToFlush) {
             if (state.hasNoSubscriptions()) {
+                if (state.isSubscribed()) {
+                    state.setSubscribed(false);
+                    if (state.getHandle().isConnected()) {
+                        BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
+                        if (stream != null) {
+                            stream.end();
+                            stream.cancel();
+                        }
+                    }
+                }
+
                 if (state.isEmpty()) {
                     // completely empty; perform release
                     final ClientTableState.ResolutionState previousState = state.getResolution();
@@ -1177,27 +1188,6 @@ public class WorkerConnection {
                         // don't send a release message to the server if the table isn't really there
                         if (state.getHandle().isConnected()) {
                             releaseHandle(state.getHandle());
-
-                            BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
-                            if (stream != null) {
-                                stream.end();
-                                stream.cancel();
-                            }
-                        }
-                    }
-                } else {
-                    // state is still retained as it is held by at least one paused binding;
-                    // it is either an unsubscribed active table, an interim state for an
-                    // active table, or a pending rollback for an operation that has not
-                    // yet completed (we leave orphaned nodes paused until a request completes).
-                    if (state.isSubscribed()) {
-                        state.setSubscribed(false);
-                        if (state.getHandle().isConnected()) {
-                            BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
-                            if (stream != null) {
-                                stream.end();
-                                stream.cancel();
-                            }
                         }
                     }
                 }
