@@ -3,6 +3,8 @@ package io.deephaven.grpc_api.runner;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.util.AbstractScriptSession;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
+import io.deephaven.db.v2.utils.ProcessMemoryTracker;
+import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.appmode.ApplicationInjector;
 import io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
@@ -97,6 +99,10 @@ public class DeephavenApiServer {
         log.info().append("Starting LTM...").endl();
         ltm.start();
 
+        log.info().append("Starting Performance Trackers...").endl();
+        UpdatePerformanceTracker.start();
+        ProcessMemoryTracker.start();
+
         // inject applications before we start the gRPC server
         applicationInjector.run();
 
@@ -105,25 +111,6 @@ public class DeephavenApiServer {
     }
 
     void startForUnitTests() throws IOException {
-        // log.info().append("Configuring logging...").endl();
-        // logInit.run();
-
-        // MemoryTableLoggers.maybeStartStatsCollection();
-
-        // log.info().append("Creating/Clearing Script Cache...").endl();
-        // AbstractScriptSession.createScriptCache();
-
-        // Don't do script sessions yet...
-        // log.info().append("Initializing Script Session...").endl();
-        // consoleService.initializeGlobalScriptSession();
-
-        // Can't start LTM in Unit test mode ATM
-        // log.info().append("Starting LTM...").endl();
-        // ltm.start();
-
-        // inject applications before we start the gRPC server
-        // applicationInjector.run();
-
         log.info().append("Starting server...").endl();
         server.start();
         healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING);

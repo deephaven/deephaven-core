@@ -232,6 +232,7 @@ class Docker {
         if (cfg.dockerfileAction) {
             dockerfileTask = project.tasks.register("${taskName}Dockerfile", Dockerfile) { dockerfile ->
                 cfg.dockerfileAction.execute(dockerfile)
+                dockerfile.destFile.set new File(dockerWorkspaceContents.path + 'file', 'Dockerfile')
             }
         }
 
@@ -346,22 +347,28 @@ class Docker {
         }
 
         if (!cfg.copyOut) {
-            // make a wrap-up task to clean up the task work, wait until things are finished, since we have nothing to copy out
+            // Make a wrap-up task to clean up the task work, wait until things are finished, since we have nothing to copy out
             return project.tasks.register(taskName) { task ->
                 task.with {
                     if (cfg.entrypoint) {
                         dependsOn containerFinished, containerLogs
                         doLast {
-                            // there was an entrypoint specified, if the command was not successful kill the build once
-                            // we're done copying output
+                            // There was an entrypoint specified, if the command was not successful kill the build once
+                            // we're done copying output. Note that this means the output is actually thrown away (aside
+                            // from being writen to the log this build)
                             if (containerFinished.get().exitCode != 0) {
                                 throw new GradleException("Command '${cfg.entrypoint.join(' ')}' failed with exit code ${containerFinished.get().exitCode}, check logs for details")
                             }
+                            logger.quiet('Entrypoint has been executed, but no output is copied out.')
                         }
                     } else {
                         dependsOn createContainer
                     }
                     finalizedBy removeContainer
+
+                    // We need to declare some output so that other tasks can correctly depend on this. Whether or not
+                    // there is an entrypoint, the last accessible output is the build image, so declare that
+                    outputs.files makeImage.get().outputs.files
                 }
             }
         }

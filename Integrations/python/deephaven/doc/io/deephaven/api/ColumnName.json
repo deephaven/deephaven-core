@@ -6,7 +6,6 @@
   "existingColumn": "The existing column name, from the right table of a join operation.\n\n:return: (io.deephaven.api.ColumnName) the existing column name",
   "expression": "The expression.\n\n:return: (io.deephaven.api.expression.Expression) the expression",
   "input": "The input column.\n\n:return: (io.deephaven.api.ColumnName) the input column",
-  "isValidColumnName": ":param name: java.lang.String\n:return: boolean",
   "isValidParsedColumnName": ":param value: java.lang.String\n:return: boolean",
   "left": "The column from the left table.\n\n:return: (io.deephaven.api.ColumnName) the left column name",
   "name": "The column name.\n\n:return: (java.lang.String) the column name",

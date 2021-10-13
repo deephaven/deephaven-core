@@ -5,8 +5,9 @@
 from abc import ABC
 from typing import List, Any
 
-from pydeephaven._combo_aggs import ComboAggregation
-from pydeephaven.constants import SortDirection, MatchRule, AggType
+from pydeephaven.combo_agg import ComboAggregation
+from pydeephaven.constants import SortDirection, MatchRule
+from pydeephaven._constants import AggType
 from pydeephaven.proto import table_pb2, table_pb2_grpc
 
 

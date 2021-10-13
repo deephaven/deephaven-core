@@ -16,7 +16,7 @@ Examples:
     >>> session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
     >>> table1 = session.import_table(csv.read_csv("data1.csv"))
     >>> table2 = session.import_table(csv.read_csv("data2.csv"))
-    >>> joined_table = table1.join(table2, keys=["key_col_1", "key_col_2"], columns_to_add=["data_col1"])
+    >>> joined_table = table1.join(table2, on=["key_col_1", "key_col_2"], joins=["data_col1"])
     >>> df = joined_table.snapshot().to_pandas()
     >>> print(df)
     >>> session.close()
@@ -25,10 +25,8 @@ Examples:
 from .table import Table
 from .session import Session
 from .dherror import DHError
-from ._combo_aggs import ComboAggregation
+from .combo_agg import ComboAggregation
 from .constants import SortDirection, MatchRule
-from ._table_interface import TableInterface
 from .query import Query
 
-__version__ = "0.5.1"
-__all__ = ["Session", "Table", "Query", "TableInterface", "ComboAggregation", "DHError", "SortDirection", "MatchRule"]
+__version__ = "0.5.2"
