@@ -1165,6 +1165,10 @@ public class WorkerConnection {
 
         for (ClientTableState state : statesToFlush) {
             if (state.hasNoSubscriptions()) {
+                // state may be retained if it is held by at least one paused binding;
+                // it is either an unsubscribed active table, an interim state for an
+                // active table, or a pending rollback for an operation that has not
+                // yet completed (we leave orphaned nodes paused until a request completes).
                 if (state.isSubscribed()) {
                     state.setSubscribed(false);
                     if (state.getHandle().isConnected()) {
