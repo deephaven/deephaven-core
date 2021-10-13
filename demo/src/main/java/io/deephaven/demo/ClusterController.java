@@ -42,11 +42,12 @@ public class ClusterController {
     private final MachinePool machines;
     private final CountDownLatch latch;
     private final OkHttpClient client;
-    private final Lazy<Boolean> leader;
+    private Lazy<Boolean> leader;
     private static ZoneId TZ_NY = ZoneOffset.of("-6");
     private static LocalTime BIZ_START = LocalTime.of(6, 0);
     // We are using NY timezone, but want to cover all N.A. business hours, so our end is 9pm NY
     private static LocalTime BIZ_END = LocalTime.of(21, 0);
+    private long checkLatency = 1;
 
     public ClusterController() {
         this(new GoogleDeploymentManager("/tmp"));
@@ -64,17 +65,8 @@ public class ClusterController {
         this.ips = manager.getIpPool();
         this.machines = new MachinePool();
 
-        // use a Lazy to see if we are the leader
-        leader = new Lazy<>(()->{
-            try {
-                final Execute.ExecutionResult result = Execute.execute("bash", "-c",
-                        "[[ $(dig +short " + DOMAIN + ") == $(dig +short $(hostname)." + DOMAIN + ") ]] && echo leader || echo not");
-                return "leader".equals(result.out.trim());
-            } catch (IOException | InterruptedException e) {
-                LOG.error("Unable to tell if we are leader", e);
-                return false;
-            }
-        });
+        resetLeader();
+
         // resolve the leader off-thread, since there's no need to block now
         setTimer("Leader Check", ()-> {
             if (leader.get()) {
@@ -100,11 +92,27 @@ public class ClusterController {
                         Thread.currentThread().interrupt();
                         return;
                     }
-                    checkState();
-                    monitorLoop();
+                    try {
+                        checkState();
+                    } finally {
+                        monitorLoop();
+                    }
                 });
             });
         }
+    }
+
+    private void resetLeader() {
+        leader = new Lazy<>(()->{
+            try {
+                final Execute.ExecutionResult result = Execute.execute("bash", "-c",
+                        "[[ $(dig +short " + DOMAIN + ") == $(dig +short $(hostname)." + DOMAIN + ") ]] && echo leader || echo not");
+                return "leader".equals(result.out.trim());
+            } catch (IOException | InterruptedException e) {
+                LOG.error("Unable to tell if we are leader", e);
+                return false;
+            }
+        });
     }
 
     public static void setTimer(String name, Callable<?> r) {
@@ -164,7 +172,7 @@ public class ClusterController {
 
     private void monitorLoop() {
         final Vertx vx = Vertx.vertx();
-        vx.setTimer(TimeUnit.MINUTES.toMillis(1), t->{
+        vx.setTimer(TimeUnit.MINUTES.toMillis(checkLatency), t->{
             setTimer("Monitor Loop", ()->{
                 try {
                     checkState();
@@ -176,6 +184,9 @@ public class ClusterController {
     }
 
     private synchronized void checkState() {
+        // make sure to re-check if we are still the leader.
+        // This will prevent an old controller from acting like the leader when a new one is promoted
+        resetLeader();
         setTimer("Check IPs", ()->{
             loadIpsUsed();
             loadIpsUnused();
@@ -324,7 +335,7 @@ public class ClusterController {
                     // mark as "in use" b/c it should not be used anymore (it was already removed from the map)
                     machine.setInUse(true);
                 }
-                if (machines.needsMoreMachines(getPoolBuffer(), getPoolSize(), getMaxPoolSize())) {
+                if (leader.get() && machines.needsMoreMachines(getPoolBuffer(), getPoolSize(), getMaxPoolSize())) {
                     requestMachine(NameGen.newName(), false);
                 }
             } catch (IOException | InterruptedException e) {
@@ -420,6 +431,12 @@ public class ClusterController {
                     "-q"
             );
             rawOut = result.out;
+            if (rawOut.contains("Quota exceeded")) {
+                checkLatency = checkLatency + 1;
+                return;
+            } else {
+                checkLatency = Math.max(1, checkLatency - 1);
+            }
             final String[] lines = rawOut.split("\n");
             if (rawOut.contains("not present")) {
                 // empty, no parsing...
@@ -498,7 +515,8 @@ public class ClusterController {
         }
         if (bits[getIndexHostname()].length() > 0) {
             // we aren't really setting a string field, rather we're selecting an existing DomainMapping from the object.
-            mach.setDomainName(bits[getIndexHostname()].trim());
+            String domain = mach.domain() == null ? DOMAIN : mach.domain().getDomainRoot();
+            mach.setDomainName(bits[getIndexHostname()].trim() + "." + domain);
         }
         if (bits[getIndexStatus()].length() > 0) {
             mach.setOnline("RUNNING".equals(bits[getIndexStatus()]));
@@ -602,6 +620,9 @@ public class ClusterController {
             final DomainPool domains = manager.getDomainPool();
             long mark = domains.markAll();
             Collection<DomainMapping> liveDomains = manager.getAllDNS(false, domains);
+            for (DomainMapping liveDomain : liveDomains) {
+                liveDomain.setMark(mark);
+            }
             domains.sweep(mark);
         } catch (IOException | InterruptedException e) {
             LOG.error("Error loading domains", e);
@@ -631,6 +652,12 @@ public class ClusterController {
                     "--format", "csv[box,no-heading](name,ADDRESS)",
                     "-q"
             );
+            if (result.out.contains("Quota exceeded")) {
+                checkLatency = checkLatency + 1;
+                return;
+            } else {
+                checkLatency = Math.max(1, checkLatency - 1);
+            }
             for (String ipRec : result.out.split("\\s+")) {
                 if (ipRec.isEmpty()) {
                     continue;
@@ -661,6 +688,12 @@ public class ClusterController {
                     "--format", "csv[box,no-heading](name,ADDRESS)",
                     "-q"
             );
+            if (result.out.contains("Quota exceeded")) {
+                checkLatency = checkLatency + 1;
+                return;
+            } else {
+                checkLatency = Math.max(1, checkLatency - 1);
+            }
             for (String ipRec : result.out.split("\\s+")) {
                 ipBits = ipRec.split(",");
                 String name = ipBits[0];

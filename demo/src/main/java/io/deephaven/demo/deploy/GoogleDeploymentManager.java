@@ -120,6 +120,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             nodes.collect(Collectors.toList()).forEach(node -> {
                 IpMapping nodeIp = node.getIp();
                 final DomainMapping mapping = node.domain() == null ? node.useNewDomain(ctrl) : node.domain();
+                LOG.infof("Ensuring node %s has domain name %s", node.getHost(), node.domain());
                 try {
                     String resolved = getDnsIp(node);
                     if (nodeIp.getIp() == null) {
@@ -443,7 +444,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 "gcloud", "compute", "instances", "list", "--project", getGoogleProject(), "--filter", "(name <= " + machine.getHost() + " AND name >= " + machine.getHost() + ")"
          );
         if (result.code != 0) {
-            throw new IllegalStateException("Fatal error trying to check if $dhNode.host exists");
+            throw new IllegalStateException("Fatal error trying to check if " + machine.getHost() + " exists");
         }
         return result.out.length() > 0 && !"Listed 0 items.\n".equals(result.out);
     }
@@ -611,6 +612,9 @@ public class GoogleDeploymentManager implements DeploymentManager {
         if (!machine.isController()) {
             ClusterController.setTimer("Attach Data Disk", ()->{
                 try {
+                    while (gcloudQuiet(true, true, "instances", "describe", machine.getHost(), "--format=value(name)").code != 0) {
+                        Thread.sleep(1000);
+                    }
                     gcloud(false,
                             "instances", "attach-disk", machine.getHost(),
                             "--disk", getLargeDiskId(), "--mode=ro", "--device-name=large-data");
@@ -659,7 +663,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     nodeIp = ips.findByIp(ip);
                     node.setIp(nodeIp);
                 } else {
-                    nodeIp.setIp(ip);
+                    ips.updateOrCreate(nodeIp.getName(), ip);
                 }
             }
         }
@@ -972,6 +976,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                      itr.hasNext();) {
                     final Map.Entry<DomainMapping, String> maybe = itr.next();
                     if (badNames.contains(maybe.getKey().getName())) {
+                        LOG.infof("Removing bad-named domain %s", maybe.getKey());
                         itr.remove();
                         invalid.put(maybe.getKey(), maybe.getValue());
                     }
@@ -979,6 +984,9 @@ public class GoogleDeploymentManager implements DeploymentManager {
             }
 
             if (!invalid.isEmpty()) {
+                if (LOG.isInfoEnabled()) {
+                    LOG.infof("Removing %s invalid domain names: %s", invalid.size(), invalid.keySet().stream().map(DomainMapping::getDomainQualified).collect(Collectors.joining("\n")));
+                }
                 dns().tx(tx -> {
                     for (Map.Entry<DomainMapping, String> item : invalid.entrySet()) {
                         tx.removeRecord(item.getKey(), item.getValue());
@@ -987,6 +995,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             }
 
         }
+        LOG.info("Done checking domains");
         return valid.keySet();
     }
 

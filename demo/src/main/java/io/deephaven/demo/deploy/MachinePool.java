@@ -45,6 +45,7 @@ public class MachinePool {
             machine.setIp(ips.reserveIp(ctrl, machine));
         }
         try {
+            machine.setOnline(true);
             manager.createMachine(machine, ips);
             machines.add(machine);
         } catch (IOException | InterruptedException e) {

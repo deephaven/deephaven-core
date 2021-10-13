@@ -56,7 +56,7 @@ public class Machine {
     }
 
     public void setDomainName(final String domainName) {
-        this.ip.selectDomain(domainName);
+        this.ip.selectDomain(this, domainName);
     }
 
     public IpMapping getIp() {
@@ -125,7 +125,7 @@ public class Machine {
 
     @Override
     public int hashCode() {
-        return Objects.hash(host);
+        return Objects.hash(host) ^ NameGen.getLocalHash();
     }
 
     @Override
@@ -183,7 +183,7 @@ public class Machine {
             ClusterController.setTimer("Set " + getHost() + " domain to " + domain(), ()-> {
                 try {
                     GoogleDeploymentManager.gcloud(true, "instances", "add-labels", getHost(),
-                            "--labels=" + LABEL_DOMAIN + "=" + domain().getDomainQualified());
+                            "--labels=" + LABEL_DOMAIN + "=" + domain().getName());
                     // if our IP is running low on DNS names, we should preemptively make a few here.
                     if (ip.getDomainsAvailable() < 5) {
                         LOG.infof("IP %s only has %s domains available; adding more", ip, ip.getDomainsAvailable());

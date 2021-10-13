@@ -1,6 +1,7 @@
 package io.deephaven.demo.deploy;
 
 import io.deephaven.demo.NameConstants;
+import io.deephaven.demo.NameGen;
 
 import java.util.Objects;
 
@@ -45,7 +46,7 @@ public class DomainMapping {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, domainRoot);
+        return Objects.hash(name, domainRoot) ^ NameGen.getLocalHash();
     }
 
     @Override

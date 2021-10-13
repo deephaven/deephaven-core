@@ -136,6 +136,7 @@ public class IpPool {
     public IpMapping updateOrCreate(final String name, final String addr) {
         final IpMapping ip = allIps.computeIfAbsent(name, n -> new IpMapping(name, addr));
         ip.setIp(addr);
+        allIps.put(addr, ip);
         return ip;
     }
 

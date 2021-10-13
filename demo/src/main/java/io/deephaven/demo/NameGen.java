@@ -2419,13 +2419,10 @@ public class NameGen {
             "neck",
             "need",
             "needle",
-            "neglect",
-            "negligence",
             "negotiation",
             "neighbor",
             "neighborhood",
             "nephew",
-            "nerve",
             "nest",
             "net",
             "network",
@@ -3612,6 +3609,16 @@ public class NameGen {
         // indices,
         // in case there is ever a bug where we need to recreate specific machine names.
         System.out.println("Initialized NameSources from " + MY_NAME);
+    }
+
+    /**
+     * To avoid collision with other controllers, we randomize hashes
+     * with a value that is local to each running controller instance.
+     *
+     * @return The hashCode of {@link #MY_NAME}, to randomize hash ordering
+     */
+    public static int getLocalHash() {
+        return MY_NAME.hashCode();
     }
 
     public static String getMyName() {

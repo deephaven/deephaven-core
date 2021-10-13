@@ -1,5 +1,6 @@
 package io.deephaven.demo.deploy;
 
+import io.deephaven.demo.NameGen;
 import io.smallrye.common.constraint.NotNull;
 import io.smallrye.common.constraint.Nullable;
 import org.jboss.logging.Logger;
@@ -74,7 +75,7 @@ public class IpMapping implements Comparable<IpMapping> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name);
+        return Objects.hash(name) ^ NameGen.getLocalHash();
     }
 
     @Override
@@ -147,8 +148,8 @@ public class IpMapping implements Comparable<IpMapping> {
         }
     }
 
-    public void selectDomain(final String domainName) {
-        if (domainName.isEmpty()) {
+    public void selectDomain(final Machine machine, final String domainName) {
+        if (domainName.isEmpty() || domains.isEmpty()) {
             return;
         }
         for (Iterator<DomainMapping> itr = domains.iterator(); itr.hasNext();) {
@@ -159,11 +160,17 @@ public class IpMapping implements Comparable<IpMapping> {
                 return;
             }
         }
-        LOG.warnf("Tried to select invalid hostname %s", domainName);
+        LOG.warnf("Tried to select invalid hostname %s for machine %s", domainName, machine.getHost());
 
     }
 
     public int getDomainsAvailable() {
         return domains.size();
+    }
+
+    public void setDomain(final DomainMapping domainMapping) {
+        domains.clear();
+        domains.add(domainMapping);
+        currentDomain = null;
     }
 }

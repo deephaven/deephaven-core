@@ -16,7 +16,7 @@ public class DomainPool {
 
     public long markAll() {
         long mark = System.currentTimeMillis();
-        allDomains.values().forEach(d->d.setMark(mark));
+        allDomains.values().forEach(d->d.setMark(mark - 1));
         return mark;
     }
 

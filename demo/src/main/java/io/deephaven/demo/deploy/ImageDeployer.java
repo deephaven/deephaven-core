@@ -42,6 +42,8 @@ public class ImageDeployer {
             throw new IllegalStateException("Snapshot " + SNAPSHOT_NAME + "-worker already exists; please bump your version!");
         }
 
+
+        Machine controller = ctrl.findMachine(controllerBox, true);
         LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
         // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
         ClusterController.setTimer("Delete " + controllerBox, ()-> {
@@ -49,6 +51,12 @@ public class ImageDeployer {
 //                    "controller-" + VERSION_MANGLE
                     controllerBox
             );
+            controller.getIp().setDomain(new DomainMapping(controllerBox, DOMAIN));
+            // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
+            controller.setController(true);
+            controller.setSnapshotCreate(true);
+            manager.assignDns(ctrl, Stream.of(controller));
+
             return "";
         });
 //        // no need to offthread, the next "expensive" operation we do is to create a clean box.
@@ -58,6 +66,8 @@ public class ImageDeployer {
 
         LOG.info("Creating new worker template box");
         Machine worker = ctrl.findMachine(workerBox, true);
+
+        worker.getIp().setDomain(new DomainMapping(workerBox, DOMAIN));
         worker.setSnapshotCreate(true);
         // The manager itself has code to select our prepare-worker.sh script as machine startup script
         manager.createMachine(worker, manager.getIpPool());
@@ -70,27 +80,29 @@ public class ImageDeployer {
 
         finishDeploy("Worker", worker, manager);
 
-        // worker is done, do the controller
+        // worker is done, create the controller (we already setup DNS for it above)
         LOG.info("Creating new controller template box");
-        Machine controller = ctrl.findMachine(controllerBox, true);
-        // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
-        controller.setController(true);
-        controller.setSnapshotCreate(true);
         manager.createMachine(controller, manager.getIpPool());
-        manager.assignDns(ctrl, Stream.of(controller));
+
         manager.waitForSsh(controller, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
         ctrl.waitUntilHealthy(controller);
 
         finishDeploy("Controller", controller, manager);
 
+        LOG.info("Creating new controller-" + VERSION_MANGLE + " box");
         Machine newCtrl = ctrl.findMachine("controller-" + VERSION_MANGLE, true);
         if (newCtrl.getIp() == null) {
             newCtrl.setIp(ctrl.requestIp());
         }
+        LOG.info("Setting up domain for " + newCtrl);
+        newCtrl.getIp().setDomain(new DomainMapping(newCtrl.getHost(), DOMAIN));
         newCtrl.setController(true);
+        LOG.info("Creating " + newCtrl);
         manager.createMachine(newCtrl, manager.getIpPool());
+        LOG.infof("Assign DNS to %s with domain %s", newCtrl.getHost(), newCtrl.domain());
         manager.assignDns(ctrl, Stream.of(newCtrl));
 
+        manager.waitForSsh(newCtrl, TimeUnit.MINUTES.toMillis(3), TimeUnit.MINUTES.toMillis(7));
         LOG.infof("Destroying VMs %s and %s", worker, controller);
         manager.destroyCluster(Arrays.asList(worker, controller), "");
 
