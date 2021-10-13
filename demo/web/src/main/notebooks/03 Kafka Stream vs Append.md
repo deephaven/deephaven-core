@@ -9,7 +9,7 @@ When ingesting a stream, you can choose whether you want to create:
 1. A table that adds new data at the end of the table (_`table_type` = **append**_); or
 2. A table that simply receives the new events, passes them to downstream nodes, and then flushes them (_`table_type` = **stream**_).
 
-That decision can impact memory usage. The code below illustrates the difference, while showing show that either method can provide _**identical aggregation results**_.\
+That decision can impact memory usage. The code below illustrates the difference, while showing that either method can provide _**identical aggregation results**_.\
 \
 \
 \
@@ -27,8 +27,8 @@ import jpy
 \
 \
 \
-The function establishes a [Kafka importer](https://deephaven.io/core/docs/how-to-guides/kafka-stream/) that sources data from a crypto trade recorder we wrote using [the XChange library](https://github.com/knowm/XChange).
-The feed started on September 10th, 2021. A month later it had ~ 110 million events.
+The function below establishes a [Kafka importer](https://deephaven.io/core/docs/how-to-guides/kafka-stream/) that sources data from a crypto trade recorder we wrote using [the XChange library](https://github.com/knowm/XChange).
+The feed started on September 10th, 2021. A month later it had ~ 110 million events. (People like trading crypto apparently.)
 
 [Kafka's docs](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html) describe the parameters and concepts.
 This demo will demonstrate the impact of choices related to `offsets` and `table_type`.
@@ -48,7 +48,7 @@ def get_trades(*, offsets, table_type):
 \
 \
 \
-In this demo, imagine you want to start your Kafka feed "1 million events ago" (instead of "now" or "at the beginning" -- i.e. 09/10/2021 in this case. To do so, you need to find the Kafka offset equivalent to "1 million events ago".
+In this demo, imagine you want to start your Kafka feed "1 million events ago" (instead of "now" or "at the beginning" -- i.e. 09/10/2021 in this case). To do so, you need to find the Kafka offset equivalent to "1 million events ago".
 
 Create a Deephaven table that listens to current records (-- i.e. crypto trades happening now).
 
@@ -128,11 +128,11 @@ row_count_append = trades_append.countBy("RowCount").updateView("Table_Type = `a
 \
 \
 \
-Touch the table tab called `agg_append` to see the Trade\*Count and Total\*Size by Exchange and Instrument (over the last 1 mm-ish trades).
+Touch the table tab called `agg_append` to see the Trade\_Count and Total\_Size by Exchange and Instrument (over the last 1 mm-ish trades).
 \
 \
 \
-For comparison, repeat the exercise, changing only the `table_type` parameter of the Kafka integration to be **\*stream\*** (instead of \_**append**\_).
+For comparison, repeat the exercise, changing only the `table_type` parameter of the Kafka integration to be _**stream**_ (instead of _**append**_).
 
 Note the `dropStream()` syntax.
 
