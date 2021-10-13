@@ -42,9 +42,8 @@ trades_stream_view = trades_stream.view("KafkaTimestamp", "Instrument", "Exchang
 Now read in a CSV of batch data sourced on 09/22/2021.
 
 ```python
-# note this is a placeholder for real csv() upload.)
-# from deephaven import readCsv
-trades_batch_view = trades_stream_view.tail(1000)
+from deephaven.TableTools import readCsv
+trades_batch_view = readCsv("/data/large/crypto/CryptoTrades_20210922.csv")
 ```
 
 \
@@ -75,7 +74,7 @@ The following scripts will demonstrate much the same with two examples:
 from deephaven.DBTimeUtils import formatDate
 
 add_column_streaming = trades_stream_view.updateView("Date = formatDate(KafkaTimestamp, TZ_NY)")
-add_column_batch     = trades_batch_view .updateView("Date = formatDate(KafkaTimestamp, TZ_NY)")
+add_column_batch     = trades_batch_view .updateView("Date = formatDate(Timestamp, TZ_NY)")
 
 # the table aggregation
 from deephaven import ComboAggregateFactory as caf
