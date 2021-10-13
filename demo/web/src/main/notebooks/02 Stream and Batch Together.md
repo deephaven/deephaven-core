@@ -47,7 +47,7 @@ Feel free to scroll around at
 
 ```python
 from deephaven import ParquetTools as pt
-t_parquet = pt.readTable("/data/large/misc/1m-x.snappy.parquet").coalesce().restrictSortTo()
+t_parquet = pt.readTable("/data/large/misc/10b-x.snappy.parquet").coalesce().restrictSortTo()
 # Allowing users to sort 10 bb rows in the UI is not best practice.
 ```
 \
