@@ -32,6 +32,7 @@ static const char* SessionService_method_names[] = {
   "/io.deephaven.proto.backplane.grpc.SessionService/Release",
   "/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket",
   "/io.deephaven.proto.backplane.grpc.SessionService/ExportNotifications",
+  "/io.deephaven.proto.backplane.grpc.SessionService/TerminationNotification",
 };
 
 std::unique_ptr< SessionService::Stub> SessionService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -47,6 +48,7 @@ SessionService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& cha
   , rpcmethod_Release_(SessionService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_ExportFromTicket_(SessionService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_ExportNotifications_(SessionService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_TerminationNotification_(SessionService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status SessionService::Stub::NewSession(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest& request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response) {
@@ -180,6 +182,29 @@ void SessionService::Stub::experimental_async::ExportNotifications(::grpc::Clien
   return ::grpc::internal::ClientAsyncReaderFactory< ::io::deephaven::proto::backplane::grpc::ExportNotification>::Create(channel_.get(), cq, rpcmethod_ExportNotifications_, context, request, false, nullptr);
 }
 
+::grpc::Status SessionService::Stub::TerminationNotification(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest& request, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_TerminationNotification_, context, request, response);
+}
+
+void SessionService::Stub::experimental_async::TerminationNotification(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* request, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_TerminationNotification_, context, request, response, std::move(f));
+}
+
+void SessionService::Stub::experimental_async::TerminationNotification(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* request, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_TerminationNotification_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse>* SessionService::Stub::PrepareAsyncTerminationNotificationRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_TerminationNotification_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse>* SessionService::Stub::AsyncTerminationNotificationRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncTerminationNotificationRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 SessionService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       SessionService_method_names[0],
@@ -241,6 +266,16 @@ SessionService::Service::Service() {
              ::grpc::ServerWriter<::io::deephaven::proto::backplane::grpc::ExportNotification>* writer) {
                return service->ExportNotifications(ctx, req, writer);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      SessionService_method_names[6],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< SessionService::Service, ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](SessionService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* req,
+             ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* resp) {
+               return service->TerminationNotification(ctx, req, resp);
+             }, this)));
 }
 
 SessionService::Service::~Service() {
@@ -285,6 +320,13 @@ SessionService::Service::~Service() {
   (void) context;
   (void) request;
   (void) writer;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status SessionService::Service::TerminationNotification(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* request, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 

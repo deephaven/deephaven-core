@@ -101,7 +101,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT CustomInfoDefaultTypeInternal _
 constexpr TableInfo::TableInfo(
   ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
   : schema_header_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
-  , size_(PROTOBUF_LONGLONG(0))
+  , size_(int64_t{0})
   , is_static_(false){}
 struct TableInfoDefaultTypeInternal {
   constexpr TableInfoDefaultTypeInternal()
@@ -138,11 +138,13 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_deephaven_2fproto_2fapplicatio
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, created_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, updated_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, removed_),
@@ -151,6 +153,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_deephaven_2fproto_2fapplicatio
   ~0u,  // no _extensions_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo_FieldType, _oneof_case_[0]),
   ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
   ::PROTOBUF_NAMESPACE_ID::internal::kInvalidFieldOffsetTag,
   ::PROTOBUF_NAMESPACE_ID::internal::kInvalidFieldOffsetTag,
   ::PROTOBUF_NAMESPACE_ID::internal::kInvalidFieldOffsetTag,
@@ -160,6 +163,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_deephaven_2fproto_2fapplicatio
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, ticket_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, field_name_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, field_type_),
@@ -171,17 +175,20 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_deephaven_2fproto_2fapplicatio
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::CustomInfo, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::CustomInfo, type_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TableInfo, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TableInfo, schema_header_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TableInfo, is_static_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TableInfo, size_),
@@ -190,16 +197,17 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_deephaven_2fproto_2fapplicatio
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, sizeof(::io::deephaven::proto::backplane::grpc::ListFieldsRequest)},
-  { 5, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate)},
-  { 13, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldInfo_FieldType)},
-  { 22, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldInfo)},
-  { 33, -1, sizeof(::io::deephaven::proto::backplane::grpc::RemovedField)},
-  { 38, -1, sizeof(::io::deephaven::proto::backplane::grpc::CustomInfo)},
-  { 44, -1, sizeof(::io::deephaven::proto::backplane::grpc::TableInfo)},
-  { 52, -1, sizeof(::io::deephaven::proto::backplane::grpc::FigureInfo)},
+  { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ListFieldsRequest)},
+  { 6, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate)},
+  { 15, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldInfo_FieldType)},
+  { 25, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldInfo)},
+  { 37, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RemovedField)},
+  { 43, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CustomInfo)},
+  { 50, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TableInfo)},
+  { 59, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FigureInfo)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -253,10 +261,8 @@ const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_deepha
   schemas, file_default_instances, TableStruct_deephaven_2fproto_2fapplication_2eproto::offsets,
   file_level_metadata_deephaven_2fproto_2fapplication_2eproto, file_level_enum_descriptors_deephaven_2fproto_2fapplication_2eproto, file_level_service_descriptors_deephaven_2fproto_2fapplication_2eproto,
 };
-PROTOBUF_ATTRIBUTE_WEAK ::PROTOBUF_NAMESPACE_ID::Metadata
-descriptor_table_deephaven_2fproto_2fapplication_2eproto_metadata_getter(int index) {
-  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2fapplication_2eproto);
-  return descriptor_table_deephaven_2fproto_2fapplication_2eproto.file_level_metadata[index];
+PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter() {
+  return &descriptor_table_deephaven_2fproto_2fapplication_2eproto;
 }
 
 // Force running AddDescriptors() at dynamic initialization time.
@@ -273,156 +279,38 @@ class ListFieldsRequest::_Internal {
  public:
 };
 
-ListFieldsRequest::ListFieldsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
-  SharedCtor();
-  RegisterArenaDtor(arena);
+ListFieldsRequest::ListFieldsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
 }
 ListFieldsRequest::ListFieldsRequest(const ListFieldsRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
 }
 
-void ListFieldsRequest::SharedCtor() {
-}
 
-ListFieldsRequest::~ListFieldsRequest() {
-  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
 
-void ListFieldsRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
-}
 
-void ListFieldsRequest::ArenaDtor(void* object) {
-  ListFieldsRequest* _this = reinterpret_cast< ListFieldsRequest* >(object);
-  (void)_this;
-}
-void ListFieldsRequest::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
-void ListFieldsRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
 
-void ListFieldsRequest::Clear() {
-// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ListFieldsRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ListFieldsRequest::GetClassData() const { return &_class_data_; }
 
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
 
-const char* ListFieldsRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-  }  // while
-success:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto success;
-#undef CHK_
-}
 
-::PROTOBUF_NAMESPACE_ID::uint8* ListFieldsRequest::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
 
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  return target;
-}
 
-size_t ListFieldsRequest::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  size_t total_size = 0;
 
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
-}
-
-void ListFieldsRequest::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  GOOGLE_DCHECK_NE(&from, this);
-  const ListFieldsRequest* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<ListFieldsRequest>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-    MergeFrom(*source);
-  }
-}
-
-void ListFieldsRequest::MergeFrom(const ListFieldsRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
-
-}
-
-void ListFieldsRequest::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-void ListFieldsRequest::CopyFrom(const ListFieldsRequest& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool ListFieldsRequest::IsInitialized() const {
-  return true;
-}
-
-void ListFieldsRequest::InternalSwap(ListFieldsRequest* other) {
-  using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-}
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ListFieldsRequest::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2fapplication_2eproto[0]);
 }
-
 
 // ===================================================================
 
@@ -430,13 +318,16 @@ class FieldsChangeUpdate::_Internal {
  public:
 };
 
-FieldsChangeUpdate::FieldsChangeUpdate(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+FieldsChangeUpdate::FieldsChangeUpdate(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
   created_(arena),
   updated_(arena),
   removed_(arena) {
   SharedCtor();
-  RegisterArenaDtor(arena);
+  if (!is_message_owned) {
+    RegisterArenaDtor(arena);
+  }
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
 }
 FieldsChangeUpdate::FieldsChangeUpdate(const FieldsChangeUpdate& from)
@@ -453,12 +344,13 @@ void FieldsChangeUpdate::SharedCtor() {
 
 FieldsChangeUpdate::~FieldsChangeUpdate() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
+  if (GetArenaForAllocation() != nullptr) return;
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void FieldsChangeUpdate::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
+inline void FieldsChangeUpdate::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
 }
 
 void FieldsChangeUpdate::ArenaDtor(void* object) {
@@ -488,7 +380,6 @@ const char* FieldsChangeUpdate::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
     switch (tag >> 3) {
       // repeated .io.deephaven.proto.backplane.grpc.FieldInfo created = 1;
       case 1:
@@ -500,7 +391,8 @@ const char* FieldsChangeUpdate::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // repeated .io.deephaven.proto.backplane.grpc.FieldInfo updated = 2;
       case 2:
@@ -512,7 +404,8 @@ const char* FieldsChangeUpdate::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // repeated .io.deephaven.proto.backplane.grpc.FieldInfo removed = 3;
       case 3:
@@ -524,27 +417,29 @@ const char* FieldsChangeUpdate::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
-      default: {
-      handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-      }
+      default:
+        goto handle_unusual;
     }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
   }  // while
-success:
+message_done:
   return ptr;
 failure:
   ptr = nullptr;
-  goto success;
+  goto message_done;
 #undef CHK_
 }
 
@@ -615,47 +510,32 @@ size_t FieldsChangeUpdate::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
 }
 
-void FieldsChangeUpdate::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-  GOOGLE_DCHECK_NE(&from, this);
-  const FieldsChangeUpdate* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<FieldsChangeUpdate>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-    MergeFrom(*source);
-  }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FieldsChangeUpdate::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    FieldsChangeUpdate::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FieldsChangeUpdate::GetClassData() const { return &_class_data_; }
+
+void FieldsChangeUpdate::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<FieldsChangeUpdate *>(to)->MergeFrom(
+      static_cast<const FieldsChangeUpdate &>(from));
 }
+
 
 void FieldsChangeUpdate::MergeFrom(const FieldsChangeUpdate& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
   created_.MergeFrom(from.created_);
   updated_.MergeFrom(from.updated_);
   removed_.MergeFrom(from.removed_);
-}
-
-void FieldsChangeUpdate::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void FieldsChangeUpdate::CopyFrom(const FieldsChangeUpdate& from) {
@@ -671,16 +551,17 @@ bool FieldsChangeUpdate::IsInitialized() const {
 
 void FieldsChangeUpdate::InternalSwap(FieldsChangeUpdate* other) {
   using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   created_.InternalSwap(&other->created_);
   updated_.InternalSwap(&other->updated_);
   removed_.InternalSwap(&other->removed_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata FieldsChangeUpdate::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2fapplication_2eproto[1]);
 }
-
 
 // ===================================================================
 
@@ -704,11 +585,11 @@ FieldInfo_FieldType::_Internal::figure(const FieldInfo_FieldType* msg) {
   return *msg->field_.figure_;
 }
 void FieldInfo_FieldType::set_allocated_custom(::io::deephaven::proto::backplane::grpc::CustomInfo* custom) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   clear_field();
   if (custom) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(custom);
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper<::io::deephaven::proto::backplane::grpc::CustomInfo>::GetOwningArena(custom);
     if (message_arena != submessage_arena) {
       custom = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
           message_arena, custom, submessage_arena);
@@ -719,11 +600,11 @@ void FieldInfo_FieldType::set_allocated_custom(::io::deephaven::proto::backplane
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType.custom)
 }
 void FieldInfo_FieldType::set_allocated_table(::io::deephaven::proto::backplane::grpc::TableInfo* table) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   clear_field();
   if (table) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(table);
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper<::io::deephaven::proto::backplane::grpc::TableInfo>::GetOwningArena(table);
     if (message_arena != submessage_arena) {
       table = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
           message_arena, table, submessage_arena);
@@ -734,11 +615,11 @@ void FieldInfo_FieldType::set_allocated_table(::io::deephaven::proto::backplane:
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType.table)
 }
 void FieldInfo_FieldType::set_allocated_figure(::io::deephaven::proto::backplane::grpc::FigureInfo* figure) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   clear_field();
   if (figure) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(figure);
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper<::io::deephaven::proto::backplane::grpc::FigureInfo>::GetOwningArena(figure);
     if (message_arena != submessage_arena) {
       figure = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
           message_arena, figure, submessage_arena);
@@ -748,10 +629,13 @@ void FieldInfo_FieldType::set_allocated_figure(::io::deephaven::proto::backplane
   }
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType.figure)
 }
-FieldInfo_FieldType::FieldInfo_FieldType(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+FieldInfo_FieldType::FieldInfo_FieldType(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor();
-  RegisterArenaDtor(arena);
+  if (!is_message_owned) {
+    RegisterArenaDtor(arena);
+  }
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType)
 }
 FieldInfo_FieldType::FieldInfo_FieldType(const FieldInfo_FieldType& from)
@@ -784,12 +668,13 @@ clear_has_field();
 
 FieldInfo_FieldType::~FieldInfo_FieldType() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType)
+  if (GetArenaForAllocation() != nullptr) return;
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void FieldInfo_FieldType::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
+inline void FieldInfo_FieldType::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   if (has_field()) {
     clear_field();
   }
@@ -809,19 +694,19 @@ void FieldInfo_FieldType::clear_field() {
 // @@protoc_insertion_point(one_of_clear_start:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType)
   switch (field_case()) {
     case kCustom: {
-      if (GetArena() == nullptr) {
+      if (GetArenaForAllocation() == nullptr) {
         delete field_.custom_;
       }
       break;
     }
     case kTable: {
-      if (GetArena() == nullptr) {
+      if (GetArenaForAllocation() == nullptr) {
         delete field_.table_;
       }
       break;
     }
     case kFigure: {
-      if (GetArena() == nullptr) {
+      if (GetArenaForAllocation() == nullptr) {
         delete field_.figure_;
       }
       break;
@@ -849,48 +734,51 @@ const char* FieldInfo_FieldType::_InternalParse(const char* ptr, ::PROTOBUF_NAME
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
     switch (tag >> 3) {
       // .io.deephaven.proto.backplane.grpc.CustomInfo custom = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_custom(), ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // .io.deephaven.proto.backplane.grpc.TableInfo table = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_table(), ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // .io.deephaven.proto.backplane.grpc.FigureInfo figure = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
           ptr = ctx->ParseMessage(_internal_mutable_figure(), ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
-      default: {
-      handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-      }
+      default:
+        goto handle_unusual;
     }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
   }  // while
-success:
+message_done:
   return ptr;
 failure:
   ptr = nullptr;
-  goto success;
+  goto message_done;
 #undef CHK_
 }
 
@@ -966,34 +854,25 @@ size_t FieldInfo_FieldType::ByteSizeLong() const {
       break;
     }
   }
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
 }
 
-void FieldInfo_FieldType::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType)
-  GOOGLE_DCHECK_NE(&from, this);
-  const FieldInfo_FieldType* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<FieldInfo_FieldType>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType)
-    MergeFrom(*source);
-  }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FieldInfo_FieldType::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    FieldInfo_FieldType::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FieldInfo_FieldType::GetClassData() const { return &_class_data_; }
+
+void FieldInfo_FieldType::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<FieldInfo_FieldType *>(to)->MergeFrom(
+      static_cast<const FieldInfo_FieldType &>(from));
 }
+
 
 void FieldInfo_FieldType::MergeFrom(const FieldInfo_FieldType& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -1014,13 +893,7 @@ void FieldInfo_FieldType::MergeFrom(const FieldInfo_FieldType& from) {
       break;
     }
   }
-}
-
-void FieldInfo_FieldType::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:io.deephaven.proto.backplane.grpc.FieldInfo.FieldType)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void FieldInfo_FieldType::CopyFrom(const FieldInfo_FieldType& from) {
@@ -1036,15 +909,16 @@ bool FieldInfo_FieldType::IsInitialized() const {
 
 void FieldInfo_FieldType::InternalSwap(FieldInfo_FieldType* other) {
   using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(field_, other->field_);
   swap(_oneof_case_[0], other->_oneof_case_[0]);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata FieldInfo_FieldType::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2fapplication_2eproto[2]);
 }
-
 
 // ===================================================================
 
@@ -1063,15 +937,18 @@ FieldInfo::_Internal::field_type(const FieldInfo* msg) {
   return *msg->field_type_;
 }
 void FieldInfo::clear_ticket() {
-  if (GetArena() == nullptr && ticket_ != nullptr) {
+  if (GetArenaForAllocation() == nullptr && ticket_ != nullptr) {
     delete ticket_;
   }
   ticket_ = nullptr;
 }
-FieldInfo::FieldInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+FieldInfo::FieldInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor();
-  RegisterArenaDtor(arena);
+  if (!is_message_owned) {
+    RegisterArenaDtor(arena);
+  }
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.FieldInfo)
 }
 FieldInfo::FieldInfo(const FieldInfo& from)
@@ -1080,22 +957,22 @@ FieldInfo::FieldInfo(const FieldInfo& from)
   field_name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_field_name().empty()) {
     field_name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_field_name(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   field_description_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_field_description().empty()) {
     field_description_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_field_description(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   application_name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_application_name().empty()) {
     application_name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_application_name(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   application_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_application_id().empty()) {
     application_id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_application_id(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   if (from._internal_has_ticket()) {
     ticket_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.ticket_);
@@ -1123,12 +1000,13 @@ application_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStr
 
 FieldInfo::~FieldInfo() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.FieldInfo)
+  if (GetArenaForAllocation() != nullptr) return;
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void FieldInfo::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
+inline void FieldInfo::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   field_name_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   field_description_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   application_name_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
@@ -1157,11 +1035,11 @@ void FieldInfo::Clear() {
   field_description_.ClearToEmpty();
   application_name_.ClearToEmpty();
   application_id_.ClearToEmpty();
-  if (GetArena() == nullptr && ticket_ != nullptr) {
+  if (GetArenaForAllocation() == nullptr && ticket_ != nullptr) {
     delete ticket_;
   }
   ticket_ = nullptr;
-  if (GetArena() == nullptr && field_type_ != nullptr) {
+  if (GetArenaForAllocation() == nullptr && field_type_ != nullptr) {
     delete field_type_;
   }
   field_type_ = nullptr;
@@ -1173,14 +1051,14 @@ const char* FieldInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
     switch (tag >> 3) {
       // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_ticket(), ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // string field_name = 2;
       case 2:
@@ -1189,14 +1067,16 @@ const char* FieldInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.FieldInfo.field_name"));
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // .io.deephaven.proto.backplane.grpc.FieldInfo.FieldType field_type = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
           ptr = ctx->ParseMessage(_internal_mutable_field_type(), ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // string field_description = 4;
       case 4:
@@ -1205,7 +1085,8 @@ const char* FieldInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.FieldInfo.field_description"));
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // string application_name = 5;
       case 5:
@@ -1214,7 +1095,8 @@ const char* FieldInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.FieldInfo.application_name"));
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // string application_id = 6;
       case 6:
@@ -1223,27 +1105,29 @@ const char* FieldInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.FieldInfo.application_id"));
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
-      default: {
-      handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-      }
+      default:
+        goto handle_unusual;
     }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
   }  // while
-success:
+message_done:
   return ptr;
 failure:
   ptr = nullptr;
-  goto success;
+  goto message_done;
 #undef CHK_
 }
 
@@ -1254,7 +1138,7 @@ failure:
   (void) cached_has_bits;
 
   // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
-  if (this->has_ticket()) {
+  if (this->_internal_has_ticket()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
@@ -1262,7 +1146,7 @@ failure:
   }
 
   // string field_name = 2;
-  if (this->field_name().size() > 0) {
+  if (!this->_internal_field_name().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_field_name().data(), static_cast<int>(this->_internal_field_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
@@ -1272,7 +1156,7 @@ failure:
   }
 
   // .io.deephaven.proto.backplane.grpc.FieldInfo.FieldType field_type = 3;
-  if (this->has_field_type()) {
+  if (this->_internal_has_field_type()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
@@ -1280,7 +1164,7 @@ failure:
   }
 
   // string field_description = 4;
-  if (this->field_description().size() > 0) {
+  if (!this->_internal_field_description().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_field_description().data(), static_cast<int>(this->_internal_field_description().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
@@ -1290,7 +1174,7 @@ failure:
   }
 
   // string application_name = 5;
-  if (this->application_name().size() > 0) {
+  if (!this->_internal_application_name().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_application_name().data(), static_cast<int>(this->_internal_application_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
@@ -1300,7 +1184,7 @@ failure:
   }
 
   // string application_id = 6;
-  if (this->application_id().size() > 0) {
+  if (!this->_internal_application_id().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_application_id().data(), static_cast<int>(this->_internal_application_id().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
@@ -1326,103 +1210,88 @@ size_t FieldInfo::ByteSizeLong() const {
   (void) cached_has_bits;
 
   // string field_name = 2;
-  if (this->field_name().size() > 0) {
+  if (!this->_internal_field_name().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_field_name());
   }
 
   // string field_description = 4;
-  if (this->field_description().size() > 0) {
+  if (!this->_internal_field_description().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_field_description());
   }
 
   // string application_name = 5;
-  if (this->application_name().size() > 0) {
+  if (!this->_internal_application_name().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_application_name());
   }
 
   // string application_id = 6;
-  if (this->application_id().size() > 0) {
+  if (!this->_internal_application_id().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_application_id());
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
-  if (this->has_ticket()) {
+  if (this->_internal_has_ticket()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *ticket_);
   }
 
   // .io.deephaven.proto.backplane.grpc.FieldInfo.FieldType field_type = 3;
-  if (this->has_field_type()) {
+  if (this->_internal_has_field_type()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *field_type_);
   }
 
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
 }
 
-void FieldInfo::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:io.deephaven.proto.backplane.grpc.FieldInfo)
-  GOOGLE_DCHECK_NE(&from, this);
-  const FieldInfo* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<FieldInfo>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:io.deephaven.proto.backplane.grpc.FieldInfo)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:io.deephaven.proto.backplane.grpc.FieldInfo)
-    MergeFrom(*source);
-  }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FieldInfo::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    FieldInfo::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FieldInfo::GetClassData() const { return &_class_data_; }
+
+void FieldInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<FieldInfo *>(to)->MergeFrom(
+      static_cast<const FieldInfo &>(from));
 }
+
 
 void FieldInfo::MergeFrom(const FieldInfo& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FieldInfo)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.field_name().size() > 0) {
+  if (!from._internal_field_name().empty()) {
     _internal_set_field_name(from._internal_field_name());
   }
-  if (from.field_description().size() > 0) {
+  if (!from._internal_field_description().empty()) {
     _internal_set_field_description(from._internal_field_description());
   }
-  if (from.application_name().size() > 0) {
+  if (!from._internal_application_name().empty()) {
     _internal_set_application_name(from._internal_application_name());
   }
-  if (from.application_id().size() > 0) {
+  if (!from._internal_application_id().empty()) {
     _internal_set_application_id(from._internal_application_id());
   }
-  if (from.has_ticket()) {
+  if (from._internal_has_ticket()) {
     _internal_mutable_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_ticket());
   }
-  if (from.has_field_type()) {
+  if (from._internal_has_field_type()) {
     _internal_mutable_field_type()->::io::deephaven::proto::backplane::grpc::FieldInfo_FieldType::MergeFrom(from._internal_field_type());
   }
-}
-
-void FieldInfo::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:io.deephaven.proto.backplane.grpc.FieldInfo)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void FieldInfo::CopyFrom(const FieldInfo& from) {
@@ -1438,11 +1307,29 @@ bool FieldInfo::IsInitialized() const {
 
 void FieldInfo::InternalSwap(FieldInfo* other) {
   using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  field_name_.Swap(&other->field_name_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  field_description_.Swap(&other->field_description_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  application_name_.Swap(&other->application_name_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  application_id_.Swap(&other->application_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &field_name_, lhs_arena,
+      &other->field_name_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &field_description_, lhs_arena,
+      &other->field_description_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &application_name_, lhs_arena,
+      &other->application_name_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &application_id_, lhs_arena,
+      &other->application_id_, rhs_arena
+  );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(FieldInfo, field_type_)
       + sizeof(FieldInfo::field_type_)
@@ -1452,9 +1339,10 @@ void FieldInfo::InternalSwap(FieldInfo* other) {
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata FieldInfo::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2fapplication_2eproto[3]);
 }
-
 
 // ===================================================================
 
@@ -1462,156 +1350,38 @@ class RemovedField::_Internal {
  public:
 };
 
-RemovedField::RemovedField(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
-  SharedCtor();
-  RegisterArenaDtor(arena);
+RemovedField::RemovedField(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.RemovedField)
 }
 RemovedField::RemovedField(const RemovedField& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.RemovedField)
 }
 
-void RemovedField::SharedCtor() {
-}
 
-RemovedField::~RemovedField() {
-  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.RemovedField)
-  SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
 
-void RemovedField::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
-}
 
-void RemovedField::ArenaDtor(void* object) {
-  RemovedField* _this = reinterpret_cast< RemovedField* >(object);
-  (void)_this;
-}
-void RemovedField::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
-void RemovedField::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
 
-void RemovedField::Clear() {
-// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.RemovedField)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData RemovedField::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*RemovedField::GetClassData() const { return &_class_data_; }
 
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
 
-const char* RemovedField::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-  }  // while
-success:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto success;
-#undef CHK_
-}
 
-::PROTOBUF_NAMESPACE_ID::uint8* RemovedField::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.RemovedField)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
 
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.RemovedField)
-  return target;
-}
 
-size_t RemovedField::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.RemovedField)
-  size_t total_size = 0;
 
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
-}
-
-void RemovedField::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:io.deephaven.proto.backplane.grpc.RemovedField)
-  GOOGLE_DCHECK_NE(&from, this);
-  const RemovedField* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<RemovedField>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:io.deephaven.proto.backplane.grpc.RemovedField)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:io.deephaven.proto.backplane.grpc.RemovedField)
-    MergeFrom(*source);
-  }
-}
-
-void RemovedField::MergeFrom(const RemovedField& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.RemovedField)
-  GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
-
-}
-
-void RemovedField::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:io.deephaven.proto.backplane.grpc.RemovedField)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-void RemovedField::CopyFrom(const RemovedField& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.RemovedField)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool RemovedField::IsInitialized() const {
-  return true;
-}
-
-void RemovedField::InternalSwap(RemovedField* other) {
-  using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-}
 
 ::PROTOBUF_NAMESPACE_ID::Metadata RemovedField::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2fapplication_2eproto[4]);
 }
-
 
 // ===================================================================
 
@@ -1619,10 +1389,13 @@ class CustomInfo::_Internal {
  public:
 };
 
-CustomInfo::CustomInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+CustomInfo::CustomInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor();
-  RegisterArenaDtor(arena);
+  if (!is_message_owned) {
+    RegisterArenaDtor(arena);
+  }
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.CustomInfo)
 }
 CustomInfo::CustomInfo(const CustomInfo& from)
@@ -1631,7 +1404,7 @@ CustomInfo::CustomInfo(const CustomInfo& from)
   type_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_type().empty()) {
     type_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_type(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.CustomInfo)
 }
@@ -1642,12 +1415,13 @@ type_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlready
 
 CustomInfo::~CustomInfo() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.CustomInfo)
+  if (GetArenaForAllocation() != nullptr) return;
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void CustomInfo::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
+inline void CustomInfo::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   type_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
@@ -1676,7 +1450,6 @@ const char* CustomInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID:
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
     switch (tag >> 3) {
       // string type = 1;
       case 1:
@@ -1685,27 +1458,29 @@ const char* CustomInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID:
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.CustomInfo.type"));
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
-      default: {
-      handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-      }
+      default:
+        goto handle_unusual;
     }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
   }  // while
-success:
+message_done:
   return ptr;
 failure:
   ptr = nullptr;
-  goto success;
+  goto message_done;
 #undef CHK_
 }
 
@@ -1716,7 +1491,7 @@ failure:
   (void) cached_has_bits;
 
   // string type = 1;
-  if (this->type().size() > 0) {
+  if (!this->_internal_type().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_type().data(), static_cast<int>(this->_internal_type().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
@@ -1742,53 +1517,38 @@ size_t CustomInfo::ByteSizeLong() const {
   (void) cached_has_bits;
 
   // string type = 1;
-  if (this->type().size() > 0) {
+  if (!this->_internal_type().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_type());
   }
 
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
 }
 
-void CustomInfo::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:io.deephaven.proto.backplane.grpc.CustomInfo)
-  GOOGLE_DCHECK_NE(&from, this);
-  const CustomInfo* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<CustomInfo>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:io.deephaven.proto.backplane.grpc.CustomInfo)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:io.deephaven.proto.backplane.grpc.CustomInfo)
-    MergeFrom(*source);
-  }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData CustomInfo::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    CustomInfo::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*CustomInfo::GetClassData() const { return &_class_data_; }
+
+void CustomInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<CustomInfo *>(to)->MergeFrom(
+      static_cast<const CustomInfo &>(from));
 }
+
 
 void CustomInfo::MergeFrom(const CustomInfo& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.CustomInfo)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.type().size() > 0) {
+  if (!from._internal_type().empty()) {
     _internal_set_type(from._internal_type());
   }
-}
-
-void CustomInfo::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:io.deephaven.proto.backplane.grpc.CustomInfo)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void CustomInfo::CopyFrom(const CustomInfo& from) {
@@ -1804,14 +1564,21 @@ bool CustomInfo::IsInitialized() const {
 
 void CustomInfo::InternalSwap(CustomInfo* other) {
   using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  type_.Swap(&other->type_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &type_, lhs_arena,
+      &other->type_, rhs_arena
+  );
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata CustomInfo::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2fapplication_2eproto[5]);
 }
-
 
 // ===================================================================
 
@@ -1819,10 +1586,13 @@ class TableInfo::_Internal {
  public:
 };
 
-TableInfo::TableInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+TableInfo::TableInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor();
-  RegisterArenaDtor(arena);
+  if (!is_message_owned) {
+    RegisterArenaDtor(arena);
+  }
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.TableInfo)
 }
 TableInfo::TableInfo(const TableInfo& from)
@@ -1831,7 +1601,7 @@ TableInfo::TableInfo(const TableInfo& from)
   schema_header_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_schema_header().empty()) {
     schema_header_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_schema_header(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   ::memcpy(&size_, &from.size_,
     static_cast<size_t>(reinterpret_cast<char*>(&is_static_) -
@@ -1849,12 +1619,13 @@ schema_header_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStri
 
 TableInfo::~TableInfo() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.TableInfo)
+  if (GetArenaForAllocation() != nullptr) return;
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void TableInfo::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
+inline void TableInfo::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   schema_header_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
@@ -1886,7 +1657,6 @@ const char* TableInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
     switch (tag >> 3) {
       // bytes schema_header = 1;
       case 1:
@@ -1894,41 +1664,45 @@ const char* TableInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
           auto str = _internal_mutable_schema_header();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // bool is_static = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
           is_static_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
       // sint64 size = 3 [jstype = JS_STRING];
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
           size_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
-      default: {
-      handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-      }
+      default:
+        goto handle_unusual;
     }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
   }  // while
-success:
+message_done:
   return ptr;
 failure:
   ptr = nullptr;
-  goto success;
+  goto message_done;
 #undef CHK_
 }
 
@@ -1939,19 +1713,19 @@ failure:
   (void) cached_has_bits;
 
   // bytes schema_header = 1;
-  if (this->schema_header().size() > 0) {
+  if (!this->_internal_schema_header().empty()) {
     target = stream->WriteBytesMaybeAliased(
         1, this->_internal_schema_header(), target);
   }
 
   // bool is_static = 2;
-  if (this->is_static() != 0) {
+  if (this->_internal_is_static() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(2, this->_internal_is_static(), target);
   }
 
   // sint64 size = 3 [jstype = JS_STRING];
-  if (this->size() != 0) {
+  if (this->_internal_size() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteSInt64ToArray(3, this->_internal_size(), target);
   }
@@ -1973,71 +1747,54 @@ size_t TableInfo::ByteSizeLong() const {
   (void) cached_has_bits;
 
   // bytes schema_header = 1;
-  if (this->schema_header().size() > 0) {
+  if (!this->_internal_schema_header().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_schema_header());
   }
 
   // sint64 size = 3 [jstype = JS_STRING];
-  if (this->size() != 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SInt64Size(
-        this->_internal_size());
+  if (this->_internal_size() != 0) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SInt64SizePlusOne(this->_internal_size());
   }
 
   // bool is_static = 2;
-  if (this->is_static() != 0) {
+  if (this->_internal_is_static() != 0) {
     total_size += 1 + 1;
   }
 
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
 }
 
-void TableInfo::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:io.deephaven.proto.backplane.grpc.TableInfo)
-  GOOGLE_DCHECK_NE(&from, this);
-  const TableInfo* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<TableInfo>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:io.deephaven.proto.backplane.grpc.TableInfo)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:io.deephaven.proto.backplane.grpc.TableInfo)
-    MergeFrom(*source);
-  }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TableInfo::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    TableInfo::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TableInfo::GetClassData() const { return &_class_data_; }
+
+void TableInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<TableInfo *>(to)->MergeFrom(
+      static_cast<const TableInfo &>(from));
 }
+
 
 void TableInfo::MergeFrom(const TableInfo& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TableInfo)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.schema_header().size() > 0) {
+  if (!from._internal_schema_header().empty()) {
     _internal_set_schema_header(from._internal_schema_header());
   }
-  if (from.size() != 0) {
+  if (from._internal_size() != 0) {
     _internal_set_size(from._internal_size());
   }
-  if (from.is_static() != 0) {
+  if (from._internal_is_static() != 0) {
     _internal_set_is_static(from._internal_is_static());
   }
-}
-
-void TableInfo::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:io.deephaven.proto.backplane.grpc.TableInfo)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void TableInfo::CopyFrom(const TableInfo& from) {
@@ -2053,8 +1810,14 @@ bool TableInfo::IsInitialized() const {
 
 void TableInfo::InternalSwap(TableInfo* other) {
   using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  schema_header_.Swap(&other->schema_header_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &schema_header_, lhs_arena,
+      &other->schema_header_, rhs_arena
+  );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(TableInfo, is_static_)
       + sizeof(TableInfo::is_static_)
@@ -2064,9 +1827,10 @@ void TableInfo::InternalSwap(TableInfo* other) {
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata TableInfo::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2fapplication_2eproto[6]);
 }
-
 
 // ===================================================================
 
@@ -2074,156 +1838,38 @@ class FigureInfo::_Internal {
  public:
 };
 
-FigureInfo::FigureInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
-  SharedCtor();
-  RegisterArenaDtor(arena);
+FigureInfo::FigureInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.FigureInfo)
 }
 FigureInfo::FigureInfo(const FigureInfo& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.FigureInfo)
 }
 
-void FigureInfo::SharedCtor() {
-}
 
-FigureInfo::~FigureInfo() {
-  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.FigureInfo)
-  SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
 
-void FigureInfo::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
-}
 
-void FigureInfo::ArenaDtor(void* object) {
-  FigureInfo* _this = reinterpret_cast< FigureInfo* >(object);
-  (void)_this;
-}
-void FigureInfo::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
-void FigureInfo::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
 
-void FigureInfo::Clear() {
-// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.FigureInfo)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FigureInfo::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FigureInfo::GetClassData() const { return &_class_data_; }
 
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
 
-const char* FigureInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-  }  // while
-success:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto success;
-#undef CHK_
-}
 
-::PROTOBUF_NAMESPACE_ID::uint8* FigureInfo::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.FigureInfo)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
 
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.FigureInfo)
-  return target;
-}
 
-size_t FigureInfo::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.FigureInfo)
-  size_t total_size = 0;
 
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
-}
-
-void FigureInfo::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:io.deephaven.proto.backplane.grpc.FigureInfo)
-  GOOGLE_DCHECK_NE(&from, this);
-  const FigureInfo* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<FigureInfo>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:io.deephaven.proto.backplane.grpc.FigureInfo)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:io.deephaven.proto.backplane.grpc.FigureInfo)
-    MergeFrom(*source);
-  }
-}
-
-void FigureInfo::MergeFrom(const FigureInfo& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FigureInfo)
-  GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
-
-}
-
-void FigureInfo::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:io.deephaven.proto.backplane.grpc.FigureInfo)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-void FigureInfo::CopyFrom(const FigureInfo& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.FigureInfo)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool FigureInfo::IsInitialized() const {
-  return true;
-}
-
-void FigureInfo::InternalSwap(FigureInfo* other) {
-  using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-}
 
 ::PROTOBUF_NAMESPACE_ID::Metadata FigureInfo::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2fapplication_2eproto[7]);
 }
-
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace grpc
