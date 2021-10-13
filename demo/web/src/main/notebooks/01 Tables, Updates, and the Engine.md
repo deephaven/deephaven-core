@@ -37,7 +37,7 @@ trades_stream = trades_stream.reverse()
 \
 \
 \
-You have likely observed Deephaven's **_1st_ Fundamental Concept_**:\
+You have likely observed Deephaven's **_1st Fundamental Concept_**:\
 Tables and streams are a single abstraction. Event streams, feeds, [soon] CDC, and other dynamic data are simply represented as incremental updates to a table. ([This write-up](https://deephaven.io/core/docs/conceptual/table-update-model/) describe's the table update model fundamental to this design.)
 
 You can readily see that your table grows as greater volumes of data are inherited from the Kafka feed.
@@ -67,9 +67,9 @@ row_count_by_instrument = trades_stream.countBy("Tot_Rows", "Instrument")\
 \
 \
 \
-USDT is a cryptocurrency pinned to the dollar.  Pretend you wnat to consider them one in the same.\
+USDT is a cryptocurrency pinned to the dollar.  Pretend you want to consider USD and USDT one in the same.\
 Below is one way to use a replace() method to swap one for the other.\
-To learn more about updateView (or other selection or projection alternatives, refer to [the docs](https://deephaven.io/core/docs/conceptual/choose-select-view-update/).
+To learn more about updateView (or other selection or projection alternatives), refer to [the docs](https://deephaven.io/core/docs/conceptual/choose-select-view-update/).
 
 ```python
 trades_stream_cleaner = trades_stream.updateView("Instrument = Instrument.replace(`USDT`, `USD`)")
@@ -113,7 +113,7 @@ multi_agg_row_0 = multi_agg.whereIn(top_instrument, "Instrument")\
 \
 \
 \
-[Joining streams](https://deephaven.io/core/docs/how-to-guides/joins-overview/) is one of Deephaven's superpowers . Deephaven supports high-performance joins that are both relational in nature ...
+[Joining streams](https://deephaven.io/core/docs/how-to-guides/joins-overview/) is one of Deephaven's superpowers . Deephaven supports both high-performance joins that are (i) relational in nature .......
 
 ```python
 join_eth_btc = multi_agg_eth.view("TimeBin", "Eth_Avg_Price = Avg_Price")\
@@ -124,7 +124,7 @@ join_eth_btc = multi_agg_eth.view("TimeBin", "Eth_Avg_Price = Avg_Price")\
 \
 \
 \
-... or [time series joins](https://deephaven.io/core/docs/reference/table-operations/join/aj/), where two sets of data are correlated to one another based on timestamps. The code below shows the last trade price and size of BTC at the time of each ETH trade event.
+... and (ii) [time series joins](https://deephaven.io/core/docs/reference/table-operations/join/aj/), where two sets of data are correlated to one another based on timestamps. The code below shows the last trade price and size of BTC at the time of each ETH trade event.
 
 ```python
 # Time series 'as-of' join that looks for the exact Eth_Time from the left table (eth_trades) in the
