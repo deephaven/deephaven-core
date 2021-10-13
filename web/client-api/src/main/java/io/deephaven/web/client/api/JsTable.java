@@ -409,7 +409,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 return obj.toString();
             }
 
-            return (new CustomColumn((JsPropertyMap<Object>)obj)).toString();
+            return (new CustomColumn((JsPropertyMap<Object>) obj)).toString();
         }).toArray(String[]::new);
         final List<CustomColumnDescriptor> newCustomColumns = CustomColumnDescriptor.from(customColumnStrings);
 

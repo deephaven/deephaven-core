@@ -8,9 +8,9 @@ import jsinterop.base.JsPropertyMap;
 public class CustomColumn {
     @JsProperty(namespace = "dh.CustomColumn")
     public static final String TYPE_FORMAT_COLOR = "FORMAT_COLOR",
-        TYPE_FORMAT_NUMBER = "FORMAT_NUMBER",
-        TYPE_FORMAT_DATE = "FORMAT_DATE",
-        TYPE_NEW = "NEW";
+            TYPE_FORMAT_NUMBER = "FORMAT_NUMBER",
+            TYPE_FORMAT_DATE = "FORMAT_DATE",
+            TYPE_NEW = "NEW";
 
     // Copied from ColumnFormattingValues
     public static final String ROW_FORMAT_NAME = "__ROWFORMATTED";
@@ -20,6 +20,7 @@ public class CustomColumn {
 
     /**
      * Get the suffix to append to the name for the provided type
+     * 
      * @param type The type of format, see TYPE_*
      * @return The suffix to append to the name for the provided type
      */
