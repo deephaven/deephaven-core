@@ -46,9 +46,8 @@ The simple script below reads in a 10 billion row, one column table.
 Feel free to scroll around at 
 
 ```python
-from deephaven.ParquetTools as pt
-t_parquet = pt.readTable("/data/large/misc/10b-x.snappy.parquet")\
-  .restrictSortTo()
+from deephaven import ParquetTools as pt
+t_parquet = pt.readTable("/data/large/misc/1m-x.snappy.parquet").coalesce().restrictSortTo()
 # Allowing users to sort 10 bb rows in the UI is not best practice.
 ```
 \
