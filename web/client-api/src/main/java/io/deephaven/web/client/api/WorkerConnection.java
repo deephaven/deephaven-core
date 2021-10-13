@@ -1177,6 +1177,12 @@ public class WorkerConnection {
                         // don't send a release message to the server if the table isn't really there
                         if (state.getHandle().isConnected()) {
                             releaseHandle(state.getHandle());
+
+                            BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
+                            if (stream != null) {
+                                stream.end();
+                                stream.cancel();
+                            }
                         }
                     }
                 } else {
