@@ -53,7 +53,7 @@ arrow::Status doit(const TableHandleManager &manager, const std::string csvfn) {
 
   auto chunks = arrow_table->columns();
   const size_t ncols = chunks.size();
-  const size_t nchunks = chunks[0]->length();
+  const size_t nchunks = chunks[0]->num_chunks();
   std::vector<std::shared_ptr<arrow::Array>> chunk(ncols);
   for (size_t i = 0; i < nchunks; ++i) {
     for (size_t j = 0; j < ncols; ++j) {

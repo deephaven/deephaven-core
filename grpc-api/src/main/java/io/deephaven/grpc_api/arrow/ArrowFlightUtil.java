@@ -319,8 +319,10 @@ public class ArrowFlightUtil {
                     resultTable.dropReference();
                     GrpcUtil.safelyExecuteLocked(observer, observer::onCompleted);
                     return resultTable;
-                }), () -> GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed"));
-                resultExportBuilder = null;
+                }), () -> {
+                    GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed");
+                    resultExportBuilder = null;
+                });
             });
         }
 
