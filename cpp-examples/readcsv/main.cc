@@ -16,19 +16,26 @@
 using deephaven::client::highlevel::TableHandleManager;
 using deephaven::client::highlevel::Client;
 using deephaven::client::utility::flight::statusOrDie;
+using deephaven::client::utility::flight::valueOrDie;
 
 arrow::Status doit(const TableHandleManager &manager, const std::string csvfn) {
   arrow::io::IOContext io_context = arrow::io::default_io_context();
-  ARROW_ASSIGN_OR_RAISE(auto input_file,
-                        arrow::io::ReadableFile::Open(csvfn));
-  ARROW_ASSIGN_OR_RAISE(
-      auto csv_reader,
-      arrow::csv::TableReader::Make(arrow::io::default_io_context(),
-                                    input_file,
-                                    arrow::csv::ReadOptions::Defaults(),
-                                    arrow::csv::ParseOptions::Defaults(),
-                                    arrow::csv::ConvertOptions::Defaults()));
-  ARROW_ASSIGN_OR_RAISE(auto arrow_table, csv_reader->Read());
+  auto input_file = valueOrDie(
+    arrow::io::ReadableFile::Open(csvfn),
+    "arrow::io::ReadableFile::Open(csvfn)"
+  );
+  auto csv_reader = valueOrDie(
+     arrow::csv::TableReader::Make(
+       arrow::io::default_io_context(),
+       input_file,
+       arrow::csv::ReadOptions::Defaults(),
+       arrow::csv::ParseOptions::Defaults(),
+       arrow::csv::ConvertOptions::Defaults()
+    ),
+    "arrow::csv::TableReader::Make"
+  );
+    
+  auto arrow_table = valueOrDie(csv_reader->Read(), "csv_reader->Read()");
   //  ARROW_RETURN_NOT_OK(arrow::PrettyPrint(arrow_table, {}, &std::cout));
 
   auto wrapper = manager.createFlightWrapper();
