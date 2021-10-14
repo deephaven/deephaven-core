@@ -45,15 +45,15 @@ arrow::Status doit(const TableHandleManager &manager, const std::string csvfn) {
   auto chunks = arrow_table->columns();
   const size_t ncols = chunks.size();
   const size_t nchunks = chunks[0]->length();
+  std::vector<std::shared_ptr<arrow::Array>> chunk(ncols);
   for (size_t i = 0; i < nchunks; ++i) {
-    std::vector<std::shared_ptr<arrow::Array>> chunk(ncols);
     for (size_t j = 0; j < ncols; ++j) {
       chunk[j] = chunks[i]->chunk(j);
     }
     auto batch = arrow::RecordBatch::Make(arrow_table->schema(), chunk[0]->length(), chunk);
     statusOrDie(fsw->WriteRecordBatch(*batch), "WriteRecordBatch failed");
   }
-    
+
   statusOrDie(fsw->DoneWriting(), "DoneWriting failed");
 
   std::shared_ptr<arrow::Buffer> buf;
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
   try {
     auto st = doit(manager, argv[1]);
     if (!st.ok()) {
-      std::cerr << "Failed with status " << st.ToString() << std::endl;
+      std::cerr << "Failed with status " << st << std::endl;
     }
   } catch (const std::runtime_error &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
