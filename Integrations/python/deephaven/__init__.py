@@ -13,6 +13,8 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * DBTimeUtils imported as dbtu
 
+* java as java
+
 * MovingAverages imported as mavg
 
 * npy as npy
@@ -60,7 +62,7 @@ __all__ = [
     'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
     'LayoutHintBuilder', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
+    "cals", "caf", "dbtu", "figw", "java", "mavg", "npy", "plt", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
 ]
 
 
@@ -90,7 +92,8 @@ from . import Calendars as cals, \
     ParquetTools as pt, \
     TableTools as ttools, \
     TableLoggers as tloggers, \
-    Types as dh
+    Types as dh, \
+    java as java
 
 from .Plot import figure_wrapper as figw
 
@@ -107,6 +110,7 @@ def initialize():
     caf._defineSymbols()
     dbtu._defineSymbols()
     dh._defineSymbols()
+    java._defineSymbols()
     kt._defineSymbols()
     mavg._defineSymbols()
     plt._defineSymbols()
