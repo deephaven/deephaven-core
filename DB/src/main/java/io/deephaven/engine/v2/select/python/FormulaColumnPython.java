@@ -31,7 +31,8 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     private boolean initialized;
 
-    private FormulaColumnPython(String columnName, io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction dcf) {
+    private FormulaColumnPython(String columnName,
+            io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction dcf) {
         super(columnName, "<python-formula>", true);
         this.dcf = Objects.requireNonNull(dcf);
     }

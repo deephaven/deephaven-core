@@ -15,7 +15,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * An {@link AggregationContextFactory} used in the implementation of {@link io.deephaven.engine.tables.Table#applyToAllBy}.
+ * An {@link AggregationContextFactory} used in the implementation of
+ * {@link io.deephaven.engine.tables.Table#applyToAllBy}.
  */
 public class FormulaAggregationFactory implements AggregationContextFactory {
 

@@ -26,9 +26,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A table operation similar to {@link io.deephaven.engine.tables.Table#where(String...)} except that instead of filtering
- * the rows in the table, it appends new columns containing the result of the filter evaluation on each row of the
- * table. It will re-evaluate cell values if any of the underlying filters are dynamic, and change.
+ * A table operation similar to {@link io.deephaven.engine.tables.Table#where(String...)} except that instead of
+ * filtering the rows in the table, it appends new columns containing the result of the filter evaluation on each row of
+ * the table. It will re-evaluate cell values if any of the underlying filters are dynamic, and change.
  */
 public class WouldMatchOperation implements QueryTable.MemoizableOperation<QueryTable> {
     private static final ReadOnlyIndex EMPTY_INDEX = Index.FACTORY.getEmptyIndex();
@@ -166,8 +166,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     /**
-     * A {@link MergedListener} implementation for {@link io.deephaven.engine.tables.Table#wouldMatch(WouldMatchPair...)}
-     * when the parent table is ticking.
+     * A {@link MergedListener} implementation for
+     * {@link io.deephaven.engine.tables.Table#wouldMatch(WouldMatchPair...)} when the parent table is ticking.
      */
     private class Listener extends MergedListener {
         final ListenerRecorder recorder;
@@ -212,8 +212,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     /**
-     * A {@link MergedListener} implementation for {@link io.deephaven.engine.tables.Table#wouldMatch(WouldMatchPair...)}
-     * when * the parent table is static (not ticking).
+     * A {@link MergedListener} implementation for
+     * {@link io.deephaven.engine.tables.Table#wouldMatch(WouldMatchPair...)} when * the parent table is static (not
+     * ticking).
      */
     private class StaticListener extends MergedListener {
         StaticListener(@NotNull List<NotificationQueue.Dependency> dependencies) {

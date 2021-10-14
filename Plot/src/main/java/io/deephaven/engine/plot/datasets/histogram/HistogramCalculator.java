@@ -73,7 +73,8 @@ public class HistogramCalculator {
 
     private static Table range(final double rangeMin, final double rangeMax, final int nbins) {
         return TableTools.emptyTable(1)
-                .update("Range = new io.deephaven.engine.plot.datasets.histogram.DiscretizedRangeEqual(" + rangeMin + ","
+                .update("Range = new io.deephaven.engine.plot.datasets.histogram.DiscretizedRangeEqual(" + rangeMin
+                        + ","
                         + rangeMax + "," + nbins + ")");
     }
 

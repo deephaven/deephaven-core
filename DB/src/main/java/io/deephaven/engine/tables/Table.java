@@ -748,8 +748,9 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @AsyncMethod
     default Table formatColumnWhere(String columnName, String condition, String formula) {
-        return formatColumns(columnName + " = (" + condition + ") ? io.deephaven.engine.util.DBColorUtil.toLong(" + formula
-                + ") : io.deephaven.engine.util.DBColorUtil.toLong(NO_FORMATTING)");
+        return formatColumns(
+                columnName + " = (" + condition + ") ? io.deephaven.engine.util.DBColorUtil.toLong(" + formula
+                        + ") : io.deephaven.engine.util.DBColorUtil.toLong(NO_FORMATTING)");
     }
 
     /**

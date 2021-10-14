@@ -379,8 +379,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a distinct aggregation.
      *
-     * The output column contains a {@link io.deephaven.engine.tables.dbarrays.DbArrayBase} with the distinct values for the
-     * input column within the group.
+     * The output column contains a {@link io.deephaven.engine.tables.dbarrays.DbArrayBase} with the distinct values for
+     * the input column within the group.
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
@@ -394,8 +394,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create a distinct aggregation.
      *
-     * The output column contains a {@link io.deephaven.engine.tables.dbarrays.DbArrayBase} with the distinct values for the
-     * input column within the group.
+     * The output column contains a {@link io.deephaven.engine.tables.dbarrays.DbArrayBase} with the distinct values for
+     * the input column within the group.
      *
      * @param countNulls if true, then null values are included in the result, otherwise null values are ignored
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have

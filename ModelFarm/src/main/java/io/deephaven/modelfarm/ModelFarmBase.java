@@ -45,8 +45,9 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
 
     /**
      * An operation that uses data from Deephaven {@link io.deephaven.engine.tables.Table Tables}, using either
-     * {@link io.deephaven.engine.v2.sources.ColumnSource#getPrev} or {@link io.deephaven.engine.v2.sources.ColumnSource#get})
-     * depending on the value of the argument to {@link #retrieveData}.
+     * {@link io.deephaven.engine.v2.sources.ColumnSource#getPrev} or
+     * {@link io.deephaven.engine.v2.sources.ColumnSource#get}) depending on the value of the argument to
+     * {@link #retrieveData}.
      */
     @FunctionalInterface
     interface QueryDataRetrievalOperation {

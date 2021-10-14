@@ -26,7 +26,8 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.v2.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
 /**
- * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link io.deephaven.engine.tables.Table#by}.
+ * An {@link IterativeChunkedAggregationOperator} used in the implementation of
+ * {@link io.deephaven.engine.tables.Table#by}.
  */
 public final class ByChunkedOperator implements IterativeChunkedAggregationOperator {
 

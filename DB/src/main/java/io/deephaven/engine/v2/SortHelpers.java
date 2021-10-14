@@ -415,7 +415,8 @@ public class SortHelpers {
 
             // Fill a chunk that is Writable, and does not have an ordered tag with the index keys that we are sorting,
             // the
-            // index would does something very similar inside of io.deephaven.engine.v2.utils.OrderedKeys.asKeyIndicesChunk;
+            // index would does something very similar inside of
+            // io.deephaven.engine.v2.utils.OrderedKeys.asKeyIndicesChunk;
             // but provides a LongChunk<OrderedKeyIndices> as its return.
             final long[] indexKeysArray = new long[sortSize];
             final WritableLongChunk<KeyIndices> indexKeys = WritableLongChunk.writableChunkWrap(indexKeysArray);

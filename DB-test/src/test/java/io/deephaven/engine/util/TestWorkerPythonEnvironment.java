@@ -53,7 +53,8 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
     }
 
     public void testEmptyTable() throws IOException {
-        WorkerPythonEnvironment.DEFAULT.eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
+        WorkerPythonEnvironment.DEFAULT
+                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
         WorkerPythonEnvironment.DEFAULT.eval("et = TableTools.emptyTable(2).update(\"A=k\")");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("et");
         assertTrue(result instanceof Table);
@@ -62,7 +63,8 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
     }
 
     public void testUpdateList() throws IOException {
-        WorkerPythonEnvironment.DEFAULT.eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
+        WorkerPythonEnvironment.DEFAULT
+                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
         WorkerPythonEnvironment.DEFAULT.eval("et = TableTools.emptyTable(2).update([\"A=k\", \"B=i*2\"])");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("et");
         assertTrue(result instanceof Table);
@@ -71,7 +73,8 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
     }
 
     public void testUpdateVarArgs() throws IOException {
-        WorkerPythonEnvironment.DEFAULT.eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
+        WorkerPythonEnvironment.DEFAULT
+                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
         WorkerPythonEnvironment.DEFAULT.eval("et = TableTools.emptyTable(2).update(\"A=k\", \"B=i*2\")");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("et");
         assertTrue(result instanceof Table);

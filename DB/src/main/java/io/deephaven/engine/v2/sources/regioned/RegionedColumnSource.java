@@ -18,8 +18,8 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * {@link io.deephaven.engine.v2.SourceTable source tables} can be thought of a tree of partitions with
  * {@link io.deephaven.engine.v2.locations.TableLocation table locations} at the leaf nodes. When building the
- * {@link io.deephaven.engine.v2.utils.Index Index} for such a {@link io.deephaven.engine.tables.Table table}, we statically
- * partition the available element address space from [0, {@value Long#MAX_VALUE} <i>(2^63-1)</i>].
+ * {@link io.deephaven.engine.v2.utils.Index Index} for such a {@link io.deephaven.engine.tables.Table table}, we
+ * statically partition the available element address space from [0, {@value Long#MAX_VALUE} <i>(2^63-1)</i>].
  *
  * <p>
  * We constrain the size at these leaf nodes in order to support a partitioning of the element address space into region

@@ -64,8 +64,8 @@ public interface TupleExporter<TUPLE_TYPE> {
 
     /**
      * <p>
-     * Export this tuple's element list as a key suitable for the {@link io.deephaven.engine.v2.TableMap}s resulting from
-     * {@link io.deephaven.engine.tables.Table#byExternal}.
+     * Export this tuple's element list as a key suitable for the {@link io.deephaven.engine.v2.TableMap}s resulting
+     * from {@link io.deephaven.engine.tables.Table#byExternal}.
      * <p>
      * For the empty tuple this is a unsupported.
      * <p>

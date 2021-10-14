@@ -405,7 +405,8 @@ public class GenerateMultiSeries {
 
                         final String arg;
                         if (typeName.equals("io.deephaven.engine.tables.Table")) {
-                            arg = "((io.deephaven.engine.plot.util.tables.TableHandle) objectArray[" + i + "]).getTable()";
+                            arg = "((io.deephaven.engine.plot.util.tables.TableHandle) objectArray[" + i
+                                    + "]).getTable()";
                         } else if (typeName.equals("java.lang.Object")) {
                             arg = "objectArray[" + i + "]";
                         } else {

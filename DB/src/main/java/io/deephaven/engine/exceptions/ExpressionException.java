@@ -2,7 +2,8 @@ package io.deephaven.engine.exceptions;
 
 /**
  * An unchecked exception indicating a problem with a parsed expression, for example in
- * {@link io.deephaven.engine.tables.Table#where(String...)} or {@link io.deephaven.engine.tables.Table#update(String...)}.
+ * {@link io.deephaven.engine.tables.Table#where(String...)} or
+ * {@link io.deephaven.engine.tables.Table#update(String...)}.
  */
 public class ExpressionException extends UncheckedTableException {
     final String problemExpression;

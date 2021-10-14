@@ -288,7 +288,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public void onUpdate(@NotNull final Update upstream) {
-            // TODO-RWC: Update and use io.deephaven.engine.tables.verify.TableAssertions.assertAppendOnly(java.lang.String,
+            // TODO-RWC: Update and use
+            // io.deephaven.engine.tables.verify.TableAssertions.assertAppendOnly(java.lang.String,
             // io.deephaven.engine.tables.Table) ?
             if (upstream.removed.nonempty() || upstream.modified.nonempty() || upstream.shifted.nonempty()) {
                 throw new IllegalStateException("Source table for a regioned symbol table should be add-only, instead "

@@ -24,10 +24,11 @@ public interface ColumnGenerator<T> {
     void init(ExtendedRandom random);
 
     /**
-     * Create a string suitable for use with {@link io.deephaven.engine.tables.Table#update(String...)} calls to generate
-     * data.
+     * Create a string suitable for use with {@link io.deephaven.engine.tables.Table#update(String...)} calls to
+     * generate data.
      *
-     * @param varName The name of this instance's variable within the {@link io.deephaven.engine.tables.select.QueryScope}
+     * @param varName The name of this instance's variable within the
+     *        {@link io.deephaven.engine.tables.select.QueryScope}
      * @return A string for use with update()
      */
     String getUpdateString(String varName);

@@ -12,7 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * An {@link AggregationContextFactory} used in the implementation of {@link io.deephaven.engine.tables.Table#byExternal}.
+ * An {@link AggregationContextFactory} used in the implementation of
+ * {@link io.deephaven.engine.tables.Table#byExternal}.
  */
 public class ByExternalAggregationFactory implements AggregationContextFactory {
 
