@@ -18,6 +18,7 @@ dependencies {
     testImplementation(platform('org.junit:junit-bom:5.7.2'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
+    testCompile "org.codehaus.groovy:groovy:$GROOVY_VERSION"
     testCompile "org.codehaus.groovy:groovy-templates:$GROOVY_VERSION"
 
     testCompile(project(path: ':DB', configuration: 'testOutput'))
