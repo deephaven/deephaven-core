@@ -25,6 +25,7 @@ import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.util.Collections2;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -228,6 +229,11 @@ public class BarrageSchemaUtil {
                 // return long.class;
                 return null;
             case Timestamp:
+                final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
+                if (timestampType.getUnit() == TimeUnit.NANOSECOND && "UTC".equals(timestampType.getTimezone())) {
+                    return DBDateTime.class;
+                }
+                return null;
             case FloatingPoint:
                 final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowType;
                 switch (floatingPointType.getPrecision()) {
