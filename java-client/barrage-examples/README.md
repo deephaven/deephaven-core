@@ -1,7 +1,8 @@
-## Deephaven client examples
+## Deephaven barrage examples
 
-Deephaven client examples is a collection of example applications built using `client-deephaven`, 
-`client-deephaven-dagger`, `client-flight`, `client-flight-dagger`, `client-session`, and `client-session-dagger`.
+Deephaven barrage examples is a collection of example applications built using `java-client-barrage`,
+`java-client-barrage-dagger`, `java-client-flight`, `java-client-flight-dagger`, `java-client-session`,
+and `java-client-session-dagger`.
 
 ### Local build
 
@@ -9,7 +10,7 @@ Deephaven client examples is a collection of example applications built using `c
 ./gradlew java-client-barrage-examples:installDist
 ```
 
-produces: 
+produces:
 
 * `java-client/barrage-examples/build/install/java-client-barrage-examples`.
 
