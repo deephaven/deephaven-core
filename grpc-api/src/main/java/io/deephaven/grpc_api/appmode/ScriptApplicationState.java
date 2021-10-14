@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.appmode;
 
 import io.deephaven.appmode.ApplicationState;
-import io.deephaven.db.util.ScriptSession;
+import io.deephaven.engine.util.ScriptSession;
 
 public class ScriptApplicationState extends ApplicationState {
 

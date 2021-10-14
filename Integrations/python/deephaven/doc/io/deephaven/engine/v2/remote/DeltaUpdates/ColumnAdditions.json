@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.v2.remote.DeltaUpdates$ColumnAdditions",
+ "methods": {},
+ "path": "io.deephaven.engine.v2.remote.DeltaUpdates.ColumnAdditions",
+ "typeName": "class"
+}

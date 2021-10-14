@@ -6,7 +6,7 @@ package io.deephaven.client.impl;
 
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.db.util.liveness.LivenessReferent;
+import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.qst.table.TableSpec;
 
 /**

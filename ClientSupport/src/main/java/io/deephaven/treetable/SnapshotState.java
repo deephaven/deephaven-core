@@ -5,21 +5,21 @@ import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.exceptions.UncheckedTableException;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.util.BooleanUtils;
-import io.deephaven.db.util.ColumnFormattingValues;
-import io.deephaven.db.v2.HierarchicalTable;
-import io.deephaven.db.v2.HierarchicalTableInfo;
-import io.deephaven.db.v2.RollupInfo;
-import io.deephaven.db.v2.TableMap;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.v2.HierarchicalTable;
+import io.deephaven.engine.v2.HierarchicalTableInfo;
+import io.deephaven.engine.v2.RollupInfo;
+import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.Index;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -155,7 +155,7 @@ class SnapshotState {
                     // later on. Ignore the by columns, they do not get modified.
                     if (includeConstituents) { // Do we include constituents?
                         final String sourceName = aggToSourceMap.get(dataPair.first);
-                        if (!io.deephaven.db.util.string.StringUtils.isNullOrEmpty(sourceName) &&
+                        if (!io.deephaven.engine.util.string.StringUtils.isNullOrEmpty(sourceName) &&
                                 !((RollupInfo) info).getSelectColumnNames().contains(dataPair.first) && // Is it one of
                                                                                                         // the grouping
                                                                                                         // columns?

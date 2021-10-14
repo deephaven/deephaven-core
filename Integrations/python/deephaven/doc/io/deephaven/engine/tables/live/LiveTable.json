@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.tables.live.LiveTable",
+ "methods": {
+  "refresh": "Refresh this LiveTable."
+ },
+ "path": "io.deephaven.engine.tables.live.LiveTable",
+ "text": "An object that should be refreshed by the LiveTableMonitor.",
+ "typeName": "interface"
+}

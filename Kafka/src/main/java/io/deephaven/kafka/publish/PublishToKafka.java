@@ -2,16 +2,16 @@ package io.deephaven.kafka.publish;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessScope;
-import io.deephaven.db.v2.*;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.ObjectChunk;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.OrderedKeys;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.util.liveness.LivenessArtifact;
+import io.deephaven.engine.util.liveness.LivenessScope;
+import io.deephaven.engine.v2.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.apache.kafka.clients.producer.Callback;
@@ -53,8 +53,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * {@link LiveTableMonitor#DEFAULT LiveTableMonitor} by holding either its {@link LiveTableMonitor#exclusiveLock()
      * exclusive lock} or its {@link LiveTableMonitor#sharedLock() shared lock}. The publisher will install a listener
      * in order to produce new records as updates become available. Callers must be sure to maintain a reference to the
-     * publisher and ensure that it remains {@link io.deephaven.db.util.liveness.LivenessReferent live}. The easiest way
-     * to do this may be to construct the publisher enclosed by a {@link io.deephaven.db.util.liveness.LivenessScope
+     * publisher and ensure that it remains {@link io.deephaven.engine.util.liveness.LivenessReferent live}. The easiest way
+     * to do this may be to construct the publisher enclosed by a {@link io.deephaven.engine.util.liveness.LivenessScope
      * liveness scope} with {@code enforceStrongReachability} specified as {@code true}, and
      * {@link LivenessScope#release() release} the scope when publication is no longer needed. For example:
      * 

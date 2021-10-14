@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.BaseTable$SwapListenerFactory",
- "methods": {
-  "newListener": ":param sourceTable: io.deephaven.db.v2.BaseTable\n:return: BaseTable.SwapListenerFactory.T"
- },
- "path": "io.deephaven.db.v2.BaseTable.SwapListenerFactory",
- "typeName": "interface"
-}

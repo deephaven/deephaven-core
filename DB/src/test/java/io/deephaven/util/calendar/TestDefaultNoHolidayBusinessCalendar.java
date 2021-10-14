@@ -1,8 +1,8 @@
 package io.deephaven.util.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.DBTimeZone;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DBTimeZone;
 
 import java.io.File;
 import java.io.FileWriter;

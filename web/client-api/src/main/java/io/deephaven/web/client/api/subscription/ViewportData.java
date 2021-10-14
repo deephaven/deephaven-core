@@ -169,7 +169,7 @@ public class ViewportData implements TableData {
                 }
                 return cleanData;
             }
-            case "io.deephaven.db.tables.utils.DBDateTime": {
+            case "io.deephaven.engine.tables.utils.DBDateTime": {
                 JsArray<Any> values = Js.uncheckedCast(dataColumn);
                 DateWrapper[] cleanData = new DateWrapper[values.length];
                 for (int i = 0; i < values.length; i++) {

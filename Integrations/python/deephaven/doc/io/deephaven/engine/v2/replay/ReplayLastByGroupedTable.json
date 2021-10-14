@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.v2.replay.ReplayLastByGroupedTable",
+ "methods": {
+  "refresh": "Refresh this LiveTable."
+ },
+ "path": "io.deephaven.engine.v2.replay.ReplayLastByGroupedTable",
+ "typeName": "class"
+}

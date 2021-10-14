@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.util.LongChunkAppender",
- "methods": {
-  "accept": ":param value: long"
- },
- "path": "io.deephaven.db.v2.sources.chunk.util.LongChunkAppender",
- "text": "LongConsumer that appends successive longs to a WritableLongChunk without mutating the destination's\n size.",
- "typeName": "class"
-}

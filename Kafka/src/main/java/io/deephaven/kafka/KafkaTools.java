@@ -11,17 +11,20 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.live.LiveTable;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.live.LiveTableRefreshCombiner;
-import io.deephaven.db.tables.live.LiveTableRegistrar;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.util.liveness.LivenessScope;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.db.v2.*;
+import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.tables.live.LiveTable;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.LiveTableRefreshCombiner;
+import io.deephaven.engine.tables.live.LiveTableRegistrar;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.util.liveness.LivenessScope;
+import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.v2.LocalTableMap;
+import io.deephaven.engine.v2.StreamTableTools;
+import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.v2.TransformableTableMap;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
@@ -868,7 +871,7 @@ public class KafkaTools {
          * to downstream operations and visualizations.
          * <p>
          * See {@link Table#STREAM_TABLE_ATTRIBUTE} for a detailed explanation of stream table semantics, and
-         * {@link io.deephaven.db.v2.StreamTableTools} for related tooling.
+         * {@link io.deephaven.engine.v2.StreamTableTools} for related tooling.
          */
         Stream(false, false),
         /**

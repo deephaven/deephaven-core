@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.util.SourceClosure",
+ "methods": {
+  "call": ":param args: java.lang.Object...\n:return: java.lang.String",
+  "getPathLoader": ":return: io.deephaven.engine.util.scripts.ScriptPathLoader"
+ },
+ "path": "io.deephaven.engine.util.SourceClosure",
+ "text": "This class represents uses of the source() and sourceOnce() method calls. It will use the underlying scriptPathLoader\n to get the script text to use.",
+ "typeName": "class"
+}

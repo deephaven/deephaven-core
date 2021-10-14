@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.util.GroovyDeephavenSession$PerformanceQueries",
- "methods": {
-  "getScriptPath": ":return: java.lang.String",
-  "priority": ":return: int"
- },
- "path": "io.deephaven.db.util.GroovyDeephavenSession.PerformanceQueries",
- "typeName": "class"
-}

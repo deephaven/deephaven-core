@@ -34,27 +34,27 @@ def _defineSymbols():
     global _java_type_MetricsManager
     if _java_type_MetricsManager is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_MetricsManager = jpy.get_type("io.deephaven.db.v2.utils.metrics.MetricsManager")
+        _java_type_MetricsManager = jpy.get_type("io.deephaven.engine.v2.utils.metrics.MetricsManager")
 
     global _java_type_PerformanceQueries
     if _java_type_PerformanceQueries is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_PerformanceQueries = jpy.get_type("io.deephaven.db.util.PerformanceQueries")
+        _java_type_PerformanceQueries = jpy.get_type("io.deephaven.engine.util.PerformanceQueries")
 
     global _java_type_PerformanceQueriesPerformanceOverviewQueryBuilder
     if _java_type_PerformanceQueriesPerformanceOverviewQueryBuilder is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_PerformanceQueriesPerformanceOverviewQueryBuilder = jpy.get_type("io.deephaven.db.util.PerformanceQueries$PerformanceOverview$QueryBuilder")
+        _java_type_PerformanceQueriesPerformanceOverviewQueryBuilder = jpy.get_type("io.deephaven.engine.util.PerformanceQueries$PerformanceOverview$QueryBuilder")
 
     global _java_type_PerformanceQueriesPersistentQueryStatusMonitor
     if _java_type_PerformanceQueriesPersistentQueryStatusMonitor is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_PerformanceQueriesPersistentQueryStatusMonitor = jpy.get_type("io.deephaven.db.util.PerformanceQueries$PersistentQueryStatusMonitor")
+        _java_type_PerformanceQueriesPersistentQueryStatusMonitor = jpy.get_type("io.deephaven.engine.util.PerformanceQueries$PersistentQueryStatusMonitor")
 
     global _java_type_DBTimeUtils
     if _java_type_DBTimeUtils is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_DBTimeUtils = jpy.get_type("io.deephaven.db.tables.utils.DBTimeUtils")
+        _java_type_DBTimeUtils = jpy.get_type("io.deephaven.engine.tables.utils.DBTimeUtils")
 
 
 # every module method should be decorated with @_passThrough

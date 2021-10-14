@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.v2.SourceTableComponentFactory",
+ "methods": {
+  "createColumnSourceManager": ":param isRefreshing: boolean\n:param codecMappings: io.deephaven.engine.v2.ColumnToCodecMappings\n:param columnDefinitions: io.deephaven.engine.tables.ColumnDefinition<?>...\n:return: io.deephaven.engine.v2.ColumnSourceManager"
+ },
+ "path": "io.deephaven.engine.v2.SourceTableComponentFactory",
+ "text": "Factory for source table components.",
+ "typeName": "interface"
+}

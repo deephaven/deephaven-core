@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.plot.DynamicChartTitle$ChartTitleSwappableTable",
+ "methods": {
+  "getSwappableTable": ":return: io.deephaven.engine.plot.util.tables.SwappableTable",
+  "getTableMapHandle": ":return: io.deephaven.engine.plot.util.tables.TableMapHandle"
+ },
+ "path": "io.deephaven.engine.plot.DynamicChartTitle.ChartTitleSwappableTable",
+ "text": "A dynamic chart title from oneClick datasets",
+ "typeName": "class"
+}

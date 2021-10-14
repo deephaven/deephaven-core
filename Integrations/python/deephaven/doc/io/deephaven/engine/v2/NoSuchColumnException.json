@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.v2.NoSuchColumnException",
+ "methods": {},
+ "path": "io.deephaven.engine.v2.NoSuchColumnException",
+ "text": "Exception thrown when a column is not found.",
+ "typeName": "class"
+}

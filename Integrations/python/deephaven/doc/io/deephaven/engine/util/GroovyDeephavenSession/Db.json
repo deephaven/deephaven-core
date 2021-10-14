@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.GroovyDeephavenSession$Db",
+ "methods": {
+  "getScriptPath": ":return: java.lang.String",
+  "priority": ":return: int"
+ },
+ "path": "io.deephaven.engine.util.GroovyDeephavenSession.Db",
+ "typeName": "class"
+}

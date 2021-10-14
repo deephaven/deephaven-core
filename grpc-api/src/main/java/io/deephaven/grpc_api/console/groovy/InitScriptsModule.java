@@ -1,10 +1,10 @@
 package io.deephaven.grpc_api.console.groovy;
 
-import io.deephaven.db.util.GroovyDeephavenSession.CountMetrics;
-import io.deephaven.db.util.GroovyDeephavenSession.Db;
-import io.deephaven.db.util.GroovyDeephavenSession.InitScript;
-import io.deephaven.db.util.GroovyDeephavenSession.PerformanceQueries;
-import io.deephaven.db.util.GroovyDeephavenSession.RunScripts;
+import io.deephaven.engine.util.GroovyDeephavenSession.CountMetrics;
+import io.deephaven.engine.util.GroovyDeephavenSession.Db;
+import io.deephaven.engine.util.GroovyDeephavenSession.InitScript;
+import io.deephaven.engine.util.GroovyDeephavenSession.PerformanceQueries;
+import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

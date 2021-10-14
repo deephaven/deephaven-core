@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults$ForDouble",
+ "methods": {},
+ "path": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults.ForDouble",
+ "text": "Default interface for immutable double ColumnSource implementations.",
+ "typeName": "interface"
+}

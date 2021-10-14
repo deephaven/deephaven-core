@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.v2.InstrumentedShiftAwareListener",
+ "methods": {
+  "getNotification": "Creates a notification for the table changes.\n\n:param update: (io.deephaven.engine.v2.ShiftAwareListener.Update) - The set of upstream table updates.\n:return: (io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification) table change notification"
+ },
+ "path": "io.deephaven.engine.v2.InstrumentedShiftAwareListener",
+ "typeName": "class"
+}

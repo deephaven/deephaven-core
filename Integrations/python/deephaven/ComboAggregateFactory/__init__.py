@@ -63,7 +63,7 @@ def _defineSymbols():
     global _java_type_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.db.v2.by.ComboAggregateFactory")
+        _java_type_ = jpy.get_type("io.deephaven.engine.v2.by.ComboAggregateFactory")
 
 
 # every module method should be decorated with @_passThrough
@@ -96,26 +96,26 @@ def Agg(*args):
     Create an aggregation.
     
     *Overload 1*  
-      :param factory: (io.deephaven.db.v2.by.AggregationStateFactory) - aggregation factory.
+      :param factory: (io.deephaven.engine.v2.by.AggregationStateFactory) - aggregation factory.
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
       
     *Overload 2*  
-      :param factory: (io.deephaven.db.v2.by.AggregationStateFactory) - aggregation factory.
-      :param matchPairs: (io.deephaven.db.tables.select.MatchPair...) - the columns to apply the aggregation to.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :param factory: (io.deephaven.engine.v2.by.AggregationStateFactory) - aggregation factory.
+      :param matchPairs: (io.deephaven.engine.tables.select.MatchPair...) - the columns to apply the aggregation to.
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
       
     *Overload 3*  
-      :param factoryType: (io.deephaven.db.v2.by.AggType) - aggregation factory type.
+      :param factoryType: (io.deephaven.engine.v2.by.AggType) - aggregation factory type.
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
       
     *Overload 4*  
-      :param factoryType: (io.deephaven.db.v2.by.AggType) - aggregation factory type.
-      :param matchPairs: (io.deephaven.db.tables.select.MatchPair...) - the columns to apply the aggregation to.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :param factoryType: (io.deephaven.engine.v2.by.AggType) - aggregation factory type.
+      :param matchPairs: (io.deephaven.engine.tables.select.MatchPair...) - the columns to apply the aggregation to.
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.Agg(*args)
@@ -128,7 +128,7 @@ def AggAbsSum(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggAbsSum(*matchPairs)
@@ -141,7 +141,7 @@ def AggArray(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggArray(*matchPairs)
@@ -154,7 +154,7 @@ def AggAvg(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggAvg(*matchPairs)
@@ -165,8 +165,8 @@ def AggCombo(*aggregations):
     """
     Create a new ComboAggregateFactory suitable for passing to Table.by(AggregationStateFactory, String...).
     
-    :param aggregations: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy...) - the aggregations to compute
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory) a new table with the specified aggregations.
+    :param aggregations: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy...) - the aggregations to compute
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory) a new table with the specified aggregations.
     """
     
     return _java_type_.AggCombo(*aggregations)
@@ -178,7 +178,7 @@ def AggCount(resultColumn):
     Create an count aggregation, equivalent to Table.countBy(String).
     
     :param resultColumn: (java.lang.String) - the name of the result column containing the count of each group
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggCount(resultColumn)
@@ -194,13 +194,13 @@ def AggCountDistinct(*args):
     *Overload 1*  
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...). Null values are not counted.
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...). Null values are not counted.
       
     *Overload 2*  
       :param countNulls: (boolean) - if true null values are counted as a distinct value, otherwise null values are ignored
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggCountDistinct(*args)
@@ -217,13 +217,13 @@ def AggDistinct(*args):
     *Overload 1*  
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...). Null values are ignored.
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...). Null values are ignored.
       
     *Overload 2*  
       :param countNulls: (boolean) - if true, then null values are included in the result, otherwise null values are ignored
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggDistinct(*args)
@@ -236,7 +236,7 @@ def AggFirst(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggFirst(*matchPairs)
@@ -251,7 +251,7 @@ def AggFormula(formula, formulaParam, *matchPairs):
     :param formulaParam: (java.lang.String) - the parameter name within the formula
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggFormula(formula, formulaParam, *matchPairs)
@@ -264,7 +264,7 @@ def AggLast(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggLast(*matchPairs)
@@ -277,7 +277,7 @@ def AggMax(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggMax(*matchPairs)
@@ -290,7 +290,7 @@ def AggMed(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggMed(*matchPairs)
@@ -303,7 +303,7 @@ def AggMin(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggMin(*matchPairs)
@@ -318,7 +318,7 @@ def AggPct(*args):
       :param percentile: (double) - the percentile to calculate
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
       
     *Overload 2*  
       :param percentile: (double) - the percentile to calculate
@@ -326,7 +326,7 @@ def AggPct(*args):
               lower value and lowest upper value to produce the median value for integers, longs, doubles, and floats
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggPct(*args)
@@ -335,19 +335,19 @@ def AggPct(*args):
 @_passThrough
 def AggSortedFirst(*args):
     """
-    Create a sorted first aggregation, equivalent to SortedBy.sortedFirstBy(io.deephaven.db.tables.Table, java.lang.String).
+    Create a sorted first aggregation, equivalent to SortedBy.sortedFirstBy(io.deephaven.engine.tables.Table, java.lang.String).
     
     *Overload 1*  
       :param sortColumn: (java.lang.String) - the column to sort by
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
       
     *Overload 2*  
       :param sortColumns: (java.lang.String[]) - the column to sort by
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggSortedFirst(*args)
@@ -356,19 +356,19 @@ def AggSortedFirst(*args):
 @_passThrough
 def AggSortedLast(*args):
     """
-    Create a sorted last aggregation, equivalent to SortedBy.sortedLastBy(io.deephaven.db.tables.Table, java.lang.String).
+    Create a sorted last aggregation, equivalent to SortedBy.sortedLastBy(io.deephaven.engine.tables.Table, java.lang.String).
     
     *Overload 1*  
       :param sortColumn: (java.lang.String) - the column to sort by
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
       
     *Overload 2*  
       :param sortColumns: (java.lang.String[]) - the columns to sort by
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggSortedLast(*args)
@@ -381,7 +381,7 @@ def AggStd(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggStd(*matchPairs)
@@ -394,7 +394,7 @@ def AggSum(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggSum(*matchPairs)
@@ -414,13 +414,13 @@ def AggUnique(*args):
     *Overload 1*  
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
       
     *Overload 2*  
       :param countNulls: (boolean) - if true, then null values are included in the result, otherwise null values are ignored
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...). Output columns contain null if
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...). Output columns contain null if
                there are no values present or there are more than 1 distinct values present.
       
     *Overload 3*  
@@ -429,7 +429,7 @@ def AggUnique(*args):
       :param nonUniqueValue: (java.lang.Object) - the value to use if there are more than 1 values present
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
               the same name, then the column name can be specified.
-      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggUnique(*args)
@@ -442,7 +442,7 @@ def AggVar(*matchPairs):
     
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggVar(*matchPairs)
@@ -456,7 +456,7 @@ def AggWAvg(weight, *matchPairs):
     :param weight: (java.lang.String) - the name of the column to use as the weight for the average
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggWAvg(weight, *matchPairs)
@@ -470,7 +470,7 @@ def AggWSum(weight, *matchPairs):
     :param weight: (java.lang.String) - the name of the column to use as the weight for the sum
     :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
             the same name, then the column name can be specified.
-    :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+    :return: (io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     
     return _java_type_.AggWSum(weight, *matchPairs)

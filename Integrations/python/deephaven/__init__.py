@@ -96,7 +96,7 @@ from .Plot import figure_wrapper as figw
 # NB: this must be defined BEFORE importing .jvm_init or .start_jvm (circular import)
 def initialize():
     __initializer__(jpy.get_type("io.deephaven.configuration.Configuration"), Config)
-    __initializer__(jpy.get_type("io.deephaven.db.util.PickledResult"), PickledResult)
+    __initializer__(jpy.get_type("io.deephaven.engine.util.PickledResult"), PickledResult)
     __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter"), PythonListenerAdapter)
     __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonFunction"), PythonFunction)
 
@@ -167,7 +167,7 @@ def __initializer__(jtype, obj):
 
 
 def PickledResult(pickled):
-    return jpy.get_type("io.deephaven.db.util.PickledResult")(pickled, sys.version)
+    return jpy.get_type("io.deephaven.engine.util.PickledResult")(pickled, sys.version)
 
 
 def Config():
@@ -188,7 +188,7 @@ def PythonListenerAdapter(dynamicTable, implementation, description=None, retain
       True to process updates for all initial rows in the table PLUS all new row changes.
     """
 
-    dt = jpy.cast(dynamicTable, jpy.get_type('io.deephaven.db.v2.DynamicTable'))
+    dt = jpy.cast(dynamicTable, jpy.get_type('io.deephaven.engine.v2.DynamicTable'))
     jtype = jpy.get_type('io.deephaven.integrations.python.PythonListenerAdapter')
     ListenerInstance = jtype(description, dynamicTable, retain, implementation)
     dt.listenForUpdates(ListenerInstance, replayInitialImage)
@@ -207,7 +207,7 @@ def PythonShiftAwareListenerAdapter(dynamicTable, implementation, description=No
     """
 
     jtype = jpy.get_type('io.deephaven.integrations.python.PythonShiftAwareListenerAdapter')
-    dt = jpy.cast(dynamicTable, jpy.get_type('io.deephaven.db.v2.DynamicTable'))
+    dt = jpy.cast(dynamicTable, jpy.get_type('io.deephaven.engine.v2.DynamicTable'))
     ListenerInstance = jtype(description, dt, retain, implementation)
     dt.listenForUpdates(ListenerInstance)
 
@@ -331,7 +331,7 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
     if replay_initial and not start_listening:
         raise ValueError("Unable to create listener.  Inconsistent arguments.  If the initial snapshot is replayed (replay_initial=True), then the listener must be registered to start listening (start_listening=True).")
 
-    _java_type_DynamicTable = jpy.get_type("io.deephaven.db.v2.DynamicTable")
+    _java_type_DynamicTable = jpy.get_type("io.deephaven.engine.v2.DynamicTable")
     dt = jpy.cast(t, _java_type_DynamicTable)
 
     nargs = _nargsListener(listener)
@@ -401,7 +401,7 @@ def doLocked(f, lock_type="shared"):
     :param lock_type: LTM lock type.  Valid values are "exclusive" and "shared".  "exclusive" allows only a single reader or writer to hold the lock.  "shared" allows multiple readers or a single writer to hold the lock.
     """
     ThrowingRunnable = jpy.get_type("io.deephaven.integrations.python.PythonThrowingRunnable")
-    LiveTableMonitor = jpy.get_type("io.deephaven.db.tables.live.LiveTableMonitor")
+    LiveTableMonitor = jpy.get_type("io.deephaven.engine.tables.live.LiveTableMonitor")
 
     if lock_type == "exclusive":
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(ThrowingRunnable(f))

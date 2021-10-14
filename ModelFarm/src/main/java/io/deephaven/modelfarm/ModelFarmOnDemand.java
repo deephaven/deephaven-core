@@ -8,10 +8,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.DynamicTable;
-import io.deephaven.db.v2.NotificationStepSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.v2.NotificationStepSource;
+import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.util.FunctionalInterfaces;
 
 import java.util.ArrayDeque;

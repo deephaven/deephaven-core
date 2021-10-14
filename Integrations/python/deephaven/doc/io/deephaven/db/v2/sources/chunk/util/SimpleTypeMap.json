@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap",
- "methods": {
-  "create": "Note: Java generics information - <V>\n\n:param forBoolean: V\n:param forChar: V\n:param forByte: V\n:param forShort: V\n:param forInt: V\n:param forLong: V\n:param forFloat: V\n:param forDouble: V\n:param forObject: V\n:return: io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap<V>",
-  "get": ":param simpleType: java.lang.Class<?>\n:return: SimpleTypeMap.V"
- },
- "path": "io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap",
- "typeName": "class"
-}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.plot.datasets.data.LiveAssociativeData",
+ "methods": {
+  "convert": ":param v: LiveAssociativeData.VALUECOLUMN\n:return: LiveAssociativeData.VALUE"
+ },
+ "path": "io.deephaven.engine.plot.datasets.data.LiveAssociativeData",
+ "text": "An AssociativeData backed by a table.",
+ "typeName": "class"
+}

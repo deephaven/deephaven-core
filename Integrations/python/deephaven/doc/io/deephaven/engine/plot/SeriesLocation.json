@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.plot.SeriesLocation",
+ "methods": {
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "get": ":param figure: io.deephaven.engine.plot.BaseFigureImpl\n:return: io.deephaven.engine.plot.SeriesInternal",
+  "hashCode": ":return: int"
+ },
+ "path": "io.deephaven.engine.plot.SeriesLocation",
+ "text": "Location of Series within a figure.",
+ "typeName": "class"
+}

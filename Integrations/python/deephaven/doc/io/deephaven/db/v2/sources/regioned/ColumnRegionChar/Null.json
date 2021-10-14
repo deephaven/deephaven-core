@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionChar$Null",
- "methods": {
-  "getChar": "Get a single char from this region.\n\n:param elementIndex: (long) - Element (char) index in the table's address space\n:return: (char) The char value at the specified element (char) index"
- },
- "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionChar.Null",
- "typeName": "class"
-}

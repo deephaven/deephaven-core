@@ -2,11 +2,11 @@ package io.deephaven.benchmarking;
 
 import io.deephaven.base.StringUtils;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.select.QueryScope;
-import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.benchmarking.generator.*;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;

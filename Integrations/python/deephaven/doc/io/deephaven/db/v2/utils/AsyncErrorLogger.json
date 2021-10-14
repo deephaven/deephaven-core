@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.AsyncErrorLogger",
- "methods": {
-  "getErrorLog": ":return: io.deephaven.db.v2.DynamicTable",
-  "log": ":param time: io.deephaven.db.tables.utils.DBDateTime\n:param entry: io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry\n:param sourceEntry: io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry\n:param originalException: java.lang.Throwable"
- },
- "path": "io.deephaven.db.v2.utils.AsyncErrorLogger",
- "typeName": "class"
-}

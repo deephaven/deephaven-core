@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.tables.utils.DBDateTimeFormatter",
+ "methods": {
+  "format": "*Overload 1*  \n  :param dateTime: io.deephaven.engine.tables.utils.DBDateTime\n  :param tz: io.deephaven.engine.tables.utils.DBTimeZone\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param dateTime: io.deephaven.engine.tables.utils.DBDateTime\n  :return: java.lang.String",
+  "getPattern": ":return: java.lang.String",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.tables.utils.DBDateTimeFormatter",
+ "text": "Formatter for DBDateTimes.",
+ "typeName": "class"
+}

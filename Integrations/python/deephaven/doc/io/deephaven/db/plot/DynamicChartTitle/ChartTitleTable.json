@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.plot.DynamicChartTitle$ChartTitleTable",
- "methods": {
-  "getTableHandle": ":return: io.deephaven.db.plot.util.tables.TableHandle"
- },
- "path": "io.deephaven.db.plot.DynamicChartTitle.ChartTitleTable",
- "text": "A dynamic chart title from Table",
- "typeName": "class"
-}

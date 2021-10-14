@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.v2.RedefinableTable",
+ "methods": {
+  "dropColumns": ":param columnNames: java.lang.String...\n:return: io.deephaven.engine.tables.Table",
+  "renameColumns": ":param pairs: io.deephaven.engine.tables.select.MatchPair...\n:return: io.deephaven.engine.tables.Table",
+  "updateView": ":param columns: io.deephaven.engine.v2.select.SelectColumn...\n:return: io.deephaven.engine.tables.Table",
+  "view": ":param columns: io.deephaven.engine.v2.select.SelectColumn...\n:return: io.deephaven.engine.tables.Table"
+ },
+ "path": "io.deephaven.engine.v2.RedefinableTable",
+ "text": "An uncoalesced table that may be redefined without triggering a UncoalescedTable.coalesce().",
+ "typeName": "class"
+}

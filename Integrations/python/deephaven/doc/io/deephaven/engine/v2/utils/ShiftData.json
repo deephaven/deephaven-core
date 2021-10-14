@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.v2.utils.ShiftData",
+ "methods": {
+  "applyDataShift": ":param shiftCallback: io.deephaven.engine.v2.utils.ShiftData.ShiftCallback",
+  "getAddedPos": ":return: io.deephaven.engine.v2.utils.Index"
+ },
+ "path": "io.deephaven.engine.v2.utils.ShiftData",
+ "typeName": "class"
+}

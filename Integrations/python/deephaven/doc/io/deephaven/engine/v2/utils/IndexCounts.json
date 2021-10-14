@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.v2.utils.IndexCounts",
+ "methods": {
+  "sampleRsp": ":param rb: io.deephaven.engine.v2.utils.rsp.RspBitmap",
+  "sampleSingleRange": ":param sr: io.deephaven.engine.v2.utils.singlerange.SingleRange",
+  "sampleSortedRanges": ":param sr: io.deephaven.engine.v2.utils.sortedranges.SortedRanges"
+ },
+ "path": "io.deephaven.engine.v2.utils.IndexCounts",
+ "typeName": "class"
+}

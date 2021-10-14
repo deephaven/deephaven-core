@@ -6,8 +6,8 @@ package io.deephaven.util.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
 
 import java.util.HashMap;
 import java.util.Map;

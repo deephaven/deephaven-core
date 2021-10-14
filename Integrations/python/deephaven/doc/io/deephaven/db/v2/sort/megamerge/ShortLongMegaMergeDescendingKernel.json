@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sort.megamerge.ShortLongMegaMergeDescendingKernel",
- "methods": {
-  "createContext": ":return: io.deephaven.db.v2.sort.megamerge.ShortLongMegaMergeDescendingKernel.ShortLongMegaMergeDescendingKernelContext<ATTR,KEY_INDICES>",
-  "merge": ":param destinationKeys: io.deephaven.db.v2.sources.LongArraySource\n:param destinationValues: io.deephaven.db.v2.sources.ShortArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.db.v2.sources.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.db.v2.sources.chunk.ShortChunk<ATTR>"
- },
- "path": "io.deephaven.db.v2.sort.megamerge.ShortLongMegaMergeDescendingKernel",
- "typeName": "class"
-}

@@ -60,7 +60,7 @@ dependencies {
     Classpaths.inheritArrow(project, 'flight-grpc', 'flightTestCompile')
 }
 
-// testOutOfBand: non-parallel, not a db test, not isolated
+// testOutOfBand: non-parallel, not a engine test, not isolated
 TestTools.addDbTest(project, 'OutOfBand', false, false, false)
 
 check.dependsOn(tasks.register('flightTest', Test) {

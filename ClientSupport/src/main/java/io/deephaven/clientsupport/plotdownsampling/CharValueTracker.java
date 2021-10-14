@@ -2,10 +2,10 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.v2.sources.CharacterArraySource;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.v2.sources.CharacterArraySource;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.utils.Index;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

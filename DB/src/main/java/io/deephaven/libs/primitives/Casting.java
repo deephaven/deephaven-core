@@ -4,7 +4,7 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.db.tables.dbarrays.*;
+import io.deephaven.engine.tables.dbarrays.*;
 
 import static io.deephaven.util.QueryConstants.*;
 

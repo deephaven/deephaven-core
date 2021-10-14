@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.plot.errors.PlotUnsupportedOperationException",
+ "methods": {},
+ "path": "io.deephaven.engine.plot.errors.PlotUnsupportedOperationException",
+ "text": "UnsupportedOperationExcetion which contains information about the plot.",
+ "typeName": "class"
+}

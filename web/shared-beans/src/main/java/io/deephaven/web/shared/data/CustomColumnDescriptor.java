@@ -24,7 +24,7 @@ public class CustomColumnDescriptor implements Serializable {
     /**
      * Extracts the column name from a given column expression.
      *
-     * Based on the logic in io.deephaven.db.tables.select.SelectColumnFactory, the valid expressions take the form:
+     * Based on the logic in io.deephaven.engine.tables.select.SelectColumnFactory, the valid expressions take the form:
      * 
      * <pre>
      *     <ColumnName>

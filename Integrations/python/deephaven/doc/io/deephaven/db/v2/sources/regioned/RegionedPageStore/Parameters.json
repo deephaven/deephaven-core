@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.RegionedPageStore$Parameters",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.regioned.RegionedPageStore.Parameters",
- "text": "Class to calculate and encapsulate the parameters of a RegionedPageStore.",
- "typeName": "class"
-}

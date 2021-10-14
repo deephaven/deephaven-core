@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.tables.dbarrays.DbSubCharArray",
+ "methods": {
+  "get": ":param index: long\n:return: char",
+  "getPrev": ":param index: long\n:return: char",
+  "isEmpty": ":return: boolean",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subArray": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.engine.tables.dbarrays.DbCharArray",
+  "subArrayByPositions": ":param positions: long[]\n:return: io.deephaven.engine.tables.dbarrays.DbCharArray",
+  "toArray": ":return: char[]"
+ },
+ "path": "io.deephaven.engine.tables.dbarrays.DbSubCharArray",
+ "typeName": "class"
+}

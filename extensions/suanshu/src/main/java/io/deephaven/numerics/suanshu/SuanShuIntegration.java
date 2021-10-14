@@ -7,8 +7,8 @@
 package io.deephaven.numerics.suanshu;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.dbarrays.*;
-import io.deephaven.db.util.GroovyDeephavenSession;
+import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.util.GroovyDeephavenSession;
 import com.numericalmethod.suanshu.matrix.MatrixAccessException;
 import com.numericalmethod.suanshu.matrix.doubles.Matrix;
 import com.numericalmethod.suanshu.matrix.doubles.matrixtype.dense.DenseMatrix;
@@ -51,7 +51,7 @@ public class SuanShuIntegration {
         }
     }
 
-    public static class Imports implements io.deephaven.db.tables.libs.QueryLibraryImports {
+    public static class Imports implements io.deephaven.engine.tables.libs.QueryLibraryImports {
 
         @Override
         public Set<Package> packages() {

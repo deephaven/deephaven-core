@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.ReplicateRegionsAndRegionedSources",
- "methods": {
-  "main": ":param args: java.lang.String..."
- },
- "path": "io.deephaven.db.v2.sources.regioned.ReplicateRegionsAndRegionedSources",
- "text": "Code generation for basic RegionedColumnSource implementations as well as well as the primary region\n interfaces for some primitive types.",
- "typeName": "class"
-}

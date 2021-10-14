@@ -4,8 +4,8 @@
 
 package io.deephaven.util.calendar;
 
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

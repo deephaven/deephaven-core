@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.v2.sort.LongMegaMergeKernel",
+ "methods": {
+  "makeContext": "Creates a SortKernel for the given chunkType.\n\n:param chunkType: (io.deephaven.engine.v2.sources.chunk.ChunkType) - the type of chunk we are sorting\n:param order: (io.deephaven.engine.tables.SortingOrder) - whether we should sort in an ascending or descending direction\n:return: (io.deephaven.engine.v2.sort.LongMegaMergeKernel<ATTR,KEY_INDICES>) a SortKernel suitable for the given type, order, and size",
+  "merge": ":param indexDestinationSource: io.deephaven.engine.v2.sources.LongArraySource\n:param valuesDestinationSource: io.deephaven.engine.v2.sources.ArrayBackedColumnSource<?>\n:param destinationOffset: long\n:param destinationSize: long\n:param indexKeys: io.deephaven.engine.v2.sources.chunk.LongChunk<LongMegaMergeKernel.KEY_INDICES>\n:param valuesToMerge: io.deephaven.engine.v2.sources.chunk.Chunk<LongMegaMergeKernel.ATTR>"
+ },
+ "path": "io.deephaven.engine.v2.sort.LongMegaMergeKernel",
+ "text": "The LongMegaMergeKernel merges sorted chunks into a column source, with a parallel long array of Index keys.\n\n The intention is that you will use a Timsort kernel to sort maximally sized chunks, then merge the result into a\n ColumnSource using the MegaMergeKernel only if necessary.",
+ "typeName": "interface"
+}

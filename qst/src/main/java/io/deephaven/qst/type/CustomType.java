@@ -52,7 +52,7 @@ public abstract class CustomType<T> extends GenericTypeBase<T> {
 
     @Check
     final void checkNotDbArray() {
-        if (clazz().getName().startsWith("io.deephaven.db.tables.dbarrays.Db")) {
+        if (clazz().getName().startsWith("io.deephaven.engine.tables.dbarrays.Db")) {
             throw new IllegalArgumentException("Can't create DB array types as custom types");
         }
     }

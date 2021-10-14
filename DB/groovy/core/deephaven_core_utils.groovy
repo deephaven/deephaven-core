@@ -52,9 +52,9 @@ performanceInfo = {
 }
 
 
-import io.deephaven.db.tables.utils.DBDateTime
-import io.deephaven.db.tables.utils.DBTimeUtils
-import io.deephaven.db.util.PerformanceQueries
+import io.deephaven.engine.tables.utils.DBDateTime
+import io.deephaven.engine.tables.utils.DBTimeUtils
+import io.deephaven.engine.util.PerformanceQueries
 
 performanceOverview = { workerName = null,  String date = DBTimeUtils.currentDateNy(), Boolean useIntraday = true,
                         String serverHost = null, String workerHostName = null ->
@@ -135,16 +135,16 @@ for( String n : calendarNames() ) {
 ///////////////////// Plotting /////////////////////
 
 //todo what about these commented out imports?
-// import static io.deephaven.db.plot.LineStyle.LineEndStyle
-// import static io.deephaven.db.plot.LineStyle.LineJoinStyle
-// import static io.deephaven.db.plot.Font.FontStyle
+// import static io.deephaven.engine.plot.LineStyle.LineEndStyle
+// import static io.deephaven.engine.plot.LineStyle.LineJoinStyle
+// import static io.deephaven.engine.plot.Font.FontStyle
 //////////////////// Colors ////////////////////////
 
-import io.deephaven.db.plot.PlotStyle
-import io.deephaven.db.plot.axistransformations.AxisTransforms
-import io.deephaven.db.plot.colors.ColorMaps
+import io.deephaven.engine.plot.PlotStyle
+import io.deephaven.engine.plot.axistransformations.AxisTransforms
+import io.deephaven.engine.plot.colors.ColorMaps
 
-import static io.deephaven.db.plot.PlottingConvenience.*
+import static io.deephaven.engine.plot.PlottingConvenience.*
 
 for( String c : io.deephaven.gui.color.Color.colorNames() ) {
     publishVariable( "COLOR_" + c, io.deephaven.gui.color.Color.valueOf(c) )
@@ -156,20 +156,20 @@ colorTable = {
             .ungroup()
     //todo simplify the following with the improved color branch
             .updateView("Paint = io.deephaven.gui.color.Color.color(Colors).javaColor()")
-            .formatColumns("Colors = io.deephaven.db.util.DBColorUtil.bgfga(Paint.getRed(), Paint.getGreen(), Paint.getBlue())")
+            .formatColumns("Colors = io.deephaven.engine.util.DBColorUtil.bgfga(Paint.getRed(), Paint.getGreen(), Paint.getBlue())")
             .dropColumns("Paint")
 }
 
 //////////////////// Count Metrics //////////////////////////
 
 resetMetricsCounts = {
-    io.deephaven.db.v2.utils.metrics.MetricsManager.resetCounters()
+    io.deephaven.engine.v2.utils.metrics.MetricsManager.resetCounters()
 }
 
 getMetricsCounts = {
-    io.deephaven.db.v2.utils.metrics.MetricsManager.getCounters()
+    io.deephaven.engine.v2.utils.metrics.MetricsManager.getCounters()
 }
 
 printMetricsCounts = {
-    println(io.deephaven.db.v2.utils.metrics.MetricsManager.getCounters())
+    println(io.deephaven.engine.v2.utils.metrics.MetricsManager.getCounters())
 }

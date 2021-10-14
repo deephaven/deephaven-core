@@ -1,13 +1,13 @@
 package io.deephaven.kafka.publish;
 
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.ChunkSource;
-import io.deephaven.db.v2.sources.chunk.ObjectChunk;
-import io.deephaven.db.v2.utils.ChunkBoxer;
-import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.v2.utils.ChunkBoxer;
+import io.deephaven.engine.v2.utils.OrderedKeys;
 
 public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSerializer<SERIALIZED_TYPE> {
 

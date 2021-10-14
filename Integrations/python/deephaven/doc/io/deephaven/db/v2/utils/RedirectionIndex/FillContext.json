@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.RedirectionIndex$FillContext",
- "methods": {},
- "path": "io.deephaven.db.v2.utils.RedirectionIndex.FillContext",
- "typeName": "interface"
-}

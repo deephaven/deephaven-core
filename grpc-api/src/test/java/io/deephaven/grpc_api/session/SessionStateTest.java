@@ -6,12 +6,12 @@ package io.deephaven.grpc_api.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessReferent;
-import io.deephaven.db.util.liveness.LivenessScope;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.db.util.liveness.LivenessStateException;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.util.liveness.LivenessArtifact;
+import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.util.liveness.LivenessScope;
+import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.util.liveness.LivenessStateException;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;

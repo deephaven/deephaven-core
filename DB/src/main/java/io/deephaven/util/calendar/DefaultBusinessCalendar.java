@@ -5,9 +5,9 @@
 package io.deephaven.util.calendar;
 
 import io.deephaven.base.Pair;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.DBTimeZone;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DBTimeZone;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jdom2.Document;

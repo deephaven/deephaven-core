@@ -1,8 +1,8 @@
 package io.deephaven.kafka.publish;
 
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.ObjectChunk;
-import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.util.SafeCloseable;
 
 /**

@@ -1,18 +1,18 @@
 package io.deephaven.stream;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.DynamicTable;
-import io.deephaven.db.v2.ModifiedColumnSet;
-import io.deephaven.db.v2.SimpleShiftAwareListener;
-import io.deephaven.db.v2.TstUtils;
-import io.deephaven.db.v2.sources.chunk.*;
-import io.deephaven.db.v2.utils.*;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.v2.SimpleShiftAwareListener;
+import io.deephaven.engine.v2.TstUtils;
+import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.BooleanUtils;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static io.deephaven.db.tables.utils.TableTools.*;
+import static io.deephaven.engine.tables.utils.TableTools.*;
 
 public class TestStreamToTableAdapter {
     @Before

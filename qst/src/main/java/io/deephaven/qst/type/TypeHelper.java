@@ -151,7 +151,7 @@ class TypeHelper {
 
                 @Override
                 public void visit(DbGenericArrayType<?, ?> dbGenericArrayType) {
-                    // The db array type by itself is not specific enough
+                    // The engine array type by itself is not specific enough
                     throw new IllegalStateException(
                             "Should not be adding DbGenericArrayType as static mapping");
                 }

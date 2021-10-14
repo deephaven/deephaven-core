@@ -5,9 +5,9 @@
 package io.deephaven.modelfarm.util;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.dbarrays.*;
-import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.tables.utils.DBDateTime;
 
 /**
  * Utilities for building model farms.

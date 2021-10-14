@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification",
+ "methods": {},
+ "path": "io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification",
+ "text": "Common base class for index update notifications.",
+ "typeName": "class"
+}

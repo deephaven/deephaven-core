@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.v2.by.SumIntChunk",
+ "methods": {
+  "sumIntChunk": ":param values: io.deephaven.engine.v2.sources.chunk.IntChunk<? extendsio.deephaven.engine.v2.sources.chunk.Attributes.Any>\n:param chunkStart: int\n:param chunkSize: int\n:return: long"
+ },
+ "path": "io.deephaven.engine.v2.by.SumIntChunk",
+ "typeName": "class"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.v2.sort.partition.DoublePartitionKernel$PartitionKernelContext",
+ "methods": {
+  "getPartitions": ":param resetBuilders: boolean\n:return: io.deephaven.engine.v2.utils.Index[]",
+  "getPivots": ":return: io.deephaven.engine.util.tuples.generated.DoubleLongTuple[]"
+ },
+ "path": "io.deephaven.engine.v2.sort.partition.DoublePartitionKernel.PartitionKernelContext",
+ "typeName": "class"
+}

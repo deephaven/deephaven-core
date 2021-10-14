@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.DependencyStreamProvider",
- "methods": {
-  "getDependencyStream": "Return a stream of dependencies for this object.\n\n:return: java.util.stream.Stream<io.deephaven.db.tables.live.NotificationQueue.Dependency>"
- },
- "path": "io.deephaven.db.v2.DependencyStreamProvider",
- "text": "An interface for things that provide a stream of dependencies.",
- "typeName": "interface"
-}

@@ -1,7 +1,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.db.tables.utils.NameValidator;
+import io.deephaven.engine.tables.utils.NameValidator;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.Type;
 import org.immutables.value.Value.Check;

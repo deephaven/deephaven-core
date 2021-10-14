@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.plot.util.tables.SwappableTableMap",
+ "methods": {
+  "getTableMapHandle": ":return: io.deephaven.engine.plot.util.tables.TableMapHandle"
+ },
+ "path": "io.deephaven.engine.plot.util.tables.SwappableTableMap",
+ "text": "SwappableTable backed by a TableMapHandle",
+ "typeName": "interface"
+}

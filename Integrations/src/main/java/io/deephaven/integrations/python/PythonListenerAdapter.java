@@ -6,9 +6,9 @@ package io.deephaven.integrations.python;
 
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
-import io.deephaven.db.v2.DynamicTable;
-import io.deephaven.db.v2.InstrumentedListenerAdapter;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.v2.InstrumentedListenerAdapter;
+import io.deephaven.engine.v2.utils.Index;
 
 
 /**

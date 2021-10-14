@@ -5,8 +5,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.db.tables.dbarrays.DbCharArray;
-import io.deephaven.db.tables.dbarrays.DbCharArrayDirect;
+import io.deephaven.engine.tables.dbarrays.DbCharArray;
+import io.deephaven.engine.tables.dbarrays.DbCharArrayDirect;
 
 import static io.deephaven.libs.primitives.CharacterPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

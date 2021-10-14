@@ -32,7 +32,7 @@ class TestDBTimeUtils(unittest.TestCase):
         Test suite for getting DBDateTime object representing the current time
         """
 
-        tz = jpy.get_type('io.deephaven.db.tables.utils.DBTimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
         with self.subTest(msg="currentTime"):
             junk = DBTimeUtils.currentTime()
         with self.subTest(msg="currentDate"):
@@ -105,7 +105,7 @@ class TestDBTimeUtils(unittest.TestCase):
         with self.subTest(msg="getExcelDateTime(DbDateTime)"):
             junk = DBTimeUtils.getExcelDateTime(now)
 
-        tz = jpy.get_type('io.deephaven.db.tables.utils.DBTimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
         with self.subTest(msg="getExcelDateTime(DbDateTime, DbTimeZone)"):
             junk = DBTimeUtils.getExcelDateTime(now, tz)
         with self.subTest(msg="getExcelDateTime(DbDateTime, TimeZone)"):
@@ -123,7 +123,7 @@ class TestDBTimeUtils(unittest.TestCase):
         with self.subTest(msg="getZonedDateTime(DbDateTime)"):
             junk = DBTimeUtils.getZonedDateTime(now)  # will have TZ_DEFAULT applied
 
-        tz = jpy.get_type('io.deephaven.db.tables.utils.DBTimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
         with self.subTest(msg="getZonedDateTime(DbDateTime, DbTimeZone)"):
             zoned = DBTimeUtils.getZonedDateTime(now, tz)
         with self.subTest(msg="toDateTime(ZonedDateTime)"):
@@ -134,7 +134,7 @@ class TestDBTimeUtils(unittest.TestCase):
         Coverage test suite for various date part extractions
         """
 
-        tz = jpy.get_type('io.deephaven.db.tables.utils.DBTimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
         # get current time
         now = DBTimeUtils.currentTime()
 
@@ -274,7 +274,7 @@ class TestDBTimeUtils(unittest.TestCase):
         Test suite for date formatting
         """
 
-        tz = jpy.get_type('io.deephaven.db.tables.utils.DBTimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
         # get current time
         now = DBTimeUtils.currentTime()
 

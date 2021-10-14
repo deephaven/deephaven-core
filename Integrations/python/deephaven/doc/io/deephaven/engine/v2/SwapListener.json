@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.v2.SwapListener",
+ "methods": {
+  "destroy": "Attempt to release (destructively when necessary) resources held by this object. This may render the object\n unusable for subsequent operations. Implementations should be sure to call super.destroy().\n \n This is intended to only ever be used as a side effect of decreasing the reference count to 0.",
+  "getNotification": "Creates a notification for the table changes.\n\n:param added: (io.deephaven.engine.v2.utils.Index) - rows added\n:param removed: (io.deephaven.engine.v2.utils.Index) - rows removed\n:param modified: (io.deephaven.engine.v2.utils.Index) - rows modified\n:return: (io.deephaven.engine.tables.live.NotificationQueue.IndexUpdateNotification) table change notification",
+  "onUpdate": "Process notification of table changes.\n\n:param added: (io.deephaven.engine.v2.utils.Index) - rows added\n:param removed: (io.deephaven.engine.v2.utils.Index) - rows removed\n:param modified: (io.deephaven.engine.v2.utils.Index) - rows modified",
+  "setInitialImage": "Sets the index for the initial data.\n\n:param initialImage: (io.deephaven.engine.v2.utils.Index) - initial image",
+  "subscribeForUpdates": "Invoke DynamicTable.listenForUpdates(Listener) for the appropriate subclass of SwapListenerBase."
+ },
+ "path": "io.deephaven.engine.v2.SwapListener",
+ "typeName": "class"
+}

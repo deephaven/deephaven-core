@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.v2.utils.KeyHolder$Base",
+ "methods": {
+  "addDependent": ":param dependent: io.deephaven.engine.v2.utils.KeyHolder",
+  "removeDependent": ":param dependent: io.deephaven.engine.v2.utils.KeyHolder"
+ },
+ "path": "io.deephaven.engine.v2.utils.KeyHolder.Base",
+ "typeName": "class"
+}

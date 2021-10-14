@@ -1,6 +1,6 @@
 package io.deephaven.kafka;
 
-import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.engine.tables.ColumnDefinition;
 import org.apache.avro.Schema;
 
 import org.junit.Test;

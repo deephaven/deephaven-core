@@ -1,0 +1,3 @@
+io.deephaven.engine.util.GroovyDeephavenSession$Db
+io.deephaven.engine.util.GroovyDeephavenSession$PerformanceQueries
+io.deephaven.engine.util.GroovyDeephavenSession$CountMetrics

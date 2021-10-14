@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.tables.verify.AppendOnlyAssertionFailure",
- "methods": {},
- "path": "io.deephaven.db.tables.verify.AppendOnlyAssertionFailure",
- "typeName": "class"
-}

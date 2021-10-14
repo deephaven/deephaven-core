@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.tables.utils.LiveWidgetCreationException",
+ "methods": {},
+ "path": "io.deephaven.engine.tables.utils.LiveWidgetCreationException",
+ "text": "This exception should be thrown when an issue occurs creating a LiveWidget.",
+ "typeName": "class"
+}

@@ -2,14 +2,14 @@ package io.deephaven.qst.type;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.deephaven.db.tables.dbarrays.DbBooleanArray;
-import io.deephaven.db.tables.dbarrays.DbByteArray;
-import io.deephaven.db.tables.dbarrays.DbCharArray;
-import io.deephaven.db.tables.dbarrays.DbDoubleArray;
-import io.deephaven.db.tables.dbarrays.DbFloatArray;
-import io.deephaven.db.tables.dbarrays.DbIntArray;
-import io.deephaven.db.tables.dbarrays.DbLongArray;
-import io.deephaven.db.tables.dbarrays.DbShortArray;
+import io.deephaven.engine.tables.dbarrays.DbBooleanArray;
+import io.deephaven.engine.tables.dbarrays.DbByteArray;
+import io.deephaven.engine.tables.dbarrays.DbCharArray;
+import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
+import io.deephaven.engine.tables.dbarrays.DbFloatArray;
+import io.deephaven.engine.tables.dbarrays.DbIntArray;
+import io.deephaven.engine.tables.dbarrays.DbLongArray;
+import io.deephaven.engine.tables.dbarrays.DbShortArray;
 import java.lang.reflect.InvocationTargetException;
 import org.junit.Test;
 

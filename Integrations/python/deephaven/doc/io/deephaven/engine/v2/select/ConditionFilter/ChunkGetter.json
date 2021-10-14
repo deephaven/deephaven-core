@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.v2.select.ConditionFilter$ChunkGetter",
+ "methods": {
+  "getChunk": ":param context: io.deephaven.engine.v2.sources.chunk.Context\n:param orderedKeys: io.deephaven.engine.v2.utils.OrderedKeys\n:return: io.deephaven.engine.v2.sources.chunk.Chunk"
+ },
+ "path": "io.deephaven.engine.v2.select.ConditionFilter.ChunkGetter",
+ "typeName": "interface"
+}

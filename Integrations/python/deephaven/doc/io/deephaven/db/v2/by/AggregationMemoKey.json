@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.by.AggregationMemoKey",
- "methods": {},
- "path": "io.deephaven.db.v2.by.AggregationMemoKey",
- "text": "Marker interface for AggregationStates to use for memoization keys.",
- "typeName": "interface"
-}

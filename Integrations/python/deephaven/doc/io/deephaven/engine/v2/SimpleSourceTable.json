@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.v2.SimpleSourceTable",
+ "methods": {},
+ "path": "io.deephaven.engine.v2.SimpleSourceTable",
+ "text": "Simple source table with no partitioning support.",
+ "typeName": "class"
+}

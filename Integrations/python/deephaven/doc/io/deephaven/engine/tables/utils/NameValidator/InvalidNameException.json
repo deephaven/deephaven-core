@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.tables.utils.NameValidator$InvalidNameException",
+ "methods": {},
+ "path": "io.deephaven.engine.tables.utils.NameValidator.InvalidNameException",
+ "typeName": "class"
+}

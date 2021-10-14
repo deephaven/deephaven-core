@@ -63,7 +63,7 @@ def query_update_performance_set(evaluationNumber):
     :return:
     """
 
-    _jtype_ = jpy.get_type("io.deephaven.db.v2.utils.PerformanceQueries")
+    _jtype_ = jpy.get_type("io.deephaven.engine.v2.utils.PerformanceQueries")
 
     tableMap = _jtype_.queryUpdatePerformanceMap(evaluationNumber)
     add_tables_from_map_to_binding(tableMap)
@@ -73,7 +73,7 @@ def query_update_performance_set(evaluationNumber):
 
 def importjava(clazz):
     _jclass_ = jpy.get_type("java.lang.Class")
-    ql = jpy.get_type("io.deephaven.db.tables.libs.QueryLibrary")
+    ql = jpy.get_type("io.deephaven.engine.tables.libs.QueryLibrary")
 
     def _get_short_class_name_(clazz):
         return _jclass_.forName(clazz).getSimpleName()
@@ -86,7 +86,7 @@ def importjava(clazz):
 
 def importstatic(clazz):
     _jclass_ = jpy.get_type("java.lang.Class")
-    ql = jpy.get_type("io.deephaven.db.tables.libs.QueryLibrary")
+    ql = jpy.get_type("io.deephaven.engine.tables.libs.QueryLibrary")
     clazz = clazz.strip()
     javaclass = jpy.get_type(clazz)
     for key, value in javaclass.__dict__.items():

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.SizedContextualizedObjectColumnSource",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.SizedContextualizedObjectColumnSource",
- "text": "Interface for ColumnSource implementations that are both SizedColumnSources and\n ContextualizedObjectColumnSources.",
- "typeName": "interface"
-}

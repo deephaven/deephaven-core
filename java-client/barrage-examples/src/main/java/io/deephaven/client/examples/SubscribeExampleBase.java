@@ -6,8 +6,8 @@ import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.db.v2.InstrumentedShiftAwareListener;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
+import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.util.process.ProcessEnvironment;
 /*

@@ -1,10 +1,10 @@
 package io.deephaven.grpc_api.table.ops.filter;
 
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.select.SelectFilterFactory;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeZone;
-import io.deephaven.db.v2.select.*;
+import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.select.SelectFilterFactory;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeZone;
+import io.deephaven.engine.v2.select.*;
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
 import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.Condition;
@@ -15,8 +15,6 @@ import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
-import org.apache.commons.text.StringEscapeUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.util.*;

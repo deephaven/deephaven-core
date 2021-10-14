@@ -1,7 +1,7 @@
 package io.deephaven.util.calendar;
 
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeZone;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeZone;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;

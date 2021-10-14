@@ -3,10 +3,10 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.ObjectChunk;
-import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.avro.generic.GenericRecord;
 

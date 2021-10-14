@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.v2.utils.Index$LegacyIndexUpdateCoalescer",
+ "methods": {
+  "takeAdded": ":return: io.deephaven.engine.v2.utils.Index",
+  "takeModified": ":return: io.deephaven.engine.v2.utils.Index",
+  "takeRemoved": ":return: io.deephaven.engine.v2.utils.Index",
+  "update": ":param addedOnUpdate: io.deephaven.engine.v2.utils.Index\n:param removedOnUpdate: io.deephaven.engine.v2.utils.Index\n:param modifiedOnUpdate: io.deephaven.engine.v2.utils.Index"
+ },
+ "path": "io.deephaven.engine.v2.utils.Index.LegacyIndexUpdateCoalescer",
+ "typeName": "class"
+}

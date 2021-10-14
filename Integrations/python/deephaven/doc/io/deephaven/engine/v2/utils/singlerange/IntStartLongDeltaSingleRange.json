@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.v2.utils.singlerange.IntStartLongDeltaSingleRange",
+ "methods": {
+  "copy": ":return: io.deephaven.engine.v2.utils.singlerange.IntStartLongDeltaSingleRange",
+  "getCardinality": ":return: long",
+  "rangeEnd": ":return: long",
+  "rangeStart": ":return: long"
+ },
+ "path": "io.deephaven.engine.v2.utils.singlerange.IntStartLongDeltaSingleRange",
+ "typeName": "class"
+}

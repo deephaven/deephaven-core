@@ -60,8 +60,8 @@ def _defineSymbols():
     global _java_type_, _Enum_Values_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.db.util.config.TableInputHandler")
-        _Enum_Values_ = jpy.get_type("io.deephaven.db.util.config.TableInputHandler$EnumValues")
+        _java_type_ = jpy.get_type("io.deephaven.engine.util.config.TableInputHandler")
+        _Enum_Values_ = jpy.get_type("io.deephaven.engine.util.config.TableInputHandler$EnumValues")
 
 
 # every module method should be decorated with @_passThrough

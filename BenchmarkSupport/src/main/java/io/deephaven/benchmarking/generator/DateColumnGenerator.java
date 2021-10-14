@@ -1,8 +1,8 @@
 package io.deephaven.benchmarking.generator;
 
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
 
 public class DateColumnGenerator implements ColumnGenerator<DBDateTime> {

@@ -85,14 +85,14 @@ def _defineSymbols():
 
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
-        _col_def_ = jpy.get_type("io.deephaven.db.tables.ColumnDefinition")
+        _table_tools_ = jpy.get_type("io.deephaven.engine.tables.utils.TableTools")
+        _col_def_ = jpy.get_type("io.deephaven.engine.tables.ColumnDefinition")
         _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
         _qst_col_header_ = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
         _qst_column_ =  jpy.get_type("io.deephaven.qst.column.Column")
         _qst_newtable_ = jpy.get_type("io.deephaven.qst.table.NewTable")
         _qst_type_ = jpy.get_type("io.deephaven.qst.type.Type")
-        _table_ = jpy.get_type("io.deephaven.db.tables.Table")
+        _table_ = jpy.get_type("io.deephaven.engine.tables.Table")
 
     if DataType is None:
         DataType = NewType('DataType', _qst_type_)
@@ -112,9 +112,9 @@ def _defineSymbols():
         float64 = double  # make life simple for people who are used to pyarrow
         string = DataType(_qst_type_.stringType())
         bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
-        stringset =  _typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
-        datetime = _typeFromJavaClassName('io.deephaven.db.tables.utils.DBDateTime')
-        timeperiod = _typeFromJavaClassName('io.deephaven.db.tables.utils.DBPeriod')
+        stringset =  _typeFromJavaClassName('io.deephaven.engine.tables.libs.StringSet')
+        datetime = _typeFromJavaClassName('io.deephaven.engine.tables.utils.DBDateTime')
+        timeperiod = _typeFromJavaClassName('io.deephaven.engine.tables.utils.DBPeriod')
 
         # Array types.
         byte_array = DataType(byte.arrayType())
@@ -141,9 +141,9 @@ def _defineSymbols():
             double : jpy.get_type('double'),
             string : jpy.get_type('java.lang.String'),
             bigdecimal : jpy.get_type('java.math.BigDecimal'),
-            stringset : jpy.get_type('io.deephaven.db.tables.libs.StringSet'),
-            datetime : jpy.get_type('io.deephaven.db.tables.utils.DBDateTime'),
-            timeperiod : jpy.get_type('io.deephaven.db.tables.utils.DBPeriod'),
+            stringset : jpy.get_type('io.deephaven.engine.tables.libs.StringSet'),
+            datetime : jpy.get_type('io.deephaven.engine.tables.utils.DBDateTime'),
+            timeperiod : jpy.get_type('io.deephaven.engine.tables.utils.DBPeriod'),
             byte_array : jpy.get_type('[B'),
             short_array : jpy.get_type('[S'),
             int_array : jpy.get_type('[I'),

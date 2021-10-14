@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.v2.SourceTableMap",
+ "methods": {},
+ "path": "io.deephaven.engine.v2.SourceTableMap",
+ "text": "LocalTableMap of single-location SourceTables keyed by TableLocationKey. Refer to\n TableLocationKey for an explanation of partitioning.",
+ "typeName": "class"
+}

@@ -12,16 +12,16 @@ import dagger.assisted.AssistedInject;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tablelogger.QueryOperationPerformanceLogLogger;
-import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
-import io.deephaven.db.tables.remotequery.QueryProcessingResults;
-import io.deephaven.db.tables.utils.QueryPerformanceNugget;
-import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessReferent;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.db.v2.DynamicNode;
-import io.deephaven.db.v2.utils.MemoryTableLoggers;
+import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
+import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
+import io.deephaven.engine.tables.remotequery.QueryProcessingResults;
+import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
+import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.util.liveness.LivenessArtifact;
+import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.v2.DynamicNode;
+import io.deephaven.engine.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -63,7 +63,7 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 /**
  * SessionState manages all exports for a single session.
  *
- * It manages exported {@link io.deephaven.db.util.liveness.LivenessReferent}. It cascades failures to child
+ * It manages exported {@link io.deephaven.engine.util.liveness.LivenessReferent}. It cascades failures to child
  * dependencies.
  *
  * TODO: - cyclical dependency detection - out-of-order dependency timeout

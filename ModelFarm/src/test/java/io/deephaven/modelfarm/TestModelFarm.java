@@ -6,9 +6,9 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.DynamicTable;
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;

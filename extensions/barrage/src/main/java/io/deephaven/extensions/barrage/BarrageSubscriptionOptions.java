@@ -61,7 +61,7 @@ public abstract class BarrageSubscriptionOptions {
      *
      * Related, when shortening the minUpdateInterval, you typically want to shorten the server's LTM cycle enough to
      * update at least as quickly. This can be done on the server with the flag
-     * {@code io.deephaven.db.tables.live.LiveTableMonitor#defaultTargetCycleTime}, or
+     * {@code io.deephaven.engine.tables.live.LiveTableMonitor#defaultTargetCycleTime}, or
      * {@code -DLiveTableMonitor.targetcycletime=1000}.
      *
      * @return the update interval to subscribe for

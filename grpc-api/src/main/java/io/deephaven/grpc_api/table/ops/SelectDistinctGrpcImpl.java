@@ -2,7 +2,7 @@ package io.deephaven.grpc_api.table.ops;
 
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;

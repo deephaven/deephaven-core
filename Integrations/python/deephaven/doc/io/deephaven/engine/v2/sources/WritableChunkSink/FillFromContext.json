@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.v2.sources.WritableChunkSink$FillFromContext",
+ "methods": {},
+ "path": "io.deephaven.engine.v2.sources.WritableChunkSink.FillFromContext",
+ "typeName": "interface"
+}

@@ -53,11 +53,11 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
                 fillValuesIn(dimension+1, ndSub, arrSub)
         else:
             # at the final dimension, and arrElement is a one dimensional array
-            if basicType.startswith('io.deephaven.db.tables.dbarrays.Db'):
+            if basicType.startswith('io.deephaven.engine.tables.dbarrays.Db'):
                 # convert each leaf
                 for i, leafElement in enumerate(arrElement):
                     ndElement[i] = convertJavaArray(leafElement.toArray(), convertNulls=convertNulls)
-            elif basicType == 'io.deephaven.db.tables.utils.DBDateTime':
+            elif basicType == 'io.deephaven.engine.tables.utils.DBDateTime':
                 # get long array
                 longs = jpy.get_type(__arrayConversionUtility__).translateArrayDBDateTimeToLong(arrElement)
                 ndElement[:] = longs
@@ -90,11 +90,11 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
             except Exception as e:
                 return 0
 
-    if basicType.startswith('io.deephaven.db.tables.dbarrays.Db'):
+    if basicType.startswith('io.deephaven.engine.tables.dbarrays.Db'):
         out = numpy.empty(shape, dtype=numpy.object)
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
-    elif basicType == 'io.deephaven.db.tables.utils.DBDateTime':
+    elif basicType == 'io.deephaven.engine.tables.utils.DBDateTime':
         out = numpy.empty(shape, dtype='datetime64[ns]')
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
@@ -260,7 +260,7 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
         return None
 
     if _isDbArray(javaArray):
-        # convert a db array to a java array, if necessary
+        # convert a engine array to a java array, if necessary
         return convertJavaArray(javaArray.toArray(), convertNulls=convertNulls)
 
     # is it an array?
@@ -463,7 +463,7 @@ def columnToSeries(table, columnName, convertNulls=NULL_CONVERSION.ERROR):
     if nparray is None:
         return None
 
-    if columnType == 'io.deephaven.db.tables.utils.DBDateTime':
+    if columnType == 'io.deephaven.engine.tables.utils.DBDateTime':
         # NOTE: I think that we should localize to UTC, and then let the user convert that if they want to...
         #       Note that localizing does not actually effect the underlying numpy array,
         #       but only a pandas construct on top
