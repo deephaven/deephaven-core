@@ -18,6 +18,8 @@ using deephaven::client::highlevel::Client;
 using deephaven::client::utility::flight::statusOrDie;
 using deephaven::client::utility::flight::valueOrDie;
 
+namespace {
+
 arrow::Status doit(const TableHandleManager &manager, const std::string csvfn) {
   arrow::io::IOContext io_context = arrow::io::default_io_context();
   auto input_file = valueOrDie(
@@ -71,6 +73,8 @@ arrow::Status doit(const TableHandleManager &manager, const std::string csvfn) {
   std::cout << "table is:\n" << table_handle.stream(true) << std::endl;
   return arrow::Status::OK();
 }
+
+}  // anonymous namespace
 
 int main(int argc, char* argv[]) {
 
