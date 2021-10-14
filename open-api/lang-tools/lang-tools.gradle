@@ -18,8 +18,8 @@ dependencies {
     testImplementation(platform('org.junit:junit-bom:5.7.2'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    testCompile "org.codehaus.groovy:groovy:$GROOVY_VERSION"
-    testCompile "org.codehaus.groovy:groovy-templates:$GROOVY_VERSION"
+    Classpaths.inheritGroovy(project, 'groovy', 'testCompile')
+    Classpaths.inheritGroovy(project, 'groovy-templates', 'testCompile')
 
     testCompile(project(path: ':DB', configuration: 'testOutput'))
     testRuntime project(':configs')
