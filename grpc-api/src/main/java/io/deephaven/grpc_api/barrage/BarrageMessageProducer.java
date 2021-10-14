@@ -11,6 +11,7 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.DBTimeUtils;
@@ -44,7 +45,7 @@ import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -440,7 +441,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
     public boolean addSubscription(final StreamObserver<MessageView> listener,
             final Options options,
-            final BitSet columnsToSubscribe,
+            final @Nullable BitSet columnsToSubscribe,
             final @Nullable Index initialViewport) {
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
@@ -450,14 +451,19 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         "asking to add a subscription for an already existing session and listener");
             }
 
-            final Subscription subscription =
-                    new Subscription(listener, options, (BitSet) columnsToSubscribe.clone(), initialViewport);
+            final BitSet cols;
+            if (columnsToSubscribe == null) {
+                cols = new BitSet(sourceColumns.length);
+                cols.set(0, sourceColumns.length);
+            } else {
+                cols = (BitSet) columnsToSubscribe.clone();
+            }
+            final Subscription subscription = new Subscription(listener, options, cols, initialViewport);
 
-            Assert.neqNull(columnsToSubscribe, "columnsToSubscribe");
             log.info().append(logPrefix)
                     .append(subscription.logPrefix)
                     .append("subbing to columns ")
-                    .append(FormatBitSet.formatBitSet(columnsToSubscribe))
+                    .append(FormatBitSet.formatBitSet(cols))
                     .endl();
 
             subscription.hasPendingUpdate = true;

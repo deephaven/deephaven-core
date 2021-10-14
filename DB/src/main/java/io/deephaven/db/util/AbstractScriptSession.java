@@ -196,6 +196,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
 
     @Override
     protected void destroy() {
+        super.destroy();
         // Clear our session's script directory:
         if (classCacheDirectory.exists()) {
             FileUtils.deleteRecursively(classCacheDirectory);

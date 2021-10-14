@@ -258,7 +258,7 @@ public class BarrageUpdateMetadata {
 
     public static native void addLastSeq(Builder builder, Long lastSeq);
 
-    public static native void addNodes(Builder builder, double nodesOffset);
+    public static native void addModColumnNodes(Builder builder, double modColumnNodesOffset);
 
     public static native void addNumAddBatches(Builder builder, double numAddBatches);
 
@@ -346,7 +346,7 @@ public class BarrageUpdateMetadata {
             double removedRowsOffset,
             double shiftDataOffset,
             double addedRowsIncludedOffset,
-            double nodesOffset);
+            double modColumnNodesOffset);
 
     @Deprecated
     public static native double createEffectiveColumnSetVector(
@@ -416,11 +416,11 @@ public class BarrageUpdateMetadata {
         return createEffectiveViewportVector(builder, Js.<JsArray<Double>>uncheckedCast(data));
     }
 
-    public static native double createNodesVector(Builder builder, JsArray<Double> data);
+    public static native double createModColumnNodesVector(Builder builder, JsArray<Double> data);
 
     @JsOverlay
-    public static final double createNodesVector(Builder builder, double[] data) {
-        return createNodesVector(builder, Js.<JsArray<Double>>uncheckedCast(data));
+    public static final double createModColumnNodesVector(Builder builder, double[] data) {
+        return createModColumnNodesVector(builder, Js.<JsArray<Double>>uncheckedCast(data));
     }
 
     @Deprecated
@@ -511,7 +511,7 @@ public class BarrageUpdateMetadata {
 
     public static native void startEffectiveViewportVector(Builder builder, double numElems);
 
-    public static native void startNodesVector(Builder builder, double numElems);
+    public static native void startModColumnNodesVector(Builder builder, double numElems);
 
     public static native void startRemovedRowsVector(Builder builder, double numElems);
 
@@ -552,11 +552,11 @@ public class BarrageUpdateMetadata {
 
     public native Long lastSeq();
 
-    public native BarrageModColumnMetadata nodes(double index, BarrageModColumnMetadata obj);
+    public native BarrageModColumnMetadata modColumnNodes(double index, BarrageModColumnMetadata obj);
 
-    public native BarrageModColumnMetadata nodes(double index);
+    public native BarrageModColumnMetadata modColumnNodes(double index);
 
-    public native double nodesLength();
+    public native double modColumnNodesLength();
 
     public native double numAddBatches();
 
