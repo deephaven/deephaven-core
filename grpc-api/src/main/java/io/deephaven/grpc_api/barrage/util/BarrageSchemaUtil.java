@@ -184,29 +184,101 @@ public class BarrageSchemaUtil {
         metadata.put("deephaven:" + key, value);
     }
 
+    // returns null if there is no "trivial" mapping.
+    private static Class<?> getDefaultType(final ArrowType arrowType) {
+        switch (arrowType.getTypeID()) {
+            case Int:
+                final ArrowType.Int intType = (ArrowType.Int) arrowType;
+                if (intType.getIsSigned()) {
+                    // SIGNED
+                    switch (intType.getBitWidth()) {
+                        case 8:
+                            return byte.class;
+                        case 16:
+                            return short.class;
+                        case 32:
+                            return int.class;
+                        case 64:
+                            return long.class;
+                        default:
+                            return null;
+                    }
+                } else {
+                    // UNSIGNED
+                    switch (intType.getBitWidth()) {
+                        case 8:
+                            return short.class;
+                        case 16:
+                            return int.class;
+                        case 32:
+                            return long.class;
+                        case 64:
+                        default:
+                            return null;
+                    }
+                }
+            case Bool:
+                return java.lang.Boolean.class;
+            case Duration:
+                // In the future, we may be able to do a simple trick here and convert to a long
+                // while adding a suffix to the column name with the TimeUnit.  Something like:
+                //     final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
+                //     final String columnNameSuffix = durationType.getUnit().toString();
+                //     // do something to append that suffix to the column name...
+                //     return long.class;
+                return null;
+            case Timestamp:
+            case FloatingPoint:
+                final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowType;
+                switch (floatingPointType.getPrecision()) {
+                    case SINGLE:
+                        return float.class;
+                    case DOUBLE:
+                        return double.class;
+                    case HALF:
+                    default:
+                        return null;
+                }
+            case Utf8:
+                return java.lang.String.class;
+            default:
+                return null;
+        }
+    }
+
     public static TableDefinition schemaToTableDefinition(final org.apache.arrow.flatbuf.Schema schema) {
-        return schemaToTableDefinition(schema.fieldsLength(), i -> schema.fields(i).name(), i -> visitor -> {
-            final org.apache.arrow.flatbuf.Field field = schema.fields(i);
-            for (int j = 0; j < field.customMetadataLength(); j++) {
-                final KeyValue keyValue = field.customMetadata(j);
-                visitor.accept(keyValue.key(), keyValue.value());
-            }
-        });
+        return schemaToTableDefinition(
+                schema.fieldsLength(),
+                i -> schema.fields(i).name(),
+                i -> getDefaultType(ArrowType.getTypeForField(schema.fields(i))),
+                i -> visitor -> {
+                    final org.apache.arrow.flatbuf.Field field = schema.fields(i);
+                    for (int j = 0; j < field.customMetadataLength(); j++) {
+                        final KeyValue keyValue = field.customMetadata(j);
+                        visitor.accept(keyValue.key(), keyValue.value());
+                    }
+                });
     }
 
     public static TableDefinition schemaToTableDefinition(final Schema schema) {
-        return schemaToTableDefinition(schema.getFields().size(), i -> schema.getFields().get(i).getName(),
+        return schemaToTableDefinition(schema.getFields().size(),
+                i -> schema.getFields().get(i).getName(),
+                i -> getDefaultType(schema.getFields().get(i).getType()),
                 i -> visitor -> {
                     schema.getFields().get(i).getMetadata().forEach(visitor);
                 });
     }
 
-    private static TableDefinition schemaToTableDefinition(final int numColumns, final IntFunction<String> getName,
+    private static TableDefinition schemaToTableDefinition(
+            final int numColumns,
+            final IntFunction<String> getName,
+            final IntFunction<Class<?>> getDefaultType,
             final IntFunction<Consumer<BiConsumer<String, String>>> visitMetadata) {
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
-            final String name = NameValidator.legalizeColumnName(getName.apply(i));
+            final String origName = getName.apply(i);
+            final String name = NameValidator.legalizeColumnName(origName);
             final MutableObject<Class<?>> type = new MutableObject<>();
             final MutableObject<Class<?>> componentType = new MutableObject<>();
 
@@ -227,8 +299,12 @@ public class BarrageSchemaUtil {
             });
 
             if (type.getValue() == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Schema did not include `deephaven:type` metadata");
+                Class<?> defaultType = getDefaultType.apply(i);
+                if (defaultType == null) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Schema did not include `deephaven:type` metadata for field " + name);
+                }
+                type.setValue(defaultType);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
