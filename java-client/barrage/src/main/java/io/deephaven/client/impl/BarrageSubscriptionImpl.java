@@ -58,7 +58,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * Represents a BarrageSubscription.
      *
      * @param session the deephaven session that this export belongs to
-     * @param export the export to subscribe to
+     * @param export the export to subscribe to (ownership is transferred to the subscription)
      * @param options the transport level options for this subscription
      * @param tableDefinition the expected table definition
      * @param performRelease a callback that is invoked when this subscription is closed/destroyed/garbage-collected

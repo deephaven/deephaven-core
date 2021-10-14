@@ -16,7 +16,7 @@ dependencies {
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    Classpaths.inheritLogbackClassic(project)
+    Classpaths.inheritLogbackClassic(project, 'implementation')
 }
 
 test {

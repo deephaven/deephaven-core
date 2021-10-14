@@ -178,7 +178,7 @@ class Classpaths {
         addDependency(config, ASSERTJ_GROUP, ASSERTJ_NAME, ASSERTJ_VERSION)
     }
 
-    static void inheritLogbackClassic(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+    static void inheritLogbackClassic(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, LOGBACK_GROUP, LOGBACK_NAME, LOGBACK_VERSION)
     }

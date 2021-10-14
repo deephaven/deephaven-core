@@ -6,26 +6,26 @@ Deephaven client examples is a collection of example applications built using `c
 ### Local build
 
 ```shell
-./gradlew client-deephaven-examples:installDist
+./gradlew java-client-barrage-examples:installDist
 ```
 
 produces: 
 
-* `java-client/deephaven-examples/build/install/client-deephaven-examples`.
+* `java-client/barrage-examples/build/install/java-client-barrage-examples`.
 
 ### Local running
 
 ```shell
-java-client/deephaven-examples/build/install/client-deephaven-examples/bin/<program> --help
+java-client/barrage-examples/build/install/java-client-barrage-examples/bin/<program> --help
 ```
 
 ### Build
 
 ```shell
-./gradlew client-deephaven-examples:build
+./gradlew java-client-barrage-examples:build
 ```
 
 produces:
 
-* `java-client/deephaven-examples/build/distributions/client-deephaven-examples-<version>.zip`
-* `java-client/deephaven-examples/build/distributions/client-deephaven-examples-<version>.tar`
+* `java-client/barrage-examples/build/distributions/java-client-barrage-examples-<version>.zip`
+* `java-client/barrage-examples/build/distributions/java-client-barrage-examples-<version>.tar`

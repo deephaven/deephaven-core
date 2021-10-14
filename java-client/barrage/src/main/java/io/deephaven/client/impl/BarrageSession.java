@@ -63,7 +63,7 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
     public BarrageSubscription subscribe(
             final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
         // fetch the schema and convert to table definition
-        final Schema schema = schema(tableHandle.export());
+        final Schema schema = schema(tableHandle);
         final TableDefinition tableDefinition = BarrageUtil.schemaToTableDefinition(schema);
         return subscribe(tableDefinition, tableHandle, options);
     }
