@@ -282,6 +282,7 @@ public class ArrowFlightUtil {
                 resultExportBuilder.submit(() -> {
                     throw GrpcUtil.statusRuntimeException(Code.CANCELLED, "cancelled");
                 });
+                resultExportBuilder = null;
             }
         }
 
@@ -297,6 +298,7 @@ public class ArrowFlightUtil {
                 resultExportBuilder.submit(() -> {
                     throw new UncheckedDeephavenException(t);
                 });
+                resultExportBuilder = null;
             }
         }
 
@@ -318,6 +320,7 @@ public class ArrowFlightUtil {
                     GrpcUtil.safelyExecuteLocked(observer, observer::onCompleted);
                     return resultTable;
                 }), () -> GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed"));
+                resultExportBuilder = null;
             });
         }
 

@@ -221,11 +221,11 @@ public class BarrageSchemaUtil {
                 return java.lang.Boolean.class;
             case Duration:
                 // In the future, we may be able to do a simple trick here and convert to a long
-                // while adding a suffix to the column name with the TimeUnit.  Something like:
-                //     final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
-                //     final String columnNameSuffix = durationType.getUnit().toString();
-                //     // do something to append that suffix to the column name...
-                //     return long.class;
+                // while adding a suffix to the column name with the TimeUnit. Something like:
+                // final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
+                // final String columnNameSuffix = durationType.getUnit().toString();
+                // // do something to append that suffix to the column name...
+                // return long.class;
                 return null;
             case Timestamp:
             case FloatingPoint:
