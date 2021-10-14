@@ -354,6 +354,8 @@ tasks.register 'allJavadoc', Javadoc, {
                 ':java-client-session-dagger',
                 ':java-client-flight',
                 ':java-client-flight-dagger',
+                ':java-client-barrage',
+                ':java-client-barrage-dagger',
                 ':proto:proto-backplane-grpc',
                 ':proto:proto-backplane-grpc-flight'
         ]
