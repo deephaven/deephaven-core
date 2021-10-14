@@ -92,16 +92,14 @@ std::shared_ptr<std::vector<std::shared_ptr<std::string>>> stringVecToShared(std
   return result;
 }
 
-namespace flight {
-void statusOrDie(const arrow::Status &status, const char *message) {
+void okOrThrow(const arrow::Status &status, const char *message) {
   if (status.ok()) {
     return;
   }
 
-  auto msg = stringf("Error: %o. %o", message, status.ToString());
+  auto msg = stringf("Status: %o. Caller message: %o", status, message != nullptr ? message : "(none)");
   throw std::runtime_error(msg);
 }
-}  // namespace flight
 
 namespace {
 void dumpTillPercentOrEnd(ostream &result, const char **fmt) {

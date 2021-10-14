@@ -19,8 +19,6 @@ using deephaven::client::highlevel::SortPair;
 using deephaven::client::highlevel::DeephavenConstants;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
-using deephaven::client::utility::flight::statusOrDie;
-using deephaven::client::utility::flight::valueOrDie;
 
 namespace deephaven {
 namespace client {

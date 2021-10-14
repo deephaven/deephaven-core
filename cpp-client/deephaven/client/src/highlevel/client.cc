@@ -32,7 +32,7 @@ using deephaven::client::utility::SimpleOstringstream;
 using deephaven::client::utility::SFCallback;
 using deephaven::client::utility::separatedList;
 using deephaven::client::utility::stringf;
-using deephaven::client::utility::flight::statusOrDie;
+using deephaven::client::utility::okOrThrow;
 
 namespace deephaven {
 namespace client {
@@ -425,7 +425,7 @@ std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::getFlightStrea
   arrow::flight::Ticket tkt;
   tkt.ticket = table.impl()->ticket().ticket();
 
-  statusOrDie(server->flightClient()->DoGet(options, tkt, &fsr), "FlightClient::DoGet");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(server->flightClient()->DoGet(options, tkt, &fsr)));
   return fsr;
 }
 
@@ -564,7 +564,7 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
 
   while (true) {
     arrow::flight::FlightStreamChunk chunk;
-    statusOrDie(fsr->Next(&chunk), "FlightStreamReader::Next()");
+    okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
     if (chunk.data == nullptr) {
       break;
     }

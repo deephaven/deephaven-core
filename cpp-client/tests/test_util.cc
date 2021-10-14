@@ -10,8 +10,8 @@ namespace client {
 namespace tests {
 
 using deephaven::client::highlevel::TableHandle;
-using deephaven::client::utility::flight::statusOrDie;
-using deephaven::client::utility::flight::valueOrDie;
+using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::valueOrThrow;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
@@ -175,8 +175,8 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
       continue;
     }
 
-    const auto lItem = valueOrDie(lChunk->GetScalar(lChunkIndex), "GetScalar");
-    const auto rItem = valueOrDie(rChunk->GetScalar(rChunkIndex), "GetScalar");
+    const auto lItem = valueOrThrow(DEEPHAVEN_EXPR_MSG(lChunk->GetScalar(lChunkIndex)));
+    const auto rItem = valueOrThrow(DEEPHAVEN_EXPR_MSG(rChunk->GetScalar(rChunkIndex)));
 
     if (!lItem->Equals(rItem)) {
       auto message = stringf("Column %o: Columns differ at element %o: %o vs %o",
@@ -195,7 +195,7 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
 std::shared_ptr<arrow::Table> basicValidate(const TableHandle &table, int expectedColumns) {
   auto fsr = table.getFlightStreamReader();
   std::shared_ptr<arrow::Table> arrowTable;
-  statusOrDie(fsr->ReadAll(&arrowTable), "FlightStreamReader::ReadAll");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&arrowTable)));
 
   if (expectedColumns != arrowTable->num_columns()) {
     auto message = stringf("Expected %o columns, but table actually has %o columns",
