@@ -2,6 +2,7 @@ package io.deephaven.kafka.publish;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.InstrumentedShiftAwareListenerAdapter;
 import io.deephaven.db.v2.StreamTableTools;
@@ -22,7 +23,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class PublishToKafka<K, V> {
+public class PublishToKafka<K, V> extends LivenessArtifact  {
     static final int CHUNK_SIZE = 2048;
 
     @NotNull
@@ -49,12 +50,17 @@ public class PublishToKafka<K, V> {
 
         if (table.isLive()) {
             ((DynamicTable) table.coalesce()).listenForUpdates(publishListener = new PublishListener());
+            manage(publishListener);
         } else {
             publishListener = null;
         }
 
         // Publish the initial table state
         publishMessages(table.getIndex(), false, true);
+
+        if (publishListener == null) {
+            producer.close();
+        }
     }
 
     private void publishMessages(ReadOnlyIndex indexToPublish, boolean usePrevious, boolean publishValues) {
@@ -134,5 +140,11 @@ public class PublishToKafka<K, V> {
                 }
             }
         }
+    }
+
+    @Override
+    protected void destroy() {
+        super.destroy();
+        producer.close();
     }
 }
