@@ -15,7 +15,7 @@ dependencies {
 
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
 
-    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    Classpaths.inheritJUnitPlatform(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
     Classpaths.inheritGroovy(project, 'groovy', 'testCompile')
