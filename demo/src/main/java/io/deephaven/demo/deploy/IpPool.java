@@ -64,12 +64,12 @@ public class IpPool {
         used.add(ip);
     }
 
-    public IpMapping getUnusedIp(ClusterController ctrl) {
+    public IpMapping getUnusedIp(DeploymentManager manager) {
         IpMapping ip = null;
         synchronized (unused) {
             if (unused.isEmpty()) {
                 // uh-oh! no more IPs... ask for at least one new IP, scaling up by square root of total IPs allocated
-                ctrl.requestNewIps((int) (1 + Math.sqrt(allIps.size())))
+                manager.requestNewIps((int) (1 + Math.sqrt(allIps.size())))
                         .forEach(this::addIpUnused);
             }
             for (final Iterator<IpMapping> itr = unused.iterator(); itr.hasNext();) {
@@ -103,9 +103,12 @@ public class IpPool {
         });
     }
 
-    public IpMapping reserveIp(ClusterController ctrl, Machine node) {
+    public IpMapping reserveIp(DeploymentManager ctrl, Machine node) {
         IpMapping nodeIp = node.getIp();
-        if (nodeIp == null) {
+        if (nodeIp == null ||
+                (nodeIp.getState() != IpState.Unclaimed && (nodeIp.getInstance().orElse(null) != node))
+        ) {
+            LOG.infof("Machine %s had unusable IP %s, getting a new one", node.getHost(), nodeIp);
             nodeIp = getUnusedIp(ctrl);
             node.setIp(nodeIp);
         }
@@ -113,6 +116,10 @@ public class IpPool {
         changeState(nodeIp, alreadyRunning ? IpState.Running : IpState.Claimed);
 
         // must remove ip from both sets before we call setInstance, which updates timestamp
+        if (nodeIp.getIp() != null) {
+            allIps.put(nodeIp.getIp(), nodeIp);
+        }
+        allIps.put(nodeIp.getName(), nodeIp);
         used.remove(nodeIp);
         unused.remove(nodeIp);
         nodeIp.setInstance(node);
@@ -136,7 +143,9 @@ public class IpPool {
     public IpMapping updateOrCreate(final String name, final String addr) {
         final IpMapping ip = allIps.computeIfAbsent(name, n -> new IpMapping(name, addr));
         ip.setIp(addr);
-        allIps.put(addr, ip);
+        if (addr != null) {
+            allIps.put(addr, ip);
+        }
         return ip;
     }
 

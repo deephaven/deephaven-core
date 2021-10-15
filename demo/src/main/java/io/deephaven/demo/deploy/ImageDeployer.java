@@ -21,11 +21,37 @@ import static io.deephaven.demo.NameConstants.*;
  */
 public class ImageDeployer {
 
+    static {
+        System.setProperty("org.jboss.logging.provider", "jdk");
+    }
     private static final Logger LOG = Logger.getLogger(ImageDeployer.class);
 
     public static void main(String ... args) throws IOException, InterruptedException {
-        new ImageDeployer().deploy(args.length > 0 ? args[0] : "0.0.1",
-                                  args.length > 1 ? args[1] : "ancestor");
+        final ImageDeployer deployer = new ImageDeployer();
+        if (args.length == 0) {
+            deployer.deploy(VERSION, "ancestor");
+        } else {
+            if ("-w".equals(args[0]) || "--worker".equals(args[0])) {
+                if (args.length < 2) {
+                    throw new IllegalArgumentException("Sent " + args[0] + " without a second argument");
+                }
+                String workerName = args[1];
+                deployer.deploySingleWorker(workerName);
+            } else {
+                deployer.deploy(args[0], args.length > 1 ? args[1] : "ancestor");
+            }
+        }
+    }
+
+    private void deploySingleWorker(final String workerName) throws IOException, InterruptedException {
+        LOG.infof("Creating new worker %s", workerName);
+        final String localDir = System.getProperty("java.io.tmpdir", "/tmp") + "/dh_deploy_" + workerName;
+        GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
+        ClusterController ctrl = new ClusterController(manager, false);
+        final Machine machine = ctrl.requestMachine(workerName, true);
+        manager.waitForSsh(machine);
+        ctrl.waitUntilHealthy(machine);
+        LOG.infof("Your machine %s is healthy!", machine.getDomainName());
     }
 
     private void deploy(final String version, String machinePrefix) throws IOException, InterruptedException {
@@ -33,8 +59,8 @@ public class ImageDeployer {
         GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
         ClusterController ctrl = new ClusterController(manager, false);
         String prefix = machinePrefix + (machinePrefix.isEmpty() || machinePrefix.endsWith("-") ? "" : "-");
-        String workerBox = prefix + "worker"; //ancestor-worker
-        String controllerBox = prefix + "controller"; // ancestor=controller
+        String workerBox = prefix + "worker-" + VERSION_MANGLE; //ancestor-worker
+        String controllerBox = prefix + "controller-" + VERSION_MANGLE; // ancestor=controller
 
         // for now, we are NOT going to allow stomping images.
         final Execute.ExecutionResult result = GoogleDeploymentManager.gcloudQuiet(true, false, "images", "describe", SNAPSHOT_NAME + "-worker");
@@ -42,8 +68,7 @@ public class ImageDeployer {
             throw new IllegalStateException("Snapshot " + SNAPSHOT_NAME + "-worker already exists; please bump your version!");
         }
 
-
-        Machine controller = ctrl.findMachine(controllerBox, true);
+        Machine controller = ctrl.findMachine(controllerBox, true, true);
         LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
         // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
         ClusterController.setTimer("Delete " + controllerBox, ()-> {
@@ -55,7 +80,6 @@ public class ImageDeployer {
             // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
             controller.setController(true);
             controller.setSnapshotCreate(true);
-            manager.assignDns(ctrl, Stream.of(controller));
 
             return "";
         });
@@ -65,7 +89,7 @@ public class ImageDeployer {
 
 
         LOG.info("Creating new worker template box");
-        Machine worker = ctrl.findMachine(workerBox, true);
+        Machine worker = ctrl.findMachine(workerBox, true, true);
 
         worker.getIp().setDomain(new DomainMapping(workerBox, DOMAIN));
         worker.setSnapshotCreate(true);
@@ -73,7 +97,7 @@ public class ImageDeployer {
         manager.createMachine(worker, manager.getIpPool());
         manager.assignDns(ctrl, Stream.of(worker));
         // even if we're just going to shut the machine down, wait until ssh is responsive
-        manager.waitForSsh(worker, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
+        manager.waitForSsh(worker, -1, TimeUnit.MINUTES.toMillis(15));
         // wait until we can reach /health, so we know the system setup is complete and the server is in a running state.
         ctrl.waitUntilHealthy(worker);
         // TODO: have a test to turn machine off and on, wait again until /health works, to verify that iptables rules are persisting across restarts
@@ -83,18 +107,20 @@ public class ImageDeployer {
         // worker is done, create the controller (we already setup DNS for it above)
         LOG.info("Creating new controller template box");
         manager.createMachine(controller, manager.getIpPool());
+        manager.assignDns(ctrl, Stream.of(controller));
 
-        manager.waitForSsh(controller, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
+        manager.waitForSsh(controller, -1, TimeUnit.MINUTES.toMillis(15));
         ctrl.waitUntilHealthy(controller);
 
         finishDeploy("Controller", controller, manager);
 
         LOG.info("Creating new controller-" + VERSION_MANGLE + " box");
-        Machine newCtrl = ctrl.findMachine("controller-" + VERSION_MANGLE, true);
+        Machine newCtrl = ctrl.findMachine("controller-" + VERSION_MANGLE, true, true);
         if (newCtrl.getIp() == null) {
             newCtrl.setIp(ctrl.requestIp());
         }
         LOG.info("Setting up domain for " + newCtrl);
+        // this is not backed by a naturally-built DNS record. Need to test...
         newCtrl.getIp().setDomain(new DomainMapping(newCtrl.getHost(), DOMAIN));
         newCtrl.setController(true);
         LOG.info("Creating " + newCtrl);

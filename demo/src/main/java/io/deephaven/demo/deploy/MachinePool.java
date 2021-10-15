@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
 
+import static io.deephaven.demo.NameConstants.DOMAIN;
+
 /**
  * MachinePool:
  * <p>
@@ -36,13 +38,16 @@ public class MachinePool {
     private final Map<String, Machine> machinesByName = new ConcurrentHashMap<>();
     private final Set<Machine> machines = new ConcurrentSkipListSet<>(CMP);
 
-    public Machine createMachine(final ClusterController ctrl, final String name) {
+    public Machine createMachine(final ClusterController ctrl, final String name, final boolean multiDomain) {
         GoogleDeploymentManager manager = ctrl.getDeploymentManager();
         final IpPool ips = manager.getIpPool();
         final String newName = name == null || name.isEmpty() ? NameGen.newName() : name;
-        final Machine machine = getOrCreate(newName, ctrl, null);
+        final Machine machine = getOrCreate(newName, ctrl, null, null);
         if (machine.getIp() == null) {
-            machine.setIp(ips.reserveIp(ctrl, machine));
+            machine.setIp(ips.reserveIp(manager, machine));
+        }
+        if (!multiDomain) {
+            machine.getIp().setDomain(manager.getDomainPool().getOrCreate(machine.getHost(), DOMAIN));
         }
         try {
             machine.setOnline(true);
@@ -75,13 +80,15 @@ public class MachinePool {
             }
             while (!candidates.isEmpty()) {
                 final Machine candidate = candidates.remove(candidates.size() - 1);
-                candidate.setInUse(true);
-                // hm... if synchronized is not enough,
-                // here is where we should try to claim a candidate through a contention-breaking set-label operation...
-                // we don't _really_ want that, though, since there is code that calls us which does not want to publicly reserve a machine.
+                if (!candidate.isInUse()) {
+                    candidate.setInUse(true);
+                    // hm... if synchronized is not enough,
+                    // here is where we should try to claim a candidate through a contention-breaking set-label operation...
+                    // we don't _really_ want that, though, since there is code that calls us which does not want to publicly reserve a machine.
 
-                LOG.warn("Sending user a machine we must turn on: " + candidate);
-                return Optional.of(candidate);
+                    LOG.warn("Sending user a machine we must turn on: " + candidate);
+                    return Optional.of(candidate);
+                }
             }
         }
         return Optional.empty();
@@ -117,12 +124,20 @@ public class MachinePool {
     public Machine findByName(final String name) {
         return machinesByName.get(name);
     }
-    public Machine getOrCreate(final String name, final ClusterController ctrl, final IpMapping ip) {
+    public Machine getOrCreate(final String name, final ClusterController ctrl, final IpMapping ip, final String realIP) {
         return machinesByName.computeIfAbsent(name, missing-> {
+            final GoogleDeploymentManager manager = ctrl.getDeploymentManager();
+            final IpPool ips = manager.getIpPool();
             final Machine machine = new Machine(missing, ip == null ? ctrl.requestIp() : ip);
+            final IpMapping machineIp = machine.getIp();
+            if (realIP != null && realIP.equals(machineIp.getIp())) {
+                // this will allow the ip pool to recognize this IP address belongs to this machine,
+                // regardless of it's "currently in use" state
+                machineIp.setInstance(machine);
+                ips.reserveIp(manager, machine);
+            }
             machines.add(machine);
-            final IpPool ips = ctrl.getDeploymentManager().getIpPool();
-            ips.reserveIp(ctrl, machine);
+            ips.reserveIp(manager, machine);
             return machine;
         });
     }
@@ -137,7 +152,7 @@ public class MachinePool {
     }
 
     public void expireInTimeString(final Machine machine, final String lease) {
-        final long parsedTime = ClusterController.parseTime(lease);
+        final long parsedTime = ClusterController.parseTime(lease, machine.getHost());
         if (parsedTime < machine.getExpiry()) {
             // machine was taken while we were loading metadata. ignore!
             return;

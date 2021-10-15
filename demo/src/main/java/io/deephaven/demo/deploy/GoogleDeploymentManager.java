@@ -46,6 +46,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
     private final String localDir;
     private final IpPool ips;
     private final DomainPool domains;
+    private final AtomicInteger pendingIps = new AtomicInteger(0);
+
     boolean createdNewMachine;
 
     private final GoogleDnsManager dns;
@@ -157,7 +159,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         if (exists) {
             turnOn(node);
         } else {
-            if (!createNew(node)) {
+            if (!createNew(node, ips)) {
                 throw new IllegalStateException("Machine " + node.getHost() + " (" + node.getDomainName() + ") does not exist, and createNew() failed to make the machine.");
             }
         }
@@ -343,7 +345,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         final long endMillis = startMillis + totalTimeoutMillis;
         Throwable last_fail;
         boolean printOnce = true;
-        boolean rebootLeft = true;
+        boolean rebootLeft = rebootTimeoutMillis > 0;
         int delay = 1000;
         while (true) {
             try {
@@ -498,9 +500,10 @@ public class GoogleDeploymentManager implements DeploymentManager {
      </pre></code>
      *
      * @param machine An instance of DhNode which describes the machine we are about to create.
+     * @param ips
      * @return true if we successfully created the machine.
      */
-    boolean createNew(Machine machine) throws IOException, InterruptedException {
+    boolean createNew(Machine machine, final IpPool ips) throws IOException, InterruptedException {
         // create a new, empty centos 7 / ubuntu 20.04 machine.
         // in the future, we'll add snapshots or source images to duplicate effort,
         // but for now our goal is to deliver a complete list of all operations needed
@@ -519,13 +522,27 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 "--hostname=" + machine.getDomainName(),
                 "--machine-type", machine.getMachineType()
         ));
-        IpMapping ip = machine.getIp();
-        if (ip == null) {
-            throw new NullPointerException("Cannot create a machine with a null IpMapping; bad machine: " + machine);
+        String extraLabel = "";
+        if (machine.isNoStableIP()) {
+            // don't use the --no-address flag, that gets us no-external-IP. We just want an ephemeral, one-shot throwaway IP
+            LOG.info("Machine " + machine.getHost() + " will get a new ephemeral IP address");
+        } else {
+            IpMapping ip = machine.getIp();
+            // TODO Need to test that this ip is correct and not in use
+            if (ip == null) {
+                throw new NullPointerException("Cannot create a machine with a null IpMapping; bad machine: " + machine);
+            }
+            cmds.add("--address");
+            cmds.add(ip.getName());
+            LOG.info("Giving machine " + machine.getHost() + " the IP address " + ip);
+            extraLabel =  ","  + LABEL_IP_NAME + "=" + ip.getName();
+            final DomainMapping currentDomain = ip.getCurrentDomain();
+            ips.reserveIp(this, machine);
+            if (currentDomain != null) {
+                // set some more extraLabel for the domain
+                extraLabel += "," + LABEL_DOMAIN + "=" + currentDomain.getName();
+            }
         }
-        cmds.add("--address");
-        cmds.add(ip.getName());
-        LOG.info("Giving machine " + machine.getHost() + " the IP address " + ip);
 
         if (!machine.isController()) {
             // non-controller machines attach the demo-data disk, so we can mount it into worker container
@@ -536,8 +553,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             final String simpleType = machine.isController() ? "controller" : "worker";
             cmds.add("--labels=" +
                     LABEL_PURPOSE + "=" + (machine.isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER)
-                    + ","  + LABEL_IP_NAME + "=" + ip.getName()
-            );
+                    + extraLabel);
             cmds.add("--tags=dh-demo,dh-creator");
             cmds.add("--service-account");
             cmds.add("dh-controller@" + getGoogleProject() + ".iam.gserviceaccount.com");
@@ -555,7 +571,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         } else if (machine.isController()) {
             cmds.add("--labels=" +
                     LABEL_PURPOSE + "=" + PURPOSE_CONTROLLER
-                    + "," + LABEL_IP_NAME + "=" + ip.getName());
+                    + extraLabel);
             cmds.add("--tags=dh-demo,dh-controller");
             cmds.add("--service-account");
             // hm... the dh-controller permissions are actually only needed by snapshotCreate machines.
@@ -579,8 +595,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("--labels=" +
                     LABEL_PURPOSE + "=" + PURPOSE_WORKER
                     + "," + LABEL_VERSION + "=" + VERSION_MANGLE
-                    + "," + LABEL_IP_NAME + "=" + ip.getName()
-            );
+                    + extraLabel);
             cmds.add("--tags=dh-demo,dh-worker");
             cmds.add("--service-account");
             if (machine.isUseImage()) {
@@ -602,12 +617,17 @@ public class GoogleDeploymentManager implements DeploymentManager {
             }
         }
         Execute.ExecutionResult res = execute(cmds);
-        // TODO: use a privileged service account for setup, and then remove the service account when creating an actual worker from the snapshot
 
         if (res.code != 0) {
             System.err.println("Unable to create machine " + machine);
             warnResult(res);
             throw new IllegalStateException("Failed to create node " + machine.getHost());
+        }
+        // when a machine doesn't have a stable IP, we need to parse the ephemeral IP out of this response
+        if (machine.isNoStableIP()) {
+            final String realIp = getGcloudIp(machine);
+            machine.getIp().setIp(realIp);
+            ips.reserveIp(this, machine);
         }
         if (!machine.isController()) {
             ClusterController.setTimer("Attach Data Disk", ()->{
@@ -877,7 +897,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     for (int r;
                          (r = in.read(bytes, 0, num)) > 0;
                     ) {
-                        LOG.infof("Wrote %s bytes from scripts/%s to %s", r, script, outputFilename);
+                        LOG.tracef("Wrote %s bytes from scripts/%s to %s", r, script, outputFilename);
                         out.write(bytes, 0, r);
                     }
                     out.write('\n');
@@ -1001,6 +1021,72 @@ public class GoogleDeploymentManager implements DeploymentManager {
 
     public DomainPool getDomainPool() {
         return domains;
+    }
+
+    @Override
+    public Collection<IpMapping> requestNewIps(int numIps) {
+        final List<IpMapping> list = new ArrayList<>();
+
+        while (numIps --> 0) {
+            final IpMapping mapping = ips.updateOrCreate(NameGen.newName(), null);
+            list.add(mapping);
+        }
+        // Filling in the IP address requires IO, so let's do that offthread...
+        // IMPORTANT: code calling us may be holding a lock, so don't de-off-thread this code without checking callers of this method for locks!
+        pendingIps.incrementAndGet();
+        ClusterController.setTimer("Get or create " + list.size() + "IPs", ()-> {
+            list.parallelStream().forEach(this::getOrCreateIp);
+            // hmm... operations like setting up DNS _require_ this operation to be complete.
+            // we should have some way to communicate this / pass on a BlockOnMe object...
+            if (pendingIps.decrementAndGet() <= 0) {
+                synchronized (pendingIps) {
+                    pendingIps.notifyAll();
+                }
+            }
+        });
+
+        return Collections.unmodifiableList(list);
+    }
+
+    protected void getOrCreateIp(final IpMapping ip) {
+        if (ip.getIp() == null) {
+            // create a new IP w/ google.
+            String name = ip.getName();
+            try {
+                final Execute.ExecutionResult result = gcloud(true, false, "addresses", "create",
+                        name, "--region", NameConstants.REGION);
+                if (result.code != 0) {
+                    String msg = "Unable to create an ip address for " + ip;
+                    System.err.println(msg);
+                    System.err.println("stdout:");
+                    System.err.println(result.out);
+                    System.err.println("stderr:");
+                    System.err.println(result.err);
+                    throw new IllegalStateException(msg);
+                }
+                // address exists... parse out the value!
+                System.out.println("Created address for " + ip + " :\n" + result.out);
+                ips.addIpUnused(ip);
+            } catch (IOException | InterruptedException e) {
+                System.err.println("Unable to create an IP address for " + ip + "; check for resource quotas / service outage?");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void waitUntilIpsCreated() {
+        synchronized (pendingIps) {
+            while (pendingIps.get() > 0) {
+                try {
+                    pendingIps.wait(2000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    LOG.errorf("Interrupted while waiting on pendingIps to == 0 instead of " + pendingIps.get());
+                    break;
+                }
+            }
+        }
     }
 }
 

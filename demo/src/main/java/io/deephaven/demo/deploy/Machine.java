@@ -35,6 +35,7 @@ public class Machine {
     private String version;
     private long mark;
     private boolean useImage;
+    private boolean noStableIP;
 
     public Machine(@NotNull final String host, IpMapping ip) {
         this.host = host;
@@ -245,5 +246,13 @@ public class Machine {
 
     public boolean isUseImage() {
         return useImage;
+    }
+
+    public void setNoStableIP(final boolean noStableIP) {
+        this.noStableIP = noStableIP;
+    }
+
+    public boolean isNoStableIP() {
+        return noStableIP;
     }
 }

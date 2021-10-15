@@ -62,7 +62,7 @@ public class GoogleDeploymentManagerTest {
         final Machine testNode = ctrl.requestMachine("test-jxn", true);
 //        testNode.setController(true); // feel free to use this to get a controller to test.
         if (!deploy.checkExists(testNode)) {
-            deploy.createNew(testNode);
+            deploy.createNew(testNode, deploy.getIpPool());
         }
         deploy.turnOn(testNode);
         deploy.waitForDns(Collections.singletonList(testNode), GoogleDeploymentManager.DNS_GOOGLE);

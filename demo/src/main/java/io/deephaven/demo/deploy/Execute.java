@@ -107,7 +107,7 @@ result.err);
         if (logErr == null) {
             logErr = quiet ? DO_NOTHING : toLogger(System.err);
         }
-        if (cmd.stream().filter(Objects::isNull).findFirst().isPresent()) {
+        if (cmd.stream().anyMatch(Objects::isNull)) {
             String msg = "Cannot pass null arguments: " + cmd;
             System.out.println(msg);
             throw new NullPointerException(msg);
@@ -252,7 +252,11 @@ result.err);
         }
         List<String> args = new ArrayList<>();
         args.addAll(Arrays.asList(
-        "ssh", "-i", getAdminSshKey(), "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", machine
+        "ssh", "-i", getAdminSshKey(),
+                "-o", "IdentitiesOnly=yes",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "ConnectTimeout=10",
+                "-o", "UserKnownHostsFile=/dev/null", machine
         ));
         args.addAll(Arrays.asList(command));
         return allowFail ? execute(args, getSshEnvMap(), null, null, DO_NOTHING, DO_NOTHING) : executeNoFail(args, getSshEnvMap(), null, null, DO_NOTHING, DO_NOTHING);

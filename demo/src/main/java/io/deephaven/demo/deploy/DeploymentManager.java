@@ -30,5 +30,8 @@ interface DeploymentManager {
     Collection<String> findMissingSnapshots(String snapshotName, ClusterMap map);
     void waitForSsh(Machine node);
 
+    Collection<IpMapping> requestNewIps(int i);
+
+    void waitUntilIpsCreated();
 }
 

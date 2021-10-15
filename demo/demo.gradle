@@ -249,3 +249,16 @@ tasks.register('deployDemo', JavaExec) {
         exe.systemProperty('deployImage', 'true')
         exe.systemProperty('dh-version', version)
 }
+
+tasks.register('deployMachine', JavaExec) {
+    JavaExec exe ->
+        String machineName = findProperty("name")
+        if (!machineName) {
+            throw new IllegalStateException("Cannot run $exe.path without passing -Pname=my-machine-name")
+        }
+        exe.main('io.deephaven.demo.deploy.ImageDeployer')
+        exe.args("--worker", machineName)
+        exe.classpath(sourceSets.main.runtimeClasspath)
+        exe.systemProperty('deployImage', 'false')
+        exe.systemProperty('dh-version', version)
+}
