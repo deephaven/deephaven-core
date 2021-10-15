@@ -5,8 +5,8 @@
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::highlevel::TableHandle;
-using deephaven::client::utility::flight::statusOrDie;
-using deephaven::client::utility::flight::valueOrDie;
+using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::valueOrThrow;
 
 #include <memory>
 
@@ -16,11 +16,11 @@ TableMaker::~TableMaker() = default;
 
 void TableMaker::finishAddColumn(std::string name, internal::TypeConverter info) {
   auto kvMetadata = std::make_shared<arrow::KeyValueMetadata>();
-  statusOrDie(kvMetadata->Set("deephaven:type", info.deephavenType()), "KeyValueMetadata::Set");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(kvMetadata->Set("deephaven:type", info.deephavenType())));
 
   auto field = std::make_shared<arrow::Field>(std::move(name), std::move(info.dataType()), true,
       std::move(kvMetadata));
-  statusOrDie(schemaBuilder_.AddField(field), "SchemaBuilder::AddField");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder_.AddField(field)));
 
   if (columns_.empty()) {
     numRows_ = info.column()->length();
@@ -34,7 +34,7 @@ void TableMaker::finishAddColumn(std::string name, internal::TypeConverter info)
 }
 
 TableHandle TableMaker::makeTable(const TableHandleManager &manager) {
-  auto schema = valueOrDie(schemaBuilder_.Finish(), "Failed to create schema");
+  auto schema = valueOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder_.Finish()));
 
   auto wrapper = manager.createFlightWrapper();
   auto [result, fd] = manager.newTableHandleAndFlightDescriptor();
@@ -44,15 +44,15 @@ TableHandle TableMaker::makeTable(const TableHandleManager &manager) {
 
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  statusOrDie(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr), "DoPut failed");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
   auto batch = arrow::RecordBatch::Make(schema, numRows_, std::move(columns_));
 
-  statusOrDie(fsw->WriteRecordBatch(*batch), "WriteRecordBatch failed");
-  statusOrDie(fsw->DoneWriting(), "DoneWriting failed");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
 
   std::shared_ptr<arrow::Buffer> buf;
-  statusOrDie(fmr->ReadMetadata(&buf), "ReadMetadata failed");
-  statusOrDie(fsw->Close(), "Close failed");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
   return result;
 }
 
