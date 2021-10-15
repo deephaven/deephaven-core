@@ -11,7 +11,7 @@ import java.lang.ref.WeakReference;
 /**
  * {@link LivenessNode} implementation that relies on reference counting to determine its liveness.
  */
-abstract class ReferenceCountedLivenessNode extends ReferenceCounted implements LivenessNode {
+public abstract class ReferenceCountedLivenessNode extends ReferenceCounted implements LivenessNode {
 
     final boolean enforceStrongReachability;
 

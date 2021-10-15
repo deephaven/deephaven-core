@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-public final class FlightSession implements AutoCloseable {
+public class FlightSession implements AutoCloseable {
 
     public static FlightSession of(SessionImpl session, BufferAllocator incomingAllocator,
             ManagedChannel channel) {
@@ -31,12 +31,12 @@ public final class FlightSession implements AutoCloseable {
         return new FlightSession(session, client);
     }
 
-    private final SessionImpl session;
+    protected final SessionImpl session;
 
     // TODO(deephaven-core#988): Add more async support to org.apache.arrow.flight.FlightClient
-    private final FlightClient client;
+    protected final FlightClient client;
 
-    private FlightSession(SessionImpl session, FlightClient client) {
+    protected FlightSession(SessionImpl session, FlightClient client) {
         this.session = Objects.requireNonNull(session);
         this.client = Objects.requireNonNull(client);
     }

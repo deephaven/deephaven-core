@@ -77,7 +77,7 @@ idea {
 }
 
 ext.versionSource = versionSource
-ext.globalVersion = "0.5.1"
+ext.globalVersion = "0.6.0"
 
 // To set fishlibVersion, go to project-local gradle.properties file
 // (or, use the gradle.properties in $USER_HOME/.gradle for a global override)
@@ -350,10 +350,12 @@ tasks.register 'allJavadoc', Javadoc, {
                 ':grpc-api',
                 ':qst',
                 ':table-api',
-                ':client-session',
-                ':client-session-dagger',
-                ':client-flight',
-                ':client-flight-dagger',
+                ':java-client-session',
+                ':java-client-session-dagger',
+                ':java-client-flight',
+                ':java-client-flight-dagger',
+                ':java-client-barrage',
+                ':java-client-barrage-dagger',
                 ':proto:proto-backplane-grpc',
                 ':proto:proto-backplane-grpc-flight'
         ]
