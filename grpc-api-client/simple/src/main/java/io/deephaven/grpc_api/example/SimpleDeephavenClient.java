@@ -194,7 +194,7 @@ public class SimpleDeephavenClient {
 
     private void onSchemaResult(final Flight.SchemaResult schemaResult) {
         final Schema schema = Schema.getRootAsSchema(schemaResult.getSchema().asReadOnlyByteBuffer());
-        final TableDefinition definition = BarrageSchemaUtil.schemaToTableDefinition(schema);
+        final TableDefinition definition = BarrageSchemaUtil.convertArrowSchema(schema).tableDef;
 
         // Note: until subscriptions move to flatbuffer, we cannot distinguish between the all-inclusive
         // non-existing-bitset and an empty bitset.

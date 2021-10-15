@@ -157,6 +157,7 @@ public class ArrowFlightUtil {
         private SessionState.ExportBuilder<Table> resultExportBuilder;
 
         private ChunkType[] columnChunkTypes;
+        private int[] columnConversionFactors;
         private Class<?>[] columnTypes;
         private Class<?>[] componentTypes;
 
@@ -244,7 +245,7 @@ public class ArrowFlightUtil {
                 for (int ci = 0; ci < numColumns; ++ci) {
                     final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                     msg.addColumnData[ci] = acd;
-
+                    final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
                     try {
                         acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
                                 columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
@@ -337,7 +338,10 @@ public class ArrowFlightUtil {
             if (resultTable != null) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
             }
-            resultTable = BarrageTable.make(BarrageSchemaUtil.schemaToTableDefinition(header), false);
+
+            final BarrageSchemaUtil.ConvertedArrowSchema result = BarrageSchemaUtil.convertArrowSchema(header);
+            resultTable = BarrageTable.make(result.tableDef, false);
+            columnConversionFactors = result.conversionFactors;
             columnChunkTypes = resultTable.getWireChunkTypes();
             columnTypes = resultTable.getWireTypes();
             componentTypes = resultTable.getWireComponentTypes();

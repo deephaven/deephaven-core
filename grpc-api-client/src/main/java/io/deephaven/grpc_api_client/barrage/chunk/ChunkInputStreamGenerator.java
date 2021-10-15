@@ -139,6 +139,16 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
+        return extractChunkFromInputStream(options, 1, chunkType, type, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static <T> Chunk<Attributes.Values> extractChunkFromInputStream(
+            final Options options,
+            final int factor,
+            final ChunkType chunkType, final Class<T> type,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
         switch (chunkType) {
             case Boolean:
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
@@ -151,7 +161,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             case Int:
                 return IntChunkInputStreamGenerator.extractChunkFromInputStream(Integer.BYTES, options, fieldNodeIter, bufferInfoIter, is);
             case Long:
-                return LongChunkInputStreamGenerator.extractChunkFromInputStream(Long.BYTES, options, fieldNodeIter, bufferInfoIter, is);
+                return LongChunkInputStreamGenerator.extractChunkFromInputStream(Long.BYTES, options, factor, fieldNodeIter, bufferInfoIter, is);
             case Float:
                 return FloatChunkInputStreamGenerator.extractChunkFromInputStream(Float.BYTES, options, fieldNodeIter, bufferInfoIter, is);
             case Double:

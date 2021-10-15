@@ -185,8 +185,27 @@ public class BarrageSchemaUtil {
         metadata.put("deephaven:" + key, value);
     }
 
-    // returns null if there is no "trivial" mapping.
-    private static Class<?> getDefaultType(final ArrowType arrowType) {
+    private static boolean maybeConvertForTimeUnit(final TimeUnit unit, final ConvertedArrowSchema result, final int i) {
+        switch(unit) {
+            case NANOSECOND:
+                return true;
+            case MICROSECOND:
+                setConversionFactor(result, i, 1000);
+                return true;
+            case MILLISECOND:
+                setConversionFactor(result, i, 1000 * 1000);
+                return true;
+            case SECOND:
+                setConversionFactor(result, i, 1000 * 1000 * 1000);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static Class<?> getDefaultType(
+            final String name, final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
+        final String exMsg = "Schema did not include `deephaven:type` metadata for field ";
         switch (arrowType.getTypeID()) {
             case Int:
                 final ArrowType.Int intType = (ArrowType.Int) arrowType;
@@ -201,8 +220,6 @@ public class BarrageSchemaUtil {
                             return int.class;
                         case 64:
                             return long.class;
-                        default:
-                            return null;
                     }
                 } else {
                     // UNSIGNED
@@ -213,27 +230,32 @@ public class BarrageSchemaUtil {
                             return int.class;
                         case 32:
                             return long.class;
-                        case 64:
-                        default:
-                            return null;
                     }
                 }
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                                " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
                 return java.lang.Boolean.class;
             case Duration:
-                // In the future, we may be able to do a simple trick here and convert to a long
-                // while adding a suffix to the column name with the TimeUnit. Something like:
-                // final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
-                // final String columnNameSuffix = durationType.getUnit().toString();
-                // // do something to append that suffix to the column name...
-                // return long.class;
-                return null;
+                final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
+                final TimeUnit durationUnit = durationType.getUnit();
+                if (maybeConvertForTimeUnit(durationUnit, result, i)) {
+                    return long.class;
+                }
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                        " of durationType(unit=" + durationUnit.toString() + ")");
             case Timestamp:
                 final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
-                if (timestampType.getUnit() == TimeUnit.NANOSECOND && "UTC".equals(timestampType.getTimezone())) {
-                    return DBDateTime.class;
+                final String tz = timestampType.getTimezone();
+                final TimeUnit timestampUnit = timestampType.getUnit();
+                if (tz == null || "UTC".equals(tz)) {
+                    if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
+                        return DBDateTime.class;
+                    }
                 }
-                return null;
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                        " of timestampType(Timezone=" + tz +
+                        ", Unit=" + timestampUnit.toString() + ")");
             case FloatingPoint:
                 final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowType;
                 switch (floatingPointType.getPrecision()) {
@@ -243,20 +265,50 @@ public class BarrageSchemaUtil {
                         return double.class;
                     case HALF:
                     default:
-                        return null;
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                                " of floatingPointType(Precision=" + floatingPointType.getPrecision().toString() + ")");
                 }
             case Utf8:
                 return java.lang.String.class;
             default:
-                return null;
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                        " of type " + arrowType.getTypeID().toString());
         }
     }
 
-    public static TableDefinition schemaToTableDefinition(final org.apache.arrow.flatbuf.Schema schema) {
-        return schemaToTableDefinition(
+    public static class ConvertedArrowSchema {
+        public final int nCols;
+        public TableDefinition tableDef;
+        // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
+        // to the expected nanos value for DBDateTime.
+        public int[] conversionFactors;
+        public ConvertedArrowSchema(final int nCols) {
+            this.nCols = nCols;
+        }
+    }
+
+    private static void setConversionFactor(final ConvertedArrowSchema result, final int i, final int factor) {
+        if (result.conversionFactors == null) {
+            result.conversionFactors = new int[result.nCols];
+            for (int j = 0; j < result.nCols; ++j) {
+                if (j == i) {
+                    result.conversionFactors[i] = factor;
+                } else {
+                    result.conversionFactors[j] = 1;
+                }
+            }
+            return;
+        }
+        result.conversionFactors[i] = factor;
+     }
+
+
+    public static ConvertedArrowSchema convertArrowSchema(
+            final org.apache.arrow.flatbuf.Schema schema) {
+        return convertArrowSchema(
                 schema.fieldsLength(),
                 i -> schema.fields(i).name(),
-                i -> getDefaultType(ArrowType.getTypeForField(schema.fields(i))),
+                i -> ArrowType.getTypeForField(schema.fields(i)),
                 i -> visitor -> {
                     final org.apache.arrow.flatbuf.Field field = schema.fields(i);
                     for (int j = 0; j < field.customMetadataLength(); j++) {
@@ -266,20 +318,22 @@ public class BarrageSchemaUtil {
                 });
     }
 
-    public static TableDefinition schemaToTableDefinition(final Schema schema) {
-        return schemaToTableDefinition(schema.getFields().size(),
+    public static ConvertedArrowSchema convertArrowSchema(final Schema schema) {
+        return convertArrowSchema(
+                schema.getFields().size(),
                 i -> schema.getFields().get(i).getName(),
-                i -> getDefaultType(schema.getFields().get(i).getType()),
+                i -> schema.getFields().get(i).getType(),
                 i -> visitor -> {
                     schema.getFields().get(i).getMetadata().forEach(visitor);
                 });
     }
 
-    private static TableDefinition schemaToTableDefinition(
+    private static ConvertedArrowSchema convertArrowSchema(
             final int numColumns,
             final IntFunction<String> getName,
-            final IntFunction<Class<?>> getDefaultType,
+            final IntFunction<ArrowType> getArrowType,
             final IntFunction<Consumer<BiConsumer<String, String>>> visitMetadata) {
+        final ConvertedArrowSchema result = new ConvertedArrowSchema(numColumns);
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
@@ -305,17 +359,14 @@ public class BarrageSchemaUtil {
             });
 
             if (type.getValue() == null) {
-                Class<?> defaultType = getDefaultType.apply(i);
-                if (defaultType == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Schema did not include `deephaven:type` metadata for field " + name);
-                }
+                Class<?> defaultType = getDefaultType(name, getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
 
-        return new TableDefinition(columns);
+        result.tableDef = new TableDefinition(columns);
+        return result;
     }
 
     private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description,

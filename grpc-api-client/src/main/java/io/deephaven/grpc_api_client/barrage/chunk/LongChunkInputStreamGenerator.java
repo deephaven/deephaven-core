@@ -24,6 +24,9 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.function.LongSupplier;
+
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<LongChunk<Attributes.Values>> {
     private static final String DEBUG_NAME = "LongChunkInputStreamGenerator";
@@ -52,7 +55,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
                 subset.forAllLongs(row -> {
-                    if (chunk.get((int) row) == QueryConstants.NULL_LONG) {
+                    if (chunk.get((int) row) == NULL_LONG) {
                         ++cachedNullCount;
                     }
                 });
@@ -100,7 +103,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                         context.count = 0;
                     };
                     subset.forAllLongs(row -> {
-                        if (chunk.get((int) row) != QueryConstants.NULL_LONG) {
+                        if (chunk.get((int) row) != NULL_LONG) {
                             context.accumulator |= 1L << context.count;
                         }
                         if (++context.count == 64) {
@@ -135,8 +138,15 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         }
     }
 
+    @FunctionalInterface
+    public interface LongSupplierWithIOException {
+        long getAsLong() throws IOException;
+    }
+
     static Chunk<Attributes.Values> extractChunkFromInputStream(
-            final int elementSize, final Options options,
+            final int elementSize,
+            final Options options,
+            final int factor,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -176,21 +186,38 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
             if (options.useDeephavenNulls) {
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    chunk.set(ii, is.readLong());
+                if (factor == 1) {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        chunk.set(ii, is.readLong());
+                    }
+                } else {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        final long in = is.readLong();
+                        final long out;
+                        if (in == NULL_LONG) {
+                            out = in;
+                        } else {
+                            out = factor * in;
+                        }
+                        chunk.set(ii, out);
+                    }
                 }
             } else {
                 long nextValid = 0;
+                LongSupplierWithIOException supplier = (factor == 1)
+                    ? is::readLong
+                    : () -> (factor * is.readLong())
+                    ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
                     }
                     final long value;
                     if ((nextValid & 0x1) == 0x0) {
-                        value = QueryConstants.NULL_LONG;
+                        value = NULL_LONG;
                         is.skipBytes(elementSize);
                     } else {
-                        value = is.readLong();
+                        value = supplier.getAsLong();
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);
