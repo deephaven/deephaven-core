@@ -20,4 +20,4 @@ COPY --from=proto-backplane-grpc generated/js raw-js-openapi/build/js-src
 
 WORKDIR /usr/src/app/raw-js-openapi
 RUN set -eux; \
-    ../node_modules/.bin/webpack --display-modules
+    ../node_modules/.bin/webpack

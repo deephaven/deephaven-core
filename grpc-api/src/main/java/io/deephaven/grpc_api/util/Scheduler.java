@@ -16,7 +16,7 @@ public interface Scheduler extends TimeProvider {
 
     /**
      * Schedule this task to run at the specified time.
-     * 
+     *
      * @param absoluteTime when to run this task
      * @param command the task to run
      */
@@ -24,7 +24,7 @@ public interface Scheduler extends TimeProvider {
 
     /**
      * Schedule this task to run at the specified time.
-     * 
+     *
      * @param delayMs how long to delay before running this task (in milliseconds)
      * @param command the task to run
      */
@@ -32,14 +32,14 @@ public interface Scheduler extends TimeProvider {
 
     /**
      * Schedule this task to run immediately.
-     * 
+     *
      * @param command the task to run
      */
     void runImmediately(@NotNull Runnable command);
 
     /**
      * Schedule this task to run immediately, under the exclusive LTM lock.
-     * 
+     *
      * @param command the task to run
      */
     void runSerially(@NotNull Runnable command);

@@ -18,7 +18,7 @@ dependencies {
   Classpaths.inheritSlf4j(project, 'jcl-over-slf4j', 'runtimeOnly')
   runtimeOnly project(':logback-print-stream-globals')
   runtimeOnly project(':logback-logbuffer')
-  runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+  Classpaths.inheritLogbackClassic(project)
 }
 
 def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
