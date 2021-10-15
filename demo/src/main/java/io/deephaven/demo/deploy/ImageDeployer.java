@@ -48,7 +48,7 @@ public class ImageDeployer {
         final String localDir = System.getProperty("java.io.tmpdir", "/tmp") + "/dh_deploy_" + workerName;
         GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
         ClusterController ctrl = new ClusterController(manager, false);
-        final Machine machine = ctrl.requestMachine(workerName, true);
+        final Machine machine = ctrl.requestMachine(workerName, true, false);
         manager.waitForSsh(machine);
         ctrl.waitUntilHealthy(machine);
         LOG.infof("Your machine %s is healthy!", machine.getDomainName());

@@ -2,6 +2,8 @@ package io.deephaven.demo.deploy;
 
 import io.deephaven.demo.NameConstants;
 import io.deephaven.demo.NameGen;
+import io.smallrye.common.constraint.NotNull;
+import io.smallrye.common.constraint.Nullable;
 
 import java.util.Objects;
 
@@ -19,9 +21,10 @@ public class DomainMapping {
     private final String domainRoot;
     private volatile long mark;
 
-    public DomainMapping(final String name, final String domainRoot) {
+    public DomainMapping(@NotNull final String name, @Nullable final String domainRoot) {
         this.name = name;
         this.domainRoot = domainRoot == null ? NameConstants.DOMAIN : domainRoot;
+        NameGen.reserveName(name);
     }
 
     public String getName() {

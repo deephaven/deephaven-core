@@ -33,6 +33,25 @@ public class Execute {
         public int code;
         public String out;
         public String err;
+        public String sourceCode;
+
+        public ExecutionResult(final String sourceCode) {
+            this.sourceCode = sourceCode;
+        }
+
+        public String getSourceCode() {
+            return sourceCode;
+        }
+
+        @Override
+        public String toString() {
+            return "ExecutionResult{" +
+                    "resultCode=" + code +
+                    ", sourceCode='" + sourceCode + '\'' +
+                    ", out='" + out + '\'' +
+                    ", err='" + err + '\'' +
+                    '}';
+        }
     }
 
     static Consumer<CharSequence> toLogger(PrintStream stream) {
@@ -160,7 +179,7 @@ result.err);
 
     private static List<Process> runningProc;
 
-    private static ExecutionResult getResult(String code, Process proc, Consumer<CharSequence> logOut, Consumer<CharSequence> logErr) throws InterruptedException {
+    private static ExecutionResult getResult(String sourceCode, Process proc, Consumer<CharSequence> logOut, Consumer<CharSequence> logErr) throws InterruptedException {
         synchronized (Execute.class) {
             if (runningProc == null) {
                 runningProc = new ArrayList<>();
@@ -185,9 +204,9 @@ result.err);
         proc.waitFor();
         // TODO: take a Duration argument?
         if (!proc.waitFor(60, TimeUnit.SECONDS)) {
-            System.err.println("Waited more than 60 seconds to run process " + code);
+            System.err.println("Waited more than 60 seconds to run process " + sourceCode);
         }
-        ExecutionResult result = new ExecutionResult();
+        ExecutionResult result = new ExecutionResult(sourceCode);
         result.code = proc.exitValue();
         // make sure we wait for our output-consuming threads to join, or else we might truncate output!
         soutThread.join();

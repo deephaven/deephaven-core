@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * IpMapping:
@@ -33,6 +34,7 @@ public class IpMapping implements Comparable<IpMapping> {
         if (name == null) {
             throw new NullPointerException("Name cannot be null");
         }
+        NameGen.reserveName(name);
         this.ip = ip;
         this.state = IpState.Unverified;
         this.instance = Optional.empty();
@@ -148,8 +150,18 @@ public class IpMapping implements Comparable<IpMapping> {
         }
     }
 
+    public void setDomain(final DomainMapping domainMapping) {
+        domains.clear();
+        domains.add(domainMapping);
+        currentDomain = null;
+    }
+
     public void selectDomain(final Machine machine, final String domainName) {
         if (domainName.isEmpty() || domains.isEmpty()) {
+            return;
+        }
+        if (domainName.equals(currentDomain.getDomainQualified())) {
+            // already correct, do nothing.
             return;
         }
         for (Iterator<DomainMapping> itr = domains.iterator(); itr.hasNext();) {
@@ -160,17 +172,12 @@ public class IpMapping implements Comparable<IpMapping> {
                 return;
             }
         }
-        LOG.warnf("Tried to select invalid hostname %s for machine %s", domainName, machine.getHost());
+        LOG.warnf("Tried to select invalid hostname %s for machine %s. Valid names: %s",
+                domainName, machine.toStringShort(), domains.stream().map(DomainMapping::getDomainQualified).collect(Collectors.joining(", ")));
 
     }
 
     public int getDomainsAvailable() {
         return domains.size();
-    }
-
-    public void setDomain(final DomainMapping domainMapping) {
-        domains.clear();
-        domains.add(domainMapping);
-        currentDomain = null;
     }
 }

@@ -1,12 +1,20 @@
 package io.deephaven.demo.deploy;
 
 import io.deephaven.demo.ClusterController;
+import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import static io.deephaven.demo.NameConstants.LABEL_IP_NAME;
 
 /**
  * A DeploymentManager is responsible for creating and interacting with real VMs.
@@ -32,6 +40,21 @@ interface DeploymentManager {
 
     Collection<IpMapping> requestNewIps(int i);
 
+
     void waitUntilIpsCreated();
+
+    Logger getLog();
+
+    default void addLabel(Machine mach, String name, String value) {
+        addLabel(mach, name, value, (r, e) -> {
+            if (e == null) {
+                getLog().infof("Set machine %s label %s=%s", mach.toStringShort(), name, value);
+            } else {
+                getLog().warnf(e, "Unable to update %s label %s=%s", mach.toStringShort(), name, value);
+            }
+
+        });
+    }
+    void addLabel(Machine mach, String name, String value, BiConsumer<Execute.ExecutionResult, Throwable> failMsg);
 }
 

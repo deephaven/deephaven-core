@@ -115,11 +115,11 @@ public class IpPool {
         boolean alreadyRunning = nodeIp.isRunningFor(node);
         changeState(nodeIp, alreadyRunning ? IpState.Running : IpState.Claimed);
 
-        // must remove ip from both sets before we call setInstance, which updates timestamp
         if (nodeIp.getIp() != null) {
             allIps.put(nodeIp.getIp(), nodeIp);
         }
         allIps.put(nodeIp.getName(), nodeIp);
+        // must remove ip from both sets before we call setInstance, which updates timestamp
         used.remove(nodeIp);
         unused.remove(nodeIp);
         nodeIp.setInstance(node);

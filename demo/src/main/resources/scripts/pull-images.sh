@@ -1,5 +1,5 @@
 # Compute some default variables
-export VERSION="${VERSION:-0.5.14}"
+export VERSION="${VERSION:-0.5.15}"
 export TYPE="${TYPE:-python}"
 export ZONE="${ZONE:-us-central1}"
 export PROJECT_ID="${PROJECT_ID:-deephaven-oss}"

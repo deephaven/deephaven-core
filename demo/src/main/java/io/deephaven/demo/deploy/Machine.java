@@ -29,18 +29,20 @@ public class Machine {
     private String diskSize;
     private String diskType;
     private boolean snapshotCreate;
-    private boolean inUse;
-    private long expiry;
-    private boolean online;
+    private volatile boolean inUse;
+    private volatile long expiry;
+    private volatile boolean online;
     private String version;
-    private long mark;
+    private volatile long mark;
     private boolean useImage;
     private boolean noStableIP;
+    private boolean destroyed;
 
     public Machine(@NotNull final String host, IpMapping ip) {
         this.host = host;
         this.ip = ip;
         this.useImage = useImages;
+        NameGen.reserveName(host);
     }
 
     public String getHost() {
@@ -129,6 +131,10 @@ public class Machine {
         return Objects.hash(host) ^ NameGen.getLocalHash();
     }
 
+    public String toStringShort() {
+        return getHost() + "(" + getDomainName() + ")";
+    }
+
     @Override
     public String toString() {
         return "Machine{" +
@@ -153,6 +159,9 @@ public class Machine {
         return expiry;
     }
 
+    public final boolean isOffline() {
+        return !isOnline();
+    }
     public boolean isOnline() {
         return online;
     }
@@ -163,41 +172,47 @@ public class Machine {
 
     public DomainMapping useNewDomain(ClusterController ctrl) {
         final DomainMapping previous = ip.getCurrentDomain();
-        final GoogleDnsManager dns = ctrl.getDeploymentManager().dns();
+        final GoogleDeploymentManager manager = ctrl.getDeploymentManager();
+        final GoogleDnsManager dns = manager.dns();
+        final DomainPool domainPool = manager.getDomainPool();
         dns.tx(tx -> {
-            if (previous != null) {
-                tx.removeRecord(previous, getIpAddressBlocking(ctrl));
-            }
+            LOG.infof("Expiring ip %s for machine %s", ip, Machine.this);
             ip.expireDomain();
             DomainMapping current = ip.getCurrentDomain();
-            final DomainPool domainPool = ctrl.getDeploymentManager().getDomainPool();
+            String ctrlIp = null;
+            if (previous != null) {
+                ctrlIp = getIpAddressBlocking(ctrl);
+                // only remove the previous record if it has changed!
+                tx.removeRecord(previous, ctrlIp);
+            }
             if (current == null) {
                 // create a new domain...
                 final String domainRoot = previous == null ? DOMAIN : previous.getDomainRoot();
                 current = domainPool.getOrCreate(NameGen.newName(), domainRoot);
                 ip.addDomainMapping(current);
                 final DomainMapping toAdd = current;
-                tx.addRecord(toAdd, getIpAddressBlocking(ctrl));
+                if (ctrlIp == null) {
+                    // only block for this once, it shouldn't be changing
+                    ctrlIp = getIpAddressBlocking(ctrl);
+                }
+                tx.addRecord(toAdd, ctrlIp);
             }
             // off-thread the "set label on machine pointing to current hostname"
             final String domainRoot = current.getDomainRoot();
             ClusterController.setTimer("Set " + getHost() + " domain to " + domain(), ()-> {
-                try {
-                    GoogleDeploymentManager.gcloud(true, "instances", "add-labels", getHost(),
-                            "--labels=" + LABEL_DOMAIN + "=" + domain().getName());
-                    // if our IP is running low on DNS names, we should preemptively make a few here.
-                    if (ip.getDomainsAvailable() < 5) {
-                        LOG.infof("IP %s only has %s domains available; adding more", ip, ip.getDomainsAvailable());
-                        dns.tx(t->{
-                            while (ip.getDomainsAvailable() < 5) {
-                                final DomainMapping domain = domainPool.getOrCreate(NameGen.newName(), domainRoot);
-                                ip.addDomainMapping(domain);
-                                tx.addRecord(domain, ip.getIp());
-                            }
-                        });
-                    }
-                } catch (IOException | InterruptedException e) {
-                    LOG.errorf("Unable to label machine %s with domain %s", getHost(), domain());
+                if (!isDestroyed()) {
+                    manager.addLabel(this, LABEL_DOMAIN, domain().getName());
+                }
+                // if our IP is running low on DNS names, we should preemptively make a few here.
+                if (ip.getDomainsAvailable() < 5) {
+                    LOG.infof("IP %s only has %s domains available; adding more", ip, ip.getDomainsAvailable());
+                    dns.tx(t->{
+                        while (ip.getDomainsAvailable() < 5) {
+                            final DomainMapping domain = domainPool.getOrCreate(NameGen.newName(), domainRoot);
+                            ip.addDomainMapping(domain);
+                            tx.addRecord(domain, ip.getIp());
+                        }
+                    });
                 }
             });
         });
@@ -254,5 +269,13 @@ public class Machine {
 
     public boolean isNoStableIP() {
         return noStableIP;
+    }
+
+    public boolean isDestroyed() {
+        return destroyed;
+    }
+
+    public void setDestroyed(final boolean destroyed) {
+        this.destroyed = destroyed;
     }
 }

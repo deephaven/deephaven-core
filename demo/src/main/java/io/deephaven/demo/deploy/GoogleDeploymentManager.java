@@ -2,6 +2,7 @@ package io.deephaven.demo.deploy;
 
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
+import io.deephaven.base.LongRingBuffer;
 import io.deephaven.demo.ClusterController;
 import io.deephaven.demo.NameConstants;
 import io.deephaven.demo.NameGen;
@@ -16,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -192,6 +194,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         dns.tx(tx -> {
             allNodes.parallelStream().forEach (node -> {
                 try {
+                    node.setDestroyed(true);
                     gcloud(false, "instances", "delete", "-q", node.getHost());
                 } catch (IOException | InterruptedException e) {
                     System.err.println("Unknown error deleting instance " + node.getHost());
@@ -680,6 +683,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             if (ind != -1) {
                 String ip = res.out.substring(ind + externalIp.length()).split("\n")[0];
                 if (nodeIp == null) {
+                    LOG.infof("No IP for machine %s looking it up by IP %s", node.toStringShort(), ip);
                     nodeIp = ips.findByIp(ip);
                     node.setIp(nodeIp);
                 } else {
@@ -707,19 +711,26 @@ public class GoogleDeploymentManager implements DeploymentManager {
     }
 
     public static void warnResult(final Execute.ExecutionResult result) {
-        String out = result.out.trim();
-        String err = result.err.trim();
+        final Throwable error;
+        if (result == null) {
+            error = new NullPointerException().fillInStackTrace();
+            LOG.error("Calling warnResult with null result", error);
+            return;
+        }
+        // differentiate a null pointer on the out/err field (NULL) with a non-null result of "null", which is a different error state
+        String out = result.out == null ? "NULL" : result.out.trim();
+        String err = result.err == null ? "NULL" : result.err.trim();
+        error = new IllegalStateException("Result failed / rejected").fillInStackTrace();
+        LOG.warnf(error, "Response failed (code %s)", result.code);
         if (out.isEmpty()) {
             LOG.warn("stdout: \"\"");
         } else {
-            LOG.warn("stdout:");
-            LOG.warn(out);
+            LOG.warnf("stdout: %s", out);
         }
         if (err.isEmpty()) {
             LOG.warn("stderr: \"\"");
         } else {
-            LOG.warn("stderr:");
-            LOG.warn(err);
+            LOG.warnf("stderr: %s", err);
         }
 
     }
@@ -795,8 +806,9 @@ public class GoogleDeploymentManager implements DeploymentManager {
         if (dnsServer == null || dnsServer.isEmpty()) {
             dnsServer = DNS_QUAD9;
         }
+        final String bashFunc = "( host " + domainName + " " + dnsServer + " || echo failed: has address not_found ) | grep \"has address\" | head -n 1 | cut -d \" \" -f 4";
         try {
-            final Execute.ExecutionResult result = Execute.bashQuiet("find_ip", "( host " + domainName + " " + dnsServer + " || echo failed: has address not_found ) | grep \"has address\" | head -n 1 | cut -d \" \" -f 4");
+            final Execute.ExecutionResult result = Execute.bashQuiet("find_ip", bashFunc);
             if (result.out.trim().equals("not_found")) {
                 result.code = 101;
             }
@@ -805,7 +817,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             String msg = "Unable to check DNS for " + domainName + " using DNS server " + dnsServer;
             e.printStackTrace();
             System.err.println(msg);
-            final Execute.ExecutionResult result = new Execute.ExecutionResult();
+            final Execute.ExecutionResult result = new Execute.ExecutionResult(bashFunc);
             result.code = 101;
             result.out = "";
             result.err = msg;
@@ -1072,6 +1084,144 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 e.printStackTrace();
             }
         }
+    }
+
+    class AddLabelRequest {
+
+        private final String host;
+        private final List<BiConsumer<Execute.ExecutionResult, Throwable>> doneList;
+        private int tries;
+        private boolean started;
+        private final Map<String, String> labels;
+
+        public AddLabelRequest(final String host, final String labelName, final String labelValue, final BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
+            this.host = host;
+            tries = getMaxTries();
+            labels = new LinkedHashMap<>();
+            labels.put(labelName, labelValue);
+            doneList = new ArrayList<>();
+            doneList.add(onDone);
+        }
+        public synchronized void addLabel(final String name, final String value, final BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
+            labels.put(name, value);
+            doneList.add(onDone);
+        }
+
+        public boolean isStarted() {
+            return started;
+        }
+
+        public void setStarted(final boolean started) {
+            this.started = started;
+        }
+
+        public void schedule(final String threadName) {
+            ClusterController.setTimer(threadName, ()->{
+                synchronized (addLabelJobs) {
+                    // once we've started working, any more label requests will need to be queued into a new instance
+                    setStarted(true);
+                }
+                tryCommit();
+            });
+        }
+
+        private void tryCommit() {
+            try {
+                // most of this class should be refactored to not just be "add labels", but general "run gcloud command".
+                final Execute.ExecutionResult result = GoogleDeploymentManager.gcloud(true, "instances", "add-labels", host,
+                        "--labels=" + labels.entrySet().stream()
+                                .map(e -> e.getKey() + "=" + e.getValue())
+                                .collect(Collectors.joining(","))
+                );
+                succeed(result);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail(e);
+            } catch (IOException e) {
+                fail(e);
+            } catch (Throwable t) {
+                fail(t);
+                if (t instanceof Error) {
+                    throw t;
+                }
+            }
+        }
+
+        private void succeed(final Execute.ExecutionResult result) {
+            final BiConsumer<Execute.ExecutionResult, Throwable>[] items;
+            if (result.code == 0) {
+                synchronized (doneList) {
+                    //noinspection unchecked
+                    items = doneList.toArray(new BiConsumer[0]);
+                    doneList.clear();
+                }
+                for (BiConsumer<Execute.ExecutionResult, Throwable> callback : items) {
+                    try {
+                        callback.accept(result, null);
+                    } catch (Throwable t) {
+                        LOG.warnf(t, "Response callback threw exception after processing execution result %s", result);
+                    }
+                }
+
+            } else {
+                LOG.warnf("Request had non-zero code %s", result.code);
+                warnResult(result);
+                fail(new IllegalStateException(String.format(
+                    "Response had code %s", result.code
+                )));
+            }
+        }
+
+        private void fail(final Throwable e) {
+            final BiConsumer<Execute.ExecutionResult, Throwable>[] items;
+            // in case we get called more than once, be picky about clearing out callbacks.
+            if (tries == 0) {
+                // make sure any last-minute threads get their request in before we close up shop
+                synchronized (doneList) {
+                    //noinspection unchecked
+                    items = doneList.toArray(new BiConsumer[0]);
+                    doneList.clear();
+                }
+                for (BiConsumer<Execute.ExecutionResult, Throwable> item : items) {
+                    item.accept(null, e);
+                }
+            } else {
+                final String title = "Add labels to " + host;
+                if (tries > 0) {
+                    ClusterController.setTimer(title, this::tryCommit);
+                }
+                tries--;
+                LOG.infof("Attempting %s job again (tries remaining: %s)", title, tries);
+            }
+        }
+
+        private int getMaxTries() {
+            return 4;
+        }
+    }
+    private final IdentityHashMap<Machine, AddLabelRequest> addLabelJobs = new IdentityHashMap<>();
+
+    @Override
+    public void addLabel(final Machine mach, final String name, final String value, BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
+        AddLabelRequest job;
+        final String machineString = mach.toStringShort();
+        synchronized (addLabelJobs) {
+            job = addLabelJobs.get(mach);
+            if (job == null || job.isStarted()) {
+                job = new AddLabelRequest(mach.getHost(), name, value, onDone);
+                addLabelJobs.put(mach, job);
+            } else {
+                job.addLabel(name, value, onDone);
+                // exit early, so we can move job.schedule out of the synchronized block
+                return;
+            }
+        }
+        job.schedule("Add labels to " + machineString);
+    }
+
+    @Override
+    public Logger getLog() {
+        return LOG;
     }
 
     @Override

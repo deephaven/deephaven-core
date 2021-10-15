@@ -47,6 +47,7 @@ public class MachinePool {
             machine.setIp(ips.reserveIp(manager, machine));
         }
         if (!multiDomain) {
+            // if you don't want a random named domain record, we need to force-set the machine's IP
             machine.getIp().setDomain(manager.getDomainPool().getOrCreate(machine.getHost(), DOMAIN));
         }
         try {
@@ -65,7 +66,7 @@ public class MachinePool {
         machines.add(machine);
     }
 
-    public Optional<Machine> maybeGetMachine(final GoogleDeploymentManager manager) {
+    public Optional<Machine> maybeGetMachine(final GoogleDeploymentManager manager, final boolean reserve) {
         List<Machine> candidates = new ArrayList<>();
         synchronized (machines) {
             for (Machine next : machines) {
@@ -81,7 +82,10 @@ public class MachinePool {
             while (!candidates.isEmpty()) {
                 final Machine candidate = candidates.remove(candidates.size() - 1);
                 if (!candidate.isInUse()) {
-                    candidate.setInUse(true);
+                    if (reserve) {
+                        // when we're reserving machines, we need to claim it here, in this synchronized block
+                        candidate.setInUse(true);
+                    }
                     // hm... if synchronized is not enough,
                     // here is where we should try to claim a candidate through a contention-breaking set-label operation...
                     // we don't _really_ want that, though, since there is code that calls us which does not want to publicly reserve a machine.
@@ -119,6 +123,10 @@ public class MachinePool {
 
     public int getNumberMachines() {
         return machines.size();
+    }
+
+    public int getNumberOfflineMachines() {
+        return (int)machines.stream().filter(Machine::isOffline).count();
     }
 
     public Machine findByName(final String name) {
