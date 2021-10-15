@@ -23,7 +23,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class PublishToKafka<K, V> extends LivenessArtifact  {
+public class PublishToKafka<K, V> extends LivenessArtifact {
     static final int CHUNK_SIZE = 2048;
 
     @NotNull
