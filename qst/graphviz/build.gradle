@@ -12,11 +12,11 @@ dependencies {
 
     implementation 'info.picocli:picocli:4.6.1'
 
-    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.19.0'
 
-    implementation 'ch.qos.logback:logback-classic:1.2.3'
+    Classpaths.inheritLogbackClassic(project, 'implementation')
 }
 
 test {

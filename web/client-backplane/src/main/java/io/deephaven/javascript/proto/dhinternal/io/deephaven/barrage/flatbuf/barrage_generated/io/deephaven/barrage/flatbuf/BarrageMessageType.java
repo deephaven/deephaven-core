@@ -11,6 +11,7 @@ public class BarrageMessageType {
     public static int BarrageSerializationOptions,
             BarrageSubscriptionRequest,
             BarrageUpdateMetadata,
+            DoGetRequest,
             NewSessionRequest,
             None,
             RefreshSessionRequest,
