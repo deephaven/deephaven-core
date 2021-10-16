@@ -10,12 +10,12 @@ package io.deephaven.extensions.barrage.chunk;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.db.v2.sources.chunk.LongChunk;
-import io.deephaven.util.QueryConstants;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
+import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.utils.Index;
 import org.jetbrains.annotations.Nullable;
@@ -24,9 +24,8 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
-import java.util.function.LongSupplier;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.*;
 
 public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<LongChunk<Attributes.Values>> {
     private static final String DEBUG_NAME = "LongChunkInputStreamGenerator";
@@ -139,14 +138,20 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @FunctionalInterface
-    public interface LongSupplierWithIOException {
+    interface LongSupplierWithIOException {
         long getAsLong() throws IOException;
+    }
+
+    @FunctionalInterface
+    public interface LongConversion {
+        long apply(long in);
+        LongConversion IDENTITY = (long a) -> a;
     }
 
     static Chunk<Attributes.Values> extractChunkFromInputStream(
             final int elementSize,
             final BarrageSubscriptionOptions options,
-            final int factor,
+            final LongConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -186,7 +191,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
             if (options.useDeephavenNulls()) {
-                if (factor == 1) {
+                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
                     for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                         chunk.set(ii, is.readLong());
                     }
@@ -197,17 +202,17 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                         if (in == NULL_LONG) {
                             out = in;
                         } else {
-                            out = factor * in;
+                            out = conversion.apply(in);
                         }
                         chunk.set(ii, out);
                     }
                 }
             } else {
                 long nextValid = 0;
-                LongSupplierWithIOException supplier = (factor == 1)
-                    ? is::readLong
-                    : () -> (factor * is.readLong())
-                    ;
+                LongChunkInputStreamGenerator.LongSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
+                        ? is::readLong
+                        : () -> (conversion.apply(is.readLong()))
+                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);

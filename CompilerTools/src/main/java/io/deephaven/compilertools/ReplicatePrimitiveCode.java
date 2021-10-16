@@ -427,7 +427,13 @@ public class ReplicatePrimitiveCode {
     public static String replaceAll(Class sourceClass, Map<String, Long> serialVersionUIDs, String exemptions[],
             String root, String[]... pairs) throws IOException {
         final String basePath = basePathForClass(sourceClass, root);
-        InputStream inputStream = new FileInputStream(basePath + "/" + sourceClass.getSimpleName() + ".java");
+        InputStream inputStream;
+        final String path = basePath + File.separator + sourceClass.getSimpleName() + ".java";
+        try {
+            inputStream = new FileInputStream(path);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("File not found: " + path + " (CWD=" + System.getProperty("user.dir") + ")", e);
+        }
         int nextChar;
         final StringBuilder inputText = new StringBuilder();
         while ((nextChar = inputStream.read()) != -1) {
@@ -495,7 +501,7 @@ public class ReplicatePrimitiveCode {
 
     private static String getModuleName(Class sourceClass) {
         for (File file : new File(".").listFiles()) {
-            // there is a folder 'lib' that exists during the build process that matches the the third startsWith
+            // there is a folder 'lib' that exists during the build process that matches the fourth startsWith
             // If we are in this package, don't bother looking at the other two.
             if (sourceClass.getName().startsWith("io.deephaven.libs.primitives")) {
                 if (file.isDirectory() && file.getName().equals("DB")) {
@@ -504,6 +510,10 @@ public class ReplicatePrimitiveCode {
             } else if (sourceClass.getName().startsWith("io.deephaven.kafka.ingest")) {
                 if (file.isDirectory() && file.getName().equals("Kafka")) {
                     return file.getPath();
+                }
+            } else if (sourceClass.getName().startsWith("io.deephaven.extensions.barrage")) {
+                if (file.isDirectory() && file.getName().equals("extensions")) {
+                    return file.getPath() + File.separator + "barrage";
                 }
             } else {
                 if (file.isDirectory() && sourceClass.getName()

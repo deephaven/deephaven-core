@@ -198,8 +198,9 @@ public class BarrageUtil {
         metadata.put("deephaven:" + key, value);
     }
 
-    private static boolean maybeConvertForTimeUnit(final TimeUnit unit, final ConvertedArrowSchema result, final int i) {
-        switch(unit) {
+    private static boolean maybeConvertForTimeUnit(final TimeUnit unit, final ConvertedArrowSchema result,
+            final int i) {
+        switch (unit) {
             case NANOSECOND:
                 return true;
             case MICROSECOND:
@@ -246,7 +247,7 @@ public class BarrageUtil {
                     }
                 }
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                                " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
+                        " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
                 return java.lang.Boolean.class;
             case Duration:
@@ -295,6 +296,7 @@ public class BarrageUtil {
         // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
         // to the expected nanos value for DBDateTime.
         public int[] conversionFactors;
+
         public ConvertedArrowSchema(final int nCols) {
             this.nCols = nCols;
         }
@@ -313,7 +315,7 @@ public class BarrageUtil {
             return;
         }
         result.conversionFactors[i] = factor;
-     }
+    }
 
 
     public static ConvertedArrowSchema convertArrowSchema(

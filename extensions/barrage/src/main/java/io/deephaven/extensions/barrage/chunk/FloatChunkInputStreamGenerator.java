@@ -10,7 +10,6 @@ package io.deephaven.extensions.barrage.chunk;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.db.v2.sources.chunk.FloatChunk;
-import io.deephaven.util.QueryConstants;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.util.LongSizedDataStructure;
@@ -25,6 +24,8 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+
+import static io.deephaven.util.QueryConstants.*;
 
 public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<FloatChunk<Attributes.Values>> {
     private static final String DEBUG_NAME = "FloatChunkInputStreamGenerator";
@@ -53,7 +54,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
                 subset.forAllLongs(row -> {
-                    if (chunk.get((int) row) == QueryConstants.NULL_FLOAT) {
+                    if (chunk.get((int) row) == NULL_FLOAT) {
                         ++cachedNullCount;
                     }
                 });
@@ -101,7 +102,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                         context.count = 0;
                     };
                     subset.forAllLongs(row -> {
-                        if (chunk.get((int) row) != QueryConstants.NULL_FLOAT) {
+                        if (chunk.get((int) row) != NULL_FLOAT) {
                             context.accumulator |= 1L << context.count;
                         }
                         if (++context.count == 64) {
@@ -136,8 +137,21 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
         }
     }
 
+    @FunctionalInterface
+    interface FloatSupplierWithIOException {
+        float getAsFloat() throws IOException;
+    }
+
+    @FunctionalInterface
+    public interface FloatConversion {
+        float apply(float in);
+        FloatConversion IDENTITY = (float a) -> a;
+    }
+
     static Chunk<Attributes.Values> extractChunkFromInputStream(
-            final int elementSize, final BarrageSubscriptionOptions options,
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final FloatConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -177,21 +191,38 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
 
             if (options.useDeephavenNulls()) {
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    chunk.set(ii, is.readFloat());
+                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        chunk.set(ii, is.readFloat());
+                    }
+                } else {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        final float in = is.readFloat();
+                        final float out;
+                        if (in == NULL_FLOAT) {
+                            out = in;
+                        } else {
+                            out = conversion.apply(in);
+                        }
+                        chunk.set(ii, out);
+                    }
                 }
             } else {
                 long nextValid = 0;
+                FloatChunkInputStreamGenerator.FloatSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
+                        ? is::readFloat
+                        : () -> (conversion.apply(is.readFloat()))
+                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
                     }
                     final float value;
                     if ((nextValid & 0x1) == 0x0) {
-                        value = QueryConstants.NULL_FLOAT;
+                        value = NULL_FLOAT;
                         is.skipBytes(elementSize);
                     } else {
-                        value = is.readFloat();
+                        value = supplier.getAsFloat();
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);
