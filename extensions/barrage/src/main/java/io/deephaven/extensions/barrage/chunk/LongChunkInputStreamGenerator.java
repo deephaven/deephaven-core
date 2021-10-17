@@ -138,17 +138,22 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @FunctionalInterface
-    interface LongSupplierWithIOException {
-        long getAsLong() throws IOException;
-    }
-
-    @FunctionalInterface
     public interface LongConversion {
         long apply(long in);
         LongConversion IDENTITY = (long a) -> a;
     }
 
     static Chunk<Attributes.Values> extractChunkFromInputStream(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, LongConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final LongConversion conversion,
@@ -209,10 +214,6 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 }
             } else {
                 long nextValid = 0;
-                LongChunkInputStreamGenerator.LongSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
-                        ? is::readLong
-                        : () -> (conversion.apply(is.readLong()))
-                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
@@ -222,7 +223,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                         value = NULL_LONG;
                         is.skipBytes(elementSize);
                     } else {
-                        value = supplier.getAsLong();
+                        value = conversion.apply(is.readLong());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);

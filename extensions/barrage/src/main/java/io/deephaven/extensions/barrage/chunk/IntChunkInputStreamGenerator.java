@@ -138,17 +138,22 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
     }
 
     @FunctionalInterface
-    interface IntSupplierWithIOException {
-        int getAsInt() throws IOException;
-    }
-
-    @FunctionalInterface
     public interface IntConversion {
         int apply(int in);
         IntConversion IDENTITY = (int a) -> a;
     }
 
     static Chunk<Attributes.Values> extractChunkFromInputStream(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, IntConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final IntConversion conversion,
@@ -209,10 +214,6 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
                 }
             } else {
                 long nextValid = 0;
-                IntChunkInputStreamGenerator.IntSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
-                        ? is::readInt
-                        : () -> (conversion.apply(is.readInt()))
-                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
@@ -222,7 +223,7 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
                         value = NULL_INT;
                         is.skipBytes(elementSize);
                     } else {
-                        value = supplier.getAsInt();
+                        value = conversion.apply(is.readInt());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);

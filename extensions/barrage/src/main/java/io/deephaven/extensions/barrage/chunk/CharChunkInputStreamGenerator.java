@@ -143,6 +143,16 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     static Chunk<Attributes.Values> extractChunkFromInputStream(
             final int elementSize,
             final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, CharConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
             final CharConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,

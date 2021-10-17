@@ -138,17 +138,22 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @FunctionalInterface
-    interface ByteSupplierWithIOException {
-        byte getAsByte() throws IOException;
-    }
-
-    @FunctionalInterface
     public interface ByteConversion {
         byte apply(byte in);
         ByteConversion IDENTITY = (byte a) -> a;
     }
 
     static Chunk<Attributes.Values> extractChunkFromInputStream(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, ByteConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final ByteConversion conversion,
@@ -209,10 +214,6 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 }
             } else {
                 long nextValid = 0;
-                ByteChunkInputStreamGenerator.ByteSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
-                        ? is::readByte
-                        : () -> (conversion.apply(is.readByte()))
-                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
@@ -222,7 +223,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                         value = NULL_BYTE;
                         is.skipBytes(elementSize);
                     } else {
-                        value = supplier.getAsByte();
+                        value = conversion.apply(is.readByte());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);

@@ -138,17 +138,22 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     }
 
     @FunctionalInterface
-    interface DoubleSupplierWithIOException {
-        double getAsDouble() throws IOException;
-    }
-
-    @FunctionalInterface
     public interface DoubleConversion {
         double apply(double in);
         DoubleConversion IDENTITY = (double a) -> a;
     }
 
     static Chunk<Attributes.Values> extractChunkFromInputStream(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, DoubleConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final DoubleConversion conversion,
@@ -209,10 +214,6 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                 }
             } else {
                 long nextValid = 0;
-                DoubleChunkInputStreamGenerator.DoubleSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
-                        ? is::readDouble
-                        : () -> (conversion.apply(is.readDouble()))
-                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
@@ -222,7 +223,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                         value = NULL_DOUBLE;
                         is.skipBytes(elementSize);
                     } else {
-                        value = supplier.getAsDouble();
+                        value = conversion.apply(is.readDouble());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);

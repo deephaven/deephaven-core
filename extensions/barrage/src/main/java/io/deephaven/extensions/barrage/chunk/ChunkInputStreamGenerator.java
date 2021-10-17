@@ -81,27 +81,32 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
             case Char:
                 return CharChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Character.BYTES, options, CharChunkInputStreamGenerator.CharConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+                        Character.BYTES, options, fieldNodeIter, bufferInfoIter, is);
             case Byte:
                 return ByteChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Byte.BYTES, options, ByteChunkInputStreamGenerator.ByteConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+                        Byte.BYTES, options, fieldNodeIter, bufferInfoIter, is);
             case Short:
                 return ShortChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Short.BYTES, options, ShortChunkInputStreamGenerator.ShortConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+                        Short.BYTES, options, fieldNodeIter, bufferInfoIter, is);
             case Int:
                 return IntChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Integer.BYTES, options, IntChunkInputStreamGenerator.IntConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+                        Integer.BYTES, options, fieldNodeIter, bufferInfoIter, is);
             case Long:
-                return LongChunkInputStreamGenerator.extractChunkFromInputStream(
+                if (factor == 1) {
+                    return LongChunkInputStreamGenerator.extractChunkFromInputStream(
+                            Long.BYTES, options,
+                            fieldNodeIter, bufferInfoIter, is);
+                }
+                return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithConversion(
                         Long.BYTES, options,
-                        (factor == 1) ? LongChunkInputStreamGenerator.LongConversion.IDENTITY : (long v) -> (v*factor),
+                        (long v) -> (v*factor),
                         fieldNodeIter, bufferInfoIter, is);
             case Float:
                 return FloatChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Float.BYTES, options, FloatChunkInputStreamGenerator.FloatConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+                        Float.BYTES, options, fieldNodeIter, bufferInfoIter, is);
             case Double:
                 return DoubleChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Double.BYTES, options, DoubleChunkInputStreamGenerator.DoubleConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+                        Double.BYTES, options,fieldNodeIter, bufferInfoIter, is);
             case Object:
                 if (type.isArray()) {
                    return VarListChunkInputStreamGenerator.extractChunkFromInputStream(options, type, fieldNodeIter, bufferInfoIter, is) ;

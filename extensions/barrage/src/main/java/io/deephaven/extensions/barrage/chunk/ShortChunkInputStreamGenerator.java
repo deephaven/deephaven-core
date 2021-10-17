@@ -138,17 +138,22 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     }
 
     @FunctionalInterface
-    interface ShortSupplierWithIOException {
-        short getAsShort() throws IOException;
-    }
-
-    @FunctionalInterface
     public interface ShortConversion {
         short apply(short in);
         ShortConversion IDENTITY = (short a) -> a;
     }
 
     static Chunk<Attributes.Values> extractChunkFromInputStream(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, ShortConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final ShortConversion conversion,
@@ -209,10 +214,6 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                 }
             } else {
                 long nextValid = 0;
-                ShortChunkInputStreamGenerator.ShortSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
-                        ? is::readShort
-                        : () -> (conversion.apply(is.readShort()))
-                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
@@ -222,7 +223,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                         value = NULL_SHORT;
                         is.skipBytes(elementSize);
                     } else {
-                        value = supplier.getAsShort();
+                        value = conversion.apply(is.readShort());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);

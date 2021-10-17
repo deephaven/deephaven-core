@@ -138,17 +138,22 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     }
 
     @FunctionalInterface
-    interface FloatSupplierWithIOException {
-        float getAsFloat() throws IOException;
-    }
-
-    @FunctionalInterface
     public interface FloatConversion {
         float apply(float in);
         FloatConversion IDENTITY = (float a) -> a;
     }
 
     static Chunk<Attributes.Values> extractChunkFromInputStream(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, FloatConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final FloatConversion conversion,
@@ -209,10 +214,6 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                 }
             } else {
                 long nextValid = 0;
-                FloatChunkInputStreamGenerator.FloatSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
-                        ? is::readFloat
-                        : () -> (conversion.apply(is.readFloat()))
-                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
@@ -222,7 +223,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                         value = NULL_FLOAT;
                         is.skipBytes(elementSize);
                     } else {
-                        value = supplier.getAsFloat();
+                        value = conversion.apply(is.readFloat());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);
