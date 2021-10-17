@@ -69,7 +69,6 @@ arrow::Status doit(const TableHandleManager &manager, const std::string csvfn) {
   statusOrDie(fmr->ReadMetadata(&buf), "ReadMetadata failed");
   statusOrDie(fsw->Close(), "Close failed");
 
-  // 14. Use Deephaven high level operations to fetch the table and print it
   std::cout << "table is:\n" << table_handle.stream(true) << std::endl;
   return arrow::Status::OK();
 }
@@ -92,7 +91,7 @@ int main(int argc, char* argv[]) {
     if (!st.ok()) {
       std::cerr << "Failed with status " << st << std::endl;
     }
-  } catch (const std::runtime_error &e) {
+  } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
   }
 

@@ -69,7 +69,7 @@ int main() {
   try {
     auto table = makeTable(manager);
     dumpSymbolColumn(table);
-  } catch (const std::runtime_error &e) {
+  } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
   }
 }
