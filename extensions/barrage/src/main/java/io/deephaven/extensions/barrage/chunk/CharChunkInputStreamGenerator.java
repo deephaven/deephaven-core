@@ -135,11 +135,6 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @FunctionalInterface
-    interface CharSupplierWithIOException {
-        char getAsChar() throws IOException;
-    }
-
-    @FunctionalInterface
     public interface CharConversion {
         char apply(char in);
         CharConversion IDENTITY = (char a) -> a;
@@ -206,10 +201,6 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 }
             } else {
                 long nextValid = 0;
-                CharChunkInputStreamGenerator.CharSupplierWithIOException supplier = (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY)
-                        ? is::readChar
-                        : () -> (conversion.apply(is.readChar()))
-                        ;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = isValid.get(ii / 64);
@@ -219,7 +210,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                         value = NULL_CHAR;
                         is.skipBytes(elementSize);
                     } else {
-                        value = supplier.getAsChar();
+                        value = conversion.apply(is.readChar());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);
