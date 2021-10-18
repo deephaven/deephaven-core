@@ -310,6 +310,11 @@ public final class ClientTableState extends TableConfig {
                 .collect(Collectors.toList());
     }
 
+    public List<CustomColumn> getCustomColumnsObject() {
+        return getCustomColumns().stream().map(CustomColumn::new)
+                .collect(Collectors.toList());
+    }
+
     public Column[] getColumns() {
         return columns;
     }
