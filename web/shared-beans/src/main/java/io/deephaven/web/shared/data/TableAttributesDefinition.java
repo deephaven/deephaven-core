@@ -106,5 +106,7 @@ public class TableAttributesDefinition implements Serializable {
         return getAsMap().get(PLUGIN_NAME);
     }
 
-    public String getLayoutHints() { return getAsMap().get(LAYOUT_HINTS_ATTRIBUTE); }
+    public String getLayoutHints() {
+        return getAsMap().get(LAYOUT_HINTS_ATTRIBUTE);
+    }
 }
