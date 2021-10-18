@@ -10,7 +10,7 @@ using deephaven::client::highlevel::NumCol;
 using deephaven::client::highlevel::Client;
 using deephaven::client::highlevel::TableHandle;
 using deephaven::client::highlevel::TableHandleManager;
-using deephaven::client::utility::flight::statusOrDie;
+using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::TableMaker;
 
 TableHandle makeTable(const TableHandleManager &manager) {
@@ -26,7 +26,7 @@ void dumpSymbolColumn(const TableHandle &tableHandle) {
   auto fsr = tableHandle.getFlightStreamReader();
   while (true) {
     arrow::flight::FlightStreamChunk chunk;
-    statusOrDie(fsr->Next(&chunk), "FlightStreamReader::Next()");
+    okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
     if (chunk.data == nullptr) {
       break;
     }
@@ -63,10 +63,10 @@ void dumpSymbolColumn(const TableHandle &tableHandle) {
 
 int main() {
   const char *server = "localhost:10000";
-  auto client = Client::connect(server);
-  auto manager = client.getManager();
 
   try {
+    auto client = Client::connect(server);
+    auto manager = client.getManager();
     auto table = makeTable(manager);
     dumpSymbolColumn(table);
   } catch (const std::exception &e) {

@@ -40,10 +40,10 @@ void doit(const TableHandleManager &manager) {
 
 int main() {
   const char *server = "localhost:10000";
-  auto client = Client::connect(server);
-  auto manager = client.getManager();
 
   try {
+    auto client = Client::connect(server);
+    auto manager = client.getManager();
     doit(manager);
   } catch (const std::runtime_error &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';

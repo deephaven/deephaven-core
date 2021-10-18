@@ -3,7 +3,8 @@ project(table_maker)
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(deephaven REQUIRED)
+add_subdirectory(../../cpp-client/deephaven deephaven_dir)
+#find_package(deephaven REQUIRED)
 
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
