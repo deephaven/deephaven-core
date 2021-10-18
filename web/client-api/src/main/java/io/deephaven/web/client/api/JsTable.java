@@ -308,6 +308,11 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsProperty
+    public JsLayoutHints getLayoutHints() {
+        return lastVisibleState().getLayoutHints();
+    }
+
+    @JsProperty
     public double getSize() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
         if (subscription != null && subscription.getStatus() == TableViewportSubscription.Status.ACTIVE) {
@@ -403,14 +408,20 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     @JsMethod
     @SuppressWarnings("unusable-by-js")
-    public JsArray<String> applyCustomColumns(String[] customColumns) {
+    public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
+        String[] customColumnStrings = Arrays.stream(customColumns).map(obj -> {
+            if (obj instanceof String || obj instanceof CustomColumn) {
+                return obj.toString();
+            }
 
-        final List<CustomColumnDescriptor> newCustomColumns = CustomColumnDescriptor.from(customColumns);
+            return (new CustomColumn((JsPropertyMap<Object>) obj)).toString();
+        }).toArray(String[]::new);
+        final List<CustomColumnDescriptor> newCustomColumns = CustomColumnDescriptor.from(customColumnStrings);
 
         // take a look at the current custom columns so we can return it
         final ClientTableState current = state();
         List<CustomColumnDescriptor> currentCustomColumns = current.getCustomColumns();
-        final List<String> returnMe = current.getCustomColumnsString();
+        final List<CustomColumn> returnMe = current.getCustomColumnsObject();
         if (!currentCustomColumns.equals(newCustomColumns)) {
             if (batchDepth > 0) {
                 // when batching, just record what the user requested, but don't compute anything
@@ -431,8 +442,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsProperty
-    public JsArray<JsString> getCustomColumns() {
-        return Js.cast(JsItr.slice(state().getCustomColumnsString()));
+    public JsArray<CustomColumn> getCustomColumns() {
+        return Js.cast(JsItr.slice(state().getCustomColumnsObject()));
     }
 
     /**
@@ -586,11 +597,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         // returning null here, rather than a default config. They can then easily build a
         // default config, but without this ability, there is no way to indicate that the
         // config omitted a totals table
-        String config = lastVisibleState().getTableDef().getAttributes().getTotalsTableConfig();
-        if (config == null) {
-            return null;
-        }
-        return JsTotalsTableConfig.parse(config);
+        return lastVisibleState().getTotalsTableConfig();
     }
 
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {

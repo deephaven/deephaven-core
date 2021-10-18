@@ -395,8 +395,6 @@ void TableHandleImpl::bindToVariableAsync(std::string variable,
 
     std::shared_ptr<SFCallback<>> outerCb_;
   };
-  std::unique_ptr<int[]> up;
-  up[5] = 3;
   auto cb = std::make_shared<cb_t>(std::move(callback));
   managerImpl_->server()->bindToVariableAsync(managerImpl_->consoleId(), ticket_,
       std::move(variable), std::move(cb));
