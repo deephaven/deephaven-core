@@ -10,7 +10,6 @@ package io.deephaven.extensions.barrage.chunk;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.db.v2.sources.chunk.DoubleChunk;
-import io.deephaven.util.QueryConstants;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.util.LongSizedDataStructure;
@@ -25,6 +24,8 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+
+import static io.deephaven.util.QueryConstants.*;
 
 public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<DoubleChunk<Attributes.Values>> {
     private static final String DEBUG_NAME = "DoubleChunkInputStreamGenerator";
@@ -53,7 +54,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
                 subset.forAllLongs(row -> {
-                    if (chunk.get((int) row) == QueryConstants.NULL_DOUBLE) {
+                    if (chunk.get((int) row) == NULL_DOUBLE) {
                         ++cachedNullCount;
                     }
                 });
@@ -101,7 +102,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                         context.count = 0;
                     };
                     subset.forAllLongs(row -> {
-                        if (chunk.get((int) row) != QueryConstants.NULL_DOUBLE) {
+                        if (chunk.get((int) row) != NULL_DOUBLE) {
                             context.accumulator |= 1L << context.count;
                         }
                         if (++context.count == 64) {
@@ -136,8 +137,26 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         }
     }
 
+    @FunctionalInterface
+    public interface DoubleConversion {
+        double apply(double in);
+        DoubleConversion IDENTITY = (double a) -> a;
+    }
+
     static Chunk<Attributes.Values> extractChunkFromInputStream(
-            final int elementSize, final BarrageSubscriptionOptions options,
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, DoubleConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final DoubleConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -177,8 +196,21 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
 
             if (options.useDeephavenNulls()) {
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    chunk.set(ii, is.readDouble());
+                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        chunk.set(ii, is.readDouble());
+                    }
+                } else {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        final double in = is.readDouble();
+                        final double out;
+                        if (in == NULL_DOUBLE) {
+                            out = in;
+                        } else {
+                            out = conversion.apply(in);
+                        }
+                        chunk.set(ii, out);
+                    }
                 }
             } else {
                 long nextValid = 0;
@@ -188,10 +220,10 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                     }
                     final double value;
                     if ((nextValid & 0x1) == 0x0) {
-                        value = QueryConstants.NULL_DOUBLE;
+                        value = NULL_DOUBLE;
                         is.skipBytes(elementSize);
                     } else {
-                        value = is.readDouble();
+                        value = conversion.apply(is.readDouble());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);

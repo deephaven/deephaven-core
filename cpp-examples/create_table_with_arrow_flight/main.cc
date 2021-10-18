@@ -92,7 +92,7 @@ int main() {
 
   try {
     doit(manager);
-  } catch (const std::runtime_error &e) {
+  } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
   }
 }

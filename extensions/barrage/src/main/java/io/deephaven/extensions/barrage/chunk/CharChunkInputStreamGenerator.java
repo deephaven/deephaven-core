@@ -7,7 +7,6 @@ package io.deephaven.extensions.barrage.chunk;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.db.v2.sources.chunk.CharChunk;
-import io.deephaven.util.QueryConstants;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.util.LongSizedDataStructure;
@@ -22,6 +21,8 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+
+import static io.deephaven.util.QueryConstants.*;
 
 public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<CharChunk<Attributes.Values>> {
     private static final String DEBUG_NAME = "CharChunkInputStreamGenerator";
@@ -50,7 +51,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
                 subset.forAllLongs(row -> {
-                    if (chunk.get((int) row) == QueryConstants.NULL_CHAR) {
+                    if (chunk.get((int) row) == NULL_CHAR) {
                         ++cachedNullCount;
                     }
                 });
@@ -98,7 +99,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                         context.count = 0;
                     };
                     subset.forAllLongs(row -> {
-                        if (chunk.get((int) row) != QueryConstants.NULL_CHAR) {
+                        if (chunk.get((int) row) != NULL_CHAR) {
                             context.accumulator |= 1L << context.count;
                         }
                         if (++context.count == 64) {
@@ -133,8 +134,26 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         }
     }
 
+    @FunctionalInterface
+    public interface CharConversion {
+        char apply(char in);
+        CharConversion IDENTITY = (char a) -> a;
+    }
+
     static Chunk<Attributes.Values> extractChunkFromInputStream(
-            final int elementSize, final BarrageSubscriptionOptions options,
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, CharConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final CharConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -174,8 +193,21 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
             if (options.useDeephavenNulls()) {
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    chunk.set(ii, is.readChar());
+                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        chunk.set(ii, is.readChar());
+                    }
+                } else {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        final char in = is.readChar();
+                        final char out;
+                        if (in == NULL_CHAR) {
+                            out = in;
+                        } else {
+                            out = conversion.apply(in);
+                        }
+                        chunk.set(ii, out);
+                    }
                 }
             } else {
                 long nextValid = 0;
@@ -185,10 +217,10 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                     }
                     final char value;
                     if ((nextValid & 0x1) == 0x0) {
-                        value = QueryConstants.NULL_CHAR;
+                        value = NULL_CHAR;
                         is.skipBytes(elementSize);
                     } else {
-                        value = is.readChar();
+                        value = conversion.apply(is.readChar());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);

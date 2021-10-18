@@ -10,7 +10,6 @@ package io.deephaven.extensions.barrage.chunk;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.db.v2.sources.chunk.IntChunk;
-import io.deephaven.util.QueryConstants;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.util.LongSizedDataStructure;
@@ -25,6 +24,8 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+
+import static io.deephaven.util.QueryConstants.*;
 
 public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<IntChunk<Attributes.Values>> {
     private static final String DEBUG_NAME = "IntChunkInputStreamGenerator";
@@ -53,7 +54,7 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
                 subset.forAllLongs(row -> {
-                    if (chunk.get((int) row) == QueryConstants.NULL_INT) {
+                    if (chunk.get((int) row) == NULL_INT) {
                         ++cachedNullCount;
                     }
                 });
@@ -101,7 +102,7 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
                         context.count = 0;
                     };
                     subset.forAllLongs(row -> {
-                        if (chunk.get((int) row) != QueryConstants.NULL_INT) {
+                        if (chunk.get((int) row) != NULL_INT) {
                             context.accumulator |= 1L << context.count;
                         }
                         if (++context.count == 64) {
@@ -136,8 +137,26 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
         }
     }
 
+    @FunctionalInterface
+    public interface IntConversion {
+        int apply(int in);
+        IntConversion IDENTITY = (int a) -> a;
+    }
+
     static Chunk<Attributes.Values> extractChunkFromInputStream(
-            final int elementSize, final BarrageSubscriptionOptions options,
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+        return extractChunkFromInputStreamWithConversion(
+                elementSize, options, IntConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+    }
+
+    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+            final int elementSize,
+            final BarrageSubscriptionOptions options,
+            final IntConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -177,8 +196,21 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
             }
 
             if (options.useDeephavenNulls()) {
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    chunk.set(ii, is.readInt());
+                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        chunk.set(ii, is.readInt());
+                    }
+                } else {
+                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                        final int in = is.readInt();
+                        final int out;
+                        if (in == NULL_INT) {
+                            out = in;
+                        } else {
+                            out = conversion.apply(in);
+                        }
+                        chunk.set(ii, out);
+                    }
                 }
             } else {
                 long nextValid = 0;
@@ -188,10 +220,10 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
                     }
                     final int value;
                     if ((nextValid & 0x1) == 0x0) {
-                        value = QueryConstants.NULL_INT;
+                        value = NULL_INT;
                         is.skipBytes(elementSize);
                     } else {
-                        value = is.readInt();
+                        value = conversion.apply(is.readInt());
                     }
                     nextValid >>= 1;
                     chunk.set(ii, value);

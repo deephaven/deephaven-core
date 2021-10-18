@@ -73,6 +73,7 @@ public class ArrowFlightUtil {
         private SessionState.ExportBuilder<Table> resultExportBuilder;
 
         private ChunkType[] columnChunkTypes;
+        private int[] columnConversionFactors;
         private Class<?>[] columnTypes;
         private Class<?>[] componentTypes;
 
@@ -160,9 +161,10 @@ public class ArrowFlightUtil {
                 for (int ci = 0; ci < numColumns; ++ci) {
                     final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                     msg.addColumnData[ci] = acd;
-
+                    final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
                     try {
-                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
+                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
+                                columnChunkTypes[ci],
                                 columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
                     } catch (final IOException unexpected) {
                         throw new UncheckedDeephavenException(unexpected);
@@ -198,6 +200,7 @@ public class ArrowFlightUtil {
                 resultExportBuilder.submit(() -> {
                     throw GrpcUtil.statusRuntimeException(Code.CANCELLED, "cancelled");
                 });
+                resultExportBuilder = null;
             }
         }
 
@@ -213,6 +216,7 @@ public class ArrowFlightUtil {
                 resultExportBuilder.submit(() -> {
                     throw new UncheckedDeephavenException(t);
                 });
+                resultExportBuilder = null;
             }
         }
 
@@ -233,7 +237,10 @@ public class ArrowFlightUtil {
                     resultTable.dropReference();
                     GrpcUtil.safelyExecuteLocked(observer, observer::onCompleted);
                     return resultTable;
-                }), () -> GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed"));
+                }), () -> {
+                    GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed");
+                    resultExportBuilder = null;
+                });
             });
         }
 
@@ -248,7 +255,10 @@ public class ArrowFlightUtil {
             if (resultTable != null) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
             }
-            resultTable = BarrageTable.make(BarrageUtil.schemaToTableDefinition(header), false);
+
+            final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
+            resultTable = BarrageTable.make(result.tableDef, false);
+            columnConversionFactors = result.conversionFactors;
             columnChunkTypes = resultTable.getWireChunkTypes();
             columnTypes = resultTable.getWireTypes();
             componentTypes = resultTable.getWireComponentTypes();
