@@ -38,7 +38,6 @@ arrow::Status doit(const TableHandleManager &manager, const std::string csvfn) {
   );
     
   auto arrow_table = valueOrDie(csv_reader->Read(), "csv_reader->Read()");
-  //  ARROW_RETURN_NOT_OK(arrow::PrettyPrint(arrow_table, {}, &std::cout));
 
   auto wrapper = manager.createFlightWrapper();
 
@@ -73,7 +72,7 @@ arrow::Status doit(const TableHandleManager &manager, const std::string csvfn) {
   return arrow::Status::OK();
 }
 
-}  // anonymous namespace
+}  // namespace
 
 int main(int argc, char* argv[]) {
 
