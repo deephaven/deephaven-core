@@ -305,18 +305,10 @@ public class BarrageUtil {
     private static void setConversionFactor(final ConvertedArrowSchema result, final int i, final int factor) {
         if (result.conversionFactors == null) {
             result.conversionFactors = new int[result.nCols];
-            for (int j = 0; j < result.nCols; ++j) {
-                if (j == i) {
-                    result.conversionFactors[i] = factor;
-                } else {
-                    result.conversionFactors[j] = 1;
-                }
-            }
-            return;
+            Arrays.fill(result.conversionFactors, 1);
         }
         result.conversionFactors[i] = factor;
     }
-
 
     public static ConvertedArrowSchema convertArrowSchema(
             final org.apache.arrow.flatbuf.Schema schema) {
