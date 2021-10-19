@@ -7,7 +7,7 @@
 set -eux
 
 NCPUS=$(getconf _NPROCESSORS_ONLN)
-BUILD_TYPE=Release
+BUILD_TYPE=Debug
 
 export MYSRC=$HOME/dhcpp/src
 export PFX=$HOME/dhcpp/lib
