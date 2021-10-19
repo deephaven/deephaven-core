@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 if(TARGET client)
     # The library has already been built (i.e. through some
-    # other path in the build graph.
+    # other path in the build graph).
     return()
 endif()
 
