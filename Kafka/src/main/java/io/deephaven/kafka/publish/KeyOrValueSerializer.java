@@ -1,42 +1,64 @@
 package io.deephaven.kafka.publish;
 
-import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.tables.Table;
+import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * Chunk-oriented serializer that supplies keys or values for stream publishing.
+ */
 public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
     /**
-     * Create a chunk of output values from a table and index.
+     * Create a chunk of output keys or values that correspond to {@code orderedKeys}. The output {@link ObjectChunk
+     * chunks} should be cached in the {@code context} for re-use, but the data returned in them should be functionally
+     * immutable and not rely on pooled or re-usable objects.
      *
-     * TODO: should we read the chunks and pass them in, or allow the key or value serializer to do that work?
+     * @param context A {@link Context} created by {@link #makeContext(int)}
+     * @param orderedKeys The row keys to serialize
+     * @param previous If previous row values should be used, as with row key removals
      *
-     * @param context a context created by {@link #makeContext(int)}
-     * @param orderedKeys the keys to serialize
-     * @param previous if previous values should be used, as with key removals
-     *
-     * @return a chunk of serialized values
+     * @return A chunk of serialized data keys or values, with {@code ObjectChunk.size() == orderedKeys.size()}
      */
     ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys,
             boolean previous);
 
     /**
-     * Create a context for calling handleChunk.
+     * Create a context for calling {@link #handleChunk(Context, OrderedKeys, boolean)}.
      *
-     * @param size the maximum number of rows that will be serialized for each chunk
+     * @param size The maximum number of rows that will be serialized for each chunk
      *
-     * @return a Context for the KeyOrValueSerializer
+     * @return A Context for the KeyOrValueSerializer
      */
     Context makeContext(int size);
 
     /**
-     * Get a list of the input column names used by this serializer.
-     *
-     * @return The list of input columns
+     * Context interface.
      */
-    List<String> inputColumnNames();
-
     interface Context extends SafeCloseable {
+    }
+
+    /**
+     * Factory interface.
+     */
+    interface Factory<SERIALIZED_TYPE> {
+        /**
+         * Get a list of the source column names that will be used by the serializers returns by {@link #create(Table)}.
+         *
+         * @return The list of input column names
+         */
+        List<String> sourceColumnNames();
+
+        /**
+         * Create a serializer using columns of {@code source} as input.
+         *
+         * @param source The source {@link Table}
+         * @return The resulting serializer
+         */
+        KeyOrValueSerializer<SERIALIZED_TYPE> create(@NotNull Table source);
     }
 }

@@ -8,25 +8,25 @@ import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.utils.ChunkBoxer;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
 
-public class SimpleKeyOrValueSerializer<K> implements KeyOrValueSerializer<K> {
+public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSerializer<SERIALIZED_TYPE> {
 
-    private final List<String> inputColumnNames;
-    private final ColumnSource<K> source;
+    private final ColumnSource<SERIALIZED_TYPE> source;
     private final ChunkBoxer.BoxerKernel boxer;
 
     public SimpleKeyOrValueSerializer(Table table, String columnName) {
-        inputColumnNames = Collections.singletonList(columnName);
         source = table.getColumnSource(columnName);
         boxer = ChunkBoxer.getBoxer(source.getChunkType(), PublishToKafka.CHUNK_SIZE);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public ObjectChunk<K, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys, boolean previous) {
+    public ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys,
+            boolean previous) {
         final SimpleContext simpleContext = (SimpleContext) context;
         final Chunk chunk = source.getChunk(simpleContext.sourceGetContext, orderedKeys);
         return boxer.box(chunk);
@@ -37,22 +37,36 @@ public class SimpleKeyOrValueSerializer<K> implements KeyOrValueSerializer<K> {
         return new SimpleContext(size);
     }
 
-    @Override
-    public List<String> inputColumnNames() {
-        return inputColumnNames;
-    }
-
     private class SimpleContext implements Context {
 
         private final ChunkSource.GetContext sourceGetContext;
 
-        private SimpleContext(int size) {
+        private SimpleContext(final int size) {
             sourceGetContext = source.makeGetContext(size);
         }
 
         @Override
         public void close() {
             sourceGetContext.close();
+        }
+    }
+
+    public static final class Factory<SERIALIZED_TYPE> implements KeyOrValueSerializer.Factory<SERIALIZED_TYPE> {
+
+        private final String columnName;
+
+        public Factory(@NotNull final String columnName) {
+            this.columnName = columnName;
+        }
+
+        @Override
+        public List<String> sourceColumnNames() {
+            return Collections.singletonList(columnName);
+        }
+
+        @Override
+        public KeyOrValueSerializer<SERIALIZED_TYPE> create(@NotNull final Table source) {
+            return new SimpleKeyOrValueSerializer<>(source, columnName);
         }
     }
 }

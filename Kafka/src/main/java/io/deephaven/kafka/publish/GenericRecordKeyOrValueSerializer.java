@@ -1,8 +1,8 @@
 package io.deephaven.kafka.publish;
 
+import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.util.string.StringUtils;
-import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
@@ -17,23 +17,17 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 
 public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<GenericRecord> {
     /**
      * The table we are reading from.
      */
-    private final DynamicTable source;
+    private final Table source;
 
     /**
      * The Avro schema.
      */
     private final Schema schema;
-
-    /**
-     * The input columns we'll read from {@code source}.
-     */
-    private final List<String> inputColumnNames;
 
     private interface FieldContext extends SafeCloseable {
     }
@@ -454,7 +448,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     protected final List<GenericRecordFieldProcessor> fieldProcessors = new ArrayList<>();
 
-    public GenericRecordKeyOrValueSerializer(final DynamicTable source,
+    public GenericRecordKeyOrValueSerializer(final Table source,
             final Schema schema,
             final Map<String, String> columnsToOutputFields,
             final Set<String> excludedColumns,
@@ -491,8 +485,6 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             }
             throw new KafkaPublisherException(sb.toString());
         }
-
-        inputColumnNames = Collections.unmodifiableList(new ArrayList<>(columnsToOutputFields.keySet()));
 
         // Now create all the processors for specifically-named fields
         columnsToOutputFields.forEach(this::makeFieldProcessor);
@@ -565,11 +557,6 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new AvroContext(size);
     }
 
-    @Override
-    public List<String> inputColumnNames() {
-        return inputColumnNames;
-    }
-
     private final class AvroContext implements Context {
 
         private final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk;
@@ -593,26 +580,26 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     /**
      * Create a builder for processing Deephaven table data into string output
      */
-    public static class Builder {
+    public static class Builder<SERIALIZED_TYPE> implements KeyOrValueSerializer.Factory<SERIALIZED_TYPE> {
 
-        private final Map<String, String> columnToTextField = new LinkedHashMap<>();
+        private final Map<String, String> columnToField = new LinkedHashMap<>();
         private final Set<String> excludedColumns = new HashSet<>();
         private Schema schema = null;
         private boolean autoValueMapping = true;
         private boolean ignoreMissingColumns = false;
         private String timestampFieldName = null;
 
-        public Builder schema(Schema schema) {
+        public Builder<SERIALIZED_TYPE> schema(Schema schema) {
             this.schema = schema;
             return this;
         }
 
-        public Builder schema(File schema) throws IOException {
+        public Builder<SERIALIZED_TYPE> schema(File schema) throws IOException {
             this.schema = new Schema.Parser().parse(schema);
             return this;
         }
 
-        public Builder schema(String schema) {
+        public Builder<SERIALIZED_TYPE> schema(String schema) {
             this.schema = new Schema.Parser().parse(schema);
             return this;
         }
@@ -628,7 +615,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
          * @return this builder
          */
         @ScriptApi
-        public Builder autoValueMapping(final boolean autoValueMapping) {
+        public Builder<SERIALIZED_TYPE> autoValueMapping(final boolean autoValueMapping) {
             this.autoValueMapping = autoValueMapping;
             return this;
         }
@@ -642,7 +629,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
          * @return this builder
          */
         @ScriptApi
-        public Builder ignoreMissingColumns(final boolean ignoreMissingColumns) {
+        public Builder<SERIALIZED_TYPE> ignoreMissingColumns(final boolean ignoreMissingColumns) {
             this.ignoreMissingColumns = ignoreMissingColumns;
             return this;
         }
@@ -656,7 +643,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
          * @return this builder
          */
         @ScriptApi
-        public Builder excludeColumn(@NotNull final String column) {
+        public Builder<SERIALIZED_TYPE> excludeColumn(@NotNull final String column) {
             checkColumnAlreadyExcluded(column);
             checkColumnAlreadyMapped(column);
             excludedColumns.add(column);
@@ -671,7 +658,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
          * @return this builder
          */
         @ScriptApi
-        public Builder mapColumn(@NotNull final String column) {
+        public Builder<SERIALIZED_TYPE> mapColumn(@NotNull final String column) {
             return mapColumn(column, column);
         }
 
@@ -684,10 +671,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
          * @return this builder
          */
         @ScriptApi
-        public Builder mapColumn(@NotNull final String column, @NotNull final String field) {
+        public Builder<SERIALIZED_TYPE> mapColumn(@NotNull final String column, @NotNull final String field) {
             checkColumnAlreadyExcluded(column);
             checkFieldAlreadyMapped(field);
-            columnToTextField.put(field, column);
+            columnToField.put(field, column);
             return this;
         }
 
@@ -698,7 +685,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
          * @return this builder
          */
         @ScriptApi
-        public Builder timestampFieldName(final String timestampFieldName) {
+        public Builder<SERIALIZED_TYPE> timestampFieldName(final String timestampFieldName) {
             if (timestampFieldName != null) {
                 checkFieldAlreadyMapped(timestampFieldName);
             }
@@ -706,17 +693,19 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             return this;
         }
 
-        /**
-         * When implemented in a subordinate class, create the actual factory for this adapter.
-         * 
-         * @return A factory for objects of this type.
-         */
-        public Function<DynamicTable, ? extends GenericRecordKeyOrValueSerializer> buildFactory() {
+        @Override
+        public List<String> sourceColumnNames() {
+            return Collections.unmodifiableList(new ArrayList<>(columnToField.keySet()));
+        }
+
+        @Override
+        public KeyOrValueSerializer<SERIALIZED_TYPE> create(@NotNull final Table source) {
             if (schema == null) {
                 throw new KafkaPublisherException("Schema is required for a GenericRecordKeyOrValueSerializer");
             }
-            return (tbl) -> new GenericRecordKeyOrValueSerializer(tbl, schema,
-                    columnToTextField, excludedColumns, autoValueMapping, ignoreMissingColumns,
+            // noinspection unchecked
+            return (KeyOrValueSerializer<SERIALIZED_TYPE>) new GenericRecordKeyOrValueSerializer(source, schema,
+                    columnToField, excludedColumns, autoValueMapping, ignoreMissingColumns,
                     timestampFieldName);
         }
 
@@ -727,13 +716,13 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         private void checkColumnAlreadyMapped(@NotNull final String column) {
-            if (columnToTextField.containsValue(column)) {
+            if (columnToField.containsValue(column)) {
                 throw new KafkaPublisherException("Column " + column + " is already mapped.");
             }
         }
 
         private void checkFieldAlreadyMapped(@NotNull final String field) {
-            if (columnToTextField.containsKey(field) || field.equals(timestampFieldName)) {
+            if (columnToField.containsKey(field) || field.equals(timestampFieldName)) {
                 throw new KafkaPublisherException("Field " + field + " is already mapped.");
             }
         }
