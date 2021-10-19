@@ -99,6 +99,18 @@ public class BatchBuilder {
             return getCustomColumns() != null && !getCustomColumns().isEmpty();
         }
 
+        public boolean hasViewColumns() {
+            return getViewColumns() != null && !getViewColumns().isEmpty();
+        }
+
+        public boolean hasDropColumns() {
+            return getDropColumns() != null && !getDropColumns().isEmpty();
+        }
+
+        public boolean isNoop() {
+            return !(hasSorts() || hasConditions() || hasFilters() || hasCustomColumns() || hasViewColumns()
+                    || hasDropColumns() || isFlat());
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -167,12 +179,15 @@ public class BatchBuilder {
     }
 
     public JsArray<Operation> serializable() {
-        if (ops.isEmpty()) {
+        if (ops.stream().allMatch(BatchOp::isNoop)) {
             return new JsArray<>();
         }
 
         JsArray<Operation> send = new JsArray<>();
         for (BatchOp op : ops) {
+            if (op.isNoop()) {
+                continue;
+            }
             if (!op.hasHandles()) {
                 assert op.getState().isRunning() : "Only running states should be found in batch without a new handle";
                 continue;
@@ -216,13 +231,14 @@ public class BatchBuilder {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
-            lastOp[0].accept(op.getNewId().makeTicket());
+            if (lastOp[0] != null) {
+                lastOp[0].accept(op.getNewId().makeTicket());
 
-            // after building the entire collection, append to the set of steps we'll send
-            for (int i = 0; i < operations.size(); i++) {
-                send.push(operations.get(i));
+                // after building the entire collection, append to the set of steps we'll send
+                for (int i = 0; i < operations.size(); i++) {
+                    send.push(operations.get(i));
+                }
             }
-
         }
         return send;
     }

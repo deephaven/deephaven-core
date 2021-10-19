@@ -202,7 +202,10 @@ public class RequestBatcher {
                 // This is like tableLoop below, except no failure is possible, since we already have the results
                 if (table.isAlive()) {
                     final ClientTableState active = table.state();
-                    assert active.isRunning() : active;
+
+                    if (!active.isRunning()) {
+                    }
+
                     boolean sortChanged = !prevState.getSorts().equals(active.getSorts());
                     boolean filterChanged = !prevState.getFilters().equals(active.getFilters());
                     boolean customColumnChanged = !prevState.getCustomColumns().equals(active.getCustomColumns());
