@@ -71,7 +71,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * @param valueSerializerFactory Optional factory for a {@link KeyOrValueSerializer} to produce Kafka record values
      * @param collapseByKeyColumns Whether to publish only the last record for each unique key. Ignored when
      *        {@code keySerializerFactory} is {@code null}. If
-     *        {@code keySerializerFactory != null && collapseByKeyColumns}, it is expected that {@code table} will not
+     *        {@code keySerializerFactory != null && !collapseByKeyColumns}, it is expected that {@code table} will not
      *        produce any row shifts; that is, the publisher expects keyed tables to be streams, add-only, or
      *        aggregated.
      */
