@@ -193,7 +193,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
             if (options.useDeephavenNulls()) {
-                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
+                if (conversion == CharChunkInputStreamGenerator.CharConversion.IDENTITY) {
                     for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                         chunk.set(ii, is.readChar());
                     }

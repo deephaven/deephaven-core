@@ -196,7 +196,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
             if (options.useDeephavenNulls()) {
-                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
+                if (conversion == ByteChunkInputStreamGenerator.ByteConversion.IDENTITY) {
                     for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                         chunk.set(ii, is.readByte());
                     }

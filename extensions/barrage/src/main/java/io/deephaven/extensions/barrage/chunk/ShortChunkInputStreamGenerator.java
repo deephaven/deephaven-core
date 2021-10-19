@@ -196,7 +196,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
 
             if (options.useDeephavenNulls()) {
-                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
+                if (conversion == ShortChunkInputStreamGenerator.ShortConversion.IDENTITY) {
                     for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                         chunk.set(ii, is.readShort());
                     }
