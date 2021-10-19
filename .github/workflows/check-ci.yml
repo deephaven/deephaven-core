@@ -16,18 +16,27 @@ jobs:
       - name: Check gitignore rules
         run: .github/scripts/check-gitignore-rules.sh
 
-      # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
-      - name: Setup JDK
-        id: setup-java
+      - name: Setup JDK 8
+        id: setup-java-8
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
           java-version: '8.0.302'
 
+      - name: Setup JDK 17
+        id: setup-java-17
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'zulu'
+          java-version: '17.0.0'
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
+
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
 
       - name: Check
         uses: burrunan/gradle-cache-action@v1

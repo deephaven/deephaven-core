@@ -78,6 +78,9 @@ class Classpaths {
     static final String LOGBACK_NAME = 'logback-classic'
     static final String LOGBACK_VERSION = '1.2.3'
 
+    static final String GROOVY_GROUP = 'org.codehaus.groovy'
+    static final String GROOVY_VERSION = '3.0.9'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -186,5 +189,10 @@ class Classpaths {
     static void inheritSlf4j(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, SLF4J_GROUP, name, SLF4J_VERSION)
+    }
+
+    static void inheritGroovy(Project p, String name, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, GROOVY_GROUP, name, GROOVY_VERSION)
     }
 }
