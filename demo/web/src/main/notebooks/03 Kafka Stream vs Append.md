@@ -72,7 +72,7 @@ Since you are targeting a Kafka offset of "1 mm events ago", create a static tab
 [Snapshotting](https://deephaven.io/core/docs/how-to-guides/reduce-update-frequency/#create-a-static-snapshot) to an empty table does the trick.
 
 ```python
-jpy.cast(latest_offset, jpy.get_type('io.deephaven.db.v2.DynamicTable')).awaitUpdate(1500)
+jpy.cast(latest_offset, jpy.get_type('io.deephaven.db.v2.DynamicTable'))
 latest_offset = emptyTable(0).snapshot(latest_offset, True)
 ```
 
