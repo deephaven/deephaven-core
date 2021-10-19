@@ -304,6 +304,9 @@ public class RequestBatcher {
                 } else {
                     failed(reject, status.getDetails());
                 }
+
+                // Tell anybody who was orphaned to check if they should release their subscriptions / handles
+                orphans.forEach(ClientTableState::cleanup);
             });
         });
     }
