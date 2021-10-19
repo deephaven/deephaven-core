@@ -196,7 +196,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
 
             if (options.useDeephavenNulls()) {
-                if (conversion == LongChunkInputStreamGenerator.LongConversion.IDENTITY) {
+                if (conversion == DoubleChunkInputStreamGenerator.DoubleConversion.IDENTITY) {
                     for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                         chunk.set(ii, is.readDouble());
                     }
