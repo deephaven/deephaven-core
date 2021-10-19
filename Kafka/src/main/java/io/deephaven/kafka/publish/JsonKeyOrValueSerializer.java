@@ -33,7 +33,12 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     /**
      * The table we are reading from.
      */
-    final DynamicTable source;
+    private final DynamicTable source;
+
+    /**
+     * The input columns we'll read from {@code source}.
+     */
+    private final List<String> inputColumnNames;
 
     private interface FieldContext extends SafeCloseable {
     }
@@ -626,6 +631,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
             throw new KafkaPublisherException(sb.toString());
         }
 
+        inputColumnNames = Collections.unmodifiableList(new ArrayList<>(columnsToOutputFields.keySet()));
+
         // Now create all the processors for specifically-named fields
         columnsToOutputFields.forEach(this::makeFieldProcessor);
 
@@ -731,10 +738,16 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         return new JsonContext(size);
     }
 
+    @Override
+    public List<String> inputColumnNames() {
+        return inputColumnNames;
+    }
+
     private final class JsonContext implements Context {
-        final WritableObjectChunk<String, Attributes.Values> outputChunk;
-        final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk;
-        final FieldContext[] fieldContexts;
+
+        private final WritableObjectChunk<String, Attributes.Values> outputChunk;
+        private final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk;
+        private final FieldContext[] fieldContexts;
 
         public JsonContext(int size) {
             this.outputChunk = WritableObjectChunk.makeWritableChunk(size);
@@ -757,13 +770,14 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
      * Create a builder for processing Deephaven table data into string output
      */
     public static class Builder {
-        final Map<String, String> columnToTextField = new HashMap<>();
-        final Set<String> excludedColumns = new HashSet<>();
-        boolean autoValueMapping = true;
-        boolean ignoreMissingColumns = false;
-        String timestampFieldName = null;
-        String nestedObjectDelimiter = null;
-        boolean outputNulls = true;
+
+        private final Map<String, String> columnToTextField = new LinkedHashMap<>();
+        private final Set<String> excludedColumns = new HashSet<>();
+        private boolean autoValueMapping = true;
+        private boolean ignoreMissingColumns = false;
+        private String timestampFieldName = null;
+        private String nestedObjectDelimiter = null;
+        private boolean outputNulls = true;
 
         /**
          * Enables or disables automatic value mapping (true by default).

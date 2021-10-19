@@ -4,6 +4,8 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.SafeCloseable;
 
+import java.util.List;
+
 public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
     /**
      * Create a chunk of output values from a table and index.
@@ -27,6 +29,13 @@ public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
      * @return a Context for the KeyOrValueSerializer
      */
     Context makeContext(int size);
+
+    /**
+     * Get a list of the input column names used by this serializer.
+     *
+     * @return The list of input columns
+     */
+    List<String> inputColumnNames();
 
     interface Context extends SafeCloseable {
     }

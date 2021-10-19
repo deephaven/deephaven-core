@@ -23,8 +23,17 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     /**
      * The table we are reading from.
      */
-    final DynamicTable source;
-    final Schema schema;
+    private final DynamicTable source;
+
+    /**
+     * The Avro schema.
+     */
+    private final Schema schema;
+
+    /**
+     * The input columns we'll read from {@code source}.
+     */
+    private final List<String> inputColumnNames;
 
     private interface FieldContext extends SafeCloseable {
     }
@@ -483,6 +492,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             throw new KafkaPublisherException(sb.toString());
         }
 
+        inputColumnNames = Collections.unmodifiableList(new ArrayList<>(columnsToOutputFields.keySet()));
+
         // Now create all the processors for specifically-named fields
         columnsToOutputFields.forEach(this::makeFieldProcessor);
 
@@ -534,31 +545,37 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     @Override
     public ObjectChunk<GenericRecord, Attributes.Values> handleChunk(Context context, OrderedKeys toProcess,
             boolean previous) {
-        final JsonContext jsonContext = (JsonContext) context;
+        final AvroContext avroContext = (AvroContext) context;
 
-        jsonContext.avroChunk.setSize(toProcess.intSize());
+        avroContext.avroChunk.setSize(toProcess.intSize());
         for (int position = 0; position < toProcess.intSize(); ++position) {
-            jsonContext.avroChunk.set(position, new GenericData.Record(schema));
+            avroContext.avroChunk.set(position, new GenericData.Record(schema));
         }
 
         for (int ii = 0; ii < fieldProcessors.size(); ++ii) {
-            fieldProcessors.get(ii).processField(jsonContext.fieldContexts[ii], jsonContext.avroChunk, toProcess,
+            fieldProcessors.get(ii).processField(avroContext.fieldContexts[ii], avroContext.avroChunk, toProcess,
                     previous);
         }
 
-        return jsonContext.avroChunk;
+        return avroContext.avroChunk;
     }
 
     @Override
     public Context makeContext(int size) {
-        return new JsonContext(size);
+        return new AvroContext(size);
     }
 
-    private final class JsonContext implements Context {
-        final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk;
-        final FieldContext[] fieldContexts;
+    @Override
+    public List<String> inputColumnNames() {
+        return inputColumnNames;
+    }
 
-        public JsonContext(int size) {
+    private final class AvroContext implements Context {
+
+        private final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk;
+        private final FieldContext[] fieldContexts;
+
+        public AvroContext(int size) {
             this.avroChunk = WritableObjectChunk.makeWritableChunk(size);
             this.fieldContexts = new FieldContext[fieldProcessors.size()];
             for (int ii = 0; ii < fieldProcessors.size(); ++ii) {
@@ -577,12 +594,13 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
      * Create a builder for processing Deephaven table data into string output
      */
     public static class Builder {
-        final Map<String, String> columnToTextField = new HashMap<>();
-        final Set<String> excludedColumns = new HashSet<>();
-        Schema schema = null;
-        boolean autoValueMapping = true;
-        boolean ignoreMissingColumns = false;
-        String timestampFieldName = null;
+
+        private final Map<String, String> columnToTextField = new LinkedHashMap<>();
+        private final Set<String> excludedColumns = new HashSet<>();
+        private Schema schema = null;
+        private boolean autoValueMapping = true;
+        private boolean ignoreMissingColumns = false;
+        private String timestampFieldName = null;
 
         public Builder schema(Schema schema) {
             this.schema = schema;
