@@ -6,8 +6,8 @@
 using deephaven::client::highlevel::Client;
 
 int main() {
+  const char *server = "localhost:10000";
   try {
-    const char *server = "localhost:10000";
     auto client = Client::connect(server);
     auto manager = client.getManager();
     auto table = manager.emptyTable(10);
