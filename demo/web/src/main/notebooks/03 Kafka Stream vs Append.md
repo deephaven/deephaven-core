@@ -14,14 +14,11 @@ That decision can impact memory usage. The code below illustrates the difference
 \
 \
 Start by importing some requisite packages. There is documentation on [installing Python packages](https://deephaven.io/core/docs/how-to-guides/install-python-packages/),
-[ComboAggregateFactory](https://deephaven.io/core/docs/reference/table-operations/group-and-aggregate/AggCombo/), [emptyTable](https://deephaven.io/core/docs/how-to-guides/empty-table/#related-documentation),
-[merge](https://deephaven.io/core/docs/how-to-guides/merge-tables/#merge-tables),
-and the [jPy project](https://github.com/bcdev/jpy) (with which Deephaven is involved).
+[ComboAggregateFactory](https://deephaven.io/core/docs/reference/table-operations/group-and-aggregate/AggCombo/), [emptyTable](https://deephaven.io/core/docs/how-to-guides/empty-table/#related-documentation), and [merge](https://deephaven.io/core/docs/how-to-guides/merge-tables/#merge-tables).
 
 ```python
 from deephaven import KafkaTools as kt, ComboAggregateFactory as caf
 from deephaven.TableTools import emptyTable, merge
-import jpy
 ```
 
 \
@@ -72,7 +69,6 @@ Since you are targeting a Kafka offset of "1 mm events ago", create a static tab
 [Snapshotting](https://deephaven.io/core/docs/how-to-guides/reduce-update-frequency/#create-a-static-snapshot) to an empty table does the trick.
 
 ```python
-jpy.cast(latest_offset, jpy.get_type('io.deephaven.db.v2.DynamicTable'))
 latest_offset = emptyTable(0).snapshot(latest_offset, True)
 ```
 
