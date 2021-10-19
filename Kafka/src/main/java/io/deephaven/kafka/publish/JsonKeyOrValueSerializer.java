@@ -3,7 +3,9 @@ package io.deephaven.kafka.publish;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.util.string.StringUtils;
 import io.deephaven.db.v2.sources.ColumnSource;
@@ -17,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     /**
@@ -608,10 +611,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
             }
             if (autoValueMapping) {
                 makeFieldProcessor(columnName, columnName);
-            } else {
-                if (!ignoreMissingColumns) {
-                    missingColumns.add(columnName);
-                }
+            } else if (!ignoreMissingColumns) {
+                missingColumns.add(columnName);
             }
         }
 
@@ -880,9 +881,33 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
             return this;
         }
 
+        public void validateColumns(@NotNull final TableDefinition tableDefinition) {
+            if (!autoValueMapping && !ignoreMissingColumns) {
+                final List<String> missingColumns = tableDefinition.getColumnStream()
+                        .map(ColumnDefinition::getName)
+                        .filter(cn -> !columnToTextField.containsKey(cn) && !excludedColumns.contains(cn))
+                        .collect(Collectors.toList());
+                if (!missingColumns.isEmpty()) {
+                    throw new IllegalArgumentException("Incompatible table definition: found columns without mappings "
+                            + missingColumns);
+                }
+            }
+            final List<String> unavailableColumns = columnToTextField.keySet().stream()
+                    .filter(cn -> tableDefinition.getColumn(cn) == null)
+                    .collect(Collectors.toList());
+            if (!unavailableColumns.isEmpty()) {
+                throw new IllegalArgumentException("Incompatible table definition: unavailable mapped columns "
+                        + unavailableColumns);
+            }
+        }
+
         @Override
-        public List<String> sourceColumnNames() {
-            return Collections.unmodifiableList(new ArrayList<>(columnToTextField.keySet()));
+        public List<String> sourceColumnNames(@NotNull final TableDefinition tableDefinition) {
+            return Collections.unmodifiableList(tableDefinition.getColumnStream()
+                    .map(ColumnDefinition::getName)
+                    .filter(cn -> columnToTextField.containsKey(cn)
+                            || (autoValueMapping && !excludedColumns.contains(cn)))
+                    .collect(Collectors.toList()));
         }
 
         @Override

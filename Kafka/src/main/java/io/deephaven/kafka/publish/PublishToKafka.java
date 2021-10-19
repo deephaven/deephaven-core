@@ -81,6 +81,12 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             final KeyOrValueSerializer.Factory<K> keySerializerFactory,
             final KeyOrValueSerializer.Factory<V> valueSerializerFactory,
             final boolean collapseByKeyColumns) {
+        if (keySerializerFactory != null) {
+            keySerializerFactory.validateColumns(table.getDefinition());
+        }
+        if (valueSerializerFactory != null) {
+            valueSerializerFactory.validateColumns(table.getDefinition());
+        }
         if (table.isLive()
                 && !LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
                 && !LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
@@ -89,7 +95,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         }
 
         this.table = table = (keySerializerFactory != null && collapseByKeyColumns)
-                ? table.lastBy(keySerializerFactory.sourceColumnNames())
+                ? table.lastBy(keySerializerFactory.sourceColumnNames(table.getDefinition()))
                 : table.coalesce();
         this.producer = new KafkaProducer<>(props);
         this.topic = topic;
@@ -118,7 +124,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         return serializerFactory == null
                 ? ModifiedColumnSet.EMPTY
                 : ((BaseTable) table).newModifiedColumnSet(
-                        serializerFactory.sourceColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                        serializerFactory.sourceColumnNames(table.getDefinition())
+                                .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     private void publishMessages(@NotNull final ReadOnlyIndex rowsToPublish, final boolean usePrevious,

@@ -1,6 +1,7 @@
 package io.deephaven.kafka.publish;
 
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
@@ -47,11 +48,20 @@ public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
      */
     interface Factory<SERIALIZED_TYPE> {
         /**
+         * Validate that this factory is compatible with {@code tableDefinition}.
+         *
+         * @param tableDefinition A {@link TableDefinition} specifying all available source columns
+         */
+        void validateColumns(@NotNull TableDefinition tableDefinition);
+
+        /**
          * Get a list of the source column names that will be used by the serializers returns by {@link #create(Table)}.
          *
+         * @param tableDefinition The {@link TableDefinition} of a {@link Table} that will be subsequently supplied to
+         *        {@link #create(Table)}
          * @return The list of input column names
          */
-        List<String> sourceColumnNames();
+        List<String> sourceColumnNames(@NotNull TableDefinition tableDefinition);
 
         /**
          * Create a serializer using columns of {@code source} as input.

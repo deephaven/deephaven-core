@@ -1,6 +1,7 @@
 package io.deephaven.kafka.publish;
 
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
@@ -60,7 +61,15 @@ public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSe
         }
 
         @Override
-        public List<String> sourceColumnNames() {
+        public void validateColumns(@NotNull final TableDefinition tableDefinition) {
+            if (tableDefinition.getColumn(columnName) == null) {
+                throw new IllegalArgumentException(
+                        "Incompatible table definition: column " + columnName + " not found");
+            }
+        }
+
+        @Override
+        public List<String> sourceColumnNames(@NotNull final TableDefinition tableDefinition) {
             return Collections.singletonList(columnName);
         }
 
