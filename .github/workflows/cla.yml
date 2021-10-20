@@ -1,0 +1,33 @@
+#
+# A GitHub Action to manage Contributor License Agreement (CLA) compliance.
+# This action uses CLA Assistant (https://github.com/marketplace/actions/cla-assistant-lite) to ensure that
+# all contributors have signed the Deephaven CLA before their PRs are merged.  
+# The CLA can be signed by commenting on the PR.
+#
+# The CLA and all signatures are maintained at:  https://github.com/deephaven/cla
+#
+
+name: "CLA Assistant"
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened,closed,synchronize]
+
+jobs:
+  CLAssistant:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "CLA Assistant"
+        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target'
+        uses: cla-assistant/github-action@v2.1.3-beta
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PERSONAL_ACCESS_TOKEN : ${{ secrets.CLA_PERSONAL_ACCESS_TOKEN }}
+        with:
+          path-to-document: 'https://github.com/deephaven/cla/blob/main/CLA.md'
+          remote-organization-name: deephaven
+          remote-repository-name:  cla
+          branch: 'main'
+          path-to-signatures: 'signatures/version1/cla.json'
+          #allowlist: user1,bot*

@@ -72,6 +72,7 @@ class Docker {
         private Action<? super Sync> copyOut;
         private File dockerfileFile;
         private Action<? super Dockerfile> dockerfileAction;
+        private TaskDependencies containerDependencies = new TaskDependencies();
 
         /**
          * Files that need to be copied in to the image.
@@ -128,9 +129,8 @@ class Docker {
         String imageName;
 
         /**
-         * Tag to apply the network to the container.
+         * Name of the docker network which the container should be attached to.
          */
-
         String network;
 
         /**
@@ -154,6 +154,19 @@ class Docker {
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
         boolean showLogsOnSuccess;
+    }
+    /**
+     * Describes relationships between this set of tasks and other external tasks.
+     */
+    static class TaskDependencies {
+        /**
+         * Indicates tasks that must have been successfully completed before the container can start.
+         */
+        Object dependsOn;
+        /**
+         * Indicates tasks that should run after the container has stopped.
+         */
+        Object finalizedBy;
     }
 
     private static void validateImageName(String imageName) {
@@ -208,6 +221,7 @@ class Docker {
         if (cfg.dockerfileAction) {
             dockerfileTask = project.tasks.register("${taskName}Dockerfile", Dockerfile) { dockerfile ->
                 cfg.dockerfileAction.execute(dockerfile)
+                dockerfile.destFile.set new File(dockerWorkspaceContents.path + 'file', 'Dockerfile')
             }
         }
 
@@ -261,6 +275,10 @@ class Docker {
                     hostConfig.network.set(cfg.network)
                 }
 
+                if (cfg.containerDependencies.dependsOn) {
+                    dependsOn(cfg.containerDependencies.dependsOn)
+                }
+
                 targetImageId makeImage.get().getImageId()
                 containerName.set(dockerContainerName)
             }
@@ -273,6 +291,11 @@ class Docker {
                 //TODO wire this up to not even run if the container doesn't exist
                 dependsOn createContainer
                 targetContainerId dockerContainerName
+
+                if (cfg.containerDependencies.finalizedBy) {
+                    finalizedBy(cfg.containerDependencies.finalizedBy)
+                }
+
                 onError { t ->
                     // ignore, container might not exist
                 }
@@ -304,22 +327,28 @@ class Docker {
         }
 
         if (!cfg.copyOut) {
-            // make a wrap-up task to clean up the task work, wait until things are finished, since we have nothing to copy out
+            // Make a wrap-up task to clean up the task work, wait until things are finished, since we have nothing to copy out
             return project.tasks.register(taskName) { task ->
                 task.with {
                     if (cfg.entrypoint) {
                         dependsOn containerFinished, containerLogs
                         doLast {
-                            // there was an entrypoint specified, if the command was not successful kill the build once
-                            // we're done copying output
+                            // There was an entrypoint specified, if the command was not successful kill the build once
+                            // we're done copying output. Note that this means the output is actually thrown away (aside
+                            // from being writen to the log this build)
                             if (containerFinished.get().exitCode != 0) {
                                 throw new GradleException("Command '${cfg.entrypoint.join(' ')}' failed with exit code ${containerFinished.get().exitCode}, check logs for details")
                             }
+                            logger.quiet('Entrypoint has been executed, but no output is copied out.')
                         }
                     } else {
                         dependsOn createContainer
                     }
                     finalizedBy removeContainer
+
+                    // We need to declare some output so that other tasks can correctly depend on this. Whether or not
+                    // there is an entrypoint, the last accessible output is the build image, so declare that
+                    outputs.files makeImage.get().outputs.files
                 }
             }
         }

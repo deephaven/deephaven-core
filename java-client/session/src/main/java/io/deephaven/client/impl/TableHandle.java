@@ -2,6 +2,7 @@ package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableSpecAdapter;
 
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * @see TableHandleManager
  */
 public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle>
-        implements Closeable {
+        implements Closeable, HasTicket {
 
     public interface Lifecycle {
         void onInit(TableHandle handle);
@@ -135,6 +136,11 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         super(table);
         this.lifecycle = lifecycle;
         this.doneLatch = new CountDownLatch(1);
+    }
+
+    @Override
+    public Ticket ticket() {
+        return export.ticket();
     }
 
     public TableHandle newRef() {

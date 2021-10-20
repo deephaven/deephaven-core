@@ -3,21 +3,18 @@ package io.deephaven.kafka.publish;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.util.string.StringUtils;
-import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.ScriptApi;
-import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.function.Function;
 
 public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     /**
@@ -33,7 +30,46 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     /**
      * The table we are reading from.
      */
-    final DynamicTable source;
+    private final Table source;
+
+    protected final String nestedObjectDelimiter;
+    protected final boolean outputNulls;
+    protected final List<JSONFieldProcessor> fieldProcessors = new ArrayList<>();
+
+    public JsonKeyOrValueSerializer(final Table source,
+                                    final String[] columnNames,
+                                    final String[] fieldNames,
+                                    final String timestampFieldName,
+                                    final String nestedObjectDelimiter,
+                                    final boolean outputNulls) {
+        this.source = source;
+        this.nestedObjectDelimiter = nestedObjectDelimiter;
+        this.outputNulls = outputNulls;
+
+        MultiFieldKeyOrValueSerializerUtils.makeFieldProcessors(columnNames, fieldNames, this::makeFieldProcessor);
+
+        if (!StringUtils.isNullOrEmpty(timestampFieldName)) {
+            fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
+        }
+
+        this.emptyObjectNode = OBJECT_MAPPER.createObjectNode();
+
+        // create any nested structure in our template
+        if (nestedObjectDelimiter != null) {
+            for (final JSONFieldProcessor fieldProcessor : this.fieldProcessors) {
+                final String[] processorFieldNames = fieldProcessor.fieldName.split(nestedObjectDelimiter);
+                ObjectNode node = emptyObjectNode;
+                for (int i = 1; i < processorFieldNames.length; i++) {
+                    ObjectNode child = (ObjectNode) node.get(processorFieldNames[i - 1]);
+                    if (child == null) {
+                        child = OBJECT_MAPPER.createObjectNode();
+                        node.set(processorFieldNames[i - 1], child);
+                    }
+                    node = child;
+                }
+            }
+        }
+    }
 
     private interface FieldContext extends SafeCloseable {
     }
@@ -582,86 +618,15 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         }
     }
 
-    protected final String nestedObjectDelimiter;
-    protected final boolean outputNulls;
-    protected final List<JSONFieldProcessor> fieldProcessors = new ArrayList<>();
-
-    public JsonKeyOrValueSerializer(final DynamicTable source,
-            final Map<String, String> columnsToOutputFields,
-            final Set<String> excludedColumns,
-            final boolean autoValueMapping,
-            final boolean ignoreMissingColumns,
-            final String timestampFieldName,
-            final String nestedObjectDelimiter,
-            final boolean outputNulls) {
-        this.source = source;
-        this.nestedObjectDelimiter = nestedObjectDelimiter;
-        this.outputNulls = outputNulls;
-
-        final String[] columnNames = source.getDefinition().getColumnNamesArray();
-        final List<String> missingColumns = new ArrayList<>();
-
-        // Create all the auto-mapped columns
-        for (final String columnName : columnNames) {
-            if (excludedColumns.contains(columnName) || columnsToOutputFields.containsValue(columnName)) {
-                continue;
-            }
-            if (autoValueMapping) {
-                makeFieldProcessor(columnName, columnName);
-            } else {
-                if (!ignoreMissingColumns) {
-                    missingColumns.add(columnName);
-                }
-            }
-        }
-
-        if (!missingColumns.isEmpty()) {
-            final StringBuilder sb = new StringBuilder("Found columns without mappings " + missingColumns);
-            if (!excludedColumns.isEmpty()) {
-                sb.append(", unmapped=").append(excludedColumns);
-            }
-            if (!columnsToOutputFields.isEmpty()) {
-                sb.append(", mapped to fields=").append(columnsToOutputFields.keySet());
-            }
-            throw new KafkaPublisherException(sb.toString());
-        }
-
-        // Now create all the processors for specifically-named fields
-        columnsToOutputFields.forEach(this::makeFieldProcessor);
-
-        if (!StringUtils.isNullOrEmpty(timestampFieldName)) {
-            fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
-        }
-
-        this.emptyObjectNode = OBJECT_MAPPER.createObjectNode();
-
-        // create any nested structure in our template
-        if (nestedObjectDelimiter != null) {
-            for (final JSONFieldProcessor fieldProcessor : this.fieldProcessors) {
-                final String[] fieldNames = fieldProcessor.fieldName.split(nestedObjectDelimiter);
-                ObjectNode node = emptyObjectNode;
-                for (int i = 1; i < fieldNames.length; i++) {
-                    ObjectNode child = (ObjectNode) node.get(fieldNames[i - 1]);
-                    if (child == null) {
-                        child = OBJECT_MAPPER.createObjectNode();
-                        node.set(fieldNames[i - 1], child);
-                    }
-                    node = child;
-                }
-            }
-        }
-    }
-
     /**
      * Create a field processor that translates a given column from its Deephaven row number to output of the intended
      * type.
      *
-     * Override this method in descendant classes to change the output style.
      *
-     * @param fieldName The name of the field in the output (if needed).
      * @param columnName The Deephaven column to be translated into publishable format
+     * @param fieldName The name of the field in the output (if needed).
      */
-    protected void makeFieldProcessor(final String fieldName, final String columnName) {
+    private void makeFieldProcessor(final String columnName, final String fieldName) {
         // getColumn should throw a ColumnNotFoundException if it can't find the column, which will blow us up here.
         @SuppressWarnings("rawtypes")
         final ColumnSource src = source.getColumnSource(columnName);
@@ -732,9 +697,10 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private final class JsonContext implements Context {
-        final WritableObjectChunk<String, Attributes.Values> outputChunk;
-        final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk;
-        final FieldContext[] fieldContexts;
+
+        private final WritableObjectChunk<String, Attributes.Values> outputChunk;
+        private final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk;
+        private final FieldContext[] fieldContexts;
 
         public JsonContext(int size) {
             this.outputChunk = WritableObjectChunk.makeWritableChunk(size);
@@ -750,161 +716,6 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
             outputChunk.close();
             jsonChunk.close();
             SafeCloseable.closeArray(fieldContexts);
-        }
-    }
-
-    /**
-     * Create a builder for processing Deephaven table data into string output
-     */
-    public static class Builder {
-        final Map<String, String> columnToTextField = new HashMap<>();
-        final Set<String> excludedColumns = new HashSet<>();
-        boolean autoValueMapping = true;
-        boolean ignoreMissingColumns = false;
-        String timestampFieldName = null;
-        String nestedObjectDelimiter = null;
-        boolean outputNulls = true;
-
-        /**
-         * Enables or disables automatic value mapping (true by default).
-         *
-         * If auto value mapping is enabled, any column that was not defined [either by excludeColumn or mapColumn] is
-         * automatically mapped to a JSON field of the same name.
-         *
-         * @param autoValueMapping should automatic value mapping be enabled
-         *
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder autoValueMapping(final boolean autoValueMapping) {
-            this.autoValueMapping = autoValueMapping;
-            return this;
-        }
-
-        /**
-         * Permit the builder to silently ignore any columns not specified. False by default. If auto value mapping is
-         * enabled, this has no effect.
-         *
-         * @param ignoreMissingColumns True if the builder should ignore table columns with no specified behavior. false
-         *        if the builder should throw an exception if columns are found with no mapping.
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder ignoreMissingColumns(final boolean ignoreMissingColumns) {
-            this.ignoreMissingColumns = ignoreMissingColumns;
-            return this;
-        }
-
-        /**
-         * Indicates that a column is unmapped, and therefore not included in the output. You may not exclude a column
-         * that has already been excluded or mapped.
-         *
-         * @param column name of the column in the output table
-         *
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder excludeColumn(@NotNull final String column) {
-            checkColumnAlreadyExcluded(column);
-            checkColumnAlreadyMapped(column);
-            excludedColumns.add(column);
-            return this;
-        }
-
-        /**
-         * Map a Deephaven column to an output field of the same name. You may map the same column to multiple output
-         * fields, but may only map a given field once.
-         *
-         * @param column The name of the Deephaven column to export
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder mapColumn(@NotNull final String column) {
-            return mapColumn(column, column);
-        }
-
-        /**
-         * Map a Deephaven column to a specified output field. You may map multiple output fields from a single column.,
-         * but may only map a given field once.
-         *
-         * @param column The name of the Deephaven column to export
-         * @param field The name of the field to produce
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder mapColumn(@NotNull final String column, @NotNull final String field) {
-            checkColumnAlreadyExcluded(column);
-            checkFieldAlreadyMapped(field);
-            columnToTextField.put(field, column);
-            return this;
-        }
-
-        /**
-         * Include a timestamp indicating when this data was processed.
-         *
-         * @param timestampFieldName The name of the field to show a timestamp, or null for no timestamp.
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder timestampFieldName(final String timestampFieldName) {
-            if (timestampFieldName != null) {
-                checkFieldAlreadyMapped(timestampFieldName);
-            }
-            this.timestampFieldName = timestampFieldName;
-            return this;
-        }
-
-        /**
-         * The delimiter used to generate nested output objects from column names.
-         *
-         * @param nestedObjectDelimiter the delimiter string/character.
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder nestedObjectDelimiter(final String nestedObjectDelimiter) {
-            this.nestedObjectDelimiter = nestedObjectDelimiter;
-            return this;
-        }
-
-        /**
-         * Whether to output null values.
-         *
-         * @param outputNulls to output nulls
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder outputNulls(final boolean outputNulls) {
-            this.outputNulls = outputNulls;
-            return this;
-        }
-
-        /**
-         * When implemented in a subordinate class, create the actual factory for this adapter.
-         * 
-         * @return A factory for objects of this type.
-         */
-        public Function<DynamicTable, ? extends JsonKeyOrValueSerializer> buildFactory() {
-            return (tbl) -> new JsonKeyOrValueSerializer(tbl,
-                    columnToTextField, excludedColumns, autoValueMapping, ignoreMissingColumns,
-                    timestampFieldName, nestedObjectDelimiter, outputNulls);
-        }
-
-        private void checkColumnAlreadyExcluded(@NotNull final String column) {
-            if (excludedColumns.contains(column)) {
-                throw new KafkaPublisherException("Column " + column + " is already excluded.");
-            }
-        }
-
-        private void checkColumnAlreadyMapped(@NotNull final String column) {
-            if (columnToTextField.containsValue(column)) {
-                throw new KafkaPublisherException("Column " + column + " is already mapped.");
-            }
-        }
-
-        private void checkFieldAlreadyMapped(@NotNull final String field) {
-            if (columnToTextField.containsKey(field) || field.equals(timestampFieldName)) {
-                throw new KafkaPublisherException("Field " + field + " is already mapped.");
-            }
         }
     }
 }

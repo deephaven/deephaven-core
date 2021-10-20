@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequestOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequestOrBuilder",
+ "typeName": "interface"
+}

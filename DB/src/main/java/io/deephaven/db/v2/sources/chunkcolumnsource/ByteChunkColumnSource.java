@@ -71,6 +71,9 @@ public class ByteChunkColumnSource extends AbstractColumnSource<Byte> implements
 
     @Override
     public Chunk<? extends Attributes.Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+        if (orderedKeys.isEmpty()) {
+            return ByteChunk.getEmptyChunk();
+        }
         // if we can slice part of one of our backing chunks, then we will return that instead
         if (orderedKeys.isContiguous()) {
             final long firstKey = orderedKeys.firstKey();

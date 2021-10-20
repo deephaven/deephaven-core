@@ -15,7 +15,7 @@ import java.util.Objects;
  *
  * @see Session
  */
-public final class Export implements AutoCloseable {
+public final class Export implements AutoCloseable, HasTicket {
 
     private final ExportStates.State state;
     private final Listener listener;
@@ -36,11 +36,7 @@ public final class Export implements AutoCloseable {
         return state.session();
     }
 
-    /**
-     * The ticket.
-     *
-     * @return the ticket
-     */
+    @Override
     public Ticket ticket() {
         return state.ticket();
     }

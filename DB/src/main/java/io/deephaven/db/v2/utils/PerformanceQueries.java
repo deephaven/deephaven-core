@@ -2,6 +2,8 @@ package io.deephaven.db.v2.utils;
 
 import io.deephaven.db.tables.Table;
 
+import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.HashMap;
@@ -152,6 +154,7 @@ public class PerformanceQueries {
      * @param evaluationNumber evaluation number
      * @return map of query update performance tables.
      */
+    @ScriptApi
     public static Map<String, Table> queryUpdatePerformanceMap(final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
         final Table qup = queryUpdatePerformance(evaluationNumber);
@@ -213,10 +216,53 @@ public class PerformanceQueries {
         return resultMap;
     }
 
+    public static float approxRatio(final long v0, final long v1) {
+        if (v1 == 0 || v0 == QueryConstants.NULL_LONG || v1 == QueryConstants.NULL_LONG) {
+            return QueryConstants.NULL_FLOAT;
+        }
+        final float pct = v0 / (float) v1;
+        // The samples are not perfect; let's not confuse our users.
+        return Math.min(pct, 1.0F);
+    }
+
+    /**
+     * A user friendly view with basic memory and GC data samples for the current engine process.
+     *
+     * @return a view on ProcessMemoryLog.
+     */
+    @ScriptApi
+    public static Table processMemory() {
+        final long maxMemoryBytes = RuntimeMemory.getInstance().getMaxMemory();
+        final int maxMemoryMiB = (int) Math.ceil(maxMemoryBytes / (1024 * 1024.0));
+        final Table maxMem = TableTools.newTable(TableTools.intCol("MaxMemMiB", maxMemoryMiB));
+        final Table pml = TableLoggers.processMemoryLog().naturalJoin(maxMem, "");
+        Table pm = pml.updateView(
+                "TotalMemMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
+                "FreeMemMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))");
+        pm = pm.view(
+                "IntervalStart = IntervalStartTime",
+                "IntervalSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
+                "AvailMemMiB = MaxMemMiB - TotalMemMiB + FreeMemMiB",
+                "MaxMemMiB",
+                "AvailMemRatio = AvailMemMiB/MaxMemMiB",
+                "GcTimeRatio = io.deephaven.db.v2.utils.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)");
+        pm = pm.formatColumns(
+                "AvailMemRatio=Decimal(`#0.0%`)",
+                "AvailMemRatio=(AvailMemRatio < 0.05) ? PALE_RED : " +
+                        "((AvailMemRatio < 0.10) ? PALE_REDPURPLE : " +
+                        "((AvailMemRatio < 0.20) ? PALE_PURPLE : NO_FORMATTING))",
+                "GcTimeRatio=Decimal(`#0.0%`)",
+                "GcTimeRatio=(GcTimeRatio >= 0.75) ? PALE_RED : " +
+                        "((GcTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
+                        "((GcTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
+                "IntervalSeconds=Decimal(`#0.000`)");
+        return pm;
+    }
+
     private static Table formatColumnsAsPct(final Table t, final String... cols) {
         final String[] formats = new String[cols.length];
         for (int i = 0; i < cols.length; ++i) {
-            formats[i] = cols[i] + "=Decimal(`#0.##%`)";
+            formats[i] = cols[i] + "=Decimal(`#0.0%`)";
         }
         return t.formatColumns(formats);
     }

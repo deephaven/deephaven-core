@@ -28,7 +28,7 @@ public class ConsoleServiceGrpcBinding implements BindableService {
 
     @Override
     public ServerServiceDefinition bindService() {
-        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService(), ConsoleServiceGrpc.SERVICE_NAME)
+        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService())
                 .onBidiOverrideWithBrowserSupport(delegate::autoCompleteStream,
                         ConsoleServiceGrpc.getAutoCompleteStreamMethod(),
                         ConsoleServiceGrpc.getOpenAutoCompleteStreamMethod(),

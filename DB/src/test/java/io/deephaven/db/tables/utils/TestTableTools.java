@@ -153,9 +153,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             DynamicTable tableDividends = readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
             assertEquals(3, tableDividends.size());
             assertEquals(4, tableDividends.getMeta().size());
-            assertTrue(0.15 == tableDividends.getColumn(2).getDouble(1));
-            assertTrue(300 == tableDividends.getColumn(3).getInt(1));
-            assertTrue(tableDividends.getColumn(0).get(2).toString().equals("Z"));
+            assertEquals(0.15, tableDividends.getColumn(2).getDouble(1));
+            assertEquals(300, tableDividends.getColumn(3).getShort(1));
+            assertEquals("Z", tableDividends.getColumn(0).get(2));
         } catch (IOException e) {
             throw new RuntimeException("Failed to execute readCSV test. ", e);
         }
@@ -172,10 +172,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                     .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
             assertEquals(3, tableDividends.size());
             assertEquals(4, tableDividends.getMeta().size());
-            assertTrue(0.15 == tableDividends.getColumn(2).getDouble(1));
-            // 300 becomes a double here because parseDouble doesn't mind leading spaces
-            assertTrue(300 == tableDividends.getColumn(3).getDouble(1));
-            assertTrue(tableDividends.getColumn(0).get(2).toString().equals(" Z"));
+            assertEquals(" 0.15", tableDividends.getColumn(2).get(1));
+            assertEquals(" 300", tableDividends.getColumn(3).get(1));
+            assertEquals(" Z", tableDividends.getColumn(0).get(2));
         } catch (IOException e) {
             throw new RuntimeException("Failed to execute readCSV test. ", e);
         }
@@ -341,14 +340,14 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
             out.printf("colA%scolB%scolC%scolD%scolE%scolF%scolG%n", separator, separator, separator, separator,
                     separator, separator);
-            out.printf("\"mark1%smark2\"%s1%s1%s1%s%s(null)%strue%n", separator, separator, separator, separator,
+            out.printf("\"mark1%smark2\"%s1%s1%s1%s%s%strue%n", separator, separator, separator, separator,
                     separator, separator, separator);
-            out.printf("etti%s3%s6%s2%s%s(null)%sFALSE%n", separator, separator, separator, separator, separator,
+            out.printf("etti%s3%s6%s2%s%s%sFALSE%n", separator, separator, separator, separator, separator,
                     separator);
-            out.printf("(null)%s(null)%s(null)%s(null)%s%s(null)%s(null)%n", separator, separator, separator, separator,
+            out.printf("%s%s%s%s%s%s%n", separator, separator, separator, separator,
                     separator, separator);
-            out.printf("%s%s%s%s%s(null)%s%n", separator, separator, separator, separator, separator, separator);
-            out.printf("test%s3%s7.0%stest%s%s(null)%sTRUE%n", separator, separator, separator, separator, separator,
+            out.printf("%s%s%s%s%s%s%n", separator, separator, separator, separator, separator, separator);
+            out.printf("test%s3%s7.0%stest%s%s%sTRUE%n", separator, separator, separator, separator, separator,
                     separator);
 
             out.flush();
@@ -365,7 +364,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             assertEquals(String.class, definition.getColumnList().get(0).getDataType());
 
             assertEquals("colB", definition.getColumnList().get(1).getName());
-            assertEquals(int.class, definition.getColumnList().get(1).getDataType());
+            assertEquals(short.class, definition.getColumnList().get(1).getDataType());
 
             assertEquals("colC", definition.getColumnList().get(2).getName());
             assertEquals(double.class, definition.getColumnList().get(2).getDataType());
@@ -383,7 +382,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             assertEquals(Boolean.class, definition.getColumnList().get(6).getDataType());
 
             assertEquals(String.format("mark1%smark2", separator), table.getColumn("colA").get(0));
-            assertEquals(1, table.getColumn("colB").getInt(0));
+            assertEquals(1, table.getColumn("colB").getShort(0));
             assertEquals(1.0, table.getColumn("colC").getDouble(0), 0.000001);
             assertEquals("1", table.getColumn("colD").get(0));
             assertEquals(null, table.getColumn("colE").get(0));
@@ -391,7 +390,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             assertEquals(Boolean.TRUE, table.getColumn("colG").getBoolean(0));
 
             assertEquals(null, table.getColumn("colA").get(2));
-            assertEquals(QueryConstants.NULL_INT, table.getColumn("colB").getInt(2));
+            assertEquals(QueryConstants.NULL_SHORT, table.getColumn("colB").getShort(2));
             assertEquals(QueryConstants.NULL_DOUBLE, table.getColumn("colC").getDouble(2), 0.0000001);
             assertEquals(null, table.getColumn("colD").get(2));
             assertEquals(null, table.getColumn("colE").get(2));

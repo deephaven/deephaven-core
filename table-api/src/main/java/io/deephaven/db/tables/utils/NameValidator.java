@@ -112,6 +112,15 @@ public class NameValidator {
         return Type.COLUMN.validate(name);
     }
 
+    public static boolean isValidColumnName(String name) {
+        try {
+            validateColumnName(name);
+            return true;
+        } catch (InvalidNameException e) {
+            return false;
+        }
+    }
+
     private static ValidationCode getCode(String name, Pattern pattern,
             boolean checkReservedVariableNames, boolean checkValidJavaWord) {
         if (name == null || name.isEmpty()) {

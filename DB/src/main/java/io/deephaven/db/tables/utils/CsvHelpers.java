@@ -6,29 +6,24 @@ package io.deephaven.db.tables.utils;
 
 import io.deephaven.base.Procedure;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.io.streams.BzipFileOutputStream;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.utils.csv.CsvSpecs;
 import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.util.QueryConstants;
+import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.util.progress.MinProcessStatus;
-import io.deephaven.util.progress.ProgressLogger;
-import io.deephaven.util.progress.StatusCallback;
 import org.jetbrains.annotations.Nullable;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.csv.CSVParser;
 
-import java.io.*;
-import java.util.*;
-
-import static io.deephaven.db.tables.utils.NameValidator.legalizeColumnName;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * Utilities for reading and writing CSV files to and from {@link Table}s
@@ -38,8 +33,165 @@ public class CsvHelpers {
     @SuppressWarnings("WeakerAccess")
     public final static int MAX_CSV_LINE_COUNT = 1000000;
 
+    public final static boolean NULLS_AS_EMPTY_DEFAULT = true;
+
     /**
-     * Writes a DB table out as a CSV file.
+     * Creates an in-memory table from {@code path} by importing CSV data.
+     *
+     * <p>
+     * If {@code path} is a non-file {@link URL}, the CSV will be parsed via {@link #readCsv(URL, CsvSpecs)}.
+     *
+     * <p>
+     * Otherwise, the {@code path} will be parsed via {@link #readCsv(Path, CsvSpecs)}, which will apply decompression
+     * based on the {@code path}.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(path, CsvSpecs.csv())}.
+     *
+     * @param path the path
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(String, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(String path) throws IOException {
+        return readCsv(path, CsvSpecs.csv());
+    }
+
+    /**
+     * Creates an in-memory table from {@code stream} by importing CSV data. The {@code stream} will be closed upon
+     * return.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(stream, CsvSpecs.csv())}
+     *
+     * @param stream an InputStream providing access to the CSV data.
+     * @return a Deephaven Table object
+     * @throws IOException if the InputStream cannot be read
+     * @see #readCsv(InputStream, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(InputStream stream) throws IOException {
+        return readCsv(stream, CsvSpecs.csv());
+    }
+
+    /**
+     * Creates an in-memory table from {@code url} by importing CSV data.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(url, CsvSpecs.csv())}.
+     *
+     * @param url the url
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(URL, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(URL url) throws IOException {
+        return readCsv(url, CsvSpecs.csv());
+    }
+
+    /**
+     * Creates an in-memory table from {@code path} by importing CSV data.
+     *
+     * <p>
+     * Paths that end in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst",
+     * or ".tar" will be decompressed.
+     *
+     * <p>
+     * Equivalent to {@code readCsv(path, CsvSpecs.csv())}.
+     *
+     * @param path the file path
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(Path, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(Path path) throws IOException {
+        return readCsv(path, CsvSpecs.csv());
+    }
+
+    /**
+     * Creates an in-memory table from {@code path} by importing CSV data according to the {@code specs}.
+     *
+     * <p>
+     * If {@code path} is a non-file {@link URL}, the CSV will be parsed via {@link #readCsv(URL, CsvSpecs)}.
+     *
+     * <p>
+     * Otherwise, the {@code path} will be parsed via {@link #readCsv(Path, CsvSpecs)}, which will apply decompression
+     * based on the {@code path}.
+     *
+     * @param path the path
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see #readCsv(URL, CsvSpecs)
+     * @see #readCsv(Path, CsvSpecs)
+     */
+    @ScriptApi
+    public static Table readCsv(String path, CsvSpecs specs) throws IOException {
+        URL: {
+            final URL url;
+            try {
+                url = new URL(path);
+            } catch (MalformedURLException e) {
+                break URL;
+            }
+            if (isStandardFile(url)) {
+                return readCsv(Paths.get(url.getPath()), specs);
+            }
+            return readCsv(url, specs);
+        }
+        return readCsv(Paths.get(path), specs);
+    }
+
+    /**
+     * Creates an in-memory table from {@code stream} by importing CSV data according to the {@code specs}. The
+     * {@code stream} will be closed upon return.
+     *
+     * @param stream the stream
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(InputStream stream, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(stream));
+    }
+
+    /**
+     * Creates an in-memory table from {@code url} by importing CSV data according to the {@code specs}.
+     *
+     * @param url the url
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     */
+    @ScriptApi
+    public static Table readCsv(URL url, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(url.openStream()));
+    }
+
+    /**
+     * Creates an in-memory table from {@code path} by importing CSV data according to the {@code specs}.
+     *
+     * <p>
+     * A {@code path} that ends in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz",
+     * ".7z", ".zst", or ".tar" will be decompressed.
+     *
+     * @param path the path
+     * @param specs the csv specs
+     * @return the table
+     * @throws IOException if an I/O exception occurs
+     * @see PathUtil#open(Path)
+     */
+    @ScriptApi
+    public static Table readCsv(Path path, CsvSpecs specs) throws IOException {
+        return InMemoryTable.from(specs.parse(PathUtil.open(path)));
+    }
+
+    /**
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -53,11 +205,11 @@ public class CsvHelpers {
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, String... columns) throws IOException {
-        writeCsv(source, destPath, compressed, timeZone, progress, false, columns);
+        writeCsv(source, destPath, compressed, timeZone, progress, NULLS_AS_EMPTY_DEFAULT, columns);
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -77,7 +229,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
@@ -101,7 +253,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out BufferedWriter used to write the CSV
@@ -120,7 +272,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out BufferedWriter used to write the CSV
@@ -190,7 +342,7 @@ public class CsvHelpers {
      */
     @ScriptApi
     public static void writeCsvPaginate(Table source, String destPath, String filename) throws IOException {
-        writeCsvPaginate(source, destPath, filename, false);
+        writeCsvPaginate(source, destPath, filename, NULLS_AS_EMPTY_DEFAULT);
     }
 
     /**
@@ -229,7 +381,7 @@ public class CsvHelpers {
     @ScriptApi
     public static void writeToMultipleFiles(Table table, String path, String filename, long startLine)
             throws IOException {
-        writeToMultipleFiles(table, path, filename, startLine, false);
+        writeToMultipleFiles(table, path, filename, startLine, NULLS_AS_EMPTY_DEFAULT);
     }
 
     /**
@@ -252,7 +404,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -267,7 +419,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -283,7 +435,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -296,11 +448,11 @@ public class CsvHelpers {
     @ScriptApi
     public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, String... colNames) throws IOException {
-        writeCsvContents(source, out, timeZone, progress, false, colNames);
+        writeCsvContents(source, out, timeZone, progress, NULLS_AS_EMPTY_DEFAULT, colNames);
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -319,7 +471,7 @@ public class CsvHelpers {
     }
 
     /**
-     * Writes a DB table out as a CSV file.
+     * Writes a table out as a CSV file.
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
@@ -414,24 +566,6 @@ public class CsvHelpers {
     }
 
     /**
-     * Return the provided {@link StatusCallback} if provided, otherwise create a new one and return it.
-     *
-     * @param progress use this if it is not null
-     * @param withLog whether to create a StatusCallback that will annotate progress updates to the current log
-     * @return a valid StatusCallback.
-     */
-    private static StatusCallback checkStatusCallback(StatusCallback progress, boolean withLog) {
-        if (progress == null) {
-            if (withLog) {
-                return new ProgressLogger(new MinProcessStatus(), ProcessEnvironment.get().getLog());
-            } else {
-                return new MinProcessStatus();
-            }
-        }
-        return progress;
-    }
-
-    /**
      * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
      * inferred from the data.
      *
@@ -440,49 +574,16 @@ public class CsvHelpers {
      *        use as a delimiter.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
+     * @deprecated See {@link #readCsv(InputStream, CsvSpecs)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(InputStream is, final String format) throws IOException {
-        return readCsvInternal(is, format, false, checkStatusCallback(null, false));
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-     *        use as a delimiter.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
-     */
-    @ScriptApi
-    static Table readHeaderlessCsv(InputStream is, final String format, StatusCallback progress,
-            Collection<String> header) throws IOException {
-        final StatusCallback lProgress = checkStatusCallback(progress, true);
-        return readCsvInternal(is, format, false, lProgress, true, header);
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-     *        use as a delimiter.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
-     */
-    @ScriptApi
-    public static Table readCsv(InputStream is, final String format, StatusCallback progress) throws IOException {
-        final StatusCallback lProgress = checkStatusCallback(progress, true);
-        return readCsvInternal(is, format, false, lProgress);
+        final CsvSpecs specs = CsvSpecs.fromLegacyFormat(format);
+        if (specs == null) {
+            throw new IllegalArgumentException(String.format("Unable to map legacy format '%s' into CsvSpecs", format));
+        }
+        return readCsv(is, specs);
     }
 
     /**
@@ -493,378 +594,16 @@ public class CsvHelpers {
      * @param separator a char to use as the delimiter value when parsing the file.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
+     * @deprecated See {@link #readCsv(InputStream, CsvSpecs)}
      */
     @ScriptApi
+    @Deprecated
     public static Table readCsv(InputStream is, final char separator) throws IOException {
-        return readCsvInternal(is, String.valueOf(separator), false, checkStatusCallback(null, false));
+        return InMemoryTable.from(CsvSpecs.builder().delimiter(separator).build().parse(is));
     }
 
-    /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @param separator a char to use as the delimiter value when parsing the file.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
-     */
-    @ScriptApi
-    public static Table readCsv(InputStream is, final char separator, StatusCallback progress) throws IOException {
-        final StatusCallback lProgress = checkStatusCallback(progress, true);
-        return readCsvInternal(is, String.valueOf(separator), false, lProgress);
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @param separator a char to use as the delimiter value when parsing the file.
-     * @return a Deephaven QueryTable object
-     * @throws IOException if the InputStream cannot be read
-     */
-    @ScriptApi
-    public static QueryTable readCsv2(InputStream is, final char separator) throws IOException {
-        return (QueryTable) readCsvInternal(is, String.valueOf(separator), true, checkStatusCallback(null, false));
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
-     */
-    @ScriptApi
-    public static Table readCsv(InputStream is) throws IOException {
-        return readCsvInternal(is, null, false, checkStatusCallback(null, false));
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
-     */
-    @ScriptApi
-    public static Table readCsv(InputStream is, StatusCallback progress) throws IOException {
-        final StatusCallback lProgress = checkStatusCallback(progress, true);
-        return readCsvInternal(is, null, false, lProgress);
-    }
-
-    /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
-     * inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @return a Deephaven QueryTable object
-     * @throws IOException if the InputStream cannot be read
-     */
-    // Public for backwards-compatibility for users calling readCsv2
-    @SuppressWarnings("WeakerAccess")
-    public static QueryTable readCsv2(InputStream is) throws IOException {
-        return (QueryTable) readCsvInternal(is, null, true, checkStatusCallback(null, false));
-    }
-
-    /**
-     * Does the work of creating a memory table by importing CSV data. The first row must be column names. Column data
-     * types are inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-     *        use as a delimiter.
-     * @param v2 whether the process the import using the older QueryTable processing (v2 = true) or the newer
-     *        InMemoryTable processing (v2 = false).
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
-     */
-    private static Table readCsvInternal(InputStream is, String format, boolean v2, StatusCallback progress)
-            throws IOException {
-        return readCsvInternal(is, format, v2, progress, false, null);
-    }
-
-
-    /**
-     * Does the work of creating a memory table by importing CSV data. The first row must be column names. Column data
-     * types are inferred from the data.
-     *
-     * @param is an InputStream providing access to the CSV data.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-     *        use as a delimiter.
-     * @param v2 whether the process the import using the older QueryTable processing (v2 = true) or the newer
-     *        InMemoryTable processing (v2 = false).
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
-     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
-     *        logger.
-     * @param noHeader True when the CSV does not have a header row.
-     * @param header Column names to use as, or instead of, the header row for the CSV.
-     * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
-     */
-    private static Table readCsvInternal(InputStream is, String format, boolean v2, StatusCallback progress,
-            boolean noHeader, @Nullable Collection<String> header) throws IOException {
-        final char separator;
-        final InputStreamReader fileReader = new InputStreamReader(is);
-
-        final StatusCallback lProgress = checkStatusCallback(progress, true);
-
-        if (format == null) {
-            format = "TRIM";
-            separator = ',';
-        } else {
-            if (format.length() == 1) {
-                separator = format.charAt(0);
-                format = "TRIM";
-            } else {
-                separator = ',';
-                format = format.toUpperCase();
-            }
-        }
-
-        final CSVFormat parseFormat = CsvParserFormat.getCsvFormat(format, separator, (format.equals("TRIM")), noHeader,
-                header == null ? null : new ArrayList<>(header));
-        final CSVParser parser = new CSVParser(fileReader, parseFormat);
-
-        lProgress.update(10, "Reading column names from CSV.");
-        String[] columnNames = new String[0];
-        if (!noHeader || !(header == null)) {
-            columnNames = parser.getHeaderMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            if (columnNames.length == 0) {
-                throw new RuntimeException("No columns found in CSV.");
-            }
-        }
-
-        lProgress.update(20, "Reading records from CSV.");
-        long initialLineNumber = parser.getCurrentLineNumber();
-        List<CSVRecord> csvData = parser.getRecords();
-        final int colCount;
-        if (csvData.size() == 0) {
-            if (noHeader && header == null) {
-                throw new RuntimeException("There was no header provided and there were no records found in the CSV.");
-            }
-            colCount = 0;
-        } else {
-            try {
-                colCount = csvData.get(0).size();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to get number of columns from first record of CSV.", e);
-            }
-        }
-
-        /*
-         * Validate provided header: The parser will fail to read if there are more column headers than data columns,
-         * but having less headers than data columns is perfectly valid, and there will be cases where columns are
-         * variable, but there is a guaranteed left-subset, or a user is only interested in a left-subset of the data.
-         */
-        if (header != null && columnNames.length > colCount && csvData.size() > 0) {
-            throw new RuntimeException("More column names provided in the header (" + columnNames.length
-                    + ") than exist in the first record of the CSV (" + colCount + ").");
-        }
-
-        if (header == null && noHeader) {
-            columnNames = new String[colCount];
-            for (int i = 0; i < colCount; i++) {
-                columnNames[i] = "Column" + (i + 1);
-            }
-        }
-
-        Object[] columnData = new Object[columnNames.length];
-        int numRows = csvData.size();
-
-        for (int col = 0; col < columnNames.length; col++) {
-            lProgress.update(20 + (col + 1) * 70 / columnNames.length,
-                    "Parsing CSV column " + (col + 1) + " of " + columnNames.length + ".");
-            columnData[col] = parseColumn(csvData, numRows, col, initialLineNumber);
-        }
-
-        HashSet<String> taken = new HashSet<>();
-        for (int i = 0; i < columnNames.length; i++) {
-            // The Apache parser does not allow duplicate column names, including blank/null, but it will allow one
-            // blank/null.
-            // Replace a single blank/null column name with the first unique value based on "Column1."
-            if (columnNames[i] == null || columnNames[i].isEmpty()) {
-                columnNames[i] = "Column" + (i + 1);
-            }
-            columnNames[i] = legalizeColumnName(columnNames[i], (s) -> s.replaceAll("[- ]", "_"), taken);
-            taken.add(columnNames[i]);
-        }
-
-        if (v2) {
-            Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>();
-            for (int ii = 0; ii < columnNames.length; ii++) {
-                lProgress.update(90 + (ii + 1) * 10 / columnNames.length,
-                        "Mapping CSV column " + (ii + 1) + " of " + columnNames.length + " to table.");
-                ColumnSource<?> arrayBackedSource =
-                        ArrayBackedColumnSource.getMemoryColumnSourceUntyped(columnData[ii]);
-                columnSources.put(columnNames[ii], arrayBackedSource);
-            }
-            lProgress.finish("");
-            return new QueryTable(Index.FACTORY.getFlatIndex(numRows), columnSources);
-        } else {
-            lProgress.finish("");
-            return new InMemoryTable(columnNames, columnData);
-        }
-    }
-
-    /**
-     * Returns a column of data, and inspects the data read from a CSV to determine what data type would best fit the
-     * column.
-     *
-     * @param csvData a List of CSVRecords from the Apache Commons CSV parser used to read the CSV file
-     * @param numRows how many rows to read from the List
-     * @param col which column from each record should be read
-     * @param initialLineNumber initial line number in the source file from which the data was read (i.e. 1 if there was
-     *        a header, 0 if not)
-     * @return an object representing an array of values from the column that was read
-     */
-    private static Object parseColumn(List<CSVRecord> csvData, int numRows, int col, long initialLineNumber)
-            throws IOException {
-        Boolean isInteger = null;
-        Boolean isLong = null;
-        Boolean isDouble = null;
-        Boolean isBoolean = null;
-        Boolean isDateTime = null;
-        Boolean isLocalTime = null;
-
-        long lineNumber = initialLineNumber;
-        for (CSVRecord line : csvData) {
-            if (col >= line.size()) {
-                throw new IOException("Error parsing column " + (col + 1) + " on line " + (lineNumber + 1) +
-                        " - line only has " + line.size() + " columns.");
-            }
-
-            final String value = line.get(col);
-
-            if (isNull(value)) {
-                continue;
-            }
-
-            if (isInteger == null || isInteger) {
-                try {
-                    Integer.parseInt(value);
-                    isInteger = true;
-                } catch (NumberFormatException e) {
-                    isInteger = false;
-                }
-            }
-
-            if (isLong == null || isLong) {
-                try {
-                    Long.parseLong(value);
-                    isLong = true;
-                } catch (NumberFormatException e) {
-                    isLong = false;
-                }
-            }
-
-            if (isDouble == null || isDouble) {
-                try {
-                    Double.parseDouble(value);
-                    isDouble = true;
-                } catch (NumberFormatException e) {
-                    isDouble = false;
-                }
-            }
-
-            if (isBoolean == null || isBoolean) {
-                isBoolean = "true".equalsIgnoreCase(line.get(col)) || "false".equalsIgnoreCase(line.get(col));
-            }
-
-            if (isDateTime == null || isDateTime) {
-                isDateTime = DBTimeUtils.convertDateTimeQuiet(value) != null;
-            }
-
-            if (isLocalTime == null || isLocalTime) {
-                isLocalTime = DBTimeUtils.convertTimeQuiet(value) != io.deephaven.util.QueryConstants.NULL_LONG;
-            }
-
-            lineNumber++;
-        }
-
-        if (isInteger != null && isInteger) {
-            int[] data = new int[numRows];
-
-            for (int row = 0; row < numRows; row++) {
-                String value = csvData.get(row).get(col);
-
-                data[row] = isNull(value) ? io.deephaven.util.QueryConstants.NULL_INT : Integer.parseInt(value);
-            }
-
-            return data;
-        } else if (isLong != null && isLong) {
-            long[] data = new long[numRows];
-
-            for (int row = 0; row < numRows; row++) {
-                String value = csvData.get(row).get(col);
-
-                data[row] = isNull(value) ? io.deephaven.util.QueryConstants.NULL_LONG : Long.parseLong(value);
-            }
-
-            return data;
-        } else if (isDouble != null && isDouble) {
-            double[] data = new double[numRows];
-
-            for (int row = 0; row < numRows; row++) {
-                String value = csvData.get(row).get(col);
-
-                data[row] = isNull(value) ? io.deephaven.util.QueryConstants.NULL_DOUBLE : Double.parseDouble(value);
-            }
-
-            return data;
-        } else if (isBoolean != null && isBoolean) {
-            Boolean[] data = new Boolean[numRows];
-
-            for (int row = 0; row < numRows; row++) {
-                String value = csvData.get(row).get(col);
-
-                data[row] = isNull(value) ? QueryConstants.NULL_BOOLEAN : Boolean.valueOf(value);
-            }
-
-            return data;
-        } else if (isDateTime != null && isDateTime) {
-            DBDateTime[] data = new DBDateTime[numRows];
-
-            for (int row = 0; row < numRows; row++) {
-                DBDateTime value = DBTimeUtils.convertDateTimeQuiet(csvData.get(row).get(col));
-
-                data[row] = value;
-            }
-
-            return data;
-        } else if (isLocalTime != null && isLocalTime) {
-            long[] data = new long[numRows];
-
-            for (int row = 0; row < numRows; row++) {
-                data[row] = DBTimeUtils.convertTimeQuiet(csvData.get(row).get(col));
-            }
-
-            return data;
-        } else {
-            String[] data = new String[numRows];
-
-            for (int row = 0; row < numRows; row++) {
-                String value = csvData.get(row).get(col);
-
-                data[row] = isNull(value) ? null : value;
-            }
-
-            return data;
-        }
-    }
-
-    private static boolean isNull(String s) {
-        return s.length() == 0 || s.equals(TableTools.NULL_STRING);
+    private static boolean isStandardFile(URL url) {
+        return "file".equals(url.getProtocol()) && url.getAuthority() == null && url.getQuery() == null
+                && url.getRef() == null;
     }
 }

@@ -1,13 +1,5 @@
 apply plugin: 'base'
 
-JavaVersion currentJavaVersion = JavaVersion.current()
-boolean is8 = currentJavaVersion.isJava8()
-
-ext {
-    // changing groovy version is dangerous for customer PQ stability; only upgrade is user is also upgrading java version >8
-    GROOVY_VERSION = is8 ? '2.3.6' : '2.5.10'
-}
-
 configurations {
 
     commonsIo
@@ -108,8 +100,6 @@ dependencies {
     dhUtil 'ant:ant:1.6.5'
 
     dhDb 'joda-time:joda-time:2.10',
-            "org.codehaus.groovy:groovy:$GROOVY_VERSION",
-            "org.codehaus.groovy:groovy-json:$GROOVY_VERSION",
             'com.jcraft:jsch:0.1.51',
             "org.eclipse.jgit:org.eclipse.jgit:$Classpaths.JGIT_VERSION",
             "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$Classpaths.JGIT_VERSION",
@@ -119,6 +109,9 @@ dependencies {
             'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.8',
             'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.9.8',
             'com.tdunning:t-digest:3.2'
+
+    Classpaths.inheritGroovy(project, 'groovy', 'dhDb')
+    Classpaths.inheritGroovy(project, 'groovy-json', 'dhDb')
 
     // https://mvnrepository.com/artifact/com.univocity/univocity-parsers
     dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0',

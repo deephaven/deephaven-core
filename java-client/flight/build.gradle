@@ -5,15 +5,15 @@ plugins {
 description = 'The Deephaven client flight library'
 
 dependencies {
-    api project(':client-session')
+    api project(':java-client-session')
     implementation project(':proto:proto-backplane-grpc-flight')
 
     Classpaths.inheritArrow(project, 'flight-core', 'api')
     Classpaths.inheritArrow(project, 'flight-grpc', 'implementation')
 
-    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.19.0'
 }
 
 test {

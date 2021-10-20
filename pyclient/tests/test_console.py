@@ -14,7 +14,7 @@ class ConsoleTestCase(BaseTestCase):
         pa_table = csv.read_csv(self.csv_file)
         user_table = self.session.import_table(pa_table)
         variable_name = "t"
-        self.session.bind_table(user_table, variable_name)
+        self.session.bind_table(variable_name, user_table)
         server_script = '''t2 = t.update("col1 = i*i")'''
         self.session.run_script(server_script)
         self.assertIn('t2', self.session.tables)

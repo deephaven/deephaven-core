@@ -12,7 +12,7 @@ String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
         'CompilerTools', 'Generators',
         'Integrations', 'ModelFarm', 'ClientSupport',
         'BenchmarkSupport', 'DB-test', 'DbTypes', 'DbTypesImpl', 'Parquet',
-        'Kafka', 'grpc-api', 'grpc-api-client', 'table-api', 'qst']
+        'Kafka', 'grpc-api', 'table-api', 'qst']
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
@@ -38,6 +38,7 @@ Map<String, String> pyMods = [
         'py36': 'py/py36',
         'py37': 'py/py37',
         'sphinx': 'sphinx',
+        'pyclient': 'pyclient',
 ]
 
 // Include our modules
@@ -103,17 +104,17 @@ project(':grpc-api-server-docker').projectDir = file('grpc-api/server/docker')
 include(':grpc-api-server-native')
 project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
 
-include(':grpc-api-client-simple')
-project(':grpc-api-client-simple').projectDir = file('grpc-api-client/simple')
-
 include(':grpc-api-client-console')
 project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
 
-include(':classgraph-extension')
-project(':classgraph-extension').projectDir = file('extensions/classgraph')
+include(':extensions-barrage')
+project(':extensions-barrage').projectDir = file('extensions/barrage')
 
-include(':suanshu-extension')
-project(':suanshu-extension').projectDir = file('extensions/suanshu')
+include(':extensions-classgraph')
+project(':extensions-classgraph').projectDir = file('extensions/classgraph')
+
+include(':extensions-suanshu')
+project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
 include(':Internals')
 
@@ -141,23 +142,32 @@ include(':envoy')
 
 include(':grpc-proxy')
 
-include(':client-session')
-project(':client-session').projectDir = file('java-client/session')
+include(':java-client-session')
+project(':java-client-session').projectDir = file('java-client/session')
 
-include(':client-flight')
-project(':client-flight').projectDir = file('java-client/flight')
+include(':java-client-flight')
+project(':java-client-flight').projectDir = file('java-client/flight')
 
-include(':client-session-dagger')
-project(':client-session-dagger').projectDir = file('java-client/session-dagger')
+include(':java-client-barrage')
+project(':java-client-barrage').projectDir = file('java-client/barrage')
 
-include(':client-flight-dagger')
-project(':client-flight-dagger').projectDir = file('java-client/flight-dagger')
+include(':java-client-session-dagger')
+project(':java-client-session-dagger').projectDir = file('java-client/session-dagger')
 
-include(':client-session-examples')
-project(':client-session-examples').projectDir = file('java-client/session-examples')
+include(':java-client-flight-dagger')
+project(':java-client-flight-dagger').projectDir = file('java-client/flight-dagger')
 
-include(':client-flight-examples')
-project(':client-flight-examples').projectDir = file('java-client/flight-examples')
+include(':java-client-barrage-dagger')
+project(':java-client-barrage-dagger').projectDir = file('java-client/barrage-dagger')
+
+include(':java-client-session-examples')
+project(':java-client-session-examples').projectDir = file('java-client/session-examples')
+
+include(':java-client-flight-examples')
+project(':java-client-flight-examples').projectDir = file('java-client/flight-examples')
+
+include(':java-client-barrage-examples')
+project(':java-client-barrage-examples').projectDir = file('java-client/barrage-examples')
 
 include(':qst:graphviz')
 

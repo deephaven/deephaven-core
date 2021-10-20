@@ -61,10 +61,12 @@ public class TableLoggers {
     }
 
     /**
-     * Start collecting data for query update performance.
+     * Return a table with process memory utilization and garbage collection data.
+     *
+     * @return A table with memory and GC data.
      */
     @ScriptApi
-    public static void startUpdatePerformanceLog() {
-        UpdatePerformanceTracker.start();
+    public static QueryTable processMemoryLog() {
+        return ProcessMemoryTracker.getInstance().getQueryTable();
     }
 }

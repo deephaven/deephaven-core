@@ -3,7 +3,7 @@ package io.deephaven.kafka.publish;
 import io.deephaven.UncheckedDeephavenException;
 
 /**
- * This exception is thrown when there is a failure to consume a Kafka record during Kafka to Deephaven ingestion.
+ * This exception is thrown when there is a failure to produce a Kafka record during Deephaven to Kafka publication.
  */
 public class KafkaPublisherException extends UncheckedDeephavenException {
     /**
@@ -12,7 +12,7 @@ public class KafkaPublisherException extends UncheckedDeephavenException {
      * @param reason the exception detail message
      * @param cause the exception cause
      */
-    public KafkaPublisherException(String reason, Exception cause) {
+    public KafkaPublisherException(String reason, Throwable cause) {
         super(reason, cause);
     }
 

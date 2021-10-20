@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.client.impl.FlightSubcomponent$FlightSubcomponentModule",
+ "methods": {},
+ "path": "io.deephaven.client.impl.FlightSubcomponent.FlightSubcomponentModule",
+ "typeName": "interface"
+}

@@ -1,30 +1,47 @@
 package io.deephaven.kafka.publish;
 
+import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.util.string.StringUtils;
-import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.ScriptApi;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 
 public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<GenericRecord> {
     /**
      * The table we are reading from.
      */
-    final DynamicTable source;
-    final Schema schema;
+    private final Table source;
+
+    /**
+     * The Avro schema.
+     */
+    private final Schema schema;
+
+
+    protected final List<GenericRecordFieldProcessor> fieldProcessors = new ArrayList<>();
+
+    public GenericRecordKeyOrValueSerializer(final Table source,
+                                             final Schema schema,
+                                             final String[] columnNames,
+                                             final String[] fieldNames,
+                                             final String timestampFieldName) {
+        this.source = source;
+        this.schema = schema;
+
+        MultiFieldKeyOrValueSerializerUtils.makeFieldProcessors(columnNames, fieldNames, this::makeFieldProcessor);
+
+        if (!StringUtils.isNullOrEmpty(timestampFieldName)) {
+            fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
+        }
+    }
 
     private interface FieldContext extends SafeCloseable {
     }
@@ -443,64 +460,14 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    protected final List<GenericRecordFieldProcessor> fieldProcessors = new ArrayList<>();
-
-    public GenericRecordKeyOrValueSerializer(final DynamicTable source,
-            final Schema schema,
-            final Map<String, String> columnsToOutputFields,
-            final Set<String> excludedColumns,
-            final boolean autoValueMapping,
-            final boolean ignoreMissingColumns,
-            final String timestampFieldName) {
-        this.source = source;
-        this.schema = schema;
-
-        final String[] columnNames = source.getDefinition().getColumnNamesArray();
-        final List<String> missingColumns = new ArrayList<>();
-
-        // Create all the auto-mapped columns
-        for (final String columnName : columnNames) {
-            if (excludedColumns.contains(columnName) || columnsToOutputFields.containsValue(columnName)) {
-                continue;
-            }
-            if (autoValueMapping) {
-                makeFieldProcessor(columnName, columnName);
-            } else {
-                if (!ignoreMissingColumns) {
-                    missingColumns.add(columnName);
-                }
-            }
-        }
-
-        if (!missingColumns.isEmpty()) {
-            final StringBuilder sb = new StringBuilder("Found columns without mappings " + missingColumns);
-            if (!excludedColumns.isEmpty()) {
-                sb.append(", unmapped=").append(excludedColumns);
-            }
-            if (!columnsToOutputFields.isEmpty()) {
-                sb.append(", mapped to fields=").append(columnsToOutputFields.keySet());
-            }
-            throw new KafkaPublisherException(sb.toString());
-        }
-
-        // Now create all the processors for specifically-named fields
-        columnsToOutputFields.forEach(this::makeFieldProcessor);
-
-        if (!StringUtils.isNullOrEmpty(timestampFieldName)) {
-            fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
-        }
-    }
-
     /**
      * Create a field processor that translates a given column from its Deephaven row number to output of the intended
      * type.
      *
-     * Override this method in descendant classes to change the output style.
-     *
-     * @param fieldName The name of the field in the output (if needed).
      * @param columnName The Deephaven column to be translated into publishable format
+     * @param fieldName The name of the field in the output (if needed).
      */
-    protected void makeFieldProcessor(final String fieldName, final String columnName) {
+    private void makeFieldProcessor(final String columnName, final String fieldName) {
         // getColumn should throw a ColumnNotFoundException if it can't find the column, which will blow us up here.
         @SuppressWarnings("rawtypes")
         final ColumnSource src = source.getColumnSource(columnName);
@@ -534,31 +501,32 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     @Override
     public ObjectChunk<GenericRecord, Attributes.Values> handleChunk(Context context, OrderedKeys toProcess,
             boolean previous) {
-        final JsonContext jsonContext = (JsonContext) context;
+        final AvroContext avroContext = (AvroContext) context;
 
-        jsonContext.avroChunk.setSize(toProcess.intSize());
+        avroContext.avroChunk.setSize(toProcess.intSize());
         for (int position = 0; position < toProcess.intSize(); ++position) {
-            jsonContext.avroChunk.set(position, new GenericData.Record(schema));
+            avroContext.avroChunk.set(position, new GenericData.Record(schema));
         }
 
         for (int ii = 0; ii < fieldProcessors.size(); ++ii) {
-            fieldProcessors.get(ii).processField(jsonContext.fieldContexts[ii], jsonContext.avroChunk, toProcess,
+            fieldProcessors.get(ii).processField(avroContext.fieldContexts[ii], avroContext.avroChunk, toProcess,
                     previous);
         }
 
-        return jsonContext.avroChunk;
+        return avroContext.avroChunk;
     }
 
     @Override
     public Context makeContext(int size) {
-        return new JsonContext(size);
+        return new AvroContext(size);
     }
 
-    private final class JsonContext implements Context {
-        final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk;
-        final FieldContext[] fieldContexts;
+    private final class AvroContext implements Context {
 
-        public JsonContext(int size) {
+        private final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk;
+        private final FieldContext[] fieldContexts;
+
+        public AvroContext(int size) {
             this.avroChunk = WritableObjectChunk.makeWritableChunk(size);
             this.fieldContexts = new FieldContext[fieldProcessors.size()];
             for (int ii = 0; ii < fieldProcessors.size(); ++ii) {
@@ -570,154 +538,6 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         public void close() {
             avroChunk.close();
             SafeCloseable.closeArray(fieldContexts);
-        }
-    }
-
-    /**
-     * Create a builder for processing Deephaven table data into string output
-     */
-    public static class Builder {
-        final Map<String, String> columnToTextField = new HashMap<>();
-        final Set<String> excludedColumns = new HashSet<>();
-        Schema schema = null;
-        boolean autoValueMapping = true;
-        boolean ignoreMissingColumns = false;
-        String timestampFieldName = null;
-
-        public Builder schema(Schema schema) {
-            this.schema = schema;
-            return this;
-        }
-
-        public Builder schema(File schema) throws IOException {
-            this.schema = new Schema.Parser().parse(schema);
-            return this;
-        }
-
-        public Builder schema(String schema) {
-            this.schema = new Schema.Parser().parse(schema);
-            return this;
-        }
-
-        /**
-         * Enables or disables automatic value mapping (true by default).
-         *
-         * If auto value mapping is enabled, any column that was not defined [either by excludeColumn or mapColumn] is
-         * automatically mapped to a JSON field of the same name.
-         *
-         * @param autoValueMapping should automatic value mapping be enabled
-         *
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder autoValueMapping(final boolean autoValueMapping) {
-            this.autoValueMapping = autoValueMapping;
-            return this;
-        }
-
-        /**
-         * Permit the builder to silently ignore any columns not specified. False by default. If auto value mapping is
-         * enabled, this has no effect.
-         *
-         * @param ignoreMissingColumns True if the builder should ignore table columns with no specified behavior. false
-         *        if the builder should throw an exception if columns are found with no mapping.
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder ignoreMissingColumns(final boolean ignoreMissingColumns) {
-            this.ignoreMissingColumns = ignoreMissingColumns;
-            return this;
-        }
-
-        /**
-         * Indicates that a column is unmapped, and therefore not included in the output. You may not exclude a column
-         * that has already been excluded or mapped.
-         *
-         * @param column name of the column in the output table
-         *
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder excludeColumn(@NotNull final String column) {
-            checkColumnAlreadyExcluded(column);
-            checkColumnAlreadyMapped(column);
-            excludedColumns.add(column);
-            return this;
-        }
-
-        /**
-         * Map a Deephaven column to an output field of the same name. You may map the same column to multiple output
-         * fields, but may only map a given field once.
-         *
-         * @param column The name of the Deephaven column to export
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder mapColumn(@NotNull final String column) {
-            return mapColumn(column, column);
-        }
-
-        /**
-         * Map a Deephaven column to a specified output field. You may map multiple output fields from a single column.,
-         * but may only map a given field once.
-         *
-         * @param column The name of the Deephaven column to export
-         * @param field The name of the field to produce
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder mapColumn(@NotNull final String column, @NotNull final String field) {
-            checkColumnAlreadyExcluded(column);
-            checkFieldAlreadyMapped(field);
-            columnToTextField.put(field, column);
-            return this;
-        }
-
-        /**
-         * Include a timestamp indicating when this data was processed.
-         *
-         * @param timestampFieldName The name of the field to show a timestamp, or null for no timestamp.
-         * @return this builder
-         */
-        @ScriptApi
-        public Builder timestampFieldName(final String timestampFieldName) {
-            if (timestampFieldName != null) {
-                checkFieldAlreadyMapped(timestampFieldName);
-            }
-            this.timestampFieldName = timestampFieldName;
-            return this;
-        }
-
-        /**
-         * When implemented in a subordinate class, create the actual factory for this adapter.
-         * 
-         * @return A factory for objects of this type.
-         */
-        public Function<DynamicTable, ? extends GenericRecordKeyOrValueSerializer> buildFactory() {
-            if (schema == null) {
-                throw new KafkaPublisherException("Schema is required for a GenericRecordKeyOrValueSerializer");
-            }
-            return (tbl) -> new GenericRecordKeyOrValueSerializer(tbl, schema,
-                    columnToTextField, excludedColumns, autoValueMapping, ignoreMissingColumns,
-                    timestampFieldName);
-        }
-
-        private void checkColumnAlreadyExcluded(@NotNull final String column) {
-            if (excludedColumns.contains(column)) {
-                throw new KafkaPublisherException("Column " + column + " is already excluded.");
-            }
-        }
-
-        private void checkColumnAlreadyMapped(@NotNull final String column) {
-            if (columnToTextField.containsValue(column)) {
-                throw new KafkaPublisherException("Column " + column + " is already mapped.");
-            }
-        }
-
-        private void checkFieldAlreadyMapped(@NotNull final String field) {
-            if (columnToTextField.containsKey(field) || field.equals(timestampFieldName)) {
-                throw new KafkaPublisherException("Field " + field + " is already mapped.");
-            }
         }
     }
 }

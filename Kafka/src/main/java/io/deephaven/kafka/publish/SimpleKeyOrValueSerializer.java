@@ -9,19 +9,22 @@ import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.utils.ChunkBoxer;
 import io.deephaven.db.v2.utils.OrderedKeys;
 
-public class SimpleKeyOrValueSerializer<K> implements KeyOrValueSerializer<K> {
-    final ColumnSource<K> source;
-    final ChunkBoxer.BoxerKernel boxer;
+public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSerializer<SERIALIZED_TYPE> {
 
-    public SimpleKeyOrValueSerializer(Table table, String column) {
-        source = table.getColumnSource(column);
+    private final ColumnSource<SERIALIZED_TYPE> source;
+    private final ChunkBoxer.BoxerKernel boxer;
+
+    public SimpleKeyOrValueSerializer(Table table, String columnName) {
+        source = table.getColumnSource(columnName);
         boxer = ChunkBoxer.getBoxer(source.getChunkType(), PublishToKafka.CHUNK_SIZE);
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public ObjectChunk<K, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys, boolean previous) {
+    public ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys,
+            boolean previous) {
         final SimpleContext simpleContext = (SimpleContext) context;
-        final Chunk chunk = source.getChunk(simpleContext.getContest, orderedKeys);
+        final Chunk chunk = source.getChunk(simpleContext.sourceGetContext, orderedKeys);
         return boxer.box(chunk);
     }
 
@@ -30,16 +33,17 @@ public class SimpleKeyOrValueSerializer<K> implements KeyOrValueSerializer<K> {
         return new SimpleContext(size);
     }
 
-    class SimpleContext implements Context {
-        final ChunkSource.GetContext getContest;
+    private class SimpleContext implements Context {
 
-        private SimpleContext(int size) {
-            getContest = source.makeGetContext(size);
+        private final ChunkSource.GetContext sourceGetContext;
+
+        private SimpleContext(final int size) {
+            sourceGetContext = source.makeGetContext(size);
         }
 
         @Override
         public void close() {
-
+            sourceGetContext.close();
         }
     }
 }

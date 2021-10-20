@@ -23,7 +23,7 @@ class GetSchema extends FlightExampleBase {
         final long start = System.nanoTime();
         final long end;
         try (final Export export = flight.session().export(table)) {
-            Schema schema = flight.getSchema(export);
+            Schema schema = flight.schema(export);
             end = System.nanoTime();
             System.out.println(schema);
         }

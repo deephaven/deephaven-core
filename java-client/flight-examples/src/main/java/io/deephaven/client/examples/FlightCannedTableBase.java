@@ -34,7 +34,7 @@ abstract class FlightCannedTableBase extends FlightExampleBase {
         final long start = System.nanoTime();
         final long end;
         try (final TableHandle handle = manager.executeLogic(logic());
-                final FlightStream stream = flight.getStream(handle.export())) {
+                final FlightStream stream = flight.stream(handle)) {
             System.out.println(stream.getSchema());
             while (stream.next()) {
                 System.out.println(stream.getRoot().contentToTSVString());

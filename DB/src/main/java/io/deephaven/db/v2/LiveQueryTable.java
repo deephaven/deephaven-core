@@ -12,7 +12,7 @@ import io.deephaven.db.v2.utils.Index;
 import java.util.Map;
 
 public class LiveQueryTable extends QueryTable implements LiveTable {
-    Index.RandomBuilder additionsBuilder = Index.FACTORY.getRandomBuilder();
+    private Index.RandomBuilder additionsBuilder = Index.FACTORY.getRandomBuilder();
 
     public LiveQueryTable(Index index, Map<String, ? extends ColumnSource<?>> result) {
         super(index, result);
@@ -20,19 +20,23 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
 
     @Override
     public void refresh() {
-        final Index added = additionsBuilder.getIndex();
+        final Index.RandomBuilder builder;
+        synchronized (this) {
+            builder = additionsBuilder;
+            additionsBuilder = Index.FACTORY.getRandomBuilder();
+        }
+        final Index added = builder.getIndex();
         getIndex().insert(added);
-        additionsBuilder = Index.FACTORY.getRandomBuilder();
         if (added.size() > 0) {
             notifyListeners(added, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
         }
     }
 
-    public void addIndex(long key) {
+    public synchronized void addIndex(long key) {
         additionsBuilder.addKey(key);
     }
 
-    public void addRange(long firstKey, long lastKey) {
+    public synchronized void addRange(long firstKey, long lastKey) {
         additionsBuilder.addRange(firstKey, lastKey);
     }
 

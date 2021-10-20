@@ -11,8 +11,8 @@ from pydeephaven import Session, Table
 
 def demo_chained_table_ops(taxi_data_table: Table) -> Table:
     return taxi_data_table.where(filters=["VendorID > 0"]) \
-        .sort(column_names=["VendorID", "fare_amount"]) \
-        .head_by(num_rows=5, column_names=["VendorID"])
+        .sort(order_by=["VendorID", "fare_amount"]) \
+        .head_by(num_rows=5, by=["VendorID"])
 
 
 def main():

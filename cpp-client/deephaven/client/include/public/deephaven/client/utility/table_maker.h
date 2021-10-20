@@ -188,7 +188,7 @@ const char *TypeConverterTraits<std::optional<T>>::deephavenTypeName =
 
 template<typename T>
 TypeConverter TypeConverter::createNew(const std::vector<T> &values) {
-  using deephaven::client::utility::flight::statusOrDie;
+  using deephaven::client::utility::okOrThrow;
   using deephaven::client::utility::stringf;
 
   typedef TypeConverterTraits<T> traits_t;
@@ -200,9 +200,9 @@ TypeConverter TypeConverter::createNew(const std::vector<T> &values) {
     bool valid;
     const auto *containedValue = tryGetContainedValue(&value, &valid);
     if (valid) {
-      statusOrDie(builder.Append(*containedValue), "builder.AppendValue");
+      okOrThrow(DEEPHAVEN_EXPR_MSG(builder.Append(*containedValue)));
     } else {
-      statusOrDie(builder.AppendNull(), "builder.AppendNull");
+      okOrThrow(DEEPHAVEN_EXPR_MSG(builder.AppendNull()));
     }
   }
   auto builderRes = builder.Finish();
@@ -210,7 +210,7 @@ TypeConverter TypeConverter::createNew(const std::vector<T> &values) {
     auto message = stringf("Error building array of type %o: %o", traits_t::deephavenTypeName,
         builderRes.status().ToString());
   }
-  auto array = builderRes.ValueOrDie();
+  auto array = builderRes.ValueUnsafe();
   return TypeConverter(std::move(dataType), traits_t::deephavenTypeName, std::move(array));
 }
 }  // namespace internal

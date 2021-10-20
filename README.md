@@ -12,6 +12,7 @@ to that data, and build rich queries, dashboards, and representations with the r
 Deephaven Community Core is an open version of [Deephaven Enterprise](https://deephaven.io),
 which functions as the data backbone for prominent hedge funds, banks, and financial exchanges.
 
+[![Join the chat at https://gitter.im/deephaven/deephaven](https://badges.gitter.im/deephaven/deephaven.svg)](https://gitter.im/deephaven/deephaven?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 ![Build CI](https://github.com/deephaven/deephaven-core/actions/workflows/build-ci.yml/badge.svg?branch=main)
 ![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
 ![Docs CI](https://github.com/deephaven/deephaven-core/actions/workflows/docs-ci.yml/badge.svg?branch=main)
@@ -25,6 +26,7 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 | ------------- | ------------------ | ---------------------------- |
 | Python        | Yes                | Yes                           |
 | Java / Groovy | Yes                | Yes                           |
+| C++           | No                 | Yes                          |
 | JavaScript    | No                 | Yes                          |
 | gRPC          | -                  | Yes                          |
 
@@ -200,6 +202,7 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 ## Resources
 
 * [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
+* [A relaxed chat room about all things Deephaven](https://gitter.im/deephaven/deephaven)
 * [Discussions](https://github.com/deephaven/deephaven-core/discussions)
 * [deephaven.io](https://deephaven.io)
 * [Deephaven Community Core docs](https://deephaven.io/core/docs/)

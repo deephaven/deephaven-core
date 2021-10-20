@@ -5,7 +5,6 @@
 package io.deephaven.kafka;
 
 import gnu.trove.map.hash.TIntLongHashMap;
-
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.deephaven.UncheckedDeephavenException;
@@ -13,7 +12,6 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTable;
@@ -27,26 +25,26 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
 import io.deephaven.kafka.publish.*;
 import io.deephaven.stream.StreamToTableAdapter;
-
+import io.deephaven.util.annotations.ScriptApi;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
-
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.impl.client.HttpClients;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
@@ -530,38 +528,68 @@ public class KafkaTools {
              */
             public abstract DataFormat dataFormat();
 
+            public abstract String[] getColumnNames();
+
             private static final class Ignore extends KeyOrValueSpec {
                 @Override
                 public DataFormat dataFormat() {
                     return DataFormat.IGNORE;
                 }
+                @Override
+                public String[] getColumnNames() {
+                    return null;
+                }
             }
 
             private static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
 
+            public static abstract class MultiFieldKeyOrValueSpec extends KeyOrValueSpec {
+                public final String[] columnNames;
+                public final String[] fieldNames;
+                protected MultiFieldKeyOrValueSpec(final String[] columnNames, final String[] fieldNames) {
+                    this.columnNames = columnNames;
+                    this.fieldNames = fieldNames;
+                }
+                public final String[] getFieldNames() {
+                    return fieldNames;
+                }
+                public final String[] getColumnNames() {
+                    return columnNames;
+                }
+            }
+
             /**
              * Avro spec.
              */
-            public static final class Avro extends KeyOrValueSpec {
+            public static final class Avro extends MultiFieldKeyOrValueSpec {
                 public final Schema schema;
                 public final String schemaName;
                 public final String schemaVersion;
-                public final Map<String, String> columnNameToFieldName;
+                public final String timestampFieldName;
 
-                private Avro(final Schema schema, final Map<String, String> columnNameToFieldName) {
+                private Avro(
+                        final Schema schema,
+                        final String[] columnNames,
+                        final String[] fieldNames,
+                        final String timestampFieldName) {
+                    super(columnNames, fieldNames);
                     this.schema = schema;
                     this.schemaName = null;
                     this.schemaVersion = null;
-                    this.columnNameToFieldName = columnNameToFieldName;
+                    this.timestampFieldName = timestampFieldName;
                 }
 
-                private Avro(final String schemaName,
+                private Avro(
+                        final String schemaName,
                         final String schemaVersion,
-                        final Map<String, String> columnNameToFieldName) {
+                        final String[] columnNames,
+                        final String[] fieldNames,
+                        final String timestampFieldName) {
+                    super(columnNames, fieldNames);
                     this.schema = null;
                     this.schemaName = schemaName;
                     this.schemaVersion = schemaVersion;
-                    this.columnNameToFieldName = columnNameToFieldName;
+                    this.timestampFieldName = timestampFieldName;
                 }
 
                 @Override
@@ -584,27 +612,37 @@ public class KafkaTools {
                 public DataFormat dataFormat() {
                     return DataFormat.SIMPLE;
                 }
+
+                @Override
+                public String[] getColumnNames() {
+                    return new String[] { columnName };
+                }
             }
 
             /**
              * JSON spec.
              */
-            public static final class Json extends KeyOrValueSpec {
-                public final Map<String, String> columnNameToFieldName;
+            public static final class Json extends MultiFieldKeyOrValueSpec {
                 public final String nestedObjectDelimiter;
                 public final boolean outputNulls;
+                public final String timestampFieldName;
 
                 private Json(
-                        final Map<String, String> columnNameToFieldName,
+                        final String[] columnNames,
+                        final String[] fieldNames,
                         final String nestedObjectDelimiter,
-                        final boolean outputNulls) {
-                    this.columnNameToFieldName = columnNameToFieldName;
+                        final boolean outputNulls,
+                        final String timestampFieldName) {
+                    super(columnNames, fieldNames);
                     this.nestedObjectDelimiter = nestedObjectDelimiter;
                     this.outputNulls = outputNulls;
+                    this.timestampFieldName = timestampFieldName;
                 }
 
-                private Json(final Map<String, String> columnNameToFieldName) {
-                    this(columnNameToFieldName, "|", false);
+                private Json(
+                        final String[] columnNames,
+                        final String[] fieldNames) {
+                    this(columnNames, fieldNames, "|", false, null);
                 }
 
                 @Override
@@ -627,46 +665,62 @@ public class KafkaTools {
         /**
          * A JSON spec from a set of column names
          *
-         * @param columnNameToFieldName A map including entries for each column intended to be included in the JSON
-         *        output, mapping it to the field name to use. If null, map all columns to fields with the same name.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON
+         *        output.  If null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
+         *        to map for the corresponding column name in the columnNames array.  If null, map
+         *        columns to fields of the same name.
          * @param nestedObjectDelimiter A string used to separate values in composite fields.
          * @param outputNulls If false, omit fields with a null value.
+         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
-                final Map<String, String> columnNameToFieldName,
+                final String[] columnNames,
+                final String[] fieldNames,
                 final String nestedObjectDelimiter,
-                final boolean outputNulls) {
-            return new KeyOrValueSpec.Json(columnNameToFieldName, nestedObjectDelimiter, outputNulls);
+                final boolean outputNulls,
+                final String timestampFieldName) {
+            return new KeyOrValueSpec.Json(columnNames, fieldNames,  nestedObjectDelimiter, outputNulls, timestampFieldName);
         }
 
         /**
          * A JSON spec from a set of column names
          *
-         * @param columnNameToFieldName A map including entries for each column intended to be included in the JSON
-         *        output, mapping it to the field name to use. If null, map all columns to fields with the same name.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON
+         *        output.  If null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
+         *        to map for the corresponding column name in the columnNames array.  If null, map
+         *        columns to fields of the same name.
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
-                final Map<String, String> columnNameToFieldName) {
-            return new KeyOrValueSpec.Json(columnNameToFieldName);
+                final String[] columnNames,
+                final String[] fieldNames) {
+            return new KeyOrValueSpec.Json(columnNames, fieldNames);
         }
 
         /**
          * Avro spec to generate Avro messages from an Avro schema.
          *
          * @param schema An Avro schema.
-         * @param columnNameToFieldName A mapping specifying what Avro fields to generate and what columnNames to use
-         *        for them; if null, use all column names matching schema field names.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON
+         *        output.  If null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
+         *        to map for the corresponding column name in the columnNames array.  If null, map
+         *        columns to fields of the same name.
+         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(
                 final Schema schema,
-                final Map<String, String> columnNameToFieldName) {
-            return new KeyOrValueSpec.Avro(schema, columnNameToFieldName);
+                final String[] columnNames,
+                final String[] fieldNames,
+                final String timestampFieldName) {
+            return new KeyOrValueSpec.Avro(schema, columnNames, fieldNames, timestampFieldName);
         }
 
         /**
@@ -677,7 +731,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final Schema schema) {
-            return new KeyOrValueSpec.Avro(schema, null);
+            return new KeyOrValueSpec.Avro(schema, null, null, null);
         }
 
         /**
@@ -687,16 +741,22 @@ public class KafkaTools {
          *
          * @param schemaName The registered name for the schema on Schema Server
          * @param schemaVersion The version to fetch
-         * @param columnNameToFieldName A mapping specifying what Avro fields to generate and what columnNames to use
-         *        for them; if null, use all column names matching schema field names.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON
+         *        output.  If null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
+         *        to map for the corresponding column name in the columnNames array.  If null, map
+         *        columns to fields of the same name.
+         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(
                 final String schemaName,
                 final String schemaVersion,
-                final Map<String, String> columnNameToFieldName) {
-            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, columnNameToFieldName);
+                final String[] columnNames,
+                final String[] fieldNames,
+                final String timestampFieldName) {
+            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, columnNames, fieldNames, timestampFieldName);
         }
 
         /**
@@ -705,15 +765,21 @@ public class KafkaTools {
          * property. The version fetched would be latest.
          *
          * @param schemaName The registered name for the schema on Schema Server
-         * @param columnNameToFieldName A mapping specifying which Avro fields to include and what column name to use
-         *        for them; if null, use all column names matching schema field names.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON
+         *        output.  If null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
+         *        to map for the corresponding column name in the columnNames array.  If null, map
+         *        columns to fields of the same name.
+         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(
                 final String schemaName,
-                final Map<String, String> columnNameToFieldName) {
-            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, columnNameToFieldName);
+                final String[] columnNames,
+                final String[] fieldNames,
+                final String timestampFieldName) {
+            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, columnNames, fieldNames, timestampFieldName);
         }
 
         /**
@@ -728,7 +794,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
-            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, null);
+            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, null, null, null);
         }
 
         /**
@@ -742,7 +808,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName) {
-            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, null);
+            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, null, null, null);
         }
 
         @SuppressWarnings("unused")
@@ -811,6 +877,7 @@ public class KafkaTools {
      * @param typeName The friendly name
      * @return The mapped {@link TableType}
      */
+    @ScriptApi
     public static TableType friendlyNameToTableType(@NotNull final String typeName) {
         // @formatter:off
         switch (typeName) {
@@ -913,6 +980,7 @@ public class KafkaTools {
                             valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper));
         };
 
+        final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
         final UnaryOperator<Table> tableConversion =
                 resultType.isAppend ? StreamTableTools::streamToAppendOnlyTable : UnaryOperator.identity();
         final Table result;
@@ -922,6 +990,8 @@ public class KafkaTools {
             partitionToConsumer = (final int partition) -> {
                 final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
                         adapterFactory.get();
+                partitionAdapterPair.getFirst().setShutdownCallback(
+                        () -> kafkaIngesterHolder.getValue().shutdownPartition(partition));
                 final Table partitionTable = tableConversion.apply(partitionAdapterPair.getFirst().table());
                 streamTableMap.enqueueUpdate(() -> Assert.eqNull(streamTableMap.put(partition, partitionTable),
                         "streamTableMap.put(partition, partitionTable)"));
@@ -931,8 +1001,10 @@ public class KafkaTools {
             final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair =
                     adapterFactory.get();
             result = tableConversion.apply(singleAdapterPair.getFirst().table());
-            partitionToConsumer = (final int partition) -> new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(),
-                    singleAdapterPair.getFirst());
+            partitionToConsumer = (final int partition) -> {
+                singleAdapterPair.getFirst().setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdown());
+                return new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
+            };
         }
 
         final KafkaIngester ingester = new KafkaIngester(
@@ -942,29 +1014,10 @@ public class KafkaTools {
                 partitionFilter,
                 partitionToConsumer,
                 partitionToInitialOffset);
+        kafkaIngesterHolder.setValue(ingester);
         ingester.start();
 
         return result;
-    }
-
-    private static void getSerializerData(
-            @NotNull final Map<String, String> columnsToFields,
-            @NotNull final Set<String> excludedColumns,
-            @NotNull final DynamicTable t,
-            @NotNull final Map<String, String> columnNameToFieldName) {
-        for (final DataColumn<?> col : t.getColumns()) {
-            final String colName = col.getName();
-            if (columnNameToFieldName == null || columnNameToFieldName.isEmpty()) {
-                columnsToFields.put(colName, colName);
-                continue;
-            }
-            final String fieldName = columnNameToFieldName.getOrDefault(colName, null);
-            if (fieldName != null) {
-                columnsToFields.put(colName, fieldName);
-            } else {
-                excludedColumns.add(colName);
-            }
-        }
     }
 
     private static Schema getProduceSchema(
@@ -983,40 +1036,31 @@ public class KafkaTools {
         }
     }
 
-    private static KeyOrValueSerializer getAvroSerializer(
-            @NotNull final DynamicTable t,
+    private static KeyOrValueSerializer<?> getAvroSerializer(
+            @NotNull final Table t,
             @NotNull final Properties kafkaConsumerProperties,
-            @NotNull final Produce.KeyOrValueSpec spec) {
-        final Produce.KeyOrValueSpec.Avro avroSpec = (Produce.KeyOrValueSpec.Avro) spec;
-        final Map<String, String> columnsToFields = new HashMap<>();
-        final Set<String> excludedColumns = new HashSet<>();
-        getSerializerData(columnsToFields, excludedColumns, t, avroSpec.columnNameToFieldName);
+            @NotNull final Produce.KeyOrValueSpec.Avro avroSpec) {
         final Schema schema = getProduceSchema(kafkaConsumerProperties, avroSpec);
         return new GenericRecordKeyOrValueSerializer(
-                t, schema, columnsToFields, excludedColumns,
-                false, true, "");
+                t, schema, avroSpec.getColumnNames(), avroSpec.getFieldNames(), avroSpec.timestampFieldName);
     }
 
-    private static KeyOrValueSerializer getJsonSerializer(
-            @NotNull final DynamicTable t,
-            @NotNull final Produce.KeyOrValueSpec spec) {
-        final Produce.KeyOrValueSpec.Json jsonSpec = (Produce.KeyOrValueSpec.Json) spec;
-        final Map<String, String> columnsToFields = new HashMap<>();
-        final Set<String> excludedColumns = new HashSet<>();
-        getSerializerData(columnsToFields, excludedColumns, t, jsonSpec.columnNameToFieldName);
+    private static KeyOrValueSerializer<?> getJsonSerializer(
+            @NotNull final Table t,
+            @NotNull final Produce.KeyOrValueSpec.Json jsonSpec) {
         return new JsonKeyOrValueSerializer(
-                t, columnsToFields, excludedColumns,
-                false, true, "",
+                t, jsonSpec.getColumnNames(), jsonSpec.getFieldNames(), jsonSpec.timestampFieldName,
                 jsonSpec.nestedObjectDelimiter, jsonSpec.outputNulls);
     }
 
-    private static KeyOrValueSerializer getSerializer(
-            @NotNull final DynamicTable t,
+    private static KeyOrValueSerializer<?> getSerializer(
+            @NotNull final Table t,
             @NotNull final Properties kafkaConsumerProperties,
             @NotNull final Produce.KeyOrValueSpec spec) {
         switch (spec.dataFormat()) {
             case AVRO:
-                return getAvroSerializer(t, kafkaConsumerProperties, spec);
+                final Produce.KeyOrValueSpec.Avro avroSpec = (Produce.KeyOrValueSpec.Avro) spec;
+                return getAvroSerializer(t, kafkaConsumerProperties, avroSpec);
             case JSON:
                 final Produce.KeyOrValueSpec.Json jsonSpec = (Produce.KeyOrValueSpec.Json) spec;
                 return getJsonSerializer(t, jsonSpec);
@@ -1033,25 +1077,45 @@ public class KafkaTools {
     /**
      * Consume from Kafka to a Deephaven table.
      *
-     * @param t The live table used as a source of data to be sent to Kafka.
+     * @param table The table used as a source of data to be sent to Kafka.
      * @param kafkaConsumerProperties Properties to be passed to create the associated KafkaProducer.
      * @param topic Kafka topic name
      * @param keySpec Conversion specification for Kafka record keys from table column data.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
+     * @param collapseByKeyColumns Whether to publish only the last record for each unique key. Ignored when
+     *        {@code keySpec} is {@code null}. If
+     *        {@code keySpec != null && !collapseByKeyColumns}, it is expected that {@code table} will not
+     *        produce any row shifts; that is, the publisher expects keyed tables to be streams, add-only, or
+     *        aggregated.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
      *         reference to this return value to ensure liveliness.
      */
     @SuppressWarnings("unused")
     public Procedure.Nullary produceFromTable(
-            @NotNull final DynamicTable t,
+            @NotNull final Table table,
             @NotNull final Properties kafkaConsumerProperties,
             @NotNull final String topic,
             @NotNull final Produce.KeyOrValueSpec keySpec,
-            @NotNull final Produce.KeyOrValueSpec valueSpec) {
-        final KeyOrValueSerializer keySerializer = getSerializer(t, kafkaConsumerProperties, keySpec);
-        final KeyOrValueSerializer valueSerializer = getSerializer(t, kafkaConsumerProperties, valueSpec);
-        final PublishToKafka producer =
-                new PublishToKafka<>(kafkaConsumerProperties, t, topic, keySerializer, valueSerializer);
+            @NotNull final Produce.KeyOrValueSpec valueSpec,
+            final boolean collapseByKeyColumns) {
+        if (table.isLive()
+                && !LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
+                && !LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+            throw new KafkaPublisherException(
+                    "Calling thread must hold an exclusive or shared LiveTableMonitor lock to publish live sources");
+        }
+
+        final String[] keyColumns = keySpec.getColumnNames();
+        final String[] valueColumns = valueSpec.getColumnNames();
+
+        final Table effectiveTable = (collapseByKeyColumns)
+                ? table.lastBy(keyColumns)
+                : table.coalesce();
+
+        final KeyOrValueSerializer<?> keySerializer = getSerializer(table, kafkaConsumerProperties, keySpec);
+        final KeyOrValueSerializer<?> valueSerializer = getSerializer(table, kafkaConsumerProperties, valueSpec);
+        final PublishToKafka producer = new PublishToKafka(
+                kafkaConsumerProperties, table, topic, keyColumns, keySerializer, valueColumns, valueSerializer);
         final Procedure.Nullary shutdownCallback = new Procedure.Nullary() {
             volatile PublishToKafka liveProducer = producer;
 
@@ -1060,7 +1124,7 @@ public class KafkaTools {
                 if (liveProducer == null) {
                     return;
                 }
-                liveProducer.shutdown();
+                liveProducer.destroy();
                 liveProducer = null;
             }
         };

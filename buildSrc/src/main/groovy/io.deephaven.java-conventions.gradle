@@ -4,20 +4,77 @@ plugins {
 
 def archivesBaseNamePrefix = 'deephaven-'
 
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '17')
+def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '8')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '8')
+
+if (languageLevel > compilerVersion) {
+  throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
+}
+if (languageLevel < 8) {
+  throw new IllegalArgumentException("languageLevel must be greater than or equal to 8")
+}
+if (runtimeVersion < languageLevel) {
+  throw new IllegalArgumentException("runtimeVersion must be greater than or equal to languageLevel")
+}
+
 archivesBaseName = "${archivesBaseNamePrefix}${project.name}"
 
 java {
   toolchain {
-    languageVersion = JavaLanguageVersion.of(8)
+    // Note: even though we are being explicit with our compilers / launchers via task type, we want to set up the
+    // plugin with our compiler version.
+    languageVersion = JavaLanguageVersion.of(compilerVersion)
   }
 }
 
+def compiler = javaToolchains.compilerFor {
+  languageVersion = JavaLanguageVersion.of(compilerVersion)
+} as Provider<JavaCompiler>
+
+def runtimeLauncher = javaToolchains.launcherFor {
+  languageVersion = JavaLanguageVersion.of(runtimeVersion)
+} as Provider<JavaLauncher>
+
+def groovyCompilerLauncher = javaToolchains.launcherFor {
+  // See notes in GroovyCompile section below.
+  // languageVersion = JavaLanguageVersion.of(compilerVersion)
+  languageVersion = JavaLanguageVersion.of(8)
+} as Provider<JavaLauncher>
+
 tasks.withType(JavaCompile).configureEach {
-  JavaCompile javac ->
-    javac.options.fork = true
-    javac.options.encoding = 'UTF-8'
-    javac.options.incremental = true
-    javac.options.compilerArgs << '-parameters'
+  javaCompiler.set compiler
+
+  options.fork = true
+  options.encoding = 'UTF-8'
+  options.incremental = true
+  options.compilerArgs << '-parameters'
+
+  if (compilerVersion != languageLevel) {
+    options.release.set languageLevel
+  }
+}
+
+tasks.withType(JavaExec).configureEach {
+  javaLauncher.set runtimeLauncher
+}
+
+tasks.withType(Test).configureEach {
+  javaLauncher.set runtimeLauncher
+}
+
+tasks.withType(GroovyCompile).configureEach {
+  javaLauncher.set groovyCompilerLauncher
+
+  // Instead of using the below code, which is rather hacky, we'll set the groovy compiler to 8.
+  // In general, it seems like groovy toolchain support is a bit lacking in fit and finish.
+
+//  // The release option doesn't seem to get picked up.
+//  // WARNING: The below breaks when not using strings with the following error:
+//  // The new Java toolchain feature cannot be used at the project level in combination with source and/or target
+//  // compatibility.
+//  setSourceCompatibility(String.valueOf(languageLevel))
+//  setTargetCompatibility(String.valueOf(languageLevel))
 }
 
 tasks.withType(Jar).configureEach {

@@ -1,6 +1,7 @@
 package io.deephaven.qst.column;
 
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.BooleanArray;
 import io.deephaven.qst.array.ByteArray;
@@ -14,6 +15,7 @@ import io.deephaven.qst.array.ShortArray;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.type.Type;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -182,5 +184,10 @@ public abstract class Column<T> {
 
     public final NewTable toTable() {
         return NewTable.of(this);
+    }
+
+    @Check
+    final void checkName() {
+        NameValidator.validateColumnName(name());
     }
 }

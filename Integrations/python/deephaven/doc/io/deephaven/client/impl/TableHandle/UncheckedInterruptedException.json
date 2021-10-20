@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.TableHandle$UncheckedInterruptedException",
+ "methods": {
+  "getCause": ":return: java.lang.InterruptedException",
+  "handle": ":return: io.deephaven.client.impl.TableHandle"
+ },
+ "path": "io.deephaven.client.impl.TableHandle.UncheckedInterruptedException",
+ "typeName": "class"
+}

@@ -5,17 +5,17 @@ Session examples is a collection of example applications built using `client-ses
 ### Local build
 
 ```shell
-./gradlew client-session-examples:installDist
+./gradlew java-client-session-examples:installDist
 ```
 
 produces:
 
-* `java-client/session-examples/build/install/client-session-examples`.
+* `java-client/session-examples/build/install/java-client-session-examples`.
 
 ### Local running
 
 ```shell
-java-client/session-examples/build/install/client-session-examples/bin/<program> --help
+java-client/session-examples/build/install/java-client-session-examples/bin/<program> --help
 ```
 
 ### Build
@@ -26,5 +26,5 @@ java-client/session-examples/build/install/client-session-examples/bin/<program>
 
 produces:
 
-* `java-client/session-examples/build/distributions/client-session-examples-<version>.zip`
-* `java-client/session-examples/build/distributions/client-session-examples-<version>.tar`
+* `java-client/session-examples/build/distributions/java-client-session-examples-<version>.zip`
+* `java-client/session-examples/build/distributions/java-client-session-examples-<version>.tar`

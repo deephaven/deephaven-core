@@ -43,10 +43,12 @@ public class QueryPerformanceLogLogger
         RowSetter<Long> DurationNanos;
         RowSetter<Long> CpuNanos;
         RowSetter<Long> UserCpuNanos;
-        RowSetter<Long> TotalMemoryFree;
-        RowSetter<Long> TotalMemoryUsed;
+        RowSetter<Long> FreeMemory;
+        RowSetter<Long> TotalMemory;
         RowSetter<Long> FreeMemoryChange;
         RowSetter<Long> TotalMemoryChange;
+        RowSetter<Long> Collections;
+        RowSetter<Long> CollectionTimeNanos;
         RowSetter<Long> AllocatedBytes;
         RowSetter<Long> PoolAllocatedBytes;
         RowSetter<Boolean> WasInterrupted;
@@ -61,10 +63,12 @@ public class QueryPerformanceLogLogger
             DurationNanos = row.getSetter("DurationNanos", long.class);
             CpuNanos = row.getSetter("CpuNanos", long.class);
             UserCpuNanos = row.getSetter("UserCpuNanos", long.class);
-            TotalMemoryFree = row.getSetter("TotalMemoryFree", long.class);
-            TotalMemoryUsed = row.getSetter("TotalMemoryUsed", long.class);
+            FreeMemory = row.getSetter("FreeMemory", long.class);
+            TotalMemory = row.getSetter("TotalMemory", long.class);
             FreeMemoryChange = row.getSetter("FreeMemoryChange", long.class);
             TotalMemoryChange = row.getSetter("TotalMemoryChange", long.class);
+            Collections = row.getSetter("Collections", long.class);
+            CollectionTimeNanos = row.getSetter("CollectionTimeNanos", long.class);
             AllocatedBytes = row.getSetter("AllocatedBytes", long.class);
             PoolAllocatedBytes = row.getSetter("PoolAllocatedBytes", long.class);
             WasInterrupted = row.getSetter("WasInterrupted", Boolean.class);
@@ -89,10 +93,12 @@ public class QueryPerformanceLogLogger
                     nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
             this.CpuNanos.setLong(nugget.getCpuNanos());
             this.UserCpuNanos.setLong(nugget.getUserCpuNanos());
-            this.TotalMemoryFree.setLong(nugget.getEndFreeMemory());
-            this.TotalMemoryUsed.setLong(nugget.getEndTotalMemory());
+            this.FreeMemory.setLong(nugget.getEndFreeMemory());
+            this.TotalMemory.setLong(nugget.getEndTotalMemory());
             this.FreeMemoryChange.setLong(nugget.getDiffFreeMemory());
             this.TotalMemoryChange.setLong(nugget.getDiffTotalMemory());
+            this.Collections.setLong(nugget.getDiffCollections());
+            this.CollectionTimeNanos.setLong(nugget.getDiffCollectionTimeNanos());
             this.AllocatedBytes.setLong(nugget.getAllocatedBytes());
             this.PoolAllocatedBytes.setLong(nugget.getPoolAllocatedBytes());
             this.WasInterrupted.setBoolean(nugget.wasInterrupted());
@@ -118,10 +124,12 @@ public class QueryPerformanceLogLogger
                 .add("DurationNanos", long.class)
                 .add("CpuNanos", long.class)
                 .add("UserCpuNanos", long.class)
-                .add("TotalMemoryFree", long.class)
-                .add("TotalMemoryUsed", long.class)
+                .add("FreeMemory", long.class)
+                .add("TotalMemory", long.class)
                 .add("FreeMemoryChange", long.class)
                 .add("TotalMemoryChange", long.class)
+                .add("Collections", long.class)
+                .add("CollectionTimeNanos", long.class)
                 .add("AllocatedBytes", long.class)
                 .add("PoolAllocatedBytes", long.class)
                 .add("WasInterrupted", Boolean.class)
