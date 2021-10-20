@@ -123,8 +123,8 @@ public class FilterCondition {
 
         for (int i = 0; i < mBinary.length; ++i) {
             if (!Objects.equals(mBinary.getAt(i), oBinary.getAt(i))) {
-               return false;
-           }
+                return false;
+            }
         }
 
         return true;

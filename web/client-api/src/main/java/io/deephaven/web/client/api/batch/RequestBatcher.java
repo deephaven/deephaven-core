@@ -282,10 +282,11 @@ public class RequestBatcher {
                 // Before we mark it as successfully running and give it its new schema, track the previous CTS
                 // that each table was using. Identify which table to watch based on its current state, even if
                 // not visible, but then track the last visible state, so we know which events to fire.
-                Map<JsTable, ClientTableState> activeTablesAndStates = StreamSupport.stream(allInterestedTables().spliterator(), false)
-                        .filter(JsTable::isAlive)
-                        .filter(t -> t.state() == state)
-                        .collect(Collectors.toMap(Function.identity(), JsTable::lastVisibleState));
+                Map<JsTable, ClientTableState> activeTablesAndStates =
+                        StreamSupport.stream(allInterestedTables().spliterator(), false)
+                                .filter(JsTable::isAlive)
+                                .filter(t -> t.state() == state)
+                                .collect(Collectors.toMap(Function.identity(), JsTable::lastVisibleState));
 
                 // Mark the table as ready to go
                 state.applyTableCreationResponse(response);
