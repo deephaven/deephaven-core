@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.kafka.publish.PublishToKafka",
+ "methods": {},
+ "path": "io.deephaven.kafka.publish.PublishToKafka",
+ "typeName": "class"
+}
