@@ -107,11 +107,6 @@ public class BatchBuilder {
             return getDropColumns() != null && !getDropColumns().isEmpty();
         }
 
-        public boolean isNoop() {
-            return !(hasSorts() || hasConditions() || hasFilters() || hasCustomColumns() || hasViewColumns()
-                    || hasDropColumns() || isFlat());
-        }
-
         @Override
         public boolean equals(Object o) {
             if (this == o)
@@ -179,15 +174,8 @@ public class BatchBuilder {
     }
 
     public JsArray<Operation> serializable() {
-        if (ops.stream().allMatch(BatchOp::isNoop)) {
-            return new JsArray<>();
-        }
-
         JsArray<Operation> send = new JsArray<>();
         for (BatchOp op : ops) {
-            if (op.isNoop()) {
-                continue;
-            }
             if (!op.hasHandles()) {
                 assert op.getState().isRunning() : "Only running states should be found in batch without a new handle";
                 continue;
@@ -231,7 +219,7 @@ public class BatchBuilder {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
-            if (lastOp[0] != null) {
+            if (!operations.isEmpty()) {
                 lastOp[0].accept(op.getNewId().makeTicket());
 
                 // after building the entire collection, append to the set of steps we'll send
