@@ -31,3 +31,5 @@ application {
       '-XX:+UseStringDeduplication',
       '-XshowSettings:vm' ]
 }
+
+apply plugin: 'io.deephaven.java-open-nio'

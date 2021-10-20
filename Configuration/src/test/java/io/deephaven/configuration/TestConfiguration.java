@@ -444,20 +444,30 @@ public class TestConfiguration extends TestCase {
         assertEquals("ABCD", history.get(1).value);
         assertEquals("EFGH", history.get(0).value);
         assertEquals("[]", history.get(0).context);
-        if ("1.8".equals(System.getProperty("java.specification.version"))) {
+        final String javaVersion = System.getProperty("java.specification.version");
+        if ("1.8".equals(javaVersion)) {
             assertEquals(
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
                             +
                             "sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
                     history.get(0).fileName);
-        } else {
+        } else if ("11".equals(javaVersion)) {
             assertEquals(
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
                             +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
                     history.get(0).fileName);
+        } else if ("17".equals(javaVersion)) {
+            assertEquals(
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
+                            +
+                            "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
+                            "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n",
+                    history.get(0).fileName);
+        } else {
+            fail("Must add specific test for java version " + javaVersion);
         }
         System.out.println("-------------- End show history -----------------");
     }

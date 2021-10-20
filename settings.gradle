@@ -116,8 +116,6 @@ project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
-include(':Internals')
-
 include(':Base')
 
 include(':SevenZip')

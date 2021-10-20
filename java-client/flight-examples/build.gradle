@@ -142,3 +142,5 @@ applicationDistribution.into('bin') {
     from(createDoPutTableScript)
     fileMode = 0755
 }
+
+apply plugin: 'io.deephaven.java-open-nio'

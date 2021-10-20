@@ -7,6 +7,7 @@ def archivesBaseNamePrefix = 'deephaven-'
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '17')
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '8')
 def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '8')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '17')
 
 if (languageLevel > compilerVersion) {
   throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
@@ -16,6 +17,9 @@ if (languageLevel < 8) {
 }
 if (runtimeVersion < languageLevel) {
   throw new IllegalArgumentException("runtimeVersion must be greater than or equal to languageLevel")
+}
+if (testRuntimeVersion < languageLevel) {
+  throw new IllegalArgumentException("testRuntimeVersion must be greater than or equal to languageLevel")
 }
 
 archivesBaseName = "${archivesBaseNamePrefix}${project.name}"
@@ -34,6 +38,10 @@ def compiler = javaToolchains.compilerFor {
 
 def runtimeLauncher = javaToolchains.launcherFor {
   languageVersion = JavaLanguageVersion.of(runtimeVersion)
+} as Provider<JavaLauncher>
+
+def testRuntimeLauncher = javaToolchains.launcherFor {
+  languageVersion = JavaLanguageVersion.of(testRuntimeVersion)
 } as Provider<JavaLauncher>
 
 def groovyCompilerLauncher = javaToolchains.launcherFor {
@@ -60,7 +68,7 @@ tasks.withType(JavaExec).configureEach {
 }
 
 tasks.withType(Test).configureEach {
-  javaLauncher.set runtimeLauncher
+  javaLauncher.set testRuntimeLauncher
 }
 
 tasks.withType(GroovyCompile).configureEach {
