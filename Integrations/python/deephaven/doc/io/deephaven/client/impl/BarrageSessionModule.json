@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSessionModule",
+ "methods": {
+  "newDeephavenClientSession": ":param session: io.deephaven.client.impl.SessionImpl\n:param allocator: org.apache.arrow.memory.BufferAllocator\n:param managedChannel: io.grpc.ManagedChannel\n:return: io.deephaven.client.impl.BarrageSession",
+  "newDeephavenClientSessionFuture": ":param sessionFuture: java.util.concurrent.CompletableFuture<? extendsio.deephaven.client.impl.SessionImpl>\n:param allocator: org.apache.arrow.memory.BufferAllocator\n:param managedChannel: io.grpc.ManagedChannel\n:return: java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.BarrageSession>"
+ },
+ "path": "io.deephaven.client.impl.BarrageSessionModule",
+ "typeName": "class"
+}

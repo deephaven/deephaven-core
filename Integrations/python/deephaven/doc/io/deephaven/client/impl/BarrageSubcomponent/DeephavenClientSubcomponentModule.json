@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSubcomponent$DeephavenClientSubcomponentModule",
+ "methods": {},
+ "path": "io.deephaven.client.impl.BarrageSubcomponent.DeephavenClientSubcomponentModule",
+ "typeName": "interface"
+}
