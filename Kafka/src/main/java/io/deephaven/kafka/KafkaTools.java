@@ -296,8 +296,6 @@ public class KafkaTools {
                 }
             }
 
-            private static final Ignore IGNORE = new Ignore();
-
             /**
              * Avro spec.
              */
@@ -376,6 +374,8 @@ public class KafkaTools {
             }
         }
 
+        public static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
+
         /**
          * Spec to explicitly ask
          * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, KeyOrValueSpec, KeyOrValueSpec, TableType)
@@ -383,7 +383,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec ignoreSpec() {
-            return KeyOrValueSpec.IGNORE;
+            return IGNORE;
         }
 
         /**
@@ -542,8 +542,6 @@ public class KafkaTools {
                 }
             }
 
-            private static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
-
             public static abstract class MultiFieldKeyOrValueSpec extends KeyOrValueSpec {
                 public final String[] columnNames;
 
@@ -650,6 +648,8 @@ public class KafkaTools {
             }
         }
 
+        public static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
+
         /**
          * Spec to explicitly ask
          * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, Consume.KeyOrValueSpec, Consume.KeyOrValueSpec, TableType)
@@ -657,7 +657,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec ignoreSpec() {
-            return KeyOrValueSpec.IGNORE;
+            return IGNORE;
         }
 
         /**
@@ -1467,8 +1467,6 @@ public class KafkaTools {
     public static final Function<String, String> DIRECT_MAPPING = Function.identity();
     @SuppressWarnings("unused")
     public static final Consume.KeyOrValueSpec FROM_PROPERTIES = Consume.KeyOrValueSpec.FROM_PROPERTIES;
-    @SuppressWarnings("unused")
-    public static final Consume.KeyOrValueSpec IGNORE = Consume.KeyOrValueSpec.IGNORE;
 
     //
     // For the benefit of our python integration

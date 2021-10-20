@@ -35,8 +35,8 @@ def _defineSymbols():
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
         _stream_table_tools_ = jpy.get_type("io.deephaven.db.v2.StreamTableTools")
         _avro_schema_jtype_ = jpy.get_type("org.apache.avro.Schema")
-        _produce_jtype_= jpy.get_type("io.deephaven.kafka.KafkaTools.Produce")
-        IGNORE = getattr(_consume_jtype_, 'IGNORE')
+        _produce_jtype_= jpy.get_type("io.deephaven.kafka.KafkaTools$Produce")
+        IGNORE = getattr(_produce_jtype_, 'IGNORE')
 
 # every module method should be decorated with @_passThrough
 @wrapt.decorator
