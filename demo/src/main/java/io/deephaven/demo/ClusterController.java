@@ -680,8 +680,11 @@ public class ClusterController {
         if (isValidVersion(mach)) {
             machines.addMachine(mach);
         } else if (!mach.isInUse()){
-            LOG.infof("Turning off invalid-version offline machine %s", mach);
-            turnOff(mach);
+            // never turn off unexpired machines.
+            if (mach.getExpiry() <= System.currentTimeMillis()) {
+                LOG.infof("Turning off invalid-version offline machine %s", mach);
+                turnOff(mach);
+            }
             machines.removeMachine(mach);
         }
         String purpose = bits[getIndexPurpose()];
