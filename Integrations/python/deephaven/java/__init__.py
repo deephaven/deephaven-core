@@ -2,7 +2,7 @@
 # Copyright (c) 2016 - 2021 Deephaven Data Labs and Patent pending
 #
 """
-A submodule for accessing java types and classes from Python
+A deephaven submodule for accessing java types from Python
 """
 
 import jpy
@@ -44,12 +44,9 @@ Float = None
 Integer = None
 Long = None
 Math = None
-Number = None
-Object = None
 Short = None
 String = None
 System = None
-Thread = None
 # java.math
 BigDecimal = None
 BigInteger = None
@@ -63,34 +60,21 @@ IntBuffer = None
 LongBuffer = None
 ShortBuffer = None
 # java.text
-DateFormat = None
 DecimalFormat = None
-NumberFormat = None
 SimpleDateFormat = None
 # java.util
-AtomicBoolean = None
-AtomicInteger = None
-AtomicLong = None
-BlockingDeque = None
-BlockingQueue = None
-Collection = None
-ConcurrentMap = None
-Condition = None
-Delayed = None
-Deque = None
-Enumeration = None
-Executor = None
-Iterator = None
-List = None
-Lock = None
-Map = None
-Queue = None
-ReadWriteLock = None
-Set = None
-SortedMap = None
-SortedSet = None
-ThreadFactory = None
-TransferQueue = None
+Arrays = None
+Collections = None
+Currency = None
+Date = None
+GregorianCalender = None
+HashMap = None
+LinkedHashMap = None
+Locale = None
+Random = None
+TimeZone = None
+WeakHashMap = None
+
 
 def _defineSymbols():
     if not jpy.has_jvm():
@@ -100,13 +84,12 @@ def _defineSymbols():
     global _Runtime_, \
         boolean, byte, char, double, float, float32, float64, int, int16, int32, int64, long, short, \
         File, \
-        Boolean, Byte, Character, Double, Float, Integer, Long, Math, Number, Object, Short, String, System, Thread, \
+        Boolean, Byte, Character, Double, Float, Integer, Long, Math, Short, String, System, \
         BigDecimal, BigInteger, \
         Buffer, ByteBuffer, CharBuffer, DoubleBuffer, FloatBuffer, IntBuffer, LongBuffer, ShortBuffer, \
-        DateFormat, DecimalFormat, NumberFormat, SimpleDateFormat, \
-        AtomicBoolean, AtomicInteger, AtomicLong, BlockingDeque, BlockingQueue, Collection, ConcurrentMap, \
-        Condition, Delayed, Deque, Enumeration, Executor, Iterator, List, Lock, Map, Queue, ReadWriteLock, \
-        Set, SortedMap, SortedSet, ThreadFactory, TransferQueue
+        DecimalFormat, SimpleDateFormat, \
+        Arrays, Collections, Currency, Date, GregorianCalendar, HashMap, LinkedHashMap, Locale, \
+        Random, TimeZone, WeakHashMap
 
     if _Runtime_ is None:
         _Runtime_ = jpy.get_type("java.lang.Runtime")
@@ -138,12 +121,9 @@ def _defineSymbols():
         Integer = jpy.get_type("java.lang.Integer")
         Long = jpy.get_type("java.lang.Long")
         Math = jpy.get_type("java.lang.Math")
-        Number = jpy.get_type("java.lang.Number")
-        Object = jpy.get_type("java.lang.Object")
         Short = jpy.get_type("java.lang.Short")
         String = jpy.get_type("java.lang.String")
         System = jpy.get_type("java.lang.System")
-        Thread = jpy.get_type("java.lang.Thread")
         
         # java.math
         BigDecimal = jpy.get_type("java.math.BigDecimal")
@@ -160,35 +140,21 @@ def _defineSymbols():
         ShortBuffer = jpy.get_type("java.nio.ShortBuffer")
 
         # java.text
-        DateFormat = jpy.get_type("java.text.DateFormat")
         DecimalFormat = jpy.get_type("java.text.DecimalFormat")
-        NumberFormat = jpy.get_type("java.text.NumberFormat")
         SimpleDateFormat = jpy.get_type("java.text.SimpleDateFormat")
 
         # java.util
-        AtomicBoolean = jpy.get_type("java.util.concurrent.atomic.AtomicBoolean")
-        AtomicInteger = jpy.get_type("java.util.concurrent.atomic.AtomicInteger")
-        AtomicLong = jpy.get_type("java.util.concurrent.atomic.AtomicLong")
-        BlockingDeque = jpy.get_type("java.util.concurrent.BlockingDeque")
-        BlockingQueue = jpy.get_type("java.util.concurrent.BlockingQueue")
-        Collection = jpy.get_type("java.util.Collection")
-        ConcurrentMap = jpy.get_type("java.util.concurrent.ConcurrentMap")
-        Condition = jpy.get_type("java.util.concurrent.locks.Condition")
-        Delayed = jpy.get_type("java.util.concurrent.Delayed")
-        Deque = jpy.get_type("java.util.Deque")
-        Enumeration = jpy.get_type("java.util.Enumeration")
-        Executor = jpy.get_type("java.util.concurrent.Executor")
-        Iterator = jpy.get_type("java.util.Iterator")
-        List = jpy.get_type("java.util.List")
-        Lock = jpy.get_type("java.util.concurrent.locks.Lock")
-        Map = jpy.get_type("java.util.Map")
-        Queue = jpy.get_type("java.util.Queue")
-        ReadWriteLock = jpy.get_type("java.util.concurrent.locks.ReadWriteLock")
-        Set = jpy.get_type("java.util.Set")
-        SortedMap = jpy.get_type("java.util.SortedMap")
-        SortedSet = jpy.get_type("java.util.SortedSet")
-        ThreadFactory = jpy.get_type("java.util.concurrent.ThreadFactory")
-        TransferQueue = jpy.get_type("java.util.concurrent.TransferQueue")
+        Arrays = jpy.get_type("java.util.Arrays")
+        Collections = jpy.get_type("java.util.Collections")
+        Currency = jpy.get_type("java.util.Currency")
+        Date = jpy.get_type("java.util.Date")
+        GregorianCalendar = jpy.get_type("java.util.GregorianCalendar")
+        HashMap = jpy.get_type("java.util.HashMap")
+        LinkedHashMap = jpy.get_type("java.util.LinkedHashMap")
+        Locale = jpy.get_type("java.util.Locale")
+        Random = jpy.get_type("java.util.Random")
+        TimeZone = jpy.get_type("java.util.TimeZone")
+        WeakHashMap = jpy.get_type("java.util.WeakHashMap")
 
 # Every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
 @wrapt.decorator
