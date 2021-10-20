@@ -25,6 +25,7 @@ import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MetadataVersion;
 import org.apache.arrow.util.Collections2;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -197,29 +198,154 @@ public class BarrageUtil {
         metadata.put("deephaven:" + key, value);
     }
 
-    public static TableDefinition schemaToTableDefinition(final org.apache.arrow.flatbuf.Schema schema) {
-        return schemaToTableDefinition(schema.fieldsLength(), i -> schema.fields(i).name(), i -> visitor -> {
-            final org.apache.arrow.flatbuf.Field field = schema.fields(i);
-            for (int j = 0; j < field.customMetadataLength(); j++) {
-                final KeyValue keyValue = field.customMetadata(j);
-                visitor.accept(keyValue.key(), keyValue.value());
-            }
-        });
+    private static boolean maybeConvertForTimeUnit(final TimeUnit unit, final ConvertedArrowSchema result,
+            final int i) {
+        switch (unit) {
+            case NANOSECOND:
+                return true;
+            case MICROSECOND:
+                setConversionFactor(result, i, 1000);
+                return true;
+            case MILLISECOND:
+                setConversionFactor(result, i, 1000 * 1000);
+                return true;
+            case SECOND:
+                setConversionFactor(result, i, 1000 * 1000 * 1000);
+                return true;
+            default:
+                return false;
+        }
     }
 
-    public static TableDefinition schemaToTableDefinition(final Schema schema) {
-        return schemaToTableDefinition(schema.getFields().size(), i -> schema.getFields().get(i).getName(),
+    private static Class<?> getDefaultType(
+            final String name, final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
+        final String exMsg = "Schema did not include `deephaven:type` metadata for field ";
+        switch (arrowType.getTypeID()) {
+            case Int:
+                final ArrowType.Int intType = (ArrowType.Int) arrowType;
+                if (intType.getIsSigned()) {
+                    // SIGNED
+                    switch (intType.getBitWidth()) {
+                        case 8:
+                            return byte.class;
+                        case 16:
+                            return short.class;
+                        case 32:
+                            return int.class;
+                        case 64:
+                            return long.class;
+                    }
+                } else {
+                    // UNSIGNED
+                    switch (intType.getBitWidth()) {
+                        case 8:
+                            return short.class;
+                        case 16:
+                            return int.class;
+                        case 32:
+                            return long.class;
+                    }
+                }
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                        " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
+            case Bool:
+                return java.lang.Boolean.class;
+            case Duration:
+                final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
+                final TimeUnit durationUnit = durationType.getUnit();
+                if (maybeConvertForTimeUnit(durationUnit, result, i)) {
+                    return long.class;
+                }
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                        " of durationType(unit=" + durationUnit.toString() + ")");
+            case Timestamp:
+                final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
+                final String tz = timestampType.getTimezone();
+                final TimeUnit timestampUnit = timestampType.getUnit();
+                if (tz == null || "UTC".equals(tz)) {
+                    if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
+                        return DBDateTime.class;
+                    }
+                }
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                        " of timestampType(Timezone=" + tz +
+                        ", Unit=" + timestampUnit.toString() + ")");
+            case FloatingPoint:
+                final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowType;
+                switch (floatingPointType.getPrecision()) {
+                    case SINGLE:
+                        return float.class;
+                    case DOUBLE:
+                        return double.class;
+                    case HALF:
+                    default:
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                                " of floatingPointType(Precision=" + floatingPointType.getPrecision().toString() + ")");
+                }
+            case Utf8:
+                return java.lang.String.class;
+            default:
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                        " of type " + arrowType.getTypeID().toString());
+        }
+    }
+
+    public static class ConvertedArrowSchema {
+        public final int nCols;
+        public TableDefinition tableDef;
+        // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
+        // to the expected nanos value for DBDateTime.
+        public int[] conversionFactors;
+
+        public ConvertedArrowSchema(final int nCols) {
+            this.nCols = nCols;
+        }
+    }
+
+    private static void setConversionFactor(final ConvertedArrowSchema result, final int i, final int factor) {
+        if (result.conversionFactors == null) {
+            result.conversionFactors = new int[result.nCols];
+            Arrays.fill(result.conversionFactors, 1);
+        }
+        result.conversionFactors[i] = factor;
+    }
+
+    public static ConvertedArrowSchema convertArrowSchema(
+            final org.apache.arrow.flatbuf.Schema schema) {
+        return convertArrowSchema(
+                schema.fieldsLength(),
+                i -> schema.fields(i).name(),
+                i -> ArrowType.getTypeForField(schema.fields(i)),
+                i -> visitor -> {
+                    final org.apache.arrow.flatbuf.Field field = schema.fields(i);
+                    for (int j = 0; j < field.customMetadataLength(); j++) {
+                        final KeyValue keyValue = field.customMetadata(j);
+                        visitor.accept(keyValue.key(), keyValue.value());
+                    }
+                });
+    }
+
+    public static ConvertedArrowSchema convertArrowSchema(final Schema schema) {
+        return convertArrowSchema(
+                schema.getFields().size(),
+                i -> schema.getFields().get(i).getName(),
+                i -> schema.getFields().get(i).getType(),
                 i -> visitor -> {
                     schema.getFields().get(i).getMetadata().forEach(visitor);
                 });
     }
 
-    private static TableDefinition schemaToTableDefinition(final int numColumns, final IntFunction<String> getName,
+    private static ConvertedArrowSchema convertArrowSchema(
+            final int numColumns,
+            final IntFunction<String> getName,
+            final IntFunction<ArrowType> getArrowType,
             final IntFunction<Consumer<BiConsumer<String, String>>> visitMetadata) {
+        final ConvertedArrowSchema result = new ConvertedArrowSchema(numColumns);
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
-            final String name = NameValidator.legalizeColumnName(getName.apply(i));
+            final String origName = getName.apply(i);
+            final String name = NameValidator.legalizeColumnName(origName);
             final MutableObject<Class<?>> type = new MutableObject<>();
             final MutableObject<Class<?>> componentType = new MutableObject<>();
 
@@ -240,13 +366,14 @@ public class BarrageUtil {
             });
 
             if (type.getValue() == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Schema did not include `deephaven:type` metadata");
+                Class<?> defaultType = getDefaultType(name, getArrowType.apply(i), result, i);
+                type.setValue(defaultType);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
 
-        return new TableDefinition(columns);
+        result.tableDef = new TableDefinition(columns);
+        return result;
     }
 
     private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description,

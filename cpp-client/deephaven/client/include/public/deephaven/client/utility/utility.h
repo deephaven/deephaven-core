@@ -139,15 +139,34 @@ internal::SeparatedListAdaptor<Iterator, Callback> separatedList(Iterator begin,
   return internal::SeparatedListAdaptor<Iterator, Callback>(begin, end, separator, std::move(cb));
 }
 
-namespace flight {
-void statusOrDie(const arrow::Status &status, const char *message);
+#define DEEPHAVEN_STRINGIFY_HELPER(X) #X
+#define DEEPHAVEN_STRINGIFY(X) DEEPHAVEN_STRINGIFY_HELPER(X)
 
+/**
+ * Expands an expression into that expression followed by a stringified version of that expression
+ * with file and line, suitable for a method like okOrThrow that takes an expression and an optional
+ * message.
+ */
+#define DEEPHAVEN_EXPR_MSG(EXPR) (EXPR), #EXPR "@" __FILE__ ":" DEEPHAVEN_STRINGIFY(__LINE__)
+
+/**
+ * If status is OK, do nothing. Otherwise throw a runtime error with an informative message.
+ * @param status the arrow::Status
+ * @param optionalMessage An optional message to be included in the exception message.
+ */
+void okOrThrow(const arrow::Status &status, const char *optionalMessage = nullptr);
+
+/**
+ * If result's internal status is OK, return result's contained value.
+ * Otherwise throw a runtime error with an informative message.
+ * @param result The arrow::Result
+ * @param message An optional message to be included in the exception message.
+ */
 template<typename T>
-T valueOrDie(arrow::Result<T> result, const char *message) {
-  statusOrDie(result.status(), message);
-  return result.ValueOrDie();
+T valueOrThrow(arrow::Result<T> result, const char *optionalMessage = nullptr) {
+  okOrThrow(result.status(), optionalMessage);
+  return result.ValueUnsafe();
 }
-}  // namespace flight
 }  // namespace utility
 }  // namespace client
 }  // namespace deephaven

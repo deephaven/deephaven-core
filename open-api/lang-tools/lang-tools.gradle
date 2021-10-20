@@ -4,59 +4,33 @@ plugins {
 
 apply from: "$rootDir/gradle/web-common.gradle"
 
-String GROOVY_VERSION = '2.5.11'
-// in case you need to test "old groovy vs. new groovy", you can swap above line w/ below line
-//String GROOVY_VERSION = '2.3.6'
-
 Classpaths.inheritCommonsText(project)
 dependencies {
-    // We want to use a newer version of groovy for spock tests,
-    // so we'll exclude groovy from our dependencies, and explicitly use the same version as spock.
-    // Note this is compileOnly, which is *non-transitive*.
-    compileOnly "org.codehaus.groovy:groovy-all:$GROOVY_VERSION"
+
     compile project(':open-api-shared-ide'),
             project(':open-api-lang-parser')
 
-    compile(project(':DB')) {
-        exclude module: "groovy-all"
-    }
+    compile(project(':DB'))
     compile project(':IO')
 
-    testCompileOnly ('org.spockframework:spock-core:1.3-groovy-2.5')
-    testRuntimeOnly ('org.spockframework:spock-core:1.3-groovy-2.5')
-    // in case you need to test "old groovy vs. new groovy", you can swap above two lines w/ below two lines
-//    testCompileOnly ('org.spockframework:spock-core:1.1-groovy-2.3')
-//    testRuntimeOnly ('org.spockframework:spock-core:1.1-groovy-2.3')
-    // WARNING: if you switch to groovy 2.3, you'll need to comment out a bunch of method bodies in TestConstants.groovy.
+    testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
 
-    testCompileOnly 'org.junit.jupiter:junit-jupiter-api:5.4.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-api:5.4.2'
+    Classpaths.inheritJUnitPlatform(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.4.2'
+    Classpaths.inheritGroovy(project, 'groovy', 'testCompile')
+    Classpaths.inheritGroovy(project, 'groovy-templates', 'testCompile')
 
-    testCompile(project(path: ':DB', configuration: 'testOutput')) {
-        exclude module: "groovy-all"
-    }
+    testCompile(project(path: ':DB', configuration: 'testOutput'))
     testRuntime project(':configs')
     testRuntime project(':test-configs')
-    testRuntime(project(':Numerics')) {
-        exclude module: "groovy-all"
-    }
+    testRuntime(project(':Numerics'))
     // intellij can be dumb and leave out our resources directory (sometimes)...
     // Do not cargo-cult this unless you have similar issues
     testRuntime files('build/resources/main')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
-}
-
-configurations.all {
-    Configuration c ->
-        c.resolutionStrategy.forcedModules = [
-                "org.codehaus.groovy:groovy:$GROOVY_VERSION",
-                "org.codehaus.groovy:groovy-templates:$GROOVY_VERSION",
-                "org.codehaus.groovy:groovy-json:$GROOVY_VERSION",
-        ]
 }
 
 test {
@@ -69,5 +43,5 @@ test {
     def pyProps = project.properties.subMap(["jpy.pythonLib", "jpy.jpyLib", "jpy.jdlLib"])
     systemProperties.putAll(pyProps)
 
-
+    useJUnitPlatform()
 }

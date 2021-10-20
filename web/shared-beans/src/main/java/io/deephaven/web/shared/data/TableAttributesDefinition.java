@@ -12,6 +12,7 @@ public class TableAttributesDefinition implements Serializable {
             COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions",
             HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable",
             HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo",
+            LAYOUT_HINTS_ATTRIBUTE = "LayoutHints",
             PLUGIN_NAME = "PluginName";
 
     // special cased attributes that have a complex type yet are always sent
@@ -103,5 +104,9 @@ public class TableAttributesDefinition implements Serializable {
 
     public String getPluginName() {
         return getAsMap().get(PLUGIN_NAME);
+    }
+
+    public String getLayoutHints() {
+        return getAsMap().get(LAYOUT_HINTS_ATTRIBUTE);
     }
 }

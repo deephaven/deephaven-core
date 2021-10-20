@@ -9,8 +9,8 @@ using deephaven::client::highlevel::NumCol;
 using deephaven::client::highlevel::Client;
 using deephaven::client::highlevel::TableHandle;
 using deephaven::client::highlevel::TableHandleManager;
-using deephaven::client::utility::flight::statusOrDie;
-using deephaven::client::utility::flight::valueOrDie;
+using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::valueOrThrow;
 using deephaven::client::utility::TableMaker;
 
 // This example shows how to use the Arrow Flight client to make a simple table.
@@ -20,20 +20,20 @@ void doit(const TableHandleManager &manager) {
 
   // 2. Add "Symbol" column (type: string) to schema
   auto symbolMetadata = std::make_shared<arrow::KeyValueMetadata>();
-  statusOrDie(symbolMetadata->Set("deephaven:type", "java.lang.String"), "KeyValueMetadata::Set");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(symbolMetadata->Set("deephaven:type", "java.lang.String")));
   auto symbolField = std::make_shared<arrow::Field>("Symbol",
       std::make_shared<arrow::StringType>(), true, std::move(symbolMetadata));
-  statusOrDie(schemaBuilder.AddField(symbolField), "SchemaBuilder::AddField");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder.AddField(symbolField)));
 
   // 3. Add "Price" column (type: double) to schema
   auto priceMetadata = std::make_shared<arrow::KeyValueMetadata>();
-  statusOrDie(priceMetadata->Set("deephaven:type", "double"), "KeyValueMetadata::Set");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(priceMetadata->Set("deephaven:type", "double")));
   auto priceField = std::make_shared<arrow::Field>("Price",
       std::make_shared<arrow::StringType>(), true, std::move(priceMetadata));
-  statusOrDie(schemaBuilder.AddField(priceField), "SchemaBuilder::AddField");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder.AddField(priceField)));
 
   // 4. Schema is done
-  auto schema = valueOrDie(schemaBuilder.Finish(), "Failed to create schema");
+  auto schema = valueOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder.Finish()));
 
   // 5. Prepare symbol and price data
   std::vector<std::string> symbols{"FB", "AAPL", "NFLX", "GOOG"};
@@ -51,8 +51,8 @@ void doit(const TableHandleManager &manager) {
 
   // 7. Get Arrow columns from builders
   std::vector<std::shared_ptr<arrow::Array>> columns = {
-      valueOrDie(symbolBuilder.Finish(), "symbolBuilder.Finish()"),
-      valueOrDie(priceBuilder.Finish(), "priceBuilder.Finish()")
+      valueOrThrow(DEEPHAVEN_EXPR_MSG(symbolBuilder.Finish())),
+      valueOrThrow(DEEPHAVEN_EXPR_MSG(priceBuilder.Finish()))
   };
 
   // 8. Get a Deephaven "FlightWrapper" object to access Arrow Flight
@@ -69,17 +69,17 @@ void doit(const TableHandleManager &manager) {
   // 11. Perform the doPut
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  statusOrDie(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr), "DoPut failed");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
 
   // 12. Make a RecordBatch containing both the schema and the data
   auto batch = arrow::RecordBatch::Make(schema, numRows, std::move(columns));
-  statusOrDie(fsw->WriteRecordBatch(*batch), "WriteRecordBatch failed");
-  statusOrDie(fsw->DoneWriting(), "DoneWriting failed");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
 
   // 13. Read back a metadata message (ignored), then close the Writer
   std::shared_ptr<arrow::Buffer> buf;
-  statusOrDie(fmr->ReadMetadata(&buf), "ReadMetadata failed");
-  statusOrDie(fsw->Close(), "Close failed");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
 
   // 14. Use Deephaven high level operations to fetch the table and print it
   std::cout << "table is:\n" << table.stream(true) << std::endl;
@@ -87,12 +87,12 @@ void doit(const TableHandleManager &manager) {
 
 int main() {
   const char *server = "localhost:10000";
-  auto client = Client::connect(server);
-  auto manager = client.getManager();
 
   try {
+    auto client = Client::connect(server);
+    auto manager = client.getManager();
     doit(manager);
-  } catch (const std::runtime_error &e) {
+  } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
   }
 }

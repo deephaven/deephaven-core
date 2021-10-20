@@ -6,7 +6,7 @@ dependencies {
     Classpaths.inheritImmutables(project)
 
     // we'll rely on the DB to provide the necessary groovy dependencies
-    compileOnly "org.codehaus.groovy:groovy:$GROOVY_VERSION"
+    Classpaths.inheritGroovy(project, 'groovy', 'compileOnly')
 
     api project(':proto:proto-backplane-grpc')
 

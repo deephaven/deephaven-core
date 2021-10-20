@@ -49,7 +49,8 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
-            results = checked(() -> TableCreator.create(manager, i -> i, i -> i, table));
+            // noinspection RedundantTypeArguments
+            results = checked(() -> TableCreator.<TableHandle, TableHandle>create(manager, i -> i, i -> i, table));
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;
@@ -65,7 +66,8 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
-            results = checked(() -> TableCreator.create(manager, i -> i, i -> i, tables));
+            // noinspection RedundantTypeArguments
+            results = checked(() -> TableCreator.<TableHandle, TableHandle>create(manager, i -> i, i -> i, tables));
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;

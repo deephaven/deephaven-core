@@ -129,6 +129,8 @@ public final class ClientTableState extends TableConfig {
     // non-final fields, but can only be set once (consider moving these into a bean of their own)
     private Column[] columns;
     private Column[] allColumns; // includes invisible columns
+    private JsLayoutHints layoutHints;
+    private JsTotalsTableConfig totalsTableConfig;
     private long size;
     private InitialTableDefinition tableDef;
     private Column rowFormatColumn;
@@ -310,12 +312,31 @@ public final class ClientTableState extends TableConfig {
                 .collect(Collectors.toList());
     }
 
+    public List<CustomColumn> getCustomColumnsObject() {
+        return getCustomColumns().stream().map(CustomColumn::new)
+                .collect(Collectors.toList());
+    }
+
     public Column[] getColumns() {
         return columns;
     }
 
     public Column[] getAllColumns() {
         return allColumns;
+    }
+
+    public JsLayoutHints getLayoutHints() {
+        if (layoutHints == null) {
+            createLayoutHints();
+        }
+        return layoutHints;
+    }
+
+    public JsTotalsTableConfig getTotalsTableConfig() {
+        if (totalsTableConfig == null) {
+            createTotalsTableConfig();
+        }
+        return totalsTableConfig;
     }
 
     public long getSize() {
@@ -358,6 +379,26 @@ public final class ClientTableState extends TableConfig {
         this.tableDef = tableDef;
         if (create) {
             createColumns();
+        }
+    }
+
+    private void createLayoutHints() {
+        String hintsString = getTableDef().getAttributes().getLayoutHints();
+        JsLayoutHints jsHints = new JsLayoutHints();
+        if (hintsString == null) {
+            layoutHints = null;
+        } else {
+            layoutHints = jsHints.parse(hintsString);
+        }
+    }
+
+    private void createTotalsTableConfig() {
+        String configString = getTableDef().getAttributes().getTotalsTableConfig();
+
+        if (configString == null) {
+            totalsTableConfig = null;
+        } else {
+            totalsTableConfig = JsTotalsTableConfig.parse(configString);
         }
     }
 
