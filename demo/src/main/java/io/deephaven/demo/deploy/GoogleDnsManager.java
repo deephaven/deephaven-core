@@ -47,9 +47,12 @@ public class GoogleDnsManager {
         int id = txDepth.getAndIncrement();
         try {
             if (id == 0) {
+                // whenever depth is zero, increase txCnt to start a new dns transaction directory
                 txCnt.incrementAndGet();
             }
+            // get a user-api-fulfilling DnsChange service pointing to current dns directory.
             DnsChange change = startTx(id);
+            // invoke user callback
             tx.mutate(change);
         } catch (Exception e) {
             LOG.error("Failed while running user callback " + tx, e);
@@ -78,11 +81,14 @@ public class GoogleDnsManager {
 
         File dnsDir = dnsDir();
         if (depth == 0) {
-            // require a clean, existent DNS dir when depth == 0
-            try {
-                forceEmptyDir(dnsDir);
-            } catch (IOException e) {
-                LOG.error("Failed while cleaning dnsDir " + dnsDir, e);
+            synchronized (txDepth) {
+
+                // require a clean, existent DNS dir when depth == 0
+                try {
+                    forceEmptyDir(dnsDir);
+                } catch (IOException e) {
+                    LOG.error("Failed while cleaning dnsDir " + dnsDir, e);
+                }
             }
         }
         return new DnsChange() {
@@ -92,10 +98,19 @@ public class GoogleDnsManager {
                 ensureDnsTx(dnsDir, d);
                 d++;
 
+                String dom = domain.getDomainQualified();
+                Execute.ExecutionResult result = Execute.executeQuiet(
+                        "gcloud", "dns", "record-sets", "list", "--project=" + getGoogleProject(),
+                        "--name=" + dom + ".", "--type=A", "--zone=" + getDnsZone(), "--format=value(DATA)"
+                );
+                if (result.out.trim().equals(ip)) {
+                    LOG.warnf("Domain %s already had DNS setup to IP %s", dom, ip);
+                    return;
+                }
                 LOG.infof("Adding dns entry %s w/ ip %s", domain, ip);
                 dnsExec(dnsDir, Arrays.asList(
                         "gcloud", "dns", "record-sets", "transaction", "add", ip, "--project=" + getGoogleProject(),
-                        "--name=" + domain.getDomainQualified() + ".", "--type=A", "--ttl=300", "--zone=" + getDnsZone()
+                        "--name=" + dom + ".", "--type=A", "--ttl=300", "--zone=" + getDnsZone()
                 ));
             }
 
@@ -104,10 +119,15 @@ public class GoogleDnsManager {
                 ensureDnsTx(dnsDir, d);
                 d++;
                 String dom = domain.getDomainQualified();
-                Execute.ExecutionResult result = Execute.executeNoFail(
+                Execute.ExecutionResult result = Execute.executeQuiet(
                         "gcloud", "dns", "record-sets", "list", "--project=" + getGoogleProject(),
                         "--name=" + dom + ".", "--type=A", "--zone=" + getDnsZone(), "--format=value(ttl)"
                 );
+                if (result.code != 0) {
+                    LOG.warnf("Failure code %s checking the ttl for domain %s (old IP %s)", result.code, dom, oldIp);
+                    warnResult(result);
+                    return;
+                }
                 String ttl = result.out.trim();
                 if (ttl.isEmpty()) {
                     LOG.warn("Tried to remove non-existent DNS record " + dom + " -> " + oldIp);
@@ -200,6 +220,7 @@ public class GoogleDnsManager {
             Execute.executeNoFail(Arrays.asList(
                     "gcloud", "dns", "--project", getGoogleProject(), "record-sets", "transaction", "execute", "--zone=" + getDnsZone()
             ), new HashMap<>(), dnsDir, null, null, null);
+            LOG.infof("Successfully completed DNS transaction in %s", dnsDir);
         } catch (Exception e) {
             LOG.error("Failed to update DNS; listing all dns-related files and their contents, for debugging:");
             File[] files = dnsDir.listFiles();
@@ -222,6 +243,7 @@ public class GoogleDnsManager {
 
     private void dnsExec(final File dnsDir, final List<String> cmdList) throws IOException, InterruptedException {
         LOG.infof("Running DNS execution in %s (exists? %s)", dnsDir, dnsDir.exists());
+        // anywhere we write to transaction.yaml, we synchronize on txDepth
         synchronized (txDepth) {
             Execute.executeNoFail(cmdList, new HashMap<>(), dnsDir, null, null, null);
         }

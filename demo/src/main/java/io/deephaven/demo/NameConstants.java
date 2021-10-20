@@ -18,6 +18,7 @@ public class NameConstants {
     public static final String LABEL_LEASE = "dh-lease";
     public static final String LABEL_VERSION = "dh-version";
     public static final String LABEL_DOMAIN = "dh-domain";
+    public static final String PURPOSE_BASE = "base";
     public static final String PURPOSE_WORKER = "worker";
     public static final String PURPOSE_CONTROLLER = "controller";
     public static final String PURPOSE_CREATOR_CONTROLLER = "creator-" + PURPOSE_CONTROLLER;
@@ -51,7 +52,7 @@ public class NameConstants {
         System.getProperty("dh-ingress-name", "dh-ingress");
     public static final String DH_POD_KEY = System.getProperty("dh-pod-key", "dh-pod-id");
     public static final String REGION = System.getProperty("dh-region", "us-central1");
-    public static final String VERSION = System.getProperty("dh-version", "0.5.15");
+    public static final String VERSION = System.getProperty("dh-version", "0.5.27");
     public static final String VERSION_MANGLE = VERSION.replaceAll("[.]", "-");
     public static final String SNAPSHOT_NAME = System.getProperty("DH_SNAPSHOT_NAME", "deephaven-app-" + VERSION_MANGLE);
     public static final String DOMAIN;

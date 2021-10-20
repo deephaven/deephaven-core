@@ -37,6 +37,7 @@ public class Machine {
     private boolean useImage;
     private boolean noStableIP;
     private boolean destroyed;
+    private long lastOnline;
 
     public Machine(@NotNull final String host, IpMapping ip) {
         this.host = host;
@@ -132,7 +133,7 @@ public class Machine {
     }
 
     public String toStringShort() {
-        return getHost() + "(" + getDomainName() + ")";
+        return getHost() + "(" + getDomainName() + " @ " + getVersion() + ")";
     }
 
     @Override
@@ -148,10 +149,14 @@ public class Machine {
     }
 
     public void setInUse(final boolean inUse) {
+        if (!this.inUse && inUse) {
+            lastOnline = System.currentTimeMillis();
+        }
         this.inUse = inUse;
     }
 
-    /* Purposely not public, see caller for details */ void setExpiry(final long expiry) {
+    /* Purposely not public, see caller for details */
+    void setExpiry(final long expiry) {
         this.expiry = expiry;
     }
 
@@ -167,6 +172,9 @@ public class Machine {
     }
 
     public void setOnline(final boolean online) {
+        if (!this.online && online) {
+            lastOnline = System.currentTimeMillis();
+        }
         this.online = online;
     }
 
@@ -189,32 +197,33 @@ public class Machine {
                 // create a new domain...
                 final String domainRoot = previous == null ? DOMAIN : previous.getDomainRoot();
                 current = domainPool.getOrCreate(NameGen.newName(), domainRoot);
-                ip.addDomainMapping(current);
-                final DomainMapping toAdd = current;
-                if (ctrlIp == null) {
-                    // only block for this once, it shouldn't be changing
-                    ctrlIp = getIpAddressBlocking(ctrl);
-                }
-                tx.addRecord(toAdd, ctrlIp);
             }
+
+            ip.addDomainMapping(current);
+            final DomainMapping toAdd = current;
+            if (ctrlIp == null) {
+                ctrlIp = getIpAddressBlocking(ctrl);
+            }
+            tx.addRecord(toAdd, ctrlIp);
+
             // off-thread the "set label on machine pointing to current hostname"
             final String domainRoot = current.getDomainRoot();
-            ClusterController.setTimer("Set " + getHost() + " domain to " + domain(), ()-> {
-                if (!isDestroyed()) {
-                    manager.addLabel(this, LABEL_DOMAIN, domain().getName());
-                }
-                // if our IP is running low on DNS names, we should preemptively make a few here.
-                if (ip.getDomainsAvailable() < 5) {
-                    LOG.infof("IP %s only has %s domains available; adding more", ip, ip.getDomainsAvailable());
-                    dns.tx(t->{
-                        while (ip.getDomainsAvailable() < 5) {
-                            final DomainMapping domain = domainPool.getOrCreate(NameGen.newName(), domainRoot);
-                            ip.addDomainMapping(domain);
-                            tx.addRecord(domain, ip.getIp());
-                        }
-                    });
-                }
-            });
+            if (!isDestroyed()) {
+                manager.addLabel(this, LABEL_DOMAIN, domain().getName());
+                // update this machine's lastOnline, so it won't get shut down again as soon as we turn it back on
+                keepAlive();
+            }
+            // if our IP is running low on DNS names, we should preemptively make a few here.
+            if (ip.getDomainsAvailable() < 5) {
+                LOG.infof("IP %s only has %s domains available; adding more", ip, ip.getDomainsAvailable());
+                dns.tx(t->{
+                    while (ip.getDomainsAvailable() < 5) {
+                        final DomainMapping domain = domainPool.getOrCreate(NameGen.newName(), domainRoot);
+                        ip.addDomainMapping(domain);
+                        tx.addRecord(domain, ip.getIp());
+                    }
+                });
+            }
         });
         return ip.getCurrentDomain();
     }
@@ -277,5 +286,13 @@ public class Machine {
 
     public void setDestroyed(final boolean destroyed) {
         this.destroyed = destroyed;
+    }
+
+    public long getLastOnline() {
+        return lastOnline;
+    }
+
+    public void keepAlive() {
+        lastOnline = System.currentTimeMillis();
     }
 }

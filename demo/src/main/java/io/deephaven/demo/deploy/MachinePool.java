@@ -23,14 +23,14 @@ public class MachinePool {
 
     // NOTE: this is dangerous! we could lose an item if we don't remove before changing expiry and put back after.
     // thus, it's private, you shouldn't use this.
-    private static final Comparator<Machine> CMP = (a, b) -> {
+    public static final Comparator<Machine> CMP = (a, b) -> {
         if (a.getExpiry() == b.getExpiry()) {
             return a.getHost().compareTo(b.getHost());
         }
-        // this stops being correct if workers are more than 42 days old.
+        // this stops being correct if workers are more than 42 days old. We kill them after an hour of idling
         long diff = a.getExpiry() - b.getExpiry();
-        // take the oldest last!
-        return diff > 0 ? -1 : diff < 0 ? 1 : 0;
+        // take the newest last!
+        return diff > 0 ? 1 : diff < 0 ? -1 : 0;
     };
 
     private static final Logger LOG = Logger.getLogger(MachinePool.class);
@@ -43,6 +43,7 @@ public class MachinePool {
         final IpPool ips = manager.getIpPool();
         final String newName = name == null || name.isEmpty() ? NameGen.newName() : name;
         final Machine machine = getOrCreate(newName, ctrl, null, null);
+        machine.setOnline(true);
         if (machine.getIp() == null) {
             machine.setIp(ips.reserveIp(manager, machine));
         }
@@ -51,7 +52,6 @@ public class MachinePool {
             machine.getIp().setDomain(manager.getDomainPool().getOrCreate(machine.getHost(), DOMAIN));
         }
         try {
-            machine.setOnline(true);
             manager.createMachine(machine, ips);
             machines.add(machine);
         } catch (IOException | InterruptedException e) {
@@ -64,9 +64,10 @@ public class MachinePool {
 
     public void addMachine(final Machine machine) {
         machines.add(machine);
+        machinesByName.put(machine.getHost(), machine);
     }
 
-    public Optional<Machine> maybeGetMachine(final GoogleDeploymentManager manager, final boolean reserve) {
+    public Optional<Machine> maybeGetMachine(final boolean reserve) {
         List<Machine> candidates = new ArrayList<>();
         synchronized (machines) {
             for (Machine next : machines) {
@@ -80,7 +81,9 @@ public class MachinePool {
                 }
             }
             while (!candidates.isEmpty()) {
+                // the machine list is ordered newest first, so when selecting candidates, prefer oldest, as newest might not be ready
                 final Machine candidate = candidates.remove(candidates.size() - 1);
+//                final Machine candidate = candidates.remove(0);
                 if (!candidate.isInUse()) {
                     if (reserve) {
                         // when we're reserving machines, we need to claim it here, in this synchronized block
@@ -132,11 +135,18 @@ public class MachinePool {
     public Machine findByName(final String name) {
         return machinesByName.get(name);
     }
+    public Optional<Machine> findByDomainName(final String name) {
+        return machines.stream().filter(m->name.equals(m.getDomainName())).findFirst();
+    }
     public Machine getOrCreate(final String name, final ClusterController ctrl, final IpMapping ip, final String realIP) {
         return machinesByName.computeIfAbsent(name, missing-> {
             final GoogleDeploymentManager manager = ctrl.getDeploymentManager();
             final IpPool ips = manager.getIpPool();
-            final Machine machine = new Machine(missing, ip == null ? ctrl.requestIp() : ip);
+            final Machine machine = new Machine(name, ip == null ? ctrl.requestIp() : ip);
+            if (manager.getBaseImageName().equals(name)) {
+                // this is a base machine, mark it as such.
+                machine.setSnapshotCreate(true);
+            }
             final IpMapping machineIp = machine.getIp();
             if (realIP != null && realIP.equals(machineIp.getIp())) {
                 // this will allow the ip pool to recognize this IP address belongs to this machine,
@@ -150,6 +160,11 @@ public class MachinePool {
         });
     }
 
+    public void clearExpiry(final Machine machine) {
+        machines.remove(machine);
+        machine.setExpiry(0);
+        machines.add(machine);
+    }
     public void expireInMillis(final Machine machine, final long sessionTtl) {
         // we remove a machine from this set before updating the expiry,
         // and then put it back after, because our comparator looks at expiry, so we don't want to lose items!

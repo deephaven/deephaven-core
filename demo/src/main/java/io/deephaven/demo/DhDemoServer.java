@@ -108,7 +108,7 @@ public class DhDemoServer implements QuarkusApplication {
 //        KubeManager state = new KubeManager();
         controller = new ClusterController(new GoogleDeploymentManager("/tmp"));
         router.get("/health").handler(rc -> {
-            System.out.println("Health check! " + rc.request().uri() + " : " +
+            LOG.info("Health check! " + rc.request().uri() + " : " +
                 rc.request().headers().get("User-Agent") + " ( "
                 + rc.request().headers().get("host") + " ) ");
 
@@ -116,8 +116,15 @@ public class DhDemoServer implements QuarkusApplication {
             //    for workers, grpcurl is on cli, or we can use grpc client here in java
             //    for controllers, we should check if we have fresh metadata and no fatal errors.
             // TODO: handle built-in quarkus health check
+
+            // enable cors to work on the main url, and the specific subdomain demo-candidate.demo.deephaven.app
+            String allowedOrigin = "https://" + DOMAIN;
+            if (("https://controller-" + VERSION_MANGLE + "." + DOMAIN) .equals(rc.request().getHeader("Origin"))) {
+                allowedOrigin = "https://controller-" + VERSION_MANGLE + "." + DOMAIN;
+            }
+            LOG.infof("Request from origin %s allowed: %s", rc.request().getHeader("Origin"), allowedOrigin);
             rc.response()
-                    .putHeader("Access-Control-Allow-Origin", "https://" + DOMAIN)
+                    .putHeader("Access-Control-Allow-Origin", allowedOrigin)
                     .putHeader("Access-Control-Allow-Methods", "GET")
                     .end("READY");
         });
@@ -212,10 +219,14 @@ public class DhDemoServer implements QuarkusApplication {
                 req.redirect(uri);
             } else {
                 // always send user to interstitial page, so we can record our cookie before sending them along to their machine.
+                String cookieDomain = System.getenv("COOKIE_DOMAIN");
+                if (cookieDomain == null) {
+                    cookieDomain = DOMAIN + "; secure";
+                }
                 req.response()
                         .putHeader("content-type", "text/html")
                         .putHeader("x-frame-options", "DENY")
-                        .putHeader("Set-Cookie", COOKIE_NAME + "=" + machine.getHost() + "; Max-Age=2400; domain=" + DOMAIN + "; secure; HttpOnly")
+                        .putHeader("Set-Cookie", COOKIE_NAME + "=" + machine.getDomainName().split("[.]")[0] + "; Max-Age=2400; domain=" + cookieDomain + "; HttpOnly")
                         .setChunked(true)
                         .setStatusCode(200)
                         // ...gross, move this to a resource file and just text replace the uri into place (store text pre-split to save IO/time)...

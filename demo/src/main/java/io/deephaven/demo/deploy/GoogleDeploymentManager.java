@@ -2,9 +2,7 @@ package io.deephaven.demo.deploy;
 
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
-import io.deephaven.base.LongRingBuffer;
 import io.deephaven.demo.ClusterController;
-import io.deephaven.demo.NameConstants;
 import io.deephaven.demo.NameGen;
 import org.apache.commons.io.FileUtils;
 import org.jboss.logging.Logger;
@@ -53,6 +51,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
     boolean createdNewMachine;
 
     private final GoogleDnsManager dns;
+    private String baseImageName;
 
     static String getDnsZone() {
         String zone = System.getenv("DH_GOOGLE_DNS_ZONE");
@@ -93,6 +92,11 @@ public class GoogleDeploymentManager implements DeploymentManager {
         ips = new IpPool();
         domains = new DomainPool();
         try {
+            concatScripts(localDir, "prepare-base.sh",
+                    "script-header.sh",
+                    "VERSION",
+                    "setup-docker.sh",
+                    "finish-setup.sh");
             concatScripts(localDir, "prepare-worker.sh",
                     "script-header.sh",
                     "VERSION",
@@ -101,6 +105,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     "gen-certs.sh",
                     "prepare-worker.sh",
                     "pull-images.sh",
+                    "systemd-enable-dh.sh",
                     "finish-setup.sh");
             concatScripts(localDir, "prepare-controller.sh",
                     "script-header.sh",
@@ -110,6 +115,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     "gen-certs.sh",
                     "prepare-controller.sh",
                     "pull-images.sh",
+                    "systemd-enable-dh.sh",
                     "finish-setup.sh");
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to create script in " + localDir, e);
@@ -128,6 +134,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 try {
                     String resolved = getDnsIp(node);
                     if (nodeIp.getIp() == null) {
+                        // if the IpMapping's actual IP is not known yet, wait for any pending IP-related operations to complete
                         ctrl.waitUntilIpsCreated();
                     }
                     // if the record exists, make sure it matches the expected IP address.
@@ -138,6 +145,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     // The IP address has changed, we need to remove the old one and create a new one.
                     // remove new, create, done below
                     if (resolved != null && !resolved.isEmpty()) {
+                        LOG.warnf("Removing machine %s's invalid DNS record pointing to %s instead of %s",
+                                node.toStringShort(), resolved, nodeIp.getIp());
                         tx.removeRecord(mapping, resolved);
                     }
                 } catch(UnknownHostException ignored) {
@@ -146,6 +155,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     LOG.errorf(e, "IO error trying the get IP address for %s", node.getDomainName());
                 }
                 try {
+                    LOG.warnf("Adding DNS for machine %s's @ %s",
+                            node.toStringShort(), nodeIp.getIp());
                     tx.addRecord(mapping, nodeIp.getIp());
                 } catch (IOException | InterruptedException e) {
                     LOG.error("Unknown error trying to add dns entry for " + node.getHost(), e);
@@ -522,7 +533,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 "--boot-disk-size", machine.getDiskSize(),
                 "--boot-disk-type", machine.getDiskType(),
                 "--boot-disk-device-name", machine.getHost(),
-                "--hostname=" + machine.getDomainName(),
+                // don't use the current DNS name, we want the machine hostname to match the actual name of machine
+                "--hostname=" + machine.getHost() + "." + DOMAIN,
                 "--machine-type", machine.getMachineType()
         ));
         String extraLabel = "";
@@ -546,14 +558,16 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 extraLabel += "," + LABEL_DOMAIN + "=" + currentDomain.getName();
             }
         }
+        boolean isBase =  getBaseImageName().equals(machine.getHost());
+        final String simpleType = machine.isController() ? "controller" : isBase ? "base" : "worker";
 
         if (!machine.isController()) {
             // non-controller machines attach the demo-data disk, so we can mount it into worker container
+            // note: it seems we can freely multi-attach disk after machine is created, but can't add disk to multiple machines when creating machines.
 //            cmds.add("--disk=device-name=large-data,mode=ro,name=" + getLargeDiskId() + ",scope=zonal");
         }
         // apply node-role specific cli arguments
         if (machine.isSnapshotCreate()) {
-            final String simpleType = machine.isController() ? "controller" : "worker";
             cmds.add("--labels=" +
                     LABEL_PURPOSE + "=" + (machine.isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER)
                     + extraLabel);
@@ -564,13 +578,10 @@ public class GoogleDeploymentManager implements DeploymentManager {
             cmds.add("--scopes");
             cmds.add("https://www.googleapis.com/auth/cloud-platform");
             // creating snapshots, we start w/ a clean image
-            cmds.add("--image");
-            cmds.add("ubuntu-2004-focal-v20210129");
-            cmds.add("--image-project");
-            cmds.add("ubuntu-os-cloud");
-            // stick our prepare-worker.sh or prepare-controller.sh script into desired location.
+            addImageFlag(cmds, isBase);
             final String scriptName = "prepare-" + simpleType + ".sh";
             addStartupScript(cmds, scriptName);
+
         } else if (machine.isController()) {
             cmds.add("--labels=" +
                     LABEL_PURPOSE + "=" + PURPOSE_CONTROLLER
@@ -583,12 +594,17 @@ public class GoogleDeploymentManager implements DeploymentManager {
             // controller starts from a prepared source image
             if (machine.isUseImage()) {
                 cmds.add("--image");
-                cmds.add(NameConstants.SNAPSHOT_NAME + "-controller");
+                cmds.add(SNAPSHOT_NAME + "-controller");
             } else {
                 cmds.add("--image");
-                cmds.add("ubuntu-2004-focal-v20210129");
-                cmds.add("--image-project");
-                cmds.add("ubuntu-os-cloud");
+                if (isBase) {
+                    cmds.add("ubuntu-2004-focal-v20210129");
+                    cmds.add("--image-project");
+                    cmds.add("ubuntu-os-cloud");
+                } else {
+                    cmds.add(getBaseImageName());
+                }
+                addImageFlag(cmds, isBase);
                 final String scriptName = "prepare-controller.sh";
                 addStartupScript(cmds, scriptName);
             }
@@ -604,19 +620,16 @@ public class GoogleDeploymentManager implements DeploymentManager {
             if (machine.isUseImage()) {
                 cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");
                 cmds.add("--image");
-                cmds.add(NameConstants.SNAPSHOT_NAME + "-worker");
+                cmds.add(SNAPSHOT_NAME + "-worker");
 //                cmds.add("--metadata=startup-script=while ! curl -k https://localhost:10000/health &> /dev/null; do echo 'Waiting for dh stack to come up'; done ; sudo iptables -A PREROUTING -t nat -p tcp --dport 443 -j REDIRECT --to-port 10000 ; sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 10000");
             } else {
                 // can't setup a worker w/o extended permissions. This should only be used for testing new worker scripts
                 cmds.add("dh-controller@" + getGoogleProject() + ".iam.gserviceaccount.com");
-                cmds.add("--image");
-                cmds.add("ubuntu-2004-focal-v20210129");
-                cmds.add("--image-project");
-                cmds.add("ubuntu-os-cloud");
-                final String scriptName = "prepare-worker.sh";
-                addStartupScript(cmds, scriptName);
+                addImageFlag(cmds, isBase);
                 cmds.add("--scopes");
                 cmds.add("https://www.googleapis.com/auth/cloud-platform");
+                final String scriptName = "prepare-" + simpleType + ".sh";
+                addStartupScript(cmds, scriptName);
             }
         }
         Execute.ExecutionResult res = execute(cmds);
@@ -648,6 +661,17 @@ public class GoogleDeploymentManager implements DeploymentManager {
         }
 
         return true;
+    }
+
+    private void addImageFlag(final List<String> cmds, final boolean isBase) throws IOException {
+        cmds.add("--image");
+        if (isBase) {
+            cmds.add("ubuntu-2004-focal-v20210129");
+            cmds.add("--image-project");
+            cmds.add("ubuntu-os-cloud");
+        } else {
+            cmds.add(getBaseImageName());
+        }
     }
 
     private void addStartupScript(final List<String> cmds, final String scriptName) throws IOException {
@@ -963,20 +987,23 @@ public class GoogleDeploymentManager implements DeploymentManager {
                     DomainMapping domain = domains.getOrCreate(simpleName, domainRoot);
                     pending.incrementAndGet();
                     ClusterController.setTimer("Find address for " + items[2], ()->{
-                        final IpMapping ownerIp = ips.findByIp(items[2]);
-                        if (ownerIp == null) {
-                            invalid.put(domain, items[2]);
-                        } else {
-                            valid.put(domain, items[2]);
-                            ownerIp.addDomainMapping(domain);
-                        }
-                        pending.decrementAndGet();
-                        synchronized (pending) {
-                            pending.notifyAll();
+                        try {
+                            final IpMapping ownerIp = ips.findByIp(items[2]);
+                            if (ownerIp == null) {
+                                invalid.put(domain, items[2]);
+                            } else {
+                                valid.put(domain, items[2]);
+                                ownerIp.addDomainMapping(domain);
+                            }
+                        } finally {
+                            pending.decrementAndGet();
+                            synchronized (pending) {
+                                pending.notifyAll();
+                            }
                         }
                     });
                 } else {
-                    LOG.error("Malformed DNS response line: " + line);
+                    LOG.errorf("Malformed DNS response line: %s", line);
                 }
             }
             long deadline = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(2);
@@ -1066,7 +1093,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             String name = ip.getName();
             try {
                 final Execute.ExecutionResult result = gcloud(true, false, "addresses", "create",
-                        name, "--region", NameConstants.REGION);
+                        name, "--region", REGION);
                 if (result.code != 0) {
                     String msg = "Unable to create an ip address for " + ip;
                     System.err.println(msg);
@@ -1086,120 +1113,79 @@ public class GoogleDeploymentManager implements DeploymentManager {
         }
     }
 
-    class AddLabelRequest {
+    public String getBaseImageName() {
+        return baseImageName == null ? "base-" + (VERSION_MANGLE.replaceFirst("[-][0-9]+$", "")) : baseImageName;
+    }
 
-        private final String host;
-        private final List<BiConsumer<Execute.ExecutionResult, Throwable>> doneList;
-        private int tries;
-        private boolean started;
+    public void setBaseImageName(final String baseImageName) {
+        this.baseImageName = baseImageName;
+    }
+
+    class AddLabelRequest extends GcloudApiRequest{
+
         private final Map<String, String> labels;
+        public void addLabel(final String name, final String value, final BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
+            synchronized (getSynchroObject()) {
+                labels.put(name, value);
+                addDoneCallback(onDone);
+            }
+        }
 
         public AddLabelRequest(final String host, final String labelName, final String labelValue, final BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
-            this.host = host;
-            tries = getMaxTries();
+            super(host, onDone);
             labels = new LinkedHashMap<>();
             labels.put(labelName, labelValue);
-            doneList = new ArrayList<>();
-            doneList.add(onDone);
-        }
-        public synchronized void addLabel(final String name, final String value, final BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
-            labels.put(name, value);
-            doneList.add(onDone);
         }
 
-        public boolean isStarted() {
-            return started;
+        @Override
+        protected Object getSynchroObject() {
+            return addLabelJobs;
         }
 
-        public void setStarted(final boolean started) {
-            this.started = started;
+        @Override
+        protected String[] getArgs() {
+            return new String[]{
+                "instances", "add-labels", getHost(),
+                "--labels=" + labels.entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue())
+                        .collect(Collectors.joining(","))
+            };
         }
 
-        public void schedule(final String threadName) {
-            ClusterController.setTimer(threadName, ()->{
-                synchronized (addLabelJobs) {
-                    // once we've started working, any more label requests will need to be queued into a new instance
-                    setStarted(true);
-                }
-                tryCommit();
-            });
-        }
+    }
 
-        private void tryCommit() {
-            try {
-                // most of this class should be refactored to not just be "add labels", but general "run gcloud command".
-                final Execute.ExecutionResult result = GoogleDeploymentManager.gcloud(true, "instances", "add-labels", host,
-                        "--labels=" + labels.entrySet().stream()
-                                .map(e -> e.getKey() + "=" + e.getValue())
-                                .collect(Collectors.joining(","))
-                );
-                succeed(result);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                fail(e);
-            } catch (IOException e) {
-                fail(e);
-            } catch (Throwable t) {
-                fail(t);
-                if (t instanceof Error) {
-                    throw t;
-                }
+    class RemoveLabelRequest extends GcloudApiRequest{
+
+        private final Set<String> labels;
+        public void removeLabel(final String name, final BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
+            synchronized (getSynchroObject()) {
+                labels.add(name);
+                addDoneCallback(onDone);
             }
         }
 
-        private void succeed(final Execute.ExecutionResult result) {
-            final BiConsumer<Execute.ExecutionResult, Throwable>[] items;
-            if (result.code == 0) {
-                synchronized (doneList) {
-                    //noinspection unchecked
-                    items = doneList.toArray(new BiConsumer[0]);
-                    doneList.clear();
-                }
-                for (BiConsumer<Execute.ExecutionResult, Throwable> callback : items) {
-                    try {
-                        callback.accept(result, null);
-                    } catch (Throwable t) {
-                        LOG.warnf(t, "Response callback threw exception after processing execution result %s", result);
-                    }
-                }
-
-            } else {
-                LOG.warnf("Request had non-zero code %s", result.code);
-                warnResult(result);
-                fail(new IllegalStateException(String.format(
-                    "Response had code %s", result.code
-                )));
-            }
+        public RemoveLabelRequest(final String host, final String labelName, final BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
+            super(host, onDone);
+            labels = new LinkedHashSet<>();
+            labels.add(labelName);
         }
 
-        private void fail(final Throwable e) {
-            final BiConsumer<Execute.ExecutionResult, Throwable>[] items;
-            // in case we get called more than once, be picky about clearing out callbacks.
-            if (tries == 0) {
-                // make sure any last-minute threads get their request in before we close up shop
-                synchronized (doneList) {
-                    //noinspection unchecked
-                    items = doneList.toArray(new BiConsumer[0]);
-                    doneList.clear();
-                }
-                for (BiConsumer<Execute.ExecutionResult, Throwable> item : items) {
-                    item.accept(null, e);
-                }
-            } else {
-                final String title = "Add labels to " + host;
-                if (tries > 0) {
-                    ClusterController.setTimer(title, this::tryCommit);
-                }
-                tries--;
-                LOG.infof("Attempting %s job again (tries remaining: %s)", title, tries);
-            }
+        @Override
+        protected String[] getArgs() {
+            return new String[] {
+                "instances", "remove-labels", getHost(),
+                "--labels=" + String.join(",", labels)
+            };
         }
 
-        private int getMaxTries() {
-            return 4;
+        @Override
+        protected Object getSynchroObject() {
+            return removeLabelJobs;
         }
     }
+
     private final IdentityHashMap<Machine, AddLabelRequest> addLabelJobs = new IdentityHashMap<>();
+    private final IdentityHashMap<Machine, RemoveLabelRequest> removeLabelJobs = new IdentityHashMap<>();
 
     @Override
     public void addLabel(final Machine mach, final String name, final String value, BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
@@ -1207,16 +1193,42 @@ public class GoogleDeploymentManager implements DeploymentManager {
         final String machineString = mach.toStringShort();
         synchronized (addLabelJobs) {
             job = addLabelJobs.get(mach);
+            // if the job is null, we are first, and will schedule a new job
+            // if the job is already started, we will also schedule a new job.
             if (job == null || job.isStarted()) {
                 job = new AddLabelRequest(mach.getHost(), name, value, onDone);
                 addLabelJobs.put(mach, job);
             } else {
+                // non-null, not-started job, we'll just add more labels to the request
                 job.addLabel(name, value, onDone);
                 // exit early, so we can move job.schedule out of the synchronized block
                 return;
             }
         }
         job.schedule("Add labels to " + machineString);
+    }
+
+    @Override
+    public Execute.ExecutionResult deleteMachine(final String hostName) throws IOException, InterruptedException {
+        return gcloud( true, "instances", "delete", "-q", hostName);
+    }
+
+    @Override
+    public void removeLabel(final Machine mach, final String name, BiConsumer<Execute.ExecutionResult, Throwable> onDone) {
+        RemoveLabelRequest job;
+        final String machineString = mach.toStringShort();
+        synchronized (removeLabelJobs) {
+            job = removeLabelJobs.get(mach);
+            if (job == null || job.isStarted()) {
+                job = new RemoveLabelRequest(mach.getHost(), name, onDone);
+                removeLabelJobs.put(mach, job);
+            } else {
+                job.removeLabel(name, onDone);
+                // exit early, so we can move job.schedule out of the synchronized block
+                return;
+            }
+        }
+        job.schedule("Remove labels from " + machineString);
     }
 
     @Override

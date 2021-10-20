@@ -162,6 +162,7 @@ public class IpPool {
                         "--filter", "address = " + ipAddr,
                         "--format", "csv[box,no-heading](NAME)");
                 if (ipLookup.code == 0) {
+                    LOG.infof("FOUND MISSING IP ADDRESS %s from %s", ipLookup, ipAddr);
                     String name = ipLookup.out.trim();
                     return updateOrCreate(name, ipAddr);
                 }

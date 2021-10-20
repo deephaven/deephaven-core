@@ -31,7 +31,7 @@ services:
       grpc-api:
         condition: service_healthy
     environment:
-      - JAVA_OPTIONS="-Xmx2g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
+      - JAVA_OPTIONS="-Xmx2g"
 
   web:
     image: ${REPO:-ghcr.io/deephaven}/web:${VERSION:-latest}

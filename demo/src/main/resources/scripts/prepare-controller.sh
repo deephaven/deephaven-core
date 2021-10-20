@@ -31,7 +31,7 @@ services:
       - /root/.config:/root/.config
       - "${DH_SVC:-/dh/svc}:/certs"
     environment:
-      - JAVA_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
+      - JAVA_OPTIONS="-Xmx12g"
       - CLOUDSDK_CONFIG=/root/.config/gcloud
 
   envoy:

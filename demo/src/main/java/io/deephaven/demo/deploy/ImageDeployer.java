@@ -61,11 +61,33 @@ public class ImageDeployer {
         String prefix = machinePrefix + (machinePrefix.isEmpty() || machinePrefix.endsWith("-") ? "" : "-");
         String workerBox = prefix + "worker-" + VERSION_MANGLE; //ancestor-worker
         String controllerBox = prefix + "controller-" + VERSION_MANGLE; // ancestor=controller
+        String baseBox = manager.getBaseImageName();
+        manager.setBaseImageName(baseBox);
 
+        Execute.ExecutionResult result;
         // for now, we are NOT going to allow stomping images.
-        final Execute.ExecutionResult result = GoogleDeploymentManager.gcloudQuiet(true, false, "images", "describe", SNAPSHOT_NAME + "-worker");
+        result = GoogleDeploymentManager.gcloudQuiet(true, false, "images", "describe", SNAPSHOT_NAME + "-worker");
         if (result.code == 0) {
             throw new IllegalStateException("Snapshot " + SNAPSHOT_NAME + "-worker already exists; please bump your version!");
+        }
+
+        result = GoogleDeploymentManager.gcloudQuiet(true, false,
+                "images", "describe", baseBox);
+        if (result.code != 0) {
+            // create a base box for the given version.
+            LOG.infof("No base image for %s, creating new base image");
+            manager.deleteMachine(baseBox);
+            Machine base = ctrl.findMachine(baseBox, true, true);
+            base.getIp().setDomain(new DomainMapping(baseBox, DOMAIN));
+            base.setSnapshotCreate(true);
+            manager.createMachine(base, manager.getIpPool());
+            manager.assignDns(ctrl, Stream.of(base));
+            // even if we're just going to shut the machine down, wait until ssh is responsive
+            manager.waitForSsh(base, -1, TimeUnit.MINUTES.toMillis(15));
+            // wait until we can get a finish-setup.sh "we are done" log messages.
+            ctrl.waitUntilHealthy(base);
+            // deploy the base image.
+            finishDeploy("Base", base, manager);
         }
 
         Machine controller = ctrl.findMachine(controllerBox, true, true);
@@ -129,6 +151,7 @@ public class ImageDeployer {
         manager.assignDns(ctrl, Stream.of(newCtrl));
 
         manager.waitForSsh(newCtrl, TimeUnit.MINUTES.toMillis(3), TimeUnit.MINUTES.toMillis(7));
+
         LOG.infof("Destroying VMs %s and %s", worker, controller);
         manager.destroyCluster(Arrays.asList(worker, controller), "");
 
@@ -139,7 +162,7 @@ public class ImageDeployer {
         LOG.info("Finishing deploy for " + machine);
         final String typeLower = type.toLowerCase();
         final String typeUpper = type.toUpperCase();
-        String snapName = SNAPSHOT_NAME + "-" + typeLower;
+        String snapName = "base".equals(typeLower) ? machine.getHost() : SNAPSHOT_NAME + "-" + typeLower;
         if (doDeploy) {
             LOG.infof("Creating new %s image %s", typeLower, snapName);
             manager.turnOff(machine);

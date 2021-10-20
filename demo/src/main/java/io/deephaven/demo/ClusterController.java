@@ -114,13 +114,14 @@ public class ClusterController {
     private void resetLeader() {
         leader = new Lazy<>(()->{
             try {
-                final Execute.ExecutionResult result = Execute.executeQuiet("bash", "-c",
-                        "[[ $(dig +short " + DOMAIN + ") == $(dig +short $(hostname)." + DOMAIN + ") ]] && echo leader || echo not");
+                final Execute.ExecutionResult result = Execute.execute("bash", "-c",
+                        "[[ $(dig +short " + DOMAIN + ") == $(dig +short $(hostname)." + DOMAIN + ") ]] && echo leader || echo follower");
                 return "leader".equals(result.out.trim());
             } catch (IOException | InterruptedException e) {
                 LOG.error("Unable to tell if we are leader", e);
                 return false;
             }
+//            return true;
         });
     }
 
@@ -197,10 +198,9 @@ public class ClusterController {
         // make sure to re-check if we are still the leader.
         // This will prevent an old controller from acting like the leader when a new one is promoted
         resetLeader();
-        setTimer("Check IPs", ()->{
-            loadIpsUsed();
-            loadIpsUnused();
-        });
+        setTimer("Check Used IPs", this::loadIpsUsed);
+        setTimer("Check Unused IPs", this::loadIpsUnused);
+        setTimer("Check Domains", this::loadDomains);
         loadMachines();
         // check for machines that have exceeded their limit, reboot them, and then put them back in the usable pool
         Set<Machine> runningMachines = new ConcurrentHashSet<>();
@@ -209,21 +209,22 @@ public class ClusterController {
         Set<Machine> usedMachines = new ConcurrentHashSet<>();
         machines.getAllMachines().forEach(machine -> {
             if (machine.isOnline()) {
-                runningMachines.add(machine);
-                if (machine.isInUse()) {
-                    usedMachines.add(machine);
+                if (machine.getExpiry() > 0 && machine.getExpiry() < System.currentTimeMillis()) {
+                    LOG.infof("Machine %s has past its expiry by %sms, shutting it down", machine, System.currentTimeMillis() - machine.getExpiry());
+                    // machine is past expiry... lets turn this box off, unless it's version is old, in which case, delete it
+                    turnOff(machine);
+                    offlineMachines.add(machine);
                 } else {
-                    availableMachines.add(machine);
+                    runningMachines.add(machine);
+                    if (machine.isInUse()) {
+                        usedMachines.add(machine);
+                    } else {
+                        availableMachines.add(machine);
+                    }
                 }
             } else {
                 machine.setInUse(false);
                 offlineMachines.add(machine);
-            }
-            if (machine.isInUse()) {
-                if (machine.getExpiry() > 0 && machine.getExpiry() < System.currentTimeMillis()) {
-                    // machine is past expiry... lets turn this box off, unless it's version is old, in which case, delete it
-                    turnOff(machine);
-                }
             }
         });
         int numRunning = runningMachines.size();
@@ -262,29 +263,41 @@ public class ClusterController {
             }
             // if fewer than needed nodes running, turn things on
             // if we don't have enough machines, add however many machines we need to fill pool
+            int limit = 3;
             while (numRunning < poolSize) {
                 if (numRunning >= getMaxPoolSize()) {
                     LOG.error("There are already " + numRunning + " running instances, and max size is " + getMaxPoolSize());
+                    break;
                 } else {
                     LOG.warn("Only " + numRunning + " machines, but want " + poolSize + "; adding a new machine");
                     numRunning++;
                     final Machine newMachine = requestMachine(NameGen.newName(), false);
                     availableMachines.add(newMachine);
                     runningMachines.add(newMachine);
+                    if (--limit <= 0) {
+                        LOG.info("Taking a break from creating new machines to refresh metadata");
+                        return;
+                    }
                 }
             }
         }
         if (availableMachines.size() < numBuffer) {
-            while (availableMachines.size() < getPoolBuffer()) {
+            int limit = 3;
+            while (availableMachines.size() < numBuffer) {
                 LOG.warn("Only " + availableMachines.size() + " machines are running and unusued, but want " + getPoolBuffer() + " available machines; adding a new machine");
                 final Machine newMachine = requestMachine(NameGen.newName(), false);
                 availableMachines.add(newMachine);
                 runningMachines.add(newMachine);
+                if (--limit <= 0) {
+                    LOG.infof("Taking a break from creating machines to refresh metadata");
+                    return;
+                }
             }
         } else if (numRunning > poolSize) {
             LOG.info(numRunning + " running machines > " + poolSize + " preferred pool size; trying to shut down extra machines");
             // if more than needed nodes are running, turn off any nodes not servicing clients
             int numShut = 0;
+            Set<Machine> notInUse = new TreeSet<>(MachinePool.CMP);
             for (Machine next : runningMachines) {
                 if (next.getExpiry() < System.currentTimeMillis()) {
                     next.setInUse(false);
@@ -299,21 +312,59 @@ public class ClusterController {
                         fixLease(next);
                     }
                 } else {
-                    // leave a buffer of unused machines running, even if we've exceeded pool size
-                    if (numBuffer--<=0) {
-                        LOG.info("Turning off unneeded machine " + next.getHost());
-                        numRunning--;
-                        numShut++;
-                        availableMachines.remove(next);
-                        turnOff(next);
-                        if (numRunning <= poolSize) {
-                            break;
-                        }
+                    notInUse.add(next);
+                }
+            }
+            // leave a buffer of unused machines running, even if we've exceeded pool size
+            for (Machine next : notInUse) {
+                if (next.getExpiry() > 0 && next.getExpiry() < System.currentTimeMillis() && availableMachines.size() > getPoolBuffer()) {
+                    LOG.infof("Turning off unneeded machine %s, expired %s minutes ago", next.toStringShort(), TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - next.getExpiry()));
+                    numRunning--;
+                    numShut++;
+                    availableMachines.remove(next);
+                    turnOff(next);
+                    if (numRunning <= poolSize) {
+                        break;
                     }
                 }
             }
+            for (Machine next : notInUse) {
+                if (next.getExpiry() == 0 && availableMachines.size() > getPoolBuffer()) {
+                    LOG.infof("Turning off never-used machine %s", next.toStringShort());
+                    numRunning--;
+                    numShut++;
+                    availableMachines.remove(next);
+                    turnOff(next);
+                    if (numRunning <= poolSize) {
+                        break;
+                    }
+                }
+            }
+
+
             LOG.info("Shut off " + numShut + " machines; warm-machines available: " + availableMachines.size());
         }
+        LOG.info("Attempting to retire machines that have been on too long");
+        int retired = 0;
+        for (Machine available : availableMachines) {
+            if (available.isOnline() && !available.isInUse()) {
+                long aliveFor = System.currentTimeMillis() - available.getLastOnline();
+                if (aliveFor > getDeletionTtl()) {
+                    retired++;
+                    LOG.infof("Retiring machine %s as it has been on too long (%s minutes) since being used / started",
+                            available.toStringShort(), TimeUnit.MILLISECONDS.toMinutes(aliveFor));
+                    // this machine has been online for 3 hours after it was last used, or 3 hour + sessionTTL w/o being used.
+                    // turn this machine off...
+                    turnOff(available);
+                    // and request a new machine
+                    if (shouldReserveReplacementMachine()) {
+                        requestMachine(false);
+                    }
+                }
+            }
+        }
+        LOG.infof("Retired %s machines", retired);
+
 
         // kill any offline machines that are older than a given time; for now, ttl + 1 hour
         reduceOfflineMachines();
@@ -329,10 +380,10 @@ public class ClusterController {
                 "-q",
                 "--format", getMachineFormatFlag(),
                 "--filter",
-                "labels." + LABEL_LEASE + " < " + expiredHourAgo
+                    "( labels." + LABEL_LEASE + " < " + expiredHourAgo + " OR NOT labels." + LABEL_LEASE + " )"
                         + " AND " +
-                        // ridiculous <=, >= needed to represent = because = actually means contains, not equals...  ...oh google...
                         "labels." + LABEL_PURPOSE + " <= " + PURPOSE_WORKER
+                        // ridiculous <=, >= needed to represent = because = actually means contains, not equals...  ...oh google...
                         + " AND " +
                         "labels." + LABEL_PURPOSE + " >= " + PURPOSE_WORKER
         );
@@ -371,9 +422,11 @@ public class ClusterController {
                 if (validVersion) {
 
                     machine.setOnline(false);
-                    boolean keep = machines.getNumberOfflineMachines() <= getMaxOfflineSize();
+                    boolean keep = machines.getNumberOfflineMachines() <= getMaxOfflineSize() && machine.getLastOnline() > (System.currentTimeMillis() - getDeletionTtl());
                     if (keep) {
                         if (leader.get()) {
+                            machines.clearExpiry(machine);
+                            manager.removeLabel(machine, LABEL_LEASE);
                             gcloud(true, "instances", "stop", "-q", machine.getHost());
                             // setup new DNS for next user
                             manager.replaceDNS(this, machine);
@@ -389,19 +442,21 @@ public class ClusterController {
 
                         // if we're the leader, kill the box
                         if (leader.get()) {
-                            gcloud( true, "instances", "delete", "-q", machine.getHost());
-                            // setup new DNS for next user
+                            manager.deleteMachine(machine.getHost());
+                            // setup new DNS for next user (we delete the machine, but still want fresh DNS for the IP we are releasing)
                             manager.replaceDNS(this, machine);
                         }
                     }
                 } else { // not a valid version
                     // only the leader gets to delete instances.
                     if (leader.get()) {
-                        if (VERSION.compareTo(machine.getVersion()) > 0) {
+                        if (VERSION_MANGLE.compareTo(machine.getVersion()) > 0) {
                             // only delete versions older than ourselves. we don't want an old controller to touch new machines,
                             // but we do want new controllers to delete old machines!
                             machine.setDestroyed(true);
-                            gcloud( true, "instances", "delete", "-q", machine.getHost());
+                            manager.deleteMachine(machine.getHost());
+                            // setup new DNS for next user
+                            manager.replaceDNS(this, machine);
                         } else {
                             LOG.infof("Not shutting down machine equal or newer (%s) than ourselves %s", machine.getVersion(), machine);
                         }
@@ -409,14 +464,24 @@ public class ClusterController {
                     // mark as "in use" b/c it should not be used anymore (it was already removed from the map)
                     machine.setInUse(true);
                 }
-                if (leader.get() && machines.needsMoreMachines(getPoolBuffer(), getPoolSize(), getMaxPoolSize())) {
-                    requestMachine(false);
+                if (shouldReserveReplacementMachine()) {
+                    final Machine newMach = requestMachine(false);
+                    LOG.infof("We shut down %s and the pool was empty enough, so we started new machine %s",
+                            machine.toStringShort(), newMach.toStringShort());
                 }
             } catch (IOException | InterruptedException e) {
                 System.err.println("Error trying to restart " + machine.getHost());
                 e.printStackTrace();
             }
         });
+    }
+
+    private long getDeletionTtl() {
+        return getSessionTtl() + TimeUnit.HOURS.toMillis(3);
+    }
+
+    private boolean shouldReserveReplacementMachine() {
+        return leader.get() && machines.needsMoreMachines(getPoolBuffer(), getPoolSize(), getMaxPoolSize());
     }
 
     /**
@@ -500,7 +565,7 @@ public class ClusterController {
         latch.countDown();
     }
     private void loadMachines() {
-        String rawOut = null;
+        String rawOut;
         try {
             LOG.info("Reloading machine metadata from google");
             long mark = System.currentTimeMillis();
@@ -605,6 +670,7 @@ public class ClusterController {
         if (bits[getIndexStatus()].length() > 0) {
             mach.setOnline(
                     "RUNNING".equals(bits[getIndexStatus()]) ||
+                    "STAGING".equals(bits[getIndexStatus()]) ||
                     "PROVISIONING".equals(bits[getIndexStatus()])
             );
         }
@@ -614,6 +680,7 @@ public class ClusterController {
         if (isValidVersion(mach)) {
             machines.addMachine(mach);
         } else if (!mach.isInUse()){
+            LOG.infof("Turning off invalid-version offline machine %s", mach);
             turnOff(mach);
             machines.removeMachine(mach);
         }
@@ -825,7 +892,7 @@ public class ClusterController {
     }
     public Machine requestMachine(boolean reserve) {
         waitUntilReady();
-        Optional<Machine> machine = machines.maybeGetMachine(manager, reserve);
+        Optional<Machine> machine = machines.maybeGetMachine(reserve);
         if (machine.isPresent()) {
             final Machine mach = machine.get();
             moveToRunningState(mach, reserve);
@@ -865,6 +932,9 @@ public class ClusterController {
         if (reserve) {
             machines.expireInMillis(machine, getSessionTtl());
             machine.setInUse(true);
+        } else {
+            // if we aren't reserving this machine, still update the expiry, so machines will gradually rotate
+            machine.keepAlive();
         }
         setTimer("Move to running state", ()->{
             Execute.ExecutionResult result = null;
@@ -877,7 +947,7 @@ public class ClusterController {
                                 PURPOSE_WORKER;
                 int tries = 5;
                 while (tries --> 0) {
-                    result = gcloud(true, "instances",
+                    result = gcloud(true, true, "instances",
                             "describe", machine.getHost(),
                             "-q",
                             "--format", getMachineFormatFlag());
@@ -944,7 +1014,7 @@ public class ClusterController {
             final Execute.ExecutionResult dnsCheck = manager.checkDns(machine.getDomainName(), DNS_GOOGLE);
             if (dnsCheck.code == 0 && dnsCheck.out.trim().equals(machineIp.getIp())) {
                 // machine is alive, DNS is all good.
-                LOG.trace("DNS resolved for " + machine.getDomainName());
+                LOG.tracef("DNS resolved for %s", machine.toStringShort());
             } else {
                 if (machine.isDestroyed()) {
                     return;
@@ -953,8 +1023,9 @@ public class ClusterController {
                 LOG.warn("DNS does not resolve correctly for " + machine.getDomainName() + " @ " + machine.getIp() + "; setting up DNS records");
                 try {
                     setupDns(machine);
+                    LOG.warnf("DNS setup requested for %s @ %s", machine.toStringShort(), machine.getIp());
                 } catch (Exception e) {
-                    LOG.error("Unable to setup DNS for machine " + machine, e);
+                    LOG.errorf(e,"Unable to setup DNS for machine %s", machine);
                 }
             }
 
@@ -1005,7 +1076,7 @@ public class ClusterController {
         String uri = "https://" + domainName + "/health";
         final Request req = new Request.Builder().get()
                 .url(uri)
-                .addHeader("User-Agent", "DeephavenBot")
+                .addHeader("User-Agent", "DeephavenCtrl")
                 .build();
         final Response response;
         try {
@@ -1046,8 +1117,12 @@ public class ClusterController {
                         "    sleep 1\n" +
                         "  done\n" +
                         "  kill $pid\n" +
-                        "  if (( tries > 0 )) && curl -k https://localhost:10000/health &> /dev/null; then\n" +
-                        "    echo \"localhost:10000 is responsive; $(hostname) is alive!\"\n" +
+                        "  if (( tries > 0 )); then\n" +
+                        "    if curl -k https://localhost:10000/health &> /dev/null; then\n" +
+                        "        echo \"localhost:10000 is responsive; $(hostname) is alive!\"\n" +
+                        "    else\n" +
+                        "        echo \"localhost:10000 is not-responsive on $(hostname)\"\n" +
+                        "    fi\n" +
                         "  else\n" +
                         "    echo Tried 720 times to reach https://localhost:10000/health but " + failed + "\n" +
                         "  fi\n" +
@@ -1084,12 +1159,16 @@ public class ClusterController {
         return machine;
     }
 
-    public boolean renewLease(final String machineName) {
-        final Machine machine = machines.findByName(machineName);
-        if (machine == null) {
+    public boolean renewLease(final String domainName) {
+        final Optional<Machine> machine = machines.findByDomainName(domainName);
+        if (!machine.isPresent()) {
             return false;
         }
-        machines.expireInMillis(machine, getSessionTtl());
+        machines.expireInMillis(machine.get(), getSessionTtl());
         return true;
+    }
+
+    public MachinePool getMachinePool() {
+        return machines;
     }
 }

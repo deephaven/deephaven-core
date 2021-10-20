@@ -6,15 +6,9 @@ import org.jboss.logging.Logger;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import static io.deephaven.demo.NameConstants.LABEL_IP_NAME;
 
 /**
  * A DeploymentManager is responsible for creating and interacting with real VMs.
@@ -55,6 +49,20 @@ interface DeploymentManager {
 
         });
     }
+    default void removeLabel(Machine mach, String name) {
+        removeLabel(mach, name, (r, e) -> {
+            if (e == null) {
+                getLog().infof("Cleared machine %s label %s", mach.toStringShort(), name);
+            } else {
+                getLog().warnf(e, "Unable to update %s label %s", mach.toStringShort(), name);
+            }
+
+        });
+    }
     void addLabel(Machine mach, String name, String value, BiConsumer<Execute.ExecutionResult, Throwable> failMsg);
+
+    void removeLabel(Machine mach, String name, BiConsumer<Execute.ExecutionResult, Throwable> failMsg);
+
+    Execute.ExecutionResult deleteMachine(String hostName) throws IOException, InterruptedException;
 }
 

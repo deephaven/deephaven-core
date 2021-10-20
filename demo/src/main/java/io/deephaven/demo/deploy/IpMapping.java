@@ -135,13 +135,15 @@ public class IpMapping implements Comparable<IpMapping> {
         return currentDomain;
     }
 
-    public void expireDomain() {
+    public DomainMapping expireDomain() {
+        final DomainMapping was = currentDomain;
         synchronized (domains) {
             if (currentDomain != null) {
                 domains.remove(currentDomain);
                 currentDomain = null;
             }
         }
+        return was;
     }
 
     public void addDomainMapping(final DomainMapping domain) {
