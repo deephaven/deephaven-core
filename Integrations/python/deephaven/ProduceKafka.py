@@ -105,7 +105,7 @@ def produceFromTable(
     return _java_type_.produceFromTable(kafka_config, topic, key, value)
 
 @_passThrough
-def avro(schema, schema_version:str = None, mapping:dict = None):
+def avro(schema, schema_version:str = None, column_names = None):
     """
     Specify an Avro schema to use when producing a Kafka stream from a Deephaven table.
 
@@ -116,14 +116,12 @@ def avro(schema, schema_version:str = None, mapping:dict = None):
        definition.
     :param schema_version:   If a string schema name is provided, the version to fetch from schema
        service; if not specified, a default of 'latest' is assumed.
-    :param mapping: A dict representing a string to string mapping from Deephaven table
-       column names to Avro field names.  If None, use all column names with matching Avro field names.
+    :param column_names: A list of strings each corresponding to an schema field, in order,
+       indicating which Deephaven column nanmes to use for the corresponding Avro field,
+       or None if the Deephaven columns names are expected to match field names.
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
-    if mapping is not None:
-        mapping = _dictToFun(mapping, default_value=IDENTITY)
-
     if _isStr(schema):
         have_actual_schema = False
         if schema_version is None:
@@ -143,30 +141,23 @@ def avro(schema, schema_version:str = None, mapping:dict = None):
             "str type or avro schema type, instead got " + str(schema))
 
     if have_actual_schema:
-        return _consume_jtype_.avroSpec(schema, mapping)
+        return _consume_jtype_.avroSpec(schema, column_names)
     else:
-        return _consume_jtype_.avroSpec(schema, schema_version, mapping)
+        return _consume_jtype_.avroSpec(schema, schema_version, column_names)
 
 @_passThrough
-def json(mapping:dict = None):
+def json(column_names = None, field_names = None):
     """
     Specify how to produce JSON data when producing a Kafka stream from a Deephaven table.
 
-    :param mapping:   A dict mapping column names to JSON field names.  If not present or None,
-       all table columns are included and a 1:1 mapping between JSON field names and Deephaven
-       table column names is assumed.
+    :param column_names: A sequence of Deephaven column names to include in the json output
+              as json fields, or None to indicate all columns.
+    :param field_names: A squence of field names to use for the corresponding column name in the
+              column_names, or None to indicate that all JSON field names will match column names.
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
-    if mapping is None:
-        return _produce_jtype_.jsonSpec(None)
-
-    if not isinstance(mapping, dict):
-        raise TypeError(
-            "argument 'mapping' is expected to be of dict type, " +
-            "instead got " + str(mapping) + " of type " + type(mapping).__name__)
-    mapping = _dictToMap(mapping)
-    return _produce_jtype_.jsonSpec(col_defs, mapping)
+    return _produce_jtype_.jsonSpec(column_names, field_names)
 
 
 @_passThrough

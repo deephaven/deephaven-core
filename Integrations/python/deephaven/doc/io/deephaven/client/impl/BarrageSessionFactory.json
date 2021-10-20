@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSessionFactory",
+ "methods": {
+  "newBarrageSession": ":return: io.deephaven.client.impl.BarrageSession",
+  "newBarrageSessionFuture": ":return: java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.BarrageSession>"
+ },
+ "path": "io.deephaven.client.impl.BarrageSessionFactory",
+ "typeName": "interface"
+}
