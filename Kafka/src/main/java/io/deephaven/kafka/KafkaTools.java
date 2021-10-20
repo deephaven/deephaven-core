@@ -672,7 +672,7 @@ public class KafkaTools {
          * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
          *        null, include all columns.
          * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
-         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        the corresponding column name in the {@code columnNames} array. If null, map columns to fields of the same
          *        name.
          * @param nestedObjectDelimiter A string used to separate values in composite fields.
          * @param outputNulls If false, omit fields with a null value.
@@ -696,7 +696,7 @@ public class KafkaTools {
          * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
          *        null, include all columns.
          * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
-         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        the corresponding column name in the {@code columnNames} array. If null, map columns to fields of the same
          *        name.
          * @return A JSON spec for the given inputs.
          */
@@ -714,7 +714,7 @@ public class KafkaTools {
          * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
          *        null, include all columns.
          * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
-         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        the corresponding column name in the {@code columnNames} array. If null, map columns to fields of the same
          *        name.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
@@ -749,7 +749,7 @@ public class KafkaTools {
          * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
          *        null, include all columns.
          * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
-         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        the corresponding column name in the {@code columnNames} array. If null, map columns to fields of the same
          *        name.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
@@ -773,7 +773,7 @@ public class KafkaTools {
          * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
          *        null, include all columns.
          * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
-         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        the corresponding column name in the {@code columnNames} array. If null, map columns to fields of the same
          *        name.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
