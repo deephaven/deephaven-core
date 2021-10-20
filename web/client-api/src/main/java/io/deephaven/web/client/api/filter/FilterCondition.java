@@ -115,6 +115,7 @@ public class FilterCondition {
 
         final FilterCondition that = (FilterCondition) o;
 
+        // TODO (deephaven-core#723): implement a reasonable equality method; comparing pb serialization is expensive
         final Uint8Array mBinary = descriptor.serializeBinary();
         final Uint8Array oBinary = that.descriptor.serializeBinary();
         if (mBinary.length != oBinary.length) {
