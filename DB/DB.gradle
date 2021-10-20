@@ -56,6 +56,7 @@ dependencies {
             project(':Container'),
             project(':table-api'),
             project(':qst'),
+            project(':uri'),
             "org.flywaydb:flyway-core:5.2.4",
             'com.github.f4b6a3:uuid-creator:3.6.0'
 

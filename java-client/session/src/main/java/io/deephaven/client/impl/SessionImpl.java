@@ -106,6 +106,8 @@ public final class SessionImpl extends SessionBase {
         final AuthenticationInfo initialAuth = AuthenticationInfo.of(response);
         final SessionImpl session =
                 new SessionImpl(config, new Retrying(REFRESH_RETRIES), initialAuth);
+
+
         session.scheduleRefreshSessionToken(response);
         return session;
     }
@@ -298,11 +300,12 @@ public final class SessionImpl extends SessionBase {
     }
 
     private void scheduleRefreshSessionToken(HandshakeResponse response) {
-        final long refreshDelayMs = Math.min(
-                System.currentTimeMillis() + response.getTokenExpirationDelayMillis() / 3,
+        final long now = System.currentTimeMillis();
+        final long targetRefreshTime = Math.min(
+                now + response.getTokenExpirationDelayMillis() / 3,
                 response.getTokenDeadlineTimeMillis() - response.getTokenExpirationDelayMillis() / 10);
-        executor.schedule(SessionImpl.this::refreshSessionToken, refreshDelayMs,
-                TimeUnit.MILLISECONDS);
+        final long refreshDelayMs = Math.max(targetRefreshTime - now, 0);
+        executor.schedule(SessionImpl.this::refreshSessionToken, refreshDelayMs, TimeUnit.MILLISECONDS);
     }
 
     private void scheduleRefreshSessionTokenNow() {

@@ -1,6 +1,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.SimpleStyle;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -67,5 +68,12 @@ public abstract class TicketTable extends TableBase {
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
+    }
+
+    @Check
+    final void checkNonEmpty() {
+        if (ticket().length == 0) {
+            throw new IllegalArgumentException("Ticket must be non-empty");
+        }
     }
 }

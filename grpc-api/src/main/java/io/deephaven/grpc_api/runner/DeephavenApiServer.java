@@ -12,6 +12,9 @@ import io.deephaven.grpc_api.log.LogInit;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.uri.TableResolver;
+import io.deephaven.uri.TableResolversInstance;
+import io.deephaven.uri.TableResolvers;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.grpc.Server;
@@ -57,6 +60,7 @@ public class DeephavenApiServer {
     private final ConsoleServiceGrpcImpl consoleService;
     private final ApplicationInjector applicationInjector;
     private final ApplicationServiceGrpcImpl applicationService;
+    private final TableResolvers tableResolvers;
 
     @Inject
     public DeephavenApiServer(
@@ -65,13 +69,15 @@ public class DeephavenApiServer {
             final LogInit logInit,
             final ConsoleServiceGrpcImpl consoleService,
             final ApplicationInjector applicationInjector,
-            final ApplicationServiceGrpcImpl applicationService) {
+            final ApplicationServiceGrpcImpl applicationService,
+            final TableResolvers tableResolvers) {
         this.server = server;
         this.ltm = ltm;
         this.logInit = logInit;
         this.consoleService = consoleService;
         this.applicationInjector = applicationInjector;
         this.applicationService = applicationService;
+        this.tableResolvers = tableResolvers;
     }
 
     public Server server() {
@@ -99,6 +105,13 @@ public class DeephavenApiServer {
 
         // inject applications before we start the gRPC server
         applicationInjector.run();
+
+        {
+            for (TableResolver resolver : tableResolvers.resolvers()) {
+                log.info().append("Found table resolver ").append(resolver.getClass().toString()).endl();
+            }
+            TableResolversInstance.init(tableResolvers);
+        }
 
         log.info().append("Starting server...").endl();
         server.start();

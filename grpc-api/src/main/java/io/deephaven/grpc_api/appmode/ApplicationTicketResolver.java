@@ -23,11 +23,13 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 @Singleton
-public class ApplicationTicketResolver extends TicketResolverBase {
+public class ApplicationTicketResolver extends TicketResolverBase implements ApplicationStates {
     private static final char TICKET_PREFIX = 'a';
     private static final String FLIGHT_DESCRIPTOR_ROUTE = "app";
     private static final String FIELD_PATH_SEGMENT = "field";
@@ -37,6 +39,20 @@ public class ApplicationTicketResolver extends TicketResolverBase {
     @Inject
     public ApplicationTicketResolver() {
         super((byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
+    }
+
+    @Override
+    public ApplicationState getQueryScopeState() {
+        final ApplicationState state = applicationMap.get(AppFieldId.SCOPE_ID);
+        if (state == null) {
+            throw new NoSuchElementException("Query scope application state does not exist");
+        }
+        return state;
+    }
+
+    @Override
+    public final Optional<ApplicationState> getApplicationState(String applicationId) {
+        return Optional.ofNullable(applicationMap.get(applicationId));
     }
 
     public synchronized void onApplicationLoad(final ApplicationState app) {

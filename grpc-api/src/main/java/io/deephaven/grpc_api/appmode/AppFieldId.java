@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
  * Our unique identifier for a field. Used to debounce frequent updates and to identify when a field is replaced.
  */
 public class AppFieldId {
-    private static final String SCOPE_ID = "scope";
+    public static final String SCOPE_ID = "scope";
 
     /**
      * The application that this field is defined under, or null if this is a fabricated query scope field.
