@@ -37,11 +37,11 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     protected final List<JSONFieldProcessor> fieldProcessors = new ArrayList<>();
 
     public JsonKeyOrValueSerializer(final Table source,
-                                    final String[] columnNames,
-                                    final String[] fieldNames,
-                                    final String timestampFieldName,
-                                    final String nestedObjectDelimiter,
-                                    final boolean outputNulls) {
+            final String[] columnNames,
+            final String[] fieldNames,
+            final String timestampFieldName,
+            final String nestedObjectDelimiter,
+            final boolean outputNulls) {
         this.source = source;
         this.nestedObjectDelimiter = nestedObjectDelimiter;
         this.outputNulls = outputNulls;

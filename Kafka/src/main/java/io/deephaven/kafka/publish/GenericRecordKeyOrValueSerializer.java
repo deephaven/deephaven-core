@@ -29,10 +29,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     protected final List<GenericRecordFieldProcessor> fieldProcessors = new ArrayList<>();
 
     public GenericRecordKeyOrValueSerializer(final Table source,
-                                             final Schema schema,
-                                             final String[] columnNames,
-                                             final String[] fieldNames,
-                                             final String timestampFieldName) {
+            final Schema schema,
+            final String[] columnNames,
+            final String[] fieldNames,
+            final String timestampFieldName) {
         this.source = source;
         this.schema = schema;
 

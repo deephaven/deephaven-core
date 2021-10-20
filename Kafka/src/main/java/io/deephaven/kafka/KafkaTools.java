@@ -535,6 +535,7 @@ public class KafkaTools {
                 public DataFormat dataFormat() {
                     return DataFormat.IGNORE;
                 }
+
                 @Override
                 public String[] getColumnNames() {
                     return null;
@@ -546,13 +547,16 @@ public class KafkaTools {
             public static abstract class MultiFieldKeyOrValueSpec extends KeyOrValueSpec {
                 public final String[] columnNames;
                 public final String[] fieldNames;
+
                 protected MultiFieldKeyOrValueSpec(final String[] columnNames, final String[] fieldNames) {
                     this.columnNames = columnNames;
                     this.fieldNames = fieldNames;
                 }
+
                 public final String[] getFieldNames() {
                     return fieldNames;
                 }
+
                 public final String[] getColumnNames() {
                     return columnNames;
                 }
@@ -615,7 +619,7 @@ public class KafkaTools {
 
                 @Override
                 public String[] getColumnNames() {
-                    return new String[] { columnName };
+                    return new String[] {columnName};
                 }
             }
 
@@ -665,11 +669,11 @@ public class KafkaTools {
         /**
          * A JSON spec from a set of column names
          *
-         * @param columnNames An array including an entry for each column intended to be included in the JSON
-         *        output.  If null, include all columns.
-         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
-         *        to map for the corresponding column name in the columnNames array.  If null, map
-         *        columns to fields of the same name.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
+         *        null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
+         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        name.
          * @param nestedObjectDelimiter A string used to separate values in composite fields.
          * @param outputNulls If false, omit fields with a null value.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
@@ -682,17 +686,18 @@ public class KafkaTools {
                 final String nestedObjectDelimiter,
                 final boolean outputNulls,
                 final String timestampFieldName) {
-            return new KeyOrValueSpec.Json(columnNames, fieldNames,  nestedObjectDelimiter, outputNulls, timestampFieldName);
+            return new KeyOrValueSpec.Json(columnNames, fieldNames, nestedObjectDelimiter, outputNulls,
+                    timestampFieldName);
         }
 
         /**
          * A JSON spec from a set of column names
          *
-         * @param columnNames An array including an entry for each column intended to be included in the JSON
-         *        output.  If null, include all columns.
-         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
-         *        to map for the corresponding column name in the columnNames array.  If null, map
-         *        columns to fields of the same name.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
+         *        null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
+         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        name.
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
@@ -706,11 +711,11 @@ public class KafkaTools {
          * Avro spec to generate Avro messages from an Avro schema.
          *
          * @param schema An Avro schema.
-         * @param columnNames An array including an entry for each column intended to be included in the JSON
-         *        output.  If null, include all columns.
-         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
-         *        to map for the corresponding column name in the columnNames array.  If null, map
-         *        columns to fields of the same name.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
+         *        null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
+         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        name.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
          */
@@ -741,11 +746,11 @@ public class KafkaTools {
          *
          * @param schemaName The registered name for the schema on Schema Server
          * @param schemaVersion The version to fetch
-         * @param columnNames An array including an entry for each column intended to be included in the JSON
-         *        output.  If null, include all columns.
-         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
-         *        to map for the corresponding column name in the columnNames array.  If null, map
-         *        columns to fields of the same name.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
+         *        null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
+         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        name.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
          */
@@ -765,11 +770,11 @@ public class KafkaTools {
          * property. The version fetched would be latest.
          *
          * @param schemaName The registered name for the schema on Schema Server
-         * @param columnNames An array including an entry for each column intended to be included in the JSON
-         *        output.  If null, include all columns.
-         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON
-         *        to map for the corresponding column name in the columnNames array.  If null, map
-         *        columns to fields of the same name.
+         * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
+         *        null, include all columns.
+         * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
+         *        the corresponding column name in the columnNames array. If null, map columns to fields of the same
+         *        name.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A spec corresponding to the schema provided.
          */
@@ -779,7 +784,8 @@ public class KafkaTools {
                 final String[] columnNames,
                 final String[] fieldNames,
                 final String timestampFieldName) {
-            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, columnNames, fieldNames, timestampFieldName);
+            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, columnNames, fieldNames,
+                    timestampFieldName);
         }
 
         /**
@@ -1083,10 +1089,9 @@ public class KafkaTools {
      * @param keySpec Conversion specification for Kafka record keys from table column data.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
      * @param collapseByKeyColumns Whether to publish only the last record for each unique key. Ignored when
-     *        {@code keySpec} is {@code null}. If
-     *        {@code keySpec != null && !collapseByKeyColumns}, it is expected that {@code table} will not
-     *        produce any row shifts; that is, the publisher expects keyed tables to be streams, add-only, or
-     *        aggregated.
+     *        {@code keySpec} is {@code null}. If {@code keySpec != null && !collapseByKeyColumns}, it is expected that
+     *        {@code table} will not produce any row shifts; that is, the publisher expects keyed tables to be streams,
+     *        add-only, or aggregated.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
      *         reference to this return value to ensure liveliness.
      */

@@ -66,11 +66,11 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * @param props The Kafka {@link Properties}
      * @param table The source {@link Table}
      * @param topic The destination topic
-     * @param keyColumns Optional array of string column names from table for the columns corresponding to
-     *                   Kafka's Key field.
+     * @param keyColumns Optional array of string column names from table for the columns corresponding to Kafka's Key
+     *        field.
      * @param keySerializer Optional {@link KeyOrValueSerializer} to produce Kafka record keys
-     * @param valueColumns Optional array of string column names from table for the columns corresponding to
-     *                     Kafka's Value field.
+     * @param valueColumns Optional array of string column names from table for the columns corresponding to Kafka's
+     *        Value field.
      * @param valueSerializer Optional {@link KeyOrValueSerializer} to produce Kafka record values
      */
     public PublishToKafka(

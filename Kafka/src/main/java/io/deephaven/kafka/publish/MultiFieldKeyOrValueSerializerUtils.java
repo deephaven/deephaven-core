@@ -9,8 +9,7 @@ class MultiFieldKeyOrValueSerializerUtils {
     static void makeFieldProcessors(
             final String[] columnNames,
             final String[] fieldNames,
-            final StringStringProcedure fieldProcessorMaker
-            ) {
+            final StringStringProcedure fieldProcessorMaker) {
         if (fieldNames != null && fieldNames.length != columnNames.length) {
             throw new IllegalArgumentException(
                     "fieldNames.length (" + fieldNames.length + ") != columnNames.length (" + columnNames.length + ")");
