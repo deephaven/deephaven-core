@@ -6,10 +6,10 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
@@ -178,7 +178,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         if (indices.size() == 0) {
             destGeneric.setSize(0);
             return;
@@ -197,7 +197,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         final long sz = indices.size();
         if (sz == 0) {
             destGeneric.setSize(0);
@@ -231,7 +231,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableObjectChunk<Boolean, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
@@ -252,7 +252,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableObjectChunk<Boolean, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
@@ -274,8 +274,8 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
 
     // the ArrayBackedColumnSource fillChunk can't handle our byte values as an Object
     @Override
-    public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        fillSparseChunk(destination, orderedKeys);
+    public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        fillSparseChunk(destination, rowSequence);
     }
 
     @Override
@@ -285,18 +285,18 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        fillSparsePrevChunk(destination, orderedKeys);
+    public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        fillSparsePrevChunk(destination, rowSequence);
     }
 
     @Override
-    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return getChunkByFilling(context, orderedKeys);
+    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return getChunkByFilling(context, rowSequence);
     }
 
     @Override
-    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return getPrevChunkByFilling(context, orderedKeys);
+    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return getPrevChunkByFilling(context, rowSequence);
     }
 
     @Override
@@ -310,23 +310,23 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         return (ColumnSource<ALTERNATE_DATA_TYPE>) new ReinterpretedAsByte();
     }
     @Override
-    void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
+    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
-        fillFromChunkByRanges(orderedKeys, src, offset -> BooleanUtils.booleanAsByte(chunk.get(offset)));
+        fillFromChunkByRanges(rowSequence, src, offset -> BooleanUtils.booleanAsByte(chunk.get(offset)));
     }
 
     @Override
-    void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
+    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
-        fillFromChunkByKeys(orderedKeys, src, offset -> BooleanUtils.booleanAsByte(chunk.get(offset)));
+        fillFromChunkByKeys(rowSequence, src, offset -> BooleanUtils.booleanAsByte(chunk.get(offset)));
     }
 
     private interface Reader {
         byte getByte(int offset);
     }
 
-    private void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src, Reader reader) {
-        final LongChunk<Attributes.OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
+    private void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src, Reader reader) {
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -375,8 +375,8 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         }
     }
 
-    private void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src, Reader reader) {
-        final LongChunk<Attributes.OrderedKeyIndices> keys = orderedKeys.asKeyIndicesChunk();
+    private void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src, Reader reader) {
+        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -415,12 +415,12 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
         fillFromChunkUnordered(src, keys, offset -> BooleanUtils.booleanAsByte(chunk.get(offset)));
     }
 
-    private void fillFromChunkUnordered(@NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys, Reader reader) {
+    private void fillFromChunkUnordered(@NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys, Reader reader) {
         if (keys.size() == 0) {
             return;
         }
@@ -488,7 +488,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             return (ColumnSource<ALTERNATE_DATA_TYPE>) BooleanArraySource.this;
         }
 
-        protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+        protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
             if (indices.size() == 0) {
                 destGeneric.setSize(0);
                 return;
@@ -506,7 +506,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             dest.setSize(ctx.offset);
         }
 
-        protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+        protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
             final long sz = indices.size();
             if (sz == 0) {
                 destGeneric.setSize(0);
@@ -539,7 +539,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             dest.setSize(ctx.offset);
         }
 
-        protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+        protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
             final WritableByteChunk<? super Values> dest = destGeneric.asWritableByteChunk();
             final int sz = indices.size();
             for (int ii = 0; ii < sz; ++ii) {
@@ -559,7 +559,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             dest.setSize(sz);
         }
 
-        protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+        protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
             final WritableByteChunk<? super Values> dest = destGeneric.asWritableByteChunk();
             final int sz = indices.size();
             for (int ii = 0; ii < sz; ++ii) {
@@ -580,22 +580,22 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         }
 
         @Override
-        public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-            fillSparseChunk(destination, orderedKeys);
+        public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+            fillSparseChunk(destination, rowSequence);
         }
 
         @Override
-        public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-            fillSparsePrevChunk(destination, orderedKeys);
+        public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+            fillSparsePrevChunk(destination, rowSequence);
         }
 
         @Override
-        public void fillChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends KeyIndices> keyIndices) {
+        public void fillChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparseChunkUnordered(destination, keyIndices);
         }
 
         @Override
-        public void fillPrevChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends KeyIndices> keyIndices) {
+        public void fillPrevChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparsePrevChunkUnordered(destination, keyIndices);
         }
 
@@ -621,17 +621,17 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
 
         @Override
         public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-                                  @NotNull OrderedKeys orderedKeys) {
+                                  @NotNull RowSequence rowSequence) {
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
-            if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-                fillFromChunkByKeys(orderedKeys, src, chunk::get);
+            if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+                fillFromChunkByKeys(rowSequence, src, chunk::get);
             } else {
-                fillFromChunkByRanges(orderedKeys, src, chunk::get);
+                fillFromChunkByRanges(rowSequence, src, chunk::get);
             }
         }
 
         @Override
-        public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys) {
+        public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
             BooleanArraySource.this.fillFromChunkUnordered(src, keys, chunk::get);
         }

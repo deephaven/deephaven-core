@@ -7,7 +7,8 @@ import io.deephaven.engine.v2.sort.timsort.LongLongTimsortKernel;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
@@ -375,7 +376,7 @@ class IncrementalByAggregationUpdateTracker {
                 final Index stateIndex = slotToIndex(indexSource, overflowIndexSource, slot);
                 stateIndex.insert(stateAddedIndex);
                 stateIndex.initializePreviousValue();
-                stateFirstKey = stateAddedIndex.firstKey();
+                stateFirstKey = stateAddedIndex.firstRowKey();
             }
 
             redirectionIndex.putVoid(stateFirstKey, slot);
@@ -504,7 +505,7 @@ class IncrementalByAggregationUpdateTracker {
                 removedBuilder.addKey(previousFirstKey);
                 continue;
             }
-            final long currentFirstKey = current.firstKey();
+            final long currentFirstKey = current.firstRowKey();
             if (previousFirstKey != currentFirstKey) {
                 // First key changed
                 redirectionIndex.removeVoid(previousFirstKey);
@@ -523,9 +524,9 @@ class IncrementalByAggregationUpdateTracker {
         boolean someKeyHasAddsOrRemoves = false;
         boolean someKeyHasModifies = false;
         final IndexShiftData shiftData;
-        try (final WritableLongChunk<KeyIndices> previousShiftedFirstKeys =
+        try (final WritableLongChunk<RowKeys> previousShiftedFirstKeys =
                 WritableLongChunk.makeWritableChunk(numStatesWithShifts);
-                final WritableLongChunk<KeyIndices> currentShiftedFirstKeys =
+                final WritableLongChunk<Attributes.RowKeys> currentShiftedFirstKeys =
                         WritableLongChunk.makeWritableChunk(numStatesWithShifts)) {
             int shiftChunkPosition = 0;
             for (long ti = 0; ti < size; ++ti) {
@@ -538,7 +539,7 @@ class IncrementalByAggregationUpdateTracker {
                     continue;
                 }
                 final long previousFirstKey = current.firstKeyPrev();
-                final long currentFirstKey = current.firstKey();
+                final long currentFirstKey = current.firstRowKey();
                 if (previousFirstKey == Index.NULL_KEY) {
                     // We must have added something
                     redirectionIndex.putVoid(currentFirstKey, slot);
@@ -570,7 +571,7 @@ class IncrementalByAggregationUpdateTracker {
             if (numStatesWithShifts > 0) {
                 previousShiftedFirstKeys.setSize(numStatesWithShifts);
                 currentShiftedFirstKeys.setSize(numStatesWithShifts);
-                try (final LongLongTimsortKernel.LongLongSortKernelContext<KeyIndices, KeyIndices> sortKernelContext =
+                try (final LongLongTimsortKernel.LongLongSortKernelContext<RowKeys, RowKeys> sortKernelContext =
                         LongLongTimsortKernel.createContext(numStatesWithShifts)) {
                     LongLongTimsortKernel.sort(sortKernelContext, currentShiftedFirstKeys, previousShiftedFirstKeys);
                 }

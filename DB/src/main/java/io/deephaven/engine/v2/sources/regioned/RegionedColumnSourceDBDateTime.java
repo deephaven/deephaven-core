@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
 import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
 
@@ -23,7 +23,7 @@ final class RegionedColumnSourceDBDateTime
 
     @Override
     public void convertRegion(WritableChunk<? super Attributes.Values> destination,
-            Chunk<? extends Attributes.Values> source, OrderedKeys orderedKeys) {
+            Chunk<? extends Attributes.Values> source, RowSequence rowSequence) {
         WritableObjectChunk<DBDateTime, ? super Attributes.Values> objectChunk = destination.asWritableObjectChunk();
         LongChunk<? extends Attributes.Values> longChunk = source.asLongChunk();
 

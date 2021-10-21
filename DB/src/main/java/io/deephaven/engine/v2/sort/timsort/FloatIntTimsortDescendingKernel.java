@@ -25,7 +25,7 @@ public class FloatIntTimsortDescendingKernel {
     }
 
     // region Context
-    public static class FloatIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements IntSortKernel<ATTR, KEY_INDICES> {
+    public static class FloatIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements IntSortKernel<ATTR, KEY_INDICES> {
         int minGallop;
         int runCount = 0;
         private final int [] runStarts;
@@ -59,7 +59,7 @@ public class FloatIntTimsortDescendingKernel {
     }
     // endregion Context
 
-    public static <ATTR extends Any, KEY_INDICES extends Keys> FloatIntSortKernelContext<ATTR, KEY_INDICES> createContext(int size) {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> FloatIntSortKernelContext<ATTR, KEY_INDICES> createContext(int size) {
         return new FloatIntSortKernelContext<>(size);
     }
 
@@ -70,7 +70,7 @@ public class FloatIntTimsortDescendingKernel {
      * of the runs.  This allows the kernel to be used for a secondary column sort, chaining it together with fewer
      * runs sorted on each pass.
      */
-    static <ATTR extends Any, KEY_INDICES extends Keys> void sort(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
+    static <ATTR extends Any, KEY_INDICES extends Indices> void sort(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
         final int numberRuns = offsetsIn.size();
         for (int run = 0; run < numberRuns; ++run) {
             final int offset = offsetsIn.get(run);
@@ -87,11 +87,11 @@ public class FloatIntTimsortDescendingKernel {
      * of the runs.  This allows the kernel to be used for a secondary column sort, chaining it together with fewer
      * runs sorted on each pass.
      */
-    public static <ATTR extends Any, KEY_INDICES extends Keys> void sort(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort) {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> void sort(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort) {
         timSort(context, indexKeys, valuesToSort, 0, indexKeys.size());
     }
 
-    static private <ATTR extends Any, KEY_INDICES extends Keys> void timSort(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, int offset, int length) {
+    static private <ATTR extends Any, KEY_INDICES extends Indices> void timSort(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, int offset, int length) {
         if (length <= 1) {
             return;
         }
@@ -219,7 +219,7 @@ public class FloatIntTimsortDescendingKernel {
      *
      * <p>On reaching the end of the data, Timsort repeatedly merges the two runs on the top of the stack, until only one run of the entire data remains.</p>
      */
-    private static <ATTR extends Any, KEY_INDICES extends Keys> void ensureMergeInvariants(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void ensureMergeInvariants(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort) {
         while (context.runCount > 1) {
             final int xIndex = context.runCount - 1;
             final int yIndex = context.runCount - 2;
@@ -264,7 +264,7 @@ public class FloatIntTimsortDescendingKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Keys> void merge(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, int start1, int length1, int length2) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void merge(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, int start1, int length1, int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
         // end of an input, we won't create a zero-length run.  When we merge runs, they only become bigger, thus
         // they'll never be empty.  I'm being cheap about function calls and control flow here.
@@ -306,7 +306,7 @@ public class FloatIntTimsortDescendingKernel {
      *
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <ATTR extends Any, KEY_INDICES extends Keys> void frontMerge(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, final int mergeStartPosition, final int start2, final int length2) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void frontMerge(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, final int mergeStartPosition, final int start2, final int length2) {
         int tempCursor = 0;
         int run2Cursor = start2;
 
@@ -408,7 +408,7 @@ public class FloatIntTimsortDescendingKernel {
      *
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <ATTR extends Any, KEY_INDICES extends Keys> void backMerge(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, final int mergeStartPosition, final int length1) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void backMerge(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, final int mergeStartPosition, final int length1) {
         final int run1End = mergeStartPosition + length1;
         int run1Cursor = run1End - 1;
         int tempCursor = context.temporaryValues.size() - 1;
@@ -509,7 +509,7 @@ public class FloatIntTimsortDescendingKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Keys> void copyToTemporary(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, int mergeStartPosition, int remaining1) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyToTemporary(FloatIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableFloatChunk<ATTR> valuesToSort, int mergeStartPosition, int remaining1) {
         context.temporaryValues.setSize(remaining1);
         context.temporaryKeys.setSize(remaining1);
 
@@ -517,7 +517,7 @@ public class FloatIntTimsortDescendingKernel {
         context.temporaryKeys.copyFromChunk(indexKeys, mergeStartPosition, 0, remaining1);
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Keys> void copyToChunk(IntChunk<KEY_INDICES> indexSource, FloatChunk<ATTR> valuesSource, WritableIntChunk<KEY_INDICES> indexDest, WritableFloatChunk<ATTR> valuesDest, int sourceStart, int destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyToChunk(IntChunk<KEY_INDICES> indexSource, FloatChunk<ATTR> valuesSource, WritableIntChunk<KEY_INDICES> indexDest, WritableFloatChunk<ATTR> valuesDest, int sourceStart, int destStart, int length) {
         valuesDest.copyFromChunk(valuesSource, sourceStart, destStart, length);
         indexDest.copyFromChunk(indexSource, sourceStart, destStart, length);
     }
@@ -556,7 +556,7 @@ public class FloatIntTimsortDescendingKernel {
         return lo;
     }
 
-    private static void insertionSort(WritableIntChunk<? extends Keys> indexKeys, WritableFloatChunk<?> valuesToSort, int offset, int length) {
+    private static void insertionSort(WritableIntChunk<? extends Indices> indexKeys, WritableFloatChunk<?> valuesToSort, int offset, int length) {
         // this could eventually be done with intrinsics (AVX 512/64 bits for int keys == 16 elements, and can be combined up to 256)
         for (int ii = offset + 1; ii < offset + length; ++ii) {
             for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj));  jj--) {
@@ -565,7 +565,7 @@ public class FloatIntTimsortDescendingKernel {
         }
     }
 
-    static private void swap(WritableIntChunk<? extends Keys> indexKeys, WritableFloatChunk<?> valuesToSort, int a, int b) {
+    static private void swap(WritableIntChunk<? extends Indices> indexKeys, WritableFloatChunk<?> valuesToSort, int a, int b) {
         final int tempIndexKey = indexKeys.get(a);
         final float tempFloat = valuesToSort.get(a);
 

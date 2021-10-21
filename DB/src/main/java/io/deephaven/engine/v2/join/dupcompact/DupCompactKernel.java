@@ -65,5 +65,5 @@ public interface DupCompactKernel extends Context {
      * @return the first position of an out-of-order element, or -1 if all elements are in order
      */
     int compactDuplicates(WritableChunk<? extends Attributes.Any> chunkToCompact,
-            WritableLongChunk<Attributes.KeyIndices> keyIndices);
+            WritableLongChunk<Attributes.RowKeys> keyIndices);
 }

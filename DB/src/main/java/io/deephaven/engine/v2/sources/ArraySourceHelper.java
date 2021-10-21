@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.copy.CopyKernel;
 import io.deephaven.util.SoftRecycler;
@@ -60,14 +60,14 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     public void fillPrevChunk(
             @NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Attributes.Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         if (prevFlusher == null) {
-            fillChunk(context, destination, orderedKeys);
+            fillChunk(context, destination, rowSequence);
             return;
         }
 
-        if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillSparsePrevChunk(destination, orderedKeys);
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillSparsePrevChunk(destination, rowSequence);
             return;
         }
 
@@ -85,7 +85,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
             destOffset.add(length);
         };
 
-        orderedKeys.forAllLongRanges((final long from, final long to) -> {
+        rowSequence.forAllLongRanges((final long from, final long to) -> {
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
@@ -281,17 +281,17 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
 
     @Override
     public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Attributes.Values> src,
-            @NotNull OrderedKeys orderedKeys) {
-        if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillFromChunkByKeys(orderedKeys, src);
+            @NotNull RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillFromChunkByKeys(rowSequence, src);
         } else {
-            fillFromChunkByRanges(orderedKeys, src);
+            fillFromChunkByRanges(rowSequence, src);
         }
     }
 
-    abstract void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Attributes.Values> src);
+    abstract void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Attributes.Values> src);
 
-    abstract void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Attributes.Values> src);
+    abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Attributes.Values> src);
 
     abstract UArray allocateNullFilledBlock(int size);
 

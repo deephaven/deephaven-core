@@ -60,11 +60,11 @@ public class SortedClockFilter extends ClockFilter {
         // be equal to fullSet.
         // This test as implemented only works because the table is flat.
         Require.requirement(selection.size() == fullSet.size()
-                && selection.size() == selection.lastKey() - selection.firstKey() + 1
-                && fullSet.size() == fullSet.lastKey() - fullSet.firstKey() + 1,
-                "selection.size() == fullSet.size() && selection.size() == selection.lastKey() - selection.firstKey() + 1 && fullSet.size() == fullSet.lastKey() - fullSet.firstKey() + 1");
+                && selection.size() == selection.lastRowKey() - selection.firstRowKey() + 1
+                && fullSet.size() == fullSet.lastRowKey() - fullSet.firstRowKey() + 1,
+                "selection.size() == fullSet.size() && selection.size() == selection.lastRowKey() - selection.firstRowKey() + 1 && fullSet.size() == fullSet.lastRowKey() - fullSet.firstRowKey() + 1");
 
-        range = new Range(selection.firstKey(), selection.lastKey());
+        range = new Range(selection.firstRowKey(), selection.lastRowKey());
         return updateAndGetAddedIndex();
     }
 

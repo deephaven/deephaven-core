@@ -1,13 +1,15 @@
 package io.deephaven.engine.v2.utils.sortedranges;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 
 import java.util.function.BiConsumer;
 
-public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
+public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     private static final boolean DEBUG = SortedRanges.DEBUG;
     private SortedRanges sar;
     private int startIdx; // end-of-range position index to the first key of this OK.
@@ -17,7 +19,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
     private long endOffset; // offset into range pointed by endIdx; note this is <= 0.
     private long size; // cardinality.
 
-    SortedRangesOrderedKeys(final SortedRanges sar) {
+    SortedRangesRowSequence(final SortedRanges sar) {
         sar.acquire();
         this.sar = sar;
         if (sar.isEmpty()) {
@@ -38,7 +40,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
         ifDebugValidate();
     }
 
-    SortedRangesOrderedKeys(
+    SortedRangesRowSequence(
             final SortedRanges sar,
             final long startPos,
             final int startIdx, final long startOffset,
@@ -55,34 +57,34 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
         ifDebugValidate();
     }
 
-    private SortedRangesOrderedKeys(final SortedRanges sar, final long startPos) {
+    private SortedRangesRowSequence(final SortedRanges sar, final long startPos) {
         this.sar = sar; // note no acquire.
         this.startPos = startPos;
     }
 
     @Override
     public void close() {
-        closeSortedArrayOrderedKeys();
+        closeSortedArrayRowSequence();
     }
 
-    protected final void closeSortedArrayOrderedKeys() {
+    protected final void closeSortedArrayRowSequence() {
         if (sar == null) {
             return;
         }
         sar.release();
         sar = null;
-        closeOrderedKeysAsChunkImpl();
+        closeRowSequenceAsChunkImpl();
     }
 
     @Override
-    public Iterator getOrderedKeysIterator() {
+    public Iterator getRowSequenceIterator() {
         return new Iterator(this);
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByPosition(final long pos, long length) {
+    public RowSequence getRowSequenceByPosition(final long pos, long length) {
         if (length <= 0 || pos >= size) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
         final int i;
         final long iPos;
@@ -99,20 +101,20 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
         if (length > size - pos) {
             length = size - pos;
         }
-        return sar.getOrderedKeysByPositionWithStart(iPos, i, startPos + pos, length);
+        return sar.getRowSequenceByPositionWithStart(iPos, i, startPos + pos, length);
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByKeyRange(long start, long end) {
+    public RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive) {
         if (size == 0) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
-        final long lastKey = lastKey();
-        final long firstKey = firstKey();
-        start = Math.max(start, firstKey);
-        end = Math.min(end, lastKey);
-        if (end < start) {
-            return OrderedKeys.EMPTY;
+        final long lastKey = lastRowKey();
+        final long firstKey = firstRowKey();
+        startRowKeyInclusive = Math.max(startRowKeyInclusive, firstKey);
+        endRowKeyInclusive = Math.min(endRowKeyInclusive, lastKey);
+        if (endRowKeyInclusive < startRowKeyInclusive) {
+            return RowSequence.EMPTY;
         }
         final int i;
         final long iPos;
@@ -126,7 +128,8 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
             i = startIdx;
             iPos = 0;
         }
-        return sar.getOrderedKeysByKeyRangePackedWithStart(iPos, i, sar.pack(start), sar.pack(end));
+        return sar.getRowSequenceByKeyRangePackedWithStart(iPos, i, sar.pack(startRowKeyInclusive),
+                sar.pack(endRowKeyInclusive));
     }
 
     @Override
@@ -171,7 +174,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
     }
 
     @Override
-    public void fillKeyIndicesChunk(final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
+    public void fillRowKeyChunk(final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
         chunkToFill.setSize(0);
         forEachLong((final long key) -> {
             chunkToFill.add(key);
@@ -180,7 +183,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
     }
 
     @Override
-    public void fillKeyRangesChunk(final WritableLongChunk<Attributes.OrderedKeyRanges> chunkToFill) {
+    public void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
         forEachLongRange((final long start, final long end) -> {
             chunkToFill.add(start);
@@ -195,12 +198,12 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
     }
 
     @Override
-    public long firstKey() {
+    public long firstRowKey() {
         return sar.absUnpackedGet(startIdx) + startOffset;
     }
 
     @Override
-    public long lastKey() {
+    public long lastRowKey() {
         return sar.absUnpackedGet(endIdx) + endOffset;
     }
 
@@ -349,7 +352,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
     private void reset(final long startPos, final int startIdx, final long startOffset,
             final int endIdx, final long endOffset, final long size) {
         if (sar != null) {
-            closeOrderedKeysAsChunkImpl();
+            closeRowSequenceAsChunkImpl();
         }
         this.startPos = startPos;
         this.startIdx = startIdx;
@@ -360,9 +363,9 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
         ifDebugValidate();
     }
 
-    static class Iterator implements OrderedKeys.Iterator {
-        private static class OKWrapper extends SortedRangesOrderedKeys {
-            OKWrapper(final SortedRanges sar, final long startPos) {
+    static class Iterator implements RowSequence.Iterator {
+        private static class RSWrapper extends SortedRangesRowSequence {
+            RSWrapper(final SortedRanges sar, final long startPos) {
                 super(sar, startPos);
             }
 
@@ -371,11 +374,11 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
                 if (SortedRanges.DEBUG) {
                     throw new IllegalStateException();
                 }
-                // We purposely /do not/ close the RspOrderedKeys part as it will get reused.
+                // We purposely /do not/ close the RspRowSequence part as it will get reused.
                 // The API doc for Iterator states that clients should /never/ call close. So that we eneded up here
                 // means
                 // there is some kind of bug.
-                closeOrderedKeysAsChunkImpl();
+                closeRowSequenceAsChunkImpl();
             }
         }
 
@@ -383,10 +386,10 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
         // Internal buffer used as a return value for next... methods. Note this object and the
         // position reflected by curr{Start,End}{Idx,Offset} may not be in sync if there
         // were any intermediate calls to advance.
-        private final SortedRangesOrderedKeys currBuf;
+        private final SortedRangesRowSequence currBuf;
         // The following four fields match the last values
         // returned for getNext* methods; when we have not returned any yet,
-        // currStart* matches the start of the OrderedKeys from which we were constructed,
+        // currStart* matches the start of the RowSequence from which we were constructed,
         // and currEndIdx == -1 to signal the iterator has not been started yet.
         private int currStartIdx;
         private int currEndIdx;
@@ -394,30 +397,30 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
         private long currEndOffset;
 
         private long sizeLeft; // number of keys left for subsequent calls to next* methods.
-        private final int oksEndIdx;
-        private final long oksEndOffset;
+        private final int rsEndIdx;
+        private final long rsEndOffset;
 
         // cached value for the first key on the call to any getNext* method, or -1 if cache has not been populated yet.
         private long nextKey;
         private long pendingAdvanceSize = 0;
 
-        public Iterator(final SortedRangesOrderedKeys oks) {
-            oks.sar.acquire();
-            this.sar = oks.sar;
-            currStartIdx = oks.startIdx;
-            currStartOffset = oks.startOffset;
-            oksEndIdx = oks.endIdx;
-            oksEndOffset = oks.endOffset;
+        public Iterator(final SortedRangesRowSequence rs) {
+            rs.sar.acquire();
+            this.sar = rs.sar;
+            currStartIdx = rs.startIdx;
+            currStartOffset = rs.startOffset;
+            rsEndIdx = rs.endIdx;
+            rsEndOffset = rs.endOffset;
             currEndIdx = -1;
             currEndOffset = 1;
-            currBuf = new OKWrapper(sar, oks.startPos);
-            sizeLeft = oks.size;
+            currBuf = new RSWrapper(sar, rs.startPos);
+            sizeLeft = rs.size;
             nextKey = -1;
         }
 
         @Override
         public void close() {
-            currBuf.closeOrderedKeysAsChunkImpl();
+            currBuf.closeRowSequenceAsChunkImpl();
             if (sar == null) {
                 return;
             }
@@ -500,35 +503,35 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
                 currEndOffset = packedToKey - rangeEndKey;
                 final long sz = currEndOffset - currStartOffset + 1;
                 if (sz > sizeLeft) {
-                    currEndIdx = oksEndIdx;
-                    currEndOffset = oksEndOffset;
+                    currEndIdx = rsEndIdx;
+                    currEndOffset = rsEndOffset;
                     return sizeLeft;
                 }
                 return sz;
             }
             long sz = 1 - currStartOffset;
             if (sz > sizeLeft) {
-                currEndIdx = oksEndIdx;
-                currEndOffset = oksEndOffset;
+                currEndIdx = rsEndIdx;
+                currEndOffset = rsEndOffset;
                 return sizeLeft;
             }
             int i = currStartIdx + 1;
             long pendingStart = -1;
-            while (i <= oksEndIdx) {
+            while (i <= rsEndIdx) {
                 long iData = sar.packedGet(i);
                 boolean neg = iData < 0;
                 if (neg) {
                     if (-iData >= packedToKey) {
                         currEndIdx = i;
                         currEndOffset = packedToKey + iData;
-                        if (currEndIdx == oksEndIdx && currEndOffset > oksEndOffset) {
-                            currEndOffset = oksEndOffset;
-                            packedToKey = -iData + oksEndOffset;
+                        if (currEndIdx == rsEndIdx && currEndOffset > rsEndOffset) {
+                            currEndOffset = rsEndOffset;
+                            packedToKey = -iData + rsEndOffset;
                         }
                         sz += packedToKey - pendingStart;
                         if (sz > sizeLeft) {
-                            currEndIdx = oksEndIdx;
-                            currEndOffset = oksEndOffset;
+                            currEndIdx = rsEndIdx;
+                            currEndOffset = rsEndOffset;
                             return sizeLeft;
                         }
                         return sz;
@@ -540,8 +543,8 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
                         currEndIdx = i - 1;
                         currEndOffset = 0;
                         if (sz > sizeLeft) {
-                            currEndIdx = oksEndIdx;
-                            currEndOffset = oksEndOffset;
+                            currEndIdx = rsEndIdx;
+                            currEndOffset = rsEndOffset;
                             return sizeLeft;
                         }
                         return sz;
@@ -549,12 +552,12 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
                     ++sz;
                     if (iData == packedToKey) {
                         if (sz > sizeLeft) {
-                            currEndIdx = oksEndIdx;
-                            currEndOffset = oksEndOffset;
+                            currEndIdx = rsEndIdx;
+                            currEndOffset = rsEndOffset;
                             return sizeLeft;
                         }
                         long nextData;
-                        if (i + 1 > oksEndIdx || (nextData = sar.packedGet(i + 1)) >= 0) {
+                        if (i + 1 > rsEndIdx || (nextData = sar.packedGet(i + 1)) >= 0) {
                             currEndIdx = i;
                             currEndOffset = 0;
                             return sz;
@@ -569,23 +572,23 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
                 ++i;
             }
             if (sz > sizeLeft) {
-                currEndIdx = oksEndIdx;
-                currEndOffset = oksEndOffset;
+                currEndIdx = rsEndIdx;
+                currEndOffset = rsEndOffset;
                 return sizeLeft;
             }
-            currEndIdx = oksEndIdx;
+            currEndIdx = rsEndIdx;
             currEndOffset = 0;
             return sz;
         }
 
         @Override
-        public OrderedKeys getNextOrderedKeysThrough(final long maxKey) {
+        public RowSequence getNextRowSequenceThrough(final long maxKey) {
             if (maxKey < 0) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             final long sz = updateCurrThrough(maxKey);
             if (sz == 0) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             nextKey = -1;
             currBuf.reset(currBuf.startPos + currBuf.size + pendingAdvanceSize, currStartIdx, currStartOffset,
@@ -595,7 +598,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
             return currBuf;
         }
 
-        private void nextOrderedKeysWithLength(final long actualLen) {
+        private void nextRowSequenceWithLength(final long actualLen) {
             long accumLen = 0;
             int i;
             long pendingStart;
@@ -620,7 +623,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
                     iNeg = iData < 0;
                 } else {
                     i = currEndIdx + 1;
-                    if (i == oksEndIdx || i + 1 == sar.count) {
+                    if (i == rsEndIdx || i + 1 == sar.count) {
                         currStartIdx = currEndIdx = i;
                         currStartOffset = currEndOffset = 0;
                         return;
@@ -649,7 +652,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
                         }
                         currStartIdx = i;
                         currStartOffset = 0;
-                        if (i + 1 == oksEndIdx || i + 2 == sar.count) {
+                        if (i + 1 == rsEndIdx || i + 2 == sar.count) {
                             currEndIdx = i + 1;
                             currEndOffset = 0;
                             return;
@@ -677,7 +680,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
             while (true) {
                 if (iNeg) {
                     long delta = -iData - pendingStart;
-                    if (accumLen + delta >= actualLen || i == oksEndIdx) {
+                    if (accumLen + delta >= actualLen || i == rsEndIdx) {
                         delta = Math.min(delta, actualLen - accumLen);
                         currEndIdx = i;
                         currEndOffset = iData + pendingStart + delta;
@@ -687,7 +690,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
                     pendingStart = -1;
                 } else {
                     ++accumLen;
-                    if (i == oksEndIdx) {
+                    if (i == rsEndIdx) {
                         currEndIdx = i;
                         currEndOffset = 0;
                         return;
@@ -714,12 +717,12 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
         }
 
         @Override
-        public OrderedKeys getNextOrderedKeysWithLength(final long desiredLen) {
+        public RowSequence getNextRowSequenceWithLength(final long desiredLen) {
             final long actualLen = Math.min(desiredLen, sizeLeft);
             if (actualLen == 0) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
-            nextOrderedKeysWithLength(actualLen);
+            nextRowSequenceWithLength(actualLen);
             nextKey = -1;
             currBuf.reset(currBuf.startPos + currBuf.size + pendingAdvanceSize, currStartIdx, currStartOffset,
                     currEndIdx, currEndOffset, actualLen);
@@ -732,7 +735,7 @@ public class SortedRangesOrderedKeys extends OrderedKeysAsChunkImpl {
         public boolean advance(final long toKey) {
             if (sizeLeft == 0 ||
                     toKey <= 0 ||
-                    (currEndIdx != -1 && toKey <= currBuf.lastKey())) {
+                    (currEndIdx != -1 && toKey <= currBuf.lastRowKey())) {
                 return sizeLeft > 0;
             }
             final long sz = updateCurrThrough(toKey - 1);

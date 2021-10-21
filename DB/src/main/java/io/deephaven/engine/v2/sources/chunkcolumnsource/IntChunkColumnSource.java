@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
  * A column source backed by {@link IntChunk IntChunks}.
  * <p>
  * The address space of the column source is dense, with each chunk backing a contiguous set of indices.  The
- * {@link #getChunk(GetContext, OrderedKeys)}
+ * {@link #getChunk(GetContext, RowSequence)}
  * call will return the backing chunk or a slice of the backing chunk if possible.
  */
 public class IntChunkColumnSource extends AbstractColumnSource<Integer> implements ImmutableColumnSourceGetDefaults.ForInt, ChunkColumnSource<Integer> {
@@ -70,18 +70,18 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer> implemen
     }
 
     @Override
-    public Chunk<? extends Attributes.Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
-        if (orderedKeys.isEmpty()) {
+    public Chunk<? extends Attributes.Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
             return IntChunk.getEmptyChunk();
         }
         // if we can slice part of one of our backing chunks, then we will return that instead
-        if (orderedKeys.isContiguous()) {
-            final long firstKey = orderedKeys.firstKey();
+        if (rowSequence.isContiguous()) {
+            final long firstKey = rowSequence.firstRowKey();
             final int firstChunk = getChunkIndex(firstKey);
-            final int lastChunk = getChunkIndex(orderedKeys.lastKey(), firstChunk);
+            final int lastChunk = getChunkIndex(rowSequence.lastRowKey(), firstChunk);
             if (firstChunk == lastChunk) {
                 final int offset = (int) (firstKey - firstOffsetForData.get(firstChunk));
-                final int length = orderedKeys.intSize();
+                final int length = rowSequence.intSize();
                 final IntChunk<? extends Attributes.Values> intChunk = data.get(firstChunk);
                 if (offset == 0 && length == intChunk.size()) {
                     return intChunk;
@@ -89,14 +89,14 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer> implemen
                 return ((ChunkGetContext) context).resettableIntChunk.resetFromChunk(intChunk, offset, length);
             }
         }
-        return getChunkByFilling(context, orderedKeys);
+        return getChunkByFilling(context, rowSequence);
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final RowSequence rowSequence) {
         final MutableInt searchStartChunkIndex = new MutableInt(0);
         destination.setSize(0);
-        orderedKeys.forAllLongRanges((s, e) -> {
+        rowSequence.forAllLongRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
@@ -120,9 +120,9 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer> implemen
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final RowSequence rowSequence) {
         // immutable, so we can delegate to fill
-        fillChunk(context, destination, orderedKeys);
+        fillChunk(context, destination, rowSequence);
     }
 
     /**

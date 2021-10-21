@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.utils.sortedranges;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
@@ -2545,13 +2546,13 @@ public class SortedRangesTest {
         }
     }
 
-    private void checkOkAgainstIndex(final String m, final OrderedKeys ok, final Index ix) {
-        assertEquals(m, ix.size(), ok.size());
-        final Index okIx = ok.asIndex();
-        assertEquals(m, ix.size(), okIx.size());
-        assertTrue(m, okIx.subsetOf(ix));
+    private void checkOkAgainstIndex(final String m, final RowSequence rs, final Index ix) {
+        assertEquals(m, ix.size(), rs.size());
+        final Index rsIx = rs.asIndex();
+        assertEquals(m, ix.size(), rsIx.size());
+        assertTrue(m, rsIx.subsetOf(ix));
         try (final Index.RangeIterator rit = ix.rangeIterator()) {
-            ok.forEachLongRange((final long start, final long end) -> {
+            rs.forEachLongRange((final long start, final long end) -> {
                 final String m2 = m + " && start==" + start + " && end==" + end;
                 assertTrue(m2, rit.hasNext());
                 rit.next();
@@ -2561,7 +2562,7 @@ public class SortedRangesTest {
             });
         }
         try (final Index.Iterator it = ix.iterator()) {
-            ok.forEachLong((final long v) -> {
+            rs.forEachLong((final long v) -> {
                 final String m2 = m + " && v==" + v;
                 assertTrue(m2, it.hasNext());
                 assertEquals(m2, v, it.nextLong());
@@ -2571,7 +2572,7 @@ public class SortedRangesTest {
     }
 
     @Test
-    public void testGetOrderedKeysByKeyRange() {
+    public void testGetRowSequenceByKeyRange() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
@@ -2594,29 +2595,29 @@ public class SortedRangesTest {
                     final String m3 = m2 + " && start==" + start;
                     for (long end = start; end <= last + 1; ++end) {
                         final String m4 = m3 + " && end==" + end;
-                        try (final OrderedKeys ok = sr.getOrderedKeysByKeyRange(start, end);
+                        try (final RowSequence rs = sr.getRowSequenceByKeyRange(start, end);
                                 final Index ix = new TreeIndex(sr.ixSubindexByKeyOnNew(start, end))) {
-                            assertEquals(m4, ix.firstKey(), ok.firstKey());
-                            assertEquals(m4, ix.lastKey(), ok.lastKey());
-                            assertEquals(m4, ix.size(), ok.size());
-                            checkOkAgainstIndex(m4, ok, ix);
+                            assertEquals(m4, ix.firstRowKey(), rs.firstRowKey());
+                            assertEquals(m4, ix.lastRowKey(), rs.lastRowKey());
+                            assertEquals(m4, ix.size(), rs.size());
+                            checkOkAgainstIndex(m4, rs, ix);
                             for (int dStart = -1; dStart <= 1; ++dStart) {
                                 for (int dEnd = -1; dEnd <= 1; ++dEnd) {
-                                    final long ok2Start = start + dStart;
-                                    final long ok2End = end + dEnd;
-                                    if (ok2End < ok2Start) {
+                                    final long rs2Start = start + dStart;
+                                    final long rs2End = end + dEnd;
+                                    if (rs2End < rs2Start) {
                                         continue;
                                     }
                                     final String m5 = m4 + " && dStart==" + dStart + " && dEnd==" + dEnd;
-                                    final OrderedKeys ok2 = ok.getOrderedKeysByKeyRange(ok2Start, ok2End);
-                                    if (ok2End < ok.firstKey() || ok.lastKey() < ok2Start) {
-                                        assertEquals(0, ok2.size());
+                                    final RowSequence rs2 = rs.getRowSequenceByKeyRange(rs2Start, rs2End);
+                                    if (rs2End < rs.firstRowKey() || rs.lastRowKey() < rs2Start) {
+                                        assertEquals(0, rs2.size());
                                         continue;
                                     }
-                                    final long rStart = Math.min(ok.lastKey(), Math.max(ok2Start, ok.firstKey()));
-                                    final long rEnd = Math.max(ok.firstKey(), Math.min(ok2End, ok.lastKey()));
+                                    final long rStart = Math.min(rs.lastRowKey(), Math.max(rs2Start, rs.firstRowKey()));
+                                    final long rEnd = Math.max(rs.firstRowKey(), Math.min(rs2End, rs.lastRowKey()));
                                     final Index ix2 = new TreeIndex(sr.ixSubindexByKeyOnNew(rStart, rEnd));
-                                    checkOkAgainstIndex(m5, ok2, ix2);
+                                    checkOkAgainstIndex(m5, rs2, ix2);
                                 }
                             }
                         }
@@ -2627,7 +2628,7 @@ public class SortedRangesTest {
     }
 
     @Test
-    public void testOrderedKeysNextWithLengthTypes() {
+    public void testRowSequenceNextWithLengthTypes() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
@@ -2645,33 +2646,33 @@ public class SortedRangesTest {
                 final int step = 1 + rand.nextInt(11);
                 final long dStart0 = rand.nextInt(step + 1);
                 final long dEnd0 = rand.nextInt(step + 1);
-                final long ok0SrLastPos = sr.getCardinality() - 1 - dEnd0;
-                final long ok0SrCard = ok0SrLastPos - dStart0 + 1;
+                final long rs0SrLastPos = sr.getCardinality() - 1 - dEnd0;
+                final long rs0SrCard = rs0SrLastPos - dStart0 + 1;
                 final long dStart = dStart0 + rand.nextInt(step + 1);
                 final long dEnd = dEnd0 + rand.nextInt(step + 1);
-                final long okSrLastPos = sr.getCardinality() - 1 - dEnd;
-                final long okSrCard = okSrLastPos - dStart + 1;
-                try (final OrderedKeys okSr0 = sr.getOrderedKeysByPosition(dStart0, ok0SrCard);
-                        final OrderedKeys okSr = okSr0.getOrderedKeysByPosition(dStart - dStart0, okSrCard)) {
-                    try (final OrderedKeys.Iterator okit = okSr.getOrderedKeysIterator()) {
+                final long rsSrLastPos = sr.getCardinality() - 1 - dEnd;
+                final long rsSrCard = rsSrLastPos - dStart + 1;
+                try (final RowSequence rsSr0 = sr.getRowSequenceByPosition(dStart0, rs0SrCard);
+                        final RowSequence rsSr = rsSr0.getRowSequenceByPosition(dStart - dStart0, rsSrCard)) {
+                    try (final RowSequence.Iterator rsIt = rsSr.getRowSequenceIterator()) {
                         long accum = 0;
                         int i = 0;
                         while (true) {
                             final String m3 = m2 + " && i==" + i;
-                            if (accum < okSrCard) {
-                                assertTrue(m3, okit.hasMore());
+                            if (accum < rsSrCard) {
+                                assertTrue(m3, rsIt.hasMore());
                             } else {
-                                assertFalse(m3, okit.hasMore());
+                                assertFalse(m3, rsIt.hasMore());
                                 break;
                             }
-                            final OrderedKeys ok = okit.getNextOrderedKeysWithLength(step);
-                            final long okCard = Math.min(step, okSrCard - accum);
-                            assertEquals(m3, okCard, ok.size());
+                            final RowSequence rs = rsIt.getNextRowSequenceWithLength(step);
+                            final long rsCard = Math.min(step, rsSrCard - accum);
+                            assertEquals(m3, rsCard, rs.size());
                             final Index subSr = new TreeIndex(
-                                    sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + okCard /* exclusive */));
-                            assertEquals(m3, okCard, subSr.size());
-                            checkOkAgainstIndex(m3, ok, subSr);
-                            accum += okCard;
+                                    sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + rsCard /* exclusive */));
+                            assertEquals(m3, rsCard, subSr.size());
+                            checkOkAgainstIndex(m3, rs, subSr);
+                            accum += rsCard;
                             ++i;
                         }
                     }
@@ -2681,7 +2682,7 @@ public class SortedRangesTest {
     }
 
     @Test
-    public void testOrderedKeysNextThroughTypes() {
+    public void testRowSequenceNextThroughTypes() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
@@ -2699,33 +2700,33 @@ public class SortedRangesTest {
                 final int step = 7;
                 final long dStart = 1 + rand.nextInt(step + 1);
                 final long dEnd = 1 + rand.nextInt(step + 1);
-                final long okSrLastPos = sr.getCardinality() - 1 - dEnd;
-                final long okSrCard = okSrLastPos - dStart + 1;
-                try (final OrderedKeys okSr = sr.getOrderedKeysByPosition(dStart, okSrCard)) {
+                final long rsSrLastPos = sr.getCardinality() - 1 - dEnd;
+                final long rsSrCard = rsSrLastPos - dStart + 1;
+                try (final RowSequence rsSr = sr.getRowSequenceByPosition(dStart, rsSrCard)) {
                     long accum = 0;
-                    try (final OrderedKeys.Iterator okit = okSr.getOrderedKeysIterator()) {
+                    try (final RowSequence.Iterator rsIt = rsSr.getRowSequenceIterator()) {
                         while (true) {
                             final String m3 = m2 + " && accum==" + accum;
-                            if (accum < okSrCard) {
-                                assertTrue(m3, okit.hasMore());
+                            if (accum < rsSrCard) {
+                                assertTrue(m3, rsIt.hasMore());
                             } else {
-                                assertFalse(m3, okit.hasMore());
+                                assertFalse(m3, rsIt.hasMore());
                                 break;
                             }
-                            final long okCard = Math.min(1 + rand.nextInt(step), okSrCard - accum);
+                            final long rsCard = Math.min(1 + rand.nextInt(step), rsSrCard - accum);
                             final Index subSr = new TreeIndex(
-                                    sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + okCard /* exclusive */));
-                            final long last = subSr.lastKey();
+                                    sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + rsCard /* exclusive */));
+                            final long last = subSr.lastRowKey();
                             final long target;
                             if (!sr.contains(last + 1) && rand.nextBoolean()) {
                                 target = last + 1;
                             } else {
                                 target = last;
                             }
-                            final OrderedKeys ok = okit.getNextOrderedKeysThrough(target);
-                            assertEquals(m3, okCard, ok.size());
-                            checkOkAgainstIndex(m3, ok, subSr);
-                            accum += okCard;
+                            final RowSequence rs = rsIt.getNextRowSequenceThrough(target);
+                            assertEquals(m3, rsCard, rs.size());
+                            checkOkAgainstIndex(m3, rs, subSr);
+                            accum += rsCard;
                         }
                     }
                 }
@@ -2883,30 +2884,30 @@ public class SortedRangesTest {
     }
 
     @Test
-    public void testNextOrderedKeysWithLengthForCoverage0() {
+    public void testNextRowSequenceWithLengthForCoverage0() {
         SortedRanges sr = SortedRanges.makeEmpty();
         sr = sr.addRange(1, 3);
         sr = sr.add(5);
-        try (final OrderedKeys.Iterator okit = sr.getOrderedKeysIterator()) {
-            OrderedKeys ok = okit.getNextOrderedKeysWithLength(3);
-            checkOkAgainstIndex("", ok, new TreeIndex(sr.subRangesByKey(1, 3)));
-            ok = okit.getNextOrderedKeysWithLength(4);
-            checkOkAgainstIndex("", ok, new TreeIndex(sr.subRangesByKey(5, 5)));
+        try (final RowSequence.Iterator rsIt = sr.getRowSequenceIterator()) {
+            RowSequence rs = rsIt.getNextRowSequenceWithLength(3);
+            checkOkAgainstIndex("", rs, new TreeIndex(sr.subRangesByKey(1, 3)));
+            rs = rsIt.getNextRowSequenceWithLength(4);
+            checkOkAgainstIndex("", rs, new TreeIndex(sr.subRangesByKey(5, 5)));
         }
     }
 
     @Test
-    public void testNextOrderedKeysWithLengthForCoverage1() {
+    public void testNextRowSequenceWithLengthForCoverage1() {
         SortedRanges sr = SortedRanges.makeEmpty();
         sr = sr.addRange(1, 3);
         sr = sr.add(7);
         sr = sr.addRange(10, 15);
         sr = sr.add(20);
-        try (final OrderedKeys.Iterator okit = sr.getOrderedKeysIterator()) {
-            OrderedKeys ok = okit.getNextOrderedKeysWithLength(3);
-            checkOkAgainstIndex("", ok, new TreeIndex(sr.subRangesByKey(1, 3)));
-            ok = okit.getNextOrderedKeysWithLength(9);
-            checkOkAgainstIndex("", ok, new TreeIndex(sr.subRangesByKey(7, 20)));
+        try (final RowSequence.Iterator rsIt = sr.getRowSequenceIterator()) {
+            RowSequence rs = rsIt.getNextRowSequenceWithLength(3);
+            checkOkAgainstIndex("", rs, new TreeIndex(sr.subRangesByKey(1, 3)));
+            rs = rsIt.getNextRowSequenceWithLength(9);
+            checkOkAgainstIndex("", rs, new TreeIndex(sr.subRangesByKey(7, 20)));
         }
     }
 

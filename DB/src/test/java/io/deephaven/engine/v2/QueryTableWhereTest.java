@@ -760,8 +760,8 @@ public class QueryTableWhereTest {
         }
 
         @Override
-        public void filter(Chunk<? extends Attributes.Values> values, LongChunk<Attributes.OrderedKeyIndices> keys,
-                WritableLongChunk<Attributes.OrderedKeyIndices> results) {
+        public void filter(Chunk<? extends Attributes.Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             if (++invokes == 1) {
                 latch.countDown();
             }

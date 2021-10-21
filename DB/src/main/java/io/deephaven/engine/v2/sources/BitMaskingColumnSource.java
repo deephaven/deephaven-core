@@ -1,14 +1,15 @@
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import io.deephaven.engine.v2.CrossJoinShiftState;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import static io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import static io.deephaven.util.QueryConstants.*;
 
@@ -375,7 +376,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
             private final boolean shared;
 
-            private final WritableLongChunk<KeyIndices> maskedKeys;
+            private final WritableLongChunk<Attributes.RowKeys> maskedKeys;
 
             private boolean maskedKeysReusable;
 
@@ -385,7 +386,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
             }
 
             private void ensureMaskedKeysInitialized(@NotNull final CrossJoinShiftState shiftState,
-                    final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
+                    final boolean usePrev, @NotNull final RowSequence rowSequence) {
                 if (maskedKeysReusable) {
                     return;
                 }
@@ -394,7 +395,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
                 }
 
                 maskedKeys.setSize(0);
-                orderedKeys.forAllLongs((final long indexKey) -> {
+                rowSequence.forAllLongs((final long indexKey) -> {
                     final long innerIndexKey =
                             usePrev ? shiftState.getPrevMasked(indexKey) : shiftState.getMasked(indexKey);
                     maskedKeys.add(innerIndexKey);
@@ -425,32 +426,32 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
     @Override
     public void fillChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        doFillChunk(context, destination, orderedKeys, false);
+            @NotNull final RowSequence rowSequence) {
+        doFillChunk(context, destination, rowSequence, false);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        doFillChunk(context, destination, orderedKeys, true);
+            @NotNull final RowSequence rowSequence) {
+        doFillChunk(context, destination, rowSequence, true);
     }
 
     private void doFillChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys,
+            @NotNull final RowSequence rowSequence,
             boolean usePrev) {
         // TODO (nate): revisit and decide if it is worth generating all right-side indexes, sorting, compacting,
-        // and then permuting back. (Note: fillChunk takes orderedKeys which are unique.)
-        final long sz = orderedKeys.size();
+        // and then permuting back. (Note: fillChunk takes rowSequence which are unique.)
+        final long sz = rowSequence.size();
         if (sz <= 0) {
             destination.setSize(0);
             return;
         }
 
         final FillContext effectiveContext = (FillContext) context;
-        effectiveContext.shareable.ensureMaskedKeysInitialized(shiftState, usePrev, orderedKeys);
-        final WritableLongChunk<KeyIndices> maskedKeys = effectiveContext.shareable.maskedKeys;
+        effectiveContext.shareable.ensureMaskedKeysInitialized(shiftState, usePrev, rowSequence);
+        final WritableLongChunk<RowKeys> maskedKeys = effectiveContext.shareable.maskedKeys;
 
         if (innerSource instanceof FillUnordered) {
             final FillUnordered cs = (FillUnordered) innerSource;

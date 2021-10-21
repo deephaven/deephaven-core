@@ -33,15 +33,15 @@ public interface IndexBuilder {
         }
     }
 
-    default void addKeyIndicesChunk(final LongChunk<Attributes.KeyIndices> chunk) {
+    default void addKeyIndicesChunk(final LongChunk<Attributes.RowKeys> chunk) {
         addKeys(new LongChunkIterator(chunk));
     }
 
-    default void addKeyIndicesChunk(final IntChunk<Attributes.KeyIndices> chunk) {
+    default void addKeyIndicesChunk(final IntChunk<Attributes.RowKeys> chunk) {
         addKeys(new IntChunkLongIterator(chunk));
     }
 
-    default void addOrderedKeyIndicesChunk(final LongChunk<Attributes.OrderedKeyIndices> chunk) {
+    default void addOrderedKeyIndicesChunk(final LongChunk<Attributes.OrderedRowKeys> chunk) {
         addKeys(new LongChunkIterator(chunk));
     }
 

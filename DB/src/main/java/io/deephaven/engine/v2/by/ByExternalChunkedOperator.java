@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
@@ -142,12 +143,12 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
     @Override
     public void addChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -160,12 +161,12 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
     @Override
     public void removeChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -179,8 +180,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     @Override
     public void modifyChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends KeyIndices> postShiftIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         // We have no inputs, so we should never get here.
         throw new IllegalStateException();
@@ -189,9 +190,9 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     @Override
     public void shiftChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends KeyIndices> preShiftIndices,
-            @NotNull final LongChunk<? extends KeyIndices> postShiftIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> preShiftIndices,
+            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
@@ -213,14 +214,14 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
     @Override
     public void modifyIndices(final BucketedContext context,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (!stepValuesModified) {
             return;
         }
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -234,10 +235,10 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     @Override
     public boolean addChunk(final SingletonContext singletonContext, final int chunkSize,
             final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices, final long destination) {
+            @NotNull final LongChunk<? extends RowKeys> inputIndices, final long destination) {
         Assert.eqNull(values, "values");
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         return accumulateToIndex(addedIndices, inputIndicesAsOrdered, 0, chunkSize, destination);
     }
 
@@ -249,17 +250,17 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     @Override
     public boolean removeChunk(final SingletonContext singletonContext, final int chunkSize,
             final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices, final long destination) {
+            @NotNull final LongChunk<? extends RowKeys> inputIndices, final long destination) {
         Assert.eqNull(values, "values");
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         return accumulateToIndex(removedIndices, inputIndicesAsOrdered, 0, chunkSize, destination);
     }
 
     @Override
     public boolean modifyChunk(final SingletonContext singletonContext, final int chunkSize,
             final Chunk<? extends Values> previousValues, final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends KeyIndices> postShiftIndices,
+            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
             final long destination) {
         // We have no inputs, so we should never get here.
         throw new IllegalStateException();
@@ -268,8 +269,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     @Override
     public boolean shiftChunk(final SingletonContext singletonContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends KeyIndices> preInputIndices,
-            @NotNull final LongChunk<? extends KeyIndices> postInputIndices,
+            @NotNull final LongChunk<? extends RowKeys> preInputIndices,
+            @NotNull final LongChunk<? extends RowKeys> postInputIndices,
             final long destination) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
@@ -280,18 +281,18 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     }
 
     @Override
-    public boolean modifyIndices(final SingletonContext context, @NotNull final LongChunk<? extends KeyIndices> indices,
+    public boolean modifyIndices(final SingletonContext context, @NotNull final LongChunk<? extends RowKeys> indices,
             final long destination) {
         if (!stepValuesModified) {
             return false;
         }
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> indicesAsOrdered = (LongChunk<OrderedKeyIndices>) indices;
+        final LongChunk<OrderedRowKeys> indicesAsOrdered = (LongChunk<OrderedRowKeys>) indices;
         return accumulateToIndex(modifiedIndices, indicesAsOrdered, 0, indices.size(), destination);
     }
 
     private static boolean accumulateToIndex(@NotNull final ObjectArraySource<Index> indexColumn,
-            @NotNull final LongChunk<OrderedKeyIndices> indicesToAdd, final int start, final int length,
+            @NotNull final LongChunk<OrderedRowKeys> indicesToAdd, final int start, final int length,
             final long destination) {
         final Index index = indexColumn.getUnsafe(destination);
         if (index == NONEXISTENT_TABLE_INDEX) {
@@ -322,8 +323,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
         return true;
     }
 
-    private boolean appendShifts(@NotNull final LongChunk<? extends KeyIndices> preShiftIndices,
-            @NotNull final LongChunk<? extends KeyIndices> postShiftIndices,
+    private boolean appendShifts(@NotNull final LongChunk<? extends RowKeys> preShiftIndices,
+            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
             final int startPosition, final int runLength, final long destination) {
         IndexShiftData.SmartCoalescingBuilder builder = shiftDataBuilders.getUnsafe(destination);
         if (builder == NONEXISTENT_TABLE_SHIFT_BUILDER) {
@@ -405,8 +406,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                             ResettableWritableObjectChunk.makeResettableChunk();
                     final ResettableWritableObjectChunk<Index, Values> addedIndicesResettableChunk =
                             ResettableWritableObjectChunk.makeResettableChunk();
-                    final OrderedKeys.Iterator initialDestinationsIterator =
-                            initialDestinations.getOrderedKeysIterator()) {
+                    final RowSequence.Iterator initialDestinationsIterator =
+                            initialDestinations.getRowSequenceIterator()) {
 
                 // noinspection unchecked
                 final WritableObjectChunk<QueryTable, Values> tablesBackingChunk =
@@ -422,8 +423,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                     addedIndices.resetWritableChunkToBackingStore(addedIndicesResettableChunk, firstSliceDestination);
                     final long lastBackingChunkDestination =
                             firstBackingChunkDestination + tablesBackingChunk.size() - 1;
-                    final OrderedKeys initialDestinationsSlice =
-                            initialDestinationsIterator.getNextOrderedKeysThrough(lastBackingChunkDestination);
+                    final RowSequence initialDestinationsSlice =
+                            initialDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
                     final ObjectChunk<?, ? extends Values> tableMapKeyChunk = tableMapKeysBoxer
                             .box(tableMapKeysSource.getChunk(tableMapKeysGetContext, initialDestinationsSlice));
@@ -497,19 +498,19 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
             return;
         }
         if (downstream.added.nonempty()) {
-            try (final OrderedKeys resurrectedDestinations = downstream.added.minus(newDestinations)) {
+            try (final RowSequence resurrectedDestinations = downstream.added.minus(newDestinations)) {
                 propagateResurrectedDestinations(resurrectedDestinations);
                 propagateNewDestinations(newDestinations);
             }
         }
         propagateUpdatesToRemovedDestinations(downstream.removed);
-        try (final OrderedKeys modifiedOrShiftedDestinations = downstream.modified.union(stepShiftedDestinations)) {
+        try (final RowSequence modifiedOrShiftedDestinations = downstream.modified.union(stepShiftedDestinations)) {
             stepShiftedDestinations = null;
             propagateUpdatesToModifiedDestinations(modifiedOrShiftedDestinations);
         }
     }
 
-    private void propagateResurrectedDestinations(@NotNull final OrderedKeys resurrectedDestinations) {
+    private void propagateResurrectedDestinations(@NotNull final RowSequence resurrectedDestinations) {
         if (resurrectedDestinations.isEmpty()) {
             return;
         }
@@ -517,8 +518,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                 ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<Index, Values> addedIndicesResettableChunk =
                         ResettableWritableObjectChunk.makeResettableChunk();
-                final OrderedKeys.Iterator resurrectedDestinationsIterator =
-                        resurrectedDestinations.getOrderedKeysIterator()) {
+                final RowSequence.Iterator resurrectedDestinationsIterator =
+                        resurrectedDestinations.getRowSequenceIterator()) {
             // Destinations that were added can't have any removals, modifications, or shifts.
 
             // noinspection unchecked
@@ -533,8 +534,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         tables.resetWritableChunkToBackingStore(tablesResettableChunk, firstSliceDestination);
                 addedIndices.resetWritableChunkToBackingStore(addedIndicesResettableChunk, firstSliceDestination);
                 final long lastBackingChunkDestination = firstBackingChunkDestination + tablesBackingChunk.size() - 1;
-                final OrderedKeys resurrectedDestinationsSlice =
-                        resurrectedDestinationsIterator.getNextOrderedKeysThrough(lastBackingChunkDestination);
+                final RowSequence resurrectedDestinationsSlice =
+                        resurrectedDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
                 resurrectedDestinationsSlice.forAllLongs((final long resurrectedDestination) -> {
                     final int backingChunkOffset =
@@ -570,7 +571,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
         }
     }
 
-    private void propagateNewDestinations(@NotNull final OrderedKeys newDestinations) {
+    private void propagateNewDestinations(@NotNull final RowSequence newDestinations) {
         if (newDestinations.isEmpty()) {
             return;
         }
@@ -592,7 +593,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<IndexShiftData.SmartCoalescingBuilder, Values> shiftDataBuildersResettableChunk =
                         allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
-                final OrderedKeys.Iterator newDestinationsIterator = newDestinations.getOrderedKeysIterator()) {
+                final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
 
             // noinspection unchecked
             final WritableObjectChunk<QueryTable, Values> tablesBackingChunk =
@@ -624,8 +625,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                             firstSliceDestination);
                 }
                 final long lastBackingChunkDestination = firstBackingChunkDestination + tablesBackingChunk.size() - 1;
-                final OrderedKeys newDestinationsSlice =
-                        newDestinationsIterator.getNextOrderedKeysThrough(lastBackingChunkDestination);
+                final RowSequence newDestinationsSlice =
+                        newDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
                 final ObjectChunk<?, ? extends Values> tableMapKeyChunk = tableMapKeysBoxer
                         .box(tableMapKeysSource.getChunk(tableMapKeysGetContext, newDestinationsSlice));
@@ -740,7 +741,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
         return subTable;
     }
 
-    private void propagateUpdatesToRemovedDestinations(@NotNull final OrderedKeys removedDestinations) {
+    private void propagateUpdatesToRemovedDestinations(@NotNull final RowSequence removedDestinations) {
         if (removedDestinations.isEmpty()) {
             return;
         }
@@ -748,7 +749,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                 ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<Index, Values> removedIndicesResettableChunk =
                         ResettableWritableObjectChunk.makeResettableChunk();
-                final OrderedKeys.Iterator removedDestinationsIterator = removedDestinations.getOrderedKeysIterator()) {
+                final RowSequence.Iterator removedDestinationsIterator = removedDestinations.getRowSequenceIterator()) {
             // Destinations that were completely removed can't have any additions, modifications, or shifts.
 
             // noinspection unchecked
@@ -763,8 +764,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         tables.resetWritableChunkToBackingStore(tablesResettableChunk, firstSliceDestination);
                 removedIndices.resetWritableChunkToBackingStore(removedIndicesResettableChunk, firstSliceDestination);
                 final long lastBackingChunkDestination = firstBackingChunkDestination + tablesBackingChunk.size() - 1;
-                final OrderedKeys removedDestinationsSlice =
-                        removedDestinationsIterator.getNextOrderedKeysThrough(lastBackingChunkDestination);
+                final RowSequence removedDestinationsSlice =
+                        removedDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
                 removedDestinationsSlice.forAllLongs((final long removedDestination) -> {
                     final int backingChunkOffset = Math.toIntExact(removedDestination - firstBackingChunkDestination);
@@ -796,7 +797,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
         }
     }
 
-    private void propagateUpdatesToModifiedDestinations(@NotNull final OrderedKeys modifiedDestinations) {
+    private void propagateUpdatesToModifiedDestinations(@NotNull final RowSequence modifiedDestinations) {
         if (modifiedDestinations.isEmpty()) {
             return;
         }
@@ -810,8 +811,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<IndexShiftData.SmartCoalescingBuilder, Values> shiftDataBuildersResettableChunk =
                         ResettableWritableObjectChunk.makeResettableChunk();
-                final OrderedKeys.Iterator modifiedDestinationsIterator =
-                        modifiedDestinations.getOrderedKeysIterator()) {
+                final RowSequence.Iterator modifiedDestinationsIterator =
+                        modifiedDestinations.getRowSequenceIterator()) {
 
             // noinspection unchecked
             final ObjectChunk<QueryTable, Values> tablesBackingChunk = tablesResettableChunk.asObjectChunk();
@@ -839,8 +840,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                 shiftDataBuilders.resetWritableChunkToBackingStore(shiftDataBuildersResettableChunk,
                         firstSliceDestination);
                 final long lastBackingChunkDestination = firstBackingChunkDestination + tablesBackingChunk.size() - 1;
-                final OrderedKeys modifiedDestinationsSlice =
-                        modifiedDestinationsIterator.getNextOrderedKeysThrough(lastBackingChunkDestination);
+                final RowSequence modifiedDestinationsSlice =
+                        modifiedDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
                 modifiedDestinationsSlice.forAllLongs((final long modifiedDestination) -> {
                     final int backingChunkOffset = Math.toIntExact(modifiedDestination - firstBackingChunkDestination);

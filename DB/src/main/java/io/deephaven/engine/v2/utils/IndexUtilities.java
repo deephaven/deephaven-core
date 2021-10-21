@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import gnu.trove.list.array.TLongArrayList;
@@ -30,7 +31,7 @@ public class IndexUtilities {
     }
 
     public static void fillKeyIndicesChunk(final ReadOnlyIndex index,
-            final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
+            final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
         chunkToFill.setSize(0); // so that we can actually add from the beginning.
         index.forEachLong((final long v) -> {
             chunkToFill.add(v);
@@ -39,7 +40,7 @@ public class IndexUtilities {
     }
 
     public static void fillKeyRangesChunk(final ReadOnlyIndex index,
-            final WritableLongChunk<Attributes.OrderedKeyRanges> chunkToFill) {
+            final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
         index.forAllLongRanges((final long start, final long end) -> {
             chunkToFill.add(start);
@@ -188,7 +189,7 @@ public class IndexUtilities {
         final MutableBoolean hasPending = new MutableBoolean();
         final MutableLong pendingStart = new MutableLong(Index.NULL_KEY);
         final MutableLong pendingEnd = new MutableLong(Index.NULL_KEY);
-        final OrderedKeys.Iterator sourceProbe = sourceIndex.getOrderedKeysIterator();
+        final RowSequence.Iterator sourceProbe = sourceIndex.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
         destIndex.forAllLongRanges((start, end) -> {
             final long sourceStart = sourceOffset.getValue() + sourceProbe.advanceAndGetPositionDistance(start);

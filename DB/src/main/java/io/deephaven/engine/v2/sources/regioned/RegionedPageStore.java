@@ -6,6 +6,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
 import io.deephaven.engine.v2.sources.chunk.page.PageStore;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,8 +28,8 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     }
 
     /**
-     * @return The mask that should be applied to {@link io.deephaven.engine.v2.utils.OrderedKeys} indices when
-     *         calculating their address within a region
+     * @return The mask that should be applied to {@link RowSequence} indices when calculating their address within a
+     *         region
      */
     @FinalDefault
     default long regionMask() {

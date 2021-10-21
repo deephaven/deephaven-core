@@ -7,11 +7,12 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.ShiftAwareListener;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkRangeIterator;
@@ -57,11 +58,11 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
     /**
      * Add all of the (ordered) keys in a slice of {@code keys} to this index if they are not already present.
      *
-     * @param keys The {@link LongChunk} of {@link OrderedKeyIndices} to insert
+     * @param keys The {@link LongChunk} of {@link OrderedRowKeys} to insert
      * @param offset The offset in {@code keys} to begin inserting keys from
      * @param length The number of keys to insert
      */
-    void insert(LongChunk<OrderedKeyIndices> keys, int offset, int length);
+    void insert(LongChunk<OrderedRowKeys> keys, int offset, int length);
 
     /**
      * Add all of the keys in {@code added} to this index if they are not already present.
@@ -88,11 +89,11 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
     /**
      * Remove all of the (ordered) keys in a slice of {@code keys} from this index if they are present.
      *
-     * @param keys The {@link LongChunk} of {@link OrderedKeyIndices} to remove
+     * @param keys The {@link LongChunk} of {@link OrderedRowKeys} to remove
      * @param offset The offset in {@code keys} to begin removing keys from
      * @param length The number of keys to remove
      */
-    void remove(LongChunk<OrderedKeyIndices> keys, int offset, int length);
+    void remove(LongChunk<OrderedRowKeys> keys, int offset, int length);
 
     /**
      * Remove all of the keys in {@code removed} that are present in this index.
@@ -188,7 +189,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
             }
         }
 
-        default void appendOrderedKeyIndicesChunk(final LongChunk<OrderedKeyIndices> chunk) {
+        default void appendOrderedKeyIndicesChunk(final LongChunk<OrderedRowKeys> chunk) {
             appendKeys(new LongChunkIterator(chunk));
         }
 
@@ -199,7 +200,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
             }
         }
 
-        default void appendOrderedKeyRangesChunk(final LongChunk<OrderedKeyRanges> chunk) {
+        default void appendOrderedKeyRangesChunk(final LongChunk<OrderedRowKeyRanges> chunk) {
             appendRanges(new LongChunkRangeIterator(chunk));
         }
 
@@ -223,8 +224,8 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
             idx.forAllLongRanges((s, e) -> appendRange(s + offset, e + offset));
         }
 
-        default void appendOrderedKeys(final OrderedKeys orderedKeys) {
-            orderedKeys.forAllLongRanges(this::appendRange);
+        default void appendRowSequence(final RowSequence rowSequence) {
+            rowSequence.forAllLongRanges(this::appendRange);
         }
     }
 
@@ -258,7 +259,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
         Index getIndexByValues(TLongArrayList list);
 
         /**
-         * Create an {@link Index} containing the continuous range [firstKey, lastKey]
+         * Create an {@link Index} containing the continuous range [firstRowKey, lastRowKey]
          *
          * @param firstKey The first key in the continuous range
          * @param lastKey The last key in the continuous range

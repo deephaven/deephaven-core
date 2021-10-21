@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.util.SafeCloseable;
@@ -16,7 +17,7 @@ import java.util.function.LongConsumer;
 /**
  * Read-only subset of the {@link Index} interface.
  */
-public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
+public interface ReadOnlyIndex extends RowSequence, SafeCloseable {
     long NULL_KEY = -1L;
 
     void close();
@@ -29,14 +30,14 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
      *
      * @return The last key, or {@link Index#NULL_KEY} if there is none.
      */
-    long lastKey();
+    long lastRowKey();
 
     /**
      * Get the first key in this {@code Index}.
      *
      * @return The first key, or {@link Index#NULL_KEY} if there is none.
      */
-    long firstKey();
+    long firstRowKey();
 
     Index clone();
 
@@ -426,12 +427,12 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
      */
     default Index subindexByPos(Index posIndex) {
         final MutableLong currentOffset = new MutableLong();
-        final OrderedKeys.Iterator iter = getOrderedKeysIterator();
+        final RowSequence.Iterator iter = getRowSequenceIterator();
         final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
         posIndex.forEachLongRange((start, end) -> {
             if (currentOffset.longValue() < start) {
                 // skip items until the beginning of this range
-                iter.getNextOrderedKeysWithLength(start - currentOffset.longValue());
+                iter.getNextRowSequenceWithLength(start - currentOffset.longValue());
                 currentOffset.setValue(start);
             }
 
@@ -439,7 +440,7 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
                 return false;
             }
 
-            iter.getNextOrderedKeysWithLength(end + 1 - currentOffset.longValue())
+            iter.getNextRowSequenceWithLength(end + 1 - currentOffset.longValue())
                     .forAllLongRanges(builder::appendRange);
             currentOffset.setValue(end + 1);
             return iter.hasMore();

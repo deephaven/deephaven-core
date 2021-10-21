@@ -10,10 +10,12 @@ import java.util.function.LongConsumer;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.io.logger.Logger;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
@@ -106,7 +108,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     @Override
     public void close() {
         impl.ixRelease();
-        closeOrderedKeysAsChunkImpl();
+        closeRowSequenceAsChunkImpl();
     }
 
     @VisibleForTesting
@@ -116,7 +118,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     private void assign(final TreeIndexImpl maybeNewImpl) {
-        invalidateOrderedKeysAsChunkImpl();
+        invalidateRowSequenceAsChunkImpl();
         if (maybeNewImpl == impl) {
             return;
         }
@@ -147,7 +149,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void insert(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    public void insert(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         if (trace)
             pre("insert(chunk)");
@@ -194,7 +196,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void remove(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    public void remove(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         if (trace)
             pre("remove(chunk)");
@@ -217,9 +219,9 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public long lastKey() {
+    public long lastRowKey() {
         if (trace)
-            pre("lastKey");
+            pre("lastRowKey");
         final long ans = impl.ixLastKey();
         if (trace)
             pos(ans);
@@ -227,9 +229,9 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public long firstKey() {
+    public long firstRowKey() {
         if (trace)
-            pre("firstKey");
+            pre("firstRowKey");
         final long ans = impl.ixFirstKey();
         if (trace)
             pos(ans);
@@ -770,7 +772,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     //
-    // From OrderedKeys
+    // From RowSequence
     //
 
     @Override
@@ -779,19 +781,19 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public OrderedKeys.Iterator getOrderedKeysIterator() {
-        return impl.ixGetOrderedKeysIterator();
+    public RowSequence.Iterator getRowSequenceIterator() {
+        return impl.ixGetRowSequenceIterator();
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
-        return impl.ixGetOrderedKeysByKeyRange(startKeyInclusive, endKeyInclusive);
+    public RowSequence getRowSequenceByKeyRange(final long startRowKeyInclusive, final long endRowKeyInclusive) {
+        return impl.ixGetRowSequenceByKeyRange(startRowKeyInclusive, endRowKeyInclusive);
 
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByPosition(final long start, final long len) {
-        return impl.ixGetOrderedKeysByPosition(start, len);
+    public RowSequence getRowSequenceByPosition(final long start, final long len) {
+        return impl.ixGetRowSequenceByPosition(start, len);
     }
 
     @Override
@@ -799,12 +801,12 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         return this;
     }
 
-    public void fillKeyIndicesChunk(final WritableLongChunk<? extends KeyIndices> chunkToFill) {
+    public void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
         IndexUtilities.fillKeyIndicesChunk(this, chunkToFill);
     }
 
     @Override
-    public void fillKeyRangesChunk(final WritableLongChunk<OrderedKeyRanges> chunkToFill) {
+    public void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         IndexUtilities.fillKeyRangesChunk(this, chunkToFill);
     }
 

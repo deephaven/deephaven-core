@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.select.chunkfilters;
 
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import gnu.trove.set.hash.TShortHashSet;
 
@@ -54,7 +54,7 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) == value) {
@@ -72,7 +72,7 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) != value) {
@@ -92,7 +92,7 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -113,7 +113,7 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -136,7 +136,7 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -159,7 +159,7 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -178,7 +178,7 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -197,7 +197,7 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);

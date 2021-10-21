@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -231,9 +231,9 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     private void validateValues(final String what, final ModifiedColumnSet columnsToCheck, final Index toValidate,
             final boolean usePrev, final boolean invertMCS) {
-        try (final OrderedKeys.Iterator it = toValidate.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it = toValidate.getRowSequenceIterator()) {
             while (it.hasMore()) {
-                final OrderedKeys subKeys = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
                 for (final ColumnInfo ci : columnInfos) {
                     if (columnsToCheck.containsAny(ci.modifiedColumnSet) == !invertMCS) {
                         ci.validateValues(what, subKeys, usePrev);
@@ -245,9 +245,9 @@ public class TableUpdateValidator implements QueryTable.Operation {
     }
 
     private void updateValues(final ModifiedColumnSet columnsToUpdate, final Index toUpdate, final boolean usePrev) {
-        try (final OrderedKeys.Iterator it = toUpdate.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it = toUpdate.getRowSequenceIterator()) {
             while (it.hasMore()) {
-                final OrderedKeys subKeys = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
                 for (final ColumnInfo ci : columnInfos) {
                     if (columnsToUpdate.containsAny(ci.modifiedColumnSet)) {
                         ci.updateValues(subKeys, usePrev);
@@ -378,7 +378,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             expectedSource.remove(toRemove);
         }
 
-        private void updateValues(final OrderedKeys toUpdate, final boolean usePrev) {
+        private void updateValues(final RowSequence toUpdate, final boolean usePrev) {
             if (isPrimitive) {
                 expectedSource.fillFromChunk(expectedFillFromContext(), getSourceChunk(toUpdate, usePrev), toUpdate);
                 return;
@@ -402,7 +402,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             expectedSource.fillFromChunk(expectedFillFromContext(), sourceFillChunk(), toUpdate);
         }
 
-        public void validateValues(final String what, final OrderedKeys toValidate, final boolean usePrev) {
+        public void validateValues(final String what, final RowSequence toValidate, final boolean usePrev) {
             Assert.leq(toValidate.size(), "toValidate.size()", CHUNK_SIZE, "CHUNK_SIZE");
             final Chunk<? extends Attributes.Values> expected =
                     expectedSource.getChunk(expectedGetContext(), toValidate);
@@ -430,9 +430,9 @@ public class TableUpdateValidator implements QueryTable.Operation {
             });
         }
 
-        private Chunk<? extends Attributes.Values> getSourceChunk(OrderedKeys orderedKeys, boolean usePrev) {
-            return usePrev ? source.getPrevChunk(sourceGetContext(), orderedKeys)
-                    : source.getChunk(sourceGetContext(), orderedKeys);
+        private Chunk<? extends Attributes.Values> getSourceChunk(RowSequence rowSequence, boolean usePrev) {
+            return usePrev ? source.getPrevChunk(sourceGetContext(), rowSequence)
+                    : source.getChunk(sourceGetContext(), rowSequence);
         }
 
         @Override

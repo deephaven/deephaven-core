@@ -134,7 +134,7 @@ public class UpdatePerformanceTest {
 
         @Override
         public long optimizerBait() {
-            return ix[0].lastKey();
+            return ix[0].lastRowKey();
         }
 
         private Runnable getParallelRunner() {

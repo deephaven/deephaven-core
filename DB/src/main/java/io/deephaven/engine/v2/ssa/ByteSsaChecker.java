@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.ByteChunkEquals;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ByteChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
@@ -19,16 +19,16 @@ public class ByteSsaChecker implements SsaChecker {
     private ByteSsaChecker() {} // static use only
 
     @Override
-    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends KeyIndices> tableIndexChunk) {
+    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
         checkSsa((ByteSegmentedSortedArray)ssa, valueChunk.asByteChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(ByteSegmentedSortedArray ssa, ByteChunk<? extends Values> valueChunk, LongChunk<? extends KeyIndices> tableIndexChunk) {
+    static void checkSsa(ByteSegmentedSortedArray ssa, ByteChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
         //noinspection unchecked
         final ByteChunk<Values> resultChunk = (ByteChunk) ssa.asByteChunk();
-        final LongChunk<KeyIndices> indexChunk = ssa.keyIndicesChunk();
+        final LongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk();
 
         Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
         Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

@@ -2,7 +2,7 @@ package io.deephaven.kafka.publish;
 
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 
 /**
@@ -10,21 +10,21 @@ import io.deephaven.util.SafeCloseable;
  */
 public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
     /**
-     * Create a chunk of output keys or values that correspond to {@code orderedKeys}. The output {@link ObjectChunk
+     * Create a chunk of output keys or values that correspond to {@code rowSequence}. The output {@link ObjectChunk
      * chunks} should be cached in the {@code context} for re-use, but the data returned in them should be functionally
      * immutable and not rely on pooled or re-usable objects.
      *
      * @param context A {@link Context} created by {@link #makeContext(int)}
-     * @param orderedKeys The row keys to serialize
+     * @param rowSequence The row keys to serialize
      * @param previous If previous row values should be used, as with row key removals
      *
-     * @return A chunk of serialized data keys or values, with {@code ObjectChunk.size() == orderedKeys.size()}
+     * @return A chunk of serialized data keys or values, with {@code ObjectChunk.size() == rowSequence.size()}
      */
-    ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys,
+    ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, RowSequence rowSequence,
             boolean previous);
 
     /**
-     * Create a context for calling {@link #handleChunk(Context, OrderedKeys, boolean)}.
+     * Create a context for calling {@link #handleChunk(Context, RowSequence, boolean)}.
      *
      * @param size The maximum number of rows that will be serialized for each chunk
      *

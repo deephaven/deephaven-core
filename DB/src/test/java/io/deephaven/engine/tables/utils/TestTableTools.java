@@ -964,7 +964,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = 2 * PRIME * ii + 1;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final long currKey = table.getIndex().lastKey();
+                final long currKey = table.getIndex().lastRowKey();
                 removeRows(table, i(currKey));
                 addToTable(table, i(fii), c("Sentinel", 1));
 
@@ -1040,7 +1040,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = SHIFT_SIZE * ii + 1;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final long currKey = table.getIndex().lastKey();
+                final long currKey = table.getIndex().lastRowKey();
                 // Manually apply shift.
                 removeRows(table, i(currKey));
                 addToTable(table, i(fii), c("Sentinel", 1));
@@ -1062,7 +1062,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     private void addRows(Random random, QueryTable table1) {
         int size;
         size = random.nextInt(10);
-        final Index newIndex = TstUtils.getRandomIndex(table1.getIndex().lastKey(), size, random);
+        final Index newIndex = TstUtils.getRandomIndex(table1.getIndex().lastRowKey(), size, random);
         TstUtils.addToTable(table1, newIndex, TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));

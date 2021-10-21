@@ -10,12 +10,8 @@ import io.deephaven.engine.v2.sources.BitMaskingColumnSource;
 import io.deephaven.engine.v2.sources.BitShiftingColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.CrossJoinRightColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.LongRangeConsumer;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.OutOfKeySpaceException;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -415,8 +411,8 @@ public class CrossJoinHelper {
                             final MutableLong watermark = new MutableLong(0);
                             final MutableInt currLeftShiftIdx = new MutableInt(0);
 
-                            try (final OrderedKeys.Iterator okit =
-                                    allRowsShift ? null : resultIndex.getOrderedKeysIterator();
+                            try (final RowSequence.Iterator rsIt =
+                                    allRowsShift ? null : resultIndex.getRowSequenceIterator();
                                     final Index unshiftedRowsToShift = rowsToShift.clone()) {
                                 upstreamLeft.shifted.unapply(unshiftedRowsToShift);
                                 final ReadOnlyIndex.SearchIterator prevIter = unshiftedRowsToShift.searchIterator();
@@ -447,12 +443,12 @@ public class CrossJoinHelper {
 
                                         final long maxTouched = Math.min(ii - 1, endRange);
                                         final long minTouched = Math.max(watermark.longValue(), beginRange);
-                                        if (!okit.advance(minTouched)) {
+                                        if (!rsIt.advance(minTouched)) {
                                             break;
                                         }
 
                                         shiftBuilder.shiftRange(minTouched, maxTouched, shiftDelta);
-                                        okit.getNextOrderedKeysThrough(maxTouched).forAllLongRanges((s, e) -> {
+                                        rsIt.getNextRowSequenceThrough(maxTouched).forAllLongRanges((s, e) -> {
                                             toRemoveFromResultIndex.appendRange(s, e);
                                             toInsertIntoResultIndex.appendRange(s + shiftDelta, e + shiftDelta);
                                         });
@@ -586,19 +582,19 @@ public class CrossJoinHelper {
                             });
                         } else if (leftChanged && upstreamLeft.shifted.nonempty()) {
                             // upstream-left-shift our result index, and build downstream shifts
-                            try (final OrderedKeys.Iterator okit = resultIndex.getOrderedKeysIterator()) {
+                            try (final RowSequence.Iterator rsIt = resultIndex.getRowSequenceIterator()) {
                                 for (int idx = 0; idx < upstreamLeft.shifted.size(); ++idx) {
                                     final long beginRange = upstreamLeft.shifted.getBeginRange(idx) << prevRightBits;
                                     final long endRange =
                                             ((upstreamLeft.shifted.getEndRange(idx) + 1) << prevRightBits) - 1;
                                     final long shiftDelta = upstreamLeft.shifted.getShiftDelta(idx) << prevRightBits;
 
-                                    if (!okit.advance(beginRange)) {
+                                    if (!rsIt.advance(beginRange)) {
                                         break;
                                     }
 
                                     shiftBuilder.shiftRange(beginRange, endRange, shiftDelta);
-                                    okit.getNextOrderedKeysThrough(endRange).forAllLongRanges((s, e) -> {
+                                    rsIt.getNextRowSequenceThrough(endRange).forAllLongRanges((s, e) -> {
                                         toRemoveFromResultIndex.appendRange(s, e);
                                         toInsertIntoResultIndex.appendRange(s + shiftDelta, e + shiftDelta);
                                     });
@@ -844,8 +840,8 @@ public class CrossJoinHelper {
 
     private static void validateZeroKeyIndexSpace(final QueryTable leftTable, final QueryTable rightTable,
             int numRightBitsReserved) {
-        final long leftLastKey = leftTable.getIndex().lastKey();
-        final long rightLastKey = rightTable.getIndex().lastKey();
+        final long leftLastKey = leftTable.getIndex().lastRowKey();
+        final long rightLastKey = rightTable.getIndex().lastRowKey();
         final int minLeftBits = CrossJoinShiftState.getMinBits(leftLastKey);
         final int minRightBits = CrossJoinShiftState.getMinBits(rightLastKey);
         numRightBitsReserved = Math.max(numRightBitsReserved, minRightBits);

@@ -781,7 +781,7 @@ public class QueryTableSelectUpdateTest {
         assertTableEquals(x, xs);
         // overhead would be greater than 10%, so we expect a flat table
         TestCase.assertTrue(xs.isFlat());
-        TestCase.assertEquals(x.size() - 1, xs.getIndex().lastKey());
+        TestCase.assertEquals(x.size() - 1, xs.getIndex().lastRowKey());
 
         final Table x2 = source.where("A % 100 > 5");
         final Table x2s = x2.select();
@@ -800,7 +800,7 @@ public class QueryTableSelectUpdateTest {
         final Table x4 = source.where("((int)(A / 1000) % 5 != 2)");
         final Table x4s = x4.select();
         assertTableEquals(x4, x4s);
-        TestCase.assertEquals(x4s.getIndex().lastKey(), x4.size() - 1);
+        TestCase.assertEquals(x4s.getIndex().lastRowKey(), x4.size() - 1);
         TestCase.assertTrue(x4s.isFlat());
     }
 

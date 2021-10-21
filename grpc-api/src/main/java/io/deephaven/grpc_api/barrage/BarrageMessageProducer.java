@@ -11,6 +11,9 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.TableDefinition;
@@ -41,10 +44,6 @@ import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.ResettableWritableObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
@@ -633,7 +632,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             deltaFillContext = deltaColumn.makeFillFromContext(chunkSize);
         }
 
-        public void doFillChunk(final OrderedKeys srcKeys, final OrderedKeys dstKeys) {
+        public void doFillChunk(final RowSequence srcKeys, final RowSequence dstKeys) {
             deltaColumn.fillFromChunk(deltaFillContext, sourceColumn.getChunk(sourceGetContext, srcKeys), dstKeys);
         }
 
@@ -694,7 +693,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         }
 
                         final long prevKeyStart =
-                                posStart >= prevIndex.size() ? prevIndex.lastKey() + 1 : prevIndex.get(posStart);
+                                posStart >= prevIndex.size() ? prevIndex.lastRowKey() + 1 : prevIndex.get(posStart);
                         final long prevKeyEnd = prevIndex.get(Math.min(posEnd, prevIndex.size() - 1));
 
                         // Note: we already know that scoped rows must touch viewport boundaries
@@ -757,9 +756,9 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 }
 
                 final BiConsumer<Index, BitSet> recordRows = (keysToAdd, columnsToRecord) -> {
-                    try (final OrderedKeys.Iterator okIt = keysToAdd.getOrderedKeysIterator()) {
-                        while (okIt.hasMore()) {
-                            final OrderedKeys srcKeys = okIt.getNextOrderedKeysWithLength(DELTA_CHUNK_SIZE); // NB: This
+                    try (final RowSequence.Iterator rsIt = keysToAdd.getRowSequenceIterator()) {
+                        while (rsIt.hasMore()) {
+                            final RowSequence srcKeys = rsIt.getNextRowSequenceWithLength(DELTA_CHUNK_SIZE); // NB: This
                                                                                                              // will
                                                                                                              // never
                                                                                                              // return
@@ -767,8 +766,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                                                                                                              // keys
                                                                                                              // than
                                                                                                              // deltaChunkSize
-                            try (final OrderedKeys dstKeys =
-                                    OrderedKeys.forRange(nextFreeDeltaKey, nextFreeDeltaKey + srcKeys.size() - 1)) {
+                            try (final RowSequence dstKeys =
+                                    RowSequenceUtil.forRange(nextFreeDeltaKey, nextFreeDeltaKey + srcKeys.size() - 1)) {
                                 nextFreeDeltaKey += srcKeys.size();
 
                                 for (final FillDeltaContext fillDeltaContext : fillDeltaContexts) {

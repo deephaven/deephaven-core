@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.ReverseOperation;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.reverse.ReverseKernel;
 import org.jetbrains.annotations.NotNull;
 
@@ -155,10 +155,10 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
     @Override
     public void fillChunk(@NotNull ColumnSource.FillContext _context,
             @NotNull WritableChunk<? super Attributes.Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         final FillContext context = (FillContext) _context;
-        final OrderedKeys reversedIndex = indexReverser.transform(orderedKeys.asIndex());
+        final RowSequence reversedIndex = indexReverser.transform(rowSequence.asIndex());
         innerSource.fillChunk(context.innerContext, destination, reversedIndex);
         context.reverseKernel.reverse(destination);
     }
@@ -166,10 +166,10 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
     @Override
     public void fillPrevChunk(@NotNull ColumnSource.FillContext _context,
             @NotNull WritableChunk<? super Attributes.Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         final FillContext context = (FillContext) _context;
-        final OrderedKeys reversedIndex = indexReverser.transformPrev(orderedKeys.asIndex());
+        final RowSequence reversedIndex = indexReverser.transformPrev(rowSequence.asIndex());
         innerSource.fillPrevChunk(context.innerContext, destination, reversedIndex);
         context.reverseKernel.reverse(destination);
     }

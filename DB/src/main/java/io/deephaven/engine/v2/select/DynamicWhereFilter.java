@@ -7,6 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -23,7 +24,6 @@ import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
@@ -273,19 +273,19 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         final Index.SequentialBuilder indexBuilder = Index.FACTORY.getSequentialBuilder();
 
         try (final ColumnSource.GetContext getContext = keyColumn.makeGetContext(CHUNK_SIZE);
-                final OrderedKeys.Iterator okIt = selection.getOrderedKeysIterator()) {
-            final WritableLongChunk<Attributes.OrderedKeyIndices> keyIndices =
+                final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
+            final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices =
                     WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
             final WritableBooleanChunk<Attributes.Values> matches = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
 
-            while (okIt.hasMore()) {
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
                 final Chunk<Attributes.Values> chunk = keyColumn.getChunk(getContext, chunkOk);
                 setInclusionKernel.matchValues(chunk, matches);
 
                 keyIndices.setSize(chunk.size());
-                chunkOk.fillKeyIndicesChunk(keyIndices);
+                chunkOk.fillRowKeyChunk(keyIndices);
 
                 for (int ii = 0; ii < chunk.size(); ++ii) {
                     if (matches.get(ii)) {

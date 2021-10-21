@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.select.chunkfilters;
 import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 
 public class CharRangeComparator {
@@ -18,7 +18,7 @@ public class CharRangeComparator {
             this.upper = upper;
         }
 
-        abstract public void filter(CharChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results);
+        abstract public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class CharCharInclusiveInclusiveFilter extends CharCharFilter {
@@ -26,7 +26,7 @@ public class CharRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char value = values.get(ii);
@@ -42,7 +42,7 @@ public class CharRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char value = values.get(ii);
@@ -58,7 +58,7 @@ public class CharRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char value = values.get(ii);
@@ -74,7 +74,7 @@ public class CharRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char value = values.get(ii);

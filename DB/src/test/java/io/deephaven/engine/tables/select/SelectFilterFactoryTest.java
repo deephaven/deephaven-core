@@ -165,14 +165,14 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         Index idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(mon, t.getColumn(0).get(idx.firstKey()));
+        assertEquals(mon, t.getColumn(0).get(idx.firstRowKey()));
         // match one of two items
         f = SelectFilterFactory.getExpression("Timestamp in '" + tues + "', '" + wed + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(tues, t.getColumn(0).get(idx.firstKey()));
+        assertEquals(tues, t.getColumn(0).get(idx.firstRowKey()));
 
         // match two of two items
         f = SelectFilterFactory.getExpression("Timestamp in '" + tues + "', '" + thurs + "'");
@@ -180,8 +180,8 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
         assertEquals(2, idx.size());
-        assertEquals(tues, t.getColumn(0).get(idx.firstKey()));
-        assertEquals(thurs, t.getColumn(0).get(idx.lastKey()));
+        assertEquals(tues, t.getColumn(0).get(idx.firstRowKey()));
+        assertEquals(thurs, t.getColumn(0).get(idx.lastRowKey()));
 
         // match zero of one item
         f = SelectFilterFactory.getExpression("Timestamp in '" + wed + "'");

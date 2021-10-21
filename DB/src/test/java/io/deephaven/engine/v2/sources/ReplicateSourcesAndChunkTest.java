@@ -102,7 +102,7 @@ public class ReplicateSourcesAndChunkTest {
         lines = addImport(lines, WritableObjectChunk.class);
         lines = addImport(lines, ObjectChunk.class);
         if (!booleanPath.contains("Sparse")) {
-            lines = removeImport(lines, "import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;");
+            lines = removeImport(lines, "import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;");
         }
         lines = simpleFixup(lines, "elementGet",
                 "getBoolean", "getByte");

@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -169,17 +169,17 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             @Override
             public void fillChunk(@NotNull FillContext fillContext,
                     @NotNull final WritableChunk<? super Values> destination,
-                    @NotNull final OrderedKeys orderedKeys) {
+                    @NotNull final RowSequence rowSequence) {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
-                ctx.chunkFiller.fillByIndices(this, orderedKeys, destination);
+                ctx.chunkFiller.fillByIndices(this, rowSequence, destination);
             }
 
             @Override
             public void fillPrevChunk(@NotNull FillContext fillContext,
                     @NotNull final WritableChunk<? super Values> destination,
-                    @NotNull final OrderedKeys orderedKeys) {
+                    @NotNull final RowSequence rowSequence) {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
-                ctx.chunkFiller.fillByIndices(this, orderedKeys, destination);
+                ctx.chunkFiller.fillByIndices(this, rowSequence, destination);
             }
         });
     }

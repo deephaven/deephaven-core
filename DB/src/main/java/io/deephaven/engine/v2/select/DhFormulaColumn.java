@@ -437,10 +437,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "private class FormulaFillContext implements [[FILL_CONTEXT_CANONICAL]]", CodeGenerator.block(
                         // The optional i chunk
                         CodeGenerator.optional("needsIChunk",
-                                "private final WritableIntChunk<Attributes.OrderedKeyIndices> __iChunk;"),
+                                "private final WritableIntChunk<Attributes.OrderedRowKeys> __iChunk;"),
                         // The optional ii chunk
                         CodeGenerator.optional("needsIIChunk",
-                                "private final WritableLongChunk<Attributes.OrderedKeyIndices> __iiChunk;"),
+                                "private final WritableLongChunk<Attributes.OrderedRowKeys> __iiChunk;"),
                         // fields
                         CodeGenerator.repeated("defineField",
                                 "private final ColumnSource.GetContext __subContext[[COL_SOURCE_NAME]];"),
@@ -502,15 +502,15 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private CodeGenerator generateFillChunk(boolean usePrev) {
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
-                "public void [[FILL_METHOD]](final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final OrderedKeys __orderedKeys)",
+                "public void [[FILL_METHOD]](final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final RowSequence __RowSequence)",
                 CodeGenerator.block(
                         "final FormulaFillContext __typedContext = (FormulaFillContext)__context;",
                         CodeGenerator.repeated("getChunks",
                                 "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = this.[[COL_SOURCE_NAME]].[[GET_CURR_OR_PREV_CHUNK]]("
                                         +
-                                        "__typedContext.__subContext[[COL_SOURCE_NAME]], __orderedKeys).[[AS_CHUNK_METHOD]]();"),
+                                        "__typedContext.__subContext[[COL_SOURCE_NAME]], __RowSequence).[[AS_CHUNK_METHOD]]();"),
                         "fillChunkHelper(" + usePrev
-                                + ", __typedContext, __destination, __orderedKeys[[ADDITIONAL_CHUNK_ARGS]]);"));
+                                + ", __typedContext, __destination, __RowSequence[[ADDITIONAL_CHUNK_ARGS]]);"));
 
         final String fillMethodName = String.format("fill%sChunk", usePrev ? "Prev" : "");
         g.replace("FILL_METHOD", fillMethodName);
@@ -536,24 +536,24 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,",
                 CodeGenerator.indent(
                         "final WritableChunk<? super Attributes.Values> __destination,",
-                        "final OrderedKeys __orderedKeys[[ADDITIONAL_CHUNK_ARGS]])"),
+                        "final RowSequence __RowSequence[[ADDITIONAL_CHUNK_ARGS]])"),
                 CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.optional("maybeCreateIOrII",
                                 "try (final Index prev = __usePrev ? __index.getPrevIndex() : null;",
                                 CodeGenerator.indent(
-                                        "final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex()))"),
+                                        "final Index inverted = ((prev != null) ? prev : __index).invert(__RowSequence.asIndex()))"),
                                 CodeGenerator.block(
                                         CodeGenerator.optional("maybeCreateI",
                                                 "__context.__iChunk.setSize(0);",
                                                 "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"),
                                         CodeGenerator.optional("maybeCreateII",
-                                                "inverted.fillKeyIndicesChunk(__context.__iiChunk);"))),
+                                                "inverted.fillRowKeyChunk(__context.__iiChunk);"))),
                         CodeGenerator.repeated("getChunks",
                                 "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"),
                         "final int[] __chunkPosHolder = new int[] {0};",
                         "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
-                                "__orderedKeys.forAllLongs(k ->", CodeGenerator.block(
+                                "__RowSequence.forAllLongs(k ->", CodeGenerator.block(
                                         "final int __chunkPos = __chunkPosHolder[0]++;",
                                         CodeGenerator.optional("maybeCreateI",
                                                 "final int i = __context.__iChunk.get(__chunkPos);"),
@@ -563,7 +563,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                                         "__typedDestination.set(__chunkPos, ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[APPLY_FORMULA_ARGS]])));"),
                                 ");" // close the lambda
                         ), CodeGenerator.samelineBlock("else",
-                                "__orderedKeys.forAllLongs(k ->", CodeGenerator.block(
+                                "__RowSequence.forAllLongs(k ->", CodeGenerator.block(
                                         "final int __chunkPos = __chunkPosHolder[0]++;",
                                         CodeGenerator.optional("maybeCreateI",
                                                 "final int i = __context.__iChunk.get(__chunkPos);"),

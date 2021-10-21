@@ -6,14 +6,13 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
 
 class ByteRadixSortKernel {
     public static LongSortKernel createContext(int size, SortingOrder order, boolean last) {
         return new ByteRadixSortContext(size, last, order);
     }
 
-    private static class ByteRadixSortContext<ATTR extends Any, KEY_INDICES extends KeyIndices> implements LongSortKernel<ATTR, KEY_INDICES> {
+    private static class ByteRadixSortContext<ATTR extends Any, KEY_INDICES extends Attributes.RowKeys> implements LongSortKernel<ATTR, KEY_INDICES> {
         final WritableLongChunk<KEY_INDICES> [] keys;
         private final int size;
         private final boolean last;

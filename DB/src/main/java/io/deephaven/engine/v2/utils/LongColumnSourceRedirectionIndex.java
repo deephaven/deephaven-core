@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
@@ -47,7 +48,7 @@ public final class LongColumnSourceRedirectionIndex extends ReadOnlyLongColumnSo
     }
 
     @Override
-    public void removeAll(final OrderedKeys keys) {
+    public void removeAll(final RowSequence keys) {
         final int numKeys = keys.intSize();
         try(final WritableChunkSink.FillFromContext fillFromContext = columnSource.makeFillFromContext(numKeys);
             final WritableLongChunk<Values> values = WritableLongChunk.makeWritableChunk(numKeys)) {
@@ -62,8 +63,8 @@ public final class LongColumnSourceRedirectionIndex extends ReadOnlyLongColumnSo
     }
 
     @Override
-    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull OrderedKeys orderedKeys) {
-        columnSource.fillFromChunk(context, src, orderedKeys);
+    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
+        columnSource.fillFromChunk(context, src, rowSequence);
     }
 
     @Override

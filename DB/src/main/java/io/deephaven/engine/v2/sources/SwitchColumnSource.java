@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -114,22 +114,22 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     @Override
     public void fillChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Attributes.Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         // noinspection unchecked
-        currentSource.fillChunk(((SwitchFillContext) context).getCurrentContext(), destination, orderedKeys);
+        currentSource.fillChunk(((SwitchFillContext) context).getCurrentContext(), destination, rowSequence);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Attributes.Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         if (prevInvalid()) {
             // noinspection unchecked
-            currentSource.fillPrevChunk(((SwitchFillContext) context).getCurrentContext(), destination, orderedKeys);
+            currentSource.fillPrevChunk(((SwitchFillContext) context).getCurrentContext(), destination, rowSequence);
             return;
         }
         // noinspection unchecked
-        prevSource.fillPrevChunk(((SwitchFillContext) context).getPrevContext(), destination, orderedKeys);
+        prevSource.fillPrevChunk(((SwitchFillContext) context).getPrevContext(), destination, rowSequence);
     }
 
     private class SwitchGetContext extends SwitchContext<GetContext> implements GetContext {
@@ -151,20 +151,20 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public Chunk<? extends Attributes.Values> getChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         // noinspection unchecked
-        return currentSource.getChunk(((SwitchGetContext) context).getCurrentContext(), orderedKeys);
+        return currentSource.getChunk(((SwitchGetContext) context).getCurrentContext(), rowSequence);
     }
 
     @Override
     public Chunk<? extends Attributes.Values> getPrevChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         if (prevInvalid()) {
             // noinspection unchecked
-            return currentSource.getPrevChunk(((SwitchGetContext) context).getCurrentContext(), orderedKeys);
+            return currentSource.getPrevChunk(((SwitchGetContext) context).getCurrentContext(), rowSequence);
         }
         // noinspection unchecked
-        return prevSource.getPrevChunk(((SwitchGetContext) context).getPrevContext(), orderedKeys);
+        return prevSource.getPrevChunk(((SwitchGetContext) context).getPrevContext(), rowSequence);
     }
 
     @Override

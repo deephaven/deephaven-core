@@ -5,12 +5,9 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.DhObjectComparisons;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.util.annotations.TestUseOnly;
 
@@ -83,8 +80,8 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
@@ -105,8 +102,8 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
@@ -127,8 +124,8 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
@@ -149,8 +146,8 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);

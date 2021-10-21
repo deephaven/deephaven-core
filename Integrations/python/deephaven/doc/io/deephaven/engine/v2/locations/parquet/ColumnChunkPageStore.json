@@ -5,7 +5,7 @@
   "firstRowOffset": ":return: (long) the first row of this page, after applying the PagingChunkSource.mask(), which refers to the first row of this\n         page.",
   "getChunkType": "Get the most suitable ChunkType for use with this ChunkSource.\n\n:return: (io.deephaven.engine.v2.sources.chunk.ChunkType) The ChunkType",
   "getPageContaining": "These implementations don't use the FillContext parameter, so we're create a helper method to ignore it.\n\n:param row: long\n:return: io.deephaven.engine.v2.sources.chunk.page.ChunkPage<ColumnChunkPageStore.ATTR>",
-  "mask": "This mask is applied to OrderedKeys which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, OrderedKeys) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, OrderedKeys). This allows the PagingChunkSources to be cached, and reused even if they are properly relocated in key space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n         long.",
+  "mask": "This mask is applied to RowSequence which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, RowSequence) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence). This allows the PagingChunkSources to be cached, and reused even if they are properly relocated in key space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n         long.",
   "size": ":return: long",
   "usesDictionaryOnEveryPage": ":return: boolean"
  },

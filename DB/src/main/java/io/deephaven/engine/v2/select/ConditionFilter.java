@@ -17,10 +17,10 @@ import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.Index.SequentialBuilder;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.text.Indenter;
 import io.deephaven.util.type.TypeUtils;
@@ -78,7 +78,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
 
         class Context implements io.deephaven.engine.v2.sources.chunk.Context {
-            public final WritableLongChunk<OrderedKeyIndices> resultChunk;
+            public final WritableLongChunk<Attributes.OrderedRowKeys> resultChunk;
 
             public Context(int maxChunkSize) {
                 resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
@@ -92,14 +92,14 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         CONTEXT getContext(int maxChunkSize);
 
-        LongChunk<OrderedKeyIndices> filter(CONTEXT context, LongChunk<OrderedKeyIndices> indices,
+        LongChunk<OrderedRowKeys> filter(CONTEXT context, LongChunk<Attributes.OrderedRowKeys> indices,
                 Chunk... inputChunks);
     }
 
 
     @FunctionalInterface
     public interface ChunkGetter {
-        Chunk getChunk(@NotNull Context context, @NotNull OrderedKeys orderedKeys);
+        Chunk getChunk(@NotNull Context context, @NotNull RowSequence rowSequence);
     }
 
     @FunctionalInterface
@@ -113,15 +113,15 @@ public class ConditionFilter extends AbstractConditionFilter {
     public static class IndexLookup implements ChunkGetterWithContext {
 
         protected final Index inverted;
-        private final OrderedKeys.Iterator invertedIterator;
+        private final RowSequence.Iterator invertedIterator;
 
         IndexLookup(Index fullSet, Index selection) {
             this.inverted = fullSet.invert(selection);
-            this.invertedIterator = inverted.getOrderedKeysIterator();
+            this.invertedIterator = inverted.getRowSequenceIterator();
         }
 
         static class Context implements io.deephaven.engine.v2.sources.chunk.Context {
-            private final WritableLongChunk<OrderedKeyIndices> chunk;
+            private final WritableLongChunk<Attributes.OrderedRowKeys> chunk;
 
             Context(int chunkSize) {
                 this.chunk = WritableLongChunk.makeWritableChunk(chunkSize);
@@ -139,10 +139,10 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         @Override
         public Chunk getChunk(@NotNull io.deephaven.engine.v2.sources.chunk.Context context,
-                @NotNull OrderedKeys orderedKeys) {
-            final WritableLongChunk<OrderedKeyIndices> wlc = ((Context) context).chunk;
-            final OrderedKeys valuesForChunk = invertedIterator.getNextOrderedKeysWithLength(orderedKeys.size());
-            valuesForChunk.fillKeyIndicesChunk(wlc);
+                @NotNull RowSequence rowSequence) {
+            final WritableLongChunk<OrderedRowKeys> wlc = ((Context) context).chunk;
+            final RowSequence valuesForChunk = invertedIterator.getNextRowSequenceWithLength(rowSequence.size());
+            valuesForChunk.fillRowKeyChunk(wlc);
             return wlc;
         }
     }
@@ -175,8 +175,8 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         @Override
         public Chunk getChunk(@NotNull io.deephaven.engine.v2.sources.chunk.Context context,
-                @NotNull OrderedKeys orderedKeys) {
-            final LongChunk lc = super.getChunk(context, orderedKeys).asLongChunk();
+                @NotNull RowSequence rowSequence) {
+            final LongChunk lc = super.getChunk(context, rowSequence).asLongChunk();
             final WritableIntChunk<Attributes.Any> wic = ((IntegerContext) context).intChunk;
             wic.setSize(lc.size());
             for (int ii = 0; ii < lc.size(); ++ii) {
@@ -221,10 +221,10 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         @Override
         public Chunk getChunk(@NotNull io.deephaven.engine.v2.sources.chunk.Context context,
-                @NotNull OrderedKeys orderedKeys) {
+                @NotNull RowSequence rowSequence) {
             final Context ctx = (Context) context;
             final WritableLongChunk wlc = ctx.chunk.asWritableLongChunk();
-            for (int i = 0; i < orderedKeys.size(); i++) {
+            for (int i = 0; i < rowSequence.size(); i++) {
                 wlc.set(i, ctx.pos++);
             }
             return wlc;
@@ -239,22 +239,22 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         @Override
         public Chunk getChunk(@NotNull io.deephaven.engine.v2.sources.chunk.Context context,
-                @NotNull OrderedKeys orderedKeys) {
+                @NotNull RowSequence rowSequence) {
             final Context ctx = (Context) context;
             final WritableIntChunk wic = ctx.chunk.asWritableIntChunk();
-            for (int ii = 0; ii < orderedKeys.size(); ii++) {
+            for (int ii = 0; ii < rowSequence.size(); ii++) {
                 wic.set(ii, (int) ctx.pos++);
             }
             return wic;
         }
     }
 
-    static class OrderedKeysChunkGetter implements ChunkGetterWithContext {
+    static class RowSequenceChunkGetter implements ChunkGetterWithContext {
         private static final Context nullContext = new Context() {};
 
         @Override
-        public Chunk getChunk(@NotNull Context context, @NotNull OrderedKeys orderedKeys) {
-            return orderedKeys.asKeyIndicesChunk();
+        public Chunk getChunk(@NotNull Context context, @NotNull RowSequence rowSequence) {
+            return rowSequence.asRowKeyChunk();
         }
 
         @Override
@@ -296,17 +296,17 @@ public class ConditionFilter extends AbstractConditionFilter {
                         sourceContexts[i] = chunkGetterWithContext.getContext(chunkSize);
                         break;
                     case "k":
-                        chunkGetterWithContext = new OrderedKeysChunkGetter();
+                        chunkGetterWithContext = new RowSequenceChunkGetter();
                         chunkGetters[i] = chunkGetterWithContext;
                         sourceContexts[i] = chunkGetterWithContext.getContext(chunkSize);
                         break;
                     default: {
                         final ColumnSource columnSource = table.getColumnSource(columnName);
                         chunkGetters[i] = usePrev
-                                ? (context, orderedKeys) -> columnSource.getPrevChunk((ColumnSource.GetContext) context,
-                                        orderedKeys)
-                                : (context, orderedKeys) -> columnSource.getChunk((ColumnSource.GetContext) context,
-                                        orderedKeys);
+                                ? (context, RowSequence) -> columnSource.getPrevChunk((ColumnSource.GetContext) context,
+                                        RowSequence)
+                                : (context, RowSequence) -> columnSource.getChunk((ColumnSource.GetContext) context,
+                                        RowSequence);
                         sourceContexts[i] = columnSource.makeGetContext(chunkSize, sharedContext);
                     }
                 }
@@ -318,25 +318,25 @@ public class ConditionFilter extends AbstractConditionFilter {
         public Index filter(final Index selection, final Index fullSet, final Table table, final boolean usePrev,
                 String formula, final Param... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
-                    final OrderedKeys.Iterator okIterator = selection.getOrderedKeysIterator()) {
+                    final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];
                 final Context sourceContexts[] = new Context[columnNames.length];
                 final SharedContext sharedContext = populateChunkGettersAndContexts(selection, fullSet, table, usePrev,
                         chunkGetters, sourceContexts);
                 final SequentialBuilder resultBuilder = Index.FACTORY.getSequentialBuilder();
                 final Chunk inputChunks[] = new Chunk[columnNames.length];
-                while (okIterator.hasMore()) {
-                    final OrderedKeys currentChunkOrderedKeys = okIterator.getNextOrderedKeysWithLength(chunkSize);
+                while (rsIterator.hasMore()) {
+                    final RowSequence currentChunkRowSequence = rsIterator.getNextRowSequenceWithLength(chunkSize);
                     for (int i = 0; i < chunkGetters.length; i++) {
                         final ChunkGetter chunkFiller = chunkGetters[i];
-                        inputChunks[i] = chunkFiller.getChunk(sourceContexts[i], currentChunkOrderedKeys);
+                        inputChunks[i] = chunkFiller.getChunk(sourceContexts[i], currentChunkRowSequence);
                     }
                     if (sharedContext != null) {
                         sharedContext.reset();
                     }
                     try {
-                        final LongChunk<OrderedKeyIndices> matchedIndices =
-                                filterKernel.filter(context, currentChunkOrderedKeys.asKeyIndicesChunk(), inputChunks);
+                        final LongChunk<OrderedRowKeys> matchedIndices =
+                                filterKernel.filter(context, currentChunkRowSequence.asRowKeyChunk(), inputChunks);
                         resultBuilder.appendOrderedKeyIndicesChunk(matchedIndices);
                     } catch (Exception e) {
                         throw new FormulaEvaluationException(e.getClass().getName() + " encountered in filter={ "
@@ -498,7 +498,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 "}\n" +
                 "\n" +
                 "@Override\n" +
-                "public LongChunk<OrderedKeyIndices> filter(Context context, LongChunk<OrderedKeyIndices> indices, Chunk... inputChunks) {\n");
+                "public LongChunk<OrderedRowKeys> filter(Context context, LongChunk<OrderedRowKeys> indices, Chunk... inputChunks) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < usedInputs.size(); i++) {
             final Class columnType = usedInputs.get(i).second;

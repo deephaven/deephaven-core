@@ -9,12 +9,10 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
@@ -433,10 +431,10 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region fillByRanges
     @Override
-    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableLongChunk<? super Values> chunk = dest.asWritableLongChunk();
         final FillByContext<long[]> ctx = new FillByContext<>();
-        orderedKeys.forAllLongRanges((long firstKey, final long lastKey) -> {
+        rowSequence.forAllLongRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -470,10 +468,10 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region fillByKeys
     @Override
-    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableLongChunk<? super Values> chunk = dest.asWritableLongChunk();
         final FillByContext<long[]> ctx = new FillByContext<>();
-        orderedKeys.forEachLong((final long v) -> {
+        rowSequence.forEachLong((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(v);
                 ctx.maxKeyInCurrentBlock = v | INDEX_MASK;
@@ -490,9 +488,9 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     }
     // endregion fillByKeys
 
-    // region fillByUnorderedKeys
+    // region fillByUnRowSequence
     @Override
-    void fillByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
+    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableLongChunk<? super Values> longChunk = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -526,7 +524,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     }
 
     @Override
-    void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
+    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableLongChunk<? super Values> longChunk = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -566,16 +564,16 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         }
         dest.setSize(keys.size());
     }
-    // endregion fillByUnorderedKeys
+    // endregion fillByUnRowSequence
 
     // region fillFromChunkByRanges
     @Override
-    void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        if (orderedKeys.size() == 0) {
+    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        if (rowSequence.size() == 0) {
             return;
         }
         final LongChunk<? extends Values> chunk = src.asLongChunk();
-        final LongChunk<OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -639,12 +637,12 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region fillFromChunkByKeys
     @Override
-    void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        if (orderedKeys.size() == 0) {
+    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        if (rowSequence.size() == 0) {
             return;
         }
         final LongChunk<? extends Values> chunk = src.asLongChunk();
-        final LongChunk<OrderedKeyIndices> keys = orderedKeys.asKeyIndicesChunk();
+        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -697,7 +695,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }
@@ -750,40 +748,40 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     // endregion fillFromChunkUnordered
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         if (prevFlusher == null) {
-            fillChunk(context, dest, orderedKeys);
+            fillChunk(context, dest, rowSequence);
             return;
         }
-        defaultFillPrevChunk(context, dest, orderedKeys);
+        defaultFillPrevChunk(context, dest, rowSequence);
     }
 
     // region getChunk
     @Override
-    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        if (orderedKeys.size() == 0) {
+    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        if (rowSequence.size() == 0) {
             return LongChunk.getEmptyChunk();
         }
-        final long firstKey = orderedKeys.firstKey();
-        final long lastKey = orderedKeys.lastKey();
-        if ((lastKey - firstKey + 1) == orderedKeys.size() && (firstKey >> BLOCK2_SHIFT == lastKey >> BLOCK2_SHIFT)) {
+        final long firstKey = rowSequence.firstRowKey();
+        final long lastKey = rowSequence.lastRowKey();
+        if ((lastKey - firstKey + 1) == rowSequence.size() && (firstKey >> BLOCK2_SHIFT == lastKey >> BLOCK2_SHIFT)) {
             // it's a contiguous range, in a single block
             return DefaultGetContext.resetChunkFromArray(context,
                     blocks.getInnermostBlockByKeyOrNull(firstKey),
                     (int) (firstKey & INDEX_MASK),
-                    (int)orderedKeys.size());
+                    (int) rowSequence.size());
         }
-        return getChunkByFilling(context, orderedKeys).asLongChunk();
+        return getChunkByFilling(context, rowSequence).asLongChunk();
     }
     // endregion getChunk
 
     // region getPrevChunk
     @Override
-    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
         if (prevFlusher == null) {
-            return getChunk(context, orderedKeys);
+            return getChunk(context, rowSequence);
         }
-        return getPrevChunkByFilling(context, orderedKeys).asLongChunk();
+        return getPrevChunkByFilling(context, rowSequence).asLongChunk();
     }
     // endregion getPrevChunk
 

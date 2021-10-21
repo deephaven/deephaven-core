@@ -56,7 +56,7 @@ public abstract class SelectAndViewAnalyzer {
                 }
             }
 
-            final long targetSize = index.empty() ? 0 : index.lastKey() + 1;
+            final long targetSize = index.empty() ? 0 : index.lastRowKey() + 1;
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();

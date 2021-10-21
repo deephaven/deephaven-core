@@ -2,10 +2,11 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.tuples.TupleSource;
@@ -21,7 +22,7 @@ import java.util.PrimitiveIterator;
 import java.util.Set;
 import java.util.function.LongConsumer;
 
-public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
+public class CurrentOnlyIndex extends RowSequenceAsChunkImpl
         implements ImplementedByTreeIndexImpl, Index, Externalizable {
 
     private static final long serialVersionUID = 1L;
@@ -45,7 +46,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
     @Override
     public void close() {
         impl.ixRelease();
-        closeOrderedKeysAsChunkImpl();
+        closeRowSequenceAsChunkImpl();
     }
 
     @Override
@@ -64,7 +65,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
     }
 
     @Override
-    public void insert(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    public void insert(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         assign(impl.ixInsert(keys, offset, length));
     }
@@ -85,7 +86,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
     }
 
     @Override
-    public void remove(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    public void remove(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         assign(impl.ixRemove(keys, offset, length));
     }
@@ -117,7 +118,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
     }
 
     @Override
-    public long lastKey() {
+    public long lastRowKey() {
         return impl.ixLastKey();
     }
 
@@ -127,18 +128,18 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
     }
 
     @Override
-    public OrderedKeys.Iterator getOrderedKeysIterator() {
-        return impl.ixGetOrderedKeysIterator();
+    public RowSequence.Iterator getRowSequenceIterator() {
+        return impl.ixGetRowSequenceIterator();
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive, final long length) {
-        return impl.ixGetOrderedKeysByPosition(startPositionInclusive, length);
+    public RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
+        return impl.ixGetRowSequenceByPosition(startPositionInclusive, length);
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
-        return impl.ixGetOrderedKeysByKeyRange(startKeyInclusive, endKeyInclusive);
+    public RowSequence getRowSequenceByKeyRange(final long startRowKeyInclusive, final long endRowKeyInclusive) {
+        return impl.ixGetRowSequenceByKeyRange(startRowKeyInclusive, endRowKeyInclusive);
     }
 
     @Override
@@ -148,7 +149,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
 
 
     @Override
-    public long firstKey() {
+    public long firstRowKey() {
         return impl.ixFirstKey();
     }
 
@@ -360,7 +361,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
 
     @Override
     public final boolean isFlat() {
-        return empty() || (lastKey() == size() - 1);
+        return empty() || (lastRowKey() == size() - 1);
     }
 
     @Override
@@ -387,7 +388,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
     }
 
     private void assign(final TreeIndexImpl maybeNewImpl) {
-        invalidateOrderedKeysAsChunkImpl();
+        invalidateRowSequenceAsChunkImpl();
         if (maybeNewImpl == impl) {
             return;
         }
@@ -396,12 +397,12 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
     }
 
     @Override
-    public void fillKeyIndicesChunk(final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
+    public void fillRowKeyChunk(final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
         IndexUtilities.fillKeyIndicesChunk(this, chunkToFill);
     }
 
     @Override
-    public void fillKeyRangesChunk(final WritableLongChunk<OrderedKeyRanges> chunkToFill) {
+    public void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
         IndexUtilities.fillKeyRangesChunk(this, chunkToFill);
     }
 

@@ -1,14 +1,16 @@
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.structures.rowsequence;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 
-public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
-    private WritableLongChunk<OrderedKeyIndices> keyIndicesChunk;
+public abstract class RowSequenceAsChunkImpl implements RowSequence {
+    private WritableLongChunk<OrderedRowKeys> keyIndicesChunk;
     private boolean keyIndicesChunkInvalidated;
-    private WritableLongChunk<OrderedKeyRanges> keyRangesChunk;
+    private WritableLongChunk<Attributes.OrderedRowKeyRanges> keyRangesChunk;
     private boolean keyRangesChunkInvalidated;
 
     private void makeKeyIndicesChunk() {
@@ -18,7 +20,7 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
 
     protected long runsUpperBound() {
         final long size = size();
-        final long range = lastKey() - firstKey() + 1;
+        final long range = lastRowKey() - firstRowKey() + 1;
         final long holesUpperBound = range - size;
         final long runsUpperBound = 1 + holesUpperBound;
         return runsUpperBound;
@@ -34,13 +36,13 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
     }
 
     private void makeKeyRangesChunk(final int size) {
-        final WritableLongChunk<OrderedKeyRanges> chunk =
+        final WritableLongChunk<OrderedRowKeyRanges> chunk =
                 WritableLongChunk.makeWritableChunk(size);
         keyRangesChunk = chunk;
     }
 
     @Override
-    public final LongChunk<OrderedKeyIndices> asKeyIndicesChunk() {
+    public final LongChunk<Attributes.OrderedRowKeys> asRowKeyChunk() {
         if (size() == 0) {
             return LongChunk.getEmptyChunk();
         }
@@ -48,7 +50,7 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
             if (keyIndicesChunk != null) {
                 if (keyIndicesChunk.capacity() >= size()) {
                     keyIndicesChunk.setSize(keyIndicesChunk.capacity());
-                    fillKeyIndicesChunk(keyIndicesChunk);
+                    fillRowKeyChunk(keyIndicesChunk);
                 } else {
                     keyIndicesChunk.close();
                     keyIndicesChunk = null;
@@ -56,7 +58,7 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
             }
             if (keyIndicesChunk == null) {
                 makeKeyIndicesChunk();
-                fillKeyIndicesChunk(keyIndicesChunk);
+                fillRowKeyChunk(keyIndicesChunk);
             }
             keyIndicesChunkInvalidated = false;
         }
@@ -65,7 +67,7 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public final LongChunk<OrderedKeyRanges> asKeyRangesChunk() {
+    public final LongChunk<OrderedRowKeyRanges> asRowKeyRangesChunk() {
         if (size() == 0) {
             return LongChunk.getEmptyChunk();
         }
@@ -73,7 +75,7 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
             final int size = sizeForRangesChunk();
             if (keyRangesChunk != null) {
                 if (keyRangesChunk.capacity() >= size) {
-                    fillKeyRangesChunk(keyRangesChunk);
+                    fillRowKeyRangesChunk(keyRangesChunk);
                 } else {
                     keyRangesChunk.close();
                     keyRangesChunk = null;
@@ -81,7 +83,7 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
             }
             if (keyRangesChunk == null) {
                 makeKeyRangesChunk(size);
-                fillKeyRangesChunk(keyRangesChunk);
+                fillRowKeyRangesChunk(keyRangesChunk);
             }
             keyRangesChunkInvalidated = false;
         }
@@ -89,16 +91,16 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
         return keyRangesChunk;
     }
 
-    abstract public long lastKey();
+    abstract public long lastRowKey();
 
     abstract public long rangesCountUpperBound();
 
     @Override
     public void close() {
-        closeOrderedKeysAsChunkImpl();
+        closeRowSequenceAsChunkImpl();
     }
 
-    protected final void closeOrderedKeysAsChunkImpl() {
+    protected final void closeRowSequenceAsChunkImpl() {
         if (keyIndicesChunk != null) {
             keyIndicesChunk.close();
             keyIndicesChunk = null;
@@ -109,7 +111,7 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
         }
     }
 
-    protected final void invalidateOrderedKeysAsChunkImpl() {
+    protected final void invalidateRowSequenceAsChunkImpl() {
         keyIndicesChunkInvalidated = true;
         keyRangesChunkInvalidated = true;
     }

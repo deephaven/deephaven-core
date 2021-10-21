@@ -3,10 +3,10 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableDoubleChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -45,7 +45,7 @@ class DoubleHelper implements FillBenchmarkHelper {
     }
 
     @Override
-    public void getFromArray(Blackhole bh, int fetchSize, LongChunk<OrderedKeyIndices> keys) {
+    public void getFromArray(Blackhole bh, int fetchSize, LongChunk<Attributes.OrderedRowKeys> keys) {
         final WritableDoubleChunk result = WritableDoubleChunk.makeWritableChunk(fetchSize);
         for (int ii = 0; ii < keys.size(); ++ii) {
             result.set(ii, doubleArray[(int)keys.get(ii)]);
@@ -54,19 +54,19 @@ class DoubleHelper implements FillBenchmarkHelper {
     }
 
     @Override
-    public void fillFromArrayBacked(Blackhole bh, int fetchSize, OrderedKeys orderedKeys) {
+    public void fillFromArrayBacked(Blackhole bh, int fetchSize, RowSequence rowSequence) {
         final WritableDoubleChunk result = WritableDoubleChunk.makeWritableChunk(fetchSize);
 
-        doubleArraySource.fillChunk(arrayContext, result, orderedKeys);
+        doubleArraySource.fillChunk(arrayContext, result, rowSequence);
 
         bh.consume(result);
     }
 
     @Override
-    public void fillFromSparse(Blackhole bh, int fetchSize, OrderedKeys orderedKeys) {
+    public void fillFromSparse(Blackhole bh, int fetchSize, RowSequence rowSequence) {
         final WritableDoubleChunk result = WritableDoubleChunk.makeWritableChunk(fetchSize);
 
-        doubleSparseArraySource.fillChunk(sparseContext, result, orderedKeys);
+        doubleSparseArraySource.fillChunk(sparseContext, result, rowSequence);
 
         bh.consume(result);
     }

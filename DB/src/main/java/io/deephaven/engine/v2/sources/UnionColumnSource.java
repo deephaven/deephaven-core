@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.ShiftedRowSequence;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
@@ -12,8 +14,6 @@ import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ShiftedOrderedKeys;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -308,50 +308,50 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     @Override
     public void fillChunk(@NotNull ColumnSource.FillContext _context,
             @NotNull WritableChunk<? super Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         final FillContext context = (FillContext) _context;
-        doFillChunk(context, destination, orderedKeys, false);
+        doFillChunk(context, destination, rowSequence, false);
     }
 
     @Override
     public void fillPrevChunk(@NotNull ColumnSource.FillContext _context,
             @NotNull WritableChunk<? super Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         final FillContext context = (FillContext) _context;
-        doFillChunk(context, destination, orderedKeys, true);
+        doFillChunk(context, destination, rowSequence, true);
     }
 
     private void doFillChunk(@NotNull FillContext context,
             @NotNull WritableChunk<? super Values> destination,
-            @NotNull OrderedKeys orderedKeys,
+            @NotNull RowSequence rowSequence,
             boolean usePrev) {
-        final int okSize = orderedKeys.intSize();
+        final int rsSize = rowSequence.intSize();
 
         // Safe to assume destination has sufficient size for the request.
-        destination.setSize(okSize);
+        destination.setSize(rsSize);
 
-        // To compute startTid and lastTid we assume at least one element is in the provided orderedKeys.
-        if (okSize == 0) {
+        // To compute startTid and lastTid we assume at least one element is in the provided rowSequence.
+        if (rsSize == 0) {
             return;
         }
 
-        final int startTid = usePrev ? unionRedirection.tidForPrevIndex(orderedKeys.firstKey())
-                : unionRedirection.tidForIndex(orderedKeys.firstKey());
-        final int lastTid = usePrev ? unionRedirection.tidForPrevIndex(orderedKeys.lastKey())
-                : unionRedirection.tidForIndex(orderedKeys.lastKey());
+        final int startTid = usePrev ? unionRedirection.tidForPrevIndex(rowSequence.firstRowKey())
+                : unionRedirection.tidForIndex(rowSequence.firstRowKey());
+        final int lastTid = usePrev ? unionRedirection.tidForPrevIndex(rowSequence.lastRowKey())
+                : unionRedirection.tidForIndex(rowSequence.lastRowKey());
         final long[] startOfIndices = usePrev ? unionRedirection.prevStartOfIndices : unionRedirection.startOfIndices;
 
-        try (final OrderedKeys.Iterator okit = orderedKeys.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = rowSequence.getRowSequenceIterator();
                 final ResettableWritableChunk<Any> resettableDestination = getChunkType().makeResettableWritableChunk();
-                final ShiftedOrderedKeys okHelper = new ShiftedOrderedKeys()) {
+                final ShiftedRowSequence okHelper = new ShiftedRowSequence()) {
             int offset = 0;
             for (int tid = startTid; tid <= lastTid; ++tid) {
-                final int capacityRemaining = Math.min(context.chunkCapacity, okSize - offset);
+                final int capacityRemaining = Math.min(context.chunkCapacity, rsSize - offset);
                 if (capacityRemaining <= 0) {
                     break;
                 }
 
-                okHelper.reset(okit.getNextOrderedKeysThrough(startOfIndices[tid + 1] - 1), -startOfIndices[tid]);
+                okHelper.reset(rsIt.getNextRowSequenceThrough(startOfIndices[tid + 1] - 1), -startOfIndices[tid]);
                 if (okHelper.intSize() <= 0) {
                     // we do not need to invoke fillChunk on this subSource
                     continue;

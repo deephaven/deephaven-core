@@ -2,15 +2,11 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.engine.v2.utils.Index;
 
 public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChunkedOperator {
@@ -21,7 +17,7 @@ public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChu
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends Attributes.RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -35,11 +31,11 @@ public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChu
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
         return addChunk(inputIndices, 0, inputIndices.size(), destination);
     }
 
-    private boolean addChunk(LongChunk<? extends KeyIndices> indices, int start, int length, long destination) {
+    private boolean addChunk(LongChunk<? extends Attributes.RowKeys> indices, int start, int length, long destination) {
         if (length == 0) {
             return false;
         }
@@ -52,7 +48,7 @@ public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChu
         if (index.empty()) {
             return false;
         }
-        final long candidate = isFirst ? index.firstKey() : index.lastKey();
+        final long candidate = isFirst ? index.firstRowKey() : index.lastRowKey();
         return updateRedirections(destination, candidate);
     }
 

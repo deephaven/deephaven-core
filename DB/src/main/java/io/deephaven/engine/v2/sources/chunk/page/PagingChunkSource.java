@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.chunk.page;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -11,19 +11,19 @@ import org.jetbrains.annotations.NotNull;
  * {@code PagingChunkSource} adds a mask to the ChunkSource, and supports some additional {@code fillChunk} methods.
  *
  * The mask is a bitmask of the lower order bits of the keys in an OrderKeys, which specifies the bits from the
- * {@link OrderedKeys} which will be used to uniquely specify the offsets into the ChunkSource elements on calls to
- * {@link ChunkSource#fillChunk(FillContext, WritableChunk, OrderedKeys)},
- * {@link ChunkSource#getChunk(GetContext, OrderedKeys)}, {@link ChunkSource#getChunk(GetContext, long, long)}.
+ * {@link RowSequence} which will be used to uniquely specify the offsets into the ChunkSource elements on calls to
+ * {@link ChunkSource#fillChunk(FillContext, WritableChunk, RowSequence)},
+ * {@link ChunkSource#getChunk(GetContext, RowSequence)}, {@link ChunkSource#getChunk(GetContext, long, long)}.
  *
- * Also, a new method {@link PagingChunkSource#fillChunkAppend(FillContext, WritableChunk, OrderedKeys.Iterator)} is
+ * Also, a new method {@link PagingChunkSource#fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} is
  * added, which supports doing a fillChunk incrementally across a series of pages.
  */
 public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
 
     /**
-     * This mask is applied to {@link OrderedKeys} which are passed into
-     * {@link #getChunk(ChunkSource.GetContext, OrderedKeys)} and
-     * {@link #fillChunk(ChunkSource.FillContext, WritableChunk, OrderedKeys)}. This allows the {@link PagingChunkSource
+     * This mask is applied to {@link RowSequence} which are passed into
+     * {@link #getChunk(ChunkSource.GetContext, RowSequence)} and
+     * {@link #fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence)}. This allows the {@link PagingChunkSource
      * PagingChunkSources} to be cached, and reused even if they are properly relocated in key space.
      *
      * @return the mask for this page, which must be a bitmask representing the some number of lower order bits of a
@@ -34,8 +34,8 @@ public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSou
     /**
      * <p>
      * The {@code maxRow} is the greatest possible row which may reference this ChunkSource. This method is used by
-     * {@link #fillChunkAppend(FillContext, WritableChunk, OrderedKeys.Iterator)} to determine which of its
-     * {@code OrderedKeys} are referencing this {@code PagingChunkSource}.
+     * {@link #fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} to determine which of its
+     * {@code RowSequence} are referencing this {@code PagingChunkSource}.
      * </p>
      *
      * <p>
@@ -58,27 +58,27 @@ public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSou
 
     /**
      * <p>
-     * Similar to {@link #fillChunk(FillContext, WritableChunk, OrderedKeys)}, except that the values from the
+     * Similar to {@link #fillChunk(FillContext, WritableChunk, RowSequence)}, except that the values from the
      * ChunkSource are appended to {@code destination}, rather than placed at the beginning.
      * </p>
      *
      * <p>
-     * The values to fill into {@code destination} are specified by {@code orderedKeysIterator}, whose
-     * {@link OrderedKeys.Iterator#firstKey()} must exist, and must be represented by this {@code PagingChunkSource}
+     * The values to fill into {@code destination} are specified by {@code RowSequenceIterator}, whose
+     * {@link RowSequence.Iterator#firstRowKey()} must exist, and must be represented by this {@code PagingChunkSource}
      * (modulo {#link @mask}), otherwise results are undefined.
      * </p>
      *
      * <p>
-     * No more than the elements in {@code orderedKeysIterator}, which are on the same page as
-     * {@link OrderedKeys.Iterator#firstKey()}, have their values appended to {@code destination}, and consumed from
-     * {@code orderedKeysIterator}. Keys are on the same page when the bits outside of {@link #mask()} are identical.
+     * No more than the elements in {@code RowSequenceIterator}, which are on the same page as
+     * {@link RowSequence.Iterator#firstRowKey()}, have their values appended to {@code destination}, and consumed from
+     * {@code RowSequenceIterator}. Indices are on the same page when the bits outside of {@link #mask()} are identical.
      *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk. In particular,
      *        the Context may be used to provide a Chunk data pool
      * @param destination The chunk to append the results to.
-     * @param orderedKeysIterator The iterator to the ordered keys, which contain at least the keys to extract from this
+     * @param RowSequenceIterator The iterator to the ordered keys, which contain at least the keys to extract from this
      *        {@code ChunkSource}. The keys to extract will be at the beginning of iteration order.
      */
     void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-            @NotNull OrderedKeys.Iterator orderedKeysIterator);
+            @NotNull RowSequence.Iterator RowSequenceIterator);
 }

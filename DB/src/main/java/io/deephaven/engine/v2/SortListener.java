@@ -8,12 +8,15 @@ import io.deephaven.base.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.hashing.HashMapK4V4;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
@@ -188,8 +191,9 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             if (numRemovedKeys > 0) {
                 fillArray(removedOutputKeys, upstream.removed, 0, reverseLookup::remove);
                 Arrays.sort(removedOutputKeys, 0, numRemovedKeys);
-                final LongChunk<OrderedKeyIndices> keyChunk = LongChunk.chunkWrap(removedOutputKeys, 0, numRemovedKeys);
-                try (final OrderedKeys wrappedKeyChunk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(keyChunk)) {
+                final LongChunk<Attributes.OrderedRowKeys> keyChunk =
+                        LongChunk.chunkWrap(removedOutputKeys, 0, numRemovedKeys);
+                try (final RowSequence wrappedKeyChunk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);
                 }
                 try (final Index rmKeyIndex = sortedArrayToIndex(removedOutputKeys, 0, numRemovedKeys)) {
@@ -210,7 +214,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             }
 
             final long indexKeyForLeftmostInsert =
-                    resultIndex.empty() ? REBALANCE_MIDPOINT : resultIndex.firstKey() - 1;
+                    resultIndex.empty() ? REBALANCE_MIDPOINT : resultIndex.firstRowKey() - 1;
             if (indexKeyForLeftmostInsert <= 0) {
                 // Actually we "could", but we "don't" (yet).
                 throw new IllegalStateException("Table has filled to key index 0; need to rebalance but cannot.");
@@ -257,9 +261,9 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             // otherwise the algorithm will not be able to break ties by upstream keyspace.
             if (numRemovedKeys > removedSize) {
                 Arrays.sort(removedOutputKeys, removedSize, numRemovedKeys);
-                final LongChunk<OrderedKeyIndices> keyChunk =
+                final LongChunk<Attributes.OrderedRowKeys> keyChunk =
                         LongChunk.chunkWrap(removedOutputKeys, removedSize, numRemovedKeys - removedSize);
-                try (final OrderedKeys wrappedKeyChunk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(keyChunk)) {
+                try (final RowSequence wrappedKeyChunk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);
                 }
                 try (final Index rmKeyIndex =
@@ -602,7 +606,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         private final ExposedTLongArrayList keys;
         private final ExposedTLongArrayList values;
         private final WritableLongChunk valuesChunk;
-        private final WritableLongChunk<OrderedKeyIndices> keysChunk;
+        private final WritableLongChunk<OrderedRowKeys> keysChunk;
         private final WritableChunkSink.FillFromContext fillFromContext;
         private final LongSortKernel sortKernel;
 
@@ -640,9 +644,9 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
                 // noinspection unchecked
                 sortKernel.sort(valuesChunk, keysChunk);
 
-                try (final OrderedKeys orderedKeys = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(keysChunk)) {
+                try (final RowSequence rowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keysChunk)) {
                     // noinspection unchecked
-                    sortMapping.fillFromChunk(fillFromContext, valuesChunk, orderedKeys);
+                    sortMapping.fillFromChunk(fillFromContext, valuesChunk, rowSequence);
                 }
 
                 for (int jj = 0; jj < thisSize; ++jj) {
@@ -754,12 +758,12 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
 
         @Override
         public void appendRange(long firstKey, long lastKey) {
-            // if direction == 1, then lastKey must be >= firstKey
-            // if direction == -1, then lastKey must be <= firstKey
+            // if direction == 1, then lastRowKey must be >= firstRowKey
+            // if direction == -1, then lastRowKey must be <= firstRowKey
             final int rangeDirection = -Long.compare(firstKey, lastKey);
             if (rangeDirection * direction < 0) {
                 Assert.assertion(rangeDirection * direction >= 0, "Range must be compatible with direction",
-                        (Object) firstKey, "firstKey", (Object) lastKey, "lastKey", direction, "direction");
+                        (Object) firstKey, "firstRowKey", (Object) lastKey, "lastRowKey", direction, "direction");
             }
 
             final int lSize = lasts.size();
@@ -767,7 +771,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
                 final long lastLast = lasts.get(lSize - 1);
 
                 Assert.assertion(Long.compare(lastKey, lastLast) * direction > 0,
-                        "Long.compare(lastKey, lastLast) * direction > 0",
+                        "Long.compare(lastRowKey, lastLast) * direction > 0",
                         "New key not being added in the right direction");
                 if (lastLast + direction == firstKey) {
                     lasts.set(lSize - 1, lastKey);
@@ -862,9 +866,9 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         // We provide a view on these various arrays
         final long[] addedOutputKeys;
         final long[] addedInputKeys;
-        // The index for the current element of added(Input,Output)Keys
+        // The index for the current element of added(Input,Output)Indices
         int addedCurrent;
-        // The exclusive end index for the added(Input,Output)Keys
+        // The exclusive end index for the added(Input,Output)Indices
         final int addedEnd;
 
         QueueState(int direction, long[] addedOutputKeys, long[] addedInputKeys, int addedCurrent, int addedEnd) {

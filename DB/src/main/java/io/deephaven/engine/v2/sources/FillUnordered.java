@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
@@ -18,7 +18,7 @@ public interface FillUnordered {
     void fillChunkUnordered(
             @NotNull ColumnSource.FillContext context,
             @NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends KeyIndices> keys);
+            @NotNull LongChunk<? extends RowKeys> keys);
 
     /**
      * Populates a contiguous portion of the given destination chunk with prev data corresponding to the keys from the
@@ -31,5 +31,5 @@ public interface FillUnordered {
     void fillPrevChunkUnordered(
             @NotNull ColumnSource.FillContext context,
             @NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends KeyIndices> keys);
+            @NotNull LongChunk<? extends RowKeys> keys);
 }

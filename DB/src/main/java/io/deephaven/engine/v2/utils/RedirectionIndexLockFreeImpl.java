@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.hashing.HashMapLockFreeK4V4;
 import io.deephaven.engine.v2.hashing.HashMapLockFreeK1V1;
 import io.deephaven.engine.v2.hashing.HashMapLockFreeK2V2;
@@ -218,7 +219,7 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
     }
 
     @Override
-    public void removeAll(final OrderedKeys keys) {
+    public void removeAll(final RowSequence keys) {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
@@ -252,14 +253,14 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
 
     @Override
     public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
 
         final MutableInt offset = new MutableInt();
         final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
-        orderedKeys.forAllLongs(key -> {
+        rowSequence.forAllLongs(key -> {
             updates.put(key, valuesLongChunk.get(offset.intValue()));
             offset.increment();
         });

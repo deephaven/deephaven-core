@@ -10,7 +10,8 @@ import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -36,13 +37,13 @@ public class TestObjectLongMegaMerge {
         int totalSize = chunkSize * chunkCount;
 
         try (final WritableObjectChunk<Object, Values> allValues = WritableObjectChunk.makeWritableChunk(totalSize);
-             final WritableLongChunk<Attributes.KeyIndices> allKeys = WritableLongChunk.makeWritableChunk(totalSize)) {
+             final WritableLongChunk<Attributes.RowKeys> allKeys = WritableLongChunk.makeWritableChunk(totalSize)) {
 
             for (int chunk = 0; chunk < chunkCount; ++chunk) {
                 final int sizeAfterAddition = (chunk + 1) * chunkSize;
 
                 try (final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(chunkSize);
-                     final WritableLongChunk<Attributes.KeyIndices> keysChunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
+                     final WritableLongChunk<Attributes.RowKeys> keysChunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
 
                     final Random random = new Random(0);
 
@@ -69,11 +70,11 @@ public class TestObjectLongMegaMerge {
 
                 try (final ChunkSource.GetContext valueContext = valuesSource.makeGetContext(sizeAfterAddition);
                      final ChunkSource.GetContext keyContext = keySource.makeGetContext(sizeAfterAddition)) {
-                    final OrderedKeys orderedKeys = OrderedKeys.forRange(0, sizeAfterAddition - 1);
+                    final RowSequence rowSequence = RowSequenceUtil.forRange(0, sizeAfterAddition - 1);
 
 
-                    final ObjectChunk<Object, Values> checkValues = valuesSource.getChunk(valueContext, orderedKeys).asObjectChunk();
-                    final LongChunk<Values> checkKeys = keySource.getChunk(keyContext, orderedKeys).asLongChunk();
+                    final ObjectChunk<Object, Values> checkValues = valuesSource.getChunk(valueContext, rowSequence).asObjectChunk();
+                    final LongChunk<Values> checkKeys = keySource.getChunk(keyContext, rowSequence).asLongChunk();
 
                     TestCase.assertEquals(checkValues.size(), allValues.size());
                     int firstDifferentValue = ObjectChunkEquals.firstDifference(checkValues, allValues);
@@ -85,8 +86,8 @@ public class TestObjectLongMegaMerge {
 
                     int firstDifferentKey = LongChunkEquals.firstDifference(checkKeys, allKeys);
                     if (firstDifferentKey < checkKeys.size()) {
-                        System.out.println("Expected Keys:\n" + ChunkUtils.dumpChunk(allKeys));
-                        System.out.println("Actual Keys:\n" + ChunkUtils.dumpChunk(checkKeys));
+                        System.out.println("Expected Indices:\n" + ChunkUtils.dumpChunk(allKeys));
+                        System.out.println("Actual Indices:\n" + ChunkUtils.dumpChunk(checkKeys));
                     }
                     TestCase.assertEquals(allKeys.size(), firstDifferentKey);
                 }

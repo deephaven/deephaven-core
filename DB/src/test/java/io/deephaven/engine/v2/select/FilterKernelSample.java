@@ -34,7 +34,7 @@ public class FilterKernelSample implements io.deephaven.engine.v2.select.Conditi
     }
     
     @Override
-    public LongChunk<OrderedKeyIndices> filter(Context context, LongChunk<OrderedKeyIndices> indices, Chunk... inputChunks) {
+    public LongChunk<OrderedRowKeys> filter(Context context, LongChunk<OrderedRowKeys> indices, Chunk... inputChunks) {
         final ShortChunk __columnChunk0 = inputChunks[0].asShortChunk();
         final DoubleChunk __columnChunk1 = inputChunks[1].asDoubleChunk();
         final int size = indices.size();

@@ -4,7 +4,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,11 +23,11 @@ public interface ColumnRegionReferencing<ATTR extends Any, REFERENCED_COLUMN_REG
     interface Converter<ATTR extends Any> {
 
         /**
-         * Converts all the native source values represented by {@code orderedKeys} <em>from a single region</em> into
+         * Converts all the native source values represented by {@code rowSequence} <em>from a single region</em> into
          * the {@code destination} chunk by appending.
          */
         void convertRegion(WritableChunk<? super ATTR> destination, Chunk<? extends ATTR> source,
-                OrderedKeys orderedKeys);
+                RowSequence rowSequence);
     }
 
     class Null<ATTR extends Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>

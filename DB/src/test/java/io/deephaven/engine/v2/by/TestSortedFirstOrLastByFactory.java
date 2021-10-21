@@ -26,7 +26,7 @@ import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggSortedLast;
 
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
-    private static final String[] colNames = new String[] {"Sym", "intCol", "doubleCol", "Keys"};
+    private static final String[] colNames = new String[] {"Sym", "intCol", "doubleCol", "Indices"};
     private static final boolean printTableUpdates = Configuration.getInstance()
             .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
 
@@ -55,24 +55,24 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             showWithIndex(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                EvalNugget.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Keys"), sortColumns)),
-                EvalNugget.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Keys"), sortColumns)),
+                EvalNugget.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Indices"), sortColumns)),
+                EvalNugget.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Indices"), sortColumns)),
                 new QueryTableTest.TableComparator(
                         queryTable.sort(sortColumns).head(1),
                         SortedBy.sortedFirstBy(queryTable, sortColumns)),
                 new QueryTableTest.TableComparator(
                         SortedBy.sortedLastBy(queryTable, sortColumns),
                         queryTable.sort(sortColumns).tail(1)),
-                EvalNugget.Sorted.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Keys"), sortColumns, "Sym"),
+                EvalNugget.Sorted.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Indices"), sortColumns, "Sym"),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Keys"), sortColumns, "Sym"),
+                EvalNugget.Sorted.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Indices"), sortColumns, "Sym"),
                         "Sym"),
                 new QueryTableTest.TableComparator(
                         queryTable.sort(sortColumns).firstBy("Sym").sort("Sym"),
                         SortedBy.sortedFirstBy(queryTable, sortColumns, "Sym").sort("Sym")),
                 new QueryTableTest.TableComparator(
                         queryTable.sort(sortColumns).lastBy("Sym").sort("Sym"),
-                        queryTable.by(AggCombo(AggSortedLast(sortColumns, "intCol", "doubleCol", "Keys")), "Sym")
+                        queryTable.by(AggCombo(AggSortedLast(sortColumns, "intCol", "doubleCol", "Indices")), "Sym")
                                 .sort("Sym"))
         };
         for (int step = 0; step < 100; step++) {

@@ -3,10 +3,11 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.benchmarking.CsvResultWriter;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.results.RunResult;
@@ -33,8 +34,8 @@ public class ColumnSourceFillBenchmark {
 
     private FillBenchmarkHelper helper;
 
-    private WritableLongChunk<Attributes.OrderedKeyIndices> keys;
-    private OrderedKeys orderedKeys;
+    private WritableLongChunk<Attributes.OrderedRowKeys> keys;
+    private RowSequence rowSequence;
 
     @Param({"long"})
     String typeName;
@@ -89,7 +90,7 @@ public class ColumnSourceFillBenchmark {
         Arrays.sort(keyArray);
 
         keys = WritableLongChunk.writableChunkWrap(keyArray, 0, keyArray.length);
-        orderedKeys = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(keys);
+        rowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keys);
     }
 
     @TearDown(Level.Trial)
@@ -104,12 +105,12 @@ public class ColumnSourceFillBenchmark {
 
     @Benchmark
     public void fillChunkArrayBacked(Blackhole bh) {
-        helper.fillFromArrayBacked(bh, fetchSize, orderedKeys);
+        helper.fillFromArrayBacked(bh, fetchSize, rowSequence);
     }
 
     @Benchmark
     public void fillChunkSparseArray(Blackhole bh) {
-        helper.fillFromSparse(bh, fetchSize, orderedKeys);
+        helper.fillFromSparse(bh, fetchSize, rowSequence);
     }
 
     public static void main(String[] args) throws RunnerException {

@@ -44,11 +44,11 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -60,11 +60,11 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -76,8 +76,8 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         // we have no inputs, so should never get here
         throw new IllegalStateException();
@@ -85,14 +85,14 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public void shiftChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> preShiftIndices,
-            LongChunk<? extends KeyIndices> postShiftIndices, IntChunk<KeyIndices> destinations,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftIndices,
+            LongChunk<? extends RowKeys> postShiftIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> preShiftIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) preShiftIndices;
+        final LongChunk<OrderedRowKeys> preShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) preShiftIndices;
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> postShiftIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) postShiftIndices;
+        final LongChunk<OrderedRowKeys> postShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) postShiftIndices;
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -112,17 +112,17 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    private long doShift(LongChunk<OrderedKeyIndices> preShiftIndices, LongChunk<OrderedKeyIndices> postShiftIndices,
+    private long doShift(LongChunk<OrderedRowKeys> preShiftIndices, LongChunk<OrderedRowKeys> postShiftIndices,
             int startPosition, int runLength, long destination) {
         final Index index = indexForSlot(destination);
         index.remove(preShiftIndices, startPosition, runLength);
         index.insert(postShiftIndices, startPosition, runLength);
-        return isFirst ? index.firstKey() : index.lastKey();
+        return isFirst ? index.firstRowKey() : index.lastRowKey();
     }
 
     @Override
-    public void modifyIndices(BucketedContext context, LongChunk<? extends KeyIndices> inputIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+    public void modifyIndices(BucketedContext context, LongChunk<? extends RowKeys> inputIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -137,32 +137,32 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         // noinspection unchecked
-        return addChunk((LongChunk<OrderedKeyIndices>) inputIndices, 0, inputIndices.size(), destination);
+        return addChunk((LongChunk<OrderedRowKeys>) inputIndices, 0, inputIndices.size(), destination);
     }
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         // noinspection unchecked
-        return removeChunk((LongChunk<OrderedKeyIndices>) inputIndices, 0, inputIndices.size(), destination);
+        return removeChunk((LongChunk<OrderedRowKeys>) inputIndices, 0, inputIndices.size(), destination);
     }
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
         // we have no inputs, so should never get here
         throw new IllegalStateException();
     }
 
     @Override
     public boolean shiftChunk(SingletonContext singletonContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> preInputIndices,
-            LongChunk<? extends KeyIndices> postInputIndices, long destination) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preInputIndices,
+            LongChunk<? extends RowKeys> postInputIndices, long destination) {
         // noinspection unchecked
-        final long newValue = doShift((LongChunk<OrderedKeyIndices>) preInputIndices,
-                (LongChunk<OrderedKeyIndices>) postInputIndices, 0, preInputIndices.size(), destination);
+        final long newValue = doShift((LongChunk<OrderedRowKeys>) preInputIndices,
+                (LongChunk<OrderedRowKeys>) postInputIndices, 0, preInputIndices.size(), destination);
         if (exposeRedirections) {
             final long oldValue = redirections.getAndSetUnsafe(destination, newValue);
             return oldValue != newValue;
@@ -173,7 +173,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     }
 
     @Override
-    public boolean modifyIndices(SingletonContext context, LongChunk<? extends KeyIndices> indices, long destination) {
+    public boolean modifyIndices(SingletonContext context, LongChunk<? extends RowKeys> indices, long destination) {
         if (indices.size() == 0) {
             return false;
         }
@@ -182,7 +182,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         return hasRedirection(indices, redirectedRow, 0, indices.size());
     }
 
-    private boolean hasRedirection(LongChunk<? extends KeyIndices> indices, long redirectedRow, int startInclusive,
+    private boolean hasRedirection(LongChunk<? extends RowKeys> indices, long redirectedRow, int startInclusive,
             int endExclusive) {
         if (isFirst) {
             return indices.get(startInclusive) == redirectedRow;
@@ -191,7 +191,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    private boolean addChunk(LongChunk<OrderedKeyIndices> indices, int start, int length, long destination) {
+    private boolean addChunk(LongChunk<OrderedRowKeys> indices, int start, int length, long destination) {
         final Index index = indexForSlot(destination);
         index.insert(indices, start, length);
 
@@ -218,7 +218,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         return index;
     }
 
-    private boolean removeChunk(LongChunk<OrderedKeyIndices> indices, int start, int length, long destination) {
+    private boolean removeChunk(LongChunk<OrderedRowKeys> indices, int start, int length, long destination) {
         final Index index = indexForSlot(destination);
         index.remove(indices, start, length);
 
@@ -226,7 +226,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     }
 
     private boolean updateRedirections(long destination, Index index) {
-        final long newValue = isFirst ? index.firstKey() : index.lastKey();
+        final long newValue = isFirst ? index.firstRowKey() : index.lastRowKey();
         final long oldValue = redirections.getAndSetUnsafe(destination, newValue);
         return oldValue != newValue;
     }
@@ -283,14 +283,14 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-                LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+                LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
                 IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
                 WritableBooleanChunk<Values> stateModified) {
             checkForChangedRedirections(startPositions, destinations, stateModified);
         }
 
         private void checkForChangedRedirections(IntChunk<ChunkPositions> startPositions,
-                IntChunk<KeyIndices> destinations, WritableBooleanChunk<Values> stateModified) {
+                IntChunk<RowKeys> destinations, WritableBooleanChunk<Values> stateModified) {
             for (int ii = 0; ii < startPositions.size(); ++ii) {
                 final int startPosition = startPositions.get(ii);
                 final long destination = destinations.get(startPosition);
@@ -303,8 +303,8 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         }
 
         private void checkForMatchingRedirections(IntChunk<ChunkPositions> startPositions,
-                IntChunk<ChunkLengths> lengths, LongChunk<? extends KeyIndices> postKeyIndices,
-                IntChunk<KeyIndices> destinations, WritableBooleanChunk<Values> stateModified) {
+                IntChunk<ChunkLengths> lengths, LongChunk<? extends RowKeys> postKeyIndices,
+                IntChunk<RowKeys> destinations, WritableBooleanChunk<Values> stateModified) {
             for (int ii = 0; ii < startPositions.size(); ++ii) {
                 final int startPosition = startPositions.get(ii);
                 final long destination = destinations.get(startPosition);
@@ -319,7 +319,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-                LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+                LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
                 IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
                 WritableBooleanChunk<Values> stateModified) {
             checkForChangedRedirections(startPositions, destinations, stateModified);
@@ -327,50 +327,50 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
-                IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+                IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
                 IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
             checkForMatchingRedirections(startPositions, length, postShiftIndices, destinations, stateModified);
         }
 
         @Override
         public void shiftChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> preShiftIndices,
-                LongChunk<? extends KeyIndices> postShiftIndices, IntChunk<KeyIndices> destinations,
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftIndices,
+                LongChunk<? extends RowKeys> postShiftIndices, IntChunk<RowKeys> destinations,
                 IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
                 WritableBooleanChunk<Values> stateModified) {
             checkForChangedRedirections(startPositions, destinations, stateModified);
         }
 
         @Override
-        public void modifyIndices(BucketedContext context, LongChunk<? extends KeyIndices> inputIndices,
-                IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
+        public void modifyIndices(BucketedContext context, LongChunk<? extends RowKeys> inputIndices,
+                IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
                 IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
             checkForMatchingRedirections(startPositions, length, inputIndices, destinations, stateModified);
         }
 
         @Override
         public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                LongChunk<? extends KeyIndices> inputIndices, long destination) {
+                LongChunk<? extends RowKeys> inputIndices, long destination) {
             return redirectionModified(destination);
         }
 
         @Override
         public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                LongChunk<? extends KeyIndices> inputIndices, long destination) {
+                LongChunk<? extends RowKeys> inputIndices, long destination) {
             return redirectionModified(destination);
         }
 
         @Override
         public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
             return checkSingletonModification(postShiftIndices, destination);
         }
 
         @Override
         public boolean shiftChunk(SingletonContext context, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> preShiftIndices,
-                LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftIndices,
+                LongChunk<? extends RowKeys> postShiftIndices, long destination) {
             if (exposeRedirections) {
                 return checkSingletonModification(postShiftIndices, destination);
             } else {
@@ -382,20 +382,20 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             return redirections.getUnsafe(destination) != redirections.getPrevLong(destination);
         }
 
-        private boolean checkSingletonModification(LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+        private boolean checkSingletonModification(LongChunk<? extends RowKeys> postShiftIndices, long destination) {
             return redirections.getUnsafe(destination) == (isFirst ? postShiftIndices.get(0)
                     : postShiftIndices.get(postShiftIndices.size() - 1));
         }
 
         @Override
-        public boolean modifyIndices(SingletonContext context, LongChunk<? extends KeyIndices> indices,
+        public boolean modifyIndices(SingletonContext context, LongChunk<? extends RowKeys> indices,
                 long destination) {
             return redirections.getUnsafe(destination) == (isFirst ? indices.get(0) : indices.get(indices.size() - 1));
         }
 
         @Override
         public boolean addIndex(SingletonContext context, Index index, long destination) {
-            return redirections.getUnsafe(destination) == (isFirst ? index.firstKey() : index.lastKey());
+            return redirections.getUnsafe(destination) == (isFirst ? index.firstRowKey() : index.lastRowKey());
         }
 
         @Override
@@ -452,7 +452,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-                LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+                LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
                 IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
                 WritableBooleanChunk<Values> stateModified) {
             updateBucketed(startPositions, destinations, stateModified);
@@ -460,7 +460,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-                LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+                LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
                 IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
                 WritableBooleanChunk<Values> stateModified) {
             updateBucketed(startPositions, destinations, stateModified);
@@ -468,20 +468,20 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public void shiftChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> preShiftIndices,
-                LongChunk<? extends KeyIndices> postShiftIndices, IntChunk<KeyIndices> destinations,
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftIndices,
+                LongChunk<? extends RowKeys> postShiftIndices, IntChunk<RowKeys> destinations,
                 IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
                 WritableBooleanChunk<Values> stateModified) {
             updateBucketed(startPositions, destinations, stateModified);
         }
 
-        private void updateBucketed(IntChunk<ChunkPositions> startPositions, IntChunk<KeyIndices> destinations,
+        private void updateBucketed(IntChunk<ChunkPositions> startPositions, IntChunk<RowKeys> destinations,
                 WritableBooleanChunk<Values> stateModified) {
             for (int ii = 0; ii < startPositions.size(); ++ii) {
                 final int startPosition = startPositions.get(ii);
                 final int destination = destinations.get(startPosition);
                 final Index trackingIndex = indices.getUnsafe(destination);
-                final long trackingKey = isFirst ? trackingIndex.firstKey() : trackingIndex.lastKey();
+                final long trackingKey = isFirst ? trackingIndex.firstRowKey() : trackingIndex.lastRowKey();
                 if (redirections.getUnsafe(destination) != trackingKey) {
                     redirections.set(destination, trackingKey);
                     stateModified.set(ii, true);
@@ -491,21 +491,21 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
-                IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+                IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
                 IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
             checkForModifications(postShiftIndices, destinations, startPositions, length, stateModified);
         }
 
         @Override
-        public void modifyIndices(BucketedContext context, LongChunk<? extends KeyIndices> inputIndices,
-                IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
+        public void modifyIndices(BucketedContext context, LongChunk<? extends RowKeys> inputIndices,
+                IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
                 IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
             checkForModifications(inputIndices, destinations, startPositions, length, stateModified);
         }
 
-        private void checkForModifications(LongChunk<? extends KeyIndices> inputIndices,
-                IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
+        private void checkForModifications(LongChunk<? extends RowKeys> inputIndices,
+                IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
                 IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
             for (int ii = 0; ii < startPositions.size(); ++ii) {
                 final int startPosition = startPositions.get(ii);
@@ -519,20 +519,20 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                LongChunk<? extends KeyIndices> inputIndices, long destination) {
+                LongChunk<? extends RowKeys> inputIndices, long destination) {
             return updateSingleton(destination);
         }
 
         @Override
         public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                LongChunk<? extends KeyIndices> inputIndices, long destination) {
+                LongChunk<? extends RowKeys> inputIndices, long destination) {
             return updateSingleton(destination);
         }
 
         @Override
         public boolean shiftChunk(SingletonContext context, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> preShiftIndices,
-                LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftIndices,
+                LongChunk<? extends RowKeys> postShiftIndices, long destination) {
             final boolean changed = updateSingleton(destination);
             return exposeRedirections && changed;
         }
@@ -544,23 +544,23 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         private boolean updateSingleton(long destination) {
             final Index trackedIndex = Require.neqNull(indices.getUnsafe(destination), "indices.get(destination)");
-            final long trackedKey = isFirst ? trackedIndex.firstKey() : trackedIndex.lastKey();
+            final long trackedKey = isFirst ? trackedIndex.firstRowKey() : trackedIndex.lastRowKey();
             return trackedKey != redirections.getAndSetUnsafe(destination, trackedKey);
         }
 
         @Override
         public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
             return checkSingletonModification(postShiftIndices, redirections.getUnsafe(destination));
         }
 
         @Override
-        public boolean modifyIndices(SingletonContext context, LongChunk<? extends KeyIndices> indices,
+        public boolean modifyIndices(SingletonContext context, LongChunk<? extends RowKeys> indices,
                 long destination) {
             return checkSingletonModification(indices, redirections.getUnsafe(destination));
         }
 
-        private boolean checkSingletonModification(LongChunk<? extends KeyIndices> postShiftIndices, long redirection) {
+        private boolean checkSingletonModification(LongChunk<? extends RowKeys> postShiftIndices, long redirection) {
             if (isFirst) {
                 return redirection == postShiftIndices.get(0);
             } else {

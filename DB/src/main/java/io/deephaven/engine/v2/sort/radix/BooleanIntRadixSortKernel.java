@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 
 public class BooleanIntRadixSortKernel {
-    public static <ATTR extends Any, KEY_INDICES extends Keys> IntSortKernel<ATTR, KEY_INDICES> createContext(int size, SortingOrder order, boolean preserveValues) {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> IntSortKernel<ATTR, KEY_INDICES> createContext(int size, SortingOrder order, boolean preserveValues) {
         if (order == SortingOrder.Ascending) {
             return new BooleanIntSortKernel<>(size, preserveValues);
         } else {
@@ -17,7 +17,7 @@ public class BooleanIntRadixSortKernel {
         }
     }
 
-    private static class BooleanIntSortKernel<ATTR extends Any, KEY_INDICES extends Keys> implements IntSortKernel<ATTR, KEY_INDICES> {
+    private static class BooleanIntSortKernel<ATTR extends Any, KEY_INDICES extends Indices> implements IntSortKernel<ATTR, KEY_INDICES> {
         final WritableIntChunk<KEY_INDICES> nullKeys;
         final WritableIntChunk<KEY_INDICES> falseKeys;
         private final boolean preserveValues;
@@ -88,10 +88,10 @@ public class BooleanIntRadixSortKernel {
         }
     }
 
-    private static class BooleanIntSortDescendingKernel<ATTR extends Any, KEY_INDICES extends Keys> implements IntSortKernel<ATTR, KEY_INDICES> {
-        final WritableIntChunk<Keys> falseKeys;
+    private static class BooleanIntSortDescendingKernel<ATTR extends Any, KEY_INDICES extends Indices> implements IntSortKernel<ATTR, KEY_INDICES> {
+        final WritableIntChunk<Indices> falseKeys;
         private final boolean preserveValues;
-        final WritableIntChunk<Keys> trueKeys;
+        final WritableIntChunk<Indices> trueKeys;
         int backPosition = 0;
 
         private BooleanIntSortDescendingKernel(int size, boolean preserveValues) {

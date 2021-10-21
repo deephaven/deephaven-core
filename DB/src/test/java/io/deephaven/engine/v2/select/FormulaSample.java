@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.type.TypeUtils;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -88,34 +88,34 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     }
 
     @Override
-    public void fillChunk(final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final OrderedKeys __orderedKeys) {
+    public void fillChunk(final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final RowSequence __rowSequence) {
         final FormulaFillContext __typedContext = (FormulaFillContext)__context;
-        final LongChunk<? extends Attributes.Values> __chunk__col__II = this.II.getChunk(__typedContext.__subContextII, __orderedKeys).asLongChunk();
-        final IntChunk<? extends Attributes.Values> __chunk__col__I = this.I.getChunk(__typedContext.__subContextI, __orderedKeys).asIntChunk();
-        fillChunkHelper(false, __typedContext, __destination, __orderedKeys, __chunk__col__II, __chunk__col__I);
+        final LongChunk<? extends Attributes.Values> __chunk__col__II = this.II.getChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
+        final IntChunk<? extends Attributes.Values> __chunk__col__I = this.I.getChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
+        fillChunkHelper(false, __typedContext, __destination, __rowSequence, __chunk__col__II, __chunk__col__I);
     }
 
     @Override
-    public void fillPrevChunk(final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final OrderedKeys __orderedKeys) {
+    public void fillPrevChunk(final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final RowSequence __rowSequence) {
         final FormulaFillContext __typedContext = (FormulaFillContext)__context;
-        final LongChunk<? extends Attributes.Values> __chunk__col__II = this.II.getPrevChunk(__typedContext.__subContextII, __orderedKeys).asLongChunk();
-        final IntChunk<? extends Attributes.Values> __chunk__col__I = this.I.getPrevChunk(__typedContext.__subContextI, __orderedKeys).asIntChunk();
-        fillChunkHelper(true, __typedContext, __destination, __orderedKeys, __chunk__col__II, __chunk__col__I);
+        final LongChunk<? extends Attributes.Values> __chunk__col__II = this.II.getPrevChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
+        final IntChunk<? extends Attributes.Values> __chunk__col__I = this.I.getPrevChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
+        fillChunkHelper(true, __typedContext, __destination, __rowSequence, __chunk__col__II, __chunk__col__I);
     }
 
     private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,
-            final WritableChunk<? super Attributes.Values> __destination,
-            final OrderedKeys __orderedKeys, LongChunk<? extends Attributes.Values> __chunk__col__II, IntChunk<? extends Attributes.Values> __chunk__col__I) {
+                                 final WritableChunk<? super Attributes.Values> __destination,
+                                 final RowSequence __rowSequence, LongChunk<? extends Attributes.Values> __chunk__col__II, IntChunk<? extends Attributes.Values> __chunk__col__I) {
         final WritableLongChunk<? super Attributes.Values> __typedDestination = __destination.asWritableLongChunk();
         try (final Index prev = __usePrev ? __index.getPrevIndex() : null;
-                final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex())) {
+                final Index inverted = ((prev != null) ? prev : __index).invert(__rowSequence.asIndex())) {
             __context.__iChunk.setSize(0);
             inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
-            inverted.fillKeyIndicesChunk(__context.__iiChunk);
+            inverted.fillRowKeyChunk(__context.__iiChunk);
         }
         final int[] __chunkPosHolder = new int[] {0};
         if (__lazyResultCache != null) {
-            __orderedKeys.forAllLongs(k -> {
+            __rowSequence.forAllLongs(k -> {
                 final int __chunkPos = __chunkPosHolder[0]++;
                 final int i = __context.__iChunk.get(__chunkPos);
                 final long ii = __context.__iiChunk.get(__chunkPos);
@@ -124,7 +124,7 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
             }
             );
         } else {
-            __orderedKeys.forAllLongs(k -> {
+            __rowSequence.forAllLongs(k -> {
                 final int __chunkPos = __chunkPosHolder[0]++;
                 final int i = __context.__iChunk.get(__chunkPos);
                 final long ii = __context.__iiChunk.get(__chunkPos);
@@ -149,8 +149,8 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     }
 
     private class FormulaFillContext implements io.deephaven.engine.v2.select.Formula.FillContext {
-        private final WritableIntChunk<Attributes.OrderedKeyIndices> __iChunk;
-        private final WritableLongChunk<Attributes.OrderedKeyIndices> __iiChunk;
+        private final WritableIntChunk<Attributes.OrderedRowKeys> __iChunk;
+        private final WritableLongChunk<Attributes.OrderedRowKeys> __iiChunk;
         private final ColumnSource.GetContext __subContextII;
         private final ColumnSource.GetContext __subContextI;
         FormulaFillContext(int __chunkCapacity) {

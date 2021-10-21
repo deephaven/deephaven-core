@@ -5,8 +5,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ShiftedOrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.ShiftedRowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -36,7 +36,7 @@ public class HashTableColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_
 
         final FillContext mainFillContext;
         final FillContext overflowFillContext;
-        final ShiftedOrderedKeys overflowShiftedOrderedKeys;
+        final ShiftedRowSequence overflowShiftedRowSequence;
         final ResettableWritableChunk<Any> overflowDestinationSlice;
 
         private HashTableFillContext(@NotNull final ColumnSource<?> mainSource,
@@ -48,7 +48,7 @@ public class HashTableColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_
             // sources at a given level will split their keys the same, but this is not ideal.
             mainFillContext = mainSource.makeFillContext(chunkCapacity, sharedContext);
             overflowFillContext = overflowSource.makeFillContext(chunkCapacity, sharedContext);
-            overflowShiftedOrderedKeys = new ShiftedOrderedKeys();
+            overflowShiftedRowSequence = new ShiftedRowSequence();
             overflowDestinationSlice = overflowSource.getChunkType().makeResettableWritableChunk();
         }
 
@@ -56,7 +56,7 @@ public class HashTableColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_
         public void close() {
             mainFillContext.close();
             overflowFillContext.close();
-            overflowShiftedOrderedKeys.close();
+            overflowShiftedRowSequence.close();
             overflowDestinationSlice.close();
         }
     }
@@ -98,33 +98,33 @@ public class HashTableColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_
 
     @Override
     public final void fillChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final HashTableFillContext typedContext = (HashTableFillContext) context;
-        if (!isOverflowLocation(orderedKeys.lastKey())) {
+        if (!isOverflowLocation(rowSequence.lastRowKey())) {
             // Overflow locations are always after main locations, so there are no responsive overflow locations
-            mainSource.fillChunk(typedContext.mainFillContext, destination, orderedKeys);
+            mainSource.fillChunk(typedContext.mainFillContext, destination, rowSequence);
             return;
         }
-        if (isOverflowLocation(orderedKeys.firstKey())) {
+        if (isOverflowLocation(rowSequence.firstRowKey())) {
             // Main locations are always before overflow locations, so there are no responsive main locations
-            typedContext.overflowShiftedOrderedKeys.reset(orderedKeys, -MINIMUM_OVERFLOW_HASH_SLOT);
+            typedContext.overflowShiftedRowSequence.reset(rowSequence, -MINIMUM_OVERFLOW_HASH_SLOT);
             overflowSource.fillChunk(typedContext.overflowFillContext, destination,
-                    typedContext.overflowShiftedOrderedKeys);
-            typedContext.overflowShiftedOrderedKeys.clear();
+                    typedContext.overflowShiftedRowSequence);
+            typedContext.overflowShiftedRowSequence.clear();
             return;
         }
         // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
-        mergedFillChunk(typedContext, destination, orderedKeys);
+        mergedFillChunk(typedContext, destination, rowSequence);
     }
 
     private void mergedFillChunk(@NotNull final HashTableFillContext typedContext,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        final int totalSize = orderedKeys.intSize();
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        final int totalSize = rowSequence.intSize();
         final int firstOverflowChunkPosition;
-        try (final OrderedKeys mainOrderedKeysSlice =
-                orderedKeys.getOrderedKeysByKeyRange(0, MINIMUM_OVERFLOW_HASH_SLOT - 1)) {
-            firstOverflowChunkPosition = mainOrderedKeysSlice.intSize();
-            mainSource.fillChunk(typedContext.mainFillContext, destination, mainOrderedKeysSlice);
+        try (final RowSequence mainRowSequenceSlice =
+                rowSequence.getRowSequenceByKeyRange(0, MINIMUM_OVERFLOW_HASH_SLOT - 1)) {
+            firstOverflowChunkPosition = mainRowSequenceSlice.intSize();
+            mainSource.fillChunk(typedContext.mainFillContext, destination, mainRowSequenceSlice);
         }
         final int sizeFromOverflow = totalSize - firstOverflowChunkPosition;
 
@@ -132,47 +132,47 @@ public class HashTableColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_
         // issues.
         destination.setSize(totalSize);
 
-        try (final OrderedKeys overflowOrderedKeysSlice =
-                orderedKeys.getOrderedKeysByPosition(firstOverflowChunkPosition, sizeFromOverflow)) {
-            typedContext.overflowShiftedOrderedKeys.reset(overflowOrderedKeysSlice, -MINIMUM_OVERFLOW_HASH_SLOT);
+        try (final RowSequence overflowRowSequenceSlice =
+                rowSequence.getRowSequenceByPosition(firstOverflowChunkPosition, sizeFromOverflow)) {
+            typedContext.overflowShiftedRowSequence.reset(overflowRowSequenceSlice, -MINIMUM_OVERFLOW_HASH_SLOT);
             overflowSource.fillChunk(typedContext.overflowFillContext,
                     typedContext.overflowDestinationSlice.resetFromChunk(destination, firstOverflowChunkPosition,
                             sizeFromOverflow),
-                    typedContext.overflowShiftedOrderedKeys);
+                    typedContext.overflowShiftedRowSequence);
         }
         typedContext.overflowDestinationSlice.clear();
-        typedContext.overflowShiftedOrderedKeys.clear();
+        typedContext.overflowShiftedRowSequence.clear();
     }
 
     @Override
     public final void fillPrevChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final HashTableFillContext typedContext = (HashTableFillContext) context;
-        if (!isOverflowLocation(orderedKeys.lastKey())) {
+        if (!isOverflowLocation(rowSequence.lastRowKey())) {
             // Overflow locations are always after main locations, so there are no responsive overflow locations
-            mainSource.fillPrevChunk(typedContext.mainFillContext, destination, orderedKeys);
+            mainSource.fillPrevChunk(typedContext.mainFillContext, destination, rowSequence);
             return;
         }
-        if (isOverflowLocation(orderedKeys.firstKey())) {
+        if (isOverflowLocation(rowSequence.firstRowKey())) {
             // Main locations are always before overflow locations, so there are no responsive main locations
-            typedContext.overflowShiftedOrderedKeys.reset(orderedKeys, -MINIMUM_OVERFLOW_HASH_SLOT);
+            typedContext.overflowShiftedRowSequence.reset(rowSequence, -MINIMUM_OVERFLOW_HASH_SLOT);
             overflowSource.fillPrevChunk(typedContext.overflowFillContext, destination,
-                    typedContext.overflowShiftedOrderedKeys);
-            typedContext.overflowShiftedOrderedKeys.clear();
+                    typedContext.overflowShiftedRowSequence);
+            typedContext.overflowShiftedRowSequence.clear();
             return;
         }
         // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
-        mergedFillPrevChunk(typedContext, destination, orderedKeys);
+        mergedFillPrevChunk(typedContext, destination, rowSequence);
     }
 
     private void mergedFillPrevChunk(@NotNull final HashTableFillContext typedContext,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        final int totalSize = orderedKeys.intSize();
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        final int totalSize = rowSequence.intSize();
         final int firstOverflowChunkPosition;
-        try (final OrderedKeys mainOrderedKeysSlice =
-                orderedKeys.getOrderedKeysByKeyRange(0, MINIMUM_OVERFLOW_HASH_SLOT - 1)) {
-            firstOverflowChunkPosition = mainOrderedKeysSlice.intSize();
-            mainSource.fillPrevChunk(typedContext.mainFillContext, destination, mainOrderedKeysSlice);
+        try (final RowSequence mainRowSequenceSlice =
+                rowSequence.getRowSequenceByKeyRange(0, MINIMUM_OVERFLOW_HASH_SLOT - 1)) {
+            firstOverflowChunkPosition = mainRowSequenceSlice.intSize();
+            mainSource.fillPrevChunk(typedContext.mainFillContext, destination, mainRowSequenceSlice);
         }
         final int sizeFromOverflow = totalSize - firstOverflowChunkPosition;
 
@@ -180,52 +180,52 @@ public class HashTableColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_
         // issues.
         destination.setSize(totalSize);
 
-        try (final OrderedKeys overflowOrderedKeysSlice =
-                orderedKeys.getOrderedKeysByPosition(firstOverflowChunkPosition, sizeFromOverflow)) {
-            typedContext.overflowShiftedOrderedKeys.reset(overflowOrderedKeysSlice, -MINIMUM_OVERFLOW_HASH_SLOT);
+        try (final RowSequence overflowRowSequenceSlice =
+                rowSequence.getRowSequenceByPosition(firstOverflowChunkPosition, sizeFromOverflow)) {
+            typedContext.overflowShiftedRowSequence.reset(overflowRowSequenceSlice, -MINIMUM_OVERFLOW_HASH_SLOT);
             overflowSource.fillPrevChunk(typedContext.overflowFillContext,
                     typedContext.overflowDestinationSlice.resetFromChunk(destination, firstOverflowChunkPosition,
                             sizeFromOverflow),
-                    typedContext.overflowShiftedOrderedKeys);
+                    typedContext.overflowShiftedRowSequence);
             typedContext.overflowDestinationSlice.clear();
-            typedContext.overflowShiftedOrderedKeys.clear();
+            typedContext.overflowShiftedRowSequence.clear();
         }
     }
 
     @Override
     public final Chunk<? extends Values> getChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         final HashTableGetContext typedContext = (HashTableGetContext) context;
-        if (!isOverflowLocation(orderedKeys.lastKey())) {
+        if (!isOverflowLocation(rowSequence.lastRowKey())) {
             // Overflow locations are always after main locations, so there are no responsive overflow locations
-            return mainSource.getChunk(typedContext.mainGetContext, orderedKeys);
+            return mainSource.getChunk(typedContext.mainGetContext, rowSequence);
         }
-        if (isOverflowLocation(orderedKeys.firstKey())) {
+        if (isOverflowLocation(rowSequence.firstRowKey())) {
             // Main locations are always before overflow locations, so there are no responsive main locations
-            typedContext.overflowShiftedOrderedKeys.reset(orderedKeys, -MINIMUM_OVERFLOW_HASH_SLOT);
-            return overflowSource.getChunk(typedContext.overflowGetContext, typedContext.overflowShiftedOrderedKeys);
+            typedContext.overflowShiftedRowSequence.reset(rowSequence, -MINIMUM_OVERFLOW_HASH_SLOT);
+            return overflowSource.getChunk(typedContext.overflowGetContext, typedContext.overflowShiftedRowSequence);
         }
         // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
-        mergedFillChunk(typedContext, typedContext.mergeChunk, orderedKeys);
+        mergedFillChunk(typedContext, typedContext.mergeChunk, rowSequence);
         return typedContext.mergeChunk;
     }
 
     @Override
     public final Chunk<? extends Values> getPrevChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         final HashTableGetContext typedContext = (HashTableGetContext) context;
-        if (!isOverflowLocation(orderedKeys.lastKey())) {
+        if (!isOverflowLocation(rowSequence.lastRowKey())) {
             // Overflow locations are always after main locations, so there are no responsive overflow locations
-            return mainSource.getPrevChunk(typedContext.mainGetContext, orderedKeys);
+            return mainSource.getPrevChunk(typedContext.mainGetContext, rowSequence);
         }
-        if (isOverflowLocation(orderedKeys.firstKey())) {
+        if (isOverflowLocation(rowSequence.firstRowKey())) {
             // Main locations are always before overflow locations, so there are no responsive main locations
-            typedContext.overflowShiftedOrderedKeys.reset(orderedKeys, -MINIMUM_OVERFLOW_HASH_SLOT);
+            typedContext.overflowShiftedRowSequence.reset(rowSequence, -MINIMUM_OVERFLOW_HASH_SLOT);
             return overflowSource.getPrevChunk(typedContext.overflowGetContext,
-                    typedContext.overflowShiftedOrderedKeys);
+                    typedContext.overflowShiftedRowSequence);
         }
         // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
-        mergedFillPrevChunk(typedContext, typedContext.mergeChunk, orderedKeys);
+        mergedFillPrevChunk(typedContext, typedContext.mergeChunk, rowSequence);
         return typedContext.mergeChunk;
     }
 

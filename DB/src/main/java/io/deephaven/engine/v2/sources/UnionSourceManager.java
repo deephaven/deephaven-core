@@ -18,7 +18,7 @@ import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -122,7 +122,7 @@ public class UnionSourceManager {
         Require.requirement(sources.size() == this.sources.length,
                 "sources.size() == this.sources.length", sources.size(),
                 "sources.size()", this.sources.length, "this.sources.length");
-        unionRedirection.appendTable(table.getIndex().lastKey());
+        unionRedirection.appendTable(table.getIndex().lastRowKey());
 
         for (int i = 0; i < this.sources.length; i++) {
             final ColumnSource<?> sourceToAdd = sources.get(names[i]);
@@ -224,7 +224,7 @@ public class UnionSourceManager {
             int firstShiftingTable = tables.size();
             for (int tableId = 0; tableId < tables.size(); ++tableId) {
                 final long newShift =
-                        unionRedirection.computeShiftIfNeeded(tableId, tables.get(tableId).getIndex().lastKey());
+                        unionRedirection.computeShiftIfNeeded(tableId, tables.get(tableId).getIndex().lastRowKey());
                 unionRedirection.prevStartOfIndicesAlt[tableId] =
                         unionRedirection.startOfIndices[tableId] += accumulatedShift;
                 accumulatedShift += newShift;
@@ -315,7 +315,7 @@ public class UnionSourceManager {
                         // protect from shifting keys that belong to other tables by clipping the shift space
                         final long lastLegalKey = unionRedirection.prevStartOfIndices[tableId + 1] - 1;
 
-                        try (OrderedKeys.Iterator okIt = index.getOrderedKeysIterator()) {
+                        try (RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
                             for (int idx = 0; idx < shiftData.size(); ++idx) {
                                 final long beginRange = shiftData.getBeginRange(idx) + offset;
                                 if (beginRange > lastLegalKey) {
@@ -324,12 +324,12 @@ public class UnionSourceManager {
                                 final long endRange = Math.min(shiftData.getEndRange(idx) + offset, lastLegalKey);
                                 final long rangeDelta = shiftData.getShiftDelta(idx);
 
-                                if (!okIt.advance(beginRange)) {
+                                if (!rsIt.advance(beginRange)) {
                                     break;
                                 }
                                 Assert.leq(beginRange, "beginRange", endRange, "endRange");
                                 shiftRemoveBuilder.appendRange(beginRange, endRange);
-                                okIt.getNextOrderedKeysThrough(endRange).forAllLongRanges(
+                                rsIt.getNextRowSequenceThrough(endRange).forAllLongRanges(
                                         (s, e) -> shiftAddedBuilder.appendRange(s + rangeDelta, e + rangeDelta));
                             }
                         }

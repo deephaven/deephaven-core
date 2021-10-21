@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,7 +38,7 @@ public class DeferredColumnRegionObject<DATA_TYPE, ATTR extends Any>
 
     @Override
     public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                               @NotNull final OrderedKeys.Iterator knownKeys,
+                                               @NotNull final RowSequence.Iterator knownKeys,
                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
         return getResultRegion().gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
     }

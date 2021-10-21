@@ -5,16 +5,13 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,8 +34,8 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
     @Override
     public void addChunk(final BucketedContext context, // Unused
             final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-            @NotNull final IntChunk<KeyIndices> destinations,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final IntChunk<Attributes.RowKeys> destinations,
             @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length,
             @NotNull final WritableBooleanChunk<Values> stateModified) {
@@ -55,7 +52,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
     public boolean addChunk(final SingletonContext context, // Unused
             final int chunkSize,
             final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
             final long destination) {
         if (chunkSize == 0) {
             return false;
@@ -71,7 +68,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
         if (index.isEmpty()) {
             return false;
         }
-        redirections.set(destination, index.lastKey());
+        redirections.set(destination, index.lastRowKey());
         return true;
     }
 
@@ -86,7 +83,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
             @NotNull final ReadOnlyIndex newDestinations) {
         Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
-        try (final OrderedKeys changedDestinations = downstream.modified.union(downstream.added)) {
+        try (final RowSequence changedDestinations = downstream.modified.union(downstream.added)) {
             copyStreamToResult(changedDestinations);
         }
         redirections = null;

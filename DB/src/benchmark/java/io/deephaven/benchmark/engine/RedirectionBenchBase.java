@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -108,7 +108,7 @@ public abstract class RedirectionBenchBase {
 
     private Table doFill(final Table t, final Blackhole bh) {
         final Index ix = t.getIndex();
-        try (final OrderedKeys.Iterator it = ix.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it = ix.getRowSequenceIterator()) {
             while (it.hasMore()) {
                 if (sharedContext != null) {
                     sharedContext.reset();
@@ -116,8 +116,8 @@ public abstract class RedirectionBenchBase {
                 for (int i = 0; i < nFillCols; ++i) {
                     final ColumnSource cs = fillSources[i];
                     final ChunkSource.FillContext fc = fillContexts[i];
-                    try (final OrderedKeys oks = it.getNextOrderedKeysWithLength(chunkCapacity)) {
-                        cs.fillChunk(fc, chunk, oks);
+                    try (final RowSequence rs = it.getNextRowSequenceWithLength(chunkCapacity)) {
+                        cs.fillChunk(fc, chunk, rs);
                         bh.consume(chunk);
                         chunk.setSize(chunkCapacity);
                     }

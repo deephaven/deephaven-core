@@ -4,8 +4,9 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +39,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
 
     private static final class FillContext implements RedirectionIndex.FillContext {
 
-        private final WritableLongChunk<KeyIndices> indexPositions;
+        private final WritableLongChunk<RowKeys> indexPositions;
 
         private FillContext(final int chunkCapacity) {
             indexPositions = WritableLongChunk.makeWritableChunk(chunkCapacity);
@@ -54,10 +55,10 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
      * TODO: Switch to this version if we ever uncomment the override for fillChunkUnordered. private static final class
      * FillContext implements RedirectionIndex.FillContext {
      * 
-     * private final int chunkCapacity; private final WritableLongChunk<KeyIndices> indexPositions;
+     * private final int chunkCapacity; private final WritableLongChunk<RowKeys> indexPositions;
      * 
-     * private LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, ChunkPositions> sortKernelContext; private
-     * WritableIntChunk<ChunkPositions> unorderedFillChunkPositions; private WritableLongChunk<KeyIndices>
+     * private LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext; private
+     * WritableIntChunk<ChunkPositions> unorderedFillChunkPositions; private WritableLongChunk<RowKeys>
      * unorderedFillMappedKeys;
      * 
      * private FillContext(final int chunkCapacity) { this.chunkCapacity = chunkCapacity; indexPositions =
@@ -82,20 +83,20 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
 
     @Override
     public void fillChunk(@NotNull final RedirectionIndex.FillContext fillContext,
-            @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
-        final WritableLongChunk<KeyIndices> indexPositions = ((FillContext) fillContext).indexPositions;
-        keysToMap.fillKeyIndicesChunk(indexPositions);
+            @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
+        final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
+        keysToMap.fillRowKeyChunk(indexPositions);
         wrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(mappedKeysOut));
         mappedKeysOut.setSize(keysToMap.intSize());
     }
 
     @Override
     public void fillPrevChunk(@NotNull final RedirectionIndex.FillContext fillContext,
-            @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
-        final WritableLongChunk<KeyIndices> indexPositions = ((FillContext) fillContext).indexPositions;
-        keysToMap.fillKeyIndicesChunk(indexPositions);
+            @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
+        final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
+        keysToMap.fillRowKeyChunk(indexPositions);
         try (final ReadOnlyIndex prevWrappedIndex = wrappedIndex.getPrevIndex()) {
             prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions),
                     new LongChunkAppender(mappedKeysOut));
@@ -108,13 +109,13 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
      * 
      * @Override public void fillChunkUnordered(@NotNull final RedirectionIndex.FillContext fillContext,
      * 
-     * @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
+     * @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
      * 
-     * @NotNull final LongChunk<KeyIndices> keysToMap) { final FillContext typedFillContext = (FillContext) fillContext;
-     * typedFillContext.ensureUnorderedFillFieldsInitialized(); final WritableLongChunk<KeyIndices> indexPositions =
-     * typedFillContext.indexPositions; final LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, ChunkPositions>
+     * @NotNull final LongChunk<RowKeys> keysToMap) { final FillContext typedFillContext = (FillContext) fillContext;
+     * typedFillContext.ensureUnorderedFillFieldsInitialized(); final WritableLongChunk<RowKeys> indexPositions =
+     * typedFillContext.indexPositions; final LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions>
      * sortKernelContext = typedFillContext.sortKernelContext; final WritableIntChunk<ChunkPositions>
-     * outputChunkPositions = typedFillContext.unorderedFillChunkPositions; final WritableLongChunk<KeyIndices>
+     * outputChunkPositions = typedFillContext.unorderedFillChunkPositions; final WritableLongChunk<RowKeys>
      * orderedMappedKeys = typedFillContext.unorderedFillMappedKeys; final int chunkSize = keysToMap.size();
      * 
      * indexPositions.copyFromTypedChunk(keysToMap, 0, 0, chunkSize); indexPositions.setSize(chunkSize);

@@ -152,7 +152,8 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         Assert.assertion(!(throwException && !coalesce), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
         final Index toAdd =
-                Index.FACTORY.getIndexByRange(expectedIndex.lastKey() + 1, expectedIndex.lastKey() + INDEX_INCREMENT);
+                Index.FACTORY.getIndexByRange(expectedIndex.lastRowKey() + 1,
+                        expectedIndex.lastRowKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
             {

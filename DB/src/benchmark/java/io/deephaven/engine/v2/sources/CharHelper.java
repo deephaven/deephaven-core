@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableCharChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -42,7 +42,7 @@ class CharHelper implements FillBenchmarkHelper {
     }
 
     @Override
-    public void getFromArray(Blackhole bh, int fetchSize, LongChunk<OrderedKeyIndices> keys) {
+    public void getFromArray(Blackhole bh, int fetchSize, LongChunk<OrderedRowKeys> keys) {
         final WritableCharChunk result = WritableCharChunk.makeWritableChunk(fetchSize);
         for (int ii = 0; ii < keys.size(); ++ii) {
             result.set(ii, charArray[(int)keys.get(ii)]);
@@ -51,19 +51,19 @@ class CharHelper implements FillBenchmarkHelper {
     }
 
     @Override
-    public void fillFromArrayBacked(Blackhole bh, int fetchSize, OrderedKeys orderedKeys) {
+    public void fillFromArrayBacked(Blackhole bh, int fetchSize, RowSequence rowSequence) {
         final WritableCharChunk result = WritableCharChunk.makeWritableChunk(fetchSize);
 
-        charArraySource.fillChunk(arrayContext, result, orderedKeys);
+        charArraySource.fillChunk(arrayContext, result, rowSequence);
 
         bh.consume(result);
     }
 
     @Override
-    public void fillFromSparse(Blackhole bh, int fetchSize, OrderedKeys orderedKeys) {
+    public void fillFromSparse(Blackhole bh, int fetchSize, RowSequence rowSequence) {
         final WritableCharChunk result = WritableCharChunk.makeWritableChunk(fetchSize);
 
-        charSparseArraySource.fillChunk(sparseContext, result, orderedKeys);
+        charSparseArraySource.fillChunk(sparseContext, result, rowSequence);
 
         bh.consume(result);
     }

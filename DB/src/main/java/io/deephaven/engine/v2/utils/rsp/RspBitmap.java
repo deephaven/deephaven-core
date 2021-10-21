@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
@@ -119,13 +121,13 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return Container.twoValues(lowBitsAsShort(v2), lowBitsAsShort(v1));
     }
 
-    public RspBitmap addValuesUnsafe(final LongChunk<OrderedKeyIndices> values, final int offset, final int length) {
+    public RspBitmap addValuesUnsafe(final LongChunk<OrderedRowKeys> values, final int offset, final int length) {
         final RspBitmap rb = writeCheck();
         rb.addValuesUnsafeNoWriteCheck(values, offset, length);
         return rb;
     }
 
-    public void addValuesUnsafeNoWriteCheck(final LongChunk<OrderedKeyIndices> values, final int offset,
+    public void addValuesUnsafeNoWriteCheck(final LongChunk<OrderedRowKeys> values, final int offset,
             final int length) {
         int lengthFromThisSpan;
         final WorkData wd = workDataPerThread.get();
@@ -171,7 +173,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         collectRemovedIndicesIfAny(sortedRangesMu);
     }
 
-    private static int countContiguousHighBitsMatches(final LongChunk<OrderedKeyIndices> values,
+    private static int countContiguousHighBitsMatches(final LongChunk<Attributes.OrderedRowKeys> values,
             final int offset, final int length,
             final long highBits) {
         for (int vi = 0; vi < length; ++vi) {
@@ -182,7 +184,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return length;
     }
 
-    private Container createOrUpdateContainerForValues(@NotNull final LongChunk<OrderedKeyIndices> values,
+    private Container createOrUpdateContainerForValues(@NotNull final LongChunk<Attributes.OrderedRowKeys> values,
             final int offset, final int length,
             final boolean existing,
             final int keyIdx,
@@ -253,7 +255,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return addValuesToContainer(values, offset, length, container);
     }
 
-    private static Container makeValuesContainer(final LongChunk<OrderedKeyIndices> values,
+    private static Container makeValuesContainer(final LongChunk<OrderedRowKeys> values,
             final int offset, final int length) {
         if (length <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
             final short[] valuesArray = new short[length];
@@ -269,7 +271,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return bitmapContainer;
     }
 
-    private static Container addValuesToContainer(final LongChunk<OrderedKeyIndices> values,
+    private static Container addValuesToContainer(final LongChunk<Attributes.OrderedRowKeys> values,
             final int offset, final int length,
             Container container) {
         if (container.getCardinality() <= length / 2) {
@@ -959,7 +961,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             return;
         }
         throw new IllegalArgumentException(
-                "Cannot append index with shiftAmount=" + shiftAmount + ", firstKey=" + other.firstValue() +
+                "Cannot append index with shiftAmount=" + shiftAmount + ", firstRowKey=" + other.firstValue() +
                         " when our lastValue=" + lastValue());
 
     }
@@ -1357,7 +1359,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<OrderedKeyIndices> values,
+    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> values,
             final int offset, final int length) {
         final RspBitmap ans = addValuesUnsafe(values, offset, length);
         ans.finishMutations();
@@ -1365,7 +1367,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<OrderedKeyIndices> values,
+    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> values,
             final int offset, final int length) {
         return ixRemove(TreeIndexImpl.fromChunk(values, offset, length, true));
     }
@@ -2104,18 +2106,18 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public OrderedKeys ixGetOrderedKeysByPosition(final long startPositionInclusive, final long length) {
-        return getOrderedKeysByPosition(startPositionInclusive, length);
+    public RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
+        return getRowSequenceByPosition(startPositionInclusive, length);
     }
 
     @Override
-    public OrderedKeys ixGetOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
-        return getOrderedKeysByKeyRange(startKeyInclusive, endKeyInclusive);
+    public RowSequence ixGetRowSequenceByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
+        return getRowSequenceByKeyRange(startKeyInclusive, endKeyInclusive);
     }
 
     @Override
-    public OrderedKeys.Iterator ixGetOrderedKeysIterator() {
-        return getOrderedKeysIterator();
+    public RowSequence.Iterator ixGetRowSequenceIterator() {
+        return getRowSequenceIterator();
     }
 
     @Override

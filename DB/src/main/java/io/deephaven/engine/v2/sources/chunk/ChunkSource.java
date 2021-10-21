@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.chunk;
 
 import io.deephaven.engine.v2.utils.LongRangeConsumer;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -22,12 +22,12 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
     ChunkType getChunkType();
 
     /**
-     * Returns a chunk of data corresponding to the keys from the given {@link OrderedKeys}.
+     * Returns a chunk of data corresponding to the keys from the given {@link RowSequence}.
      *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk. In particular,
      *        the Context may be used to provide a Chunk data pool
-     * @param orderedKeys An {@link OrderedKeys} representing the keys to be fetched
-     * @return A chunk of data corresponding to the keys from the given {@link OrderedKeys}
+     * @param rowSequence An {@link RowSequence} representing the keys to be fetched
+     * @return A chunk of data corresponding to the keys from the given {@link RowSequence}
      *
      * @apiNote
      *          <p>
@@ -39,17 +39,17 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
      *          Post-condition: The retrieved values start at position 0 in the chunk.
      *          </p>
      *          <p>
-     *          Post-condition: destination.size() will be equal to orderedKeys.size()
+     *          Post-condition: destination.size() will be equal to rowSequence.size()
      *          </p>
      */
-    Chunk<? extends ATTR> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys);
+    Chunk<? extends ATTR> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence);
 
     /**
-     * Same as {@link #getChunk(GetContext, OrderedKeys)}, except that you pass in the begin and last keys representing
-     * the begin and last (inclusive) keys of a single range rather than an {@link OrderedKeys}. Typically you want to
-     * call this only if you don't have an {@link OrderedKeys}, such as during an
-     * {@link OrderedKeys#forAllLongRanges(LongRangeConsumer)} call. In this case, it allows you to avoid creating an
-     * intermediary {@link OrderedKeys} object.
+     * Same as {@link #getChunk(GetContext, RowSequence)}, except that you pass in the begin and last keys representing
+     * the begin and last (inclusive) keys of a single range rather than an {@link RowSequence}. Typically you want to
+     * call this only if you don't have an {@link RowSequence}, such as during an
+     * {@link RowSequence#forAllLongRanges(LongRangeConsumer)} call. In this case, it allows you to avoid creating an
+     * intermediary {@link RowSequence} object.
      *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk. In particular,
      *        the Context may be used to provide a Chunk data pool
@@ -58,44 +58,44 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
      *
      * @apiNote
      *          <p>
-     *          [beginKey,lastKey] must be a range that exists in this ChunkSource. This is unchecked.
+     *          [beginKey,lastRowKey] must be a range that exists in this ChunkSource. This is unchecked.
      *          </p>
      *          <p>
      *          Post-condition: The retrieved values start at position 0 in the chunk.
      *          </p>
      *          <p>
-     *          Post-condition: destination.size() will be equal to lastKey - beginKey + 1
+     *          Post-condition: destination.size() will be equal to lastRowKey - beginKey + 1
      *          </p>
      */
     Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey);
 
     /**
-     * Populates the given destination chunk with data corresponding to the keys from the given {@link OrderedKeys}.
+     * Populates the given destination chunk with data corresponding to the keys from the given {@link RowSequence}.
      *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk.
-     * @param destination The chunk to be populated according to {@code orderedKeys}. No assumptions shall be made about
-     *        the size of the chunk shall be made. The chunk will be populated from position [0,orderedKeys.size()).
-     * @param orderedKeys An {@link OrderedKeys} representing the keys to be fetched
+     * @param destination The chunk to be populated according to {@code rowSequence}. No assumptions shall be made about
+     *        the size of the chunk shall be made. The chunk will be populated from position [0,rowSequence.size()).
+     * @param rowSequence An {@link RowSequence} representing the keys to be fetched
      * @apiNote
      *          <p>
      *          Post-condition: The retrieved values start at position 0 in the chunk.
      *          </p>
      *          <p>
-     *          Post-condition: destination.size() will be equal to orderedKeys.size()
+     *          Post-condition: destination.size() will be equal to rowSequence.size()
      *          </p>
      */
     void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-            @NotNull OrderedKeys orderedKeys);
+            @NotNull RowSequence rowSequence);
 
     /**
-     * Marker interface for {@link Context}s that are used in {@link #getChunk(GetContext, OrderedKeys)}.
+     * Marker interface for {@link Context}s that are used in {@link #getChunk(GetContext, RowSequence)}.
      */
     interface GetContext extends Context {
     }
 
     /**
      * Marker interface for {@link Context}s that are used in
-     * {@link #fillChunk(FillContext, WritableChunk, OrderedKeys)}.
+     * {@link #fillChunk(FillContext, WritableChunk, RowSequence)}.
      */
     interface FillContext extends Context {
     }
@@ -111,12 +111,12 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
         // TODO: Deprecate or remove getPrevChunk and fillPrevChunk if/when we do away with getPrev methods
 
         /**
-         * Returns a chunk of previous data corresponding to the keys from the given {@link OrderedKeys}.
+         * Returns a chunk of previous data corresponding to the keys from the given {@link RowSequence}.
          *
          * @param context A context containing all mutable/state related data used in retrieving the Chunk. In
          *        particular, the Context may be used to provide a Chunk data pool
-         * @param orderedKeys An {@link OrderedKeys} representing the keys to be fetched
-         * @return A chunk of data corresponding to the keys from the given {@link OrderedKeys}
+         * @param rowSequence An {@link RowSequence} representing the keys to be fetched
+         * @return A chunk of data corresponding to the keys from the given {@link RowSequence}
          * @apiNote
          *          <p>
          *          The returned chunk belongs to the ColumnSource and may be mutated as result of calling getChunk
@@ -126,34 +126,34 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
          *          <p>
          *          Post-condition: The retrieved values start at position 0 in the chunk.
          *          <p>
-         *          Post-condition: destination.size() will be equal to orderedKeys.size()
+         *          Post-condition: destination.size() will be equal to rowSequence.size()
          */
-        Chunk<? extends ATTR> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys);
+        Chunk<? extends ATTR> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence);
 
         /**
-         * Same as {@link #getPrevChunk(GetContext, OrderedKeys)}, except that you pass in the begin and last keys
-         * representing the begin and last (inclusive) keys of a single range rather than an {@link OrderedKeys}.
+         * Same as {@link #getPrevChunk(GetContext, RowSequence)}, except that you pass in the begin and last keys
+         * representing the begin and last (inclusive) keys of a single range rather than an {@link RowSequence}.
          */
         Chunk<? extends ATTR> getPrevChunk(@NotNull GetContext context, long firstKey, long lastKey);
 
         /**
-         * Populates the given destination chunk with data corresponding to the keys from the given {@link OrderedKeys}.
+         * Populates the given destination chunk with data corresponding to the keys from the given {@link RowSequence}.
          *
          * @param context A context containing all mutable/state related data used in retrieving the Chunk.
-         * @param destination The chunk to be populated according to {@code orderedKeys}. No assumptions shall be made
+         * @param destination The chunk to be populated according to {@code rowSequence}. No assumptions shall be made
          *        about the size of the chunk shall be made. The chunk will be populated from position
-         *        [0,orderedKeys.size()).
-         * @param orderedKeys An {@link OrderedKeys} representing the keys to be fetched
+         *        [0,rowSequence.size()).
+         * @param rowSequence An {@link RowSequence} representing the keys to be fetched
          * @apiNote
          *          <p>
          *          Post-condition: The retrieved values start at position 0 in the chunk.
          *          </p>
          *          <p>
-         *          Post-condition: destination.size() will be equal to orderedKeys.size()
+         *          Post-condition: destination.size() will be equal to rowSequence.size()
          *          </p>
          */
         void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-                @NotNull OrderedKeys orderedKeys);
+                @NotNull RowSequence rowSequence);
 
         /**
          * @return a chunk source which accesses the previous values.

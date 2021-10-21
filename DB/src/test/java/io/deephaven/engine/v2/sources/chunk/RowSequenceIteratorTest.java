@@ -1,17 +1,16 @@
 package io.deephaven.engine.v2.sources.chunk;
 
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.junit.Test;
 
 import java.util.Random;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class OrderedKeysIteratorTest {
+public class RowSequenceIteratorTest {
 
     private static final int MAX_STEP = 65536;
 
@@ -44,29 +43,29 @@ public class OrderedKeysIteratorTest {
     private void genericTest(Index index, int chunkSize) {
         final long[] values = valuesForIndex(index);
         int vPos = 0;
-        final OrderedKeys.Iterator wrapper = index.getOrderedKeysIterator();
+        final RowSequence.Iterator wrapper = index.getRowSequenceIterator();
         int step = 0;
         while (wrapper.hasMore()) {
-            final OrderedKeys ok = wrapper.getNextOrderedKeysWithLength(chunkSize);
+            final RowSequence rs = wrapper.getNextRowSequenceWithLength(chunkSize);
             final int localVPos = vPos;
-            LongChunk<OrderedKeyIndices> indices = ok.asKeyIndicesChunk();
+            LongChunk<Attributes.OrderedRowKeys> indices = rs.asRowKeyChunk();
             for (int i = 0; i < indices.size(); i++) {
                 assertEquals(indices.get(i), values[vPos++]);
             }
             vPos = localVPos;
-            LongChunk<OrderedKeyRanges> ranges = ok.asKeyRangesChunk();
+            LongChunk<OrderedRowKeyRanges> ranges = rs.asRowKeyRangesChunk();
             for (int i = 0; i < ranges.size(); i += 2) {
                 for (long idx = ranges.get(i); idx <= ranges.get(i + 1); idx++) {
                     assertEquals(idx, values[vPos++]);
                 }
             }
             vPos = localVPos;
-            indices = ok.asKeyIndicesChunk();
+            indices = rs.asRowKeyChunk();
             for (int i = 0; i < indices.size(); i++) {
                 assertEquals(indices.get(i), values[vPos++]);
             }
             vPos = localVPos;
-            ranges = ok.asKeyRangesChunk();
+            ranges = rs.asRowKeyRangesChunk();
             for (int i = 0; i < ranges.size(); i += 2) {
                 for (long idx = ranges.get(i); idx <= ranges.get(i + 1); idx++) {
                     assertEquals(idx, values[vPos++]);

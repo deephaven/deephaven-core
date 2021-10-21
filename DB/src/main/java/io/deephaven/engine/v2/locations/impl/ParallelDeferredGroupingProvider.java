@@ -87,7 +87,7 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
 
         private Source(@NotNull final ColumnLocation columnLocation, final long firstKey, final long lastKey) {
             Require.neqNull(columnLocation, "columnLocation");
-            Require.leq(firstKey, "firstKey", lastKey, "lastKey");
+            Require.leq(firstKey, "firstRowKey", lastKey, "lastRowKey");
             this.columnLocation = columnLocation;
             this.firstKey = firstKey;
             this.lastKey = lastKey;
@@ -137,7 +137,7 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
             final long locationSize = lastKey - firstKey + 1;
             if (valuesToLocationIndexRange.isEmpty()) {
                 // NB: It's impossible for the location to be legitimately empty, since the constructor validates that
-                // firstKey <= lastKey.
+                // firstRowKey <= lastRowKey.
                 throw new IllegalStateException(
                         "Invalid empty grouping for " + columnLocation + ": expected " + locationSize + " rows");
             }
@@ -226,8 +226,8 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
     @Override
     public void addSource(@NotNull final ColumnLocation columnLocation,
             @NotNull final ReadOnlyIndex locationIndexInTable) {
-        final long firstKey = locationIndexInTable.firstKey();
-        final long lastKey = locationIndexInTable.lastKey();
+        final long firstKey = locationIndexInTable.firstRowKey();
+        final long lastKey = locationIndexInTable.lastRowKey();
         if (lastKey - firstKey + 1 != locationIndexInTable.size()) {
             /*
              * TODO (https://github.com/deephaven/deephaven-core/issues/816): This constraint is valid for all existing

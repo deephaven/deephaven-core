@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 
 public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftAwareListenerImpl {
@@ -67,9 +67,9 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
         final int contextSize = (int) Math.min(CHUNK_SIZE, toProcess.size());
 
         try (final ChunkSource.GetContext getContext = parentColumnSource.makeGetContext(contextSize);
-                final OrderedKeys.Iterator okIt = toProcess.getOrderedKeysIterator()) {
-            while (okIt.hasMore()) {
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(contextSize);
+                final RowSequence.Iterator rsIt = toProcess.getRowSequenceIterator()) {
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(contextSize);
                 final Chunk<? extends Attributes.Values> valuesChunk = parentColumnSource.getChunk(getContext, chunkOk);
                 final int firstUnsorted = sortCheck.sortCheck(valuesChunk);
                 if (firstUnsorted >= 0) {

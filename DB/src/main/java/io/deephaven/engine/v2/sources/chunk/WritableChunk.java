@@ -150,7 +150,7 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
      * Upcast the attribute.
      *
      * When you know the data you will receive in this chunk from another source is a more specific suptype than the
-     * source provides, you can upcast the attribute with this helper method (such as reading KeyIndices from a
+     * source provides, you can upcast the attribute with this helper method (such as reading RowKeys from a
      * ColumnSource which thinks they are just Values.)
      *
      * @apiNote Downcast should not be necessary on WritableChunks, as a WritableChunk filling method should accept an

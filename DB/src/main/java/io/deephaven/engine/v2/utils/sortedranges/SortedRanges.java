@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils.sortedranges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.*;
@@ -2367,18 +2368,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public final OrderedKeys getOrderedKeysByPosition(final long pos, long length) {
+    public final RowSequence getRowSequenceByPosition(final long pos, long length) {
         final long card = getCardinality();
         if (isEmpty() || pos >= card) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
         if (pos + length >= card) {
             length = card - pos;
         }
-        return getOrderedKeysByPositionWithStart(0, 0, pos, length);
+        return getRowSequenceByPositionWithStart(0, 0, pos, length);
     }
 
-    public final OrderedKeys getOrderedKeysByPositionWithStart(
+    public final RowSequence getRowSequenceByPositionWithStart(
             final long iStartPos, final int istart, final long startPosForOK, final long lengthForOK) {
         int i = istart;
         long iPos = iStartPos;
@@ -2405,7 +2406,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         startOffset = 0;
                         endIdx = i;
                         endOffset = 0;
-                        return new SortedRangesOrderedKeys(this, startPosForOK, startIdx, startOffset, endIdx,
+                        return new SortedRangesRowSequence(this, startPosForOK, startIdx, startOffset, endIdx,
                                 endOffset, 1L);
                     }
                     final long nextData = packedGet(i + 1);
@@ -2430,7 +2431,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (iPos >= endPositionInclusive) {
             endIdx = startIdx;
             endOffset = startOffset + lengthForOK - 1;
-            return new SortedRangesOrderedKeys(this, startPosForOK, startIdx, startOffset, endIdx, endOffset,
+            return new SortedRangesRowSequence(this, startPosForOK, startIdx, startOffset, endIdx, endOffset,
                     lengthForOK);
         }
         i = startIdx + 1;
@@ -2475,27 +2476,27 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             iData = packedGet(i);
             iNeg = iData < 0;
         }
-        return new SortedRangesOrderedKeys(this, startPosForOK, startIdx, startOffset, endIdx, endOffset, lengthForOK);
+        return new SortedRangesRowSequence(this, startPosForOK, startIdx, startOffset, endIdx, endOffset, lengthForOK);
     }
 
-    public final OrderedKeys getOrderedKeysByKeyRange(final long start, final long end) {
+    public final RowSequence getRowSequenceByKeyRange(final long start, final long end) {
         if (isEmpty()) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
         final long last = last();
         if (last < start) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
         final long first = first();
         if (end < first) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
         final long packedStart = pack(Math.max(start, first));
         final long packedEnd = pack(Math.min(end, last));
-        return getOrderedKeysByKeyRangePackedWithStart(0, 0, packedStart, packedEnd);
+        return getRowSequenceByKeyRangePackedWithStart(0, 0, packedStart, packedEnd);
     }
 
-    final OrderedKeys getOrderedKeysByKeyRangePackedWithStart(
+    final RowSequence getRowSequenceByKeyRangePackedWithStart(
             final long iStartPos, final int iStart, final long packedStart, final long packedEnd) {
         int i = iStart;
         long iPos = iStartPos;
@@ -2520,10 +2521,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 ++iPos;
                 if (iData >= packedStart) {
                     if (iData > packedStart && iData > packedEnd) {
-                        return OrderedKeys.EMPTY;
+                        return RowSequence.EMPTY;
                     }
                     if (i + 1 >= count) {
-                        return new SortedRangesOrderedKeys(this, iPos, i, 0, i, 0, 1);
+                        return new SortedRangesRowSequence(this, iPos, i, 0, i, 0, 1);
                     }
                     startPos = iPos;
                     final int iNext = i + 1;
@@ -2532,7 +2533,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (iNextNeg) {
                         final long iNextValue = -iNextData;
                         if (iNextValue >= packedEnd) {
-                            return new SortedRangesOrderedKeys(
+                            return new SortedRangesRowSequence(
                                     this, iPos,
                                     iNext, iData - iNextValue,
                                     iNext, packedEnd - iNextValue,
@@ -2546,7 +2547,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         iData = iNextData;
                     } else {
                         if (iNext > packedEnd) {
-                            return new SortedRangesOrderedKeys(this, startPos, i, 0, i, 0, 1);
+                            return new SortedRangesRowSequence(this, startPos, i, 0, i, 0, 1);
                         }
                         pendingStart = -1;
                         startOffset = 0;
@@ -2571,7 +2572,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 final long iValue = -iData;
                 if (iValue >= packedEnd) {
                     final long endOffset = packedEnd - iValue;
-                    return new SortedRangesOrderedKeys(
+                    return new SortedRangesRowSequence(
                             this, startPos, startIdx, startOffset, i, endOffset,
                             packedEnd - pendingStart + iPos - startPos + 1);
                 }
@@ -2579,7 +2580,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 pendingStart = -1;
             } else {
                 if (iData > packedEnd) {
-                    return new SortedRangesOrderedKeys(
+                    return new SortedRangesRowSequence(
                             this, startPos,
                             startIdx, startOffset,
                             i - 1, 0,
@@ -2589,7 +2590,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 pendingStart = iData;
             }
             if (i + 1 >= count) {
-                return new SortedRangesOrderedKeys(
+                return new SortedRangesRowSequence(
                         this, startPos, startIdx, startOffset, i, 0, iPos - startPos + 1);
             }
             ++i;
@@ -2598,12 +2599,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public final OrderedKeys.Iterator getOrderedKeysIterator() {
+    public final RowSequence.Iterator getRowSequenceIterator() {
         if (isEmpty()) {
-            return OrderedKeys.Iterator.EMPTY;
+            return RowSequence.Iterator.EMPTY;
         }
-        return new SortedRangesOrderedKeys.Iterator(
-                new SortedRangesOrderedKeys(this));
+        return new SortedRangesRowSequence.Iterator(
+                new SortedRangesRowSequence(this));
     }
 
     public final long getAverageRunLengthEstimate() {
@@ -4448,13 +4449,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset,
+    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
             final int length) {
         return ixInsert(TreeIndexImpl.fromChunk(keys, offset, length, true));
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset,
+    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
             final int length) {
         return ixRemove(TreeIndexImpl.fromChunk(keys, offset, length, true));
     }
@@ -4937,18 +4938,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final OrderedKeys ixGetOrderedKeysByPosition(final long startPositionInclusive, final long length) {
-        return getOrderedKeysByPosition(startPositionInclusive, length);
+    public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
+        return getRowSequenceByPosition(startPositionInclusive, length);
     }
 
     @Override
-    public final OrderedKeys ixGetOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
-        return getOrderedKeysByKeyRange(startKeyInclusive, endKeyInclusive);
+    public final RowSequence ixGetRowSequenceByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
+        return getRowSequenceByKeyRange(startKeyInclusive, endKeyInclusive);
     }
 
     @Override
-    public final OrderedKeys.Iterator ixGetOrderedKeysIterator() {
-        return getOrderedKeysIterator();
+    public final RowSequence.Iterator ixGetRowSequenceIterator() {
+        return getRowSequenceIterator();
     }
 
     @Override

@@ -56,7 +56,7 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
@@ -69,7 +69,7 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
@@ -82,13 +82,13 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         return addChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         return removeChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 

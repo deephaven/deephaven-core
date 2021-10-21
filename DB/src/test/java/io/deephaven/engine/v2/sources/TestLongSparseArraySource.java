@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -168,8 +168,8 @@ public class TestLongSparseArraySource {
 
     private void checkRandomFill(int chunkSize, LongSparseArraySource source, ColumnSource.FillContext fillContext,
                                  WritableLongChunk<Values> dest, long[] expectations, Index index, boolean usePrev) {
-        for (final OrderedKeys.Iterator okIt = index.getOrderedKeysIterator(); okIt.hasMore(); ) {
-            final OrderedKeys nextOk = okIt.getNextOrderedKeysWithLength(chunkSize);
+        for (final RowSequence.Iterator rsIt = index.getRowSequenceIterator(); rsIt.hasMore(); ) {
+            final RowSequence nextOk = rsIt.getNextRowSequenceWithLength(chunkSize);
 
             if (usePrev) {
                 source.fillChunk(fillContext, dest, nextOk);
@@ -190,8 +190,8 @@ public class TestLongSparseArraySource {
         int offset;
         final Index index = Index.FACTORY.getIndexByRange(firstKey, lastKey);
         offset = firstKey;
-        for (final OrderedKeys.Iterator it = index.getOrderedKeysIterator(); it.hasMore(); ) {
-            final OrderedKeys nextOk = it.getNextOrderedKeysWithLength(chunkSize);
+        for (final RowSequence.Iterator it = index.getRowSequenceIterator(); it.hasMore(); ) {
+            final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
             if (usePrev) {
                 source.fillPrevChunk(fillContext, dest, nextOk);
@@ -207,8 +207,8 @@ public class TestLongSparseArraySource {
         int offset;
         final Index index = Index.FACTORY.getIndexByRange(firstKey, lastKey);
         offset = firstKey;
-        for (final OrderedKeys.Iterator it = index.getOrderedKeysIterator(); it.hasMore(); ) {
-            final OrderedKeys nextOk = it.getNextOrderedKeysWithLength(chunkSize);
+        for (final RowSequence.Iterator it = index.getRowSequenceIterator(); it.hasMore(); ) {
+            final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
             final LongChunk<Values> result;
             if (usePrev) {
@@ -228,7 +228,7 @@ public class TestLongSparseArraySource {
         }
     }
 
-    private void checkRangeResults(long[] expectations, int offset, OrderedKeys nextOk, LongChunk<Values> result) {
+    private void checkRangeResults(long[] expectations, int offset, RowSequence nextOk, LongChunk<Values> result) {
         for (int ii = 0; ii < nextOk.size(); ++ii) {
             checkFromValues("expectations[" + offset + " + " + ii + " = " + (ii + offset) + "] vs. dest[" + ii + "]", expectations[ii + offset], result.get(ii));
         }

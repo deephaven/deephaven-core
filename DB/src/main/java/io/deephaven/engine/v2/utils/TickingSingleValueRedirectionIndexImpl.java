@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
@@ -70,8 +71,8 @@ public class TickingSingleValueRedirectionIndexImpl implements SingleValueRedire
     @Override
     public void fillChunk(
             @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         final int sz = keysToMap.intSize();
         mappedKeysOut.setSize(sz);
         mappedKeysOut.fillWithValue(0, sz, value);
@@ -80,8 +81,8 @@ public class TickingSingleValueRedirectionIndexImpl implements SingleValueRedire
     @Override
     public void fillPrevChunk(
             @NotNull FillContext fillContext,
-            @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-            @NotNull OrderedKeys keysToMap) {
+            @NotNull WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
+            @NotNull RowSequence keysToMap) {
         final long fillValue =
                 (updatedClockTick > 0 && updatedClockTick == LogicalClock.DEFAULT.currentStep()) ? prevValue : value;
         final int sz = keysToMap.intSize();

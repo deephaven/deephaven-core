@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.join;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.*;
@@ -147,9 +148,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 leftAdditionsOrRemovals ? leftStampSource.makeFillContext(leftChunkSize) : null;
         final WritableChunk<Values> leftStampValues =
                 leftAdditionsOrRemovals ? stampChunkType.makeWritableChunk(leftChunkSize) : null;
-        final WritableLongChunk<KeyIndices> leftStampKeys =
+        final WritableLongChunk<RowKeys> leftStampKeys =
                 leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(leftChunkSize) : null;
-        final LongSortKernel<Values, KeyIndices> sortKernel =
+        final LongSortKernel<Values, RowKeys> sortKernel =
                 LongSortKernel.makeContext(stampChunkType, order, Math.max(leftChunkSize, rightChunkSize), true);
 
         final Index.RandomBuilder modifiedBuilder = Index.FACTORY.getRandomBuilder();
@@ -191,15 +192,15 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         continue;
                     }
 
-                    try (final OrderedKeys.Iterator leftOkIt = leftRemoved.getOrderedKeysIterator()) {
-                        while (leftOkIt.hasMore()) {
+                    try (final RowSequence.Iterator leftRsIt = leftRemoved.getRowSequenceIterator()) {
+                        while (leftRsIt.hasMore()) {
                             assert leftFillContext != null;
                             assert leftStampValues != null;
 
-                            final OrderedKeys chunkOk = leftOkIt.getNextOrderedKeysWithLength(leftChunkSize);
+                            final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(leftChunkSize);
 
                             leftStampSource.fillPrevChunk(leftFillContext, leftStampValues, chunkOk);
-                            chunkOk.fillKeyIndicesChunk(leftStampKeys);
+                            chunkOk.fillRowKeyChunk(leftStampKeys);
 
                             sortKernel.sort(leftStampKeys, leftStampValues);
 
@@ -226,10 +227,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     if (relevantShift.nonempty()) {
                         try (final SizedSafeCloseable<ColumnSource.FillContext> leftShiftFillContext =
                                 new SizedSafeCloseable<>(leftStampSource::makeFillContext);
-                                final SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> shiftSortContext =
+                                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
                                         new SizedSafeCloseable<>(
                                                 size -> LongSortKernel.makeContext(stampChunkType, order, size, true));
-                                final SizedLongChunk<KeyIndices> stampKeys = new SizedLongChunk<>();
+                                final SizedLongChunk<RowKeys> stampKeys = new SizedLongChunk<>();
                                 final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
 
                             sequentialBuilders.ensureCapacity(relevantShift.size());
@@ -303,11 +304,11 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     slots, sequentialBuilders);
 
             final MutableObject<Index> indexOutput = new MutableObject<>();
-            try (final WritableLongChunk<KeyIndices> priorRedirections =
+            try (final WritableLongChunk<RowKeys> priorRedirections =
                     WritableLongChunk.makeWritableChunk(rightChunkSize);
                     final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(rightChunkSize);
                     final WritableChunk<Values> rightStampValues = stampChunkType.makeWritableChunk(rightChunkSize);
-                    final WritableLongChunk<KeyIndices> rightStampKeys =
+                    final WritableLongChunk<RowKeys> rightStampKeys =
                             WritableLongChunk.makeWritableChunk(rightChunkSize)) {
                 for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
                     final long slot = slots.getLong(slotIndex);
@@ -326,12 +327,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         }
                         final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
 
-                        try (final OrderedKeys.Iterator removeIt = rightRemoved.getOrderedKeysIterator()) {
+                        try (final RowSequence.Iterator removeIt = rightRemoved.getRowSequenceIterator()) {
                             while (removeIt.hasMore()) {
-                                final OrderedKeys chunkOk = removeIt.getNextOrderedKeysWithLength(rightChunkSize);
+                                final RowSequence chunkOk = removeIt.getNextRowSequenceWithLength(rightChunkSize);
 
                                 rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
-                                chunkOk.fillKeyIndicesChunk(rightStampKeys);
+                                chunkOk.fillRowKeyChunk(rightStampKeys);
                                 sortKernel.sort(rightStampKeys, rightStampValues);
 
                                 priorRedirections.setSize(rightChunkSize);
@@ -355,10 +356,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     if (relevantShift.nonempty()) {
                         try (final SizedSafeCloseable<ColumnSource.FillContext> rightShiftFillContext =
                                 new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                                final SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> shiftSortKernel =
+                                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
                                         new SizedSafeCloseable<>(
                                                 sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
-                                final SizedLongChunk<KeyIndices> rightStampKeys = new SizedLongChunk<>();
+                                final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>();
                                 final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampChunkType)) {
 
                             sequentialBuilders.ensureCapacity(relevantShift.size());
@@ -404,7 +405,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                             rightStampSource.fillPrevChunk(
                                                     rightShiftFillContext.ensureCapacity(shiftSize),
                                                     rightStampValues.ensureCapacity(shiftSize), indexToShift);
-                                            indexToShift.fillKeyIndicesChunk(rightStampKeys.ensureCapacity(shiftSize));
+                                            indexToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
                                             shiftSortKernel.ensureCapacity(shiftSize).sort(rightStampKeys.get(),
                                                     rightStampValues.get());
 
@@ -414,13 +415,13 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                             rightSsa.applyShiftReverse(rightStampValues.get(), rightStampKeys.get(),
                                                     slotSit.shiftDelta());
                                         } else {
-                                            try (final OrderedKeys.Iterator shiftIt =
-                                                    indexToShift.getOrderedKeysIterator()) {
+                                            try (final RowSequence.Iterator shiftIt =
+                                                    indexToShift.getRowSequenceIterator()) {
                                                 while (shiftIt.hasMore()) {
-                                                    final OrderedKeys chunkOk =
-                                                            shiftIt.getNextOrderedKeysWithLength(rightChunkSize);
+                                                    final RowSequence chunkOk =
+                                                            shiftIt.getNextRowSequenceWithLength(rightChunkSize);
                                                     final int shiftSize = chunkOk.intSize();
-                                                    chunkOk.fillKeyIndicesChunk(
+                                                    chunkOk.fillRowKeyChunk(
                                                             rightStampKeys.ensureCapacity(shiftSize));
                                                     rightStampSource.fillPrevChunk(
                                                             rightShiftFillContext.ensureCapacity(shiftSize),
@@ -450,7 +451,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             try (final ColumnSource.FillContext rightFillContext = rightStampSource.makeFillContext(rightChunkSize);
                     final WritableChunk<Values> stampChunk = stampChunkType.makeWritableChunk(rightChunkSize);
                     final WritableChunk<Values> nextRightValue = stampChunkType.makeWritableChunk(rightChunkSize);
-                    final WritableLongChunk<KeyIndices> insertedIndices =
+                    final WritableLongChunk<RowKeys> insertedIndices =
                             WritableLongChunk.makeWritableChunk(rightChunkSize);
                     final WritableBooleanChunk<Any> retainStamps =
                             WritableBooleanChunk.makeWritableChunk(rightChunkSize)) {
@@ -523,7 +524,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 (startChunk + 1) * rightChunkSize)) {
                             rightStampSource.fillChunk(rightFillContext, stampChunk, chunkOk);
                             insertedIndices.setSize(chunkOk.intSize());
-                            chunkOk.fillKeyIndicesChunk(insertedIndices);
+                            chunkOk.fillRowKeyChunk(insertedIndices);
 
                             sortKernel.sort(insertedIndices, stampChunk);
 
@@ -566,7 +567,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                 try (final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(rightChunkSize);
                         final WritableChunk<Values> rightStampChunk = stampChunkType.makeWritableChunk(rightChunkSize);
-                        final WritableLongChunk<KeyIndices> rightStampIndices =
+                        final WritableLongChunk<RowKeys> rightStampIndices =
                                 WritableLongChunk.makeWritableChunk(rightChunkSize)) {
                     for (int slotIndex = 0; slotIndex < modifiedSlotCount; ++slotIndex) {
                         final long slot = slots.getLong(slotIndex);
@@ -581,11 +582,11 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         // if we are not empty on the left, then we must already have created the SSA
                         final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
 
-                        try (final OrderedKeys.Iterator modit = rightModified.getOrderedKeysIterator()) {
+                        try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
                             while (modit.hasMore()) {
-                                final OrderedKeys chunkOk = modit.getNextOrderedKeysWithLength(rightChunkSize);
+                                final RowSequence chunkOk = modit.getNextRowSequenceWithLength(rightChunkSize);
                                 rightStampSource.fillChunk(fillContext, rightStampChunk, chunkOk);
-                                chunkOk.fillKeyIndicesChunk(rightStampIndices);
+                                chunkOk.fillRowKeyChunk(rightStampIndices);
                                 sortKernel.sort(rightStampIndices, rightStampChunk);
 
                                 ssaSsaStamp.findModified(leftSsa, redirectionIndex, rightStampChunk, rightStampIndices,
@@ -688,16 +689,16 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 }
 
 
-                try (final OrderedKeys.Iterator leftOkIt = leftAdded.getOrderedKeysIterator();
-                        final WritableLongChunk<KeyIndices> rightKeysForLeft =
+                try (final RowSequence.Iterator leftRsIt = leftAdded.getRowSequenceIterator();
+                        final WritableLongChunk<RowKeys> rightKeysForLeft =
                                 WritableLongChunk.makeWritableChunk(leftChunkSize)) {
                     assert leftFillContext != null;
                     assert leftStampValues != null;
 
-                    while (leftOkIt.hasMore()) {
-                        final OrderedKeys chunkOk = leftOkIt.getNextOrderedKeysWithLength(leftChunkSize);
+                    while (leftRsIt.hasMore()) {
+                        final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(leftChunkSize);
                         leftStampSource.fillChunk(leftFillContext, leftStampValues, chunkOk);
-                        chunkOk.fillKeyIndicesChunk(leftStampKeys);
+                        chunkOk.fillRowKeyChunk(leftStampKeys);
 
                         sortKernel.sort(leftStampKeys, leftStampValues);
 

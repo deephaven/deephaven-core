@@ -2,43 +2,48 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.structures.rowsequence;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.OrderedChunkUtils;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.LongAbortableConsumer;
+import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
 
-public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
+public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
-    private final LongChunk<OrderedKeyIndices> backingChunk;
-    private final WritableLongChunk<OrderedKeyIndices> toReleaseChunk;
-    private WritableLongChunk<OrderedKeyRanges> asRangesChunk = null;
+    private final LongChunk<OrderedRowKeys> backingChunk;
+    private final WritableLongChunk<OrderedRowKeys> toReleaseChunk;
+    private WritableLongChunk<Attributes.OrderedRowKeyRanges> asRangesChunk = null;
 
-    private OrderedKeysKeyIndicesChunkImpl(final LongChunk<OrderedKeyIndices> backingChunk) {
+    private RowSequenceRowKeysChunkImpl(final LongChunk<OrderedRowKeys> backingChunk) {
         this.backingChunk = backingChunk;
         this.toReleaseChunk = null;
     }
 
-    static OrderedKeysKeyIndicesChunkImpl makeByWrapping(final LongChunk<OrderedKeyIndices> backingChunk) {
-        return new OrderedKeysKeyIndicesChunkImpl(backingChunk);
+    static RowSequenceRowKeysChunkImpl makeByWrapping(final LongChunk<OrderedRowKeys> backingChunk) {
+        return new RowSequenceRowKeysChunkImpl(backingChunk);
     }
 
-    private OrderedKeysKeyIndicesChunkImpl(final WritableLongChunk<OrderedKeyIndices> backingChunk) {
+    private RowSequenceRowKeysChunkImpl(final WritableLongChunk<OrderedRowKeys> backingChunk) {
         this.backingChunk = this.toReleaseChunk = backingChunk;
     }
 
-    static OrderedKeysKeyIndicesChunkImpl makeByTaking(final WritableLongChunk<OrderedKeyIndices> backingChunkToOwn) {
-        return new OrderedKeysKeyIndicesChunkImpl(backingChunkToOwn);
+    static RowSequenceRowKeysChunkImpl makeByTaking(final WritableLongChunk<OrderedRowKeys> backingChunkToOwn) {
+        return new RowSequenceRowKeysChunkImpl(backingChunkToOwn);
     }
 
-    private class Iterator implements OrderedKeys.Iterator {
+    private class Iterator implements RowSequence.Iterator {
 
         private int iteratorOffset = 0;
-        private OrderedKeysKeyIndicesChunkImpl pendingClose;
+        private RowSequenceRowKeysChunkImpl pendingClose;
 
         private void tryClosePendingClose() {
             if (pendingClose != null) {
@@ -63,28 +68,28 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
         }
 
         @Override
-        public final OrderedKeys getNextOrderedKeysThrough(final long maxKey) {
+        public final RowSequence getNextRowSequenceThrough(final long maxKey) {
             tryClosePendingClose();
             final int newEndOffset = findFirstIndexAfterKey(maxKey, iteratorOffset);
             int newLen = newEndOffset - iteratorOffset;
             if (newLen == 0) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             pendingClose =
-                    new OrderedKeysKeyIndicesChunkImpl(backingChunk.slice(iteratorOffset, newLen));
+                    new RowSequenceRowKeysChunkImpl(backingChunk.slice(iteratorOffset, newLen));
             iteratorOffset = newEndOffset;
             return pendingClose;
         }
 
         @Override
-        public final OrderedKeys getNextOrderedKeysWithLength(final long numberOfKeys) {
+        public final RowSequence getNextRowSequenceWithLength(final long numberOfKeys) {
             tryClosePendingClose();
             final int newLen = Math.toIntExact(Math.min(numberOfKeys, backingChunk.size() - iteratorOffset));
             if (newLen == 0) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             pendingClose =
-                    new OrderedKeysKeyIndicesChunkImpl(backingChunk.slice(iteratorOffset, newLen));
+                    new RowSequenceRowKeysChunkImpl(backingChunk.slice(iteratorOffset, newLen));
             iteratorOffset += newLen;
             return pendingClose;
         }
@@ -102,28 +107,28 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public final OrderedKeys.Iterator getOrderedKeysIterator() {
+    public final RowSequence.Iterator getRowSequenceIterator() {
         return new Iterator();
     }
 
     @Override
-    public final OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive, final long length) {
+    public final RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
         final int newStartOffset = Math.toIntExact(Math.min(backingChunk.size(), startPositionInclusive));
         final int newLen = Math.toIntExact(Math.min(backingChunk.size() - newStartOffset, length));
         if (newLen == 0) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
-        return new OrderedKeysKeyIndicesChunkImpl(backingChunk.slice(newStartOffset, newLen));
+        return new RowSequenceRowKeysChunkImpl(backingChunk.slice(newStartOffset, newLen));
     }
 
     @Override
-    public final OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
-        final int newStartOffset = findLowerBoundOfKey(startKeyInclusive, 0);
-        final int newLen = findFirstIndexAfterKey(endKeyInclusive, newStartOffset) - newStartOffset;
+    public final RowSequence getRowSequenceByKeyRange(final long startRowKeyInclusive, final long endRowKeyInclusive) {
+        final int newStartOffset = findLowerBoundOfKey(startRowKeyInclusive, 0);
+        final int newLen = findFirstIndexAfterKey(endRowKeyInclusive, newStartOffset) - newStartOffset;
         if (newLen == 0) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
-        return new OrderedKeysKeyIndicesChunkImpl(backingChunk.slice(newStartOffset, newLen));
+        return new RowSequenceRowKeysChunkImpl(backingChunk.slice(newStartOffset, newLen));
     }
 
     @Override
@@ -139,12 +144,12 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public final LongChunk<OrderedKeyIndices> asKeyIndicesChunk() {
+    public final LongChunk<Attributes.OrderedRowKeys> asRowKeyChunk() {
         return backingChunk;
     }
 
     @Override
-    public final LongChunk<OrderedKeyRanges> asKeyRangesChunk() {
+    public final LongChunk<Attributes.OrderedRowKeyRanges> asRowKeyRangesChunk() {
         if (backingChunk.size() == 0) {
             return LongChunk.getEmptyChunk();
         }
@@ -155,7 +160,7 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public final void fillKeyIndicesChunk(final WritableLongChunk<? extends KeyIndices> chunkToFill) {
+    public final void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
         final int newSize = Math.toIntExact(size());
         // noinspection unchecked
         backingChunk.copyToChunk(0, (WritableLongChunk) chunkToFill, 0, newSize);
@@ -163,7 +168,7 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public final void fillKeyRangesChunk(final WritableLongChunk<OrderedKeyRanges> chunkToFill) {
+    public final void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
         ChunkUtils.convertToOrderedKeyRanges(backingChunk, chunkToFill);
     }
 
@@ -173,12 +178,12 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public long firstKey() {
+    public long firstRowKey() {
         return backingChunk.size() > 0 ? backingChunk.get(0) : Index.NULL_KEY;
     }
 
     @Override
-    public long lastKey() {
+    public long lastRowKey() {
         final int sz = backingChunk.size();
         return sz > 0 ? backingChunk.get(sz - 1) : Index.NULL_KEY;
     }
@@ -190,8 +195,8 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
 
     @Override
     public long getAverageRunLengthEstimate() {
-        final long first = firstKey();
-        final long last = lastKey();
+        final long first = firstRowKey();
+        final long last = lastRowKey();
         final long range = last - first + 1;
         Assert.leq(first, "first", last, "last");
         final long numMinHoles = range - size();

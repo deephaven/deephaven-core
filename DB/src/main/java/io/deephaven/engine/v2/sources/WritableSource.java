@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -79,15 +79,15 @@ public interface WritableSource<T> extends ColumnSource<T>, WritableChunkSink<At
      */
     @Override
     default void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         final SinkFiller filler = (SinkFiller) context;
         filler.reset(this, src);
-        orderedKeys.forEachLong(filler);
+        rowSequence.forEachLong(filler);
     }
 
     @Override
     default void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull LongChunk<Attributes.KeyIndices> keys) {
+            @NotNull LongChunk<Attributes.RowKeys> keys) {
         final SinkFiller filler = (SinkFiller) context;
         filler.reset(this, src);
         for (int ii = 0; ii < keys.size(); ++ii) {

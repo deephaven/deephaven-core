@@ -4,10 +4,10 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -68,16 +68,16 @@ public class BooleanAsByteColumnSource extends AbstractColumnSource<Byte> implem
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final UnboxedFillContext unboxedFillContext = (UnboxedFillContext) context;
-        final ObjectChunk<Boolean, ? extends Values> booleanObjectChunk = alternateColumnSource.getChunk(unboxedFillContext.alternateGetContext, orderedKeys).asObjectChunk();
+        final ObjectChunk<Boolean, ? extends Values> booleanObjectChunk = alternateColumnSource.getChunk(unboxedFillContext.alternateGetContext, rowSequence).asObjectChunk();
         convertToByte(destination, booleanObjectChunk);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final UnboxedFillContext unboxedFillContext = (UnboxedFillContext) context;
-        final ObjectChunk<Boolean, ? extends Values> booleanObjectChunk = alternateColumnSource.getPrevChunk(unboxedFillContext.alternateGetContext, orderedKeys).asObjectChunk();
+        final ObjectChunk<Boolean, ? extends Values> booleanObjectChunk = alternateColumnSource.getPrevChunk(unboxedFillContext.alternateGetContext, rowSequence).asObjectChunk();
         convertToByte(destination, booleanObjectChunk);
     }
 

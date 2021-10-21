@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.QueryTable;
@@ -9,10 +11,7 @@ import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
-import io.deephaven.engine.v2.utils.ShiftedOrderedKeys;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
@@ -67,8 +66,8 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     @Override
     public void addChunk(final BucketedContext context, // Unused
             final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-            @NotNull final IntChunk<KeyIndices> destinations,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final IntChunk<RowKeys> destinations,
             @NotNull final IntChunk<ChunkPositions> startPositions,
             final IntChunk<ChunkLengths> length, // Unused
             @NotNull final WritableBooleanChunk<Values> stateModified) {
@@ -85,7 +84,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     public boolean addChunk(final SingletonContext context, // Unused
             final int chunkSize,
             final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
             final long destination) {
         if (chunkSize == 0) {
             return false;
@@ -100,7 +99,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
         if (index.isEmpty()) {
             return false;
         }
-        return maybeAssignFirst(destination, index.firstKey());
+        return maybeAssignFirst(destination, index.firstRowKey());
     }
 
     private boolean maybeAssignFirst(final long destination, final long sourceIndexKey) {
@@ -136,7 +135,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
         copyStreamToResult(downstream.added);
         redirections = null;
         if (downstream.added.nonempty()) {
-            Assert.eq(downstream.added.lastKey() + 1, "downstream.added.lastKey() + 1", nextDestination,
+            Assert.eq(downstream.added.lastRowKey() + 1, "downstream.added.lastRowKey() + 1", nextDestination,
                     "nextDestination");
             firstDestinationThisStep = nextDestination;
         }
@@ -155,12 +154,12 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
      * <lI>For each input column: get a chunk of input values and then fill the output column</li>
      * </ol>
      *
-     * @param destinations The added destination slots as an {@link OrderedKeys}
+     * @param destinations The added destination slots as an {@link RowSequence}
      */
-    private void copyStreamToResult(@NotNull final OrderedKeys destinations) {
+    private void copyStreamToResult(@NotNull final RowSequence destinations) {
         try (final SafeCloseableList toClose = new SafeCloseableList()) {
-            final OrderedKeys.Iterator destinationsIterator = toClose.add(destinations.getOrderedKeysIterator());
-            final ShiftedOrderedKeys shiftedSliceDestinations = toClose.add(new ShiftedOrderedKeys());
+            final RowSequence.Iterator destinationsIterator = toClose.add(destinations.getRowSequenceIterator());
+            final ShiftedRowSequence shiftedSliceDestinations = toClose.add(new ShiftedRowSequence());
             final ChunkSource.GetContext redirectionsContext =
                     toClose.add(redirections.makeGetContext(COPY_CHUNK_SIZE));
             final SharedContext inputSharedContext = toClose.add(SharedContext.makeSharedContext());
@@ -173,17 +172,17 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
                 inputContexts[ci] = inputColumns[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
                 final WritableSource<?> outputColumn = outputColumns[ci];
                 outputContexts[ci] = outputColumn.makeFillFromContext(COPY_CHUNK_SIZE);
-                outputColumn.ensureCapacity(destinations.lastKey() + 1, false);
+                outputColumn.ensureCapacity(destinations.lastRowKey() + 1, false);
             }
 
             while (destinationsIterator.hasMore()) {
-                final OrderedKeys sliceDestinations =
-                        destinationsIterator.getNextOrderedKeysWithLength(COPY_CHUNK_SIZE);
+                final RowSequence sliceDestinations =
+                        destinationsIterator.getNextRowSequenceWithLength(COPY_CHUNK_SIZE);
                 shiftedSliceDestinations.reset(sliceDestinations, -firstDestinationThisStep);
-                final LongChunk<OrderedKeyIndices> sourceIndices = Chunk.<Values, OrderedKeyIndices>downcast(
+                final LongChunk<OrderedRowKeys> sourceIndices = Chunk.<Values, OrderedRowKeys>downcast(
                         redirections.getChunk(redirectionsContext, shiftedSliceDestinations)).asLongChunk();
 
-                try (final OrderedKeys sliceSources = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(sourceIndices)) {
+                try (final RowSequence sliceSources = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(sourceIndices)) {
                     for (int ci = 0; ci < numResultColumns; ++ci) {
                         final Chunk<? extends Values> inputChunk =
                                 inputColumns[ci].getChunk(inputContexts[ci], sliceSources);

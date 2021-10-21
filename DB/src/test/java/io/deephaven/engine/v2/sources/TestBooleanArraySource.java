@@ -12,10 +12,10 @@ import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.Shuffle;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -80,16 +80,16 @@ public class TestBooleanArraySource {
     }
 
     private void validateValues(int chunkSize, byte[] values, Index index, BooleanArraySource source) {
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             final ObjectChunk<Boolean, ?> chunk = source.getChunk(context, okChunk).asObjectChunk();
             assertTrue(chunk.size() <= chunkSize);
-            if (okIterator.hasMore()) {
+            if (rsIterator.hasMore()) {
                 assertEquals(chunkSize, chunk.size());
             }
             for (int i = 0; i < chunk.size(); i++) {
@@ -107,13 +107,13 @@ public class TestBooleanArraySource {
 
 
     private void validatePrevValues(int chunkSize, byte[] values, Index index, BooleanArraySource source) {
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             final ObjectChunk<Boolean, ?> chunk = source.getPrevChunk(context, okChunk).asObjectChunk();
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -167,13 +167,13 @@ public class TestBooleanArraySource {
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource<?> source = formulaColumn.getDataView();
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             final ObjectChunk<Boolean, ?> chunk = source.getChunk(context, okChunk).asObjectChunk();
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -277,14 +277,14 @@ public class TestBooleanArraySource {
     }
 
     private void validateValuesWithFill(int chunkSize, byte[] values, Index index, BooleanArraySource source) {
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableObjectChunk<Boolean, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             source.fillChunk(context, chunk, okChunk);
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -298,14 +298,14 @@ public class TestBooleanArraySource {
     }
 
     private void validatePrevValuesWithFill(int chunkSize, byte[] values, Index index, BooleanArraySource source) {
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableObjectChunk<Boolean, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             source.fillPrevChunk(context, chunk, okChunk);
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -379,14 +379,14 @@ public class TestBooleanArraySource {
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource source = formulaColumn.getDataView();
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableObjectChunk<Boolean, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             source.fillChunk(context, chunk, okChunk);
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -549,7 +549,7 @@ public class TestBooleanArraySource {
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
              final WritableObjectChunk<Boolean, Values> dest = WritableObjectChunk.makeWritableChunk(keys.length);
-             final ResettableLongChunk<KeyIndices> rlc = ResettableLongChunk.makeResettableChunk()) {
+             final ResettableLongChunk<RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
             rlc.resetFromTypedArray(keys, 0, keys.length);
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());

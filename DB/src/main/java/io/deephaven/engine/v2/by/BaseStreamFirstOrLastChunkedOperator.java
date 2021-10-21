@@ -100,7 +100,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
 
     @Override
     public final void removeChunk(BucketedContext bucketedContext, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.KeyIndices> inputIndices, IntChunk<Attributes.KeyIndices> destinations,
+            LongChunk<? extends Attributes.RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations,
             IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length,
             WritableBooleanChunk<Attributes.Values> stateModified) {
         throw new UnsupportedOperationException();
@@ -108,31 +108,31 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
 
     @Override
     public final void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Attributes.Values> previousValues,
-            Chunk<? extends Attributes.Values> newValues, LongChunk<? extends Attributes.KeyIndices> postShiftIndices,
-            IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkPositions> startPositions,
+            Chunk<? extends Attributes.Values> newValues, LongChunk<? extends Attributes.RowKeys> postShiftIndices,
+            IntChunk<Attributes.RowKeys> destinations, IntChunk<Attributes.ChunkPositions> startPositions,
             IntChunk<Attributes.ChunkLengths> length, WritableBooleanChunk<Attributes.Values> stateModified) {
         throw new IllegalStateException();
     }
 
     @Override
     public final void shiftChunk(BucketedContext bucketedContext, Chunk<? extends Attributes.Values> previousValues,
-            Chunk<? extends Attributes.Values> newValues, LongChunk<? extends Attributes.KeyIndices> preShiftIndices,
-            LongChunk<? extends Attributes.KeyIndices> postShiftIndices, IntChunk<Attributes.KeyIndices> destinations,
+            Chunk<? extends Attributes.Values> newValues, LongChunk<? extends Attributes.RowKeys> preShiftIndices,
+            LongChunk<? extends Attributes.RowKeys> postShiftIndices, IntChunk<Attributes.RowKeys> destinations,
             IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length,
             WritableBooleanChunk<Attributes.Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final void modifyIndices(BucketedContext context, LongChunk<? extends Attributes.KeyIndices> inputIndices,
-            IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkPositions> startPositions,
+    public final void modifyIndices(BucketedContext context, LongChunk<? extends Attributes.RowKeys> inputIndices,
+            IntChunk<Attributes.RowKeys> destinations, IntChunk<Attributes.ChunkPositions> startPositions,
             IntChunk<Attributes.ChunkLengths> length, WritableBooleanChunk<Attributes.Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public final boolean removeChunk(SingletonContext singletonContext, int chunkSize,
-            Chunk<? extends Attributes.Values> values, LongChunk<? extends Attributes.KeyIndices> inputIndices,
+            Chunk<? extends Attributes.Values> values, LongChunk<? extends Attributes.RowKeys> inputIndices,
             long destination) {
         throw new UnsupportedOperationException();
     }
@@ -140,20 +140,20 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
     @Override
     public final boolean modifyChunk(SingletonContext singletonContext, int chunkSize,
             Chunk<? extends Attributes.Values> previousValues, Chunk<? extends Attributes.Values> newValues,
-            LongChunk<? extends Attributes.KeyIndices> postShiftIndices, long destination) {
+            LongChunk<? extends Attributes.RowKeys> postShiftIndices, long destination) {
         throw new IllegalStateException();
     }
 
     @Override
     public final boolean shiftChunk(SingletonContext singletonContext,
             Chunk<? extends Attributes.Values> previousValues, Chunk<? extends Attributes.Values> newValues,
-            LongChunk<? extends Attributes.KeyIndices> preInputIndices,
-            LongChunk<? extends Attributes.KeyIndices> postInputIndices, long destination) {
+            LongChunk<? extends Attributes.RowKeys> preInputIndices,
+            LongChunk<? extends Attributes.RowKeys> postInputIndices, long destination) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final boolean modifyIndices(SingletonContext context, LongChunk<? extends Attributes.KeyIndices> indices,
+    public final boolean modifyIndices(SingletonContext context, LongChunk<? extends Attributes.RowKeys> indices,
             long destination) {
         throw new UnsupportedOperationException();
     }

@@ -135,7 +135,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         private final long lastKey;
 
         protected Range(final long firstKey, final long lastKey) {
-            nextKey = Require.leq(firstKey, "firstKey", lastKey, "lastKey");
+            nextKey = Require.leq(firstKey, "firstRowKey", lastKey, "lastRowKey");
             this.lastKey = lastKey;
         }
 

@@ -52,7 +52,7 @@ public class SnapshotInternalListener extends BaseTable.ShiftAwareListenerImpl {
 
         // Populate stamp columns from the triggering table
         if (!triggerTable.getIndex().empty()) {
-            SnapshotUtils.copyStampColumns(triggerTable.getColumnSourceMap(), triggerTable.getIndex().lastKey(),
+            SnapshotUtils.copyStampColumns(triggerTable.getColumnSourceMap(), triggerTable.getIndex().lastRowKey(),
                     resultLeftColumns, 0);
         }
         final Index currentIndex = snapshotTable.getIndex();

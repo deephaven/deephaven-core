@@ -7,21 +7,9 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ByteChunk;
-import io.deephaven.engine.v2.sources.chunk.CharChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.DefaultGetContext;
-import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
-import io.deephaven.engine.v2.sources.chunk.FloatChunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.ResettableWritableChunk;
-import io.deephaven.engine.v2.sources.chunk.ShortChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.immutable.ImmutableBooleanArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableByteArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableCharArraySource;
@@ -32,7 +20,8 @@ import io.deephaven.engine.v2.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableShortArraySource;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.v2.utils.ShiftData;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.BooleanArray;
@@ -118,7 +107,7 @@ public abstract class ArrayBackedColumnSource<T>
     static final int IN_USE_MASK = (1 << LOG_INUSE_BITSET_SIZE) - 1;
 
     /**
-     * Minimum average run length in an {@link OrderedKeys} that should trigger {@link Chunk}-filling by key ranges
+     * Minimum average run length in an {@link RowSequence} that should trigger {@link Chunk}-filling by key ranges
      * instead of individual keys.
      */
     static final long USE_RANGES_AVERAGE_RUN_LENGTH = 5;
@@ -226,7 +215,7 @@ public abstract class ArrayBackedColumnSource<T>
             @Nullable final Class<?> componentType) {
         final ArrayBackedColumnSource<T> result = getMemoryColumnSource(data.length, dataType, componentType);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, ObjectChunk.chunkWrap(data), range);
         }
         return result;
@@ -242,7 +231,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Byte> result = new ByteArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
         }
         return result;
@@ -259,7 +248,7 @@ public abstract class ArrayBackedColumnSource<T>
         final WritableSource<Byte> dest = (WritableSource<Byte>) result.reinterpret(byte.class);
         result.ensureCapacity(data.length);
         try (final FillFromContext context = dest.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             dest.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
         }
         return result;
@@ -275,7 +264,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Character> result = new CharacterArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, CharChunk.chunkWrap(data), range);
         }
         return result;
@@ -291,7 +280,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Double> result = new DoubleArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, DoubleChunk.chunkWrap(data), range);
         }
         return result;
@@ -307,7 +296,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Float> result = new FloatArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, FloatChunk.chunkWrap(data), range);
         }
         return result;
@@ -323,7 +312,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Integer> result = new IntegerArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, IntChunk.chunkWrap(data), range);
         }
         return result;
@@ -339,7 +328,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Long> result = new LongArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, LongChunk.chunkWrap(data), range);
         }
         return result;
@@ -357,7 +346,7 @@ public abstract class ArrayBackedColumnSource<T>
         result.ensureCapacity(data.length);
         final WritableSource<Long> asLong = (WritableSource<Long>) result.reinterpret(long.class);
         try (final FillFromContext context = asLong.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             asLong.fillFromChunk(context, LongChunk.chunkWrap(data), range);
         }
         return result;
@@ -373,7 +362,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Short> result = new ShortArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, ShortChunk.chunkWrap(data), range);
         }
         return result;
@@ -615,13 +604,13 @@ public abstract class ArrayBackedColumnSource<T>
 
     @Override
     public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillSparseChunk(destination, orderedKeys);
+            @NotNull final RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillSparseChunk(destination, rowSequence);
             return;
         }
         MutableInt destOffset = new MutableInt(0);
-        orderedKeys.forAllLongRanges((final long from, final long to) -> {
+        rowSequence.forAllLongRanges((final long from, final long to) -> {
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
@@ -648,14 +637,14 @@ public abstract class ArrayBackedColumnSource<T>
     @Override
     public void fillChunkUnordered(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final LongChunk<? extends KeyIndices> keyIndices) {
+            @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
         fillSparseChunkUnordered(destination, keyIndices);
     }
 
     @Override
     public void fillPrevChunkUnordered(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final LongChunk<? extends KeyIndices> keyIndices) {
+            @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
         fillSparsePrevChunkUnordered(destination, keyIndices);
     }
 
@@ -672,20 +661,20 @@ public abstract class ArrayBackedColumnSource<T>
             long position);
 
     protected abstract void fillSparseChunk(@NotNull WritableChunk<? super Values> destination,
-            @NotNull OrderedKeys indices);
+            @NotNull RowSequence indices);
 
     protected abstract void fillSparsePrevChunk(@NotNull WritableChunk<? super Values> destination,
-            @NotNull OrderedKeys indices);
+            @NotNull RowSequence indices);
 
     protected abstract void fillSparseChunkUnordered(@NotNull WritableChunk<? super Values> destination,
-            @NotNull LongChunk<? extends KeyIndices> indices);
+            @NotNull LongChunk<? extends Attributes.RowKeys> indices);
 
     protected abstract void fillSparsePrevChunkUnordered(@NotNull WritableChunk<? super Values> destination,
-            @NotNull LongChunk<? extends KeyIndices> indices);
+            @NotNull LongChunk<? extends Attributes.RowKeys> indices);
 
     @Override
-    public Chunk<Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
-        final LongChunk<OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
+    public Chunk<Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
         if (ranges.size() == 2) {
             final long first = ranges.get(0);
             final long last = ranges.get(1);
@@ -698,7 +687,7 @@ public abstract class ArrayBackedColumnSource<T>
             }
         }
 
-        return getChunkByFilling(context, orderedKeys);
+        return getChunkByFilling(context, rowSequence);
     }
 
     private static class ArrayAdapter<T> implements Array.Visitor, PrimitiveArray.Visitor {

@@ -8,14 +8,11 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
@@ -46,8 +43,10 @@ public interface IterativeChunkedAggregationOperator {
      * @param stateModified a boolean output array, parallel to destinations, which is set to true if the corresponding
      *        destination has been modified
      */
-    void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+    void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends Attributes.RowKeys> inputIndices,
+            IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified);
 
     /**
@@ -64,8 +63,8 @@ public interface IterativeChunkedAggregationOperator {
      *        destination has been modified
      */
     void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            LongChunk<? extends Attributes.RowKeys> inputIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified);
 
     /**
@@ -86,8 +85,8 @@ public interface IterativeChunkedAggregationOperator {
      */
     default void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends KeyIndices> postShiftIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            LongChunk<? extends RowKeys> postShiftIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         try (final WritableBooleanChunk<Values> addModified =
                 WritableBooleanChunk.makeWritableChunk(stateModified.size())) {
@@ -117,8 +116,10 @@ public interface IterativeChunkedAggregationOperator {
      */
     default void shiftChunk(BucketedContext context, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends KeyIndices> preShiftIndices, LongChunk<? extends KeyIndices> postShiftIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            LongChunk<? extends Attributes.RowKeys> preShiftIndices,
+            LongChunk<? extends Attributes.RowKeys> postShiftIndices,
+            IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         // we don't actually care
     }
@@ -135,8 +136,8 @@ public interface IterativeChunkedAggregationOperator {
      * @param stateModified a boolean output array, parallel to destinations, which is set to true if the corresponding
      *        destination has been modified
      */
-    default void modifyIndices(BucketedContext context, LongChunk<? extends KeyIndices> inputIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+    default void modifyIndices(BucketedContext context, LongChunk<? extends RowKeys> inputIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         // we don't actually care
     }
@@ -152,7 +153,7 @@ public interface IterativeChunkedAggregationOperator {
      * @return true if the state was modified, false otherwise
      */
     boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination);
+            LongChunk<? extends Attributes.RowKeys> inputIndices, long destination);
 
     /**
      * Remove a chunk of data previously aggregated into the result columns.
@@ -165,7 +166,7 @@ public interface IterativeChunkedAggregationOperator {
      * @return true if the state was modified, false otherwise
      */
     boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination);
+            LongChunk<? extends RowKeys> inputIndices, long destination);
 
     /**
      * Modify a chunk of data previously aggregated into the result columns using a parallel chunk of new values. Never
@@ -181,7 +182,7 @@ public interface IterativeChunkedAggregationOperator {
      */
     default boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+            LongChunk<? extends RowKeys> postShiftIndices, long destination) {
         // There are no shifted indices here for any operators that care about indices, hence it is safe to remove in
         // "post-shift" space.
         final boolean modifiedOld = removeChunk(context, chunkSize, previousValues, postShiftIndices, destination);
@@ -202,7 +203,7 @@ public interface IterativeChunkedAggregationOperator {
      */
     default boolean shiftChunk(SingletonContext context, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends KeyIndices> preShiftIndices, LongChunk<? extends KeyIndices> postShiftIndices,
+            LongChunk<? extends RowKeys> preShiftIndices, LongChunk<? extends Attributes.RowKeys> postShiftIndices,
             long destination) {
         // we don't actually care
         return false;
@@ -217,7 +218,8 @@ public interface IterativeChunkedAggregationOperator {
      * @param destination the destination that was modified
      * @return true if the result should be considered modified
      */
-    default boolean modifyIndices(SingletonContext context, LongChunk<? extends KeyIndices> indices, long destination) {
+    default boolean modifyIndices(SingletonContext context, LongChunk<? extends Attributes.RowKeys> indices,
+            long destination) {
         return false;
     }
 

@@ -568,7 +568,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
-    public void testColumnSourceCanReuseContextWithSmallerOrderedKeys() {
+    public void testColumnSourceCanReuseContextWithSmallerRowSequence() {
         final QueryTable t1 = testRefreshingTable(i(0, 1));
         final QueryTable t2 = (QueryTable) t1.update("K=k", "A=1");
         final QueryTable t3 = (QueryTable) testTable(i(2, 3)).update("I=i", "A=1");

@@ -5,6 +5,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -18,7 +19,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.*;
 
 
-import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
@@ -197,7 +197,7 @@ class StaticChunkedNaturalJoinStateManager
         // the chunk of hashcodes
         final WritableIntChunk<HashCode> hashChunk;
         // the chunk of positions within our table
-        final WritableLongChunk<KeyIndices> tableLocationsChunk;
+        final WritableLongChunk<RowKeys> tableLocationsChunk;
 
         final ResettableWritableChunk<Values>[] writeThroughChunks = getResettableWritableKeyChunks();
         final WritableIntChunk<ChunkPositions> sourcePositions;
@@ -207,12 +207,12 @@ class StaticChunkedNaturalJoinStateManager
         final WritableBooleanChunk<Any> equalValues;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
-        final WritableLongChunk<KeyIndices> overflowLocationsToFetch;
+        final WritableLongChunk<RowKeys> overflowLocationsToFetch;
         // the overflow position in the working key chunks, parallel to the overflowLocationsToFetch
         final WritableIntChunk<ChunkPositions> overflowPositionInSourceChunk;
 
         // the position with our hash table that we should insert a value into
-        final WritableLongChunk<KeyIndices> insertTableLocations;
+        final WritableLongChunk<RowKeys> insertTableLocations;
         // the position in our chunk, parallel to the workingChunkInsertTablePositions
         final WritableIntChunk<ChunkPositions> insertPositionsInSourceChunk;
 
@@ -220,7 +220,7 @@ class StaticChunkedNaturalJoinStateManager
         final WritableIntChunk<ChunkPositions> chunkPositionsToCheckForEquality;
         // While processing overflow insertions, parallel to the chunkPositions to check for equality, the overflow location that
         // is represented by the first of the pairs in chunkPositionsToCheckForEquality
-        final WritableLongChunk<KeyIndices> overflowLocationForEqualityCheck;
+        final WritableLongChunk<RowKeys> overflowLocationForEqualityCheck;
 
         // the chunk of state values that we read from the hash table
         // @WritableStateChunkType@ from \QWritableLongChunk<Values>\E
@@ -370,7 +370,7 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     private void buildTable(final BuildContext bc,
-                            final OrderedKeys buildIndex,
+                            final RowSequence buildIndex,
                             ColumnSource<?>[] buildSources
             // region extra build arguments
             , final LongArraySource resultSource
@@ -381,16 +381,16 @@ class StaticChunkedNaturalJoinStateManager
         final boolean isLeftSide = resultSource != null;
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = buildIndex.getRowSequenceIterator();
              // region build initialization try
              // endregion build initialization try
         ) {
             // region build initialization
             // the chunk of right indices that are parallel to the sourceChunks
-            final WritableLongChunk<OrderedKeyIndices> rightSourceIndexKeys;
+            final WritableLongChunk<OrderedRowKeys> rightSourceIndexKeys;
 
             // the destination hash slots for each left-hand-side entry
-            final WritableLongChunk<KeyIndices> sourceChunkLeftHashSlots;
+            final WritableLongChunk<RowKeys> sourceChunkLeftHashSlots;
 
             if (isLeftSide) {
                 sourceChunkLeftHashSlots = WritableLongChunk.makeWritableChunk(bc.chunkSize);
@@ -408,11 +408,11 @@ class StaticChunkedNaturalJoinStateManager
             //noinspection unchecked
             final Chunk<Values> [] sourceKeyChunks = new Chunk[buildSources.length];
 
-            while (okIt.hasMore()) {
-                // we reset early to avoid carrying around state for old OrderedKeys which can't be reused.
+            while (rsIt.hasMore()) {
+                // we reset early to avoid carrying around state for old RowSequence which can't be reused.
                 bc.resetSharedContexts();
 
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(bc.chunkSize);
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
 
                 getKeyChunks(buildSources, bc.buildContexts, sourceKeyChunks, chunkOk);
                 hashKeyChunks(bc.hashChunk, sourceKeyChunks);
@@ -421,7 +421,7 @@ class StaticChunkedNaturalJoinStateManager
                 if (isLeftSide) {
                     sourceChunkLeftHashSlots.setSize(bc.hashChunk.size());
                 } else {
-                    chunkOk.fillKeyIndicesChunk(rightSourceIndexKeys);
+                    chunkOk.fillRowKeyChunk(rightSourceIndexKeys);
                 }
                 // endregion build loop initialization
 
@@ -773,15 +773,15 @@ class StaticChunkedNaturalJoinStateManager
         }
     }
 
-    private void fillKeys(ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<KeyIndices> tableLocationsChunk) {
+    private void fillKeys(ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<RowKeys> tableLocationsChunk) {
         fillKeys(keySources, fillContexts, keyChunks, tableLocationsChunk);
     }
 
-    private void fillOverflowKeys(ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<KeyIndices> overflowLocationsChunk) {
+    private void fillOverflowKeys(ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<RowKeys> overflowLocationsChunk) {
         fillKeys(overflowKeySources, fillContexts, keyChunks, overflowLocationsChunk);
     }
 
-    private static void fillKeys(ArrayBackedColumnSource<?>[] keySources, ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<KeyIndices> keyIndices) {
+    private static void fillKeys(ArrayBackedColumnSource<?>[] keySources, ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<RowKeys> keyIndices) {
         for (int ii = 0; ii < keySources.length; ++ii) {
             keySources[ii].fillChunkUnordered(fillContexts[ii], keyChunks[ii], keyIndices);
         }
@@ -794,9 +794,9 @@ class StaticChunkedNaturalJoinStateManager
         }
     }
 
-    private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts, Chunk<? extends Values>[] chunks, OrderedKeys orderedKeys) {
+    private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts, Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getChunk(contexts[ii], orderedKeys);
+            chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
         }
     }
 
@@ -846,7 +846,7 @@ class StaticChunkedNaturalJoinStateManager
         // the chunk of hashcodes
         final WritableIntChunk<HashCode> hashChunk;
         // the chunk of positions within our table
-        final WritableLongChunk<KeyIndices> tableLocationsChunk;
+        final WritableLongChunk<RowKeys> tableLocationsChunk;
 
         // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
@@ -854,7 +854,7 @@ class StaticChunkedNaturalJoinStateManager
         final WritableLongChunk<Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
-        final WritableLongChunk<KeyIndices> overflowLocationsToFetch;
+        final WritableLongChunk<RowKeys> overflowLocationsToFetch;
         // the overflow position in the working keychunks, parallel to the overflowLocationsToFetch
         final WritableIntChunk<ChunkPositions> overflowPositionInWorkingChunk;
         // values we have read from the overflow locations sources
@@ -977,7 +977,7 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     private void decorationProbe(ProbeContext pc
-                                , OrderedKeys probeIndex
+                                , RowSequence probeIndex
                                 , final ColumnSource<?>[] probeSources
                                  // region additional probe arguments
                                  , @Nullable final LongArraySource leftRedirections
@@ -988,7 +988,7 @@ class StaticChunkedNaturalJoinStateManager
         // endregion probe start
         long hashSlotOffset = 0;
 
-        try (final OrderedKeys.Iterator okIt = probeIndex.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = probeIndex.getRowSequenceIterator();
              // region probe additional try resources
              final SafeCloseableList chunksToClose = new SafeCloseableList();
              // endregion probe additional try resources
@@ -998,10 +998,10 @@ class StaticChunkedNaturalJoinStateManager
 
             // region probe initialization
 
-            // the chunk of right indices created from our OrderedKeys, used to write into the hash table
-            final WritableLongChunk<OrderedKeyIndices> rightKeyIndices;
+            // the chunk of right indices created from our RowSequence, used to write into the hash table
+            final WritableLongChunk<OrderedRowKeys> rightKeyIndices;
             // the destination hash slots for each left-hand-side entry
-            final WritableLongChunk<KeyIndices> workingLeftRedirections;
+            final WritableLongChunk<RowKeys> workingLeftRedirections;
             if (isLeftSide) {
                 workingLeftRedirections = WritableLongChunk.makeWritableChunk(pc.chunkSize);
                 chunksToClose.add(workingLeftRedirections);
@@ -1014,10 +1014,10 @@ class StaticChunkedNaturalJoinStateManager
 
             // endregion probe initialization
 
-            while (okIt.hasMore()) {
+            while (rsIt.hasMore()) {
                 // we reset shared contexts early to avoid carrying around state that can't be reused.
                 pc.resetSharedContexts();
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(pc.chunkSize);
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
                 final int chunkSize = chunkOk.intSize();
 
                 // region probe loop initialization
@@ -1025,7 +1025,7 @@ class StaticChunkedNaturalJoinStateManager
                     workingLeftRedirections.fillWithValue(0, chunkSize, Index.NULL_KEY);
                     workingLeftRedirections.setSize(chunkSize);
                 } else {
-                    chunkOk.fillKeyIndicesChunk(rightKeyIndices);
+                    chunkOk.fillRowKeyChunk(rightKeyIndices);
                 }
                 // endregion probe loop initialization
 
@@ -1169,7 +1169,7 @@ class StaticChunkedNaturalJoinStateManager
     }
     // endmixin decorationProbe
 
-    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<KeyIndices> tablePositionsChunk) {
+    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk) {
 
         // turn hash codes into indices within our table
         for (int ii = 0; ii < hashChunk.size(); ++ii) {

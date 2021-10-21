@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.jetbrains.annotations.NotNull;
@@ -168,29 +168,29 @@ public class RegionedColumnSourceBenchmark {
         switch (mode) {
             case "Fill":
                 try (final ColumnSource.FillContext fillContext = inputSource.makeFillContext(chunkCapacity);
-                        final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
-                    while (oki.hasMore()) {
-                        final OrderedKeys ok = oki.getNextOrderedKeysWithLength(chunkCapacity);
-                        inputSource.fillChunk(fillContext, destination, ok);
+                        final RowSequence.Iterator rsi = inputTable.getIndex().getRowSequenceIterator()) {
+                    while (rsi.hasMore()) {
+                        final RowSequence rs = rsi.getNextRowSequenceWithLength(chunkCapacity);
+                        inputSource.fillChunk(fillContext, destination, rs);
                         bh.consume(destination);
                     }
                 }
                 break;
             case "Get":
                 try (final ColumnSource.GetContext getContext = inputSource.makeGetContext(chunkCapacity);
-                        final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
-                    while (oki.hasMore()) {
-                        final OrderedKeys ok = oki.getNextOrderedKeysWithLength(chunkCapacity);
-                        bh.consume(inputSource.getChunk(getContext, ok));
+                        final RowSequence.Iterator rsi = inputTable.getIndex().getRowSequenceIterator()) {
+                    while (rsi.hasMore()) {
+                        final RowSequence rs = rsi.getNextRowSequenceWithLength(chunkCapacity);
+                        bh.consume(inputSource.getChunk(getContext, rs));
                     }
                 }
                 break;
             case "Default":
                 try (final ColumnSource.FillContext fillContext = inputSource.makeFillContext(chunkCapacity);
-                        final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
-                    while (oki.hasMore()) {
-                        final OrderedKeys ok = oki.getNextOrderedKeysWithLength(chunkCapacity);
-                        inputSource.defaultFillChunk(fillContext, destination, ok);
+                        final RowSequence.Iterator rsi = inputTable.getIndex().getRowSequenceIterator()) {
+                    while (rsi.hasMore()) {
+                        final RowSequence rs = rsi.getNextRowSequenceWithLength(chunkCapacity);
+                        inputSource.defaultFillChunk(fillContext, destination, rs);
                         bh.consume(destination);
                     }
                 }

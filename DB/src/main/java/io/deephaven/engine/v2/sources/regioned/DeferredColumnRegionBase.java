@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -63,19 +63,19 @@ public abstract class DeferredColumnRegionBase<ATTR extends Attributes.Any, REGI
 
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-            @NotNull OrderedKeys orderedKeys) {
-        getResultRegion().fillChunk(context, destination, orderedKeys);
+            @NotNull RowSequence rowSequence) {
+        getResultRegion().fillChunk(context, destination, rowSequence);
     }
 
     @Override
     public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-            @NotNull OrderedKeys.Iterator orderedKeysIterator) {
-        getResultRegion().fillChunkAppend(context, destination, orderedKeysIterator);
+            @NotNull RowSequence.Iterator RowSequenceIterator) {
+        getResultRegion().fillChunkAppend(context, destination, RowSequenceIterator);
     }
 
     @Override
-    public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return getResultRegion().getChunk(context, orderedKeys);
+    public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return getResultRegion().getChunk(context, rowSequence);
     }
 
     @Override

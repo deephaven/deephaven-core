@@ -1,6 +1,7 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
@@ -8,7 +9,6 @@ import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.IndexUtilities;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.Arrays;
@@ -170,11 +170,11 @@ public class BucketState {
             values[columnIndex].setMinIndex(offset, QueryConstants.NULL_LONG);
         }
 
-        final OrderedKeys.Iterator it = index.getOrderedKeysIterator();
+        final RowSequence.Iterator it = index.getRowSequenceIterator();
         while (it.hasMore()) {
-            final OrderedKeys next = it.getNextOrderedKeysWithLength(RunChartDownsample.CHUNK_SIZE);
+            final RowSequence next = it.getNextRowSequenceWithLength(RunChartDownsample.CHUNK_SIZE);
             // LongChunk<Attributes.Values> dateChunk = context.getXValues(next, false);
-            final LongChunk<Attributes.OrderedKeyIndices> keyChunk = next.asKeyIndicesChunk();
+            final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
             final Chunk<? extends Attributes.Values>[] valueChunks = context.getYValues(cols, next, false);
 
             // find the max in this chunk, compare with existing, loop.
@@ -194,8 +194,8 @@ public class BucketState {
         }
         final Index.RandomBuilder build = Index.FACTORY.getRandomBuilder();
         Assert.eqFalse(index.empty(), "index.empty()");
-        build.addKey(index.firstKey());
-        build.addKey(index.lastKey());
+        build.addKey(index.firstRowKey());
+        build.addKey(index.lastRowKey());
         if (trackNulls) {
             long indexSize = index.size();
             for (int i = 0; i < values.length; i++) {
@@ -212,15 +212,15 @@ public class BucketState {
                 if (nullsForCol.empty()) {
                     continue;
                 }
-                OrderedKeys.Iterator keysIterator = index.getOrderedKeysIterator();
+                RowSequence.Iterator keysIterator = index.getRowSequenceIterator();
                 MutableLong position = new MutableLong(0);
                 IndexUtilities.forAllInvertedLongRanges(index, nullsForCol, (first, last) -> {
                     if (first > 0) {
                         // Advance to (first - 1)
-                        keysIterator.getNextOrderedKeysWithLength(first - 1 - position.longValue());
+                        keysIterator.getNextRowSequenceWithLength(first - 1 - position.longValue());
                         build.addKey(keysIterator.peekNextKey());
                         // Advance to first
-                        keysIterator.getNextOrderedKeysWithLength(1);
+                        keysIterator.getNextRowSequenceWithLength(1);
                         build.addKey(keysIterator.peekNextKey());
 
                         position.setValue(first);
@@ -228,10 +228,10 @@ public class BucketState {
 
                     if (last < indexSize - 1) {
                         // Advance to last
-                        keysIterator.getNextOrderedKeysWithLength(last - position.longValue());
+                        keysIterator.getNextRowSequenceWithLength(last - position.longValue());
                         build.addKey(keysIterator.peekNextKey());
                         // Advance to (last + 1)
-                        keysIterator.getNextOrderedKeysWithLength(1);
+                        keysIterator.getNextRowSequenceWithLength(1);
                         build.addKey(keysIterator.peekNextKey());
 
                         position.setValue(last + 1);
@@ -274,10 +274,10 @@ public class BucketState {
     }
 
     public void validate(final boolean usePrev, final DownsampleChunkContext context, int[] allYColumnIndexes) {
-        final OrderedKeys.Iterator it = index.getOrderedKeysIterator();
+        final RowSequence.Iterator it = index.getRowSequenceIterator();
         while (it.hasMore()) {
-            final OrderedKeys next = it.getNextOrderedKeysWithLength(RunChartDownsample.CHUNK_SIZE);
-            final LongChunk<Attributes.OrderedKeyIndices> keyChunk = next.asKeyIndicesChunk();
+            final RowSequence next = it.getNextRowSequenceWithLength(RunChartDownsample.CHUNK_SIZE);
+            final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
             final Chunk<? extends Attributes.Values>[] valueChunks =
                     context.getYValues(allYColumnIndexes, next, usePrev);
 

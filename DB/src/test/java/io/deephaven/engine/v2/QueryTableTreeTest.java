@@ -1422,7 +1422,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertTableEquals(table, treed);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final long key = table.getIndex().firstKey();
+            final long key = table.getIndex().firstRowKey();
             table.getIndex().remove(key);
             TstUtils.removeRows(table, i(key));
             table.notifyListeners(i(), i(key), i());

@@ -6,10 +6,11 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
 import io.deephaven.engine.util.tuples.EmptyTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
@@ -19,7 +20,7 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
-public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Index {
+public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Index {
 
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})
     @Override
@@ -81,7 +82,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
      * @return Whether this index is flat (that is, contiguous from 0 to size - 1)
      */
     public final boolean isFlat() {
-        return empty() || (lastKey() == size() - 1);
+        return empty() || (lastRowKey() == size() - 1);
     }
 
     @Override
@@ -223,7 +224,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     /**
      * On an insertion operation, we clear all of our mappings so that they are not out-of-date.
      */
-    protected void updateGroupingOnInsert(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    protected void updateGroupingOnInsert(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
         clearMappings();
     }
 
@@ -251,7 +252,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     /**
      * On an insertion operation, we clear all of our mappings so that they are not out-of-date.
      */
-    protected void updateGroupingOnRemove(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    protected void updateGroupingOnRemove(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
         clearMappings();
     }
 
@@ -300,7 +301,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
 
         collectGrouping(this, this::intersect, mappings, ephemeralMappings, resultCollector, tupleSource, sourcesKey);
 
-        // TODO: We need to do something better than weakly-reachable List<ColumnSource>s here. Keys are probably
+        // TODO: We need to do something better than weakly-reachable List<ColumnSource>s here. Indices are probably
         // cleaned up well before we want right now. Values only cleaned up on access. Both are sub-par.
         if (areColumnsImmutable(sourcesKey)) {
             if (mappings == null) {

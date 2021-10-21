@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -61,11 +62,11 @@ public class TestReadOnlyRedirectedColumnSource {
 
     private void doCheck(
             final ColumnSource cs,
-            final OrderedKeys oks,
+            final RowSequence rs,
             final WritableObjectChunk<String, Values> chunk,
             final long offset) {
         final MutableLong pos = new MutableLong();
-        oks.forAllLongs(k -> {
+        rs.forAllLongs(k -> {
             final String s = (String) cs.get(k);
             assertEquals("offset=" + (pos.intValue() + offset) + ", k=" + k, s, chunk.get(pos.intValue()));
             pos.increment();
@@ -80,13 +81,13 @@ public class TestReadOnlyRedirectedColumnSource {
         final ColumnSource cs = t.getColumnSource(col);
         final Index ix = t.getIndex();
         try (final ColumnSource.FillContext fc = cs.makeFillContext(sz);
-                final OrderedKeys.Iterator it = ix.getOrderedKeysIterator()) {
+                final RowSequence.Iterator it = ix.getRowSequenceIterator()) {
             long offset = 0;
             while (it.hasMore()) {
-                final OrderedKeys oks = it.getNextOrderedKeysWithLength(sz);
-                cs.fillChunk(fc, chunk, oks);
-                doCheck(cs, oks, chunk, offset);
-                offset += oks.size();
+                final RowSequence rs = it.getNextRowSequenceWithLength(sz);
+                cs.fillChunk(fc, chunk, rs);
+                doCheck(cs, rs, chunk, offset);
+                offset += rs.size();
             }
         }
         return t;

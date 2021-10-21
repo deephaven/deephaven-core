@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
@@ -64,7 +64,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final TDigestContext tDigestContext = (TDigestContext) bucketedContext;
@@ -97,7 +97,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends Attributes.RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException("t-digest Approximate percentiles do not support data removal.");
@@ -105,15 +105,15 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
-            Chunk<? extends Values> postValues, LongChunk<? extends KeyIndices> postShiftIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            Chunk<? extends Values> postValues, LongChunk<? extends Attributes.RowKeys> postShiftIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException("t-digest Approximate percentiles do not support data modification.");
     }
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
         final TDigestContext tDigestContext = (TDigestContext) singletonContext;
         final TDigest digest = digestForSlot(destination);
         final DoubleChunk<? extends Values> doubleValues = tDigestContext.toDoubleCast.cast(values);
@@ -152,7 +152,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         throw new UnsupportedOperationException("t-digest Approximate percentiles do not support data removal.");
     }
 

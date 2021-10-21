@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.sources.chunk.page;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 public class DoubleChunkPage<ATTR extends Attributes.Any> extends DoubleChunk<ATTR> implements ChunkPage<ATTR> {
@@ -28,14 +28,14 @@ public class DoubleChunkPage<ATTR extends Attributes.Any> extends DoubleChunk<AT
     }
 
     @Override
-    public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
+    public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull RowSequence rowSequence) {
         WritableDoubleChunk<? super ATTR> to = destination.asWritableDoubleChunk();
 
-        if (orderedKeys.getAverageRunLengthEstimate() >= Chunk.SYSTEM_ARRAYCOPY_THRESHOLD) {
-            orderedKeys.forAllLongRanges((final long rangeStartKey, final long rangeEndKey) ->
+        if (rowSequence.getAverageRunLengthEstimate() >= Chunk.SYSTEM_ARRAYCOPY_THRESHOLD) {
+            rowSequence.forAllLongRanges((final long rangeStartKey, final long rangeEndKey) ->
                     to.appendTypedChunk(this, getChunkOffset(rangeStartKey), (int) (rangeEndKey - rangeStartKey + 1)));
         } else {
-            orderedKeys.forEachLong((final long key) -> {
+            rowSequence.forEachLong((final long key) -> {
                 to.add(get(getChunkOffset(key)));
                 return true;
             });

@@ -276,7 +276,8 @@ public class ExportTableUpdateListenerTest {
         // export mid-tick
         liveTableMonitor.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1, src.getIndex().lastKey() + 42);
+            update.added =
+                    Index.FACTORY.getIndexByRange(src.getIndex().lastRowKey() + 1, src.getIndex().lastRowKey() + 42);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = IndexShiftData.EMPTY;
@@ -306,7 +307,7 @@ public class ExportTableUpdateListenerTest {
         liveTableMonitor.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.added =
-                    Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1, src.getIndex().lastKey() + nRows);
+                    Index.FACTORY.getIndexByRange(src.getIndex().lastRowKey() + 1, src.getIndex().lastRowKey() + nRows);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = IndexShiftData.EMPTY;

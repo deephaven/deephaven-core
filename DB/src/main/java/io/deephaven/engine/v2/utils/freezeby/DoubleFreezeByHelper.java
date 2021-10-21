@@ -10,7 +10,7 @@ package io.deephaven.engine.v2.utils.freezeby;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
 class DoubleFreezeByHelper implements FreezeByOperator.FreezeByHelper {
     private final DoubleArraySource resultSource;
@@ -22,7 +22,7 @@ class DoubleFreezeByHelper implements FreezeByOperator.FreezeByHelper {
     }
 
     @Override
-    public void addChunk(Chunk<? extends Attributes.Values> values, IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkLengths> length) {
+    public void addChunk(Chunk<? extends Attributes.Values> values, IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.RowKeys> destinations, IntChunk<Attributes.ChunkLengths> length) {
         final DoubleChunk asDouble = values.asDoubleChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int position = startPositions.get(ii);
@@ -44,7 +44,7 @@ class DoubleFreezeByHelper implements FreezeByOperator.FreezeByHelper {
     }
 
     @Override
-    public void clearIndex(OrderedKeys removed) {
+    public void clearIndex(RowSequence removed) {
         // region clearIndex
         // endregion clearIndex
     }

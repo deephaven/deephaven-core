@@ -5,6 +5,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -244,7 +246,7 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     // region build wrappers
-    int buildFromRightSide(OrderedKeys rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots) {
+    int buildFromRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots) {
         if (rightIndex.isEmpty()) {
             return 0;
         }
@@ -255,7 +257,7 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    int buildFromLeftSide(OrderedKeys leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
+    int buildFromLeftSide(RowSequence leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
         if (leftIndex.isEmpty()) {
             return 0;
         }
@@ -317,7 +319,7 @@ class StaticChunkedAsOfJoinStateManager
         // the chunk of hashcodes
         final WritableIntChunk<HashCode> hashChunk;
         // the chunk of positions within our table
-        final WritableLongChunk<KeyIndices> tableLocationsChunk;
+        final WritableLongChunk<RowKeys> tableLocationsChunk;
 
         final ResettableWritableChunk<Values>[] writeThroughChunks = getResettableWritableKeyChunks();
         final WritableIntChunk<ChunkPositions> sourcePositions;
@@ -327,12 +329,12 @@ class StaticChunkedAsOfJoinStateManager
         final WritableBooleanChunk<Any> equalValues;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
-        final WritableLongChunk<KeyIndices> overflowLocationsToFetch;
+        final WritableLongChunk<RowKeys> overflowLocationsToFetch;
         // the overflow position in the working key chunks, parallel to the overflowLocationsToFetch
         final WritableIntChunk<ChunkPositions> overflowPositionInSourceChunk;
 
         // the position with our hash table that we should insert a value into
-        final WritableLongChunk<KeyIndices> insertTableLocations;
+        final WritableLongChunk<RowKeys> insertTableLocations;
         // the position in our chunk, parallel to the workingChunkInsertTablePositions
         final WritableIntChunk<ChunkPositions> insertPositionsInSourceChunk;
 
@@ -340,7 +342,7 @@ class StaticChunkedAsOfJoinStateManager
         final WritableIntChunk<ChunkPositions> chunkPositionsToCheckForEquality;
         // While processing overflow insertions, parallel to the chunkPositions to check for equality, the overflow location that
         // is represented by the first of the pairs in chunkPositionsToCheckForEquality
-        final WritableLongChunk<KeyIndices> overflowLocationForEqualityCheck;
+        final WritableLongChunk<RowKeys> overflowLocationForEqualityCheck;
 
         // the chunk of state values that we read from the hash table
         // @WritableStateChunkType@ from \QWritableByteChunk<Values>\E
@@ -361,9 +363,9 @@ class StaticChunkedAsOfJoinStateManager
         final WritableIntChunk<Values> overflowLocations;
 
         // mixin rehash
-        final WritableLongChunk<KeyIndices> rehashLocations;
+        final WritableLongChunk<RowKeys> rehashLocations;
         final WritableIntChunk<Values> overflowLocationsToMigrate;
-        final WritableLongChunk<KeyIndices> overflowLocationsAsKeyIndices;
+        final WritableLongChunk<RowKeys> overflowLocationsAsKeyIndices;
         final WritableBooleanChunk<Any> shouldMoveBucket;
 
         final ResettableWritableLongChunk<Any> overflowLocationForPromotionLoop = ResettableWritableLongChunk.makeResettableChunk();
@@ -383,7 +385,7 @@ class StaticChunkedAsOfJoinStateManager
         final ChunkSource.GetContext[] buildContexts;
 
         // region build context
-        final WritableLongChunk<OrderedKeyIndices> sourceIndexKeys;
+        final WritableLongChunk<OrderedRowKeys> sourceIndexKeys;
         // endregion build context
 
         final boolean haveSharedContexts;
@@ -528,7 +530,7 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     private void buildTable(final BuildContext bc,
-                            final OrderedKeys buildIndex,
+                            final RowSequence buildIndex,
                             ColumnSource<?>[] buildSources
                             // region extra build arguments
                             , boolean isLeftSide
@@ -543,7 +545,7 @@ class StaticChunkedAsOfJoinStateManager
         buildCookieSource.ensureCapacity(tableSize);
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = buildIndex.getRowSequenceIterator();
              // region build initialization try
              // endregion build initialization try
         ) {
@@ -556,19 +558,19 @@ class StaticChunkedAsOfJoinStateManager
             //noinspection unchecked
             final Chunk<Values> [] sourceKeyChunks = new Chunk[buildSources.length];
 
-            while (okIt.hasMore()) {
-                // we reset early to avoid carrying around state for old OrderedKeys which can't be reused.
+            while (rsIt.hasMore()) {
+                // we reset early to avoid carrying around state for old RowSequence which can't be reused.
                 bc.resetSharedContexts();
 
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(bc.chunkSize);
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
 
                 getKeyChunks(buildSources, bc.buildContexts, sourceKeyChunks, chunkOk);
                 hashKeyChunks(bc.hashChunk, sourceKeyChunks);
 
                 // region build loop initialization
-                // TODO: make chunkOk.fillKeyIndicesChunk ignore the input size
+                // TODO: make chunkOk.fillRowKeyChunk ignore the input size
                 bc.sourceIndexKeys.setSize(bc.chunkSize);
-                chunkOk.fillKeyIndicesChunk(bc.sourceIndexKeys);
+                chunkOk.fillRowKeyChunk(bc.sourceIndexKeys);
 
                 addedSlots.ensureCapacity(slotCount.intValue() + bc.chunkSize);
                 overflowBuildCookieSource.ensureCapacity(nextOverflowLocation + bc.chunkSize);
@@ -908,7 +910,7 @@ class StaticChunkedAsOfJoinStateManager
             initializeRehashLocations(bc.rehashLocations, bucketsToAdd);
 
             // fill the overflow bucket locations
-            overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(LongChunk.downcast(bc.rehashLocations)));
+            overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceUtil.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(bc.rehashLocations)));
             // null out the overflow locations in the table
             setOverflowLocationsToNull(tableHashPivot - (tableSize >> 1), bucketsToAdd);
 
@@ -1007,7 +1009,7 @@ class StaticChunkedAsOfJoinStateManager
                     bc.overflowLocationForPromotionLoop.resetFromTypedChunk(bc.overflowLocationsToFetch, moves, totalPromotionsToProcess - moves);
                 }
 
-                overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(bc.overflowLocationForPromotionLoop));
+                overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceUtil.wrapRowKeysChunkAsRowSequence(bc.overflowLocationForPromotionLoop));
                 IntChunkEquals.notEqual(bc.overflowLocations, QueryConstants.NULL_INT, bc.shouldMoveBucket);
 
                 // crunch the chunk down to relevant locations
@@ -1110,10 +1112,10 @@ class StaticChunkedAsOfJoinStateManager
         final ChunkSource.FillContext [] keyFillContext = makeFillContexts(keySources, SharedContext.makeSharedContext(), maxSize);
         final WritableChunk [] keyChunks = getWritableKeyChunks(maxSize);
 
-        try (final WritableLongChunk<KeyIndices> positions = WritableLongChunk.makeWritableChunk(maxSize);
+        try (final WritableLongChunk<RowKeys> positions = WritableLongChunk.makeWritableChunk(maxSize);
              final WritableBooleanChunk exists = WritableBooleanChunk.makeWritableChunk(maxSize);
              final WritableIntChunk hashChunk = WritableIntChunk.makeWritableChunk(maxSize);
-             final WritableLongChunk<KeyIndices> tableLocationsChunk = WritableLongChunk.makeWritableChunk(maxSize);
+             final WritableLongChunk<RowKeys> tableLocationsChunk = WritableLongChunk.makeWritableChunk(maxSize);
              final SafeCloseableArray ignored = new SafeCloseableArray<>(keyFillContext);
              final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
              // @StateChunkName@ from \QByteChunk\E
@@ -1151,7 +1153,7 @@ class StaticChunkedAsOfJoinStateManager
         this.maximumLoadFactor = maximumLoadFactor;
     }
 
-    private void createOverflowPartitions(WritableLongChunk<KeyIndices> overflowLocationsToFetch, WritableLongChunk<KeyIndices> rehashLocations, WritableBooleanChunk<Any> shouldMoveBucket, int moves) {
+    private void createOverflowPartitions(WritableLongChunk<RowKeys> overflowLocationsToFetch, WritableLongChunk<RowKeys> rehashLocations, WritableBooleanChunk<Any> shouldMoveBucket, int moves) {
         int startWritePosition = 0;
         int endWritePosition = moves;
         for (int ii = 0; ii < shouldMoveBucket.size(); ++ii) {
@@ -1173,14 +1175,14 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    private void initializeRehashLocations(WritableLongChunk<KeyIndices> rehashLocations, int bucketsToAdd) {
+    private void initializeRehashLocations(WritableLongChunk<RowKeys> rehashLocations, int bucketsToAdd) {
         rehashLocations.setSize(bucketsToAdd);
         for (int ii = 0; ii < bucketsToAdd; ++ii) {
             rehashLocations.set(ii, tableHashPivot + ii - (tableSize >> 1));
         }
     }
 
-    private void compactOverflowLocations(IntChunk<Values> overflowLocations, WritableLongChunk<KeyIndices> overflowLocationsToFetch) {
+    private void compactOverflowLocations(IntChunk<Values> overflowLocations, WritableLongChunk<RowKeys> overflowLocationsToFetch) {
         overflowLocationsToFetch.setSize(0);
         for (int ii = 0; ii < overflowLocations.size(); ++ii) {
             final int overflowLocation = overflowLocations.get(ii);
@@ -1190,7 +1192,7 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    private void swapOverflowPointers(LongChunk<KeyIndices> tableLocationsChunk, LongChunk<KeyIndices> overflowLocationsToFetch) {
+    private void swapOverflowPointers(LongChunk<RowKeys> tableLocationsChunk, LongChunk<RowKeys> overflowLocationsToFetch) {
         for (int ii = 0; ii < overflowLocationsToFetch.size(); ++ii) {
             final long newLocation = tableLocationsChunk.get(ii);
             final int existingOverflow = overflowLocationSource.getUnsafe(newLocation);
@@ -1293,15 +1295,15 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    private void fillKeys(ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<KeyIndices> tableLocationsChunk) {
+    private void fillKeys(ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<RowKeys> tableLocationsChunk) {
         fillKeys(keySources, fillContexts, keyChunks, tableLocationsChunk);
     }
 
-    private void fillOverflowKeys(ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<KeyIndices> overflowLocationsChunk) {
+    private void fillOverflowKeys(ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<RowKeys> overflowLocationsChunk) {
         fillKeys(overflowKeySources, fillContexts, keyChunks, overflowLocationsChunk);
     }
 
-    private static void fillKeys(ArrayBackedColumnSource<?>[] keySources, ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<KeyIndices> keyIndices) {
+    private static void fillKeys(ArrayBackedColumnSource<?>[] keySources, ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<RowKeys> keyIndices) {
         for (int ii = 0; ii < keySources.length; ++ii) {
             keySources[ii].fillChunkUnordered(fillContexts[ii], keyChunks[ii], keyIndices);
         }
@@ -1314,15 +1316,15 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts, Chunk<? extends Values>[] chunks, OrderedKeys orderedKeys) {
+    private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts, Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getChunk(contexts[ii], orderedKeys);
+            chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
         }
     }
 
 
     // region probe wrappers
-    void probeLeft(OrderedKeys leftIndex, ColumnSource<?>[] leftSources)  {
+    void probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources)  {
         if (leftIndex.isEmpty()) {
             return;
         }
@@ -1331,7 +1333,7 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    int probeLeft(OrderedKeys leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, Index.RandomBuilder foundBuilder)  {
+    int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, Index.RandomBuilder foundBuilder)  {
         if (leftIndex.isEmpty()) {
             return 0;
         }
@@ -1342,7 +1344,7 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    void probeRight(OrderedKeys rightIndex, ColumnSource<?>[] rightSources)  {
+    void probeRight(RowSequence rightIndex, ColumnSource<?>[] rightSources)  {
         if (rightIndex.isEmpty()) {
             return;
         }
@@ -1368,7 +1370,7 @@ class StaticChunkedAsOfJoinStateManager
         // the chunk of hashcodes
         final WritableIntChunk<HashCode> hashChunk;
         // the chunk of positions within our table
-        final WritableLongChunk<KeyIndices> tableLocationsChunk;
+        final WritableLongChunk<RowKeys> tableLocationsChunk;
 
         // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
@@ -1376,7 +1378,7 @@ class StaticChunkedAsOfJoinStateManager
         final WritableByteChunk<Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
-        final WritableLongChunk<KeyIndices> overflowLocationsToFetch;
+        final WritableLongChunk<RowKeys> overflowLocationsToFetch;
         // the overflow position in the working keychunks, parallel to the overflowLocationsToFetch
         final WritableIntChunk<ChunkPositions> overflowPositionInWorkingChunk;
         // values we have read from the overflow locations sources
@@ -1393,8 +1395,8 @@ class StaticChunkedAsOfJoinStateManager
 
         // region probe context
 
-        // the chunk of indices created from our OrderedKeys, used to write into the hash table
-        final WritableLongChunk<OrderedKeyIndices> keyIndices;
+        // the chunk of indices created from our RowSequence, used to write into the hash table
+        final WritableLongChunk<OrderedRowKeys> keyIndices;
         // endregion probe context
         final boolean haveSharedContexts;
 
@@ -1492,7 +1494,7 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     private void decorationProbe(ProbeContext pc
-                                , OrderedKeys probeIndex
+                                , RowSequence probeIndex
                                 , final ColumnSource<?>[] probeSources
                                  // region additional probe arguments
                                 , final boolean isLeftSide
@@ -1512,7 +1514,7 @@ class StaticChunkedAsOfJoinStateManager
         // endregion probe start
         long hashSlotOffset = 0;
 
-        try (final OrderedKeys.Iterator okIt = probeIndex.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = probeIndex.getRowSequenceIterator();
              // region probe additional try resources
              // endregion probe additional try resources
             ) {
@@ -1522,14 +1524,14 @@ class StaticChunkedAsOfJoinStateManager
             // region probe initialization
             // endregion probe initialization
 
-            while (okIt.hasMore()) {
+            while (rsIt.hasMore()) {
                 // we reset shared contexts early to avoid carrying around state that can't be reused.
                 pc.resetSharedContexts();
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(pc.chunkSize);
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
                 final int chunkSize = chunkOk.intSize();
 
                 // region probe loop initialization
-                chunkOk.fillKeyIndicesChunk(pc.keyIndices);
+                chunkOk.fillRowKeyChunk(pc.keyIndices);
                 // endregion probe loop initialization
 
                 // get our keys, hash them, and convert them to table locations
@@ -1653,13 +1655,13 @@ class StaticChunkedAsOfJoinStateManager
     }
     // endmixin decorationProbe
 
-    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<KeyIndices> tablePositionsChunk) {
+    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk) {
         // mixin rehash
         // NOTE that this mixin section is a bit ugly, we are spanning the two functions so that we can avoid using tableHashPivot and having the unused pivotPoint parameter
         convertHashToTableLocations(hashChunk, tablePositionsChunk, tableHashPivot);
     }
 
-    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<KeyIndices> tablePositionsChunk, int pivotPoint) {
+    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk, int pivotPoint) {
         // endmixin rehash
 
         // turn hash codes into indices within our table
@@ -1798,7 +1800,7 @@ class StaticChunkedAsOfJoinStateManager
 
     String keyString(long slot) {
         final WritableChunk<Values>[] keyChunk = getWritableKeyChunks(1);
-        final WritableLongChunk<KeyIndices> slotChunk = WritableLongChunk.makeWritableChunk(1);
+        final WritableLongChunk<RowKeys> slotChunk = WritableLongChunk.makeWritableChunk(1);
         if (isOverflowLocation(slot)) {
             slotChunk.set(0, hashLocationToOverflowLocation(slot));
             final ColumnSource.FillContext[] contexts = makeFillContexts(overflowKeySources, null, 1);

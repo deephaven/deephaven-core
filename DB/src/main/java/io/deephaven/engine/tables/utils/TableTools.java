@@ -35,11 +35,8 @@ import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.ShortChunk;
-import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.MergeSortedHelper;
-import io.deephaven.engine.v2.utils.OrderedKeys;
-import io.deephaven.engine.v2.utils.TimeProvider;
+import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.io.util.NullOutputStream;
@@ -1542,7 +1539,7 @@ public class TableTools {
         return Base64.getEncoder().encodeToString(computeFingerprint(source));
     }
 
-    private static void processColumnForFingerprint(OrderedKeys ok, ColumnSource<?> col, DataOutputStream outputStream)
+    private static void processColumnForFingerprint(RowSequence ok, ColumnSource<?> col, DataOutputStream outputStream)
             throws IOException {
         if (col.getType() == DBDateTime.class) {
             col = ReinterpretUtilities.dateTimeToLongSource(col);
@@ -1554,9 +1551,9 @@ public class TableTools {
         switch (chunkType) {
             case Char:
                 try (final ColumnSource.GetContext getContext = col.makeGetContext(chunkSize);
-                        final OrderedKeys.Iterator okit = ok.getOrderedKeysIterator()) {
-                    while (okit.hasMore()) {
-                        final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+                        final RowSequence.Iterator rsIt = ok.getRowSequenceIterator()) {
+                    while (rsIt.hasMore()) {
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                         final CharChunk<? extends Values> valuesChunk = col.getChunk(getContext, chunkOk).asCharChunk();
                         for (int ii = 0; ii < valuesChunk.size(); ++ii) {
                             outputStream.writeChar(valuesChunk.get(ii));
@@ -1566,9 +1563,9 @@ public class TableTools {
                 break;
             case Byte:
                 try (final ColumnSource.GetContext getContext = col.makeGetContext(chunkSize);
-                        final OrderedKeys.Iterator okit = ok.getOrderedKeysIterator()) {
-                    while (okit.hasMore()) {
-                        final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+                        final RowSequence.Iterator rsIt = ok.getRowSequenceIterator()) {
+                    while (rsIt.hasMore()) {
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                         final ByteChunk<? extends Values> valuesChunk = col.getChunk(getContext, chunkOk).asByteChunk();
                         for (int ii = 0; ii < valuesChunk.size(); ++ii) {
                             outputStream.writeByte(valuesChunk.get(ii));
@@ -1578,9 +1575,9 @@ public class TableTools {
                 break;
             case Short:
                 try (final ColumnSource.GetContext getContext = col.makeGetContext(chunkSize);
-                        final OrderedKeys.Iterator okit = ok.getOrderedKeysIterator()) {
-                    while (okit.hasMore()) {
-                        final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+                        final RowSequence.Iterator rsIt = ok.getRowSequenceIterator()) {
+                    while (rsIt.hasMore()) {
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                         final ShortChunk<? extends Values> valuesChunk =
                                 col.getChunk(getContext, chunkOk).asShortChunk();
                         for (int ii = 0; ii < valuesChunk.size(); ++ii) {
@@ -1591,9 +1588,9 @@ public class TableTools {
                 break;
             case Int:
                 try (final ColumnSource.GetContext getContext = col.makeGetContext(chunkSize);
-                        final OrderedKeys.Iterator okit = ok.getOrderedKeysIterator()) {
-                    while (okit.hasMore()) {
-                        final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+                        final RowSequence.Iterator rsIt = ok.getRowSequenceIterator()) {
+                    while (rsIt.hasMore()) {
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                         final IntChunk<? extends Values> valuesChunk = col.getChunk(getContext, chunkOk).asIntChunk();
                         for (int ii = 0; ii < valuesChunk.size(); ++ii) {
                             outputStream.writeInt(valuesChunk.get(ii));
@@ -1603,9 +1600,9 @@ public class TableTools {
                 break;
             case Long:
                 try (final ColumnSource.GetContext getContext = col.makeGetContext(chunkSize);
-                        final OrderedKeys.Iterator okit = ok.getOrderedKeysIterator()) {
-                    while (okit.hasMore()) {
-                        final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+                        final RowSequence.Iterator rsIt = ok.getRowSequenceIterator()) {
+                    while (rsIt.hasMore()) {
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                         final LongChunk<? extends Values> valuesChunk = col.getChunk(getContext, chunkOk).asLongChunk();
                         for (int ii = 0; ii < valuesChunk.size(); ++ii) {
                             outputStream.writeLong(valuesChunk.get(ii));
@@ -1615,9 +1612,9 @@ public class TableTools {
                 break;
             case Float:
                 try (final ColumnSource.GetContext getContext = col.makeGetContext(chunkSize);
-                        final OrderedKeys.Iterator okit = ok.getOrderedKeysIterator()) {
-                    while (okit.hasMore()) {
-                        final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+                        final RowSequence.Iterator rsIt = ok.getRowSequenceIterator()) {
+                    while (rsIt.hasMore()) {
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                         final FloatChunk<? extends Values> valuesChunk =
                                 col.getChunk(getContext, chunkOk).asFloatChunk();
                         for (int ii = 0; ii < valuesChunk.size(); ++ii) {
@@ -1628,9 +1625,9 @@ public class TableTools {
                 break;
             case Double:
                 try (final ColumnSource.GetContext getContext = col.makeGetContext(chunkSize);
-                        final OrderedKeys.Iterator okit = ok.getOrderedKeysIterator()) {
-                    while (okit.hasMore()) {
-                        final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+                        final RowSequence.Iterator rsIt = ok.getRowSequenceIterator()) {
+                    while (rsIt.hasMore()) {
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                         final DoubleChunk<? extends Values> valuesChunk =
                                 col.getChunk(getContext, chunkOk).asDoubleChunk();
                         for (int ii = 0; ii < valuesChunk.size(); ++ii) {
@@ -1641,9 +1638,9 @@ public class TableTools {
                 break;
             case Object:
                 try (final ColumnSource.GetContext getContext = col.makeGetContext(chunkSize);
-                        final OrderedKeys.Iterator okit = ok.getOrderedKeysIterator()) {
-                    while (okit.hasMore()) {
-                        final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+                        final RowSequence.Iterator rsIt = ok.getRowSequenceIterator()) {
+                    while (rsIt.hasMore()) {
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                         final ObjectChunk<?, ? extends Values> valuesChunk =
                                 col.getChunk(getContext, chunkOk).asObjectChunk();
                         for (int ii = 0; ii < valuesChunk.size(); ++ii) {

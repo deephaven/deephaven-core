@@ -31,7 +31,7 @@ public class GenerateTableUpdates {
 
     public static void generateAppends(final int size, Random random, QueryTable table,
             TstUtils.ColumnInfo[] columnInfos) {
-        final long firstKey = table.getIndex().lastKey() + 1;
+        final long firstKey = table.getIndex().lastRowKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
         final Index keysToAdd = Index.FACTORY.getIndexByRange(firstKey, firstKey + randomSize - 1);
         final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfos.length];
@@ -196,8 +196,8 @@ public class GenerateTableUpdates {
                 int shiftStrategy = random.nextInt(100);
                 if (shiftStrategy < profile.SHIFT_10_PERCENT_KEY_SPACE && index.nonempty()) {
                     // 10% of keyspace
-                    final long startKey = nextLong(random, index.lastKey() + 1);
-                    final long lastKey = Math.min(startKey + (long) (index.lastKey() * 0.1), index.lastKey());
+                    final long startKey = nextLong(random, index.lastRowKey() + 1);
+                    final long lastKey = Math.min(startKey + (long) (index.lastRowKey() * 0.1), index.lastRowKey());
                     shiftConsumer.accept(startKey, lastKey);
                 }
                 shiftStrategy -= profile.SHIFT_10_PERCENT_KEY_SPACE;

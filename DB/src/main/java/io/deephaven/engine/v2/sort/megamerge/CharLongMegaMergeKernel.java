@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Keys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.Indices;
 import io.deephaven.engine.v2.sources.chunk.*;
 
 public class CharLongMegaMergeKernel {
@@ -16,7 +16,7 @@ public class CharLongMegaMergeKernel {
     }
 
     // region Context
-    public static class CharLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
+    public static class CharLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
         @SuppressWarnings("rawtypes")
         private static final CharLongMegaMergeKernelContext INSTANCE = new CharLongMegaMergeKernelContext();
 
@@ -27,17 +27,17 @@ public class CharLongMegaMergeKernel {
     }
     // endregion Context
 
-    public static <ATTR extends Any, KEY_INDICES extends Keys> CharLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext() {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> CharLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext() {
         //noinspection unchecked
         return CharLongMegaMergeKernelContext.INSTANCE;
     }
 
-    static public <ATTR extends Any, KEY_INDICES extends Keys> void merge(LongArraySource destinationKeys,
-                                                                           CharacterArraySource destinationValues,
-                                                                           long destinationOffset,
-                                                                           long destinationSize,
-                                                                           LongChunk<KEY_INDICES> keysChunk,
-                                                                           CharChunk<ATTR> valuesChunk
+    static public <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void merge(LongArraySource destinationKeys,
+                                                                                        CharacterArraySource destinationValues,
+                                                                                        long destinationOffset,
+                                                                                        long destinationSize,
+                                                                                        LongChunk<KEY_INDICES> keysChunk,
+                                                                                        CharChunk<ATTR> valuesChunk
     ) {
         destinationKeys.ensureCapacity(destinationOffset + destinationSize + keysChunk.size(), false);
         destinationValues.ensureCapacity(destinationOffset + destinationSize + valuesChunk.size(), false);
@@ -148,7 +148,7 @@ public class CharLongMegaMergeKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Keys> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, CharChunk<ATTR> valuesChunk, LongArraySource destinationKeys, CharacterArraySource destinationValues, int sourceStart, long destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, CharChunk<ATTR> valuesChunk, LongArraySource destinationKeys, CharacterArraySource destinationValues, int sourceStart, long destStart, int length) {
         destinationValues.copyFromChunk(destStart, length, (CharChunk)valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }

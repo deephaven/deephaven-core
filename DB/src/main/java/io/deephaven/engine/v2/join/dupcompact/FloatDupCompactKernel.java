@@ -14,11 +14,11 @@ public class FloatDupCompactKernel implements DupCompactKernel {
     private FloatDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.KeyIndices> keyIndices) {
+    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableFloatChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableFloatChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.KeyIndices> keyIndices) {
+    private static int compactDuplicates(WritableFloatChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

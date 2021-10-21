@@ -14,11 +14,11 @@ public class DoubleReverseDupCompactKernel implements DupCompactKernel {
     private DoubleReverseDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.KeyIndices> keyIndices) {
+    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableDoubleChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableDoubleChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.KeyIndices> keyIndices) {
+    private static int compactDuplicates(WritableDoubleChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

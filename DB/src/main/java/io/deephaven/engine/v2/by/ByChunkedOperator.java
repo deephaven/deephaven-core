@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -64,13 +64,13 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void addChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= startPositions.size() > 0;
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -83,13 +83,13 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void removeChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= startPositions.size() > 0;
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> inputIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -103,8 +103,8 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     @Override
     public void modifyChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends KeyIndices> postShiftIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         // We have no inputs, so we should never get here.
         throw new IllegalStateException();
@@ -113,16 +113,16 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     @Override
     public void shiftChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends KeyIndices> preShiftIndices,
-            @NotNull final LongChunk<? extends KeyIndices> postShiftIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> preShiftIndices,
+            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> preShiftIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) preShiftIndices;
+        final LongChunk<OrderedRowKeys> preShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) preShiftIndices;
         // noinspection unchecked
-        final LongChunk<OrderedKeyIndices> postShiftIndicesAsOrdered = (LongChunk<OrderedKeyIndices>) postShiftIndices;
+        final LongChunk<OrderedRowKeys> postShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) postShiftIndices;
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -135,8 +135,8 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void modifyIndices(final BucketedContext context,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-            @NotNull final IntChunk<KeyIndices> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (!stepValuesModified) {
             return;
@@ -148,11 +148,11 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     @Override
     public boolean addChunk(final SingletonContext singletonContext, final int chunkSize,
             final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices, final long destination) {
+            @NotNull final LongChunk<? extends RowKeys> inputIndices, final long destination) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= chunkSize > 0;
         // noinspection unchecked
-        addChunk((LongChunk<OrderedKeyIndices>) inputIndices, 0, chunkSize, destination);
+        addChunk((LongChunk<OrderedRowKeys>) inputIndices, 0, chunkSize, destination);
         return true;
     }
 
@@ -166,18 +166,18 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     @Override
     public boolean removeChunk(final SingletonContext singletonContext, final int chunkSize,
             final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends KeyIndices> inputIndices, final long destination) {
+            @NotNull final LongChunk<? extends RowKeys> inputIndices, final long destination) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= chunkSize > 0;
         // noinspection unchecked
-        removeChunk((LongChunk<OrderedKeyIndices>) inputIndices, 0, chunkSize, destination);
+        removeChunk((LongChunk<OrderedRowKeys>) inputIndices, 0, chunkSize, destination);
         return true;
     }
 
     @Override
     public boolean modifyChunk(final SingletonContext singletonContext, final int chunkSize,
             final Chunk<? extends Values> previousValues, final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends KeyIndices> postShiftIndices,
+            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
             final long destination) {
         // We have no inputs, so we should never get here.
         throw new IllegalStateException();
@@ -186,19 +186,19 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     @Override
     public boolean shiftChunk(final SingletonContext singletonContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends KeyIndices> preInputIndices,
-            @NotNull final LongChunk<? extends KeyIndices> postInputIndices,
+            @NotNull final LongChunk<? extends RowKeys> preInputIndices,
+            @NotNull final LongChunk<? extends RowKeys> postInputIndices,
             final long destination) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
         // noinspection unchecked
-        doShift((LongChunk<OrderedKeyIndices>) preInputIndices, (LongChunk<OrderedKeyIndices>) postInputIndices, 0,
+        doShift((LongChunk<OrderedRowKeys>) preInputIndices, (LongChunk<OrderedRowKeys>) postInputIndices, 0,
                 preInputIndices.size(), destination);
         return false;
     }
 
     @Override
-    public boolean modifyIndices(final SingletonContext context, @NotNull final LongChunk<? extends KeyIndices> indices,
+    public boolean modifyIndices(final SingletonContext context, @NotNull final LongChunk<? extends RowKeys> indices,
             final long destination) {
         if (!stepValuesModified) {
             return false;
@@ -207,7 +207,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
         return indices.size() != 0;
     }
 
-    private void addChunk(@NotNull final LongChunk<OrderedKeyIndices> indices, final int start, final int length,
+    private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
         final Index index = indexForSlot(destination);
         index.insert(indices, start, length);
@@ -217,14 +217,14 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
         indexForSlot(destination).insert(addIndex);
     }
 
-    private void removeChunk(@NotNull final LongChunk<OrderedKeyIndices> indices, final int start, final int length,
+    private void removeChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
         final Index index = indexForSlot(destination);
         index.remove(indices, start, length);
     }
 
-    private void doShift(@NotNull final LongChunk<OrderedKeyIndices> preShiftIndices,
-            @NotNull final LongChunk<OrderedKeyIndices> postShiftIndices,
+    private void doShift(@NotNull final LongChunk<OrderedRowKeys> preShiftIndices,
+            @NotNull final LongChunk<OrderedRowKeys> postShiftIndices,
             final int startPosition, final int runLength, final long destination) {
         final Index index = indexForSlot(destination);
         index.remove(preShiftIndices, startPosition, runLength);
@@ -324,19 +324,19 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
         initializeNewIndexPreviousValues(newDestinations);
     }
 
-    private void initializeNewIndexPreviousValues(@NotNull final OrderedKeys newDestinations) {
+    private void initializeNewIndexPreviousValues(@NotNull final RowSequence newDestinations) {
         if (newDestinations.isEmpty()) {
             return;
         }
         try (final ChunkSource.GetContext indicesGetContext = indices.makeGetContext(BLOCK_SIZE);
-                final OrderedKeys.Iterator newDestinationsIterator = newDestinations.getOrderedKeysIterator()) {
+                final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
             while (newDestinationsIterator.hasMore()) {
                 final long nextDestination = newDestinationsIterator.peekNextKey();
                 final long nextBlockEnd = (nextDestination / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;
-                // This OrderedKeys slice should be exactly aligned to a slice of a single data block in indices (since
+                // This RowSequence slice should be exactly aligned to a slice of a single data block in indices (since
                 // it is an ArrayBackedColumnSource), allowing getChunk to skip a copy.
-                final OrderedKeys newDestinationsSlice =
-                        newDestinationsIterator.getNextOrderedKeysThrough(nextBlockEnd);
+                final RowSequence newDestinationsSlice =
+                        newDestinationsIterator.getNextRowSequenceThrough(nextBlockEnd);
                 final ObjectChunk<Index, Values> indicesChunk =
                         indices.getChunk(indicesGetContext, newDestinationsSlice).asObjectChunk();
                 final int indicesChunkSize = indicesChunk.size();

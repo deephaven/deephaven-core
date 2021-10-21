@@ -9,13 +9,12 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
@@ -452,10 +451,10 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     // region fillByRanges
     @Override
-    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableByteChunk<? super Values> chunk = dest.asWritableByteChunk();
         final FillByContext<byte[]> ctx = new FillByContext<>();
-        orderedKeys.forAllLongRanges((long firstKey, final long lastKey) -> {
+        rowSequence.forAllLongRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -489,10 +488,10 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     // region fillByKeys
     @Override
-    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableByteChunk<? super Values> chunk = dest.asWritableByteChunk();
         final FillByContext<byte[]> ctx = new FillByContext<>();
-        orderedKeys.forEachLong((final long v) -> {
+        rowSequence.forEachLong((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(v);
                 ctx.maxKeyInCurrentBlock = v | INDEX_MASK;
@@ -509,9 +508,9 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     }
     // endregion fillByKeys
 
-    // region fillByUnorderedKeys
+    // region fillByUnRowSequence
     @Override
-    void fillByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
+    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
         final WritableByteChunk<? super Values> byteChunk = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -545,7 +544,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     }
 
     @Override
-    void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
+    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
         final WritableByteChunk<? super Values> byteChunk = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -585,16 +584,16 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
         }
         dest.setSize(keys.size());
     }
-    // endregion fillByUnorderedKeys
+    // endregion fillByUnRowSequence
 
     // region fillFromChunkByRanges
     @Override
-    void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        if (orderedKeys.size() == 0) {
+    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        if (rowSequence.size() == 0) {
             return;
         }
         final ByteChunk<? extends Values> chunk = src.asByteChunk();
-        final LongChunk<OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -658,12 +657,12 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     // region fillFromChunkByKeys
     @Override
-    void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        if (orderedKeys.size() == 0) {
+    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        if (rowSequence.size() == 0) {
             return;
         }
         final ByteChunk<? extends Values> chunk = src.asByteChunk();
-        final LongChunk<OrderedKeyIndices> keys = orderedKeys.asKeyIndicesChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -716,7 +715,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<Attributes.RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }
@@ -769,40 +768,40 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     // endregion fillFromChunkUnordered
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         if (prevFlusher == null) {
-            fillChunk(context, dest, orderedKeys);
+            fillChunk(context, dest, rowSequence);
             return;
         }
-        defaultFillPrevChunk(context, dest, orderedKeys);
+        defaultFillPrevChunk(context, dest, rowSequence);
     }
 
     // region getChunk
     @Override
-    public ByteChunk<Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        if (orderedKeys.size() == 0) {
+    public ByteChunk<Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        if (rowSequence.size() == 0) {
             return ByteChunk.getEmptyChunk();
         }
-        final long firstKey = orderedKeys.firstKey();
-        final long lastKey = orderedKeys.lastKey();
-        if ((lastKey - firstKey + 1) == orderedKeys.size() && (firstKey >> BLOCK2_SHIFT == lastKey >> BLOCK2_SHIFT)) {
+        final long firstKey = rowSequence.firstRowKey();
+        final long lastKey = rowSequence.lastRowKey();
+        if ((lastKey - firstKey + 1) == rowSequence.size() && (firstKey >> BLOCK2_SHIFT == lastKey >> BLOCK2_SHIFT)) {
             // it's a contiguous range, in a single block
             return DefaultGetContext.resetChunkFromArray(context,
                     blocks.getInnermostBlockByKeyOrNull(firstKey),
                     (int) (firstKey & INDEX_MASK),
-                    (int)orderedKeys.size());
+                    (int) rowSequence.size());
         }
-        return getChunkByFilling(context, orderedKeys).asByteChunk();
+        return getChunkByFilling(context, rowSequence).asByteChunk();
     }
     // endregion getChunk
 
     // region getPrevChunk
     @Override
-    public ByteChunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public ByteChunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
         if (prevFlusher == null) {
-            return getChunk(context, orderedKeys);
+            return getChunk(context, rowSequence);
         }
-        return getPrevChunkByFilling(context, orderedKeys).asByteChunk();
+        return getPrevChunkByFilling(context, rowSequence).asByteChunk();
     }
     // endregion getPrevChunk
 

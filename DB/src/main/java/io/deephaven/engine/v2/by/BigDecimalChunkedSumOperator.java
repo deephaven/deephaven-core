@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,7 +37,7 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
@@ -50,7 +50,7 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
@@ -63,8 +63,8 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
 
     @Override
     public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> preAsObjectChunk = previousValues.asObjectChunk();
         final ObjectChunk<BigDecimal, ? extends Values> postAsObjectChunk = newValues.asObjectChunk();
@@ -78,19 +78,19 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         return addChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         return removeChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
     public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
         return modifyChunk(previousValues.asObjectChunk(), newValues.asObjectChunk(), destination, 0,
                 previousValues.size());
     }
@@ -191,8 +191,8 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
     }
 
     @Override
-    public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return resultColumn.getChunk(context, orderedKeys);
+    public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return resultColumn.getChunk(context, rowSequence);
     }
 
     @Override
@@ -202,8 +202,8 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
 
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
-        resultColumn.fillChunk(context, destination, orderedKeys);
+            @NotNull RowSequence rowSequence) {
+        resultColumn.fillChunk(context, destination, rowSequence);
     }
 
     @Override

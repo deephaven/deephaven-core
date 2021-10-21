@@ -1,6 +1,7 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.Function;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
@@ -19,7 +20,6 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.libs.primitives.LongNumericPrimitives;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -494,7 +494,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 }
                 return nextPosition;
             }
-            final int reused = (int) availableSlots.firstKey();
+            final int reused = (int) availableSlots.firstRowKey();
             availableSlots.remove(reused);
             return reused;
         }
@@ -516,8 +516,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 last = key.zoomRange[1];
             } else {
                 final Index index = usePrev ? sourceTable.getIndex().getPrevIndex() : sourceTable.getIndex();
-                first = xColumnSource.getLong(index.firstKey());
-                last = xColumnSource.getLong(index.lastKey());
+                first = xColumnSource.getLong(index.firstRowKey());
+                last = xColumnSource.getLong(index.lastRowKey());
             }
 
             // take the difference between first and last, divide by the requested number of bins,
@@ -535,11 +535,11 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             final int[] all = this.allYColumnIndexes;
             context.addYColumnsOfInterest(all);
 
-            final OrderedKeys.Iterator it = index.getOrderedKeysIterator();
+            final RowSequence.Iterator it = index.getRowSequenceIterator();
             while (it.hasMore()) {
-                final OrderedKeys next = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final RowSequence next = it.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final LongChunk<Attributes.Values> xValueChunk = context.getXValues(next, usePrev);
-                final LongChunk<Attributes.OrderedKeyIndices> keyChunk = next.asKeyIndicesChunk();
+                final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
                 final Chunk<? extends Attributes.Values>[] valueChunks = context.getYValues(all, next, usePrev);
 
                 long lastBin = 0;
@@ -566,12 +566,12 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 return;
             }
 
-            final OrderedKeys.Iterator it = removed.getOrderedKeysIterator();
+            final RowSequence.Iterator it = removed.getRowSequenceIterator();
 
             while (it.hasMore()) {
-                final OrderedKeys next = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final RowSequence next = it.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final LongChunk<Attributes.Values> dateChunk = context.getXValues(next, true);
-                final LongChunk<Attributes.OrderedKeyIndices> keyChunk = next.asKeyIndicesChunk();
+                final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
 
                 final long lastBin = 0;
                 BucketState bucket = null;
@@ -601,13 +601,13 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             // build the chunk GetContexts, if needed
             context.addYColumnsOfInterest(yColIndexes);
 
-            final OrderedKeys.Iterator it = modified.getOrderedKeysIterator();
+            final RowSequence.Iterator it = modified.getRowSequenceIterator();
 
             while (it.hasMore()) {
-                final OrderedKeys next = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final RowSequence next = it.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final LongChunk<Attributes.Values> oldDateChunk = context.getXValues(next, true);
                 final LongChunk<Attributes.Values> newDateChunk = context.getXValues(next, false);
-                final LongChunk<Attributes.OrderedKeyIndices> keyChunk = next.asKeyIndicesChunk();
+                final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
                 final Chunk<? extends Attributes.Values>[] valueChunks = context.getYValues(yColIndexes, next, false);
 
                 final long lastBin = 0;

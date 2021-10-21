@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -167,8 +167,8 @@ public class TestObjectSparseArraySource {
 
     private void checkRandomFill(int chunkSize, ObjectSparseArraySource source, ColumnSource.FillContext fillContext,
                                  WritableObjectChunk<?, ? extends Values> dest, Object[] expectations, Index index, boolean usePrev) {
-        for (final OrderedKeys.Iterator okIt = index.getOrderedKeysIterator(); okIt.hasMore(); ) {
-            final OrderedKeys nextOk = okIt.getNextOrderedKeysWithLength(chunkSize);
+        for (final RowSequence.Iterator rsIt = index.getRowSequenceIterator(); rsIt.hasMore(); ) {
+            final RowSequence nextOk = rsIt.getNextRowSequenceWithLength(chunkSize);
 
             if (usePrev) {
                 source.fillChunk(fillContext, dest, nextOk);
@@ -189,8 +189,8 @@ public class TestObjectSparseArraySource {
         int offset;
         final Index index = Index.FACTORY.getIndexByRange(firstKey, lastKey);
         offset = firstKey;
-        for (final OrderedKeys.Iterator it = index.getOrderedKeysIterator(); it.hasMore(); ) {
-            final OrderedKeys nextOk = it.getNextOrderedKeysWithLength(chunkSize);
+        for (final RowSequence.Iterator it = index.getRowSequenceIterator(); it.hasMore(); ) {
+            final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
             if (usePrev) {
                 source.fillPrevChunk(fillContext, dest, nextOk);
@@ -206,8 +206,8 @@ public class TestObjectSparseArraySource {
         int offset;
         final Index index = Index.FACTORY.getIndexByRange(firstKey, lastKey);
         offset = firstKey;
-        for (final OrderedKeys.Iterator it = index.getOrderedKeysIterator(); it.hasMore(); ) {
-            final OrderedKeys nextOk = it.getNextOrderedKeysWithLength(chunkSize);
+        for (final RowSequence.Iterator it = index.getRowSequenceIterator(); it.hasMore(); ) {
+            final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
             final ObjectChunk<?, ? extends Values> result;
             if (usePrev) {
@@ -227,7 +227,7 @@ public class TestObjectSparseArraySource {
         }
     }
 
-    private void checkRangeResults(Object[] expectations, int offset, OrderedKeys nextOk, ObjectChunk<?, ? extends Values> result) {
+    private void checkRangeResults(Object[] expectations, int offset, RowSequence nextOk, ObjectChunk<?, ? extends Values> result) {
         for (int ii = 0; ii < nextOk.size(); ++ii) {
             checkFromValues("expectations[" + offset + " + " + ii + " = " + (ii + offset) + "] vs. dest[" + ii + "]", expectations[ii + offset], result.get(ii));
         }

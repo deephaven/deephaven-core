@@ -6,7 +6,8 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.rsp.RspArray;
@@ -233,7 +234,7 @@ public abstract class SortedIndexTestBase extends TestCase {
      */
     private Pair<Index, TLongList> generateSubsetMethod1(long[] fullKeys, @SuppressWarnings("unused") Index fullIndex,
             int maxPosition, Random generator) {
-        final boolean subset[] = new boolean[(int) fullIndex.lastKey() + 1];
+        final boolean subset[] = new boolean[(int) fullIndex.lastRowKey() + 1];
 
         final double density = generator.nextDouble();
 
@@ -984,7 +985,7 @@ public abstract class SortedIndexTestBase extends TestCase {
                 ++step;
                 final String m = "step=" + step;
                 final Index index = fromTreeIndexImpl(rhs.get());
-                final LongChunk<OrderedKeyIndices> asKeyIndicesChunk = index.asKeyIndicesChunk();
+                final LongChunk<OrderedRowKeys> asKeyIndicesChunk = index.asRowKeyChunk();
 
                 final Index expectedAfterInsert = fromTreeIndexImpl(lhs.get());
                 expectedAfterInsert.validate(m);
@@ -997,7 +998,7 @@ public abstract class SortedIndexTestBase extends TestCase {
                 assertEquals(m, expectedAfterInsert, actualAfterInsert1);
 
                 final Index actualAfterInsert2 = fromTreeIndexImpl(lhs.get());
-                try (final WritableLongChunk<OrderedKeyIndices> toBeSliced =
+                try (final WritableLongChunk<OrderedRowKeys> toBeSliced =
                         WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
                     actualAfterInsert2.insert(toBeSliced, 1024, asKeyIndicesChunk.size());
@@ -1015,7 +1016,7 @@ public abstract class SortedIndexTestBase extends TestCase {
                 assertEquals(m, expectedAfterRemove, actualAfterRemove1);
 
                 final Index actualAfterRemove2 = fromTreeIndexImpl(lhs.get());
-                try (final WritableLongChunk<OrderedKeyIndices> toBeSliced =
+                try (final WritableLongChunk<Attributes.OrderedRowKeys> toBeSliced =
                         WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
                     actualAfterRemove2.remove(toBeSliced, 1024, asKeyIndicesChunk.size());
@@ -1032,7 +1033,7 @@ public abstract class SortedIndexTestBase extends TestCase {
                     final Index rhsIndex = fromTreeIndexImpl(rhs.get());
 
                     lhsIndex.insert(rhsIndex);
-                    lhsTreeIndexImpl.ixInsertSecondHalf(rhsIndex.asKeyIndicesChunk(), 0, rhsIndex.intSize());
+                    lhsTreeIndexImpl.ixInsertSecondHalf(rhsIndex.asRowKeyChunk(), 0, rhsIndex.intSize());
 
                     assertEquals(lhsIndex, fromTreeIndexImpl(lhsTreeIndexImpl));
                 }

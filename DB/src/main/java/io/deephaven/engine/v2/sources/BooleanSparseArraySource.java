@@ -14,13 +14,12 @@ import static io.deephaven.engine.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
@@ -461,10 +460,10 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
 
     // region fillByRanges
     @Override
-    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableObjectChunk<Boolean, ? super Values> chunk = dest.asWritableObjectChunk();
         final FillByContext<byte[]> ctx = new FillByContext<>();
-        orderedKeys.forAllLongRanges((long firstKey, final long lastKey) -> {
+        rowSequence.forAllLongRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -500,10 +499,10 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
 
     // region fillByKeys
     @Override
-    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableObjectChunk<Boolean, ? super Values> chunk = dest.asWritableObjectChunk();
         final FillByContext<byte[]> ctx = new FillByContext<>();
-        orderedKeys.forEachLong((final long v) -> {
+        rowSequence.forEachLong((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(v);
                 ctx.maxKeyInCurrentBlock = v | INDEX_MASK;
@@ -520,9 +519,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     }
     // endregion fillByKeys
 
-    // region fillByUnorderedKeys
+    // region fillByUnRowSequence
     @Override
-    void fillByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
+    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableObjectChunk<Boolean, ? super Values> booleanObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -556,7 +555,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     }
 
     @Override
-    void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends KeyIndices> keys) {
+    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableObjectChunk<Boolean, ? super Values> booleanObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -596,16 +595,16 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
         dest.setSize(keys.size());
     }
-    // endregion fillByUnorderedKeys
+    // endregion fillByUnRowSequence
 
     // region fillFromChunkByRanges
     @Override
-    void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        if (orderedKeys.size() == 0) {
+    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        if (rowSequence.size() == 0) {
             return;
         }
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -671,12 +670,12 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
 
     // region fillFromChunkByKeys
     @Override
-    void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        if (orderedKeys.size() == 0) {
+    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        if (rowSequence.size() == 0) {
             return;
         }
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<OrderedKeyIndices> keys = orderedKeys.asKeyIndicesChunk();
+        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -729,7 +728,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
 
     // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }
@@ -782,25 +781,25 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     // endregion fillFromChunkUnordered
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         if (prevFlusher == null) {
-            fillChunk(context, dest, orderedKeys);
+            fillChunk(context, dest, rowSequence);
             return;
         }
-        defaultFillPrevChunk(context, dest, orderedKeys);
+        defaultFillPrevChunk(context, dest, rowSequence);
     }
 
     // region getChunk
     @Override
-    public ObjectChunk<Boolean, Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return getChunkByFilling(context, orderedKeys).asObjectChunk();
+    public ObjectChunk<Boolean, Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return getChunkByFilling(context, rowSequence).asObjectChunk();
     }
     // endregion getChunk
 
     // region getPrevChunk
     @Override
-    public ObjectChunk<Boolean, Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return getPrevChunkByFilling(context, orderedKeys).asObjectChunk();
+    public ObjectChunk<Boolean, Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return getPrevChunkByFilling(context, rowSequence).asObjectChunk();
     }
     // endregion getPrevChunk
 
@@ -866,26 +865,26 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-            fillSparseChunk(destination, orderedKeys);
+        public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+            fillSparseChunk(destination, rowSequence);
         }
 
         @Override
-        public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-            fillSparsePrevChunk(destination, orderedKeys);
+        public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+            fillSparsePrevChunk(destination, rowSequence);
         }
 
         @Override
-        public void fillChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends KeyIndices> keyIndices) {
+        public void fillChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparseChunkUnordered(destination, keyIndices);
         }
 
         @Override
-        public void fillPrevChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends KeyIndices> keyIndices) {
+        public void fillPrevChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
             fillSparsePrevChunkUnordered(destination, keyIndices);
         }
 
-        private void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+        private void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
             if (indices.size() == 0) {
                 destGeneric.setSize(0);
                 return;
@@ -909,7 +908,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             destGeneric.setSize(ctx.offset);
         }
 
-        private void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+        private void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
             final long sz = indices.size();
             if (sz == 0) {
                 destGeneric.setSize(0);
@@ -920,10 +919,10 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                 fillSparseChunk(destGeneric, indices);
                 return;
             }
-            fillSparsePrevChunkUnordered(destGeneric, indices.asKeyIndicesChunk());
+            fillSparsePrevChunkUnordered(destGeneric, indices.asRowKeyChunk());
         }
 
-        private void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+        private void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
             final WritableByteChunk<? super Values> chunk = destGeneric.asWritableByteChunk();
             // This implementation is in "key" style (rather than range style).
             for (int ii = 0; ii < indices.size(); ) {
@@ -957,7 +956,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             destGeneric.setSize(indices.size());
         }
 
-        private void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+        private void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
             final WritableByteChunk<? super Values> booleanObjectChunk = destGeneric.asWritableByteChunk();
             for (int ii = 0; ii < indices.size(); ) {
                 final long firstKey = indices.get(ii);
@@ -1000,13 +999,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public void fillFromChunk(@NotNull FillFromContext context_unused, @NotNull Chunk<? extends Values> src, @NotNull OrderedKeys orderedKeys) {
+        public void fillFromChunk(@NotNull FillFromContext context_unused, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
             // This implementation is in "key" style (rather than range style).
-            if (orderedKeys.size() == 0) {
+            if (rowSequence.size() == 0) {
                 return;
             }
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
-            final LongChunk<OrderedKeyIndices> keys = orderedKeys.asKeyIndicesChunk();
+            final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
             final boolean hasPrev = wrapped.prevFlusher != null;
 

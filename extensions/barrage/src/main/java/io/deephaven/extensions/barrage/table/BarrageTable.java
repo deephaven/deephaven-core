@@ -266,7 +266,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                         redirectionIndex.makeFillFromContext(update.rowsIncluded.intSize());
                         final Index destinationIndex = getFreeRows(update.rowsIncluded.size())) {
                     // Update redirection mapping:
-                    redirectionIndex.fillFromChunk(redirContext, destinationIndex.asKeyIndicesChunk(),
+                    redirectionIndex.fillFromChunk(redirContext, destinationIndex.asRowKeyChunk(),
                             update.rowsIncluded);
 
                     // Update data chunk-wise:
@@ -295,7 +295,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
                 try (final RedirectionIndex.FillContext redirContext =
                         redirectionIndex.makeFillContext(column.rowsModified.intSize(), null);
-                        final WritableLongChunk<Attributes.KeyIndices> keys =
+                        final WritableLongChunk<Attributes.RowKeys> keys =
                                 WritableLongChunk.makeWritableChunk(column.rowsModified.intSize())) {
                     redirectionIndex.fillChunk(redirContext, keys, column.rowsModified);
                     for (int i = 0; i < keys.size(); ++i) {
@@ -363,7 +363,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
         final Index result = freeset.subindexByPos(0, (int) size);
         Assert.assertion(result.size() == size, "result.size() == size");
-        freeset.removeRange(0, result.lastKey());
+        freeset.removeRange(0, result.lastRowKey());
         return result;
     }
 
@@ -372,8 +372,8 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             return;
         }
 
-        // Note: these are NOT OrderedKeyIndices until after the call to .sort()
-        try (final WritableLongChunk<Attributes.OrderedKeyIndices> redirectedRows =
+        // Note: these are NOT OrderedRowKeys until after the call to .sort()
+        try (final WritableLongChunk<Attributes.OrderedRowKeys> redirectedRows =
                 WritableLongChunk.makeWritableChunk(rowsToFree.intSize("BarrageTable"))) {
             redirectedRows.setSize(0);
 

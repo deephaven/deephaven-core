@@ -1,7 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
@@ -25,7 +26,7 @@ public class IndexIterationRaw {
     // Build and index for it
     // Generate 4 double arrays
     // Have chunk fetching:
-    // - using OrderedKeys, range, direct,
+    // - using RowSequence, range, direct,
     // - using fetched long chunk range/direct,
     // - iteration over array of indices/ranges with chunk get,
     // - direct iteration over array of indices/ranges
@@ -49,8 +50,8 @@ public class IndexIterationRaw {
     long indexRanges[];
     Index rspIndex;
 
-    private WritableLongChunk<OrderedKeyIndices> indexChunk;
-    private WritableLongChunk<OrderedKeyRanges> rangeChunk;
+    private WritableLongChunk<Attributes.OrderedRowKeys> indexChunk;
+    private WritableLongChunk<Attributes.OrderedRowKeyRanges> rangeChunk;
     private long expectedSum;
 
     @Setup(Level.Trial)
@@ -94,15 +95,15 @@ public class IndexIterationRaw {
         System.out.println("Expected expectedSum = " + expectedSum);
     }
 
-    private long fillChunkByOrderedKeysRange(OrderedKeys orderedKeys) {
-        return fillChunkDirectByRange(orderedKeys.asKeyRangesChunk());
+    private long fillChunkByRowSequenceRange(RowSequence rowSequence) {
+        return fillChunkDirectByRange(rowSequence.asRowKeyRangesChunk());
     }
 
-    private long fillChunkByOrderedKeysItems(OrderedKeys orderedKeys) {
-        return fillChunkDirectByItems(orderedKeys.asKeyIndicesChunk());
+    private long fillChunkByRowSequenceItems(RowSequence rowSequence) {
+        return fillChunkDirectByItems(rowSequence.asRowKeyChunk());
     }
 
-    private long fillChunkDirectByRange(LongChunk<OrderedKeyRanges> ranges) {
+    private long fillChunkDirectByRange(LongChunk<Attributes.OrderedRowKeyRanges> ranges) {
         long sum = 0;
         int size = ranges.size();
         for (int i = 0; i < size; i += 2) {
@@ -115,7 +116,7 @@ public class IndexIterationRaw {
         return sum;
     }
 
-    private long fillChunkDirectByItems(LongChunk<OrderedKeyIndices> indices) {
+    private long fillChunkDirectByItems(LongChunk<Attributes.OrderedRowKeys> indices) {
         long sum = 0;
         int size = indices.size();
         for (int i = 0; i < size; i++) {
@@ -179,21 +180,21 @@ public class IndexIterationRaw {
 
 
     @Benchmark
-    public void rspOrderedKeysByRange(Blackhole bh) {
-        orderedKeysByRange(bh, rspIndex);
+    public void rspRowSequenceByRange(Blackhole bh) {
+        RowSequenceByRange(bh, rspIndex);
     }
 
-    private void orderedKeysByRange(Blackhole bh, Index index) {
+    private void RowSequenceByRange(Blackhole bh, Index index) {
         long sum = 0;
         final int stepCount = indexCount / chunkSize;
-        final OrderedKeys.Iterator okit = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
         for (int step = 0; step < stepCount; step++) {
-            final OrderedKeys ok = okit.getNextOrderedKeysWithLength(chunkSize);
-            sum += fillChunkByOrderedKeysRange(ok);
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
+            sum += fillChunkByRowSequenceRange(rs);
             bh.consume(sum);
         }
-        final OrderedKeys ok = okit.getNextOrderedKeysWithLength(chunkSize);
-        sum += fillChunkByOrderedKeysRange(ok);
+        final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
+        sum += fillChunkByRowSequenceRange(rs);
         bh.consume(sum);
         print(sum);
     }
@@ -209,21 +210,21 @@ public class IndexIterationRaw {
     }
 
     @Benchmark
-    public void rspOrderedKeysByItems(Blackhole bh) {
-        orderedKeysByItems(bh, rspIndex);
+    public void rspRowSequenceByItems(Blackhole bh) {
+        RowSequenceByItems(bh, rspIndex);
     }
 
-    public void orderedKeysByItems(Blackhole bh, Index index) {
+    public void RowSequenceByItems(Blackhole bh, Index index) {
         long sum = 0;
         final int stepCount = indexCount / chunkSize;
-        final OrderedKeys.Iterator okit = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
         for (int step = 0; step < stepCount; step++) {
-            final OrderedKeys ok = okit.getNextOrderedKeysWithLength(chunkSize);
-            sum += fillChunkByOrderedKeysItems(ok);
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
+            sum += fillChunkByRowSequenceItems(rs);
             bh.consume(sum);
         }
-        final OrderedKeys ok = okit.getNextOrderedKeysWithLength(chunkSize);
-        sum += fillChunkByOrderedKeysItems(ok);
+        final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
+        sum += fillChunkByRowSequenceItems(rs);
         bh.consume(sum);
         print(sum);
     }
@@ -266,7 +267,7 @@ public class IndexIterationRaw {
         print(sum);
     }
 
-    private int fillChunkOfIndicesFromRange(WritableLongChunk<OrderedKeyIndices> indices, int posInRange,
+    private int fillChunkOfIndicesFromRange(WritableLongChunk<OrderedRowKeys> indices, int posInRange,
             long startValue, int count) {
         indices.setSize(0);
         long pos = startValue;
@@ -308,7 +309,8 @@ public class IndexIterationRaw {
         print(sum);
     }
 
-    private void fillChunkOfRangesFromIndices(WritableLongChunk<OrderedKeyRanges> ranges, final int posInIndex,
+    private void fillChunkOfRangesFromIndices(WritableLongChunk<Attributes.OrderedRowKeyRanges> ranges,
+            final int posInIndex,
             final int count) {
         ranges.setSize(0);
         ranges.add(indexPoints[posInIndex]);

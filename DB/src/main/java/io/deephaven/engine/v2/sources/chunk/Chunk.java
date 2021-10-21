@@ -172,8 +172,8 @@ public interface Chunk<ATTR extends Any> {
      * Downcast the attribute.
      *
      * When you know the data in this chunk which you plan to read is a more specific sub-type, you can downcast the
-     * attribute with this helper method. This might be necessary, for instance, when you have a KeyIndices chunk which
-     * you sort, and now want to treat it as an OrderedKeyIndices.
+     * attribute with this helper method. This might be necessary, for instance, when you have a RowKeys chunk which you
+     * sort, and now want to treat it as an OrderedRowKeys.
      *
      * @apiNote Upcast should not be necessary on read-only chunks, as a read-only chunk method should accept an upper
      *          bound wildcard.

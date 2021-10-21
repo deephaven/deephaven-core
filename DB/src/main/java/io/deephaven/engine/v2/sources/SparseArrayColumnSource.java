@@ -7,14 +7,15 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -399,11 +400,11 @@ public abstract class SparseArrayColumnSource<T>
     // region fillChunk
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-            @NotNull OrderedKeys orderedKeys) {
-        if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillByKeys(dest, orderedKeys);
+            @NotNull RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillByKeys(dest, rowSequence);
         } else {
-            fillByRanges(dest, orderedKeys);
+            fillByRanges(dest, rowSequence);
         }
     }
     // endregion fillChunk
@@ -412,27 +413,27 @@ public abstract class SparseArrayColumnSource<T>
     public void fillChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends KeyIndices> keys) {
-        fillByUnorderedKeys(dest, keys);
+            @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
+        fillByUnRowSequence(dest, keys);
     }
 
     @Override
     public void fillPrevChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends KeyIndices> keys) {
-        fillPrevByUnorderedKeys(dest, keys);
+            @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
+        fillPrevByUnRowSequence(dest, keys);
     }
 
-    abstract void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys);
+    abstract void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence);
 
-    abstract void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull OrderedKeys orderedKeys);
+    abstract void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence);
 
-    abstract void fillByUnorderedKeys(@NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends KeyIndices> keyIndices);
+    abstract void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keyIndices);
 
-    abstract void fillPrevByUnorderedKeys(@NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends KeyIndices> keyIndices);
+    abstract void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keyIndices);
 
     private static final FillFromContext FILL_FROM_CONTEXT_INSTANCE = new FillFromContext() {};
 
@@ -443,17 +444,17 @@ public abstract class SparseArrayColumnSource<T>
 
     @Override
     public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull OrderedKeys orderedKeys) {
-        if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillFromChunkByKeys(orderedKeys, src);
+            @NotNull RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillFromChunkByKeys(rowSequence, src);
         } else {
-            fillFromChunkByRanges(orderedKeys, src);
+            fillFromChunkByRanges(rowSequence, src);
         }
     }
 
-    abstract void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src);
+    abstract void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
-    abstract void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src);
+    abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
     @Override
     public boolean isImmutable() {

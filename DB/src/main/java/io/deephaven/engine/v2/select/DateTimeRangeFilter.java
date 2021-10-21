@@ -7,7 +7,6 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.util.QueryConstants;
@@ -72,8 +71,8 @@ public class DateTimeRangeFilter extends LongRangeFilter {
 
     private class DateTimeLongChunkFilterAdapter implements ChunkFilter {
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             try (final WritableLongChunk<Values> writableLongChunk =
                     WritableLongChunk.makeWritableChunk(values.size())) {
 

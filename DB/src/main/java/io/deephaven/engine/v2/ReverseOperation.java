@@ -68,7 +68,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final Index indexToReverse = usePrev ? parent.getIndex().getPrevIndex() : parent.getIndex();
-        prevPivot = pivotPoint = computePivot(indexToReverse.lastKey());
+        prevPivot = pivotPoint = computePivot(indexToReverse.lastRowKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
@@ -124,7 +124,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
         // transform shifted and apply to our index
         final long newShift =
-                (parentIndex.lastKey() > pivotPoint) ? computePivot(parentIndex.lastKey()) - pivotPoint : 0;
+                (parentIndex.lastRowKey() > pivotPoint) ? computePivot(parentIndex.lastRowKey()) - pivotPoint : 0;
         if (upstream.shifted.nonempty() || newShift > 0) {
             long watermarkKey = 0;
             final IndexShiftData.Builder oShiftedBuilder = new IndexShiftData.Builder();

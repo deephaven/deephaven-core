@@ -7,7 +7,8 @@ import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -377,7 +378,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
             private final boolean shared;
 
             private final WritableIntChunk<ChunkLengths> runLengths;
-            private final WritableLongChunk<OrderedKeyIndices> uniqueIndices;
+            private final WritableLongChunk<OrderedRowKeys> uniqueIndices;
             private final MutableInt currentRunLength = new MutableInt();
             private final MutableInt currentRunPosition = new MutableInt();
             private final MutableLong currentRunInnerIndexKey = new MutableLong();
@@ -391,7 +392,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
             }
 
             private void ensureKeysAndLengthsInitialized(@NotNull final CrossJoinShiftState shiftState,
-                    final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
+                    final boolean usePrev, @NotNull final RowSequence rowSequence) {
                 if (keysAndLengthsReusable) {
                     return;
                 }
@@ -403,7 +404,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
                 currentRunPosition.setValue(0);
                 currentRunInnerIndexKey.setValue(Index.NULL_KEY);
 
-                orderedKeys.forAllLongs((final long indexKey) -> {
+                rowSequence.forAllLongs((final long indexKey) -> {
                     final long lastInnerIndexKey = currentRunInnerIndexKey.longValue();
                     final long innerIndexKey =
                             usePrev ? shiftState.getPrevShifted(indexKey) : shiftState.getShifted(indexKey);
@@ -451,32 +452,32 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
     @Override
     public void fillChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        doFillChunk(context, destination, orderedKeys, false);
+            @NotNull final RowSequence rowSequence) {
+        doFillChunk(context, destination, rowSequence, false);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        doFillChunk(context, destination, orderedKeys, true);
+            @NotNull final RowSequence rowSequence) {
+        doFillChunk(context, destination, rowSequence, true);
     }
 
     private void doFillChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys,
+            @NotNull final RowSequence rowSequence,
             boolean usePrev) {
-        final long sz = orderedKeys.size();
+        final long sz = rowSequence.size();
         if (sz <= 0) {
             destination.setSize(0);
             return;
         }
 
         final FillContext effectiveContext = (FillContext) context;
-        effectiveContext.shareable.ensureKeysAndLengthsInitialized(shiftState, usePrev, orderedKeys);
+        effectiveContext.shareable.ensureKeysAndLengthsInitialized(shiftState, usePrev, rowSequence);
 
-        try (final OrderedKeys innerOK =
-                OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(effectiveContext.shareable.uniqueIndices)) {
+        try (final RowSequence innerOK =
+                RowSequenceUtil.wrapRowKeysChunkAsRowSequence(effectiveContext.shareable.uniqueIndices)) {
             if (usePrev) {
                 innerSource.fillPrevChunk(effectiveContext.innerFillContext, destination, innerOK);
             } else {
@@ -484,7 +485,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
             }
         }
 
-        effectiveContext.dupExpandKernel.expandDuplicates(orderedKeys.intSize(), destination,
+        effectiveContext.dupExpandKernel.expandDuplicates(rowSequence.intSize(), destination,
                 effectiveContext.shareable.runLengths);
     }
 }

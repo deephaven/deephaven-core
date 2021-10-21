@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.join.stamp.StampKernel;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.Index;
@@ -29,16 +29,16 @@ class AsOfStampContext implements Context {
     private WritableChunk<Values> leftStampChunk;
     private WritableChunk<Values> rightStampChunk;
 
-    private WritableLongChunk<KeyIndices> leftKeyIndicesChunk;
-    private WritableLongChunk<KeyIndices> rightKeyIndicesChunk;
+    private WritableLongChunk<RowKeys> leftKeyIndicesChunk;
+    private WritableLongChunk<RowKeys> rightKeyIndicesChunk;
 
     private ChunkSource.FillContext leftFillContext;
     private ChunkSource.FillContext rightFillContext;
 
     private final DupCompactKernel rightDupCompact;
-    private LongSortKernel<Values, KeyIndices> sortKernel;
+    private LongSortKernel<Values, Attributes.RowKeys> sortKernel;
 
-    private WritableLongChunk<KeyIndices> leftRedirections;
+    private WritableLongChunk<RowKeys> leftRedirections;
 
     private final StampKernel stampKernel;
 
@@ -179,13 +179,13 @@ class AsOfStampContext implements Context {
      * @param rightKeyIndicesChunk the output chunk of rightKeyIndices
      * @param rightStampChunk the output chunk of right stamp values
      */
-    void getAndCompactStamps(Index rightIndex, WritableLongChunk<KeyIndices> rightKeyIndicesChunk,
+    void getAndCompactStamps(Index rightIndex, WritableLongChunk<RowKeys> rightKeyIndicesChunk,
             WritableChunk<Values> rightStampChunk) {
         ensureRightFillCapacity(rightIndex.intSize());
         // read the right stamp column
         rightKeyIndicesChunk.setSize(rightIndex.intSize());
         rightStampSource.fillChunk(rightFillContext, rightStampChunk, rightIndex);
-        rightIndex.fillKeyIndicesChunk(rightKeyIndicesChunk);
+        rightIndex.fillRowKeyChunk(rightKeyIndicesChunk);
 
         sortKernel.sort(rightKeyIndicesChunk, rightStampChunk);
 
@@ -200,14 +200,14 @@ class AsOfStampContext implements Context {
      * @param rightKeyIndicesChunk the right key indices (already compacted)
      * @param redirectionIndex the redirection index to update
      */
-    void processEntry(Index leftIndex, Chunk<Values> rightStampChunk, LongChunk<KeyIndices> rightKeyIndicesChunk,
+    void processEntry(Index leftIndex, Chunk<Values> rightStampChunk, LongChunk<RowKeys> rightKeyIndicesChunk,
             RedirectionIndex redirectionIndex) {
         ensureLeftCapacity(leftIndex.intSize());
 
         // read the left stamp column
         leftStampSource.fillChunk(leftFillContext, leftStampChunk, leftIndex);
         leftKeyIndicesChunk.setSize(leftIndex.intSize());
-        leftIndex.fillKeyIndicesChunk(leftKeyIndicesChunk);
+        leftIndex.fillRowKeyChunk(leftKeyIndicesChunk);
 
         // sort the left stamp column
         sortKernel.sort(leftKeyIndicesChunk, leftStampChunk);
@@ -217,7 +217,7 @@ class AsOfStampContext implements Context {
     }
 
     private void computeRedirections(RedirectionIndex redirectionIndex, Chunk<Values> rightStampChunk,
-            LongChunk<KeyIndices> rightKeyIndicesChunk) {
+            LongChunk<RowKeys> rightKeyIndicesChunk) {
         stampKernel.computeRedirections(leftStampChunk, rightStampChunk, rightKeyIndicesChunk, leftRedirections);
         for (int ii = 0; ii < leftKeyIndicesChunk.size(); ++ii) {
             final long rightKey = leftRedirections.get(ii);

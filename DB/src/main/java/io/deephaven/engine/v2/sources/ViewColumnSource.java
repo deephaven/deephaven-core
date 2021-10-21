@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
@@ -227,31 +227,31 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public Chunk<Values> getChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
-        return formula.getChunk(((VCSGetContext) context).underlyingGetContext, orderedKeys);
+            @NotNull final RowSequence rowSequence) {
+        return formula.getChunk(((VCSGetContext) context).underlyingGetContext, rowSequence);
 
     }
 
     @Override
     public Chunk<Values> getPrevChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
-        return formula.getPrevChunk(((VCSGetContext) context).underlyingGetContext, orderedKeys);
+            @NotNull final RowSequence rowSequence) {
+        return formula.getPrevChunk(((VCSGetContext) context).underlyingGetContext, rowSequence);
 
     }
 
     @Override
     public void fillChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        formula.fillChunk(((VCSFillContext) context).underlyingFillContext, destination, orderedKeys);
+            @NotNull final RowSequence rowSequence) {
+        formula.fillChunk(((VCSFillContext) context).underlyingFillContext, destination, rowSequence);
     }
 
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        formula.fillPrevChunk(((VCSFillContext) context).underlyingFillContext, destination, orderedKeys);
+            @NotNull final RowSequence rowSequence) {
+        formula.fillPrevChunk(((VCSFillContext) context).underlyingFillContext, destination, rowSequence);
     }
 
     public static class VCSGetContext implements GetContext {

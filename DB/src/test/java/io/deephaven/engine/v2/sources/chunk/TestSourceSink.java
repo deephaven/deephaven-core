@@ -3,7 +3,8 @@ package io.deephaven.engine.v2.sources.chunk;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import junit.framework.TestCase;
 
 import java.util.Random;
@@ -28,18 +29,18 @@ public class TestSourceSink {
         randomResetter.resetWithRandomValues(rng, chunkA, chunkSize);
         randomResetter.resetWithRandomValues(rng, chunkB, chunkSize);
 
-        final OrderedKeys keysA =
-                OrderedKeys.wrapKeyRangesChunkAsOrderedKeys(LongChunk.chunkWrap(new long[] {0, chunkSize - 1}));
-        final OrderedKeys keysB = OrderedKeys
-                .wrapKeyRangesChunkAsOrderedKeys(LongChunk.chunkWrap(new long[] {2 * chunkSize, 3 * chunkSize - 1}));
+        final RowSequence keysA =
+                RowSequenceUtil.wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, chunkSize - 1}));
+        final RowSequence keysB = RowSequenceUtil
+                .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {2 * chunkSize, 3 * chunkSize - 1}));
 
         final WritableChunkSink.FillFromContext fromContext = sink.makeFillFromContext(chunkSize);
         sink.fillFromChunk(fromContext, chunkA, keysA);
         sink.fillFromChunk(fromContext, chunkB, keysB);
 
         // Get the whole thing back as one big chunk
-        final OrderedKeys keysAll =
-                OrderedKeys.wrapKeyRangesChunkAsOrderedKeys(LongChunk.chunkWrap(new long[] {0, 4 * chunkSize - 1}));
+        final RowSequence keysAll =
+                RowSequenceUtil.wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, 4 * chunkSize - 1}));
         final ChunkSource.GetContext getContext = sink.makeGetContext(totalSize);
 
         final Chunk<Values> valuesAll = sink.getChunk(getContext, keysAll);

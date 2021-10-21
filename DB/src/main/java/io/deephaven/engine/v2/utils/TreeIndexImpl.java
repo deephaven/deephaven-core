@@ -5,7 +5,9 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
@@ -29,7 +31,8 @@ public interface TreeIndexImpl {
     TreeIndexImpl ixInsertRange(long startKey, long endKey);
 
     @FinalDefault
-    default TreeIndexImpl ixInsert(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    default TreeIndexImpl ixInsert(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+            final int length) {
         if (length <= 1) {
             if (length == 0) {
                 return this;
@@ -47,7 +50,7 @@ public interface TreeIndexImpl {
         return ixInsertSecondHalf(keys, offset, length);
     }
 
-    TreeIndexImpl ixInsertSecondHalf(LongChunk<OrderedKeyIndices> keys, int offset, int length);
+    TreeIndexImpl ixInsertSecondHalf(LongChunk<OrderedRowKeys> keys, int offset, int length);
 
     TreeIndexImpl ixInsert(TreeIndexImpl added);
 
@@ -58,7 +61,8 @@ public interface TreeIndexImpl {
     TreeIndexImpl ixRemoveRange(long startKey, long endKey);
 
     @FinalDefault
-    default TreeIndexImpl ixRemove(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    default TreeIndexImpl ixRemove(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+            final int length) {
         if (ixIsEmpty()) {
             return this;
         }
@@ -80,7 +84,7 @@ public interface TreeIndexImpl {
         return ixRemoveSecondHalf(keys, offset, length);
     }
 
-    TreeIndexImpl ixRemoveSecondHalf(LongChunk<OrderedKeyIndices> keys, int offset, int length);
+    TreeIndexImpl ixRemoveSecondHalf(LongChunk<Attributes.OrderedRowKeys> keys, int offset, int length);
 
     TreeIndexImpl ixRemove(TreeIndexImpl removed);
 
@@ -140,11 +144,11 @@ public interface TreeIndexImpl {
 
     TreeIndexImpl ixInsertWithShift(long shiftAmount, TreeIndexImpl other);
 
-    OrderedKeys ixGetOrderedKeysByPosition(long startPositionInclusive, long length);
+    RowSequence ixGetRowSequenceByPosition(long startPositionInclusive, long length);
 
-    OrderedKeys ixGetOrderedKeysByKeyRange(long startKeyInclusive, long endKeyInclusive);
+    RowSequence ixGetRowSequenceByKeyRange(long startKeyInclusive, long endKeyInclusive);
 
-    OrderedKeys.Iterator ixGetOrderedKeysIterator();
+    RowSequence.Iterator ixGetRowSequenceIterator();
 
     long ixRangesCountUpperBound();
 
@@ -171,14 +175,14 @@ public interface TreeIndexImpl {
     }
 
     /**
-     * Produce a {@link TreeIndexImpl} from a slice of a {@link LongChunk} of {@link OrderedKeyIndices}.
+     * Produce a {@link TreeIndexImpl} from a slice of a {@link LongChunk} of {@link Attributes.OrderedRowKeys}.
      *
-     * @param keys The {@link LongChunk} of {@link OrderedKeyIndices} to build from
+     * @param keys The {@link LongChunk} of {@link OrderedRowKeys} to build from
      * @param offset The offset in {@code keys} to begin building from
      * @param length The number of keys to include
      * @return A new {@link TreeIndexImpl} containing the specified slice of {@code keys}
      */
-    static TreeIndexImpl fromChunk(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length,
+    static TreeIndexImpl fromChunk(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset, final int length,
             final boolean disposable) {
         if (length == 0) {
             return EMPTY;
@@ -225,13 +229,13 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public TreeIndexImpl ixInsertSecondHalf(final LongChunk<OrderedKeyIndices> keys, final int offset,
+        public TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
                 final int length) {
             return fromChunk(keys, offset, length, false);
         }
 
         @Override
-        public TreeIndexImpl ixRemoveSecondHalf(final LongChunk<OrderedKeyIndices> keys, final int offset,
+        public TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
                 final int length) {
             throw new IllegalStateException();
         }
@@ -408,18 +412,18 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public OrderedKeys ixGetOrderedKeysByPosition(long startPositionInclusive, long length) {
-            return OrderedKeys.EMPTY;
+        public RowSequence ixGetRowSequenceByPosition(long startPositionInclusive, long length) {
+            return RowSequence.EMPTY;
         }
 
         @Override
-        public OrderedKeys ixGetOrderedKeysByKeyRange(long startKeyInclusive, long endKeyInclusive) {
-            return OrderedKeys.EMPTY;
+        public RowSequence ixGetRowSequenceByKeyRange(long startKeyInclusive, long endKeyInclusive) {
+            return RowSequence.EMPTY;
         }
 
         @Override
-        public OrderedKeys.Iterator ixGetOrderedKeysIterator() {
-            return OrderedKeys.Iterator.EMPTY;
+        public RowSequence.Iterator ixGetRowSequenceIterator() {
+            return RowSequence.Iterator.EMPTY;
         }
 
         @Override

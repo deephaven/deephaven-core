@@ -5,8 +5,8 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -94,7 +94,7 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
     private class RedirectionFillFrom implements FillFromContext {
         final RedirectionIndex.FillContext redirectionFillContext;
         final FillFromContext innerFillFromContext;
-        final WritableLongChunk<KeyIndices> redirections;
+        final WritableLongChunk<RowKeys> redirections;
 
         private RedirectionFillFrom(int chunkCapacity) {
             this.redirectionFillContext = redirectionIndex.makeFillContext(chunkCapacity, null);
@@ -117,18 +117,18 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
 
     @Override
     public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Attributes.Values> src,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         redirectionIndex.fillChunk(redirectionFillFrom.redirectionFillContext, redirectionFillFrom.redirections,
-                orderedKeys);
+                rowSequence);
         ((WritableSource<T>) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
                 redirectionFillFrom.redirections);
     }
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context,
-            @NotNull Chunk<? extends Attributes.Values> src, @NotNull LongChunk<KeyIndices> keys) {
+            @NotNull Chunk<? extends Attributes.Values> src, @NotNull LongChunk<RowKeys> keys) {
         // noinspection unchecked
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         redirectionIndex.fillChunkUnordered(redirectionFillFrom.redirectionFillContext,

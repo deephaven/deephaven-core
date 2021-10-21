@@ -34,7 +34,7 @@ public class FilterKernelArraySample implements io.deephaven.engine.v2.select.Co
     }
     
     @Override
-    public LongChunk<OrderedKeyIndices> filter(Context context, LongChunk<OrderedKeyIndices> indices, Chunk... inputChunks) {
+    public LongChunk<OrderedRowKeys> filter(Context context, LongChunk<OrderedRowKeys> indices, Chunk... inputChunks) {
         final int size = indices.size();
         context.resultChunk.setSize(0);
         for (int __my_i__ = 0; __my_i__ < size; __my_i__++) {

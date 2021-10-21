@@ -273,10 +273,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             Assert.neqNull(initialIndex, "initialIndex");
             Assert.eqTrue(initialIndex.nonempty(), "initialIndex.nonempty()");
             Assert.eqNull(indexAtLastUpdate, "indexAtLastUpdate");
-            if (initialIndex.lastKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
+            if (initialIndex.lastRowKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
                 throw new TableDataException(String.format(
                         "Location %s has initial last key %#016X, larger than maximum supported key %#016X",
-                        location, initialIndex.lastKey(),
+                        location, initialIndex.lastRowKey(),
                         RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK));
             }
 
@@ -329,10 +329,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     // Nothing to do
                     return;
                 }
-                if (updateIndex.lastKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
+                if (updateIndex.lastRowKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
                     throw new TableDataException(String.format(
                             "Location %s has updated last key %#016X, larger than maximum supported key %#016X",
-                            location, updateIndex.lastKey(),
+                            location, updateIndex.lastRowKey(),
                             RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK));
                 }
 

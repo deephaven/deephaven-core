@@ -15,7 +15,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -291,21 +291,21 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public void fillChunk(@NotNull FillContext context,
-                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final Index keysToCheck = closer.add(orderedKeys.asIndex());
+                final Index keysToCheck = closer.add(rowSequence.asIndex());
                 final Index intersection = closer.add(keysToCheck.intersect(source));
-                fillChunkInternal(keysToCheck, intersection, orderedKeys.intSize(), destination);
+                fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }
 
         @Override
         public void fillPrevChunk(@NotNull FillContext context,
-                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final Index keysToCheck = closer.add(orderedKeys.asIndex());
+                final Index keysToCheck = closer.add(rowSequence.asIndex());
                 final Index intersection = closer.add(keysToCheck.getPrevIndex().intersect(source.getPrevIndex()));
-                fillChunkInternal(keysToCheck, intersection, orderedKeys.intSize(), destination);
+                fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }
 
@@ -314,19 +314,19 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          *
          * @param keysToCheck the requested set of keys for the chunk
          * @param intersection the intersection of keys to check with the current source
-         * @param orderedKeysSize the total number of keys requested
+         * @param RowSequenceSize the total number of keys requested
          * @param destination the destination chunk
          */
-        private void fillChunkInternal(Index keysToCheck, Index intersection, int orderedKeysSize,
+        private void fillChunkInternal(Index keysToCheck, Index intersection, int RowSequenceSize,
                 @NotNull WritableChunk<? super Attributes.Values> destination) {
             final WritableObjectChunk<Boolean, ? super Attributes.Values> writeable =
                     destination.asWritableObjectChunk();
-            writeable.setSize(orderedKeysSize);
+            writeable.setSize(RowSequenceSize);
             if (intersection.empty()) {
-                writeable.fillWithValue(0, orderedKeysSize, false);
+                writeable.fillWithValue(0, RowSequenceSize, false);
                 return;
-            } else if (intersection.size() == orderedKeysSize) {
-                writeable.fillWithValue(0, orderedKeysSize, true);
+            } else if (intersection.size() == RowSequenceSize) {
+                writeable.fillWithValue(0, RowSequenceSize, true);
                 return;
             }
 
@@ -353,10 +353,10 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             // If this is true, we've bailed out of the lockstep iteration because there are no more intersections,
             // so we can fill the rest with false.
             if (keysIterator.hasNext()) {
-                writeable.fillWithValue(chunkIndex, orderedKeysSize - chunkIndex, false);
+                writeable.fillWithValue(chunkIndex, RowSequenceSize - chunkIndex, false);
             }
 
-            destination.setSize(orderedKeysSize);
+            destination.setSize(RowSequenceSize);
         }
 
         @Override

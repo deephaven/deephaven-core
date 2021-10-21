@@ -1,7 +1,8 @@
 package io.deephaven.engine.v2.sources.chunk.page;
 
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,21 +20,21 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
     PAGE getPageContaining(FillContext fillContext, long row);
 
     @Override
-    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
-        if (orderedKeys.size() == 0) {
+    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
+        if (rowSequence.size() == 0) {
             return getChunkType().getEmptyChunk();
         }
 
-        final long firstKey = orderedKeys.firstKey();
+        final long firstKey = rowSequence.firstRowKey();
         final FillContext fillContext = DefaultGetContext.getFillContext(context);
         final PAGE page = getPageContaining(fillContext, firstKey);
         final long pageMaxRow = page.maxRow(firstKey);
 
-        if (orderedKeys.lastKey() <= pageMaxRow) {
-            return page.getChunk(context, orderedKeys);
+        if (rowSequence.lastRowKey() <= pageMaxRow) {
+            return page.getChunk(context, rowSequence);
         } else {
             final WritableChunk<ATTR> destination = DefaultGetContext.getWritableChunk(context);
-            doFillChunkAppend(fillContext, destination, orderedKeys, page);
+            doFillChunkAppend(fillContext, destination, rowSequence, page);
             return destination;
         }
     }
@@ -48,9 +49,9 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
         if (lastKey <= pageMaxRow) {
             return page.getChunk(context, firstKey, lastKey);
         } else {
-            try (final OrderedKeys orderedKeys = OrderedKeys.forRange(firstKey, lastKey)) {
+            try (final RowSequence rowSequence = RowSequenceUtil.forRange(firstKey, lastKey)) {
                 final WritableChunk<ATTR> destination = DefaultGetContext.getWritableChunk(context);
-                doFillChunkAppend(fillContext, destination, orderedKeys, page);
+                doFillChunkAppend(fillContext, destination, rowSequence, page);
                 return destination;
             }
         }
@@ -58,50 +59,50 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
 
     @Override
     default void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        if (orderedKeys.size() == 0) {
+            @NotNull final RowSequence rowSequence) {
+        if (rowSequence.size() == 0) {
             return;
         }
 
-        final long firstKey = orderedKeys.firstKey();
+        final long firstKey = rowSequence.firstRowKey();
         final PAGE page = getPageContaining(context, firstKey);
         final long pageMaxRow = page.maxRow(firstKey);
 
-        if (orderedKeys.lastKey() <= pageMaxRow) {
-            page.fillChunk(context, destination, orderedKeys);
+        if (rowSequence.lastRowKey() <= pageMaxRow) {
+            page.fillChunk(context, destination, rowSequence);
         } else {
-            doFillChunkAppend(context, destination, orderedKeys, page);
+            doFillChunkAppend(context, destination, rowSequence, page);
         }
     }
 
     @Override
     default void fillChunkAppend(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
-            @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
-        long firstKey = orderedKeysIterator.peekNextKey();
+            @NotNull final RowSequence.Iterator RowSequenceIterator) {
+        long firstKey = RowSequenceIterator.peekNextKey();
         final long pageStoreMaxKey = maxRow(firstKey);
 
         do {
             final PAGE page = getPageContaining(context, firstKey);
-            page.fillChunkAppend(context, destination, orderedKeysIterator);
-        } while (orderedKeysIterator.hasMore() &&
-                (firstKey = orderedKeysIterator.peekNextKey()) <= pageStoreMaxKey);
+            page.fillChunkAppend(context, destination, RowSequenceIterator);
+        } while (RowSequenceIterator.hasMore() &&
+                (firstKey = RowSequenceIterator.peekNextKey()) <= pageStoreMaxKey);
     }
 
     /**
      * This is a helper which is the same as a call to {@link #fillChunkAppend}, except that some of the initial work
      * has already been done for the first call to
-     * {@link Page#fillChunkAppend(FillContext, WritableChunk, OrderedKeys.Iterator)} which we don't want to repeat.
+     * {@link Page#fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} which we don't want to repeat.
      */
     // Should be private
     @FinalDefault
     default void doFillChunkAppend(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
-            @NotNull final OrderedKeys orderedKeys, @NotNull final Page<INNER_ATTR> page) {
+            @NotNull final RowSequence rowSequence, @NotNull final Page<INNER_ATTR> page) {
         destination.setSize(0);
-        try (final OrderedKeys.Iterator orderedKeysIterator = orderedKeys.getOrderedKeysIterator()) {
-            page.fillChunkAppend(context, destination, orderedKeysIterator);
-            fillChunkAppend(context, destination, orderedKeysIterator);
+        try (final RowSequence.Iterator RowSequenceIterator = rowSequence.getRowSequenceIterator()) {
+            page.fillChunkAppend(context, destination, RowSequenceIterator);
+            fillChunkAppend(context, destination, RowSequenceIterator);
         }
     }
 }

@@ -7,12 +7,12 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableShortChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,12 +38,12 @@ public class TstColumnRegionShort {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             WritableShortChunk<? super Attributes.Values> shortDestination = destination.asWritableShortChunk();
             int size = destination.size();
-            int length = (int) orderedKeys.size();
+            int length = (int) rowSequence.size();
 
-            orderedKeys.forAllLongs(key ->
+            rowSequence.forAllLongs(key ->
             {
                 for (int i = 0; i < length; ++i) {
                     shortDestination.set(size + i, (short) key);

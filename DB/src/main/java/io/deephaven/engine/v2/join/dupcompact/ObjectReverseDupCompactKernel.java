@@ -5,8 +5,6 @@ package io.deephaven.engine.v2.join.dupcompact;
 
 import java.util.Objects;
 
-import java.util.Objects;
-
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 
@@ -16,11 +14,11 @@ public class ObjectReverseDupCompactKernel implements DupCompactKernel {
     private ObjectReverseDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.KeyIndices> keyIndices) {
+    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableObjectChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableObjectChunk<Object, ? extends Any> chunkToCompact, WritableLongChunk<Attributes.KeyIndices> keyIndices) {
+    private static int compactDuplicates(WritableObjectChunk<Object, ? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

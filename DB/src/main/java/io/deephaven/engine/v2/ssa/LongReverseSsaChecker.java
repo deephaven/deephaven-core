@@ -5,12 +5,11 @@ package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
-import io.deephaven.engine.v2.hashing.LongChunkEquals;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 
 public class LongReverseSsaChecker implements SsaChecker {
@@ -19,16 +18,16 @@ public class LongReverseSsaChecker implements SsaChecker {
     private LongReverseSsaChecker() {} // static use only
 
     @Override
-    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends KeyIndices> tableIndexChunk) {
+    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
         checkSsa((LongReverseSegmentedSortedArray)ssa, valueChunk.asLongChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(LongReverseSegmentedSortedArray ssa, LongChunk<? extends Values> valueChunk, LongChunk<? extends KeyIndices> tableIndexChunk) {
+    static void checkSsa(LongReverseSegmentedSortedArray ssa, LongChunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
         //noinspection unchecked
         final LongChunk<Values> resultChunk = (LongChunk) ssa.asLongChunk();
-        final LongChunk<KeyIndices> indexChunk = ssa.keyIndicesChunk();
+        final LongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk();
 
         Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
         Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

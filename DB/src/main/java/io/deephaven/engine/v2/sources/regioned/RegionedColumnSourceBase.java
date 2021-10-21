@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sources.AbstractDeferredGroupingColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -44,8 +44,8 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Value
      */
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
-        RegionedPageStore.super.fillChunk(context, destination, orderedKeys);
+            @NotNull RowSequence rowSequence) {
+        RegionedPageStore.super.fillChunk(context, destination, rowSequence);
     }
 
     /**
@@ -53,8 +53,8 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Value
      */
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
-        fillChunk(context, destination, orderedKeys);
+            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
+        fillChunk(context, destination, rowSequence);
     }
 
     /**

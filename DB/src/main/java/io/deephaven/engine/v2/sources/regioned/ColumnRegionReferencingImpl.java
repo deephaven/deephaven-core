@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.chunk.GetContextMaker;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -33,9 +33,9 @@ public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REG
 
     @Override
     public void fillChunkAppend(@NotNull ChunkSource.FillContext context,
-            @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super ATTR> destination, @NotNull RowSequence rowSequence) {
         FillContext.<ATTR>converter(context).convertRegion(destination,
-                referencedColumnRegion.getChunk(FillContext.nativeGetContext(context), orderedKeys), orderedKeys);
+                referencedColumnRegion.getChunk(FillContext.nativeGetContext(context), rowSequence), rowSequence);
     }
 
     @Override

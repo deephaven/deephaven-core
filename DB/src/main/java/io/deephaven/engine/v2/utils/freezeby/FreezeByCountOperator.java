@@ -24,7 +24,7 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.KeyIndices> inputIndices, IntChunk<Attributes.KeyIndices> destinations,
+            LongChunk<? extends Attributes.RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations,
             IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length,
             WritableBooleanChunk<Attributes.Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -39,7 +39,7 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.KeyIndices> inputIndices, IntChunk<Attributes.KeyIndices> destinations,
+            LongChunk<? extends Attributes.RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations,
             IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length,
             WritableBooleanChunk<Attributes.Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -51,7 +51,7 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
         if (chunkSize != 1) {
             throw new IllegalStateException("FreezeBy only allows one row per state!");
         }
@@ -61,7 +61,7 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
         setEmpty(destination);
         return false;
     }

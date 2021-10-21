@@ -188,7 +188,7 @@ public class TestSelectFilterFactory extends TestCase {
         selectFilter.init(table.getDefinition());
         Index index = selectFilter.filter(table.getIndex(), table.getIndex(), table, false);
         ColumnSource columnSource = table.getColumnSource(STRING_COLUMN);
-        return columnSource.get(index.firstKey()).toString();
+        return columnSource.get(index.firstRowKey()).toString();
     }
 
     private static String wrapBackTicks(String input) {

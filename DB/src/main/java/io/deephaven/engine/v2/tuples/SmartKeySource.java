@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkBoxer;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -107,28 +107,28 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
 
     @Override
     public final Chunk<Values> getChunk(@NotNull final ChunkSource.GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
-        return getChunk(context, orderedKeys, false);
+            @NotNull final RowSequence rowSequence) {
+        return getChunk(context, rowSequence, false);
     }
 
     public final Chunk<Values> getPrevChunk(@NotNull final ChunkSource.GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
-        return getChunk(context, orderedKeys, true);
+            @NotNull final RowSequence rowSequence) {
+        return getChunk(context, rowSequence, true);
     }
 
     private Chunk<Values> getChunk(@NotNull final ChunkSource.GetContext context,
-            @NotNull final OrderedKeys orderedKeys, final boolean usePrev) {
+            @NotNull final RowSequence rowSequence, final boolean usePrev) {
         final GetContext gc = (GetContext) context;
-        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(orderedKeys, usePrev, gc);
-        fillFromUnderlying(orderedKeys, underlyingValues, gc.values);
+        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(rowSequence, usePrev, gc);
+        fillFromUnderlying(rowSequence, underlyingValues, gc.values);
         return gc.values;
     }
 
-    private void fillFromUnderlying(@NotNull final OrderedKeys orderedKeys,
+    private void fillFromUnderlying(@NotNull final RowSequence rowSequence,
             @NotNull final ObjectChunk<?, ? extends Values>[] underlyingValues,
             @NotNull final WritableObjectChunk<SmartKey, ? super Values> destination) {
         final int length = columnSources.length;
-        final int size = orderedKeys.intSize();
+        final int size = rowSequence.intSize();
         destination.setSize(size);
         for (int ii = 0; ii < size; ++ii) {
             final Object[] columnValues = new Object[length];
@@ -140,7 +140,7 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
     }
 
     @NotNull
-    private ObjectChunk<?, ? extends Values>[] getUnderlyingChunks(@NotNull final OrderedKeys orderedKeys,
+    private ObjectChunk<?, ? extends Values>[] getUnderlyingChunks(@NotNull final RowSequence rowSequence,
             final boolean usePrev, @NotNull final FillContext fillContext) {
         final int length = columnSources.length;
 
@@ -150,10 +150,10 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
             final Chunk<Values> underlyingChunk;
             if (usePrev) {
                 // noinspection unchecked
-                underlyingChunk = columnSources[csi].getPrevChunk(fillContext.underlyingContexts[csi], orderedKeys);
+                underlyingChunk = columnSources[csi].getPrevChunk(fillContext.underlyingContexts[csi], rowSequence);
             } else {
                 // noinspection unchecked
-                underlyingChunk = columnSources[csi].getChunk(fillContext.underlyingContexts[csi], orderedKeys);
+                underlyingChunk = columnSources[csi].getChunk(fillContext.underlyingContexts[csi], rowSequence);
             }
             underlyingValues[csi] = fillContext.boxers[csi].box(underlyingChunk);
         }
@@ -162,17 +162,17 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
 
     @Override
     public final void fillChunk(@NotNull final ChunkSource.FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final FillContext fc = (FillContext) context;
-        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(orderedKeys, false, fc);
-        fillFromUnderlying(orderedKeys, underlyingValues, destination.asWritableObjectChunk());
+        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(rowSequence, false, fc);
+        fillFromUnderlying(rowSequence, underlyingValues, destination.asWritableObjectChunk());
     }
 
     public final void fillPrevChunk(@NotNull final ChunkSource.FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final FillContext fc = (FillContext) context;
-        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(orderedKeys, true, fc);
-        fillFromUnderlying(orderedKeys, underlyingValues, destination.asWritableObjectChunk());
+        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(rowSequence, true, fc);
+        fillFromUnderlying(rowSequence, underlyingValues, destination.asWritableObjectChunk());
     }
 
     private static class FillContext implements ChunkSource.FillContext {

@@ -201,7 +201,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
 
                     final Object keyValue = args[keyArgument];
                     if (keyValue == null) {
-                        throw new IllegalArgumentException("Join Keys Value is null for Join operation!");
+                        throw new IllegalArgumentException("Join Indices Value is null for Join operation!");
                     }
 
                     final Class keyClass = keyValue.getClass();

@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.by;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -266,34 +266,34 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public void fillChunk(@NotNull FillContext context,
-                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
-                destination.fillWithNullValue(0, orderedKeys.intSize());
+                destination.fillWithNullValue(0, rowSequence.intSize());
             } else {
-                longArraySource.fillChunk(context, destination, orderedKeys);
+                longArraySource.fillChunk(context, destination, rowSequence);
             }
         }
 
         @Override
         public void fillPrevChunk(@NotNull FillContext context,
-                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
-                destination.fillWithNullValue(0, orderedKeys.intSize());
+                destination.fillWithNullValue(0, rowSequence.intSize());
             } else {
-                longArraySource.fillPrevChunk(context, destination, orderedKeys);
+                longArraySource.fillPrevChunk(context, destination, rowSequence);
             }
         }
 
         @Override
         public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context,
-                @NotNull OrderedKeys orderedKeys) {
+                @NotNull RowSequence rowSequence) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
-                return doNullFill((DefaultGetContext) context, orderedKeys.intSize());
+                return doNullFill((DefaultGetContext) context, rowSequence.intSize());
             } else {
-                return longArraySource.getChunk(context, orderedKeys);
+                return longArraySource.getChunk(context, rowSequence);
             }
         }
 
@@ -319,12 +319,12 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public Chunk<? extends Attributes.Values> getPrevChunk(@NotNull GetContext context,
-                @NotNull OrderedKeys orderedKeys) {
+                @NotNull RowSequence rowSequence) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
-                return doNullFill((DefaultGetContext) context, orderedKeys.intSize());
+                return doNullFill((DefaultGetContext) context, rowSequence.intSize());
             } else {
-                return longArraySource.getPrevChunk(context, orderedKeys);
+                return longArraySource.getPrevChunk(context, rowSequence);
             }
         }
 

@@ -3,11 +3,10 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.Shuffle;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -72,16 +71,16 @@ public class TestCharacterArraySource {
     }
 
     private void validateValues(int chunkSize, char[] values, Index index, CharacterArraySource source) {
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             final CharChunk chunk = source.getChunk(context, okChunk).asCharChunk();
             assertTrue(chunk.size() <= chunkSize);
-            if (okIterator.hasMore()) {
+            if (rsIterator.hasMore()) {
                 assertEquals(chunkSize, chunk.size());
             }
             for (int i = 0; i < chunk.size(); i++) {
@@ -92,7 +91,7 @@ public class TestCharacterArraySource {
                 pos++;
             }
             // region samecheck
-            final LongChunk<OrderedKeyRanges> ranges = okChunk.asKeyRangesChunk();
+            final LongChunk<OrderedRowKeyRanges> ranges = okChunk.asRowKeyRangesChunk();
             if (ranges.size() > 2 || ranges.get(0) / CharacterArraySource.BLOCK_SIZE != (ranges.get(1) / CharacterArraySource.BLOCK_SIZE)) {
                 assertTrue(DefaultGetContext.isMyWritableChunk(context, chunk));
 
@@ -106,13 +105,13 @@ public class TestCharacterArraySource {
 
 
     private void validatePrevValues(int chunkSize, char[] values, Index index, CharacterArraySource source) {
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             final CharChunk chunk = source.getPrevChunk(context, okChunk).asCharChunk();
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -166,13 +165,13 @@ public class TestCharacterArraySource {
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource<?> source = formulaColumn.getDataView();
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             final CharChunk chunk = source.getChunk(context, okChunk).asCharChunk();
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -276,14 +275,14 @@ public class TestCharacterArraySource {
     }
 
     private void validateValuesWithFill(int chunkSize, char[] values, Index index, CharacterArraySource source) {
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             source.fillChunk(context, chunk, okChunk);
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -297,14 +296,14 @@ public class TestCharacterArraySource {
     }
 
     private void validatePrevValuesWithFill(int chunkSize, char[] values, Index index, CharacterArraySource source) {
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             source.fillPrevChunk(context, chunk, okChunk);
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -378,14 +377,14 @@ public class TestCharacterArraySource {
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource source = formulaColumn.getDataView();
-        final OrderedKeys.Iterator okIterator = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
         final Index.Iterator it = index.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
-            assertTrue(okIterator.hasMore());
-            final OrderedKeys okChunk = okIterator.getNextOrderedKeysWithLength(chunkSize);
+            assertTrue(rsIterator.hasMore());
+            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
             source.fillChunk(context, chunk, okChunk);
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
@@ -548,7 +547,7 @@ public class TestCharacterArraySource {
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
              final WritableCharChunk<Values> dest = WritableCharChunk.makeWritableChunk(keys.length);
-             final ResettableLongChunk<KeyIndices> rlc = ResettableLongChunk.makeResettableChunk()) {
+             final ResettableLongChunk<Attributes.RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
             rlc.resetFromTypedArray(keys, 0, keys.length);
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());

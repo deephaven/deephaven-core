@@ -97,7 +97,7 @@ public class SnapshotUtils {
             final ColumnSource<?> srcCs = entry.getValue();
 
             final WritableSource<?> destCs = destColumns.get(name);
-            destCs.ensureCapacity(destIndex.lastKey() + 1);
+            destCs.ensureCapacity(destIndex.lastRowKey() + 1);
             ChunkUtils.copyData(srcCs, srcIndex, destCs, destIndex, usePrev);
         }
     }

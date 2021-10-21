@@ -14,7 +14,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
 import java.util.function.Consumer;
 
@@ -59,7 +59,7 @@ class CrossJoinModifiedSlotTracker {
 
         int chunkCapacity = START_SLOT_CHUNK_SIZE;
         final SizedLongChunk<Values> flagChunk = new SizedLongChunk<>();
-        final SizedLongChunk<KeyIndices> keyChunk = new SizedLongChunk<>();
+        final SizedLongChunk<RowKeys> keyChunk = new SizedLongChunk<>();
         Index.RandomBuilder indexBuilder = Index.FACTORY.getRandomBuilder();
 
         long lastIndex = 0; // if added/removed/modified have been shifted then this is the left-index for the shift
@@ -132,7 +132,7 @@ class CrossJoinModifiedSlotTracker {
             finalizedRight = true;
 
             ensureSortKernel();
-            final WritableLongChunk<KeyIndices> keyChunk = this.keyChunk.get();
+            final WritableLongChunk<RowKeys> keyChunk = this.keyChunk.get();
             final WritableLongChunk<Values> flagChunk = this.flagChunk.get();
             sortKernel.sort(WritableLongChunk.downcast(flagChunk), keyChunk);
 
@@ -145,7 +145,7 @@ class CrossJoinModifiedSlotTracker {
             // let's accumulate downstream offsets too
             final Index.SequentialBuilder removedBuilder = Index.FACTORY.getSequentialBuilder();
 
-            try (final OrderedKeys.Iterator iter = rightIndex.getOrderedKeysIterator()) {
+            try (final RowSequence.Iterator iter = rightIndex.getRowSequenceIterator()) {
                 final long startRelativePos = iter.getRelativePosition();
 
                 // first we build and translate the removed
@@ -191,7 +191,7 @@ class CrossJoinModifiedSlotTracker {
             final Index.SequentialBuilder addedBuilder = Index.FACTORY.getSequentialBuilder();
             final Index.SequentialBuilder modifiedBuilder = Index.FACTORY.getSequentialBuilder();
 
-            try (final OrderedKeys.Iterator iter = rightIndex.getOrderedKeysIterator()) {
+            try (final RowSequence.Iterator iter = rightIndex.getRowSequenceIterator()) {
                 final long startRelativePos = iter.getRelativePosition();
 
                 for (int ii = 0; ii < keyChunk.size(); ++ii) {
@@ -278,7 +278,7 @@ class CrossJoinModifiedSlotTracker {
     }
 
     private final ObjectArraySource<SlotState> modifiedSlots = new ObjectArraySource<>(SlotState.class);
-    private LongSortKernel<KeyIndices, KeyIndices> sortKernel;
+    private LongSortKernel<RowKeys, RowKeys> sortKernel;
 
     private void ensureSortKernel() {
         if (sortKernel == null) {

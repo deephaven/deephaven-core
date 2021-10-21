@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -69,16 +69,16 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
     @Override
     public void fillChunkAppend(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         final WritableObjectChunk<DATA_TYPE, ? super ATTR> objectDestination =
                 destination.asWritableObjectChunk();
-        orderedKeys.forAllLongs((final long key) -> objectDestination.add(getObject(key)));
+        rowSequence.forAllLongs((final long key) -> objectDestination.add(getObject(key)));
     }
 
     @Override
     public boolean gatherDictionaryValuesIndex(
             @NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-            @NotNull final OrderedKeys.Iterator knownKeys,
+            @NotNull final RowSequence.Iterator knownKeys,
             @NotNull final Index.SequentialBuilder sequentialBuilder) {
         final long dictSize = getDictionaryChunk().size();
 

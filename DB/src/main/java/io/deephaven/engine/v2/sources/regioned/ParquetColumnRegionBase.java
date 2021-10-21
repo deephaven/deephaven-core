@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -30,8 +30,8 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
 
     @Override
     public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
-        return columnChunkPageStore.getChunk(context, orderedKeys);
+            @NotNull final RowSequence rowSequence) {
+        return columnChunkPageStore.getChunk(context, rowSequence);
     }
 
     @Override
@@ -42,15 +42,15 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
 
     @Override
     public final void fillChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
-        columnChunkPageStore.fillChunk(context, destination, orderedKeys);
+            @NotNull final WritableChunk<? super ATTR> destination, @NotNull final RowSequence rowSequence) {
+        columnChunkPageStore.fillChunk(context, destination, rowSequence);
     }
 
     @Override
     public final void fillChunkAppend(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
-            @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
-        columnChunkPageStore.fillChunkAppend(context, destination, orderedKeysIterator);
+            @NotNull final RowSequence.Iterator RowSequenceIterator) {
+        columnChunkPageStore.fillChunkAppend(context, destination, RowSequenceIterator);
     }
 
     @Override

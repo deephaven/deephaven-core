@@ -543,7 +543,7 @@ public class IndexCoalescerTest {
         final ShiftAwareListener.Update[] up = newEmptyUpdates(4);
         // {added={1073741825,1073741827-1073741828,1073741832-1073741833}, removed={1073741825-1073741827},
         // modified={1073741829,1073741831}, shifted={[1073741828,1073741828]-2},
-        // modifiedColumnSet={Sym,doubleCol,Keys}}
+        // modifiedColumnSet={Sym,doubleCol,Indices}}
         up[0].added = i(1073741825, 1073741827, 1073741828, 1073741832, 1073741833);
         up[0].removed = i(1073741825, 1073741826, 1073741827);
         up[0].shifted = newShiftDataByTriplets(1073741828, 1073741828, -2);
@@ -555,13 +555,13 @@ public class IndexCoalescerTest {
         up[1].shifted = newShiftDataByTriplets(1073741826, 1073741827, -1);
         // {added={1073741823,1073741827,1073741832}, removed={1073741830},
         // modified={1073741824-1073741826,1073741829,1073741831,1073741833},
-        // shifted={[1073741825,1073741827]-1,[1073741832,1073741832]+1}, modifiedColumnSet={Sym,intCol,Keys}}
+        // shifted={[1073741825,1073741827]-1,[1073741832,1073741832]+1}, modifiedColumnSet={Sym,intCol,Indices}}
         up[2].added = i(1073741823, 1073741827, 1073741832);
         up[2].removed = i(1073741830);
         up[2].shifted = newShiftDataByTriplets(1073741825, 1073741827, -1, 1073741832, 1073741832, +1);
         // {added={1073741820-1073741823,1073741826,1073741830}, removed={1073741823,1073741827},
         // modified={1073741819,1073741824-1073741825,1073741829,1073741831-1073741833},
-        // shifted={[1073741824,1073741824]-5,[1073741825,1073741826]-1}, modifiedColumnSet={intCol,Keys}}
+        // shifted={[1073741824,1073741824]-5,[1073741825,1073741826]-1}, modifiedColumnSet={intCol,Indices}}
         up[3].added = i(1073741820, 1073741821, 1073741822, 1073741823, 1073741826, 1073741830);
         up[3].removed = i(1073741823, 1073741827);
         up[3].shifted = newShiftDataByTriplets(1073741824, 1073741824, -5, 1073741825, 1073741826, -1);

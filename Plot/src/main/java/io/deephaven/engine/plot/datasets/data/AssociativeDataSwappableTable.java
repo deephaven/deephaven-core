@@ -32,7 +32,7 @@ public class AssociativeDataSwappableTable<KEY, VALUE, VALUECOLUMN>
      *
      * The {@code swappableTable} must have had a lastBy applied!
      *
-     * Keys are held in the {@code keyColumn} of {@code swappableTable}. Their associated values are held in the
+     * Indices are held in the {@code keyColumn} of {@code swappableTable}. Their associated values are held in the
      * {@code valueColumn}.
      *
      * The data type of the keys is specified by {@code keyColumnType}. The data type of the values is specified by

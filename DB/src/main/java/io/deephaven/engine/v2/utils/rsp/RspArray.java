@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils.rsp;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
@@ -4491,7 +4492,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return true;
     }
 
-    public OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive, final long length) {
+    public RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
         if (startPositionInclusive < 0) {
             throw new IllegalArgumentException(
                     ("startPositionInclusive=" + startPositionInclusive + " should be >=0."));
@@ -4500,7 +4501,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (isCardinalityCached()) {
             final long cardinality = getCardinality();
             if (startPositionInclusive >= cardinality) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             endPositionInclusive = Math.min(startPositionInclusive + length, cardinality) - 1;
         } else {
@@ -4517,7 +4518,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             prevCardMu = new MutableLong(0);
             startIdx = getIndexForRankNoAcc(0, startPositionInclusive, prevCardMu);
             if (startIdx == size) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             cardBeforeStart = prevCardMu.longValue();
         }
@@ -4540,30 +4541,30 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
         }
         final long startOffset = startPositionInclusive - cardBeforeStart;
-        return new RspOrderedKeys(this, startIdx, startOffset, cardBeforeStart, endIdx, endOffset, cardBeforeEnd);
+        return new RspRowSequence(this, startIdx, startOffset, cardBeforeStart, endIdx, endOffset, cardBeforeEnd);
     }
 
-    public OrderedKeys getOrderedKeysByKeyRange(final long startValueInclusive, final long endValueInclusive) {
+    public RowSequence getRowSequenceByKeyRange(final long startValueInclusive, final long endValueInclusive) {
         if (isEmpty() || endValueInclusive < startValueInclusive) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
         final long lastSpanCardinality = getSpanCardinalityAtIndexMaybeAcc(size - 1);
-        return getOrderedKeysByKeyRangeConstrainedToIndexAndOffsetRange(startValueInclusive, endValueInclusive,
+        return getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(startValueInclusive, endValueInclusive,
                 0, 0, 0, size - 1, lastSpanCardinality - 1);
     }
 
-    public RspOrderedKeys asOrderedKeys() {
+    public RspRowSequence asRowSequence() {
         if (isEmpty()) {
             throw new IllegalStateException("Cannot convert to ordered keys an empty array");
         }
         final long lastSpanCard = getSpanCardinalityAtIndexMaybeAcc(size - 1);
-        return new RspOrderedKeys(this,
+        return new RspRowSequence(this,
                 0, 0, 0,
                 size - 1, lastSpanCard - 1, getCardinality() - lastSpanCard);
     }
 
     // endIdx and endOffsetIn are inclusive.
-    OrderedKeys getOrderedKeysByKeyRangeConstrainedToIndexAndOffsetRange(
+    RowSequence getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(
             final long startValue, final long endValue,
             final int startIdx, final long startOffsetIn, final long cardBeforeStartIdx,
             final int endIdx, final long endOffsetIn) {
@@ -4572,7 +4573,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (startKeyIdx < 0) {
             startKeyIdx = -startKeyIdx - 1;
             if (startKeyIdx >= size) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
         }
         final long endKey = highBits(endValue);
@@ -4591,7 +4592,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             // the following result can't be outside of valid pos space or we would have returned above.
             absoluteStartPos = -absoluteStartPos - 1;
             if (absoluteStartPos == getCardinality()) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
         }
         final long cardBeforeEndKeyIdx = cardinalityBeforeMaybeAcc(endKeyIdx, beforeCardCtx);
@@ -4603,7 +4604,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (absoluteEndPos < 0) {
                 absoluteEndPos = -absoluteEndPos - 2;
                 if (absoluteEndPos < 0) {
-                    return OrderedKeys.EMPTY;
+                    return RowSequence.EMPTY;
                 }
                 final long totalCardAtEndKeyIdx = cardBeforeEndKeyIdx + getSpanCardinalityAtIndexMaybeAcc(endKeyIdx);
                 final long lastValidPos = totalCardAtEndKeyIdx - 1;
@@ -4634,16 +4635,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         } else {
             endOffsetOut = endOffsetIn;
         }
-        return new RspOrderedKeys(this,
+        return new RspRowSequence(this,
                 startKeyIdx, startOffsetOut, cardBeforeStartKeyIdx,
                 endKeyIdx, endOffsetOut, cardBeforeEndKeyIdx);
     }
 
-    public OrderedKeys.Iterator getOrderedKeysIterator() {
+    public RowSequence.Iterator getRowSequenceIterator() {
         if (isEmpty()) {
-            return OrderedKeys.Iterator.EMPTY;
+            return RowSequence.Iterator.EMPTY;
         }
-        return new RspOrderedKeys.Iterator(asOrderedKeys());
+        return new RspRowSequence.Iterator(asRowSequence());
     }
 
     public long getAverageRunLengthEstimate() {

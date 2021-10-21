@@ -252,7 +252,7 @@ public class ReplicateSortKernel {
                 .map(x -> x.replaceAll("LongSortKernelContext", "LongIntSortKernelContext"))
                 .map(x -> x.replaceAll(
                         "static class LongIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements SortKernel<ATTR, KEY_INDICES>",
-                        "static class LongIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements AutoCloseable"))
+                        "static class LongIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements AutoCloseable"))
                 .map(x -> x.replaceAll("IntChunk<KeyIndices>", "IntChunk"))
                 .collect(Collectors.toList());
 
@@ -272,7 +272,7 @@ public class ReplicateSortKernel {
                 .map(x -> x.replaceAll("IntSortKernelContext", "IntIntSortKernelContext"))
                 .map(x -> x.replaceAll(
                         "static class IntIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements SortKernel<ATTR, KEY_INDICES>",
-                        "static class IntIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements AutoCloseable"))
+                        "static class IntIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements AutoCloseable"))
                 .map(x -> x.replaceAll("IntChunk<KeyIndices>", "IntChunk"))
                 .collect(Collectors.toList());
 

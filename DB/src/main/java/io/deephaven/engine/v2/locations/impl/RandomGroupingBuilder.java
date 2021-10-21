@@ -22,7 +22,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
     private Map<DATA_TYPE, Index> groupToIndex;
 
     /**
-     * Add a mapping from value [firstKey, lastKey] to the groupings under construction.
+     * Add a mapping from value [firstRowKey, lastRowKey] to the groupings under construction.
      *
      * @param value The value for the grouping
      * @param firstKey The first key in the range

@@ -7,6 +7,7 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.common.io.LittleEndianDataInputStream;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
@@ -21,7 +22,6 @@ import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableShortChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -332,14 +332,14 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
     private interface Validator {
         void assertExpected(final WritableChunk<Attributes.Values> original,
                 final WritableChunk<Attributes.Values> computed,
-                @Nullable final OrderedKeys subset);
+                @Nullable final RowSequence subset);
     }
 
     private static final class ObjectIdentityValidator<T> implements Validator {
         @Override
         public void assertExpected(final WritableChunk<Attributes.Values> untypedOriginal,
                 final WritableChunk<Attributes.Values> unTypedComputed,
-                @Nullable OrderedKeys subset) {
+                @Nullable RowSequence subset) {
             final WritableObjectChunk<T, Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<T, Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
 
@@ -371,7 +371,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
         @Override
         public void assertExpected(final WritableChunk<Attributes.Values> untypedOriginal,
                 final WritableChunk<Attributes.Values> untypedComputed,
-                @Nullable OrderedKeys subset) {
+                @Nullable RowSequence subset) {
             final WritableObjectChunk<T, Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<String, Attributes.Values> computed = untypedComputed.asWritableObjectChunk();
             if (subset == null) {
@@ -393,7 +393,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
         @Override
         public void assertExpected(final WritableChunk<Attributes.Values> untypedOriginal,
                 final WritableChunk<Attributes.Values> unTypedComputed,
-                @Nullable OrderedKeys subset) {
+                @Nullable RowSequence subset) {
             final WritableObjectChunk<long[], Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<long[], Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
             if (subset == null) {

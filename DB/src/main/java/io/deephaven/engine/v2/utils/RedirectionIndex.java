@@ -4,15 +4,12 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.Context;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import gnu.trove.map.TLongLongMap;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +47,7 @@ public interface RedirectionIndex {
     }
 
     /**
-     * Lookup each element in OrderedKeys and write the result to mappedKeysOut
+     * Lookup each element in RowSequence and write the result to mappedKeysOut
      *
      * @param fillContext the RedirectionIndex FillContext
      * @param mappedKeysOut the result chunk
@@ -58,8 +55,8 @@ public interface RedirectionIndex {
      */
     default void fillChunk(
             @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         // Assume that caller provided a chunk large enough to use.
         mappedKeysOut.setSize(0);
         keysToMap.forEachLong((final long k) -> {
@@ -70,8 +67,8 @@ public interface RedirectionIndex {
 
     default void fillChunkUnordered(
             @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-            @NotNull final LongChunk<KeyIndices> keysToMap) {
+            @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
+            @NotNull final LongChunk<RowKeys> keysToMap) {
         // Assume that caller provided a chunk large enough to use.
         mappedKeysOut.setSize(0);
         for (int ii = 0; ii < keysToMap.size(); ++ii) {
@@ -81,8 +78,8 @@ public interface RedirectionIndex {
 
     default void fillPrevChunk(
             @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         // Assume that caller provided a chunk large enough to use.
         mappedKeysOut.setSize(0);
         keysToMap.forEachLong((final long k) -> {
@@ -116,7 +113,7 @@ public interface RedirectionIndex {
         remove(key);
     }
 
-    default void removeAll(final OrderedKeys keys) {
+    default void removeAll(final RowSequence keys) {
         keys.forAllLongs(this::remove);
     }
 
@@ -135,10 +132,10 @@ public interface RedirectionIndex {
      * Our default, inefficient, implementation. Inheritors who care should provide a better implementation.
      */
     default void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         final MutableInt offset = new MutableInt();
         final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
-        orderedKeys.forAllLongs(key -> {
+        rowSequence.forAllLongs(key -> {
             final long index = valuesLongChunk.get(offset.intValue());
             if (index == Index.NULL_KEY) {
                 removeVoid(key);

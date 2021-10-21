@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
@@ -34,7 +35,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
 import static io.deephaven.engine.v2.utils.rsp.RspArray.BLOCK_SIZE;
 import static io.deephaven.engine.v2.utils.rsp.RspArray.BLOCK_LAST;
 
@@ -1218,7 +1218,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         assertEquals(2, r2.getAverageRunLengthEstimate());
     }
 
-    public void testGetOrderedKeysByKeyRange() {
+    public void testGetRowSequenceByKeyRange() {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
@@ -1231,8 +1231,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final long start = 8;
         for (long end : ends) {
             final String m = "end==" + end;
-            final OrderedKeys oks = ix.getOrderedKeysByKeyRange(start, end);
-            final Index ioks = oks.asIndex();
+            final RowSequence rs = ix.getRowSequenceByKeyRange(start, end);
+            final Index ioks = rs.asIndex();
             boolean firstTime = true;
             long n = 0;
             for (final long v : vs) {
@@ -1242,7 +1242,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 } else {
                     ++n;
                     if (firstTime) {
-                        assertEquals(m2, v, oks.firstKey());
+                        assertEquals(m2, v, rs.firstRowKey());
                         firstTime = false;
                     }
                     assertTrue(m2, ioks.find(v) >= 0);
@@ -1252,7 +1252,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         }
     }
 
-    public void testGetOrderedKeysByPosition() {
+    public void testGetRowSequenceByPosition() {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
@@ -1266,8 +1266,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
             final String m = "startPos==" + startPos;
             for (long endPos = startPos; endPos <= sz; ++endPos) {
                 final String m2 = m + " && endPos==" + endPos;
-                final OrderedKeys oks = ix.getOrderedKeysByPosition(startPos, endPos - startPos + 1);
-                final Index ioks = oks.asIndex();
+                final RowSequence rs = ix.getRowSequenceByPosition(startPos, endPos - startPos + 1);
+                final Index ioks = rs.asIndex();
                 long n = 0;
                 boolean firstTime = true;
                 for (int p = 0; p < sz; ++p) {
@@ -1277,7 +1277,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                     } else {
                         ++n;
                         if (firstTime) {
-                            assertEquals(m3, vs[p], oks.firstKey());
+                            assertEquals(m3, vs[p], rs.firstRowKey());
                             firstTime = false;
                         }
                         assertTrue(m3, ioks.find(ix.get(p)) >= 0);
@@ -1296,8 +1296,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
             b.appendKey(v);
         }
         final Index ix = b.getIndex();
-        final WritableLongChunk<OrderedKeyIndices> kixchunk = WritableLongChunk.makeWritableChunk(vs.length);
-        ix.fillKeyIndicesChunk(kixchunk);
+        final WritableLongChunk<Attributes.OrderedRowKeys> kixchunk = WritableLongChunk.makeWritableChunk(vs.length);
+        ix.fillRowKeyChunk(kixchunk);
         assertEquals(vs.length, kixchunk.size());
     }
 
@@ -1439,8 +1439,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
             r.insert(ixs[i]);
         }
         assertEquals(sz, r.size());
-        assertEquals(0, r.firstKey());
-        assertEquals(sz - 1, r.lastKey());
+        assertEquals(0, r.firstRowKey());
+        assertEquals(sz - 1, r.lastRowKey());
     }
 
     public void testSubindexByPosRegreesion0() {
@@ -1496,7 +1496,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 }
             }
             if (rit.hasNext()) {
-                assertFalse(m, ix.containsRange(start, ix.lastKey()));
+                assertFalse(m, ix.containsRange(start, ix.lastRowKey()));
             }
         }
     }
@@ -1538,8 +1538,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
                     assertEquals(m2, expected, overlapsRange);
                 }
             }
-            if (end < ix.lastKey()) {
-                assertTrue(m, ix.overlapsRange(end + 1, ix.lastKey()));
+            if (end < ix.lastRowKey()) {
+                assertTrue(m, ix.overlapsRange(end + 1, ix.lastRowKey()));
             }
             if (start > 0) {
                 // this is not the first range.
@@ -1547,7 +1547,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
             }
             prevEnd = end;
         }
-        assertFalse(ix.overlapsRange(ix.lastKey() + 1, ix.lastKey() + 10000 * BLOCK_SIZE));
+        assertFalse(ix.overlapsRange(ix.lastRowKey() + 1, ix.lastRowKey() + 10000 * BLOCK_SIZE));
     }
 
     public void testOneRangeIndexMinus() {
@@ -1636,7 +1636,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         index.insertRange(130972, 131071);
         index.insert(262144);
 
-        final LongChunk<Attributes.OrderedKeyRanges> ranges = index.asKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = index.asRowKeyRangesChunk();
         assertEquals(4, ranges.size());
         assertEquals(130972, ranges.get(0));
         assertEquals(131071, ranges.get(1));
@@ -1763,8 +1763,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final Index ix1 = new TreeIndex(RspBitmap.makeSingleRange(1073741843L, 1073741860L));
         final Index ix2 = new TreeIndex(SortedRanges.makeSingleElement(1073741843L));
         final Index ix3 = ix1.minus(ix2);
-        assertEquals(ix1.lastKey() - ix1.firstKey(), ix3.size());
-        assertTrue(ix3.containsRange(ix1.firstKey() + 1, ix1.lastKey()));
+        assertEquals(ix1.lastRowKey() - ix1.firstRowKey(), ix3.size());
+        assertTrue(ix3.containsRange(ix1.firstRowKey() + 1, ix1.lastRowKey()));
     }
 
     public void testSubsetOfRegression0() {

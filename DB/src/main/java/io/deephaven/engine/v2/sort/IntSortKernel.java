@@ -11,9 +11,9 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
 
 /**
- * The SortKernel sorts a chunk of primitive value together with a parallel IntChunk of KeyIndices.
+ * The SortKernel sorts a chunk of primitive value together with a parallel IntChunk of RowKeys.
  */
-public interface IntSortKernel<ATTR extends Any, KEY_INDICES extends Keys> extends Context {
+public interface IntSortKernel<ATTR extends Any, KEY_INDICES extends Indices> extends Context {
     /**
      * Creates a SortKernel for the given chunkType.
      *
@@ -24,7 +24,7 @@ public interface IntSortKernel<ATTR extends Any, KEY_INDICES extends Keys> exten
      *                       kernel need only permute the input indices into sorted order
      * @return a SortKernel suitable for the given type, order, and size
      */
-    static <ATTR extends Any, KEY_INDICES extends Keys> IntSortKernel<ATTR, KEY_INDICES> makeContext(ChunkType chunkType, SortingOrder order, int size, boolean preserveValues) {
+    static <ATTR extends Any, KEY_INDICES extends Indices> IntSortKernel<ATTR, KEY_INDICES> makeContext(ChunkType chunkType, SortingOrder order, int size, boolean preserveValues) {
         switch (chunkType) {
             case Char:
                 if (order == SortingOrder.Ascending) {

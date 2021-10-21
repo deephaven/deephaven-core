@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
@@ -119,14 +119,14 @@ public class TableDiff {
                             expectedSharedContext, actualNameToColumnSource.get(name), actualSharedContext)))
                     .toArray(ColumnDiffContext[]::new);
 
-            try (final OrderedKeys.Iterator expectedIterator = expectedResult.getIndex().getOrderedKeysIterator();
-                    final OrderedKeys.Iterator actualIterator = actualResult.getIndex().getOrderedKeysIterator()) {
+            try (final RowSequence.Iterator expectedIterator = expectedResult.getIndex().getRowSequenceIterator();
+                    final RowSequence.Iterator actualIterator = actualResult.getIndex().getRowSequenceIterator()) {
 
                 int columnsRemaining = columnContexts.length;
                 long position = 0;
                 while (expectedIterator.hasMore() && actualIterator.hasMore() && columnsRemaining > 0) {
-                    final OrderedKeys expectedChunkOk = expectedIterator.getNextOrderedKeysWithLength(chunkSize);
-                    final OrderedKeys actualChunkOk = actualIterator.getNextOrderedKeysWithLength(chunkSize);
+                    final RowSequence expectedChunkOk = expectedIterator.getNextRowSequenceWithLength(chunkSize);
+                    final RowSequence actualChunkOk = actualIterator.getNextRowSequenceWithLength(chunkSize);
 
                     for (int ci = 0; ci < columnContexts.length; ++ci) {
                         final ColumnDiffContext columnContext = columnContexts[ci];
@@ -227,8 +227,8 @@ public class TableDiff {
          * @return -1 if the expected and actual chunks were equal, else the position in row space of the first
          *         difference
          */
-        private long diffChunk(@NotNull final OrderedKeys expectedChunkOk,
-                @NotNull final OrderedKeys actualChunkOk,
+        private long diffChunk(@NotNull final RowSequence expectedChunkOk,
+                @NotNull final RowSequence actualChunkOk,
                 @NotNull final WritableBooleanChunk equalValues,
                 @NotNull final Set<DiffItems> itemsToSkip,
                 @NotNull final List<String> issues,

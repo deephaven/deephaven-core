@@ -317,7 +317,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         @Override
         public void validate(String msg) {
             if (t1.getIndex().size() > 0) {
-                Assert.assertEquals(msg, t1.getIndex().size() - 1, t1.getIndex().lastKey());
+                Assert.assertEquals(msg, t1.getIndex().size() - 1, t1.getIndex().lastRowKey());
             }
         }
 

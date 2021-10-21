@@ -9,6 +9,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
@@ -286,14 +287,14 @@ public class SyncTableFilter {
     private void doMatch(final int tableIndex, final KeyState state, final long matchValue) {
         final Index.SequentialBuilder matchedBuilder = Index.FACTORY.getSequentialBuilder();
         final Index.SequentialBuilder pendingBuilder = Index.FACTORY.getSequentialBuilder();
-        final WritableLongChunk<Attributes.OrderedKeyIndices> keyIndices =
+        final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices =
                 WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
 
-        try (final OrderedKeys.Iterator okit = state.pendingRows.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = state.pendingRows.getRowSequenceIterator();
                 final ColumnSource.GetContext getContext = idSources.get(tableIndex).makeGetContext(CHUNK_SIZE)) {
-            while (okit.hasMore()) {
-                final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(CHUNK_SIZE);
-                chunkOk.fillKeyIndicesChunk(keyIndices);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+                chunkOk.fillRowKeyChunk(keyIndices);
                 final LongChunk<? extends Attributes.Values> idChunk =
                         idSources.get(tableIndex).getChunk(getContext, chunkOk).asLongChunk();
                 for (int ii = 0; ii < idChunk.size(); ++ii) {
@@ -395,14 +396,14 @@ public class SyncTableFilter {
         // in Treasure the TupleSource will handle chunks better
         final WritableObjectChunk valuesChunk = WritableObjectChunk.makeWritableChunk(CHUNK_SIZE);
         final WritableLongChunk<Attributes.Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-        final WritableLongChunk<Attributes.OrderedKeyIndices> keyIndicesChunk =
+        final WritableLongChunk<Attributes.OrderedRowKeys> keyIndicesChunk =
                 WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
         final ColumnSource<Long> idSource = idSources.get(tableIndex);
-        try (final OrderedKeys.Iterator okIt = index.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
                 final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
-            while (okIt.hasMore()) {
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
-                chunkOk.fillKeyIndicesChunk(keyIndicesChunk);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+                chunkOk.fillRowKeyChunk(keyIndicesChunk);
                 valuesChunk.setSize(0);
                 chunkOk.forEachLong(idx -> {
                     Object tuple = keySources[tableIndex].createTuple(idx);

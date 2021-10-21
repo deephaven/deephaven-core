@@ -2,6 +2,6 @@
  "className": "io.deephaven.engine.v2.sources.chunk.ChunkSource$GetContext",
  "methods": {},
  "path": "io.deephaven.engine.v2.sources.chunk.ChunkSource.GetContext",
- "text": "Marker interface for Contexts that are used in ChunkSource.getChunk(GetContext, OrderedKeys).",
+ "text": "Marker interface for Contexts that are used in ChunkSource.getChunk(GetContext, RowSequence).",
  "typeName": "interface"
 }

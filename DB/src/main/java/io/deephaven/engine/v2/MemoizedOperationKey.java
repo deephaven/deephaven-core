@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Keys for memoized operations on QueryTable.
+ * Indices for memoized operations on QueryTable.
  *
  * When a null key is returned from one of the static methods; the operation will not be memoized (e.g., if we might
  * depend on the query scope; we can't memoize the operation).

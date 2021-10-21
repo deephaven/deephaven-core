@@ -12,11 +12,10 @@ import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -66,8 +65,8 @@ public class DoubleStreamSortedFirstOrLastChunkedOperator extends CopyingPermute
     @Override
     public void addChunk(final BucketedContext bucketedContext, // Unused
                          @NotNull final Chunk<? extends Values> values,
-                         @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-                         @NotNull final IntChunk<KeyIndices> destinations,
+                         @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices,
+                         @NotNull final IntChunk<Attributes.RowKeys> destinations,
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
@@ -84,13 +83,13 @@ public class DoubleStreamSortedFirstOrLastChunkedOperator extends CopyingPermute
     public boolean addChunk(final SingletonContext singletonContext, // Unused
                             final int chunkSize,
                             @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
+                            @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices,
                             final long destination) {
         return addChunk(values.asDoubleChunk(), inputIndices, 0, inputIndices.size(), destination);
     }
 
     private boolean addChunk(@NotNull final DoubleChunk<? extends Values> values,
-                             @NotNull final LongChunk<? extends KeyIndices> indices,
+                             @NotNull final LongChunk<? extends Attributes.RowKeys> indices,
                              final int start,
                              final int length,
                              final long destination) {
@@ -148,7 +147,7 @@ public class DoubleStreamSortedFirstOrLastChunkedOperator extends CopyingPermute
                 "downstream.removed.empty() && downstream.shifted.empty()");
         // In a combo-agg, we may get modifications from other other operators that we didn't record as modifications in
         // our redirections, so we separately track updated destinations.
-        try (final OrderedKeys changedDestinations = isCombo ? changedDestinationsBuilder.getIndex() : downstream.modified.union(downstream.added)) {
+        try (final RowSequence changedDestinations = isCombo ? changedDestinationsBuilder.getIndex() : downstream.modified.union(downstream.added)) {
             copyStreamToResult(changedDestinations);
         }
         redirections = null;

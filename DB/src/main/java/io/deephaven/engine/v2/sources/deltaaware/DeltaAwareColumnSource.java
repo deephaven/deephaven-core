@@ -4,9 +4,10 @@
 
 package io.deephaven.engine.v2.sources.deltaaware;
 
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
@@ -47,12 +48,12 @@ import org.jetbrains.annotations.NotNull;
 // delta[8] = d18
 // delta[9] = d19
 //
-// Now someone calls fillChunk with orderedKeys = {0, 4, 5, 9, 10, 14, 15}
+// Now someone calls fillChunk with RowSequence = {0, 4, 5, 9, 10, 14, 15}
 //
-// We calculate orderedKeys - deltaRows, representing the baseline keys in the baseline space.
+// We calculate RowSequence - deltaRows, representing the baseline keys in the baseline space.
 // baselineKeysBs = {0, 4, 10, 14}
 //
-// We also calculate intersection(orderedKeys, deltaRows), representing the delta keys in the _baseline_ space.
+// We also calculate intersection(RowSequence, deltaRows), representing the delta keys in the _baseline_ space.
 // deltaKeysBS = {5, 9, 15}
 //
 // We translate the above using invert, representing the delta keys in the _delta_ space.
@@ -167,7 +168,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // 1. Will you be doing get or fill?
     // 2. Will you be accessing baseline (aka prev), delta, or current?
     // 3. FUTURE WORK: Will you be specifying all your keys up up front and slurping them sequentially (call this
-    // "sequential access") or will you be specifying OrderedKeys at every get call (call this "random access")
+    // "sequential access") or will you be specifying RowSequence at every get call (call this "random access")
     //
     // Because #3 is future work we only have six types of "fetch" calls we care about, denoted compactly like this:
     // {get, fill} x {prev, delta, current}.
@@ -209,17 +210,17 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // ==================================================================================================================
 
     @Override
-    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
         // TODO: this can probably use the defaultChunkSource.defaultGetChunk and avoid this cast with a refactoring.
         // noinspection unchecked
-        return (Chunk<Values>) getOrFillChunk((DAContext) context, null, orderedKeys);
+        return (Chunk<Values>) getOrFillChunk((DAContext) context, null, rowSequence);
     }
 
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         // Ignore return type.
-        getOrFillChunk((DAContext) context, dest, orderedKeys);
+        getOrFillChunk((DAContext) context, dest, rowSequence);
     }
 
     /**
@@ -228,29 +229,29 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      *
      * @param context The context.
      * @param optionalDest Null if you are doing a get, or destination chunk if you are doing a fill.
-     * @param orderedKeys Keys to get.
+     * @param rowSequence Indices to get.
      * @return The chunk if you are doing a get, or {@code dest} if you are doing a fill.
      */
     private Chunk<? super Values> getOrFillChunk(@NotNull DAContext context, WritableChunk<? super Values> optionalDest,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         // Do the volatile read once
         final Index dRows = deltaRows;
         // Optimization if we're not tracking prev or if there are no deltas.
         if (dRows == null || dRows.empty()) {
-            return getOrFillSimple(baseline, context.baseline, optionalDest, orderedKeys);
+            return getOrFillSimple(baseline, context.baseline, optionalDest, rowSequence);
         }
 
-        // baselineKeysBS: (orderedKeys - deltaRows): baseline keys in the baseline coordinate space
-        // deltaKeysBS: (orderedKeys intersect deltaRows) delta keys, also in the baseline coordinate space
+        // baselineKeysBS: (rowSequence - deltaRows): baseline keys in the baseline coordinate space
+        // deltaKeysBS: (rowSequence intersect deltaRows) delta keys, also in the baseline coordinate space
         // deltaKeysDS: the above, translated to the delta coordinate space
         final Index[] splitResult = new Index[2];
-        splitKeys(orderedKeys, dRows, splitResult);
+        splitKeys(rowSequence, dRows, splitResult);
         final Index baselineKeysBS = splitResult[1];
         final Index deltaKeysBS = splitResult[0];
 
         // If one or the other is empty, shortcut here
         if (deltaKeysBS.empty()) {
-            // By the way, baselineKeysBS equals orderedKeys, so you could pick either one
+            // By the way, baselineKeysBS equals rowSequence, so you could pick either one
             return getOrFillSimple(baseline, context.baseline, optionalDest, baselineKeysBS);
         }
 
@@ -274,11 +275,11 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static Chunk<? super Values> getOrFillSimple(ChunkSource src, GetAndFillContexts ctx,
             WritableChunk<? super Values> optionalDest,
-            OrderedKeys orderedKeys) {
+            RowSequence rowSequence) {
         if (optionalDest == null) {
-            return src.getChunk(ctx.getContext, orderedKeys);
+            return src.getChunk(ctx.getContext, rowSequence);
         }
-        src.fillChunk(ctx.optionalFillContext, optionalDest, orderedKeys);
+        src.fillChunk(ctx.optionalFillContext, optionalDest, rowSequence);
         return optionalDest;
     }
 
@@ -289,16 +290,16 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // ==================================================================================================================
 
     @Override
-    public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
         final DAContext dactx = (DAContext) context;
-        return baseline.getChunk(dactx.baseline.getContext, orderedKeys);
+        return baseline.getChunk(dactx.baseline.getContext, rowSequence);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         final DAContext dactx = (DAContext) context;
-        baseline.fillChunk(dactx.baseline.optionalFillContext, dest, orderedKeys);
+        baseline.fillChunk(dactx.baseline.optionalFillContext, dest, rowSequence);
     }
 
     // ==================================================================================================================
@@ -315,13 +316,13 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         throw new UnsupportedOperationException("TODO(kosak)");
     }
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull LongChunk<Attributes.KeyIndices> keys) {
+            @NotNull LongChunk<Attributes.RowKeys> keys) {
         throw new UnsupportedOperationException("TODO");
     }
 
@@ -545,18 +546,19 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     private void commitValues() {
         try (
                 final FillFromContext baselineCtx = baseline.makeFillFromContext(preferredChunkSize);
-                final WritableLongChunk<OrderedKeyRanges> orderedKeyRanges = WritableLongChunk.makeWritableChunk(2);
+                final WritableLongChunk<Attributes.OrderedRowKeyRanges> orderedKeyRanges =
+                        WritableLongChunk.makeWritableChunk(2);
                 final GetContext deltaCtx = delta.makeGetContext(preferredChunkSize);
-                final OrderedKeys.Iterator it = deltaRows.getOrderedKeysIterator()) {
+                final RowSequence.Iterator it = deltaRows.getRowSequenceIterator()) {
             long startKey = 0;
             while (it.hasMore()) {
-                final OrderedKeys baselineOk = it.getNextOrderedKeysWithLength(preferredChunkSize);
+                final RowSequence baselineOk = it.getNextRowSequenceWithLength(preferredChunkSize);
                 final int baselineOkSize = baselineOk.intSize();
                 orderedKeyRanges.set(0, startKey);
                 orderedKeyRanges.set(1, startKey + baselineOkSize - 1);
                 orderedKeyRanges.setSize(2);
                 startKey += baselineOkSize;
-                final OrderedKeys deltaOk = OrderedKeys.wrapKeyRangesChunkAsOrderedKeys(orderedKeyRanges);
+                final RowSequence deltaOk = RowSequenceUtil.wrapKeyRangesChunkAsRowSequence(orderedKeyRanges);
                 final Chunk<? extends Values> data = delta.getChunk(deltaCtx, deltaOk);
                 baseline.fillFromChunk(baselineCtx, data, baselineOk);
             }
@@ -609,12 +611,12 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * Partitions {@code lhs} into two indices: (lhs intersect rhs) and (lhs minus rhs).
      *
-     * @param lhs The {@link OrderedKeys} to partition
+     * @param lhs The {@link RowSequence} to partition
      * @param rhs The keys which control the partition operation
      * @param results Allocated by the caller. {@code results[0]} will be set to (lhs intersect rhs). {@code results[1]}
      *        will be set to (lhs minus rhs).
      */
-    private static void splitKeys(OrderedKeys lhs, Index rhs, Index[] results) {
+    private static void splitKeys(RowSequence lhs, Index rhs, Index[] results) {
         final Index lhsIndex = lhs.asIndex();
         results[0] = lhsIndex.intersect(rhs);
         results[1] = lhsIndex.minus(rhs);

@@ -8,7 +8,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -32,7 +33,7 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
@@ -40,7 +41,7 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
@@ -48,39 +49,39 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
-    private void doBucketedUpdate(ReAvgContext context, IntChunk<KeyIndices> destinations,
+    private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
         context.keyIndices.setSize(startPositions.size());
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             context.keyIndices.set(ii, destinations.get(startPosition));
         }
-        try (final OrderedKeys destinationOk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(context.keyIndices)) {
+        try (final RowSequence destinationOk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
             updateResult(context, destinationOk, stateModified);
         }
     }
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         return updateResult(destination);
     }
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         return updateResult(destination);
     }
 
     @Override
     public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
         return updateResult(destination);
     }
 
@@ -91,7 +92,7 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
         return updateResult(destination, sumSumValue, nncValue);
     }
 
-    private void updateResult(ReAvgContext reAvgContext, OrderedKeys destinationOk,
+    private void updateResult(ReAvgContext reAvgContext, RowSequence destinationOk,
             WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> sumSumChunk =
                 sumSum.getChunk(reAvgContext.sumSumContext, destinationOk).asObjectChunk();
@@ -114,7 +115,7 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
     }
 
     private class ReAvgContext implements BucketedContext {
-        final WritableLongChunk<OrderedKeyIndices> keyIndices;
+        final WritableLongChunk<OrderedRowKeys> keyIndices;
         final ChunkSource.GetContext sumSumContext;
         final ChunkSource.GetContext nncSumContext;
 

@@ -1,14 +1,15 @@
 package io.deephaven.engine.v2.sources.chunk.util;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
 
 public class LongChunkRangeIterator implements io.deephaven.engine.v2.utils.LongRangeIterator {
-    private final LongChunk<OrderedKeyRanges> ck;
+    private final LongChunk<Attributes.OrderedRowKeyRanges> ck;
     private final int lastj;
     private int j;
-    public LongChunkRangeIterator(final LongChunk<OrderedKeyRanges> ck) {
+    public LongChunkRangeIterator(final LongChunk<OrderedRowKeyRanges> ck) {
         this.ck = ck;
         lastj = ck.size() - 2;
         j = -2;

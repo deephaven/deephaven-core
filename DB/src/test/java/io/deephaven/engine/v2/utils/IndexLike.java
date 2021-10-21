@@ -49,7 +49,7 @@ public interface IndexLike {
 
                 @Override
                 public long lastKey() {
-                    return idx.lastKey();
+                    return idx.lastRowKey();
                 }
 
                 @Override
@@ -95,7 +95,7 @@ public interface IndexLike {
 
                 @Override
                 public long lastKey() {
-                    return idx.lastKey();
+                    return idx.lastRowKey();
                 }
 
                 @Override

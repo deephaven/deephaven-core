@@ -1,12 +1,14 @@
 package io.deephaven.engine.v2.utils.singlerange;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 
-public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements SingleRangeMixin {
+public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements SingleRangeMixin {
     private long rangeStart;
     private long rangeEnd;
 
@@ -20,19 +22,19 @@ public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements Si
         return rangeEnd;
     }
 
-    SingleRangeOrderedKeys(final long rangeStart, final long rangeEnd) {
+    SingleRangeRowSequence(final long rangeStart, final long rangeEnd) {
         this.rangeStart = rangeStart;
         this.rangeEnd = rangeEnd;
     }
 
     protected void reset(final long rangeStart, final long rangeEnd) {
-        invalidateOrderedKeysAsChunkImpl();
+        invalidateRowSequenceAsChunkImpl();
         this.rangeStart = rangeStart;
         this.rangeEnd = rangeEnd;
     }
 
-    public SingleRangeOrderedKeys copy() {
-        return new SingleRangeOrderedKeys(rangeStart, rangeEnd);
+    public SingleRangeRowSequence copy() {
+        return new SingleRangeRowSequence(rangeStart, rangeEnd);
     }
 
     @Override
@@ -41,12 +43,12 @@ public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements Si
     }
 
     @Override
-    public long lastKey() {
+    public long lastRowKey() {
         return rangeEnd;
     }
 
     @Override
-    public long firstKey() {
+    public long firstRowKey() {
         return rangeStart;
     }
 
@@ -66,7 +68,7 @@ public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements Si
     }
 
     @Override
-    public void fillKeyIndicesChunk(final WritableLongChunk<? extends KeyIndices> chunkToFill) {
+    public void fillRowKeyChunk(final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
         final int n = intSize();
         for (int i = 0; i < n; ++i) {
             chunkToFill.set(i, rangeStart() + i);
@@ -75,7 +77,7 @@ public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements Si
     }
 
     @Override
-    public void fillKeyRangesChunk(final WritableLongChunk<OrderedKeyRanges> chunkToFill) {
+    public void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         final int maxSz = chunkToFill.size();
         if (maxSz < 2) {
             chunkToFill.setSize(0);
@@ -86,17 +88,17 @@ public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements Si
         chunkToFill.setSize(2);
     }
 
-    static final class OKIterator implements OrderedKeys.Iterator {
+    static final class Iterator implements RowSequence.Iterator {
         private long currStart;
         private long currEnd;
         private long sizeLeft;
-        private final SingleRangeOrderedKeys currBuf;
+        private final SingleRangeRowSequence currBuf;
 
-        public OKIterator(final long rangeStart, final long rangeEnd) {
+        public Iterator(final long rangeStart, final long rangeEnd) {
             currStart = rangeStart;
             currEnd = -1;
             sizeLeft = rangeEnd - rangeStart + 1;
-            currBuf = new SingleRangeOrderedKeys(0, 0);
+            currBuf = new SingleRangeRowSequence(0, 0);
         }
 
         @Override
@@ -116,17 +118,17 @@ public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements Si
         }
 
         @Override
-        public OrderedKeys getNextOrderedKeysThrough(final long maxKeyInclusive) {
+        public RowSequence getNextRowSequenceThrough(final long maxKeyInclusive) {
             if (maxKeyInclusive < 0 || sizeLeft <= 0) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             if (currEnd != -1) {
                 if (maxKeyInclusive <= currEnd) {
-                    return OrderedKeys.EMPTY;
+                    return RowSequence.EMPTY;
                 }
                 currStart = currEnd + 1;
             } else if (maxKeyInclusive < currStart) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             currEnd = Math.min(currStart + sizeLeft - 1, maxKeyInclusive);
             sizeLeft -= currEnd - currStart + 1;
@@ -135,9 +137,9 @@ public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements Si
         }
 
         @Override
-        public OrderedKeys getNextOrderedKeysWithLength(final long numberOfKeys) {
+        public RowSequence getNextRowSequenceWithLength(final long numberOfKeys) {
             if (numberOfKeys <= 0 || sizeLeft <= 0) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             if (currEnd != -1) {
                 currStart = currEnd + 1;

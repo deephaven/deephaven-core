@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.utils.singlerange;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.*;
@@ -158,13 +159,13 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset,
+    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
             final int length) {
         return TreeIndexImpl.fromChunk(keys, offset, length, false).ixInsertRange(rangeStart(), rangeEnd());
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset,
+    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
             final int length) {
         return ixRemove(TreeIndexImpl.fromChunk(keys, offset, length, true));
     }
@@ -687,30 +688,30 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final OrderedKeys ixGetOrderedKeysByPosition(final long startPositionInclusive, final long length) {
+    public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
         if (startPositionInclusive >= ixCardinality() || length == 0) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
         final long e = Math.min(s + length - 1, rangeEnd());
-        return new SingleRangeOrderedKeys(s, e);
+        return new SingleRangeRowSequence(s, e);
     }
 
     @Override
-    public final OrderedKeys ixGetOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
+    public final RowSequence ixGetRowSequenceByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
         if (startKeyInclusive > rangeEnd() ||
                 endKeyInclusive < rangeStart() ||
                 endKeyInclusive < startKeyInclusive) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
-        return new SingleRangeOrderedKeys(
+        return new SingleRangeRowSequence(
                 Math.max(startKeyInclusive, rangeStart()),
                 Math.min(endKeyInclusive, rangeEnd()));
     }
 
     @Override
-    public final OrderedKeys.Iterator ixGetOrderedKeysIterator() {
-        return new SingleRangeOrderedKeys.OKIterator(rangeStart(), rangeEnd());
+    public final RowSequence.Iterator ixGetRowSequenceIterator() {
+        return new SingleRangeRowSequence.Iterator(rangeStart(), rangeEnd());
     }
 
     @Override

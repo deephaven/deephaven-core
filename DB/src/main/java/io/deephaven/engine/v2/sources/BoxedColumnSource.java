@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -54,17 +54,17 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
     @Override
     public final void fillChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final Chunk<? extends Values> originalChunk =
-                originalSource.getChunk(((BoxedFillContext) context).originalGetContext, orderedKeys);
+                originalSource.getChunk(((BoxedFillContext) context).originalGetContext, rowSequence);
         transformChunk(originalChunk, destination);
     }
 
     @Override
     public final void fillPrevChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final Chunk<? extends Values> originalChunk =
-                originalSource.getPrevChunk(((BoxedFillContext) context).originalGetContext, orderedKeys);
+                originalSource.getPrevChunk(((BoxedFillContext) context).originalGetContext, rowSequence);
         transformChunk(originalChunk, destination);
     }
 

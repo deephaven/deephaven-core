@@ -3,6 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.join.JoinListenerRecorder;
@@ -245,7 +246,7 @@ class NaturalJoinHelper {
             // we don't care where it goes
             redirectionIndex = getSingleValueRedirectionIndex(rightRefreshing, Index.NULL_KEY);
         } else if (rightTable.size() == 1) {
-            redirectionIndex = getSingleValueRedirectionIndex(rightRefreshing, rightTable.getIndex().firstKey());
+            redirectionIndex = getSingleValueRedirectionIndex(rightRefreshing, rightTable.getIndex().firstRowKey());
         } else {
             if (exactMatch && leftTable.size() > 0) {
                 throw new RuntimeException(
@@ -365,7 +366,7 @@ class NaturalJoinHelper {
                 redirectionIndex.setValue(Index.NULL_KEY);
             }
         } else {
-            final long value = rightTable.getIndex().firstKey();
+            final long value = rightTable.getIndex().firstRowKey();
             changed = redirectionIndex.getValue() != value;
             if (changed) {
                 redirectionIndex.setValue(value);
@@ -454,11 +455,11 @@ class NaturalJoinHelper {
 
         @Override
         public void fillChunk(@NotNull final FillContext context,
-                @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
             final WritableIntChunk<? super Values> destAsInt = destination.asWritableIntChunk();
             final LongToIntFillContext longToIntContext = (LongToIntFillContext) context;
             final WritableLongChunk<Values> longChunk = longToIntContext.longChunk;
-            symbolSource.fillChunk(longToIntContext.innerFillContext, longChunk, orderedKeys);
+            symbolSource.fillChunk(longToIntContext.innerFillContext, longChunk, rowSequence);
             for (int ii = 0; ii < longChunk.size(); ++ii) {
                 destAsInt.set(ii, symbolLookup.getInt(longChunk.get(ii)));
             }
@@ -712,7 +713,7 @@ class NaturalJoinHelper {
             changedRedirection = true;
 
             if (rightIndex == Index.NULL_KEY) {
-                jsm.checkExactMatch(exactMatch, leftIndices.firstKey(), rightIndex);
+                jsm.checkExactMatch(exactMatch, leftIndices.firstRowKey(), rightIndex);
                 leftIndices.forAllLongs(redirectionIndex::removeVoid);
             } else {
                 leftIndices.forAllLongs((long key) -> redirectionIndex.putVoid(key, rightIndex));

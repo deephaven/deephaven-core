@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -23,7 +23,7 @@ final class RegionedColumnSourceBoolean
 
     @Override
     public void convertRegion(WritableChunk<? super Attributes.Values> destination,
-                              Chunk<? extends Attributes.Values> source, OrderedKeys orderedKeys) {
+                              Chunk<? extends Attributes.Values> source, RowSequence rowSequence) {
         WritableObjectChunk<Boolean, ? super Attributes.Values> objectChunk = destination.asWritableObjectChunk();
         ByteChunk<? extends Attributes.Values> byteChunk = source.asByteChunk();
 

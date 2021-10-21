@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.utils.IndexShiftData$SmartCoalescingBuilder",
  "methods": {
-  "build": "Make final modifications to the IndexShiftData and return it. Invoke close() to minimize the\n lifetime of the pre-shift OrderedKeys.Iterator.\n\n:return: (io.deephaven.engine.v2.utils.IndexShiftData) The built IndexShiftData",
+  "build": "Make final modifications to the IndexShiftData and return it. Invoke close() to minimize the\n lifetime of the pre-shift RowSequence.Iterator.\n\n:return: (io.deephaven.engine.v2.utils.IndexShiftData) The built IndexShiftData",
   "nonempty": ":return: (boolean) true iff there is at least one shift appended to this builder",
   "shiftRange": "Shift a range of keys. The shift must be consistent with previously added shifts.\n\n:param beginRange: (long) - first key to shift (inclusive)\n:param endRange: (long) - last key to shift (inclusive)\n:param shiftDelta: (long) - offset to shift by; may be negative"
  },

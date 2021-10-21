@@ -7,6 +7,7 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
@@ -288,18 +289,18 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     public void apply(final Index index) {
         final Index.SequentialBuilder toRemove = Index.FACTORY.getSequentialBuilder();
         final Index.SequentialBuilder toInsert = Index.FACTORY.getSequentialBuilder();
-        try (final OrderedKeys.Iterator okit = index.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {
                 final long beginRange = getBeginRange(idx);
                 final long endRange = getEndRange(idx);
                 final long shiftDelta = getShiftDelta(idx);
 
-                if (!okit.advance(beginRange)) {
+                if (!rsIt.advance(beginRange)) {
                     break;
                 }
 
                 toRemove.appendRange(beginRange, endRange);
-                okit.getNextOrderedKeysThrough(endRange).forAllLongRanges((s, e) -> {
+                rsIt.getNextRowSequenceThrough(endRange).forAllLongRanges((s, e) -> {
                     toInsert.appendRange(s + shiftDelta, e + shiftDelta);
                 });
             }
@@ -342,18 +343,18 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     public void unapply(final Index index) {
         final Index.SequentialBuilder toRemove = Index.FACTORY.getSequentialBuilder();
         final Index.SequentialBuilder toInsert = Index.FACTORY.getSequentialBuilder();
-        try (final OrderedKeys.Iterator okit = index.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {
                 final long beginRange = getBeginRange(idx);
                 final long endRange = getEndRange(idx);
                 final long shiftDelta = getShiftDelta(idx);
 
-                if (!okit.advance(beginRange + shiftDelta)) {
+                if (!rsIt.advance(beginRange + shiftDelta)) {
                     break;
                 }
 
                 toRemove.appendRange(beginRange + shiftDelta, endRange + shiftDelta);
-                okit.getNextOrderedKeysThrough(endRange + shiftDelta).forAllLongRanges((s, e) -> {
+                rsIt.getNextRowSequenceThrough(endRange + shiftDelta).forAllLongRanges((s, e) -> {
                     toInsert.appendRange(s - shiftDelta, e - shiftDelta);
                 });
             }
@@ -1060,7 +1061,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
         /**
          * Make final modifications to the {@link IndexShiftData} and return it. Invoke {@link #close()} to minimize the
-         * lifetime of the pre-shift {@link OrderedKeys.Iterator}.
+         * lifetime of the pre-shift {@link RowSequence.Iterator}.
          *
          * @return The built IndexShiftData
          */
@@ -1115,17 +1116,17 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         final Index.SequentialBuilder preShiftBuilder = Index.FACTORY.getSequentialBuilder();
         final Index.SequentialBuilder postShiftBuilder = Index.FACTORY.getSequentialBuilder();
 
-        try (final OrderedKeys.Iterator okit = postShiftIndex.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator rsIt = postShiftIndex.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {
                 final long beginRange = getBeginRange(idx);
                 final long endRange = getEndRange(idx);
                 final long shiftDelta = getShiftDelta(idx);
 
-                if (!okit.advance(beginRange + shiftDelta)) {
+                if (!rsIt.advance(beginRange + shiftDelta)) {
                     break;
                 }
 
-                okit.getNextOrderedKeysThrough(endRange + shiftDelta).forAllLongRanges((s, e) -> {
+                rsIt.getNextRowSequenceThrough(endRange + shiftDelta).forAllLongRanges((s, e) -> {
                     preShiftBuilder.appendRange(s - shiftDelta, e - shiftDelta);
                     postShiftBuilder.appendRange(s, e);
                 });

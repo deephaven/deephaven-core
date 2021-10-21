@@ -1,7 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import org.openjdk.jmh.annotations.*;
@@ -20,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 public class IndexBuilderChunkedBench {
     private Index ix = null;
     private static final int chunkSz = 1024;
-    private WritableLongChunk<OrderedKeyIndices> indicesChunk = null;
-    private WritableLongChunk<OrderedKeyRanges> rangesChunk = null;
+    private WritableLongChunk<Attributes.OrderedRowKeys> indicesChunk = null;
+    private WritableLongChunk<Attributes.OrderedRowKeyRanges> rangesChunk = null;
 
     @Setup(Level.Trial)
     public void setup() {

@@ -179,13 +179,13 @@ public class TableMapTest extends LiveTableTestCase {
 
         final TstUtils.ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Keys"},
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Indices"},
                         new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
                         new TstUtils.IntGenerator(0, 20),
                         new TstUtils.DoubleGenerator(0, 100),
                         new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
 
-        final Table withK = table.update("K=Keys");
+        final Table withK = table.update("K=Indices");
 
         final QueryTable rightTable = getTable(size, random, initColumnInfos(new String[] {"Sym", "RightCol"},
                 new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
@@ -202,8 +202,9 @@ public class TableMapTest extends LiveTableTestCase {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return ((TransformableTableMap) table.update("K=Keys").byExternal("Sym")
-                                .populateKeys("aa", "bb", "cc", "dd").asTable(false, false, false).update("K2=Keys*2")
+                        return ((TransformableTableMap) table.update("K=Indices").byExternal("Sym")
+                                .populateKeys("aa", "bb", "cc", "dd").asTable(false, false, false)
+                                .update("K2=Indices*2")
                                 .select("K", "K2", "Half=doubleCol/2", "Sq=doubleCol*doubleCol",
                                         "Weight=intCol*doubleCol", "Sym")).merge().sort("K", "Sym");
                     }

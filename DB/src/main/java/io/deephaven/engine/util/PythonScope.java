@@ -51,8 +51,8 @@ public interface PythonScope<PyObj> {
     /**
      * The helper method to turn a raw key into a string key.
      * <p>
-     * Note: this assumes that all the keys are strings, which is not always true. Keys can also be tuples. TODO: revise
-     * interface as appropriate if this becomes an issue.
+     * Note: this assumes that all the keys are strings, which is not always true. Indices can also be tuples. TODO:
+     * revise interface as appropriate if this becomes an issue.
      *
      * @param key the raw key
      * @return the string key

@@ -31,15 +31,15 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         final Random random = new Random(0);
         final TstUtils.ColumnInfo columnInfo[];
         final QueryTable queryTable = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Keys"},
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Indices"},
                         new TstUtils.SetGenerator<>("a", "b", "c", "d"),
                         new TstUtils.IntGenerator(10, 100),
                         new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
                         new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
         final EvalNugget en[] = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.head(0)),
-                EvalNugget.from(() -> queryTable.update("x = Keys").head(0)),
-                EvalNugget.from(() -> queryTable.updateView("x = Keys").head(0)),
+                EvalNugget.from(() -> queryTable.update("x = Indices").head(0)),
+                EvalNugget.from(() -> queryTable.updateView("x = Indices").head(0)),
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.by("Sym").sort("Sym").head(0);
@@ -82,10 +82,10 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x = Keys").head(1);
+                        return queryTable.update("x = Indices").head(1);
                     }
                 },
-                EvalNugget.from(() -> queryTable.updateView("x = Keys").head(1)),
+                EvalNugget.from(() -> queryTable.updateView("x = Indices").head(1)),
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.by("Sym").sort("Sym").head(1);
@@ -128,10 +128,10 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x = Keys").head(10);
+                        return queryTable.update("x = Indices").head(10);
                     }
                 },
-                EvalNugget.from(() -> queryTable.updateView("x = Keys").head(10)),
+                EvalNugget.from(() -> queryTable.updateView("x = Indices").head(10)),
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.by("Sym").sort("Sym").head(10);
@@ -174,10 +174,10 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x = Keys").tail(0);
+                        return queryTable.update("x = Indices").tail(0);
                     }
                 },
-                EvalNugget.from(() -> queryTable.updateView("x = Keys").tail(0)),
+                EvalNugget.from(() -> queryTable.updateView("x = Indices").tail(0)),
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.by("Sym").sort("Sym").tail(0);
@@ -225,10 +225,10 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x = Keys").tail(1);
+                        return queryTable.update("x = Indices").tail(1);
                     }
                 },
-                EvalNugget.from(() -> queryTable.updateView("x = Keys").tail(1)),
+                EvalNugget.from(() -> queryTable.updateView("x = Indices").tail(1)),
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.by("Sym").sort("Sym").tail(1);
@@ -271,10 +271,10 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x = Keys").tail(10);
+                        return queryTable.update("x = Indices").tail(10);
                     }
                 },
-                EvalNugget.from(() -> queryTable.updateView("x = Keys").tail(10)),
+                EvalNugget.from(() -> queryTable.updateView("x = Indices").tail(10)),
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.by("Sym").sort("Sym").tail(10);

@@ -1,8 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
 import io.deephaven.benchmarking.BenchUtil;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -148,15 +147,16 @@ public class IndexIteration {
         ranges.add(prevValue + 1);
     }
 
-    private void fillChunkByOrderedKeysRange(OrderedKeys orderedKeys, WritableDoubleChunk doubleChunk, int sourceId) {
-        fillChunkDirectByRange(orderedKeys.asKeyRangesChunk(), doubleChunk, sourceId);
+    private void fillChunkByRowSequenceRange(RowSequence rowSequence, WritableDoubleChunk doubleChunk, int sourceId) {
+        fillChunkDirectByRange(rowSequence.asRowKeyRangesChunk(), doubleChunk, sourceId);
     }
 
-    private void fillChunkByOrderedKeyItems(OrderedKeys orderedKeys, WritableDoubleChunk doubleChunk, int sourceId) {
-        fillChunkDirectByItems(orderedKeys.asKeyIndicesChunk(), doubleChunk, sourceId);
+    private void fillChunkByOrderedKeyItems(RowSequence rowSequence, WritableDoubleChunk doubleChunk, int sourceId) {
+        fillChunkDirectByItems(rowSequence.asRowKeyChunk(), doubleChunk, sourceId);
     }
 
-    private void fillChunkDirectByRange(LongChunk<OrderedKeyRanges> ranges, WritableDoubleChunk doubleChunk,
+    private void fillChunkDirectByRange(LongChunk<Attributes.OrderedRowKeyRanges> ranges,
+            WritableDoubleChunk doubleChunk,
             int sourceId) {
         int pos = 0;
         final int size = ranges.size();
@@ -169,7 +169,7 @@ public class IndexIteration {
         doubleChunk.setSize(pos);
     }
 
-    private void fillChunkDirectByItems(LongChunk<OrderedKeyIndices> indices, WritableDoubleChunk doubleChunk,
+    private void fillChunkDirectByItems(LongChunk<Attributes.OrderedRowKeys> indices, WritableDoubleChunk doubleChunk,
             int sourceId) {
         final int size = indices.size();
         doubleChunk.setSize(0);
@@ -238,23 +238,23 @@ public class IndexIteration {
     }
 
     @Benchmark
-    public void orderedKeysByRange(Blackhole bh) {
+    public void RowSequenceByRange(Blackhole bh) {
         double sum = 0;
         final int stepCount = indexCount / chunkSize;
-        final OrderedKeys.Iterator okit = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
 
         for (int step = 0; step < stepCount; step++) {
-            final OrderedKeys ok = okit.getNextOrderedKeysWithLength(chunkSize);
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
             for (int i = 0; i < chunks.length; i++) {
-                fillChunkByOrderedKeysRange(ok, chunks[i], i);
+                fillChunkByRowSequenceRange(rs, chunks[i], i);
             }
             evaluate(result, chunks);
             bh.consume(result);
             sum = sum(sum);
         }
-        final OrderedKeys ok = okit.getNextOrderedKeysWithLength(chunkSize);
+        final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
         for (int i = 0; i < chunks.length; i++) {
-            fillChunkByOrderedKeysRange(ok, chunks[i], i);
+            fillChunkByRowSequenceRange(rs, chunks[i], i);
         }
         evaluate(result, chunks);
         sum = sum(sum);
@@ -272,22 +272,22 @@ public class IndexIteration {
     }
 
     @Benchmark
-    public void orderedKeysByItems(Blackhole bh) {
+    public void RowSequenceByItems(Blackhole bh) {
         double sum = 0;
         final int stepCount = indexCount / chunkSize;
-        final OrderedKeys.Iterator okit = index.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
         for (int step = 0; step < stepCount; step++) {
-            final OrderedKeys ok = okit.getNextOrderedKeysWithLength(chunkSize);
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
             for (int i = 0; i < chunks.length; i++) {
-                fillChunkByOrderedKeyItems(ok, chunks[i], i);
+                fillChunkByOrderedKeyItems(rs, chunks[i], i);
             }
             evaluate(result, chunks);
             sum = sum(sum);
             bh.consume(result);
         }
-        final OrderedKeys ok = okit.getNextOrderedKeysWithLength(chunkSize);
+        final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
         for (int i = 0; i < chunks.length; i++) {
-            fillChunkByOrderedKeyItems(ok, chunks[i], i);
+            fillChunkByOrderedKeyItems(rs, chunks[i], i);
         }
         evaluate(result, chunks);
         sum = sum(sum);

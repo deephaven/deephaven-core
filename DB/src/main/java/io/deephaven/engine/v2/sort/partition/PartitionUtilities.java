@@ -15,7 +15,7 @@ class PartitionUtilities {
      */
     static void sampleIndexKeys(
             final long seed, final Index index, final int sampleSize,
-            final WritableLongChunk<Attributes.KeyIndices> sampledKeys) {
+            final WritableLongChunk<Attributes.RowKeys> sampledKeys) {
         final Random random = new Random(seed);
         final TLongHashSet sample = new TLongHashSet(sampleSize);
         final long maxValue = index.size();

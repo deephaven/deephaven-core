@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 
 public class BooleanLongRadixSortKernel {
-    public static <ATTR extends Any, KEY_INDICES extends Keys> LongSortKernel<ATTR, KEY_INDICES> createContext(int size, SortingOrder order, boolean preserveValues) {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> LongSortKernel<ATTR, KEY_INDICES> createContext(int size, SortingOrder order, boolean preserveValues) {
         if (order == SortingOrder.Ascending) {
             return new BooleanLongSortKernel<>(size, preserveValues);
         } else {
@@ -14,7 +14,7 @@ public class BooleanLongRadixSortKernel {
         }
     }
 
-    private static class BooleanLongSortKernel<ATTR extends Any, KEY_INDICES extends Keys> implements LongSortKernel<ATTR, KEY_INDICES> {
+    private static class BooleanLongSortKernel<ATTR extends Any, KEY_INDICES extends Indices> implements LongSortKernel<ATTR, KEY_INDICES> {
         final WritableLongChunk<KEY_INDICES> nullKeys;
         final WritableLongChunk<KEY_INDICES> falseKeys;
         private final boolean preserveValues;
@@ -85,10 +85,10 @@ public class BooleanLongRadixSortKernel {
         }
     }
 
-    private static class BooleanLongSortDescendingKernel<ATTR extends Any, KEY_INDICES extends Keys> implements LongSortKernel<ATTR, KEY_INDICES> {
-        final WritableLongChunk<Keys> falseKeys;
+    private static class BooleanLongSortDescendingKernel<ATTR extends Any, KEY_INDICES extends Indices> implements LongSortKernel<ATTR, KEY_INDICES> {
+        final WritableLongChunk<Indices> falseKeys;
         private final boolean preserveValues;
-        final WritableLongChunk<Keys> trueKeys;
+        final WritableLongChunk<Indices> trueKeys;
         int backPosition = 0;
 
         private BooleanLongSortDescendingKernel(int size, boolean preserveValues) {

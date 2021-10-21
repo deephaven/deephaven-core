@@ -1948,7 +1948,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable, rightInfo);
                     }
                     if (modStamp) {
-                        final long lastStamp = stampTable.getIndex().lastKey();
+                        final long lastStamp = stampTable.getIndex().lastRowKey();
                         final int numAdditions = 1 + random.nextInt(stampSize);
                         final Index stampsToAdd =
                                 Index.FACTORY.getIndexByRange(lastStamp + 1, lastStamp + numAdditions);
@@ -1989,7 +1989,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
                         // verify the modified stamps
                         final int lastStamp =
-                                stampTable.getColumnSource("Stamp").getInt(stampTable.getIndex().lastKey());
+                                stampTable.getColumnSource("Stamp").getInt(stampTable.getIndex().lastRowKey());
                         @SuppressWarnings("unchecked")
                         final ColumnSource<Integer> stamps = snapshot.getColumnSource("Stamp");
                         for (final Index.Iterator it = modified.iterator(); it.hasNext();) {
@@ -2635,7 +2635,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(expected, ungrouped);
 
         // assertTableEquals only calls get(), we need to make sure the specialized get()s also work too.
-        final long firstKey = ungrouped.getIndex().firstKey();
+        final long firstKey = ungrouped.getIndex().firstRowKey();
         final long secondKey = ungrouped.getIndex().get(1);
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_BYTE, ungrouped.getColumnSource("BValue").getByte(firstKey));

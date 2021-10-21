@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseablePair;
 import io.deephaven.util.thread.NamingThreadFactory;
@@ -285,7 +285,7 @@ public class SparseSelect {
         final WritableChunkSink.FillFromContext[] ffcs = new WritableChunkSink.FillFromContext[inputSources.length];
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(gcs);
                 final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(ffcs);
-                final OrderedKeys.Iterator okit = addedAndModified.getOrderedKeysIterator();
+                final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
             for (int cc = 0; cc < inputSources.length; cc++) {
                 if (toCopy == null || toCopy[cc]) {
@@ -293,9 +293,9 @@ public class SparseSelect {
                     ffcs[cc] = outputSources[cc].makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
                 }
             }
-            while (okit.hasMore()) {
+            while (rsIt.hasMore()) {
                 sharedContext.reset();
-                final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(SPARSE_SELECT_CHUNK_SIZE);
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(SPARSE_SELECT_CHUNK_SIZE);
                 for (int cc = 0; cc < inputSources.length; cc++) {
                     if (toCopy == null || toCopy[cc]) {
                         final Chunk<? extends Values> values = inputSources[cc].getChunk(gcs[cc], chunkOk);
@@ -331,12 +331,12 @@ public class SparseSelect {
 
     private static void doCopySource(Index addedAndModified, WritableSource<?> outputSource,
             ColumnSource<?> inputSource) {
-        try (final OrderedKeys.Iterator okit = addedAndModified.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
                 final WritableChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
                 final ChunkSource.GetContext gc = inputSource.makeGetContext(SPARSE_SELECT_CHUNK_SIZE)) {
-            while (okit.hasMore()) {
-                final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(SPARSE_SELECT_CHUNK_SIZE);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(SPARSE_SELECT_CHUNK_SIZE);
                 final Chunk<? extends Values> values = inputSource.getChunk(gc, chunkOk);
                 outputSource.fillFromChunk(ffc, values, chunkOk);
             }
@@ -355,8 +355,8 @@ public class SparseSelect {
                 final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(fcs);
                 final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored3 = new SafeCloseableArray<>(ffcs);
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
-                final OrderedKeys.Iterator preIt = shifts.first.getOrderedKeysIterator();
-                final OrderedKeys.Iterator postIt = shifts.second.getOrderedKeysIterator()) {
+                final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
+                final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator()) {
 
             for (int cc = 0; cc < outputSources.length; cc++) {
                 if (toShift == null || toShift[cc]) {
@@ -367,8 +367,8 @@ public class SparseSelect {
             }
 
             while (preIt.hasMore()) {
-                final OrderedKeys preChunkOk = preIt.getNextOrderedKeysWithLength(SPARSE_SELECT_CHUNK_SIZE);
-                final OrderedKeys postChunkOk = postIt.getNextOrderedKeysWithLength(SPARSE_SELECT_CHUNK_SIZE);
+                final RowSequence preChunkOk = preIt.getNextRowSequenceWithLength(SPARSE_SELECT_CHUNK_SIZE);
+                final RowSequence postChunkOk = postIt.getNextRowSequenceWithLength(SPARSE_SELECT_CHUNK_SIZE);
                 for (int cc = 0; cc < outputSources.length; cc++) {
                     if (toShift == null || toShift[cc]) {
                         outputSources[cc].fillPrevChunk(fcs[cc], values[cc], preChunkOk);
@@ -403,16 +403,16 @@ public class SparseSelect {
     }
 
     private static void doShiftSource(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource<?> outputSource) {
-        try (final OrderedKeys.Iterator preIt = shifts.first.getOrderedKeysIterator();
-                final OrderedKeys.Iterator postIt = shifts.second.getOrderedKeysIterator();
+        try (final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
+                final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator();
                 final WritableChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
                 final ChunkSource.FillContext fc = outputSource.makeFillContext(SPARSE_SELECT_CHUNK_SIZE);
                 final WritableChunk<Values> values =
                         outputSource.getChunkType().makeWritableChunk(SPARSE_SELECT_CHUNK_SIZE)) {
             while (preIt.hasMore()) {
-                final OrderedKeys preChunkOk = preIt.getNextOrderedKeysWithLength(SPARSE_SELECT_CHUNK_SIZE);
-                final OrderedKeys postChunkOk = postIt.getNextOrderedKeysWithLength(SPARSE_SELECT_CHUNK_SIZE);
+                final RowSequence preChunkOk = preIt.getNextRowSequenceWithLength(SPARSE_SELECT_CHUNK_SIZE);
+                final RowSequence postChunkOk = postIt.getNextRowSequenceWithLength(SPARSE_SELECT_CHUNK_SIZE);
                 outputSource.fillPrevChunk(fc, values, preChunkOk);
                 outputSource.fillFromChunk(ffc, values, postChunkOk);
             }

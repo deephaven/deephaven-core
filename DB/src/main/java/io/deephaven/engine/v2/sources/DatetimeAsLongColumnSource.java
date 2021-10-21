@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -69,16 +69,16 @@ public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> imple
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final UnboxingFillContext unboxingFillContext = (UnboxingFillContext) context;
-        final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk = alternateColumnSource.getChunk(unboxingFillContext.alternateGetContext, orderedKeys).asObjectChunk();
+        final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk = alternateColumnSource.getChunk(unboxingFillContext.alternateGetContext, rowSequence).asObjectChunk();
         convertToLong(destination, dbdatetimeChunk);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final UnboxingFillContext unboxingFillContext = (UnboxingFillContext) context;
-        final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk = alternateColumnSource.getPrevChunk(unboxingFillContext.alternateGetContext, orderedKeys).asObjectChunk();
+        final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk = alternateColumnSource.getPrevChunk(unboxingFillContext.alternateGetContext, rowSequence).asObjectChunk();
         convertToLong(destination, dbdatetimeChunk);
     }
 

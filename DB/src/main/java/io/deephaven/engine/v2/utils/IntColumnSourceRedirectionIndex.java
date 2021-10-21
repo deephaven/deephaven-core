@@ -1,9 +1,11 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
@@ -75,8 +77,8 @@ public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {
     @Override
     public final void fillChunk(
             @NotNull final RedirectionIndex.FillContext fillContext,
-            @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         final FillContext effectiveContext = (FillContext) fillContext;
         columnSource.fillChunk(effectiveContext.colSrcCtx, effectiveContext.intChunk, keysToMap);
         final int sz = keysToMap.intSize();
@@ -90,8 +92,8 @@ public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {
     @Override
     public final void fillPrevChunk(
             @NotNull final RedirectionIndex.FillContext fillContext,
-            @NotNull final WritableLongChunk<KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         final FillContext effectiveContext = (FillContext) fillContext;
         columnSource.fillPrevChunk(effectiveContext.colSrcCtx, effectiveContext.intChunk, keysToMap);
         final int sz = keysToMap.intSize();

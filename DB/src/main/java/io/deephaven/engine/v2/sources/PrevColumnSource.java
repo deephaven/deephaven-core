@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -140,13 +140,13 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public final Chunk<? extends Values> getChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
-        return originalSource.getPrevChunk(context, orderedKeys);
+            @NotNull final RowSequence rowSequence) {
+        return originalSource.getPrevChunk(context, rowSequence);
     }
 
     @Override
     public final Chunk<? extends Values> getPrevChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         throw new UnsupportedOperationException();
     }
 
@@ -157,13 +157,13 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public final void fillChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        originalSource.fillPrevChunk(context, destination, orderedKeys);
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        originalSource.fillPrevChunk(context, destination, rowSequence);
     }
 
     @Override
     public final void fillPrevChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         throw new UnsupportedOperationException();
     }
 }

@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 
@@ -81,8 +82,8 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     @Override
     public void fillChunk(
             @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         mappedKeysOut.setSize(0);
         keysToMap.forAllLongRanges((final long start, final long end) -> {
             for (long v = start; v <= end; ++v) {
@@ -107,8 +108,8 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     @Override
     public void fillPrevChunk(
             @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         if (checkpoint == null) {
             fillChunk(fillContext, mappedKeysOut, keysToMap);
             return;

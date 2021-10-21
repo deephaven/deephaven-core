@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -72,20 +72,20 @@ class SingleColumnTupleSource<TUPLE_TYPE>
     }
 
     @Override
-    public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return columnSource.getChunk(context, orderedKeys);
+    public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return columnSource.getChunk(context, rowSequence);
     }
 
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
-        columnSource.fillChunk(context, destination, orderedKeys);
+            @NotNull RowSequence rowSequence) {
+        columnSource.fillChunk(context, destination, rowSequence);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
-        columnSource.fillPrevChunk(context, destination, orderedKeys);
+            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
+        columnSource.fillPrevChunk(context, destination, rowSequence);
     }
 
     @Override

@@ -2,12 +2,12 @@ package io.deephaven.engine.v2.sources.chunk.util.chunkfillers;
 
 import io.deephaven.engine.v2.sources.ElementSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
 public interface ChunkFiller {
     static ChunkFiller fromChunkType(final ChunkType chunkType) {
@@ -35,17 +35,18 @@ public interface ChunkFiller {
         }
     }
 
-    void fillByRanges(ElementSource src, OrderedKeys keys, WritableChunk<? super Values> dest);
+    void fillByRanges(ElementSource src, RowSequence keys, WritableChunk<? super Values> dest);
 
-    void fillByIndices(ElementSource src, OrderedKeys keys, WritableChunk<? super Values> dest);
+    void fillByIndices(ElementSource src, RowSequence keys, WritableChunk<? super Values> dest);
 
-    void fillByIndices(ElementSource src, LongChunk<? extends KeyIndices> chunk, WritableChunk<? super Values> dest);
+    void fillByIndices(ElementSource src, LongChunk<? extends Attributes.RowKeys> chunk,
+            WritableChunk<? super Values> dest);
 
-    void fillPrevByRanges(ElementSource src, OrderedKeys keys, WritableChunk<? super Values> dest);
+    void fillPrevByRanges(ElementSource src, RowSequence keys, WritableChunk<? super Values> dest);
 
-    void fillPrevByIndices(ElementSource src, OrderedKeys keys, WritableChunk<? super Values> dest);
+    void fillPrevByIndices(ElementSource src, RowSequence keys, WritableChunk<? super Values> dest);
 
-    void fillPrevByIndices(ElementSource src, LongChunk<? extends KeyIndices> chunk,
+    void fillPrevByIndices(ElementSource src, LongChunk<? extends Attributes.RowKeys> chunk,
             WritableChunk<? super Values> dest);
 
     /**
@@ -53,5 +54,5 @@ public interface ChunkFiller {
      * run we may want to generalize this functionality, or, at the very least, move it to some "ColumnSourceFiller"
      * class.
      */
-    void fillFromSingleValue(ElementSource src, long srcKey, WritableSource dest, OrderedKeys destKeys);
+    void fillFromSingleValue(ElementSource src, long srcKey, WritableSource dest, RowSequence destKeys);
 }

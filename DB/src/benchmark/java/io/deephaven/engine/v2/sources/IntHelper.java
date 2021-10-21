@@ -3,10 +3,10 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -45,7 +45,7 @@ class IntHelper implements FillBenchmarkHelper {
     }
 
     @Override
-    public void getFromArray(Blackhole bh, int fetchSize, LongChunk<OrderedKeyIndices> keys) {
+    public void getFromArray(Blackhole bh, int fetchSize, LongChunk<OrderedRowKeys> keys) {
         final WritableIntChunk result = WritableIntChunk.makeWritableChunk(fetchSize);
         for (int ii = 0; ii < keys.size(); ++ii) {
             result.set(ii, intArray[(int)keys.get(ii)]);
@@ -54,19 +54,19 @@ class IntHelper implements FillBenchmarkHelper {
     }
 
     @Override
-    public void fillFromArrayBacked(Blackhole bh, int fetchSize, OrderedKeys orderedKeys) {
+    public void fillFromArrayBacked(Blackhole bh, int fetchSize, RowSequence rowSequence) {
         final WritableIntChunk result = WritableIntChunk.makeWritableChunk(fetchSize);
 
-        intArraySource.fillChunk(arrayContext, result, orderedKeys);
+        intArraySource.fillChunk(arrayContext, result, rowSequence);
 
         bh.consume(result);
     }
 
     @Override
-    public void fillFromSparse(Blackhole bh, int fetchSize, OrderedKeys orderedKeys) {
+    public void fillFromSparse(Blackhole bh, int fetchSize, RowSequence rowSequence) {
         final WritableIntChunk result = WritableIntChunk.makeWritableChunk(fetchSize);
 
-        intSparseArraySource.fillChunk(sparseContext, result, orderedKeys);
+        intSparseArraySource.fillChunk(sparseContext, result, rowSequence);
 
         bh.consume(result);
     }

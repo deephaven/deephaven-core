@@ -95,7 +95,7 @@ public class SnapshotIncrementalListener extends MergedListener {
             Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
         final Index qtIndex = triggerTable.getIndex();
         if (!qtIndex.empty()) {
-            SnapshotUtils.copyStampColumns(leftColumns, qtIndex.lastKey(), resultColumns, rowsToCopy);
+            SnapshotUtils.copyStampColumns(leftColumns, qtIndex.lastRowKey(), resultColumns, rowsToCopy);
         }
         SnapshotUtils.copyDataColumns(rightTable.getColumnSourceMap(), rowsToCopy, resultColumns, rowsToCopy, false);
     }

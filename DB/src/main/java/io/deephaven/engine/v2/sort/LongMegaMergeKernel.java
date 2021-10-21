@@ -14,7 +14,7 @@ import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
  * The intention is that you will use a Timsort kernel to sort maximally sized chunks, then merge the result into a
  * ColumnSource using the MegaMergeKernel only if necessary.
  */
-public interface LongMegaMergeKernel<ATTR extends Any, KEY_INDICES extends Keys> extends Context {
+public interface LongMegaMergeKernel<ATTR extends Any, KEY_INDICES extends Indices> extends Context {
     /**
      * Creates a SortKernel for the given chunkType.
      *
@@ -22,7 +22,7 @@ public interface LongMegaMergeKernel<ATTR extends Any, KEY_INDICES extends Keys>
      * @param order whether we should sort in an ascending or descending direction
      * @return a SortKernel suitable for the given type, order, and size
      */
-    static <ATTR extends Any, KEY_INDICES extends Keys> LongMegaMergeKernel<ATTR, KEY_INDICES> makeContext(ChunkType chunkType, SortingOrder order) {
+    static <ATTR extends Any, KEY_INDICES extends Indices> LongMegaMergeKernel<ATTR, KEY_INDICES> makeContext(ChunkType chunkType, SortingOrder order) {
         switch (chunkType) {
             case Char:
                 if (order == SortingOrder.Ascending) {

@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.v2.utils.ReadOnlyIndex",
  "methods": {
   "clone": ":return: io.deephaven.engine.v2.utils.Index",
-  "close": "Free any resources associated with this object.\n \n Using any OrderedKeys methods after close() is an error and may produce exceptions or undefined\n results.",
+  "close": "Free any resources associated with this object.\n \n Using any RowSequence methods after close() is an error and may produce exceptions or undefined\n results.",
   "containsRange": "Queries whether this index contains every element in the range provided.\n\n:param start: (long) - Start of the range, inclusive.\n:param end: (long) - End of the range, inclusive.\n:return: (boolean) true if this index contains every element x in start <= x <= end.",
   "copyImmutableGroupings": ":param source: io.deephaven.engine.v2.tuples.TupleSource\n:param dest: io.deephaven.engine.v2.tuples.TupleSource",
   "empty": "Queries whether this index is empty (i.e. has no keys).\n\n:return: (boolean) true if the size() of this Index is zero, false if the size is greater than zero",

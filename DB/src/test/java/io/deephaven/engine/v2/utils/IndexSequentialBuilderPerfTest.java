@@ -37,7 +37,7 @@ public class IndexSequentialBuilderPerfTest {
         }
         for (int j = 0; j < sz; ++j) {
             sbs[j].appendKey(j);
-            bh ^= sbs[j].getIndex().firstKey();
+            bh ^= sbs[j].getIndex().firstRowKey();
         }
         return bh;
     }

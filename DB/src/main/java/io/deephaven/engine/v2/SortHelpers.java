@@ -4,6 +4,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sort.LongMegaMergeKernel;
@@ -374,7 +376,7 @@ public class SortHelpers {
             // Mapped values generic is the chunk of unique integer keys for the sort operation, using the narrowest
             // possible primitive type (byte, short, or int).
             final WritableChunk<Any> mappedValuesGeneric;
-            final LongSortKernel<Any, KeyIndices> sortContext;
+            final LongSortKernel<Any, RowKeys> sortContext;
 
             if (mapping.getMaxMapping() <= Byte.MAX_VALUE) {
                 final WritableByteChunk<Any> mappedValues;
@@ -416,11 +418,11 @@ public class SortHelpers {
             // Fill a chunk that is Writable, and does not have an ordered tag with the index keys that we are sorting,
             // the
             // index would does something very similar inside of
-            // io.deephaven.engine.v2.utils.OrderedKeys.asKeyIndicesChunk;
-            // but provides a LongChunk<OrderedKeyIndices> as its return.
+            // io.deephaven.engine.v2.utils.RowSequence.asRowKeyChunk;
+            // but provides a LongChunk<OrderedRowKeys> as its return.
             final long[] indexKeysArray = new long[sortSize];
-            final WritableLongChunk<KeyIndices> indexKeys = WritableLongChunk.writableChunkWrap(indexKeysArray);
-            index.fillKeyIndicesChunk(indexKeys);
+            final WritableLongChunk<RowKeys> indexKeys = WritableLongChunk.writableChunkWrap(indexKeysArray);
+            index.fillRowKeyChunk(indexKeys);
             sortContext.sort(indexKeys, mappedValuesGeneric);
             sortContext.close();
             mappedValuesGeneric.close();
@@ -450,20 +452,20 @@ public class SortHelpers {
         valuesToMerge.ensureCapacity(sortSize, false);
 
         long accumulatedSize = 0;
-        final LongMegaMergeKernel<Values, KeyIndices> longMegaMergeKernel =
+        final LongMegaMergeKernel<Values, RowKeys> longMegaMergeKernel =
                 LongMegaMergeKernel.makeContext(columnSource.getChunkType(), order);
-        try (final LongSortKernel<Values, KeyIndices> sortContext =
+        try (final LongSortKernel<Values, RowKeys> sortContext =
                 LongSortKernel.makeContext(columnSource.getChunkType(), order, sortChunkSize, true);
-                final OrderedKeys.Iterator okit = index.getOrderedKeysIterator()) {
-            while (okit.hasMore()) {
-                final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(sortChunkSize);
+                final RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(sortChunkSize);
                 final int chunkSize = chunkOk.intSize();
 
                 try (final WritableChunk<Values> partialValues = makeAndFillValues(usePrev, chunkOk, columnSource)) {
                     final long[] partialKeysArray = new long[chunkSize];
-                    final WritableLongChunk<KeyIndices> partialKeys =
+                    final WritableLongChunk<RowKeys> partialKeys =
                             WritableLongChunk.writableChunkWrap(partialKeysArray);
-                    chunkOk.fillKeyIndicesChunk(partialKeys);
+                    chunkOk.fillRowKeyChunk(partialKeys);
 
                     sortContext.sort(partialKeys, partialValues);
 
@@ -479,13 +481,13 @@ public class SortHelpers {
 
     @NotNull
     private static long[] doChunkSortingOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            OrderedKeys index, boolean usePrev, int chunkSize) {
+            RowSequence index, boolean usePrev, int chunkSize) {
         try (final WritableChunk<Values> values = makeAndFillValues(usePrev, index, columnSource)) {
             final long[] indexKeysArray = new long[chunkSize];
-            final WritableLongChunk<KeyIndices> indexKeys = WritableLongChunk.writableChunkWrap(indexKeysArray);
-            index.fillKeyIndicesChunk(indexKeys);
+            final WritableLongChunk<RowKeys> indexKeys = WritableLongChunk.writableChunkWrap(indexKeysArray);
+            index.fillRowKeyChunk(indexKeys);
 
-            try (final LongSortKernel<Values, KeyIndices> sortContext =
+            try (final LongSortKernel<Values, RowKeys> sortContext =
                     LongSortKernel.makeContext(columnSource.getChunkType(), order, chunkSize, false)) {
                 sortContext.sort(indexKeys, values);
             }
@@ -541,7 +543,7 @@ public class SortHelpers {
         final int sortSize = index.intSize();
 
         final long[] indexKeysArray = new long[sortSize];
-        final WritableLongChunk<KeyIndices> indexKeys = WritableLongChunk.writableChunkWrap(indexKeysArray);
+        final WritableLongChunk<RowKeys> indexKeys = WritableLongChunk.writableChunkWrap(indexKeysArray);
 
         WritableIntChunk<ChunkPositions> offsetsOut = WritableIntChunk.makeWritableChunk((sortSize + 1) / 2);
         WritableIntChunk<ChunkLengths> lengthsOut = WritableIntChunk.makeWritableChunk((sortSize + 1) / 2);
@@ -572,12 +574,12 @@ public class SortHelpers {
                 });
             }
         } else {
-            index.fillKeyIndicesChunk(indexKeys);
+            index.fillRowKeyChunk(indexKeys);
 
             final ChunkType chunkType = columnSource.getChunkType();
 
             final WritableChunk<Values> values = makeAndFillValues(usePrev, index, columnSource);
-            try (final LongSortKernel<Values, KeyIndices> sortContext =
+            try (final LongSortKernel<Values, RowKeys> sortContext =
                     LongSortKernel.makeContext(chunkType, order[0], sortSize, true)) {
                 sortContext.sort(indexKeys, values);
             }
@@ -595,9 +597,9 @@ public class SortHelpers {
 
         final int totalRunLength = sumChunk(lengthsOut);
 
-        final WritableLongChunk<KeyIndices> indicesToFetch = WritableLongChunk.makeWritableChunk(totalRunLength);
+        final WritableLongChunk<RowKeys> indicesToFetch = WritableLongChunk.makeWritableChunk(totalRunLength);
         final WritableIntChunk<ChunkPositions> originalPositions = WritableIntChunk.makeWritableChunk(totalRunLength);
-        final LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, ChunkPositions> sortIndexContext =
+        final LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortIndexContext =
                 LongIntTimsortKernel.createContext(totalRunLength);
 
         ChunkType chunkType = columnSources[1].getChunkType();
@@ -605,7 +607,7 @@ public class SortHelpers {
                 computeIndicesToFetch(indexKeys, offsetsOut, lengthsOut, indicesToFetch, originalPositions);
         WritableChunk<Values> values = fetchSecondaryValues(usePrev, columnSources[1], indicesToFetch,
                 originalPositions, sortIndexContext, maximumSecondarySize);
-        try (final LongSortKernel<Values, KeyIndices> sortContext =
+        try (final LongSortKernel<Values, RowKeys> sortContext =
                 LongSortKernel.makeContext(chunkType, order[1], indicesToFetch.size(), columnSources.length != 2)) {
             // and we can sort the stuff within the run now
             sortContext.sort(indexKeys, values, offsetsOut, lengthsOut);
@@ -636,7 +638,7 @@ public class SortHelpers {
                 values = fetchSecondaryValues(usePrev, columnSources[columnIndex], indicesToFetch, originalPositions,
                         sortIndexContext, maximumSecondarySize);
 
-                try (final LongSortKernel<Values, KeyIndices> sortContext = LongSortKernel.makeContext(chunkType,
+                try (final LongSortKernel<Values, RowKeys> sortContext = LongSortKernel.makeContext(chunkType,
                         order[columnIndex], indicesToFetch.size(), columnIndex != columnSources.length - 1)) {
                     // and we can sort the stuff within the run now
                     sortContext.sort(indexKeys, values, offsetsOut, lengthsOut);
@@ -666,13 +668,13 @@ public class SortHelpers {
     }
 
     private static WritableChunk<Values> fetchSecondaryValues(boolean usePrev, ColumnSource columnSource,
-            WritableLongChunk<KeyIndices> indicesToFetch, WritableIntChunk<ChunkPositions> originalPositions,
-            LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, ChunkPositions> sortIndexContext,
+            WritableLongChunk<RowKeys> indicesToFetch, WritableIntChunk<ChunkPositions> originalPositions,
+            LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortIndexContext,
             int maximumSecondarySize) {
         sortIndexContext.sort(originalPositions, indicesToFetch);
 
         try (final WritableChunk<Values> secondaryValues = makeAndFillValues(usePrev,
-                OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(WritableLongChunk.downcast(indicesToFetch)),
+                RowSequenceUtil.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(indicesToFetch)),
                 columnSource)) {
 
             final ChunkType chunkType = columnSource.getChunkType();
@@ -686,9 +688,9 @@ public class SortHelpers {
         }
     }
 
-    private static int computeIndicesToFetch(WritableLongChunk<KeyIndices> indexKeys,
+    private static int computeIndicesToFetch(WritableLongChunk<RowKeys> indexKeys,
             WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut,
-            WritableLongChunk<KeyIndices> indicesToFetch, WritableIntChunk<ChunkPositions> originalPositions) {
+            WritableLongChunk<RowKeys> indicesToFetch, WritableIntChunk<ChunkPositions> originalPositions) {
         indicesToFetch.setSize(0);
         originalPositions.setSize(0);
         int maximumSecondarySize = 0;
@@ -715,7 +717,7 @@ public class SortHelpers {
     }
 
     @NotNull
-    private static WritableChunk<Values> makeAndFillValues(boolean usePrev, OrderedKeys ok,
+    private static WritableChunk<Values> makeAndFillValues(boolean usePrev, RowSequence ok,
             ColumnSource<?> columnSource) {
         final int sortSize = LongSizedDataStructure.intSize("SortHelper.makeAndFillValues", ok.size());
 

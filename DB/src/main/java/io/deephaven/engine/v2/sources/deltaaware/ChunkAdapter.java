@@ -35,7 +35,7 @@ public class ChunkAdapter<T> {
      */
     private WritableChunkSink.FillFromContext deltaFillFromContext;
     /**
-     * A custom OrderedKeys implementation optimized to store a single key, and to be resettable.
+     * A custom RowSequence implementation optimized to store a single key, and to be resettable.
      */
     private final SoleKey soleKey;
     /**

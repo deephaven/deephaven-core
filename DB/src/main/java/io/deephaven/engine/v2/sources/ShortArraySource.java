@@ -16,7 +16,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableShortChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
@@ -241,7 +241,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         if (indices.size() == 0) {
             destGeneric.setSize(0);
             return;
@@ -260,7 +260,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         final long sz = indices.size();
         if (sz == 0) {
             destGeneric.setSize(0);
@@ -293,7 +293,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableShortChunk<? super Values> dest = destGeneric.asWritableShortChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
@@ -314,7 +314,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableShortChunk<? super Values> dest = destGeneric.asWritableShortChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
@@ -335,12 +335,12 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        if (orderedKeys.size() == 0) {
+    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        if (rowSequence.size() == 0) {
             return;
         }
         final ShortChunk<? extends Values> chunk = src.asShortChunk();
-        final LongChunk<OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -410,12 +410,12 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        if (orderedKeys.size() == 0) {
+    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        if (rowSequence.size() == 0) {
             return;
         }
         final ShortChunk<? extends Values> chunk = src.asShortChunk();
-        final LongChunk<OrderedKeyIndices> keys = orderedKeys.asKeyIndicesChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -454,7 +454,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }

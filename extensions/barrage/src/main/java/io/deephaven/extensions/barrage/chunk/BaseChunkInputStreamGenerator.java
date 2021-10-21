@@ -5,13 +5,14 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -58,14 +59,14 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
 
     abstract class BaseChunkInputStream extends DrainableColumn {
         protected final BarrageSubscriptionOptions options;
-        protected final OrderedKeys subset;
+        protected final RowSequence subset;
         protected boolean read = false;
 
         BaseChunkInputStream(final T chunk, final BarrageSubscriptionOptions options, final Index subset) {
             this.options = options;
-            this.subset = chunk.size() == 0 ? OrderedKeys.EMPTY : subset != null ? subset.clone() : OrderedKeys.forRange(0, chunk.size() - 1);
+            this.subset = chunk.size() == 0 ? RowSequence.EMPTY : subset != null ? subset.clone() : RowSequenceUtil.forRange(0, chunk.size() - 1);
             REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
-            Assert.leq(this.subset.lastKey(), "this.subset.lastKey()", Integer.MAX_VALUE, "Integer.MAX_VALUE");
+            Assert.leq(this.subset.lastRowKey(), "this.subset.lastRowKey()", Integer.MAX_VALUE, "Integer.MAX_VALUE");
         }
 
         @Override

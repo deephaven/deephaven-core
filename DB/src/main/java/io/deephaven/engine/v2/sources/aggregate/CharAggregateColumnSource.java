@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -39,10 +39,10 @@ public final class CharAggregateColumnSource extends BaseAggregateColumnSource<D
     }
 
     @Override
-    public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        final ObjectChunk<Index, ? extends Values> indexChunk = indexSource.getChunk(((AggregateFillContext) context).indexGetContext, orderedKeys).asObjectChunk();
+    public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        final ObjectChunk<Index, ? extends Values> indexChunk = indexSource.getChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbCharArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
-        final int size = orderedKeys.intSize();
+        final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             typedDestination.set(di, new DbCharArrayColumnWrapper(aggregatedSource, indexChunk.get(di)));
         }
@@ -50,10 +50,10 @@ public final class CharAggregateColumnSource extends BaseAggregateColumnSource<D
     }
 
     @Override
-    public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        final ObjectChunk<Index, ? extends Values> indexChunk = indexSource.getPrevChunk(((AggregateFillContext) context).indexGetContext, orderedKeys).asObjectChunk();
+    public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        final ObjectChunk<Index, ? extends Values> indexChunk = indexSource.getPrevChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbCharArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
-        final int size = orderedKeys.intSize();
+        final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             typedDestination.set(di, new DbPrevCharArrayColumnWrapper(aggregatedSource, indexChunk.get(di)));
         }

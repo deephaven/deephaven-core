@@ -299,7 +299,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     private ColumnInfo[] getIncrementalColumnInfo() {
         return initColumnInfos(
                 new String[] {"Sym", "intCol", "doubleCol", "floatCol", "longCol", "shortCol", "byteCol", "charCol",
-                        "boolCol", "bigI", "bigD", "Keys"},
+                        "boolCol", "bigI", "bigD", "Indices"},
                 new SetGenerator<>("a", "b", "c", "d"),
                 new IntGenerator(10, 100),
                 new SetGenerator<>(10.1, 20.1, 30.1),
@@ -322,8 +322,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         final EvalNugget en[] = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.sort("Sym")),
-                EvalNugget.from(() -> queryTable.update("x = Keys").sortDescending("intCol")),
-                EvalNugget.from(() -> queryTable.updateView("x = Keys").sort("Sym", "intCol"))
+                EvalNugget.from(() -> queryTable.update("x = Indices").sortDescending("intCol")),
+                EvalNugget.from(() -> queryTable.updateView("x = Indices").sort("Sym", "intCol"))
                         .hasUnstableColumns("x"),
                 EvalNugget.from(() -> queryTable.by("Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.by("Sym", "intCol").sort("Sym", "intCol")),

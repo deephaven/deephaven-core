@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -147,9 +147,9 @@ public class TickSuppressor {
                                         new SafeCloseableArray<>(changedCellsArray);
                                 final SharedContext currentSharedContext = SharedContext.makeSharedContext();
                                 final SharedContext prevSharedContext = SharedContext.makeSharedContext();
-                                final OrderedKeys.Iterator preOkIt =
-                                        upstream.getModifiedPreShift().getOrderedKeysIterator();
-                                final OrderedKeys.Iterator postOkIt = upstream.modified.getOrderedKeysIterator()) {
+                                final RowSequence.Iterator preRsIt =
+                                        upstream.getModifiedPreShift().getRowSequenceIterator();
+                                final RowSequence.Iterator postRsIt = upstream.modified.getRowSequenceIterator()) {
                             int changedColumnCount = 0;
                             for (int cc = 0; cc < columnCount; cc++) {
                                 if (upstream.modifiedColumnSet.containsAny(inputModifiedColumnSets[cc])) {
@@ -169,10 +169,10 @@ public class TickSuppressor {
                                 }
                             }
 
-                            while (postOkIt.hasMore()) {
-                                try (final OrderedKeys postChunkOk = postOkIt.getNextOrderedKeysWithLength(chunkSize);
-                                        final OrderedKeys preChunkOk =
-                                                preOkIt.getNextOrderedKeysWithLength(chunkSize)) {
+                            while (postRsIt.hasMore()) {
+                                try (final RowSequence postChunkOk = postRsIt.getNextRowSequenceWithLength(chunkSize);
+                                        final RowSequence preChunkOk =
+                                                preRsIt.getNextRowSequenceWithLength(chunkSize)) {
                                     currentSharedContext.reset();
                                     prevSharedContext.reset();
 

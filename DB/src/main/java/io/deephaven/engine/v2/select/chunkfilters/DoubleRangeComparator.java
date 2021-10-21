@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.select.chunkfilters;
 import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 
 public class DoubleRangeComparator {
@@ -21,7 +21,7 @@ public class DoubleRangeComparator {
             this.upper = upper;
         }
 
-        abstract public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results);
+        abstract public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results);
     }
 
     static class DoubleDoubleInclusiveInclusiveFilter extends DoubleDoubleFilter {
@@ -29,7 +29,7 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -45,7 +45,7 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -61,7 +61,7 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -77,7 +77,7 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);

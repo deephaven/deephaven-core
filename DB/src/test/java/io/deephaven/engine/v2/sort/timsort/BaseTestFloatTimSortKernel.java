@@ -3,6 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.timsort;
 
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.tuples.generated.FloatLongLongTuple;
 import io.deephaven.engine.util.tuples.generated.FloatLongTuple;
@@ -13,7 +14,6 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
@@ -133,7 +133,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
         final WritableLongChunk<Any> secondaryChunkPermuted;
 
         final LongIntTimsortKernel.LongIntSortKernelContext sortIndexContext;
-        final WritableLongChunk<KeyIndices> indicesToFetch;
+        final WritableLongChunk<RowKeys> indicesToFetch;
         final WritableIntChunk<ChunkPositions> originalPositions;
 
         final ColumnSource<Long> secondaryColumnSource;
@@ -212,7 +212,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
                 sortIndexContext.sort(originalPositions, indicesToFetch);
 
                 // now we have the indices that we need to fetch from the secondary column source, in sorted order
-                secondaryColumnSource.fillChunk(secondaryColumnSourceContext, WritableLongChunk.downcast(secondaryChunk), OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(WritableLongChunk.downcast(indicesToFetch)));
+                secondaryColumnSource.fillChunk(secondaryColumnSourceContext, WritableLongChunk.downcast(secondaryChunk), RowSequenceUtil.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(indicesToFetch)));
 
                 // permute the results back to the order that we would like them in the subsequent sort
                 secondaryChunkPermuted.setSize(secondaryChunk.size());
@@ -231,14 +231,14 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
         }
     }
 
-    static private void prepareFloatChunks(List<FloatLongTuple> javaTuples, WritableFloatChunk valueChunk, WritableLongChunk<Attributes.KeyIndices> indexKeys) {
+    static private void prepareFloatChunks(List<FloatLongTuple> javaTuples, WritableFloatChunk valueChunk, WritableLongChunk<RowKeys> indexKeys) {
         for (int ii = 0; ii < javaTuples.size(); ++ii) {
             valueChunk.set(ii, javaTuples.get(ii).getFirstElement());
             indexKeys.set(ii, javaTuples.get(ii).getSecondElement());
         }
     }
 
-    static private void prepareMultiFloatChunks(List<FloatLongLongTuple> javaTuples, WritableFloatChunk valueChunk, WritableLongChunk secondaryChunk, WritableLongChunk<Attributes.KeyIndices> indexKeys) {
+    static private void prepareMultiFloatChunks(List<FloatLongLongTuple> javaTuples, WritableFloatChunk valueChunk, WritableLongChunk secondaryChunk, WritableLongChunk<RowKeys> indexKeys) {
         for (int ii = 0; ii < javaTuples.size(); ++ii) {
             valueChunk.set(ii, javaTuples.get(ii).getFirstElement());
             secondaryChunk.set(ii, javaTuples.get(ii).getSecondElement());
@@ -409,7 +409,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 //        }
     }
 
-    static private void verify(int size, List<FloatLongLongTuple> javaTuples, FloatChunk primaryChunk, LongChunk secondaryChunk, LongChunk<Attributes.KeyIndices> indexKeys) {
+    static private void verify(int size, List<FloatLongLongTuple> javaTuples, FloatChunk primaryChunk, LongChunk secondaryChunk, LongChunk<RowKeys> indexKeys) {
 //        System.out.println("Verify: " + javaTuples);
 //        dumpChunks(primaryChunk, indexKeys);
 

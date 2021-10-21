@@ -23,7 +23,7 @@ import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
@@ -230,7 +230,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         Assert.assertion(!(throwException && !coalesceAndListen), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
         final Index toAdd =
-                Index.FACTORY.getIndexByRange(expectedIndex.lastKey() + 1, expectedIndex.lastKey() + INDEX_INCREMENT);
+                Index.FACTORY.getIndexByRange(expectedIndex.lastRowKey() + 1,
+                        expectedIndex.lastRowKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
             {
@@ -303,7 +304,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     private void doRefreshChangedCheck() {
         final Index toAdd =
-                Index.FACTORY.getIndexByRange(expectedIndex.lastKey() + 1, expectedIndex.lastKey() + INDEX_INCREMENT);
+                Index.FACTORY.getIndexByRange(expectedIndex.lastRowKey() + 1,
+                        expectedIndex.lastRowKey() + INDEX_INCREMENT);
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
@@ -659,13 +661,13 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                         return new DummyContext(int.class, (int) invocation.getParameter(0));
                     }
                 });
-                allowing(columnSources[3]).getChunk(with(any(DummyContext.class)), with(any(OrderedKeys.class)));
+                allowing(columnSources[3]).getChunk(with(any(DummyContext.class)), with(any(RowSequence.class)));
                 will(new CustomAction("Fill dummy chunk") {
                     @Override
                     public Object invoke(@NotNull final Invocation invocation) {
                         final WritableIntChunk<Values> destination =
                                 ((DummyContext) invocation.getParameter(0)).sourceChunk.asWritableIntChunk();
-                        final int length = ((OrderedKeys) invocation.getParameter(1)).intSize();
+                        final int length = ((RowSequence) invocation.getParameter(1)).intSize();
                         destination.fillWithValue(0, length, 1);
                         destination.setSize(length);
                         return destination;
@@ -696,13 +698,13 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                         return new DummyContext(int.class, (int) invocation.getParameter(0));
                     }
                 });
-                allowing(columnSources[3]).getChunk(with(any(DummyContext.class)), with(any(OrderedKeys.class)));
+                allowing(columnSources[3]).getChunk(with(any(DummyContext.class)), with(any(RowSequence.class)));
                 will(new CustomAction("Fill dummy chunk") {
                     @Override
                     public Object invoke(@NotNull final Invocation invocation) {
                         final WritableIntChunk<Values> destination =
                                 ((DummyContext) invocation.getParameter(0)).sourceChunk.asWritableIntChunk();
-                        final int length = ((OrderedKeys) invocation.getParameter(1)).intSize();
+                        final int length = ((RowSequence) invocation.getParameter(1)).intSize();
                         destination.fillWithValue(0, length, 1);
                         destination.setSize(length);
                         return destination;

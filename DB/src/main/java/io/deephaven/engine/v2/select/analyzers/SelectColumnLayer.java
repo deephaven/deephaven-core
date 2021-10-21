@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 
 import java.util.function.LongToIntFunction;
@@ -68,8 +68,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final ReadOnlyIndex preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
         final ReadOnlyIndex postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
 
-        final long lastKey = Math.max(postMoveKeys.empty() ? -1 : postMoveKeys.lastKey(),
-                upstream.added.empty() ? -1 : upstream.added.lastKey());
+        final long lastKey = Math.max(postMoveKeys.empty() ? -1 : postMoveKeys.lastRowKey(),
+                upstream.added.empty() ? -1 : upstream.added.lastRowKey());
         if (lastKey != -1) {
             writableSource.ensureCapacity(lastKey + 1);
         }
@@ -98,12 +98,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 try (final ChunkSource.FillContext srcContext = writableSource.makeFillContext(shiftContextSize);
                         final WritableChunk<Attributes.Values> chunk =
                                 writableSource.getChunkType().makeWritableChunk(shiftContextSize);
-                        final OrderedKeys.Iterator srcIter = preMoveKeys.getOrderedKeysIterator();
-                        final OrderedKeys.Iterator destIter = postMoveKeys.getOrderedKeysIterator()) {
+                        final RowSequence.Iterator srcIter = preMoveKeys.getRowSequenceIterator();
+                        final RowSequence.Iterator destIter = postMoveKeys.getRowSequenceIterator()) {
 
                     while (srcIter.hasMore()) {
-                        final OrderedKeys srcKeys = srcIter.getNextOrderedKeysWithLength(PAGE_SIZE);
-                        final OrderedKeys destKeys = destIter.getNextOrderedKeysWithLength(PAGE_SIZE);
+                        final RowSequence srcKeys = srcIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                        final RowSequence destKeys = destIter.getNextRowSequenceWithLength(PAGE_SIZE);
                         Assert.eq(srcKeys.size(), "srcKeys.size()", destKeys.size(), "destKeys.size()");
                         writableSource.fillPrevChunk(srcContext, chunk, srcKeys);
                         writableSource.fillFromChunk(destContext, chunk, destKeys);
@@ -115,9 +115,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             if (upstream.added.nonempty()) {
                 assert destContext != null;
                 assert chunkSourceContext != null;
-                try (final OrderedKeys.Iterator keyIter = upstream.added.getOrderedKeysIterator()) {
+                try (final RowSequence.Iterator keyIter = upstream.added.getRowSequenceIterator()) {
                     while (keyIter.hasMore()) {
-                        final OrderedKeys keys = keyIter.getNextOrderedKeysWithLength(PAGE_SIZE);
+                        final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
                         writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
                     }
                 }
@@ -126,9 +126,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             // apply modifies!
             if (modifiesAffectUs) {
                 assert chunkSourceContext != null;
-                try (final OrderedKeys.Iterator keyIter = upstream.modified.getOrderedKeysIterator()) {
+                try (final RowSequence.Iterator keyIter = upstream.modified.getRowSequenceIterator()) {
                     while (keyIter.hasMore()) {
-                        final OrderedKeys keys = keyIter.getNextOrderedKeysWithLength(PAGE_SIZE);
+                        final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
                         writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
                     }
                 }

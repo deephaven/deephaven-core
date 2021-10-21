@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -118,7 +118,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         abstract void processField(
                 FieldContext fieldContext,
                 WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys,
+                RowSequence keys,
                 boolean isRemoval);
     }
 
@@ -155,7 +155,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         void processField(
                 final FieldContext fieldContext,
                 final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                final OrderedKeys keys,
+                final RowSequence keys,
                 final boolean previous) {
             final ContextImpl contextImpl = (ContextImpl) fieldContext;
             final ChunkType inputChunk;
@@ -303,7 +303,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         public void processField(
                 final FieldContext fieldContext,
                 final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                final OrderedKeys keys,
+                final RowSequence keys,
                 final boolean isRemoval) {
             final long nanos = DBDateTime.now().getNanos();
             for (int ii = 0; ii < avroChunk.size(); ++ii) {
@@ -373,7 +373,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
      * @return A List of Strings containing all of the parsed update statements
      */
     @Override
-    public ObjectChunk<GenericRecord, Attributes.Values> handleChunk(Context context, OrderedKeys toProcess,
+    public ObjectChunk<GenericRecord, Attributes.Values> handleChunk(Context context, RowSequence toProcess,
             boolean previous) {
         final AvroContext avroContext = (AvroContext) context;
 

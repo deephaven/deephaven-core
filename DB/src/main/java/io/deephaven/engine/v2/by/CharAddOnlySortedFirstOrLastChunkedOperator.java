@@ -6,7 +6,7 @@ import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import org.jetbrains.annotations.NotNull;
@@ -40,8 +40,8 @@ public class CharAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
     @Override
     public void addChunk(final BucketedContext bucketedContext, // Unused
                          @NotNull final Chunk<? extends Values> values,
-                         @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-                         @NotNull final IntChunk<KeyIndices> destinations,
+                         @NotNull final LongChunk<? extends RowKeys> inputIndices,
+                         @NotNull final IntChunk<RowKeys> destinations,
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
@@ -58,13 +58,13 @@ public class CharAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
     public boolean addChunk(final SingletonContext singletonContext, // Unused
                             final int chunkSize,
                             @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
+                            @NotNull final LongChunk<? extends RowKeys> inputIndices,
                             final long destination) {
         return addChunk(values.asCharChunk(), inputIndices, 0, inputIndices.size(), destination);
     }
 
     private boolean addChunk(@NotNull final CharChunk<? extends Values> values,
-                             @NotNull final LongChunk<? extends KeyIndices> indices,
+                             @NotNull final LongChunk<? extends RowKeys> indices,
                              final int start,
                              final int length,
                              final long destination) {

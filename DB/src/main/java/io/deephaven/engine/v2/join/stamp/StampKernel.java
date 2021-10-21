@@ -2,7 +2,6 @@ package io.deephaven.engine.v2.join.stamp;
 
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
@@ -134,6 +133,7 @@ public interface StampKernel extends Context {
      * @param rightKeyIndices the input rhs stamp indices
      * @param leftRedirections the resulting redirections from the stamping operation
      */
-    void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<KeyIndices> rightKeyIndices,
-            WritableLongChunk<KeyIndices> leftRedirections);
+    void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps,
+            LongChunk<Attributes.RowKeys> rightKeyIndices,
+            WritableLongChunk<Attributes.RowKeys> leftRedirections);
 }

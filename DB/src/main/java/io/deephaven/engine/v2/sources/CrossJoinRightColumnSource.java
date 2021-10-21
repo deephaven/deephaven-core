@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import static io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 
 import io.deephaven.base.verify.Assert;
@@ -18,7 +18,8 @@ import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -350,15 +351,15 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     @Override
     public void fillChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        doFillChunk(context, destination, orderedKeys, false);
+            @NotNull final RowSequence rowSequence) {
+        doFillChunk(context, destination, rowSequence, false);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        doFillChunk(context, destination, orderedKeys, true);
+            @NotNull final RowSequence rowSequence) {
+        doFillChunk(context, destination, rowSequence, true);
     }
 
     private long redirect(long outerKey) {
@@ -377,16 +378,16 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
     private void doFillChunk(@NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys,
+            @NotNull final RowSequence rowSequence,
             final boolean usePrev) {
-        final int size = orderedKeys.intSize();
+        final int size = rowSequence.intSize();
         if (size <= 0) {
             destination.setSize(0);
             return;
         }
         final FillContext effectiveContext = (FillContext) context;
 
-        effectiveContext.shareable.ensureMappedKeysInitialized(crossJoinManager, usePrev, orderedKeys);
+        effectiveContext.shareable.ensureMappedKeysInitialized(crossJoinManager, usePrev, rowSequence);
 
         if (innerSource instanceof FillUnordered) {
             effectiveContext.doUnorderedFill((FillUnordered) innerSource, usePrev, destination);
@@ -455,13 +456,13 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             private final boolean rightIsLive;
             private final boolean shared;
 
-            private final WritableLongChunk<KeyIndices> mappedKeys;
+            private final WritableLongChunk<Attributes.RowKeys> mappedKeys;
 
-            private final LongIntTimsortKernel.LongIntSortKernelContext<KeyIndices, Attributes.ChunkPositions> sortKernelContext;
-            private final WritableLongChunk<KeyIndices> sortedMappedKeys;
+            private final LongIntTimsortKernel.LongIntSortKernelContext<Attributes.RowKeys, Attributes.ChunkPositions> sortKernelContext;
+            private final WritableLongChunk<Attributes.RowKeys> sortedMappedKeys;
             private final WritableIntChunk<Attributes.ChunkPositions> mappedKeysOrder;
-            private final WritableLongChunk<KeyIndices> compactedMappedKeys;
-            private final ResettableWritableLongChunk<KeyIndices> nonNullCompactedMappedKeys;
+            private final WritableLongChunk<RowKeys> compactedMappedKeys;
+            private final ResettableWritableLongChunk<Attributes.RowKeys> nonNullCompactedMappedKeys;
             private final WritableIntChunk<Attributes.ChunkLengths> runLengths;
 
             private boolean mappedKeysReusable;
@@ -470,7 +471,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             private boolean sortedFillContextReusable;
             private int uniqueKeyCount;
             private boolean hasNulls;
-            private OrderedKeys innerOrderedKeys;
+            private RowSequence innerRowSequence;
 
             private Shareable(final boolean rightIsLive, final boolean shared, final int chunkCapacity) {
                 this.rightIsLive = rightIsLive;
@@ -489,7 +490,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             }
 
             private void ensureMappedKeysInitialized(@NotNull final CrossJoinStateManager crossJoinManager,
-                    final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
+                    final boolean usePrev, @NotNull final RowSequence rowSequence) {
                 if (mappedKeysReusable) {
                     return;
                 }
@@ -497,7 +498,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                     reset();
                 }
 
-                totalKeyCount = orderedKeys.intSize();
+                totalKeyCount = rowSequence.intSize();
                 Assert.gtZero(totalKeyCount, "totalKeyCount");
                 mappedKeys.setSize(totalKeyCount);
 
@@ -533,7 +534,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                     }
                 };
 
-                orderedKeys.forAllLongs(ii -> {
+                rowSequence.forAllLongs(ii -> {
                     final long leftIndex =
                             usePrev ? crossJoinManager.getPrevShifted(ii) : crossJoinManager.getShifted(ii);
                     if (leftIndex != lastLeftIndex.longValue()) {
@@ -589,7 +590,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
                 hasNulls = compactedMappedKeys.get(0) == Index.NULL_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
-                innerOrderedKeys = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(
+                innerRowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(
                         LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys,
                                 keysToSkip, uniqueKeyCount - keysToSkip)));
 
@@ -604,9 +605,9 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 sortedFillContextReusable = false;
                 uniqueKeyCount = -1;
                 hasNulls = false;
-                if (innerOrderedKeys != null) {
-                    innerOrderedKeys.close();
-                    innerOrderedKeys = null;
+                if (innerRowSequence != null) {
+                    innerRowSequence.close();
+                    innerRowSequence = null;
                 }
 
                 super.reset();
@@ -614,9 +615,9 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
             @Override
             public void close() {
-                if (innerOrderedKeys != null) {
-                    innerOrderedKeys.close();
-                    innerOrderedKeys = null;
+                if (innerRowSequence != null) {
+                    innerRowSequence.close();
+                    innerRowSequence = null;
                 }
 
                 mappedKeys.close();
@@ -662,9 +663,9 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             // Read compacted, ordered keys
             if (usePrev) {
                 innerSource.fillPrevChunk(innerFillContext, compactedOrderedValuesDestination,
-                        shareable.innerOrderedKeys);
+                        shareable.innerRowSequence);
             } else {
-                innerSource.fillChunk(innerFillContext, compactedOrderedValuesDestination, shareable.innerOrderedKeys);
+                innerSource.fillChunk(innerFillContext, compactedOrderedValuesDestination, shareable.innerRowSequence);
             }
 
             // Expand unique values if necessary

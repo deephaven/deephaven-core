@@ -1,7 +1,10 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -19,13 +22,13 @@ import java.util.zip.CRC32;
 @Warmup(iterations = 1, time = 12)
 @Measurement(iterations = 3, time = 12)
 @Fork(value = 1)
-public class OrderedKeysBench {
+public class RowSequenceBench {
     private Index ix = null;
     private static final int chunkSz = 1024;
-    private WritableLongChunk<OrderedKeyIndices> indicesChunk = null;
-    private WritableLongChunk<OrderedKeyRanges> rangesChunk = null;
+    private WritableLongChunk<Attributes.OrderedRowKeys> indicesChunk = null;
+    private WritableLongChunk<OrderedRowKeyRanges> rangesChunk = null;
     private static final int fixedCostChunkSz = 1024;
-    private OrderedKeys fixedCostOk = null;
+    private RowSequence fixedCostOk = null;
 
     @Setup(Level.Trial)
     public void setup() {
@@ -44,7 +47,7 @@ public class OrderedKeysBench {
             }
         };
         TestValues.setup(tb, 16 * 1024 * 1024, TestValues.asymmetric);
-        final WritableLongChunk<OrderedKeyIndices> fixedCostChunk =
+        final WritableLongChunk<OrderedRowKeys> fixedCostChunk =
                 WritableLongChunk.makeWritableChunk(fixedCostChunkSz);
         final Random r = new Random(1);
         long last = 0;
@@ -52,7 +55,7 @@ public class OrderedKeysBench {
             last += r.nextInt(1009);
             fixedCostChunk.set(i, last);
         }
-        fixedCostOk = OrderedKeysKeyIndicesChunkImpl.makeByTaking(fixedCostChunk);
+        fixedCostOk = RowSequenceUtil.takeRowKeysChunkAndMakeRowSequence(fixedCostChunk);
     }
 
     static void updateCrc32(final CRC32 crc32, final long v) {
@@ -70,7 +73,7 @@ public class OrderedKeysBench {
             return true;
         });
         indicesChunk.setSize(chunkSz);
-        fixedCostOk.fillKeyIndicesChunk(indicesChunk);
+        fixedCostOk.fillRowKeyChunk(indicesChunk);
         final int sz = indicesChunk.size();
         for (int i = 0; i < sz; ++i) {
             accum.setValue(accum.longValue() ^ indicesChunk.get(i));
@@ -106,13 +109,13 @@ public class OrderedKeysBench {
     }
 
     @Benchmark
-    public void b03_OKIteratorThenFillChunk(final Blackhole bh) {
+    public void b03_rsIteratorThenFillChunk(final Blackhole bh) {
         final CRC32 crc32 = new CRC32();
-        final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
         indicesChunk.setSize(chunkSz);
-        while (okit.hasMore()) {
-            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(chunkSz);
-            oks.fillKeyIndicesChunk(indicesChunk);
+        while (rsIt.hasMore()) {
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSz);
+            rs.fillRowKeyChunk(indicesChunk);
             for (int i = 0; i < indicesChunk.size(); ++i) {
                 updateCrc32(crc32, indicesChunk.get(i));
             }
@@ -122,13 +125,13 @@ public class OrderedKeysBench {
     }
 
     @Benchmark
-    public void b04_OKIteratorThenForEach(final Blackhole bh) {
+    public void b04_rsIteratorThenForEach(final Blackhole bh) {
         final CRC32 crc32 = new CRC32();
-        final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator();
+        final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
         indicesChunk.setSize(chunkSz);
-        while (okit.hasMore()) {
-            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(chunkSz);
-            oks.forEachLong((final long v) -> {
+        while (rsIt.hasMore()) {
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSz);
+            rs.forEachLong((final long v) -> {
                 updateCrc32(crc32, v);
                 return true;
             });
@@ -166,13 +169,13 @@ public class OrderedKeysBench {
     }
 
     @Benchmark
-    public void b07_OKIteratorThenFillRangeChunk(final Blackhole bh) {
+    public void b07_rsIteratorThenFillRangeChunk(final Blackhole bh) {
         final CRC32 crc32 = new CRC32();
-        final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator();
-        while (okit.hasMore()) {
-            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(chunkSz / 2);
+        final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
+        while (rsIt.hasMore()) {
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSz / 2);
             rangesChunk.setSize(chunkSz);
-            oks.fillKeyRangesChunk(rangesChunk);
+            rs.fillRowKeyRangesChunk(rangesChunk);
             final int sz = rangesChunk.size();
             for (int i = 0; i < sz; i += 2) {
                 final long start = rangesChunk.get(i);
@@ -187,12 +190,12 @@ public class OrderedKeysBench {
     }
 
     @Benchmark
-    public void b08_OKIteratorThenForEachRange(final Blackhole bh) {
+    public void b08_rsIteratorThenForEachRange(final Blackhole bh) {
         final CRC32 crc32 = new CRC32();
-        final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator();
-        while (okit.hasMore()) {
-            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(chunkSz / 2);
-            oks.forAllLongRanges((final long s, final long e) -> {
+        final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
+        while (rsIt.hasMore()) {
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSz / 2);
+            rs.forAllLongRanges((final long s, final long e) -> {
                 for (long v = s; v <= e; ++v) {
                     updateCrc32(crc32, v);
                 }
@@ -203,6 +206,6 @@ public class OrderedKeysBench {
     }
 
     public static void main(String[] args) throws RunnerException {
-        BenchUtil.run(OrderedKeysBench.class);
+        BenchUtil.run(RowSequenceBench.class);
     }
 }

@@ -4,9 +4,10 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
@@ -24,9 +25,9 @@ import java.util.stream.LongStream;
 import static org.junit.Assert.*;
 
 /**
- * OrderedKeys implementation tests can extend this to verify that OrderedKeys behavior is as expected.
+ * RowSequence implementation tests can extend this to verify that RowSequence behavior is as expected.
  */
-public abstract class OrderedKeysTestBase {
+public abstract class RowSequenceTestBase {
 
     private SafeCloseableList itemsToCloseOnTearDownCase;
 
@@ -42,7 +43,7 @@ public abstract class OrderedKeysTestBase {
         ChunkPoolReleaseTracking.checkAndDisable();
     }
 
-    protected abstract OrderedKeys create(long... values);
+    protected abstract RowSequence create(long... values);
 
     final <TYPE extends SafeCloseable> TYPE closeOnTearDownCase(@NotNull final TYPE item) {
         itemsToCloseOnTearDownCase.add(item);
@@ -68,23 +69,23 @@ public abstract class OrderedKeysTestBase {
     }
 
     @Test
-    public void testOKIteratorGetNextMaxKeyOverruns() {
+    public void testrsIteratorGetNextMaxKeyOverruns() {
         final long[] indices = indicesFromRanges(0, 4, 10, 20, 40, 60);
-        try (final OrderedKeys ok1 = create(indices)) {
-            try (final OrderedKeys.Iterator it1 = ok1.getOrderedKeysIterator()) {
-                final OrderedKeys ok2 = it1.getNextOrderedKeysThrough(20);
-                try (final OrderedKeys.Iterator it2 = ok2.getOrderedKeysIterator()) {
-                    final OrderedKeys ok3 = it2.getNextOrderedKeysThrough(600);
-                    assertEquals(20, ok3.lastKey());
+        try (final RowSequence rs1 = create(indices)) {
+            try (final RowSequence.Iterator it1 = rs1.getRowSequenceIterator()) {
+                final RowSequence rs2 = it1.getNextRowSequenceThrough(20);
+                try (final RowSequence.Iterator it2 = rs2.getRowSequenceIterator()) {
+                    final RowSequence rs3 = it2.getNextRowSequenceThrough(600);
+                    assertEquals(20, rs3.lastRowKey());
                 }
             }
         }
     }
 
     @Test
-    public void testCanConstructOrderedKeys() {
+    public void testCanConstructRowSequence() {
         final long[] indices = indicesFromRanges(0, 4, Long.MAX_VALUE - 4, Long.MAX_VALUE);
-        try (final OrderedKeys OK = create(indices)) {
+        try (final RowSequence OK = create(indices)) {
             assertContentsByIndices(indices, OK);
         }
     }
@@ -106,163 +107,163 @@ public abstract class OrderedKeysTestBase {
     public static final long offset0 = (1 << 16) - 4;
 
     @Test
-    public void testGetOrderedKeysByPositionEdgedAtBeginning() {
+    public void testGetRowSequenceByPositionEdgedAtBeginning() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(0, 20)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(0, 20)) {
             assertContentsByIndices(indicesFromRanges(shift(array(1, 10, 21, 30), offset0)), byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByPositionEdgeInMiddle() {
+    public void testGetRowSequenceByPositionEdgeInMiddle() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(10, 20)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(10, 20)) {
             assertContentsByIndices(indicesFromRanges(shift(array(21, 40), offset0)), byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByPositionMiddle() {
+    public void testGetRowSequenceByPositionMiddle() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(8, 24)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(8, 24)) {
             assertContentsByIndices(indicesFromRanges(shift(array(9, 10, 21, 40, 101, 102), offset0)), byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByPositionEdgedAtEnd() {
+    public void testGetRowSequenceByPositionEdgedAtEnd() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(28, 44)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(28, 44)) {
             assertContentsByIndices(indicesFromRanges(shift(array(39, 40, 101, 142), offset0)), byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByPositionBeginAtEnd() {
+    public void testGetRowSequenceByPositionBeginAtEnd() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(72, 1024)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(72, 1024)) {
             assertContentsByIndices(indicesFromRanges(), byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByPositionOverlapAtEnd() {
+    public void testGetRowSequenceByPositionOverlapAtEnd() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(60, 1024)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(60, 1024)) {
             assertContentsByIndices(indicesFromRanges(shift(array(131, 142), offset0)), byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByPositionBeyondEnd() {
+    public void testGetRowSequenceByPositionBeyondEnd() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(100, 1)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(100, 1)) {
             assertContentsByIndices(indicesFromRanges(), byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByPositionOverlapEntire() {
+    public void testGetRowSequenceByPositionOverlapEntire() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(0, 1024)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(0, 1024)) {
             assertContentsByIndices(indices, byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByPositionExactRange() {
+    public void testGetRowSequenceByPositionExactRange() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byPos = OK.getOrderedKeysByPosition(0, indices.length)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byPos = OK.getRowSequenceByPosition(0, indices.length)) {
             assertContentsByIndices(indices, byPos);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeBeforeBeginning() {
+    public void testGetRowSequenceByRangeBeforeBeginning() {
         final long[] indices = indicesFromRanges(shift(array(21, 40, 101, 142), offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byKey = OK.getOrderedKeysByKeyRange(offset0, 20 + offset0)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byKey = OK.getRowSequenceByKeyRange(offset0, 20 + offset0)) {
             assertContentsByIndices(indicesFromRanges(), byKey);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeOverlapBeginning() {
+    public void testGetRowSequenceByRangeOverlapBeginning() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byKey = OK.getOrderedKeysByKeyRange(offset0, offset0 + 5)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byKey = OK.getRowSequenceByKeyRange(offset0, offset0 + 5)) {
             assertContentsByIndices(indicesFromRanges(offset0 + 1, offset0 + 5), byKey);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeEdgeAtBeginning() {
+    public void testGetRowSequenceByRangeEdgeAtBeginning() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byRange = OK.getOrderedKeysByKeyRange(offset0 + 1, offset0 + 5)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byRange = OK.getRowSequenceByKeyRange(offset0 + 1, offset0 + 5)) {
             assertContentsByIndices(indicesFromRanges(offset0 + 1, offset0 + 5), byRange);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeEdgeInMiddle() {
+    public void testGetRowSequenceByRangeEdgeInMiddle() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byRange = OK.getOrderedKeysByKeyRange(offset0 + 10, offset0 + 30)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byRange = OK.getRowSequenceByKeyRange(offset0 + 10, offset0 + 30)) {
             assertContentsByIndices(indicesFromRanges(shift(array(10, 10, 21, 30), offset0)), byRange);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeMiddle() {
+    public void testGetRowSequenceByRangeMiddle() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byRange = OK.getOrderedKeysByKeyRange(offset0 + 24, offset0 + 34)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byRange = OK.getRowSequenceByKeyRange(offset0 + 24, offset0 + 34)) {
             assertContentsByIndices(indicesFromRanges(offset0 + 24, offset0 + 34), byRange);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeEdgedAtEnd() {
+    public void testGetRowSequenceByRangeEdgedAtEnd() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byRange = OK.getOrderedKeysByKeyRange(offset0 + 120, offset0 + 142)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byRange = OK.getRowSequenceByKeyRange(offset0 + 120, offset0 + 142)) {
             assertContentsByIndices(indicesFromRanges(offset0 + 120, offset0 + 142), byRange);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeBeginAtEnd() {
+    public void testGetRowSequenceByRangeBeginAtEnd() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byRange = OK.getOrderedKeysByKeyRange(offset0 + 143, offset0 + 1024)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byRange = OK.getRowSequenceByKeyRange(offset0 + 143, offset0 + 1024)) {
             assertContentsByIndices(indicesFromRanges(), byRange);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeOverlapEnd() {
+    public void testGetRowSequenceByRangeOverlapEnd() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byRange = OK.getOrderedKeysByKeyRange(offset0 + 25, offset0 + 1024)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byRange = OK.getRowSequenceByKeyRange(offset0 + 25, offset0 + 1024)) {
             assertContentsByIndices(indicesFromRanges(shift(array(25, 40, 101, 142), offset0)), byRange);
         }
     }
 
     @Test
-    public void testGetOrderedKeysByRangeBeyondEnd() {
+    public void testGetRowSequenceByRangeBeyondEnd() {
         final long[] indices = indicesFromRanges(shift(ranges0, offset0));
-        try (final OrderedKeys OK = create(indices);
-                final OrderedKeys byRange = OK.getOrderedKeysByKeyRange(offset0 + 1024, offset0 + 2048)) {
+        try (final RowSequence OK = create(indices);
+                final RowSequence byRange = OK.getRowSequenceByKeyRange(offset0 + 1024, offset0 + 2048)) {
             assertContentsByIndices(indicesFromRanges(), byRange);
         }
     }
@@ -271,12 +272,13 @@ public abstract class OrderedKeysTestBase {
     public void testFillIndices() {
         for (long[] ranges : new long[][] {ranges0, ranges1, ranges2}) {
             final long[] indices = indicesFromRanges(shift(ranges, offset0));
-            try (final WritableLongChunk<OrderedKeyIndices> chunk =
+            try (final WritableLongChunk<Attributes.OrderedRowKeys> chunk =
                     WritableLongChunk.makeWritableChunk(indices.length)) {
-                try (final OrderedKeys OK = create(indices)) {
-                    OK.fillKeyIndicesChunk(chunk);
+                try (final RowSequence OK = create(indices)) {
+                    OK.fillRowKeyChunk(chunk);
                 }
-                final LongChunk<OrderedKeyIndices> expectedChunk = LongChunk.chunkWrap(indices, 0, indices.length);
+                final LongChunk<Attributes.OrderedRowKeys> expectedChunk =
+                        LongChunk.chunkWrap(indices, 0, indices.length);
                 assertChunksEqual(expectedChunk, chunk);
             }
         }
@@ -288,10 +290,10 @@ public abstract class OrderedKeysTestBase {
         for (int r = 0; r < rangesessess.length; ++r) {
             final long[] ranges = rangesessess[r];
             final long[] indices = indicesFromRanges(shift(ranges, offset0));
-            try (final WritableLongChunk<OrderedKeyRanges> chunk =
+            try (final WritableLongChunk<OrderedRowKeyRanges> chunk =
                     WritableLongChunk.makeWritableChunk(indices.length)) {
-                try (final OrderedKeys OK = create(indices)) {
-                    OK.fillKeyRangesChunk(chunk);
+                try (final RowSequence OK = create(indices)) {
+                    OK.fillRowKeyRangesChunk(chunk);
                 }
                 int i = 0;
                 assertEquals(0, chunk.size() & 1);
@@ -310,7 +312,7 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testAverageRunLenSingleRun() {
         final long[] indices = indicesFromRanges(1, 100);
-        try (final OrderedKeys OK = create(indices)) {
+        try (final RowSequence OK = create(indices)) {
             assertEquals(indices.length, OK.getAverageRunLengthEstimate());
         }
     }
@@ -321,7 +323,7 @@ public abstract class OrderedKeysTestBase {
         for (int idx = 0; idx < indices.length; ++idx) {
             indices[idx] = 2 * idx;
         }
-        try (final OrderedKeys OK = create(indices)) {
+        try (final RowSequence OK = create(indices)) {
             assertEquals(1, OK.getAverageRunLengthEstimate());
         }
     }
@@ -331,8 +333,8 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testIteratorAdvanceAndPeekOnlyAllElements() {
         final long[] indices = indicesFromRanges(ranges1);
-        try (final OrderedKeys OK = create(indices)) {
-            try (final OrderedKeys.Iterator it = OK.getOrderedKeysIterator()) {
+        try (final RowSequence OK = create(indices)) {
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
                 for (int offset = 0; offset < indices.length; ++offset) {
                     assertEquals(indices[offset], it.peekNextKey());
                     final boolean expectMore = offset + 1 < indices.length;
@@ -347,8 +349,8 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testIteratorAdvanceAndPeekOnlyCertainElements() {
         final long[] indices = indicesFromRanges(ranges1);
-        try (final OrderedKeys OK = create(indices)) {
-            try (final OrderedKeys.Iterator it = OK.getOrderedKeysIterator()) {
+        try (final RowSequence OK = create(indices)) {
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
                 for (int offset = 0; offset < indices.length; ++offset) {
                     if (indices[offset] % 5 != 0)
                         continue;
@@ -364,11 +366,11 @@ public abstract class OrderedKeysTestBase {
     public void testIteratorGetNextByLenOnly() {
         final int stepSize = 5;
         final long[] indices = indicesFromRanges(ranges1);
-        try (final OrderedKeys OK = create(indices)) {
-            try (final OrderedKeys.Iterator it = OK.getOrderedKeysIterator()) {
+        try (final RowSequence OK = create(indices)) {
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
                 for (int offset = 0; offset < indices.length; offset += stepSize) {
                     final long pos0 = it.getRelativePosition();
-                    final OrderedKeys subOK = it.getNextOrderedKeysWithLength(stepSize);
+                    final RowSequence subOK = it.getNextRowSequenceWithLength(stepSize);
                     final long pos1 = it.getRelativePosition();
                     assertEquals(subOK.size(), pos1 - pos0);
                     assertContentsByIndices(sliceLongArray(indices, offset,
@@ -382,13 +384,13 @@ public abstract class OrderedKeysTestBase {
     public void testIteratorGetNextByKeyOnly() {
         final long stepSize = 5;
         final long[] indices = indicesFromRanges(ranges1);
-        try (final OrderedKeys OK = create(indices)) {
-            try (final OrderedKeys.Iterator it = OK.getOrderedKeysIterator()) {
+        try (final RowSequence OK = create(indices)) {
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
                 for (long key = indices[0] - (indices[0] % stepSize); key < indices[indices.length - 1]; key +=
                         stepSize) {
                     final long endKey = key + stepSize - 1;
                     final long pos0 = it.getRelativePosition();
-                    final OrderedKeys subOK = it.getNextOrderedKeysThrough(endKey);
+                    final RowSequence subOK = it.getNextRowSequenceThrough(endKey);
                     final long pos1 = it.getRelativePosition();
                     final String m = "key==" + key;
                     assertEquals(m, subOK.size(), pos1 - pos0);
@@ -407,11 +409,11 @@ public abstract class OrderedKeysTestBase {
     public void testIteratorAdvanceThenLen() {
         final int stepSize = 50;
         final long[] indices = indicesFromRanges(ranges1);
-        try (final OrderedKeys OK = create(indices)) {
-            try (final OrderedKeys.Iterator it = OK.getOrderedKeysIterator()) {
+        try (final RowSequence OK = create(indices)) {
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
                 it.advance(150);
                 final long pos0 = it.getRelativePosition();
-                final OrderedKeys subOK = it.getNextOrderedKeysWithLength(50);
+                final RowSequence subOK = it.getNextRowSequenceWithLength(50);
                 final long pos1 = it.getRelativePosition();
                 assertEquals(subOK.size(), pos1 - pos0);
                 final int startOffset = Arrays.binarySearch(indices, 150);
@@ -423,10 +425,10 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testIteratorAdvanceThenKeyThrough() {
         final long[] indices = indicesFromRanges(ranges1);
-        try (final OrderedKeys OK = create(indices)) {
-            try (final OrderedKeys.Iterator it = OK.getOrderedKeysIterator()) {
+        try (final RowSequence OK = create(indices)) {
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
                 it.advance(150);
-                final OrderedKeys subOK = it.getNextOrderedKeysThrough(212);
+                final RowSequence subOK = it.getNextRowSequenceThrough(212);
                 final int startOffset = Arrays.binarySearch(indices, 150);
                 final int endOffset = Arrays.binarySearch(indices, 212);
                 assertContentsByIndices(sliceLongArray(indices, startOffset, endOffset + 1), subOK);
@@ -437,12 +439,12 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testIteratorKeyThroughThenLen() {
         final long[] indices = indicesFromRanges(ranges1);
-        try (final OrderedKeys OK = create(indices)) {
-            try (final OrderedKeys.Iterator it = OK.getOrderedKeysIterator()) {
+        try (final RowSequence OK = create(indices)) {
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
                 final int offset = Arrays.binarySearch(indices, 150) + 1;
-                OrderedKeys subOK = it.getNextOrderedKeysThrough(150);
+                RowSequence subOK = it.getNextRowSequenceThrough(150);
                 assertContentsByIndices(sliceLongArray(indices, 0, offset), subOK);
-                subOK = it.getNextOrderedKeysWithLength(20);
+                subOK = it.getNextRowSequenceWithLength(20);
                 assertContentsByIndices(sliceLongArray(indices, offset, offset + 20), subOK);
             }
         }
@@ -451,12 +453,12 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testIteratorLenThenKeyThrough() {
         final long[] indices = indicesFromRanges(ranges1);
-        try (final OrderedKeys OK = create(indices)) {
-            try (final OrderedKeys.Iterator it = OK.getOrderedKeysIterator()) {
+        try (final RowSequence OK = create(indices)) {
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
                 final int offset = 35;
-                OrderedKeys subOK = it.getNextOrderedKeysWithLength(offset);
+                RowSequence subOK = it.getNextRowSequenceWithLength(offset);
                 assertContentsByIndices(sliceLongArray(indices, 0, offset), subOK);
-                subOK = it.getNextOrderedKeysThrough(150);
+                subOK = it.getNextRowSequenceThrough(150);
                 final int endOffset = Arrays.binarySearch(indices, 150);
                 assertContentsByIndices(sliceLongArray(indices, offset, endOffset + 1), subOK);
             }
@@ -476,11 +478,11 @@ public abstract class OrderedKeysTestBase {
         }
         long estimate = ix.getAverageRunLengthEstimate();
         assertEquals(1.0, rlen / (double) estimate, 0.1);
-        try (final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator rsIt = ix.getRowSequenceIterator()) {
             int r = 0;
-            while (okit.hasMore()) {
+            while (rsIt.hasMore()) {
                 final String m = "r==" + r;
-                final OrderedKeys oks = okit.getNextOrderedKeysWithLength(ix.size() / 2 + 1);
+                final RowSequence rs = rsIt.getNextRowSequenceWithLength(ix.size() / 2 + 1);
                 assertEquals(1.0, rlen / (double) estimate, 0.1);
                 ++r;
             }
@@ -496,26 +498,26 @@ public abstract class OrderedKeysTestBase {
     }
 
     protected void assertContentsByIndices(final long[] expected,
-            final OrderedKeys orderedKeys) {
-        assertContentsByIndices(null, expected, orderedKeys);
+            final RowSequence rowSequence) {
+        assertContentsByIndices(null, expected, rowSequence);
     }
 
     protected void assertContentsByIndices(
-            final String msg, final long[] expected, final OrderedKeys orderedKeys) {
-        final LongChunk<OrderedKeyIndices> expectedIndices = LongChunk.chunkWrap(expected);
-        try (final WritableLongChunk<OrderedKeyRanges> expectedRanges =
+            final String msg, final long[] expected, final RowSequence rowSequence) {
+        final LongChunk<Attributes.OrderedRowKeys> expectedIndices = LongChunk.chunkWrap(expected);
+        try (final WritableLongChunk<OrderedRowKeyRanges> expectedRanges =
                 ChunkUtils.convertToOrderedKeyRanges(expectedIndices)) {
 
             // size must be identical
-            assertEquals(msg, expectedIndices.size(), orderedKeys.size());
+            assertEquals(msg, expectedIndices.size(), rowSequence.size());
 
             // Check Ordered Indices Chunk
-            assertChunksEqual(expectedIndices, orderedKeys.asKeyIndicesChunk());
+            assertChunksEqual(expectedIndices, rowSequence.asRowKeyChunk());
             // Check Ordered Ranges Chunk
-            assertChunksEqual(expectedRanges, orderedKeys.asKeyRangesChunk());
+            assertChunksEqual(expectedRanges, rowSequence.asRowKeyRangesChunk());
             // Check Index
             final MutableInt idx = new MutableInt(0);
-            final Index ix = orderedKeys.asIndex();
+            final Index ix = rowSequence.asIndex();
             assertTrue(msg, ix.forEachLong((value) -> {
                 assertEquals(msg + " && value==" + value, expectedIndices.get(idx.intValue()), value);
                 idx.add(1);
@@ -523,26 +525,26 @@ public abstract class OrderedKeysTestBase {
             }));
 
             // Check fillKeyIndices
-            try (final WritableLongChunk<OrderedKeyIndices> writableOKIndices =
+            try (final WritableLongChunk<Attributes.OrderedRowKeys> writableOKIndices =
                     WritableLongChunk.makeWritableChunk(expectedIndices.size())) {
-                orderedKeys.fillKeyIndicesChunk(writableOKIndices);
+                rowSequence.fillRowKeyChunk(writableOKIndices);
                 assertChunksEqual(expectedIndices, writableOKIndices);
             }
             // Check fillKeyRanges
-            try (final WritableLongChunk<OrderedKeyRanges> writableOKRanges =
+            try (final WritableLongChunk<OrderedRowKeyRanges> writableOKRanges =
                     WritableLongChunk.makeWritableChunk(expectedRanges.size())) {
-                orderedKeys.fillKeyRangesChunk(writableOKRanges);
+                rowSequence.fillRowKeyRangesChunk(writableOKRanges);
                 assertChunksEqual(expectedRanges, writableOKRanges);
             }
         }
 
         if (expectedIndices.size() > 0) {
             // Check first and last key.
-            assertEquals(msg, expectedIndices.get(0), orderedKeys.firstKey());
-            assertEquals(msg, expectedIndices.get(expectedIndices.size() - 1), orderedKeys.lastKey());
+            assertEquals(msg, expectedIndices.get(0), rowSequence.firstRowKey());
+            assertEquals(msg, expectedIndices.get(expectedIndices.size() - 1), rowSequence.lastRowKey());
 
             // Check averageRunLength is reasonable (note: undefined if size is 0)
-            final long runLen = orderedKeys.getAverageRunLengthEstimate();
+            final long runLen = rowSequence.getAverageRunLengthEstimate();
             assertTrue(msg, runLen > 0);
             assertTrue(msg, runLen <= expectedIndices.size());
         }
@@ -566,14 +568,14 @@ public abstract class OrderedKeysTestBase {
             8 * k2 - 1, 10 * k2, 12 * k2 + 3};
 
     private interface IndexBoundaryTest {
-        void run(final String ctxt, final OrderedKeys ok, final Index ix, final long s, final long e);
+        void run(final String ctxt, final RowSequence rs, final Index ix, final long s, final long e);
     }
 
     private void testIndexBoundaries(final long[] ranges, final IndexBoundaryTest test) {
         final long[] r = ranges;
         final long[] indices = indicesFromRanges(r);
-        try (final OrderedKeys ok = create(indices)) {
-            final Index ix = ok.asIndex();
+        try (final RowSequence rs = create(indices)) {
+            final Index ix = rs.asIndex();
             for (int ri = 0; ri < r.length / 2; ri += 2) {
                 final long si = r[ri];
                 final long ei = r[ri + 1];
@@ -582,7 +584,7 @@ public abstract class OrderedKeysTestBase {
                         if (e < s || s < 0) {
                             continue;
                         }
-                        test.run("s==" + s + " && e==" + e, ok, ix, s, e);
+                        test.run("s==" + s + " && e==" + e, rs, ix, s, e);
                     }
                 }
             }
@@ -592,11 +594,11 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testForEachLong() {
         testIndexBoundaries(ranges2,
-                (final String ctxt, final OrderedKeys ok, final Index ix, final long s, final long e) -> {
+                (final String ctxt, final RowSequence rs, final Index ix, final long s, final long e) -> {
                     final Index expected = ix.subindexByKey(s, e);
-                    try (final OrderedKeys ok1 = ok.getOrderedKeysByKeyRange(s, e)) {
+                    try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
-                        ok1.forEachLong((final long v) -> {
+                        rs1.forEachLong((final long v) -> {
                             b.appendKey(v);
                             return true;
                         });
@@ -611,11 +613,11 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testForAllLongs() {
         testIndexBoundaries(ranges2,
-                (final String ctxt, final OrderedKeys ok, final Index ix, final long s, final long e) -> {
+                (final String ctxt, final RowSequence rs, final Index ix, final long s, final long e) -> {
                     final Index expected = ix.subindexByKey(s, e);
-                    try (final OrderedKeys ok1 = ok.getOrderedKeysByKeyRange(s, e)) {
+                    try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
-                        ok1.forAllLongs(b::appendKey);
+                        rs1.forAllLongs(b::appendKey);
                         final Index result = b.getIndex();
                         assertEquals(ctxt, expected.size(), result.size());
                         final Index d = expected.minus(result);
@@ -627,11 +629,11 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testForEachLongRange() {
         testIndexBoundaries(ranges2,
-                (final String ctxt, final OrderedKeys ok, final Index ix, final long s, final long e) -> {
+                (final String ctxt, final RowSequence rs, final Index ix, final long s, final long e) -> {
                     final Index expected = ix.subindexByKey(s, e);
-                    try (final OrderedKeys ok1 = ok.getOrderedKeysByKeyRange(s, e)) {
+                    try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
-                        ok1.forEachLongRange((final long start, final long end) -> {
+                        rs1.forEachLongRange((final long start, final long end) -> {
                             b.appendRange(start, end);
                             return true;
                         });
@@ -646,11 +648,11 @@ public abstract class OrderedKeysTestBase {
     @Test
     public void testForAllLongRanges() {
         testIndexBoundaries(ranges2,
-                (final String ctxt, final OrderedKeys ok, final Index ix, final long s, final long e) -> {
+                (final String ctxt, final RowSequence rs, final Index ix, final long s, final long e) -> {
                     final Index expected = ix.subindexByKey(s, e);
-                    try (final OrderedKeys ok1 = ok.getOrderedKeysByKeyRange(s, e)) {
+                    try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
-                        ok1.forAllLongRanges(b::appendRange);
+                        rs1.forAllLongRanges(b::appendRange);
                         final Index result = b.getIndex();
                         assertEquals(ctxt, expected.size(), result.size());
                         final Index d = expected.minus(result);
@@ -667,16 +669,16 @@ public abstract class OrderedKeysTestBase {
         final int chunkCapacity = 4096;
 
         LongStream.range(0, 20).forEach(ri -> index.insertRange(ri * regionSize, ri * regionSize + 99_999));
-        try (final OrderedKeys.Iterator outerOKI = index.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator outerOKI = index.getRowSequenceIterator()) {
             while (outerOKI.hasMore()) {
-                final OrderedKeys next = outerOKI.getNextOrderedKeysWithLength(chunkCapacity);
-                final long firstKey = next.firstKey();
-                final long lastKey = next.lastKey();
+                final RowSequence next = outerOKI.getNextRowSequenceWithLength(chunkCapacity);
+                final long firstKey = next.firstRowKey();
+                final long lastKey = next.lastRowKey();
                 if ((firstKey >> regionBits) == (lastKey >> regionBits)) {
                     // Same region - nothing special to do here
                     continue;
                 }
-                try (final OrderedKeys.Iterator innerOKI = next.getOrderedKeysIterator()) {
+                try (final RowSequence.Iterator innerOKI = next.getRowSequenceIterator()) {
                     int totalConsumed = 0;
                     while (innerOKI.hasMore()) {
                         final long nextKey = innerOKI.peekNextKey();
@@ -698,26 +700,26 @@ public abstract class OrderedKeysTestBase {
     public void testAdvancePastEnd() {
         final long[] r = ranges2;
         final long[] indices = indicesFromRanges(r);
-        try (final OrderedKeys ok = create(indices);
-                final OrderedKeys.Iterator okIter = ok.getOrderedKeysIterator()) {
-            final long last = ok.lastKey();
-            final OrderedKeys ok2 = okIter.getNextOrderedKeysThrough(last);
-            assertFalse(okIter.hasMore());
-            assertFalse(okIter.advance(last + 1));
+        try (final RowSequence rs = create(indices);
+                final RowSequence.Iterator rsIter = rs.getRowSequenceIterator()) {
+            final long last = rs.lastRowKey();
+            final RowSequence rs2 = rsIter.getNextRowSequenceThrough(last);
+            assertFalse(rsIter.hasMore());
+            assertFalse(rsIter.advance(last + 1));
         }
     }
 
     @Test
-    public void testNextOrderedKeysThroughPastEnd() {
+    public void testNextRowSequenceThroughPastEnd() {
         final long[] r = ranges2;
         final long[] indices = indicesFromRanges(r);
-        try (final OrderedKeys ok = create(indices);
-                final OrderedKeys.Iterator okIter = ok.getOrderedKeysIterator()) {
-            final long last = ok.lastKey();
-            final OrderedKeys ok2 = okIter.getNextOrderedKeysThrough(last);
-            assertFalse(okIter.hasMore());
-            final OrderedKeys ok3 = okIter.getNextOrderedKeysThrough(last + 1);
-            assertEquals(0, ok3.size());
+        try (final RowSequence rs = create(indices);
+                final RowSequence.Iterator rsIter = rs.getRowSequenceIterator()) {
+            final long last = rs.lastRowKey();
+            final RowSequence rs2 = rsIter.getNextRowSequenceThrough(last);
+            assertFalse(rsIter.hasMore());
+            final RowSequence rs3 = rsIter.getNextRowSequenceThrough(last + 1);
+            assertEquals(0, rs3.size());
         }
     }
 }

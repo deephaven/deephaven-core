@@ -238,7 +238,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 reverseLookup.put(sortedKeys[i], i + offset);
             }
 
-            // fillFromChunk may convert the provided OrderedKeys to a KeyRanges (or KeyIndices) chunk that is owned by
+            // fillFromChunk may convert the provided RowSequence to a KeyRanges (or RowKeys) chunk that is owned by
             // the Index and is not closed until the index is closed.
             WritableChunkSink.FillFromContext fillFromContext =
                     closer.add(sortMapping.makeFillFromContext(sortedKeys.length));

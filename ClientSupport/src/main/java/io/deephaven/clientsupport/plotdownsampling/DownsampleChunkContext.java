@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
 import java.util.Arrays;
 import java.util.List;
@@ -66,7 +66,7 @@ public class DownsampleChunkContext implements AutoCloseable {
      * @param usePrev whether or not previous values should be fetched
      * @return a LongChunk containing the values specified
      */
-    public LongChunk<Attributes.Values> getXValues(final OrderedKeys keys, final boolean usePrev) {
+    public LongChunk<Attributes.Values> getXValues(final RowSequence keys, final boolean usePrev) {
         // noinspection unchecked
         return (LongChunk<Attributes.Values>) (usePrev ? xColumnSource.getPrevChunk(xContext, keys)
                 : xColumnSource.getChunk(xContext, keys));
@@ -85,7 +85,7 @@ public class DownsampleChunkContext implements AutoCloseable {
      * @return an array containing the data in the specified rows. The array will be the same size as the original
      *         yColumnSources, with only the indexes in yCols populated.
      */
-    public Chunk<? extends Attributes.Values>[] getYValues(final int[] yCols, final OrderedKeys keys,
+    public Chunk<? extends Attributes.Values>[] getYValues(final int[] yCols, final RowSequence keys,
             final boolean usePrev) {
         Arrays.fill(valuesArray, null);
         for (final int yCol : yCols) {
@@ -102,7 +102,7 @@ public class DownsampleChunkContext implements AutoCloseable {
      * @param usePrev whether or not previous values should be fetched
      * @return a chunk containing the values specified
      */
-    public Chunk<? extends Attributes.Values> getYValues(final int yColIndex, final OrderedKeys keys,
+    public Chunk<? extends Attributes.Values> getYValues(final int yColIndex, final RowSequence keys,
             final boolean usePrev) {
         final ColumnSource<?> columnSource = yColumnSources.get(yColIndex);
         final ChunkSource.GetContext getContext = yContexts[yColIndex];

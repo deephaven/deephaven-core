@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -29,10 +29,10 @@ public class DbArrayChunkAdapter<ATTR extends Attributes.Any> implements Default
 
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         // First let the underlying ChunkSource fill the chunk, and then we overwrite the values with the result
         // of applying DbArray#getDirect to each element.
-        underlying.fillChunk(context, destination, orderedKeys);
+        underlying.fillChunk(context, destination, rowSequence);
         final WritableObjectChunk<DbArrayBase, ? super ATTR> typedDest = destination.asWritableObjectChunk();
         for (int ii = 0; ii < destination.size(); ++ii) {
             final DbArrayBase dbArray = typedDest.get(ii);

@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.Pair;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
@@ -18,7 +19,6 @@ import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexBuilder;
-import io.deephaven.engine.v2.utils.OrderedKeys;
 import io.deephaven.engine.v2.utils.SortedIndex;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
@@ -255,7 +255,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         }
         // noinspection unchecked
         return ((Map<TYPE, Index>) index.getGrouping(columnSource)).entrySet().stream()
-                .sorted(java.util.Comparator.comparingLong(e -> e.getValue().firstKey())).collect(Collectors.toMap(
+                .sorted(java.util.Comparator.comparingLong(e -> e.getValue().firstRowKey())).collect(Collectors.toMap(
                         Map.Entry::getKey,
                         new Function<Map.Entry<TYPE, Index>, long[]>() {
                             private long prevLastKey = -1L;
@@ -265,8 +265,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                             public long[] apply(@NotNull final Map.Entry<TYPE, Index> entry) {
                                 final Index index = entry.getValue();
                                 Assert.instanceOf(index, "index", SortedIndex.class);
-                                Assert.gt(index.firstKey(), "index.firstKey()", prevLastKey, "prevLastKey");
-                                prevLastKey = index.lastKey();
+                                Assert.gt(index.firstRowKey(), "index.firstRowKey()", prevLastKey, "prevLastKey");
+                                prevLastKey = index.lastRowKey();
                                 return new long[] {currentSize, currentSize += index.size()};
                             }
                         },
@@ -284,7 +284,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
             @NotNull final BiConsumer<TYPE, Index> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .filter(kie -> kie.getValue().nonempty())
-                .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstKey()))
+                .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstRowKey()))
                 .forEachOrdered(kie -> groupConsumer.accept(kie.getKey(), kie.getValue()));
     }
 
@@ -330,7 +330,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         groupToIndex.entrySet().stream()
                 .map(kie -> new Pair<>(kie.getKey(), kie.getValue().intersect(intersect)))
                 .filter(kip -> kip.getSecond().nonempty())
-                .sorted(java.util.Comparator.comparingLong(kip -> kip.getSecond().firstKey()))
+                .sorted(java.util.Comparator.comparingLong(kip -> kip.getSecond().firstRowKey()))
                 .forEachOrdered(kip -> groupConsumer.accept(kip.getFirst(), kip.getSecond()));
     }
 
@@ -369,36 +369,36 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
 
     @Override
     public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
-        defaultFillChunk(context, destination, orderedKeys);
+            @NotNull final RowSequence rowSequence) {
+        defaultFillChunk(context, destination, rowSequence);
     }
 
     @VisibleForTesting
     public final void defaultFillChunk(@SuppressWarnings("unused") @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         final ChunkFiller filler = destination.getChunkFiller();
-        if (orderedKeys.getAverageRunLengthEstimate() >= USE_RANGES_AVERAGE_RUN_LENGTH) {
-            filler.fillByRanges(this, orderedKeys, destination);
+        if (rowSequence.getAverageRunLengthEstimate() >= USE_RANGES_AVERAGE_RUN_LENGTH) {
+            filler.fillByRanges(this, rowSequence, destination);
         } else {
-            filler.fillByIndices(this, orderedKeys, destination);
+            filler.fillByIndices(this, rowSequence, destination);
         }
     }
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        defaultFillPrevChunk(context, destination, orderedKeys);
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        defaultFillPrevChunk(context, destination, rowSequence);
     }
 
     final void defaultFillPrevChunk(@SuppressWarnings("unused") @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         final ChunkFiller filler = destination.getChunkFiller();
-        if (orderedKeys.getAverageRunLengthEstimate() >= USE_RANGES_AVERAGE_RUN_LENGTH) {
-            filler.fillPrevByRanges(this, orderedKeys, destination);
+        if (rowSequence.getAverageRunLengthEstimate() >= USE_RANGES_AVERAGE_RUN_LENGTH) {
+            filler.fillPrevByRanges(this, rowSequence, destination);
         } else {
-            filler.fillPrevByIndices(this, orderedKeys, destination);
+            filler.fillPrevByIndices(this, rowSequence, destination);
         }
     }
 

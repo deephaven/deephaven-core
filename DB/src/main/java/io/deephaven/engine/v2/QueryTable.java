@@ -1122,7 +1122,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table flatten() {
-        if (!isFlat() && !isRefreshing() && index.size() - 1 == index.lastKey()) {
+        if (!isFlat() && !isRefreshing() && index.size() - 1 == index.lastRowKey()) {
             // We're already flat, and we'll never update; so we can just return ourselves, after setting ourselves flat
             setFlat();
         }
@@ -1144,7 +1144,7 @@ public class QueryTable extends BaseTable {
     @Override
     public boolean isFlat() {
         if (flat) {
-            Assert.assertion(index.lastKey() == index.size() - 1, "index.lastKey() == index.size() - 1", index,
+            Assert.assertion(index.lastRowKey() == index.size() - 1, "index.lastRowKey() == index.size() - 1", index,
                     "index");
         }
         return flat;
@@ -1921,7 +1921,7 @@ public class QueryTable extends BaseTable {
             final QueryTable result = new QueryTable(resultIndex, resultColumns);
             if (isRefreshing()) {
                 listenForUpdates(new ListenerImpl("snapshotHistory" + resultColumns.keySet().toString(), this, result) {
-                    private long lastKey = index.lastKey();
+                    private long lastKey = index.lastRowKey();
 
                     @Override
                     public void onUpdate(final Index added, final Index removed, final Index modified) {
@@ -1932,15 +1932,15 @@ public class QueryTable extends BaseTable {
                         if (added.size() == 0 || rightTable.size() == 0) {
                             return;
                         }
-                        Assert.assertion(added.firstKey() > lastKey, "added.firstKey() > lastKey",
-                                lastKey, "lastKey", added, "added");
+                        Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey",
+                                lastKey, "lastRowKey", added, "added");
                         final long oldSize = resultIndex.size();
                         final long newSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), added,
                                 rightTable.getColumnSourceMap(), rightTable.getIndex(),
                                 resultColumns, oldSize);
                         final Index addedSnapshots = Index.FACTORY.getIndexByRange(oldSize, newSize - 1);
                         resultIndex.insert(addedSnapshots);
-                        lastKey = index.lastKey();
+                        lastKey = index.lastRowKey();
                         result.notifyListeners(addedSnapshots, Index.FACTORY.getEmptyIndex(),
                                 Index.FACTORY.getEmptyIndex());
                     }
@@ -2832,11 +2832,11 @@ public class QueryTable extends BaseTable {
             final long[] sizes, final Index.RandomBuilder indexBuilder, final long base, final Index index) {
         Assert.assertion(base >= 0 && base <= 63, "base >= 0 && base <= 63", base, "base");
         long mask = ((1L << base) - 1) << (64 - base);
-        long lastKey = index.lastKey();
+        long lastKey = index.lastRowKey();
         if ((lastKey > 0) && ((lastKey & mask) != 0)) {
             throw new IllegalStateException(
                     "Key overflow detected, perhaps you should flatten your table before calling ungroup.  "
-                            + ",lastKey=" + lastKey + ", base=" + base);
+                            + ",lastRowKey=" + lastKey + ", base=" + base);
         }
 
         int pos = 0;

@@ -1,57 +1,59 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements OrderedKeys {
+public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSequence {
 
-    public static OrderedKeys wrap(OrderedKeys toWrap, long shiftAmount) {
-        if (toWrap instanceof ShiftedOrderedKeys) {
-            final ShiftedOrderedKeys orig = ((ShiftedOrderedKeys) toWrap);
+    public static RowSequence wrap(RowSequence toWrap, long shiftAmount) {
+        if (toWrap instanceof ShiftedRowSequence) {
+            final ShiftedRowSequence orig = ((ShiftedRowSequence) toWrap);
             toWrap = orig.wrappedOK;
             shiftAmount += orig.shiftAmount;
         }
-        return (shiftAmount == 0) ? toWrap : new ShiftedOrderedKeys(toWrap, shiftAmount);
+        return (shiftAmount == 0) ? toWrap : new ShiftedRowSequence(toWrap, shiftAmount);
     }
 
     private long shiftAmount;
-    private OrderedKeys wrappedOK;
+    private RowSequence wrappedOK;
 
-    private ShiftedOrderedKeys(final OrderedKeys wrappedOK, final long shiftAmount) {
-        Assert.assertion(!(wrappedOK instanceof ShiftedOrderedKeys),
-                "Wrapped Ordered Keys must not be a ShiftedOrderedKeys");
+    private ShiftedRowSequence(final RowSequence wrappedOK, final long shiftAmount) {
+        Assert.assertion(!(wrappedOK instanceof ShiftedRowSequence),
+                "Wrapped Ordered Indices must not be a ShiftedRowSequence");
         this.shiftAmount = shiftAmount;
         this.wrappedOK = wrappedOK;
     }
 
-    public ShiftedOrderedKeys() {
+    public ShiftedRowSequence() {
         this.shiftAmount = 0;
         this.wrappedOK = null;
     }
 
-    public void reset(OrderedKeys toWrap, long shiftAmount) {
-        if (toWrap instanceof ShiftedOrderedKeys) {
-            final ShiftedOrderedKeys orig = ((ShiftedOrderedKeys) toWrap);
+    public void reset(RowSequence toWrap, long shiftAmount) {
+        if (toWrap instanceof ShiftedRowSequence) {
+            final ShiftedRowSequence orig = ((ShiftedRowSequence) toWrap);
             this.shiftAmount = shiftAmount + orig.shiftAmount;
             this.wrappedOK = orig.wrappedOK;
         } else {
             this.shiftAmount = shiftAmount;
             this.wrappedOK = toWrap;
         }
-        invalidateOrderedKeysAsChunkImpl();
+        invalidateRowSequenceAsChunkImpl();
     }
 
     public final void clear() {
         this.shiftAmount = 0;
         this.wrappedOK = null;
-        invalidateOrderedKeysAsChunkImpl();
+        invalidateRowSequenceAsChunkImpl();
     }
 
-    private class Iterator implements OrderedKeys.Iterator {
-        OrderedKeys.Iterator wrappedIt = wrappedOK.getOrderedKeysIterator();
-        ShiftedOrderedKeys reusableOK = new ShiftedOrderedKeys(null, shiftAmount);
+    private class Iterator implements RowSequence.Iterator {
+        RowSequence.Iterator wrappedIt = wrappedOK.getRowSequenceIterator();
+        ShiftedRowSequence reusableOK = new ShiftedRowSequence(null, shiftAmount);
 
         @Override
         public void close() {
@@ -74,14 +76,14 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
         }
 
         @Override
-        public OrderedKeys getNextOrderedKeysThrough(long maxKeyInclusive) {
-            reusableOK.reset(wrappedIt.getNextOrderedKeysThrough(maxKeyInclusive - shiftAmount), shiftAmount);
+        public RowSequence getNextRowSequenceThrough(long maxKeyInclusive) {
+            reusableOK.reset(wrappedIt.getNextRowSequenceThrough(maxKeyInclusive - shiftAmount), shiftAmount);
             return reusableOK;
         }
 
         @Override
-        public OrderedKeys getNextOrderedKeysWithLength(long numberOfKeys) {
-            reusableOK.reset(wrappedIt.getNextOrderedKeysWithLength(numberOfKeys), shiftAmount);
+        public RowSequence getNextRowSequenceWithLength(long numberOfKeys) {
+            reusableOK.reset(wrappedIt.getNextRowSequenceWithLength(numberOfKeys), shiftAmount);
             return reusableOK;
         }
 
@@ -97,18 +99,20 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
     }
 
     @Override
-    public Iterator getOrderedKeysIterator() {
+    public Iterator getRowSequenceIterator() {
         return new Iterator();
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByPosition(long startPositionInclusive, long length) {
-        return wrap(wrappedOK.getOrderedKeysByPosition(startPositionInclusive, length), shiftAmount);
+    public RowSequence getRowSequenceByPosition(long startPositionInclusive, long length) {
+        return wrap(wrappedOK.getRowSequenceByPosition(startPositionInclusive, length), shiftAmount);
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByKeyRange(long startKeyInclusive, long endKeyInclusive) {
-        return wrap(wrappedOK.getOrderedKeysByKeyRange(startKeyInclusive - shiftAmount, endKeyInclusive - shiftAmount),
+    public RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive) {
+        return wrap(
+                wrappedOK.getRowSequenceByKeyRange(startRowKeyInclusive - shiftAmount,
+                        endRowKeyInclusive - shiftAmount),
                 shiftAmount);
     }
 
@@ -118,14 +122,14 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
     }
 
     @Override
-    public void fillKeyIndicesChunk(WritableLongChunk<? extends KeyIndices> chunkToFill) {
-        wrappedOK.fillKeyIndicesChunk(chunkToFill);
+    public void fillRowKeyChunk(WritableLongChunk<? extends RowKeys> chunkToFill) {
+        wrappedOK.fillRowKeyChunk(chunkToFill);
         shiftIndicesChunk(chunkToFill);
     }
 
     @Override
-    public void fillKeyRangesChunk(WritableLongChunk<OrderedKeyRanges> chunkToFill) {
-        wrappedOK.fillKeyRangesChunk(chunkToFill);
+    public void fillRowKeyRangesChunk(WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
+        wrappedOK.fillRowKeyRangesChunk(chunkToFill);
         shiftKeyRangesChunk(chunkToFill);
     }
 
@@ -135,13 +139,13 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
     }
 
     @Override
-    public long firstKey() {
-        return wrappedOK.firstKey() + shiftAmount;
+    public long firstRowKey() {
+        return wrappedOK.firstRowKey() + shiftAmount;
     }
 
     @Override
-    public long lastKey() {
-        return wrappedOK.lastKey() + shiftAmount;
+    public long lastRowKey() {
+        return wrappedOK.lastRowKey() + shiftAmount;
     }
 
     @Override
@@ -166,7 +170,7 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
 
     @Override
     public void close() {
-        closeOrderedKeysAsChunkImpl();
+        closeRowSequenceAsChunkImpl();
         clear();
     }
 
@@ -177,13 +181,13 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
         return mi.intValue();
     }
 
-    private void shiftIndicesChunk(WritableLongChunk<? extends KeyIndices> chunkToFill) {
+    private void shiftIndicesChunk(WritableLongChunk<? extends RowKeys> chunkToFill) {
         for (int ii = 0; ii < chunkToFill.size(); ++ii) {
             chunkToFill.set(ii, chunkToFill.get(ii) + shiftAmount);
         }
     }
 
-    private void shiftKeyRangesChunk(WritableLongChunk<OrderedKeyRanges> chunkToFill) {
+    private void shiftKeyRangesChunk(WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         for (int ii = 0; ii < chunkToFill.size(); ++ii) {
             chunkToFill.set(ii, chunkToFill.get(ii) + shiftAmount);
         }

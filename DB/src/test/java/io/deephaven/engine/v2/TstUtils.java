@@ -399,7 +399,7 @@ public class TstUtils {
     }
 
     public static Index newIndex(int targetSize, Index sourceIndex, Random random) {
-        final long maxKey = (sourceIndex.size() == 0 ? 0 : sourceIndex.lastKey());
+        final long maxKey = (sourceIndex.size() == 0 ? 0 : sourceIndex.lastRowKey());
         final long emptySlots = maxKey - sourceIndex.size();
         final int slotsToFill = Math.min(
                 Math.min((int) (Math.max(0.0, ((random.nextGaussian() / 0.1) + 0.9)) * emptySlots), targetSize),

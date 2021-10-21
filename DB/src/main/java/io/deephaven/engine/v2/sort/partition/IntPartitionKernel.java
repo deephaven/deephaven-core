@@ -17,12 +17,12 @@ public class IntPartitionKernel {
     public static class PartitionKernelContext {
         // during the actual partition operation, we stick the new keys in here; when we exceed chunksize afterwards,
         // we can pass the entire chunk value to the builder; which then makes the virtual call to build it all at once
-        private final WritableLongChunk<KeyIndices>[] accumulatedKeys;
+        private final WritableLongChunk<RowKeys>[] accumulatedKeys;
         private final Index.SequentialBuilder [] builders;
 
         private final int chunkSize;
         private final WritableIntChunk<Any> pivotValues;
-        private final WritableLongChunk<KeyIndices> pivotKeys;
+        private final WritableLongChunk<RowKeys> pivotKeys;
         private final boolean preserveEquality;
 
         private PartitionKernelContext(int chunkSize, int numPartitions, boolean preserveEquality) {
@@ -81,7 +81,7 @@ public class IntPartitionKernel {
     public static PartitionKernelContext createContext(Index index, ColumnSource<Integer> columnSource, int chunkSize, int nPartitions, boolean preserveEquality) {
         final PartitionKernelContext context = new PartitionKernelContext(chunkSize, nPartitions, preserveEquality);
 
-        final WritableLongChunk<KeyIndices> tempPivotKeys = WritableLongChunk.makeWritableChunk(nPartitions * 3);
+        final WritableLongChunk<RowKeys> tempPivotKeys = WritableLongChunk.makeWritableChunk(nPartitions * 3);
         final WritableIntChunk<Any> tempPivotValues = WritableIntChunk.makeWritableChunk(nPartitions * 3);
 
         samplePivots(index, nPartitions, tempPivotKeys, tempPivotValues, columnSource);
@@ -98,7 +98,7 @@ public class IntPartitionKernel {
     // the sample pivots function could be smarter; in that if we are reading a block, there is a strong argument to
     // sample the entirety of the relevant values within the block from disk.  We might also want to do a complete
     // linear pass so that we can determine ideal pivots (or maybe if a radix based approach is better).
-    private static void samplePivots(Index index, int nPartitions, WritableLongChunk<KeyIndices> pivotKeys, WritableIntChunk<Any> pivotValues, ColumnSource<Integer> columnSource) {
+    private static void samplePivots(Index index, int nPartitions, WritableLongChunk<RowKeys> pivotKeys, WritableIntChunk<Any> pivotValues, ColumnSource<Integer> columnSource) {
         pivotKeys.setSize(0);
         final int pivotsRequired = nPartitions - 1;
         final int samplesRequired = pivotsRequired * 3;
@@ -133,7 +133,7 @@ public class IntPartitionKernel {
      * @param indexKeys a chunk of index keys to partition
      * @param values  a chunk of values that go with the index keys
      */
-    public static void partition(PartitionKernelContext context, LongChunk<KeyIndices> indexKeys, IntChunk values) {
+    public static void partition(PartitionKernelContext context, LongChunk<RowKeys> indexKeys, IntChunk values) {
         final int accumulatedChunkSize = context.chunkSize;
         for (int ii = 0; ii < values.size(); ii += accumulatedChunkSize) {
             final int last = Math.min(values.size(), ii + accumulatedChunkSize);
@@ -165,7 +165,7 @@ public class IntPartitionKernel {
 
     private static void flushToBuilder(PartitionKernelContext context, int partition) {
         final Index.SequentialBuilder builder = context.builders[partition];
-        final WritableLongChunk<KeyIndices> partitionKeys = context.accumulatedKeys[partition];
+        final WritableLongChunk<RowKeys> partitionKeys = context.accumulatedKeys[partition];
         final int chunkSize = partitionKeys.size();
         for (int ii = 0; ii < chunkSize; ++ii) {
             builder.appendKey(partitionKeys.get(ii));
@@ -188,7 +188,7 @@ public class IntPartitionKernel {
         return lo * 2;
     }
 
-    private static int binarySearchTieIndex(IntChunk pivotValues, LongChunk<KeyIndices> pivotKeys, int lo, int hi, int searchValue, long searchKey) {
+    private static int binarySearchTieIndex(IntChunk pivotValues, LongChunk<RowKeys> pivotKeys, int lo, int hi, int searchValue, long searchKey) {
         while (lo != hi) {
             final int mid = (lo + hi) / 2;
             final int compareValue = pivotValues.get(mid);

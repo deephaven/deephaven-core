@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ResettableWritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
@@ -99,11 +100,11 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
 
     @Override
     public void fillChunk(@NotNull FillContext fillContext,
-            @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut, @NotNull OrderedKeys keysToMap) {
+            @NotNull WritableLongChunk<Attributes.RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap) {
         final MutableInt outputPosition = new MutableInt(0);
         final MutableInt lastSlot = new MutableInt(0);
         mappedKeysOut.setSize(keysToMap.intSize());
-        try (final ResettableWritableLongChunk<Attributes.KeyIndices> resettableKeys =
+        try (final ResettableWritableLongChunk<Attributes.RowKeys> resettableKeys =
                 ResettableWritableLongChunk.makeResettableChunk()) {
             keysToMap.forAllLongRanges((begin, end) -> {
                 while (begin <= end) {
@@ -124,16 +125,16 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
                     final long size = end - begin + 1;
                     final int groupSize;
 
-                    final WritableLongChunk<Attributes.KeyIndices> chunkToFill = resettableKeys.resetFromTypedChunk(
+                    final WritableLongChunk<Attributes.RowKeys> chunkToFill = resettableKeys.resetFromTypedChunk(
                             mappedKeysOut, outputPosition.intValue(), mappedKeysOut.size() - outputPosition.intValue());
                     if (beginKeyWithOffset > 0 || (beginKeyWithOffset + size < groups[slot].size())) {
-                        try (OrderedKeys orderedKeysByPosition =
-                                groups[slot].getOrderedKeysByPosition(beginKeyWithOffset, size)) {
-                            orderedKeysByPosition.fillKeyIndicesChunk(chunkToFill);
-                            groupSize = orderedKeysByPosition.intSize();
+                        try (RowSequence rowSequenceByPosition =
+                                groups[slot].getRowSequenceByPosition(beginKeyWithOffset, size)) {
+                            rowSequenceByPosition.fillRowKeyChunk(chunkToFill);
+                            groupSize = rowSequenceByPosition.intSize();
                         }
                     } else {
-                        groups[slot].fillKeyIndicesChunk(chunkToFill);
+                        groups[slot].fillRowKeyChunk(chunkToFill);
                         groupSize = groups[slot].intSize();
                     }
                     outputPosition.add(groupSize);
@@ -146,7 +147,7 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
 
     @Override
     public void fillPrevChunk(@NotNull FillContext fillContext,
-            @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut, @NotNull OrderedKeys keysToMap) {
+            @NotNull WritableLongChunk<Attributes.RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap) {
         fillChunk(fillContext, mappedKeysOut, keysToMap);
     }
 

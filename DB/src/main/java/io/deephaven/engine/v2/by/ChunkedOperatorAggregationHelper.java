@@ -5,6 +5,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
@@ -310,33 +312,33 @@ public class ChunkedOperatorAggregationHelper {
         private final SafeCloseableList toClose;
 
         private final IterativeChunkedAggregationOperator.BucketedContext[] bucketedContexts;
-        private final IntIntTimsortKernel.IntIntSortKernelContext<KeyIndices, ChunkPositions> sortKernelContext;
+        private final IntIntTimsortKernel.IntIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext;
 
         // These are used for all access when only pre- or post-shift (or previous or current) are needed, else for
         // pre-shift/previous
         private final SharedContext sharedContext;
         private final ChunkSource.GetContext[] getContexts;
         private final WritableChunk<Values>[] workingChunks;
-        private final WritableLongChunk<KeyIndices> permutedKeyIndices;
+        private final WritableLongChunk<RowKeys> permutedKeyIndices;
 
         // These are used when post-shift/current values are needed concurrently with pre-shift/previous
         private final SharedContext postSharedContext;
         private final ChunkSource.GetContext[] postGetContexts;
         private final WritableChunk<Values>[] postWorkingChunks;
-        private final WritableLongChunk<KeyIndices> postPermutedKeyIndices;
+        private final WritableLongChunk<RowKeys> postPermutedKeyIndices;
 
         private final WritableIntChunk<ChunkPositions> runStarts;
         private final WritableIntChunk<ChunkLengths> runLengths;
         private final WritableIntChunk<ChunkPositions> chunkPositions;
-        private final WritableIntChunk<KeyIndices> slots;
+        private final WritableIntChunk<RowKeys> slots;
         private final WritableBooleanChunk<Values> modifiedSlots;
         private final WritableBooleanChunk<Values> slotsModifiedByOperator;
 
         private final IncrementalChunkedOperatorAggregationStateManager.BuildContext bc;
-        private final WritableIntChunk<KeyIndices> reincarnatedSlots;
+        private final WritableIntChunk<RowKeys> reincarnatedSlots;
 
         private final IncrementalChunkedOperatorAggregationStateManager.ProbeContext pc;
-        private final WritableIntChunk<KeyIndices> emptiedSlots;
+        private final WritableIntChunk<RowKeys> emptiedSlots;
 
         private KeyedUpdateContext(@NotNull final AggregationContext ac,
                 @NotNull final IncrementalChunkedOperatorAggregationStateManager incrementalStateManager,
@@ -575,18 +577,18 @@ public class ChunkedOperatorAggregationHelper {
             return downstream;
         }
 
-        private void doRemoves(@NotNull final OrderedKeys keyIndicesToRemove) {
+        private void doRemoves(@NotNull final RowSequence keyIndicesToRemove) {
             if (keyIndicesToRemove.isEmpty()) {
                 return;
             }
-            try (final OrderedKeys.Iterator keyIndicesToRemoveIterator = keyIndicesToRemove.getOrderedKeysIterator()) {
+            try (final RowSequence.Iterator keyIndicesToRemoveIterator = keyIndicesToRemove.getRowSequenceIterator()) {
                 while (keyIndicesToRemoveIterator.hasMore()) {
-                    doRemovesForChunk(keyIndicesToRemoveIterator.getNextOrderedKeysWithLength(CHUNK_SIZE));
+                    doRemovesForChunk(keyIndicesToRemoveIterator.getNextRowSequenceWithLength(CHUNK_SIZE));
                 }
             }
         }
 
-        private void doRemovesForChunk(@NotNull final OrderedKeys keyIndicesToRemoveChunk) {
+        private void doRemovesForChunk(@NotNull final RowSequence keyIndicesToRemoveChunk) {
 
             incrementalStateManager.remove(pc, keyIndicesToRemoveChunk, reinterpretedKeySources, slots, emptiedSlots);
             emptiedStatesBuilder.addKeyIndicesChunk(emptiedSlots);
@@ -594,12 +596,12 @@ public class ChunkedOperatorAggregationHelper {
             propagateRemovesToOperators(keyIndicesToRemoveChunk, slots);
         }
 
-        private void propagateRemovesToOperators(@NotNull final OrderedKeys keyIndicesToRemoveChunk,
-                @NotNull final WritableIntChunk<KeyIndices> slotsToRemoveFrom) {
+        private void propagateRemovesToOperators(@NotNull final RowSequence keyIndicesToRemoveChunk,
+                @NotNull final WritableIntChunk<RowKeys> slotsToRemoveFrom) {
             findSlotRuns(sortKernelContext, runStarts, runLengths, chunkPositions, slotsToRemoveFrom);
 
             if (ac.requiresIndices()) {
-                final LongChunk<OrderedKeyIndices> keyIndices = keyIndicesToRemoveChunk.asKeyIndicesChunk();
+                final LongChunk<OrderedRowKeys> keyIndices = keyIndicesToRemoveChunk.asRowKeyChunk();
                 LongPermuteKernel.permuteInput(keyIndices, chunkPositions, permutedKeyIndices);
             }
 
@@ -632,19 +634,19 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
 
-        private void doInserts(@NotNull final OrderedKeys keyIndicesToInsert, final boolean addToStateManager) {
+        private void doInserts(@NotNull final RowSequence keyIndicesToInsert, final boolean addToStateManager) {
             if (keyIndicesToInsert.isEmpty()) {
                 return;
             }
-            try (final OrderedKeys.Iterator keyIndicesToInsertIterator = keyIndicesToInsert.getOrderedKeysIterator()) {
+            try (final RowSequence.Iterator keyIndicesToInsertIterator = keyIndicesToInsert.getRowSequenceIterator()) {
                 while (keyIndicesToInsertIterator.hasMore()) {
-                    doInsertsForChunk(keyIndicesToInsertIterator.getNextOrderedKeysWithLength(CHUNK_SIZE),
+                    doInsertsForChunk(keyIndicesToInsertIterator.getNextRowSequenceWithLength(CHUNK_SIZE),
                             addToStateManager);
                 }
             }
         }
 
-        private void doInsertsForChunk(@NotNull final OrderedKeys keyIndicesToInsertChunk,
+        private void doInsertsForChunk(@NotNull final RowSequence keyIndicesToInsertChunk,
                 final boolean addToStateManager) {
             if (addToStateManager) {
                 incrementalStateManager.addForUpdate(bc, keyIndicesToInsertChunk, reinterpretedKeySources,
@@ -657,14 +659,14 @@ public class ChunkedOperatorAggregationHelper {
             propagateInsertsToOperators(keyIndicesToInsertChunk, slots);
         }
 
-        private void propagateInsertsToOperators(@NotNull final OrderedKeys keyIndicesToInsertChunk,
-                @NotNull final WritableIntChunk<KeyIndices> slotsToAddTo) {
+        private void propagateInsertsToOperators(@NotNull final RowSequence keyIndicesToInsertChunk,
+                @NotNull final WritableIntChunk<RowKeys> slotsToAddTo) {
             ac.ensureCapacity(outputPosition.intValue());
 
             findSlotRuns(sortKernelContext, runStarts, runLengths, chunkPositions, slotsToAddTo);
 
             if (ac.requiresIndices()) {
-                final LongChunk<OrderedKeyIndices> keyIndices = keyIndicesToInsertChunk.asKeyIndicesChunk();
+                final LongChunk<OrderedRowKeys> keyIndices = keyIndicesToInsertChunk.asRowKeyChunk();
                 permutedKeyIndices.setSize(keyIndices.size());
                 LongPermuteKernel.permuteInput(keyIndices, chunkPositions, permutedKeyIndices);
             }
@@ -702,9 +704,9 @@ public class ChunkedOperatorAggregationHelper {
             if (postShiftIndexToProcess.isEmpty()) {
                 return;
             }
-            try (final WritableLongChunk<OrderedKeyIndices> preKeyIndices =
+            try (final WritableLongChunk<OrderedRowKeys> preKeyIndices =
                     WritableLongChunk.makeWritableChunk(pc.chunkSize);
-                    final WritableLongChunk<OrderedKeyIndices> postKeyIndices =
+                    final WritableLongChunk<OrderedRowKeys> postKeyIndices =
                             WritableLongChunk.makeWritableChunk(pc.chunkSize)) {
                 final Runnable applyChunkedShift = () -> doProcessShiftBucketed(preKeyIndices, postKeyIndices);
                 processUpstreamShifts(upstream, postShiftIndexToProcess, preKeyIndices, postKeyIndices,
@@ -712,15 +714,15 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
 
-        private void doProcessShiftBucketed(@NotNull final WritableLongChunk<OrderedKeyIndices> preKeyIndices,
-                @NotNull final WritableLongChunk<OrderedKeyIndices> postKeyIndices) {
+        private void doProcessShiftBucketed(@NotNull final WritableLongChunk<OrderedRowKeys> preKeyIndices,
+                @NotNull final WritableLongChunk<OrderedRowKeys> postKeyIndices) {
 
             final boolean[] chunkInitialized = new boolean[ac.size()];
 
-            try (final OrderedKeys preShiftChunkKeys =
-                    OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(WritableLongChunk.downcast(preKeyIndices));
-                    final OrderedKeys postShiftChunkKeys =
-                            OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(WritableLongChunk.downcast(postKeyIndices))) {
+            try (final RowSequence preShiftChunkKeys =
+                    RowSequenceUtil.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(preKeyIndices));
+                    final RowSequence postShiftChunkKeys =
+                            RowSequenceUtil.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(postKeyIndices))) {
                 sharedContext.reset();
                 postSharedContext.reset();
                 Arrays.fill(chunkInitialized, false);
@@ -768,20 +770,20 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
 
-        private void doSameSlotModifies(@NotNull final OrderedKeys preShiftKeyIndicesToModify,
-                @NotNull final OrderedKeys postShiftKeyIndicesToModify,
+        private void doSameSlotModifies(@NotNull final RowSequence preShiftKeyIndicesToModify,
+                @NotNull final RowSequence postShiftKeyIndicesToModify,
                 final boolean supplyPostIndices, @NotNull final boolean[] operatorsToProcess,
                 @NotNull final boolean[] operatorsToProcessIndicesOnly) {
             final boolean shifted = preShiftKeyIndicesToModify != postShiftKeyIndicesToModify;
-            try (final OrderedKeys.Iterator preShiftIterator = preShiftKeyIndicesToModify.getOrderedKeysIterator();
-                    final OrderedKeys.Iterator postShiftIterator =
-                            shifted ? postShiftKeyIndicesToModify.getOrderedKeysIterator() : null) {
+            try (final RowSequence.Iterator preShiftIterator = preShiftKeyIndicesToModify.getRowSequenceIterator();
+                    final RowSequence.Iterator postShiftIterator =
+                            shifted ? postShiftKeyIndicesToModify.getRowSequenceIterator() : null) {
                 final boolean[] chunkInitialized = new boolean[ac.size()];
                 while (preShiftIterator.hasMore()) {
-                    final OrderedKeys preShiftKeyIndicesChunk =
-                            preShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
-                    final OrderedKeys postShiftKeyIndicesChunk =
-                            shifted ? postShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE)
+                    final RowSequence preShiftKeyIndicesChunk =
+                            preShiftIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+                    final RowSequence postShiftKeyIndicesChunk =
+                            shifted ? postShiftIterator.getNextRowSequenceWithLength(CHUNK_SIZE)
                                     : preShiftKeyIndicesChunk;
                     sharedContext.reset();
                     postSharedContext.reset();
@@ -792,8 +794,8 @@ public class ChunkedOperatorAggregationHelper {
                     findSlotRuns(sortKernelContext, runStarts, runLengths, chunkPositions, slots);
 
                     if (supplyPostIndices) {
-                        final LongChunk<OrderedKeyIndices> postKeyIndices =
-                                postShiftKeyIndicesChunk.asKeyIndicesChunk();
+                        final LongChunk<OrderedRowKeys> postKeyIndices =
+                                postShiftKeyIndicesChunk.asRowKeyChunk();
                         permutedKeyIndices.setSize(postKeyIndices.size());
                         LongPermuteKernel.permuteInput(postKeyIndices, chunkPositions, permutedKeyIndices);
                     }
@@ -844,18 +846,18 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
 
-        private void doSameSlotModifyIndicesOnly(@NotNull final OrderedKeys postShiftKeyIndicesToModify,
+        private void doSameSlotModifyIndicesOnly(@NotNull final RowSequence postShiftKeyIndicesToModify,
                 @NotNull final boolean[] operatorsToProcessIndicesOnly) {
-            try (final OrderedKeys.Iterator postShiftIterator = postShiftKeyIndicesToModify.getOrderedKeysIterator()) {
+            try (final RowSequence.Iterator postShiftIterator = postShiftKeyIndicesToModify.getRowSequenceIterator()) {
                 while (postShiftIterator.hasMore()) {
-                    final OrderedKeys postShiftKeyIndicesChunk =
-                            postShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                    final RowSequence postShiftKeyIndicesChunk =
+                            postShiftIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
 
                     incrementalStateManager.findModifications(pc, postShiftKeyIndicesChunk, reinterpretedKeySources,
                             slots);
                     findSlotRuns(sortKernelContext, runStarts, runLengths, chunkPositions, slots);
 
-                    final LongChunk<OrderedKeyIndices> postKeyIndices = postShiftKeyIndicesChunk.asKeyIndicesChunk();
+                    final LongChunk<OrderedRowKeys> postKeyIndices = postShiftKeyIndicesChunk.asRowKeyChunk();
                     permutedKeyIndices.setSize(postKeyIndices.size());
                     LongPermuteKernel.permuteInput(postKeyIndices, chunkPositions, permutedKeyIndices);
 
@@ -958,22 +960,22 @@ public class ChunkedOperatorAggregationHelper {
             final Index.SequentialBuilder keyChangeIndicesPostShiftBuilder =
                     Index.CURRENT_FACTORY.getSequentialBuilder();
 
-            try (final OrderedKeys.Iterator modifiedPreShiftIterator =
-                    upstream.getModifiedPreShift().getOrderedKeysIterator();
-                    final OrderedKeys.Iterator modifiedPostShiftIterator =
-                            shifted ? upstream.modified.getOrderedKeysIterator() : null;
-                    final WritableIntChunk<KeyIndices> postSlots = WritableIntChunk.makeWritableChunk(bc.chunkSize)) {
+            try (final RowSequence.Iterator modifiedPreShiftIterator =
+                    upstream.getModifiedPreShift().getRowSequenceIterator();
+                    final RowSequence.Iterator modifiedPostShiftIterator =
+                            shifted ? upstream.modified.getRowSequenceIterator() : null;
+                    final WritableIntChunk<RowKeys> postSlots = WritableIntChunk.makeWritableChunk(bc.chunkSize)) {
 
                 // Hijacking postPermutedKeyIndices because it's not used in this loop; the rename hopefully makes the
                 // code much clearer!
-                final WritableLongChunk<OrderedKeyIndices> removedKeyIndices =
+                final WritableLongChunk<OrderedRowKeys> removedKeyIndices =
                         WritableLongChunk.downcast(postPermutedKeyIndices);
 
                 while (modifiedPreShiftIterator.hasMore()) {
-                    final OrderedKeys modifiedPreShiftChunk =
-                            modifiedPreShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
-                    final OrderedKeys modifiedPostShiftChunk =
-                            shifted ? modifiedPostShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE)
+                    final RowSequence modifiedPreShiftChunk =
+                            modifiedPreShiftIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+                    final RowSequence modifiedPostShiftChunk =
+                            shifted ? modifiedPostShiftIterator.getNextRowSequenceWithLength(CHUNK_SIZE)
                                     : modifiedPreShiftChunk;
 
                     incrementalStateManager.remove(pc, modifiedPreShiftChunk, reinterpretedKeySources, slots,
@@ -983,9 +985,9 @@ public class ChunkedOperatorAggregationHelper {
                             outputPosition, postSlots, reincarnatedSlots);
                     reincarnatedStatesBuilder.addKeyIndicesChunk(reincarnatedSlots);
 
-                    final LongChunk<OrderedKeyIndices> preShiftIndices = modifiedPreShiftChunk.asKeyIndicesChunk();
-                    final LongChunk<OrderedKeyIndices> postShiftIndices =
-                            shifted ? modifiedPostShiftChunk.asKeyIndicesChunk() : preShiftIndices;
+                    final LongChunk<OrderedRowKeys> preShiftIndices = modifiedPreShiftChunk.asRowKeyChunk();
+                    final LongChunk<OrderedRowKeys> postShiftIndices =
+                            shifted ? modifiedPostShiftChunk.asRowKeyChunk() : preShiftIndices;
 
                     final int chunkSize = slots.size();
                     int numKeyChanges = 0;
@@ -1013,8 +1015,8 @@ public class ChunkedOperatorAggregationHelper {
                     }
                     slots.setSize(numKeyChanges);
                     removedKeyIndices.setSize(numKeyChanges);
-                    try (final OrderedKeys keyIndicesToRemoveChunk =
-                            OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(removedKeyIndices)) {
+                    try (final RowSequence keyIndicesToRemoveChunk =
+                            RowSequenceUtil.wrapRowKeysChunkAsRowSequence(removedKeyIndices)) {
                         propagateRemovesToOperators(keyIndicesToRemoveChunk, slots);
                     }
                 }
@@ -1053,17 +1055,17 @@ public class ChunkedOperatorAggregationHelper {
     private static ReadOnlyIndex extractUnshiftedModifiesFromUpstream(@NotNull final Update upstream) {
         final Index.SequentialBuilder unshiftedModifiesBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
 
-        try (final OrderedKeys.Iterator modifiedPreShiftIterator =
-                upstream.getModifiedPreShift().getOrderedKeysIterator();
-                final OrderedKeys.Iterator modifiedPostShiftIterator = upstream.modified.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator modifiedPreShiftIterator =
+                upstream.getModifiedPreShift().getRowSequenceIterator();
+                final RowSequence.Iterator modifiedPostShiftIterator = upstream.modified.getRowSequenceIterator()) {
             while (modifiedPreShiftIterator.hasMore()) {
-                final OrderedKeys modifiedPreShiftChunk =
-                        modifiedPreShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
-                final OrderedKeys modifiedPostShiftChunk =
-                        modifiedPostShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final RowSequence modifiedPreShiftChunk =
+                        modifiedPreShiftIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+                final RowSequence modifiedPostShiftChunk =
+                        modifiedPostShiftIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
 
-                final LongChunk<OrderedKeyIndices> preShiftIndices = modifiedPreShiftChunk.asKeyIndicesChunk();
-                final LongChunk<OrderedKeyIndices> postShiftIndices = modifiedPostShiftChunk.asKeyIndicesChunk();
+                final LongChunk<OrderedRowKeys> preShiftIndices = modifiedPreShiftChunk.asRowKeyChunk();
+                final LongChunk<OrderedRowKeys> postShiftIndices = modifiedPostShiftChunk.asRowKeyChunk();
 
                 final int chunkSize = preShiftIndices.size();
                 for (int ki = 0; ki < chunkSize; ++ki) {
@@ -1156,7 +1158,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void processUpstreamShifts(Update upstream, ReadOnlyIndex useIndex,
-            WritableLongChunk<OrderedKeyIndices> preKeyIndices, WritableLongChunk<OrderedKeyIndices> postKeyIndices,
+            WritableLongChunk<OrderedRowKeys> preKeyIndices, WritableLongChunk<OrderedRowKeys> postKeyIndices,
             Runnable applyChunkedShift) {
         Index.SearchIterator postOkForward = null;
         Index.SearchIterator postOkReverse = null;
@@ -1251,8 +1253,8 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static int resetWritePosition(boolean polarityReversed, WritableLongChunk<OrderedKeyIndices> preKeyIndices,
-            WritableLongChunk<OrderedKeyIndices> postKeyIndices) {
+    private static int resetWritePosition(boolean polarityReversed, WritableLongChunk<OrderedRowKeys> preKeyIndices,
+            WritableLongChunk<OrderedRowKeys> postKeyIndices) {
         if (polarityReversed) {
             postKeyIndices.setSize(postKeyIndices.capacity());
             if (preKeyIndices != null) {
@@ -1269,7 +1271,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void maybeApplyChunkedShift(Runnable applyChunkedShift,
-            WritableLongChunk<OrderedKeyIndices> preKeyIndices, WritableLongChunk<OrderedKeyIndices> postKeyIndices,
+            WritableLongChunk<OrderedRowKeys> preKeyIndices, WritableLongChunk<OrderedRowKeys> postKeyIndices,
             boolean polarityReversed, int writePosition) {
         if (polarityReversed) {
             int chunkSize = postKeyIndices.capacity();
@@ -1318,9 +1320,9 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void findSlotRuns(
-            IntIntTimsortKernel.IntIntSortKernelContext<KeyIndices, ChunkPositions> sortKernelContext,
+            IntIntTimsortKernel.IntIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext,
             WritableIntChunk<ChunkPositions> runStarts, WritableIntChunk<ChunkLengths> runLengths,
-            WritableIntChunk<ChunkPositions> chunkPosition, WritableIntChunk<KeyIndices> slots) {
+            WritableIntChunk<ChunkPositions> chunkPosition, WritableIntChunk<RowKeys> slots) {
         chunkPosition.setSize(slots.size());
         ChunkUtils.fillInOrder(chunkPosition);
         IntIntTimsortKernel.sort(sortKernelContext, chunkPosition, slots);
@@ -1331,7 +1333,7 @@ public class ChunkedOperatorAggregationHelper {
      * Get values from the inputColumn, and permute them into workingChunk.
      */
     private static void getAndPermuteChunk(ChunkSource.WithPrev<Values> inputColumn, ChunkSource.GetContext getContext,
-            OrderedKeys chunkOk, boolean usePrev, PermuteKernel permuteKernel, IntChunk<ChunkPositions> chunkPosition,
+            RowSequence chunkOk, boolean usePrev, PermuteKernel permuteKernel, IntChunk<ChunkPositions> chunkPosition,
             WritableChunk<Values> workingChunk) {
         final Chunk<? extends Values> values;
         if (inputColumn == null) {
@@ -1350,7 +1352,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void modifySlots(Index.RandomBuilder modifiedBuilder, IntChunk<ChunkPositions> runStarts,
-            WritableIntChunk<KeyIndices> slots, BooleanChunk modified) {
+            WritableIntChunk<RowKeys> slots, BooleanChunk modified) {
         int outIndex = 0;
         for (int runIndex = 0; runIndex < runStarts.size(); ++runIndex) {
             if (modified.get(runIndex)) {
@@ -1414,15 +1416,15 @@ public class ChunkedOperatorAggregationHelper {
                 for (int ii = 0; ii < responsiveGroups; ++ii) {
                     final Index index = groupKeyIndexTable.second.get(ii);
                     // noinspection ConstantConditions
-                    try (final OrderedKeys.Iterator okit = index.getOrderedKeysIterator()) {
+                    try (final RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
                         // noinspection unchecked
                         final Chunk<? extends Values>[] workingChunks = new Chunk[ac.size()];
 
-                        while (okit.hasMore()) {
-                            final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                        while (rsIt.hasMore()) {
+                            final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                             final int chunkSize = chunkOk.intSize();
-                            final LongChunk<OrderedKeyIndices> keyIndices =
-                                    indicesRequired ? chunkOk.asKeyIndicesChunk() : null;
+                            final LongChunk<OrderedRowKeys> keyIndices =
+                                    indicesRequired ? chunkOk.asRowKeyChunk() : null;
                             sharedContext.reset();
 
                             Arrays.fill(workingChunks, null);
@@ -1477,15 +1479,15 @@ public class ChunkedOperatorAggregationHelper {
                 final SafeCloseable ignored2 = new SafeCloseableArray<>(getContexts);
                 final SafeCloseable ignored3 = new SafeCloseableArray<>(workingChunks);
                 final SafeCloseable ignored4 = new SafeCloseableArray<>(bucketedContexts);
-                final OrderedKeys.Iterator okIt = index.getOrderedKeysIterator();
-                final WritableIntChunk<KeyIndices> outputPositions = WritableIntChunk.makeWritableChunk(chunkSize);
+                final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
+                final WritableIntChunk<RowKeys> outputPositions = WritableIntChunk.makeWritableChunk(chunkSize);
                 final WritableIntChunk<ChunkPositions> chunkPosition = WritableIntChunk.makeWritableChunk(chunkSize);
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
-                final IntIntTimsortKernel.IntIntSortKernelContext<KeyIndices, ChunkPositions> sortKernelContext =
+                final IntIntTimsortKernel.IntIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext =
                         IntIntTimsortKernel.createContext(chunkSize);
                 final WritableIntChunk<ChunkPositions> runStarts = WritableIntChunk.makeWritableChunk(chunkSize);
                 final WritableIntChunk<ChunkLengths> runLengths = WritableIntChunk.makeWritableChunk(chunkSize);
-                final WritableLongChunk<KeyIndices> permutedKeyIndices =
+                final WritableLongChunk<RowKeys> permutedKeyIndices =
                         ac.requiresIndices() ? WritableLongChunk.makeWritableChunk(chunkSize) : null;
                 final WritableBooleanChunk<Values> unusedModifiedSlots =
                         WritableBooleanChunk.makeWritableChunk(chunkSize)) {
@@ -1493,8 +1495,8 @@ public class ChunkedOperatorAggregationHelper {
             ac.initializeWorkingChunks(workingChunks, chunkSize);
             ac.initializeBucketedContexts(bucketedContexts, chunkSize);
 
-            while (okIt.hasMore()) {
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(chunkSize);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                 sharedContext.reset();
 
                 stateManager.add(bc, chunkOk, buildSources, outputPosition, outputPositions);
@@ -1504,7 +1506,7 @@ public class ChunkedOperatorAggregationHelper {
                 findSlotRuns(sortKernelContext, runStarts, runLengths, chunkPosition, outputPositions);
 
                 if (permutedKeyIndices != null) {
-                    final LongChunk<OrderedKeyIndices> keyIndices = chunkOk.asKeyIndicesChunk();
+                    final LongChunk<OrderedRowKeys> keyIndices = chunkOk.asRowKeyChunk();
                     LongPermuteKernel.permuteInput(keyIndices, chunkPosition, permutedKeyIndices);
                 }
 
@@ -1545,12 +1547,12 @@ public class ChunkedOperatorAggregationHelper {
 
         try (final SafeCloseable bc =
                 stateManager.makeAggregationStateBuildContext(groupedFlatKeySource, responsiveGroups);
-                final OrderedKeys ok = OrderedKeys.forRange(0, responsiveGroups - 1);
-                final OrderedKeys.Iterator okIt = ok.getOrderedKeysIterator();
-                final WritableIntChunk<KeyIndices> outputPositions =
+                final RowSequence rs = RowSequenceUtil.forRange(0, responsiveGroups - 1);
+                final RowSequence.Iterator rsIt = rs.getRowSequenceIterator();
+                final WritableIntChunk<RowKeys> outputPositions =
                         WritableIntChunk.makeWritableChunk(responsiveGroups)) {
-            while (okIt.hasMore()) {
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 stateManager.add(bc, chunkOk, groupedFlatKeySource, outputPosition, outputPositions);
             }
             Assert.eq(outputPosition.intValue(), "outputPosition.intValue()", responsiveGroups, "responsiveGroups");
@@ -1579,18 +1581,18 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource.GetContext[] getContext = new ColumnSource.GetContext[keyColumnsRaw.length];
         final WritableChunkSink.FillFromContext[] fillFromContexts =
                 new WritableChunkSink.FillFromContext[keyColumnsRaw.length];
-        try (final OrderedKeys.Iterator okit = copyValues.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = copyValues.getRowSequenceIterator();
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
                 final SafeCloseableArray ignored = new SafeCloseableArray<>(getContext);
                 final SafeCloseableArray ignored2 = new SafeCloseableArray<>(fillFromContexts)) {
             for (int ii = 0; ii < keyColumnsRaw.length; ++ii) {
                 getContext[ii] = keyColumnsRaw[ii].makeGetContext(chunkSize, sharedContext);
                 fillFromContexts[ii] = keyColumnsCopied[ii].makeFillFromContext(chunkSize);
-                keyColumnsCopied[ii].ensureCapacity(copyValues.lastKey() + 1);
+                keyColumnsCopied[ii].ensureCapacity(copyValues.lastRowKey() + 1);
             }
 
-            while (okit.hasMore()) {
-                final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(chunkSize);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
                 sharedContext.reset();
                 for (int ci = 0; ci < keyColumnsRaw.length; ci++) {
                     final Chunk<? extends Values> values = keyColumnsRaw[ci].getChunk(getContext[ci], chunkOk);
@@ -1789,19 +1791,19 @@ public class ChunkedOperatorAggregationHelper {
         return ac.transformResult(result);
     }
 
-    private static void doNoKeyAddition(OrderedKeys index, AggregationContext ac,
+    private static void doNoKeyAddition(RowSequence index, AggregationContext ac,
             IterativeChunkedAggregationOperator.SingletonContext[] opContexts, boolean[] operatorsToProcess,
             boolean usePrev, boolean[] modifiedOperators) {
         doNoKeyUpdate(index, ac, opContexts, operatorsToProcess, usePrev, false, modifiedOperators);
     }
 
-    private static void doNoKeyRemoval(OrderedKeys index, AggregationContext ac,
+    private static void doNoKeyRemoval(RowSequence index, AggregationContext ac,
             IterativeChunkedAggregationOperator.SingletonContext[] opContexts, boolean[] operatorsToProcess,
             boolean[] modifiedOperators) {
         doNoKeyUpdate(index, ac, opContexts, operatorsToProcess, true, true, modifiedOperators);
     }
 
-    private static void doNoKeyModifications(OrderedKeys preIndex, OrderedKeys postIndex, AggregationContext ac,
+    private static void doNoKeyModifications(RowSequence preIndex, RowSequence postIndex, AggregationContext ac,
             IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
             final boolean supplyPostIndices, @NotNull final boolean[] operatorsToProcess,
             @NotNull final boolean[] operatorsToProcessIndicesOnly, @NotNull final boolean[] modifiedOperators) {
@@ -1812,8 +1814,8 @@ public class ChunkedOperatorAggregationHelper {
                 final SafeCloseableArray ignored2 = new SafeCloseableArray<>(postGetContexts);
                 final SharedContext preSharedContext = SharedContext.makeSharedContext();
                 final SharedContext postSharedContext = SharedContext.makeSharedContext();
-                final OrderedKeys.Iterator preIt = preIndex.getOrderedKeysIterator();
-                final OrderedKeys.Iterator postIt = postIndex.getOrderedKeysIterator()) {
+                final RowSequence.Iterator preIt = preIndex.getRowSequenceIterator();
+                final RowSequence.Iterator postIt = postIndex.getRowSequenceIterator()) {
             ac.initializeGetContexts(preSharedContext, preGetContexts, preIndex.size(), operatorsToProcess);
             ac.initializeGetContexts(postSharedContext, postGetContexts, postIndex.size(), operatorsToProcess);
 
@@ -1821,16 +1823,16 @@ public class ChunkedOperatorAggregationHelper {
             final Chunk<? extends Values>[] workingPostChunks = new Chunk[ac.size()];
 
             while (postIt.hasMore()) {
-                final OrderedKeys postChunkOk = postIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
-                final OrderedKeys preChunkOk = preIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final RowSequence postChunkOk = postIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+                final RowSequence preChunkOk = preIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
                 final int chunkSize = postChunkOk.intSize();
 
                 preSharedContext.reset();
                 postSharedContext.reset();
 
-                final LongChunk<OrderedKeyIndices> postKeyIndices =
-                        supplyPostIndices ? postChunkOk.asKeyIndicesChunk() : null;
+                final LongChunk<OrderedRowKeys> postKeyIndices =
+                        supplyPostIndices ? postChunkOk.asRowKeyChunk() : null;
 
                 Arrays.fill(workingPreChunks, null);
                 Arrays.fill(workingPostChunks, null);
@@ -1864,14 +1866,14 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static void doIndexOnlyNoKeyModifications(@NotNull final OrderedKeys postIndex,
+    private static void doIndexOnlyNoKeyModifications(@NotNull final RowSequence postIndex,
             @NotNull final AggregationContext ac,
             @NotNull final IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
             @NotNull final boolean[] operatorsToProcessIndicesOnly, @NotNull final boolean[] modifiedOperators) {
-        try (final OrderedKeys.Iterator postIt = postIndex.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator postIt = postIndex.getRowSequenceIterator()) {
             while (postIt.hasMore()) {
-                final OrderedKeys postChunkOk = postIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
-                final LongChunk<OrderedKeyIndices> postKeyIndices = postChunkOk.asKeyIndicesChunk();
+                final RowSequence postChunkOk = postIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+                final LongChunk<OrderedRowKeys> postKeyIndices = postChunkOk.asRowKeyChunk();
                 for (int ii = 0; ii < ac.size(); ++ii) {
                     if (operatorsToProcessIndicesOnly[ii]) {
                         modifiedOperators[ii] |= ac.operators[ii].modifyIndices(opContexts[ii], postKeyIndices, 0);
@@ -1881,7 +1883,7 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static void doNoKeyUpdate(OrderedKeys index, AggregationContext ac,
+    private static void doNoKeyUpdate(RowSequence index, AggregationContext ac,
             IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
             boolean[] operatorsToProcess, boolean usePrev, boolean remove, boolean[] modifiedOperators) {
         final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
@@ -1889,7 +1891,7 @@ public class ChunkedOperatorAggregationHelper {
 
         try (final SafeCloseableArray ignored = new SafeCloseableArray<>(getContexts);
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
-                final OrderedKeys.Iterator okIt = index.getOrderedKeysIterator()) {
+                final RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
             ac.initializeGetContexts(sharedContext, getContexts, index.size(), operatorsToProcess);
 
             // noinspection unchecked
@@ -1898,10 +1900,10 @@ public class ChunkedOperatorAggregationHelper {
             // on an empty initial pass we want to go through the operator anyway, so that we initialize things
             // correctly for the aggregation of zero keys
             do {
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 sharedContext.reset();
 
-                final LongChunk<OrderedKeyIndices> keyIndices = indicesRequired ? chunkOk.asKeyIndicesChunk() : null;
+                final LongChunk<OrderedRowKeys> keyIndices = indicesRequired ? chunkOk.asRowKeyChunk() : null;
 
                 Arrays.fill(workingChunks, null);
 
@@ -1920,7 +1922,7 @@ public class ChunkedOperatorAggregationHelper {
                             processColumnNoKey(remove, chunkOk, inputSlot >= 0 ? workingChunks[inputSlot] : null,
                                     ac.operators[ii], opContexts[ii], keyIndices);
                 }
-            } while (okIt.hasMore());
+            } while (rsIt.hasMore());
         }
     }
 
@@ -1939,9 +1941,9 @@ public class ChunkedOperatorAggregationHelper {
                     final SafeCloseableArray ignored2 = new SafeCloseableArray<>(postGetContexts);
                     final SharedContext sharedContext = SharedContext.makeSharedContext();
                     final SharedContext postSharedContext = SharedContext.makeSharedContext();
-                    final WritableLongChunk<OrderedKeyIndices> preKeyIndices =
+                    final WritableLongChunk<OrderedRowKeys> preKeyIndices =
                             WritableLongChunk.makeWritableChunk(chunkSize);
-                    final WritableLongChunk<OrderedKeyIndices> postKeyIndices =
+                    final WritableLongChunk<OrderedRowKeys> postKeyIndices =
                             WritableLongChunk.makeWritableChunk(chunkSize)) {
                 ac.initializeGetContexts(sharedContext, getContexts, chunkSize, operatorsToShift);
                 ac.initializeGetContexts(postSharedContext, postGetContexts, chunkSize, operatorsToShift);
@@ -1958,15 +1960,15 @@ public class ChunkedOperatorAggregationHelper {
             IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
             boolean[] operatorsToShift, SharedContext sharedContext, SharedContext postSharedContext,
             ColumnSource.GetContext[] getContexts, ColumnSource.GetContext[] postGetContexts,
-            WritableLongChunk<OrderedKeyIndices> preKeyIndices, WritableLongChunk<OrderedKeyIndices> postKeyIndices,
+            WritableLongChunk<OrderedRowKeys> preKeyIndices, WritableLongChunk<OrderedRowKeys> postKeyIndices,
             boolean[] modifiedOperators) {
         // noinspection unchecked
         final Chunk<? extends Values>[] workingPreChunks = new Chunk[ac.size()];
         // noinspection unchecked
         final Chunk<? extends Values>[] workingPostChunks = new Chunk[ac.size()];
 
-        try (final OrderedKeys preChunkOk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(preKeyIndices);
-                final OrderedKeys postChunkOk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(postKeyIndices)) {
+        try (final RowSequence preChunkOk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(preKeyIndices);
+                final RowSequence postChunkOk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(postKeyIndices)) {
             sharedContext.reset();
             postSharedContext.reset();
             Arrays.fill(workingPreChunks, null);
@@ -1997,10 +1999,10 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static boolean processColumnNoKey(boolean remove, OrderedKeys chunkOk, Chunk<? extends Values> values,
+    private static boolean processColumnNoKey(boolean remove, RowSequence chunkOk, Chunk<? extends Values> values,
             IterativeChunkedAggregationOperator operator,
             IterativeChunkedAggregationOperator.SingletonContext opContext,
-            LongChunk<? extends KeyIndices> keyIndices) {
+            LongChunk<? extends RowKeys> keyIndices) {
         if (remove) {
             return operator.removeChunk(opContext, chunkOk.intSize(), values, keyIndices, 0);
         } else {
@@ -2009,7 +2011,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     @Nullable
-    private static Chunk<? extends Values> fetchValues(boolean usePrev, OrderedKeys chunkOk,
+    private static Chunk<? extends Values> fetchValues(boolean usePrev, RowSequence chunkOk,
             ChunkSource.WithPrev inputColumn, ChunkSource.GetContext getContext) {
         final Chunk<? extends Values> values;
         if (inputColumn == null) {

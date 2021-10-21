@@ -1,7 +1,9 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
@@ -14,10 +16,10 @@ import static io.deephaven.engine.v2.utils.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.v2.utils.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.*;
 
-public class RspOrderedKeysTest extends OrderedKeysTestBase {
+public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Override
-    protected OrderedKeys create(long... values) {
+    protected RowSequence create(long... values) {
         final RspBitmap rb = RspBitmap.makeEmpty();
         for (long v : values) {
             rb.addUnsafe(v);
@@ -28,11 +30,11 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
 
     @Test
     public void testAverageRunLength() {
-        assertEquals(1, OrderedKeys.EMPTY.getAverageRunLengthEstimate());
+        assertEquals(1, RowSequence.EMPTY.getAverageRunLengthEstimate());
         final RspBitmap rb = new RspBitmap();
-        final OrderedKeys rok = rb.getOrderedKeysByKeyRange(0, 1);
-        assertEquals(1, rok.getAverageRunLengthEstimate());
-        rok.close();
+        final RowSequence rs = rb.getRowSequenceByKeyRange(0, 1);
+        assertEquals(1, rs.getAverageRunLengthEstimate());
+        rs.close();
     }
 
     @Test
@@ -43,15 +45,15 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.add(65536 * 2 - 1);
         rb.add(65536 * 2 + 2);
         rb.addRange(65536 * 3 - 1, 65536 * 6 + 2);
-        try (final OrderedKeys.Iterator it = rb.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it = rb.getRowSequenceIterator()) {
             long v = 65536;
             final RspBitmap res = new RspBitmap();
             while (it.hasMore()) {
-                final OrderedKeys oks = it.getNextOrderedKeysThrough(v);
-                if (oks.size() != 0) {
-                    try (final WritableLongChunk<OrderedKeyRanges> chunk =
+                final RowSequence rs = it.getNextRowSequenceThrough(v);
+                if (rs.size() != 0) {
+                    try (final WritableLongChunk<OrderedRowKeyRanges> chunk =
                             WritableLongChunk.makeWritableChunk(65536 * 6)) {
-                        oks.fillKeyRangesChunk(chunk);
+                        rs.fillRowKeyRangesChunk(chunk);
                         assertEquals(0, chunk.size() % 2);
                         int i = 0;
                         while (i < chunk.size()) {
@@ -75,16 +77,16 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.add(65536 * 2 - 1);
         rb.add(65536 * 2 + 2);
         rb.addRange(65536 * 3 - 1, 65536 * 6 + 2);
-        try (final OrderedKeys.Iterator it = rb.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it = rb.getRowSequenceIterator()) {
             long v = 65536;
             final RspBitmap res = new RspBitmap();
             final long len = rb.getCardinality() / 4;
             while (it.hasMore()) {
-                final OrderedKeys oks = it.getNextOrderedKeysWithLength(len);
-                if (oks.size() != 0) {
-                    try (final WritableLongChunk<OrderedKeyRanges> chunk =
+                final RowSequence rs = it.getNextRowSequenceWithLength(len);
+                if (rs.size() != 0) {
+                    try (final WritableLongChunk<OrderedRowKeyRanges> chunk =
                             WritableLongChunk.makeWritableChunk(2 * (int) len)) {
-                        oks.fillKeyRangesChunk(chunk);
+                        rs.fillRowKeyRangesChunk(chunk);
                         assertEquals(0, chunk.size() % 2);
                         int i = 0;
                         while (i < chunk.size()) {
@@ -108,36 +110,36 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         // so far single full span.
         final long len = 20;
         final long[] startOffsets = {0, 1, 4, BLOCK_LAST - 19, BLOCK_LAST - 20};
-        OrderedKeys ok;
+        RowSequence rs;
         Index ix;
         for (long startOffset : startOffsets) {
-            ok = rb.getOrderedKeysByPosition(startOffset, len);
-            ix = ok.asIndex();
+            rs = rb.getRowSequenceByPosition(startOffset, len);
+            ix = rs.asIndex();
             ix.validate();
             final String m = "startOffset==" + startOffset;
             assertEquals(m, len, ix.size());
-            assertEquals(m, sk + startOffset, ix.firstKey());
-            assertEquals(m, sk + startOffset + len - 1, ix.lastKey());
+            assertEquals(m, sk + startOffset, ix.firstRowKey());
+            assertEquals(m, sk + startOffset + len - 1, ix.lastRowKey());
         }
         // a second full block span.
         rb = rb.addRange(sk + BLOCK_SIZE, sk + BLOCK_SIZE + BLOCK_LAST);
 
         for (long startOffset : startOffsets) {
-            ok = rb.getOrderedKeysByPosition(startOffset, len);
-            ix = ok.asIndex();
+            rs = rb.getRowSequenceByPosition(startOffset, len);
+            ix = rs.asIndex();
             ix.validate();
             final String m = "startOffset==" + startOffset;
             assertEquals(m, len, ix.size());
-            assertEquals(m, sk + startOffset, ix.firstKey());
-            assertEquals(m, sk + startOffset + len - 1, ix.lastKey());
-            ok.close();
-            ok = rb.getOrderedKeysByPosition(startOffset, BLOCK_SIZE - (startOffset - 1));
-            ix = ok.asIndex();
+            assertEquals(m, sk + startOffset, ix.firstRowKey());
+            assertEquals(m, sk + startOffset + len - 1, ix.lastRowKey());
+            rs.close();
+            rs = rb.getRowSequenceByPosition(startOffset, BLOCK_SIZE - (startOffset - 1));
+            ix = rs.asIndex();
             ix.validate(m);
             assertEquals(m, BLOCK_SIZE - (startOffset - 1), ix.size());
-            assertEquals(m, sk + startOffset, ix.firstKey());
-            assertEquals(m, sk + BLOCK_SIZE, ix.lastKey());
-            ok.close();
+            assertEquals(m, sk + startOffset, ix.firstRowKey());
+            assertEquals(m, sk + BLOCK_SIZE, ix.lastRowKey());
+            rs.close();
         }
     }
 
@@ -148,37 +150,37 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb = rb.addRange(sk, sk + BLOCK_LAST);
         rb = rb.addRange(sk + 4 * BLOCK_SIZE + 4, sk + 4 * BLOCK_SIZE + 40);
         rb = rb.addRange(sk + 10 * BLOCK_SIZE, sk + 10 * BLOCK_SIZE + BLOCK_LAST);
-        OrderedKeys ok = rb.getOrderedKeysByPosition(BLOCK_SIZE / 2, BLOCK_SIZE);
-        Index ix = ok.asIndex();
+        RowSequence rs = rb.getRowSequenceByPosition(BLOCK_SIZE / 2, BLOCK_SIZE);
+        Index ix = rs.asIndex();
         ix.validate();
         assertEquals(BLOCK_SIZE, ix.size());
 
         rb = rb.addRange(sk + BLOCK_SIZE, sk + BLOCK_SIZE + BLOCK_LAST);
-        ok = rb.getOrderedKeysByPosition(BLOCK_SIZE / 2, 2 * BLOCK_SIZE);
-        ix = ok.asIndex();
+        rs = rb.getRowSequenceByPosition(BLOCK_SIZE / 2, 2 * BLOCK_SIZE);
+        ix = rs.asIndex();
         ix.validate();
         assertEquals(2 * BLOCK_SIZE, ix.size());
-        ok.close();
+        rs.close();
 
         rb = rb.addRange(sk + 9 * BLOCK_SIZE, sk + 9 * BLOCK_SIZE + BLOCK_LAST);
-        ok = rb.getOrderedKeysByPosition(BLOCK_SIZE / 2, 3 * BLOCK_SIZE);
-        ix = ok.asIndex();
+        rs = rb.getRowSequenceByPosition(BLOCK_SIZE / 2, 3 * BLOCK_SIZE);
+        ix = rs.asIndex();
         ix.validate();
         assertEquals(3 * BLOCK_SIZE, ix.size());
-        ok.close();
+        rs.close();
 
         rb = rb.addRange(sk + 6 * BLOCK_SIZE, sk + 6 * BLOCK_SIZE + 2);
-        ok = rb.getOrderedKeysByPosition(BLOCK_SIZE / 2, 3 * BLOCK_SIZE);
-        ix = ok.asIndex();
+        rs = rb.getRowSequenceByPosition(BLOCK_SIZE / 2, 3 * BLOCK_SIZE);
+        ix = rs.asIndex();
         ix.validate();
         assertEquals(3 * BLOCK_SIZE, ix.size());
-        ok.close();
+        rs.close();
 
-        ok = rb.getOrderedKeysByPosition(rb.find(sk + 6 * BLOCK_SIZE + 2), 1 + 2 * BLOCK_SIZE);
-        ix = ok.asIndex();
+        rs = rb.getRowSequenceByPosition(rb.find(sk + 6 * BLOCK_SIZE + 2), 1 + 2 * BLOCK_SIZE);
+        ix = rs.asIndex();
         ix.validate();
         assertEquals(1 + 2 * BLOCK_SIZE, ix.size());
-        ok.close();
+        rs.close();
     }
 
     @Test
@@ -187,11 +189,11 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         final long sk = 7 * BLOCK_SIZE;
         rb.addRange(sk, sk + 5 * BLOCK_SIZE - 1);
         assertEquals(5 * BLOCK_SIZE, rb.getCardinality());
-        final OrderedKeys ok = rb.getOrderedKeysByPosition(1, 5 * BLOCK_SIZE - 2);
-        final Index ix = ok.asIndex();
+        final RowSequence rs = rb.getRowSequenceByPosition(1, 5 * BLOCK_SIZE - 2);
+        final Index ix = rs.asIndex();
         ix.validate();
         assertEquals(5 * BLOCK_SIZE - 2, ix.size());
-        ok.close();
+        rs.close();
     }
 
     @Test
@@ -199,13 +201,13 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         final RspBitmap rb = new RspBitmap();
         final long sk = 5 * BLOCK_SIZE;
         rb.addRange(sk + 5, 6 * BLOCK_SIZE + 4);
-        final OrderedKeys ok = rb.getOrderedKeysByKeyRange(sk + 60000, 6 * BLOCK_SIZE + 4);
-        final Index ix = ok.asIndex();
+        final RowSequence rs = rb.getRowSequenceByKeyRange(sk + 60000, 6 * BLOCK_SIZE + 4);
+        final Index ix = rs.asIndex();
         ix.validate();
-        assertEquals(sk + 60000, ix.firstKey());
-        assertEquals(6 * BLOCK_SIZE + 4, ix.lastKey());
-        assertEquals(ix.lastKey() - ix.firstKey() + 1, ix.size());
-        ok.close();
+        assertEquals(sk + 60000, ix.firstRowKey());
+        assertEquals(6 * BLOCK_SIZE + 4, ix.lastRowKey());
+        assertEquals(ix.lastRowKey() - ix.firstRowKey() + 1, ix.size());
+        rs.close();
     }
 
     @Test
@@ -215,13 +217,13 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.addRange(sk, sk + 10 * BLOCK_SIZE);
         final long first = 16 * BLOCK_SIZE + 1;
         final long last = 17 * BLOCK_SIZE - 1;
-        final OrderedKeys ok = rb.getOrderedKeysByKeyRange(first, last);
-        final Index ix = ok.asIndex();
+        final RowSequence rs = rb.getRowSequenceByKeyRange(first, last);
+        final Index ix = rs.asIndex();
         ix.validate();
-        assertEquals(first, ix.firstKey());
-        assertEquals(last, ix.lastKey());
+        assertEquals(first, ix.firstRowKey());
+        assertEquals(last, ix.lastRowKey());
         assertEquals(last - first + 1, ix.size());
-        ok.close();
+        rs.close();
     }
 
     @Test
@@ -231,13 +233,13 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.addRange(sk, sk + 4 * BLOCK_SIZE - 1);
         final long first = sk + BLOCK_SIZE;
         final long last = sk + 4 * BLOCK_SIZE - 1;
-        final OrderedKeys ok = rb.getOrderedKeysByKeyRange(first, last);
-        final Index ix = ok.asIndex();
+        final RowSequence rs = rb.getRowSequenceByKeyRange(first, last);
+        final Index ix = rs.asIndex();
         ix.validate();
-        assertEquals(first, ix.firstKey());
-        assertEquals(last, ix.lastKey());
+        assertEquals(first, ix.firstRowKey());
+        assertEquals(last, ix.lastRowKey());
         assertEquals(last - first + 1, ix.size());
-        ok.close();
+        rs.close();
     }
 
     @Test
@@ -247,11 +249,11 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.addRange(sk, sk + 4 * BLOCK_SIZE);
         final long first = sk + BLOCK_SIZE;
         final long last = sk + 4 * BLOCK_SIZE;
-        final OrderedKeys ok = rb.getOrderedKeysByKeyRange(first, last);
-        final Index ix = ok.asIndex();
+        final RowSequence rs = rb.getRowSequenceByKeyRange(first, last);
+        final Index ix = rs.asIndex();
         ix.validate();
-        assertEquals(first, ix.firstKey());
-        assertEquals(last, ix.lastKey());
+        assertEquals(first, ix.firstRowKey());
+        assertEquals(last, ix.lastRowKey());
         assertEquals(last - first + 1, ix.size());
     }
 
@@ -263,15 +265,15 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.addRange(sk + BLOCK_SIZE, sk + 3 * BLOCK_SIZE + 1);
         final long startKey = sk + 22;
         final long endKey = sk + 3 * BLOCK_SIZE + 1;
-        final OrderedKeys ok = rb.getOrderedKeysByKeyRange(startKey, endKey);
-        final Index ix = ok.asIndex();
+        final RowSequence rs = rb.getRowSequenceByKeyRange(startKey, endKey);
+        final Index ix = rs.asIndex();
         ix.validate();
         final RspBitmap rb2 = (RspBitmap) rb.ixSubindexByKeyOnNew(startKey, endKey);
         rb2.andEquals(rb);
         final Index ix2 = new TreeIndex(rb2);
         assertEquals(ix2.size(), ix.size());
         assertEquals(0, ix2.minus(ix).size());
-        ok.close();
+        rs.close();
     }
 
     @Test
@@ -297,17 +299,17 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                         if (startKey < 0 || endKey < startKey) {
                             continue;
                         }
-                        try (final OrderedKeys ok = rb.getOrderedKeysByKeyRange(startKey, endKey)) {
+                        try (final RowSequence rs = rb.getRowSequenceByKeyRange(startKey, endKey)) {
                             final RspBitmap expected = rb.subrangeByValue(startKey, endKey);
                             final RspBitmap res = new RspBitmap();
-                            final OrderedKeys.Iterator it = ok.getOrderedKeysIterator();
+                            final RowSequence.Iterator it = rs.getRowSequenceIterator();
                             final int chunkSz = 13;
-                            try (final WritableLongChunk<OrderedKeyIndices> chunk =
+                            try (final WritableLongChunk<OrderedRowKeys> chunk =
                                     WritableLongChunk.makeWritableChunk(chunkSz)) {
                                 while (it.hasMore()) {
-                                    final OrderedKeys okit = it.getNextOrderedKeysWithLength(chunkSz);
+                                    final RowSequence rsIt = it.getNextRowSequenceWithLength(chunkSz);
                                     chunk.setSize(chunkSz);
-                                    okit.fillKeyIndicesChunk(chunk);
+                                    rsIt.fillRowKeyChunk(chunk);
                                     final int sz = chunk.size();
                                     for (int i = 0; i < sz; ++i) {
                                         res.addUnsafeNoWriteCheck(chunk.get(i));
@@ -347,17 +349,17 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                         if (startKey < 0 || endKey < startKey) {
                             continue;
                         }
-                        try (final OrderedKeys ok = rb.getOrderedKeysByKeyRange(startKey, endKey)) {
+                        try (final RowSequence rs = rb.getRowSequenceByKeyRange(startKey, endKey)) {
                             final RspBitmap expected = rb.subrangeByValue(startKey, endKey);
                             final RspBitmap res = new RspBitmap();
-                            final OrderedKeys.Iterator it = ok.getOrderedKeysIterator();
+                            final RowSequence.Iterator it = rs.getRowSequenceIterator();
                             final int chunkSz = 13;
-                            try (final WritableLongChunk<OrderedKeyRanges> chunk =
+                            try (final WritableLongChunk<OrderedRowKeyRanges> chunk =
                                     WritableLongChunk.makeWritableChunk(chunkSz)) {
                                 while (it.hasMore()) {
-                                    final OrderedKeys okit = it.getNextOrderedKeysWithLength(chunkSz / 2);
+                                    final RowSequence rsIt = it.getNextRowSequenceWithLength(chunkSz / 2);
                                     chunk.setSize(chunkSz);
-                                    okit.fillKeyRangesChunk(chunk);
+                                    rsIt.fillRowKeyRangesChunk(chunk);
                                     final int sz = chunk.size();
                                     for (int i = 0; i < sz; i += 2) {
                                         res.addRangeUnsafeNoWriteCheck(chunk.get(i), chunk.get(i + 1));
@@ -396,13 +398,13 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                         if (startKey < 0 || endKey < startKey) {
                             continue;
                         }
-                        try (final OrderedKeys ok = rb.getOrderedKeysByKeyRange(startKey, endKey)) {
+                        try (final RowSequence rs = rb.getRowSequenceByKeyRange(startKey, endKey)) {
                             final RspBitmap expected = rb.subrangeByValue(startKey, endKey);
                             final RspBitmap res = new RspBitmap();
-                            final OrderedKeys.Iterator it = ok.getOrderedKeysIterator();
+                            final RowSequence.Iterator it = rs.getRowSequenceIterator();
                             while (it.hasMore()) {
-                                final OrderedKeys okit = it.getNextOrderedKeysWithLength(13);
-                                okit.forAllLongRanges(res::addRange);
+                                final RowSequence rsIt = it.getNextRowSequenceWithLength(13);
+                                rsIt.forAllLongRanges(res::addRange);
                             }
                             final String m = "startKey==" + startKey + " && endKey==" + endKey;
                             assertEquals(m, expected.getCardinality(), res.getCardinality());
@@ -418,19 +420,19 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
     public void testInvariantRegression0() {
         final RspBitmap rb = new RspBitmap();
         rb.addValues(175, 225, 288, 351, 429, 523, 562, 131247, 131297, 131360, 131423, 131501, 131595, 131634);
-        final OrderedKeys.Iterator it = rb.getOrderedKeysIterator();
+        final RowSequence.Iterator it = rb.getRowSequenceIterator();
         int maxKey = BLOCK_SIZE - 1;
         while (it.hasMore()) {
-            final OrderedKeys oks = it.getNextOrderedKeysThrough(maxKey);
+            final RowSequence rs = it.getNextRowSequenceThrough(maxKey);
             final String m = "maxKey==" + maxKey;
             switch (maxKey) {
                 case BLOCK_SIZE - 1:
                 case 3 * BLOCK_SIZE - 1:
-                    assertEquals(m, 7, oks.size());
+                    assertEquals(m, 7, rs.size());
                     break;
                 case 2 * BLOCK_SIZE - 1:
-                    assertEquals(m, 0, oks.size());
-                    assertEquals(m, OrderedKeys.EMPTY, oks);
+                    assertEquals(m, 0, rs.size());
+                    assertEquals(m, RowSequence.EMPTY, rs);
                     break;
                 default:
                     fail(m + "; Shouldn't get here.");
@@ -446,10 +448,10 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         final long beyond = 2199023255552L;
         assertTrue(beyond > end);
         final RspBitmap rb = new RspBitmap(start, end);
-        final OrderedKeys.Iterator it = rb.getOrderedKeysIterator();
+        final RowSequence.Iterator it = rb.getRowSequenceIterator();
         assertTrue(it.hasMore());
-        final OrderedKeys oks1 = it.getNextOrderedKeysThrough(end - 1);
-        assertEquals(end - start + 1 - 1, oks1.size());
+        final RowSequence rs1 = it.getNextRowSequenceThrough(end - 1);
+        assertEquals(end - start + 1 - 1, rs1.size());
         final long relPosPre = it.getRelativePosition();
         final boolean advanced = it.advance(beyond);
         final long relPosPost = it.getRelativePosition();
@@ -463,11 +465,11 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.addRange(0, 2);
         rb.addRange(BLOCK_SIZE, BLOCK_SIZE + 2);
         rb.addRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 2);
-        try (final OrderedKeys.Iterator it1 = rb.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it1 = rb.getRowSequenceIterator()) {
             assertTrue(it1.hasMore());
-            final OrderedKeys ok1 = it1.getNextOrderedKeysWithLength(6);
-            assertEquals(6, ok1.size());
-            try (final OrderedKeys.Iterator it2 = ok1.getOrderedKeysIterator()) {
+            final RowSequence rs1 = it1.getNextRowSequenceWithLength(6);
+            assertEquals(6, rs1.size());
+            try (final RowSequence.Iterator it2 = rs1.getRowSequenceIterator()) {
                 assertTrue(it2.hasMore());
                 final boolean advanced = it2.advance(2 * BLOCK_SIZE + 2);
                 assertFalse(advanced);
@@ -481,12 +483,12 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.addRange(0, 3);
         rb.addRange(BLOCK_SIZE, BLOCK_SIZE + 5);
         rb.addRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 3);
-        final OrderedKeys.Iterator it = rb.getOrderedKeysIterator();
+        final RowSequence.Iterator it = rb.getRowSequenceIterator();
         assertTrue(it.hasMore());
-        final OrderedKeys ok0 = it.getNextOrderedKeysThrough(BLOCK_SIZE + 5);
-        assertEquals(10, ok0.size());
-        final OrderedKeys ok1 = it.getNextOrderedKeysThrough(2 * BLOCK_SIZE + 3);
-        assertEquals(4, ok1.size());
+        final RowSequence rs0 = it.getNextRowSequenceThrough(BLOCK_SIZE + 5);
+        assertEquals(10, rs0.size());
+        final RowSequence rs1 = it.getNextRowSequenceThrough(2 * BLOCK_SIZE + 3);
+        assertEquals(4, rs1.size());
     }
 
     @Test
@@ -502,10 +504,10 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         // Further, we need to stop in a partial range short of the full filled buf.
         rb.addRange(1, 2);
         rb.addRange(4, 5);
-        rb.addRange(7, 8); // we stop here (7 below in getOrderedKeysByRange), so that there is one range after us.
+        rb.addRange(7, 8); // we stop here (7 below in getRowSequenceByRange), so that there is one range after us.
         rb.addRange(10, 11);
-        final OrderedKeys ok = rb.getOrderedKeysByKeyRange(1, 7);
-        ok.forAllLongRanges((final long start, final long end) -> {
+        final RowSequence rs = rb.getRowSequenceByKeyRange(1, 7);
+        rs.forAllLongRanges((final long start, final long end) -> {
             assertTrue(end >= start);
         });
     }
@@ -517,10 +519,10 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
 
         final long CHUNK_SIZE = 4096;
 
-        try (final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it = index.getRowSequenceIterator()) {
             assertTrue(it.hasMore());
-            final OrderedKeys subKeys = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
-            final LongChunk<OrderedKeyRanges> ranges = subKeys.asKeyRangesChunk();
+            final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
+            final LongChunk<Attributes.OrderedRowKeyRanges> ranges = subKeys.asRowKeyRangesChunk();
             assertFalse(it.hasMore());
             assertEquals(4, ranges.size());
             assertEquals(130972, ranges.get(0));
@@ -537,12 +539,12 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb.add(BLOCK_SIZE);
         rb.add(2 * BLOCK_SIZE);
         long count = 0;
-        try (final OrderedKeys.Iterator okIter = rb.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator rsIter = rb.getRowSequenceIterator()) {
             long last = 0;
-            while (okIter.hasMore()) {
-                final OrderedKeys ok = okIter.getNextOrderedKeysThrough(last + BLOCK_SIZE);
-                last = ok.lastKey();
-                final LongChunk<OrderedKeyIndices> chunk = ok.asKeyIndicesChunk();
+            while (rsIter.hasMore()) {
+                final RowSequence rs = rsIter.getNextRowSequenceThrough(last + BLOCK_SIZE);
+                last = rs.lastRowKey();
+                final LongChunk<OrderedRowKeys> chunk = rs.asRowKeyChunk();
                 count += chunk.size();
             }
         }
@@ -557,10 +559,10 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
 
         final long CHUNK_SIZE = 4096;
 
-        try (final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it = index.getRowSequenceIterator()) {
             assertTrue(it.hasMore());
-            final OrderedKeys subKeys = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
-            final LongChunk<OrderedKeyRanges> ranges = subKeys.asKeyRangesChunk();
+            final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
+            final LongChunk<Attributes.OrderedRowKeyRanges> ranges = subKeys.asRowKeyRangesChunk();
             assertFalse(it.hasMore());
             assertEquals(4, ranges.size());
             assertEquals(130972, ranges.get(0));
@@ -578,10 +580,10 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
 
         final long CHUNK_SIZE = 4096;
 
-        try (final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+        try (final RowSequence.Iterator it = index.getRowSequenceIterator()) {
             assertTrue(it.hasMore());
-            final OrderedKeys subKeys = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
-            final LongChunk<OrderedKeyRanges> ranges = subKeys.asKeyRangesChunk();
+            final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
+            final LongChunk<OrderedRowKeyRanges> ranges = subKeys.asRowKeyRangesChunk();
             assertFalse(it.hasMore());
             assertEquals(4, ranges.size());
             assertEquals(130972, ranges.get(0));
@@ -598,19 +600,19 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb = rb.add(v);
         rb = rb.add(2 * v + 1);
         for (long target = 2 * v; target <= 2 * v + 1; ++target) {
-            try (final OrderedKeys.Iterator okIter = rb.getOrderedKeysIterator()) {
-                assertTrue(okIter.advance(target));
-                final OrderedKeys ok = okIter.getNextOrderedKeysWithLength(1);
-                assertEquals(1, ok.size());
-                assertEquals(2 * v + 1, ok.firstKey());
+            try (final RowSequence.Iterator rsIter = rb.getRowSequenceIterator()) {
+                assertTrue(rsIter.advance(target));
+                final RowSequence rs = rsIter.getNextRowSequenceWithLength(1);
+                assertEquals(1, rs.size());
+                assertEquals(2 * v + 1, rs.firstRowKey());
             }
         }
         rb = rb.addRange(3 * v + 10, 3 * v + 13);
-        try (final OrderedKeys.Iterator okIter = rb.getOrderedKeysIterator()) {
-            assertTrue(okIter.advance(2 * v + 2));
-            final OrderedKeys ok = okIter.getNextOrderedKeysWithLength(2);
-            assertEquals(2, ok.size());
-            assertEquals(3 * v + 10, ok.firstKey());
+        try (final RowSequence.Iterator rsIter = rb.getRowSequenceIterator()) {
+            assertTrue(rsIter.advance(2 * v + 2));
+            final RowSequence rs = rsIter.getNextRowSequenceWithLength(2);
+            assertEquals(2, rs.size());
+            assertEquals(3 * v + 10, rs.firstRowKey());
         }
     }
 
@@ -643,7 +645,7 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                     rb.addRange(start, end);
                 }
             }
-            try (final OrderedKeys.Iterator okIter = rb.getOrderedKeysIterator();
+            try (final RowSequence.Iterator rsIter = rb.getRowSequenceIterator();
                     final RspRangeIterator rit = rb.getRangeIterator()) {
                 long prevEnd = -2;
                 long lastRelativePos = -rb.getCardinality() - 1;
@@ -655,27 +657,27 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
                     final String m2 = m + " && nrange==" + nrange;
                     assertTrue(m2, prevEnd + 1 < start);
                     final long advanceTarget = Math.max(prevEnd + 1, 0);
-                    assertTrue(m2, okIter.advance(advanceTarget));
-                    assertEquals(m2, start, okIter.peekNextKey());
-                    final long relativePos = okIter.getRelativePosition();
+                    assertTrue(m2, rsIter.advance(advanceTarget));
+                    assertEquals(m2, start, rsIter.peekNextKey());
+                    final long relativePos = rsIter.getRelativePosition();
                     assertTrue(relativePos > lastRelativePos);
-                    try (final OrderedKeys.Iterator okIter2 = rb.getOrderedKeysIterator()) {
-                        assertTrue(m2, okIter2.advance(advanceTarget));
-                        assertEquals(m2, start, okIter2.peekNextKey());
+                    try (final RowSequence.Iterator rsIter2 = rb.getRowSequenceIterator()) {
+                        assertTrue(m2, rsIter2.advance(advanceTarget));
+                        assertEquals(m2, start, rsIter2.peekNextKey());
                     }
                     if (start - 1 > 0 && start - 1 != advanceTarget) {
-                        try (final OrderedKeys.Iterator okIter2 = rb.getOrderedKeysIterator()) {
-                            assertTrue(m2, okIter2.advance(start - 1));
-                            assertEquals(m2, start, okIter2.peekNextKey());
+                        try (final RowSequence.Iterator rsIter2 = rb.getRowSequenceIterator()) {
+                            assertTrue(m2, rsIter2.advance(start - 1));
+                            assertEquals(m2, start, rsIter2.peekNextKey());
                         }
                     }
-                    try (final OrderedKeys.Iterator okIter2 = rb.getOrderedKeysIterator()) {
-                        assertTrue(m2, okIter2.advance(start));
-                        assertEquals(m2, start, okIter2.peekNextKey());
+                    try (final RowSequence.Iterator rsIter2 = rb.getRowSequenceIterator()) {
+                        assertTrue(m2, rsIter2.advance(start));
+                        assertEquals(m2, start, rsIter2.peekNextKey());
                     }
-                    try (final OrderedKeys.Iterator okIter2 = rb.getOrderedKeysIterator()) {
-                        assertTrue(m2, okIter2.advance(end));
-                        assertEquals(m2, end, okIter2.peekNextKey());
+                    try (final RowSequence.Iterator rsIter2 = rb.getRowSequenceIterator()) {
+                        assertTrue(m2, rsIter2.advance(end));
+                        assertEquals(m2, end, rsIter2.peekNextKey());
                     }
                     prevEnd = end;
                     lastRelativePos = relativePos;
@@ -691,29 +693,29 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         final RspBitmap rb = new RspBitmap();
         rb.add(v);
         rb.addRange(2 * v + 1, 2 * v + 3);
-        try (final OrderedKeys.Iterator okIter = rb.getOrderedKeysIterator()) {
-            final OrderedKeys ok = okIter.getNextOrderedKeysWithLength(2);
-            assertEquals(2, ok.size());
-            assertEquals(v, ok.firstKey());
-            assertEquals(2 * v + 1, ok.lastKey());
-            final OrderedKeys ok2 = okIter.getNextOrderedKeysThrough(2 * v);
-            assertEquals(0, ok2.size());
+        try (final RowSequence.Iterator rsIter = rb.getRowSequenceIterator()) {
+            final RowSequence rs = rsIter.getNextRowSequenceWithLength(2);
+            assertEquals(2, rs.size());
+            assertEquals(v, rs.firstRowKey());
+            assertEquals(2 * v + 1, rs.lastRowKey());
+            final RowSequence rs2 = rsIter.getNextRowSequenceThrough(2 * v);
+            assertEquals(0, rs2.size());
         }
     }
 
     @Test
-    public void testIteratorGetNextOrderedKeysThroughRegression0() {
+    public void testIteratorGetNextRowSequenceThroughRegression0() {
         RspBitmap rb = RspBitmap.makeSingleRange(10, 15);
         rb = rb.appendRange(BLOCK_SIZE + 1, BLOCK_SIZE + 10);
         // rb has two containers, we are going to iterate to a maxKey of BLOCK_SIZE, which is not present
         // and if it was, would be at the beginning of the second container.
-        try (OrderedKeys.Iterator it = rb.ixGetOrderedKeysIterator()) {
+        try (RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
             assertTrue(it.hasMore());
-            OrderedKeys ok = it.getNextOrderedKeysThrough(BLOCK_SIZE);
-            assertEquals(15, ok.lastKey());
+            RowSequence rs = it.getNextRowSequenceThrough(BLOCK_SIZE);
+            assertEquals(15, rs.lastRowKey());
             assertTrue(it.hasMore());
-            ok = it.getNextOrderedKeysThrough(BLOCK_SIZE + 20);
-            assertEquals(BLOCK_SIZE + 10, ok.lastKey());
+            rs = it.getNextRowSequenceThrough(BLOCK_SIZE + 20);
+            assertEquals(BLOCK_SIZE + 10, rs.lastRowKey());
             assertFalse(it.hasMore());
         }
     }
@@ -724,15 +726,15 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb = rb.add(1);
         rb = rb.add(BLOCK_SIZE + 10);
         rb = rb.addRange(2 * BLOCK_SIZE, 3 * BLOCK_SIZE + 1);
-        try (OrderedKeys.Iterator it = rb.ixGetOrderedKeysIterator()) {
+        try (RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
             assertTrue(it.hasMore());
             final boolean has = it.advance(BLOCK_SIZE + 1);
             assertTrue(has);
-            final OrderedKeys ok = it.getNextOrderedKeysThrough(3 * BLOCK_SIZE + 1);
-            assertEquals(BLOCK_SIZE + 3, ok.size());
-            assertFalse(ok.isContiguous());
-            assertEquals(BLOCK_SIZE + 10, ok.firstKey());
-            assertEquals(3 * BLOCK_SIZE + 1, ok.lastKey());
+            final RowSequence rs = it.getNextRowSequenceThrough(3 * BLOCK_SIZE + 1);
+            assertEquals(BLOCK_SIZE + 3, rs.size());
+            assertFalse(rs.isContiguous());
+            assertEquals(BLOCK_SIZE + 10, rs.firstRowKey());
+            assertEquals(3 * BLOCK_SIZE + 1, rs.lastRowKey());
             assertFalse(it.hasMore());
         }
     }
@@ -743,13 +745,13 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb = rb.add(1);
         rb = rb.add(BLOCK_SIZE + 10);
         rb = rb.addRange(2 * BLOCK_SIZE, 3 * BLOCK_SIZE + 1);
-        try (OrderedKeys.Iterator it = rb.ixGetOrderedKeysIterator()) {
+        try (RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
             assertTrue(it.hasMore());
-            OrderedKeys ok = it.getNextOrderedKeysThrough(BLOCK_SIZE + 10);
-            assertEquals(2, ok.size());
-            assertFalse(ok.isContiguous());
-            assertEquals(1, ok.firstKey());
-            assertEquals(BLOCK_SIZE + 10, ok.lastKey());
+            RowSequence rs = it.getNextRowSequenceThrough(BLOCK_SIZE + 10);
+            assertEquals(2, rs.size());
+            assertFalse(rs.isContiguous());
+            assertEquals(1, rs.firstRowKey());
+            assertEquals(BLOCK_SIZE + 10, rs.lastRowKey());
             assertTrue(it.hasMore());
         }
     }
@@ -760,11 +762,11 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb = rb.add(1);
         rb = rb.add(BLOCK_SIZE + 10);
         rb = rb.addRange(2 * BLOCK_SIZE, 3 * BLOCK_SIZE + 1);
-        try (OrderedKeys.Iterator it = rb.ixGetOrderedKeysIterator()) {
+        try (RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
             assertTrue(it.hasMore());
-            OrderedKeys ok = it.getNextOrderedKeysThrough(BLOCK_SIZE + 9);
-            assertEquals(1, ok.size());
-            assertEquals(1, ok.firstKey());
+            RowSequence rs = it.getNextRowSequenceThrough(BLOCK_SIZE + 9);
+            assertEquals(1, rs.size());
+            assertEquals(1, rs.firstRowKey());
             assertTrue(it.hasMore());
         }
     }
@@ -775,12 +777,12 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         rb = rb.add(1);
         rb = rb.add(BLOCK_SIZE + 10);
         rb = rb.addRange(2 * BLOCK_SIZE, 3 * BLOCK_SIZE + 1);
-        try (OrderedKeys.Iterator it = rb.ixGetOrderedKeysIterator()) {
+        try (RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
             assertTrue(it.hasMore());
-            OrderedKeys ok = it.getNextOrderedKeysThrough(BLOCK_SIZE + 11);
-            assertEquals(2, ok.size());
-            assertEquals(1, ok.firstKey());
-            assertEquals(BLOCK_SIZE + 10, ok.lastKey());
+            RowSequence rs = it.getNextRowSequenceThrough(BLOCK_SIZE + 11);
+            assertEquals(2, rs.size());
+            assertEquals(1, rs.firstRowKey());
+            assertEquals(BLOCK_SIZE + 10, rs.lastRowKey());
             assertTrue(it.hasMore());
         }
     }
@@ -790,13 +792,13 @@ public class RspOrderedKeysTest extends OrderedKeysTestBase {
         RspBitmap rb = RspBitmap.makeEmpty();
         rb = rb.add(BLOCK_SIZE + 10);
         rb = rb.addRange(2 * BLOCK_SIZE, 3 * BLOCK_SIZE + 1);
-        try (OrderedKeys.Iterator it = rb.ixGetOrderedKeysIterator()) {
+        try (RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
             assertTrue(it.hasMore());
-            OrderedKeys ok = it.getNextOrderedKeysThrough(BLOCK_SIZE + 9);
-            assertEquals(0, ok.size());
+            RowSequence rs = it.getNextRowSequenceThrough(BLOCK_SIZE + 9);
+            assertEquals(0, rs.size());
             assertTrue(it.hasMore());
-            ok = it.getNextOrderedKeysThrough(BLOCK_SIZE + 11);
-            assertEquals(1, ok.size());
+            rs = it.getNextRowSequenceThrough(BLOCK_SIZE + 11);
+            assertEquals(1, rs.size());
             assertTrue(it.hasMore());
         }
     }

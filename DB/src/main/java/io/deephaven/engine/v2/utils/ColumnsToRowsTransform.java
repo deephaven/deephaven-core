@@ -5,6 +5,8 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
@@ -349,11 +351,11 @@ public class ColumnsToRowsTransform {
         @Override
         public void fillChunk(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super Attributes.Values> destination,
-                @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final RowSequence rowSequence) {
             final MutableInt outputPosition = new MutableInt();
             final WritableObjectChunk<String, ?> objectChunk = destination.asWritableObjectChunk();
-            destination.setSize(orderedKeys.intSize());
-            orderedKeys.forAllLongs(idx -> {
+            destination.setSize(rowSequence.intSize());
+            rowSequence.forAllLongs(idx -> {
                 objectChunk.set(outputPosition.intValue(), getLabel(idx));
                 outputPosition.increment();
             });
@@ -362,8 +364,8 @@ public class ColumnsToRowsTransform {
         @Override
         public void fillPrevChunk(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super Attributes.Values> destination,
-                @NotNull final OrderedKeys orderedKeys) {
-            fillChunk(context, destination, orderedKeys);
+                @NotNull final RowSequence rowSequence) {
+            fillChunk(context, destination, rowSequence);
         }
     }
 
@@ -518,7 +520,7 @@ public class ColumnsToRowsTransform {
         private class TransposeFillContext implements FillContext {
             final WritableChunk<? super Attributes.Values> tempValues;
             final FillContext[] innerContexts;
-            final WritableLongChunk<Attributes.OrderedKeyIndices>[] innerKeys;
+            final WritableLongChunk<Attributes.OrderedRowKeys>[] innerKeys;
             final WritableIntChunk<Attributes.ChunkPositions>[] outputPositions;
             final PermuteKernel permuteKernel;
 
@@ -554,31 +556,31 @@ public class ColumnsToRowsTransform {
         @Override
         public void fillChunk(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super Attributes.Values> destination,
-                @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final RowSequence rowSequence) {
             // noinspection unchecked
             final TransposeFillContext transposeFillContext = (TransposeFillContext) context;
-            updateContext(transposeFillContext, orderedKeys);
-            doFillAndPermute(destination, transposeFillContext, false, orderedKeys.size());
+            updateContext(transposeFillContext, rowSequence);
+            doFillAndPermute(destination, transposeFillContext, false, rowSequence.size());
         }
 
         @Override
         public void fillPrevChunk(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super Attributes.Values> destination,
-                @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final RowSequence rowSequence) {
             // noinspection unchecked
             final TransposeFillContext transposeFillContext = (TransposeFillContext) context;
-            updateContext(transposeFillContext, orderedKeys);
-            doFillAndPermute(destination, transposeFillContext, true, orderedKeys.size());
+            updateContext(transposeFillContext, rowSequence);
+            doFillAndPermute(destination, transposeFillContext, true, rowSequence.size());
         }
 
         private void updateContext(@NotNull final TransposeFillContext context,
-                @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final RowSequence rowSequence) {
             for (int ii = 0; ii < transposeColumns.length; ++ii) {
                 context.innerKeys[ii].setSize(0);
                 context.outputPositions[ii].setSize(0);
             }
             final MutableInt outputPosition = new MutableInt();
-            orderedKeys.forAllLongs(idx -> {
+            rowSequence.forAllLongs(idx -> {
                 final int sourceColumn = (int) (idx & mask);
                 final long sourceIndex = idx >> bits;
                 context.outputPositions[sourceColumn].add(outputPosition.intValue());
@@ -596,8 +598,8 @@ public class ColumnsToRowsTransform {
                 final boolean isComplete = transposeFillContext.innerKeys[ii].size() == originalSize;
                 final WritableChunk<? super Attributes.Values> tempDest =
                         isComplete ? destination : transposeFillContext.tempValues;
-                try (final OrderedKeys innerOk =
-                        OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(transposeFillContext.innerKeys[ii])) {
+                try (final RowSequence innerOk =
+                        RowSequenceUtil.wrapRowKeysChunkAsRowSequence(transposeFillContext.innerKeys[ii])) {
                     if (usePrev) {
                         transposeColumns[ii].fillPrevChunk(transposeFillContext.innerContexts[ii], tempDest, innerOk);
                     } else {

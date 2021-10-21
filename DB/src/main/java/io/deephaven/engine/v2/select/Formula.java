@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.Context;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -152,29 +152,29 @@ public abstract class Formula implements ElementSource {
 
     public abstract FillContext makeFillContext(final int chunkCapacity);
 
-    public Chunk<Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+    public Chunk<Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
         final FormulaGetContext formulaGetContext = (FormulaGetContext) context;
         final WritableChunk<Values> sourceChunk = formulaGetContext.sourceChunk;
-        fillChunk(formulaGetContext.fillContext, sourceChunk, orderedKeys);
+        fillChunk(formulaGetContext.fillContext, sourceChunk, rowSequence);
         return sourceChunk;
     }
 
 
     public Chunk<Values> getPrevChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final RowSequence rowSequence) {
         final FormulaGetContext formulaGetContext = (FormulaGetContext) context;
         final WritableChunk<Values> sourceChunk = formulaGetContext.sourceChunk;
-        fillPrevChunk(formulaGetContext.fillContext, sourceChunk, orderedKeys);
+        fillPrevChunk(formulaGetContext.fillContext, sourceChunk, rowSequence);
         return sourceChunk;
     }
 
     public abstract void fillChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys);
+            @NotNull final RowSequence rowSequence);
 
     public abstract void fillPrevChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final OrderedKeys orderedKeys);
+            @NotNull final RowSequence rowSequence);
 
     protected abstract ChunkType getChunkType();
 }

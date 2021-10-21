@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -229,7 +229,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
-                            OrderedKeys.Iterator.EMPTY, symbolTableIndexBuilder);
+                            RowSequence.Iterator.EMPTY, symbolTableIndexBuilder);
                 } while (keysToVisit.hasNext());
             }
             symbolTableIndex = symbolTableIndexBuilder.getIndex();
@@ -307,7 +307,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
             try (final Index.SearchIterator keysToVisit = upstream.added.searchIterator();
-                    final OrderedKeys.Iterator knownKeys = symbolTable.getIndex().getOrderedKeysIterator()) {
+                    final RowSequence.Iterator knownKeys = symbolTable.getIndex().getRowSequenceIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,

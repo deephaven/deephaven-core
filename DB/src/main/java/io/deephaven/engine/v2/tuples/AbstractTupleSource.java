@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.tuples;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -38,7 +38,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
     @Override
     public final void fillChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
@@ -46,15 +46,15 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
         for (int i = 0; i < columnSources.length; ++i) {
             // noinspection unchecked
-            chunks[i] = columnSources[i].getChunk(getContexts[i], orderedKeys);
+            chunks[i] = columnSources[i].getChunk(getContexts[i], rowSequence);
         }
 
-        convertChunks(destination, orderedKeys.intSize(), chunks);
+        convertChunks(destination, rowSequence.intSize(), chunks);
     }
 
     @Override
     public final void fillPrevChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
@@ -62,10 +62,10 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
         for (int i = 0; i < columnSources.length; ++i) {
             // noinspection unchecked
-            chunks[i] = columnSources[i].getPrevChunk(getContexts[i], orderedKeys);
+            chunks[i] = columnSources[i].getPrevChunk(getContexts[i], rowSequence);
         }
 
-        convertChunks(destination, orderedKeys.intSize(), chunks);
+        convertChunks(destination, rowSequence.intSize(), chunks);
     }
 
     protected abstract void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize,

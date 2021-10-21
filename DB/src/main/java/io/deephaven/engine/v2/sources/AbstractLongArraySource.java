@@ -6,10 +6,10 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
@@ -197,11 +197,11 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
-    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         fillSparseLongChunk(destGeneric, indices);
     }
 
-    protected final void fillSparseLongChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+    protected final void fillSparseLongChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         final long sz = indices.size();
         if (sz == 0) {
             destGeneric.setSize(0);
@@ -221,11 +221,11 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         fillSparsePrevLongChunk(destGeneric, indices);
     }
 
-    protected final void fillSparsePrevLongChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices) {
+    protected final void fillSparsePrevLongChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         final long sz = indices.size();
         if (sz == 0) {
             destGeneric.setSize(0);
@@ -258,11 +258,11 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
-    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         fillSparseLongChunkUnordered(destGeneric, indices);
     }
 
-    protected final void fillSparseLongChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+    protected final void fillSparseLongChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableLongChunk<? super Values> dest = destGeneric.asWritableLongChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ii++) {
@@ -283,11 +283,11 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
-    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         fillSparsePrevLongChunkUnordered(destGeneric, indices);
     }
 
-    protected final void fillSparsePrevLongChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices) {
+    protected final void fillSparsePrevLongChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableLongChunk<? super Values> dest = destGeneric.asWritableLongChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ii++) {
@@ -307,7 +307,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         dest.setSize(sz);
     }
 
-    protected <R> void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices, final LongFunction<R> mapper) {
+    protected <R> void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices, final LongFunction<R> mapper) {
         final long sz = indices.size();
         if (sz == 0) {
             destGeneric.setSize(0);
@@ -326,7 +326,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         dest.setSize(ctx.offset);
     }
 
-    protected <R> void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final OrderedKeys indices, final LongFunction<R> mapper) {
+    protected <R> void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices, final LongFunction<R> mapper) {
         final long sz = indices.size();
         if (sz == 0) {
             destGeneric.setSize(0);
@@ -359,7 +359,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         dest.setSize(ctx.offset);
     }
 
-    protected <R> void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices,final LongFunction<R> mapper) {
+    protected <R> void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices, final LongFunction<R> mapper) {
         final WritableObjectChunk<R, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final int sz = indices.size();
         final R nullValue = mapper.apply(NULL_LONG);
@@ -380,7 +380,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         dest.setSize(sz);
     }
 
-    protected <R> void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends KeyIndices> indices, final LongFunction<R> mapper) {
+    protected <R> void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices, final LongFunction<R> mapper) {
         final WritableObjectChunk<R, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final int sz = indices.size();
         final R nullValue = mapper.apply(NULL_LONG);
@@ -411,9 +411,9 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
-    void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
+    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final LongChunk<? extends Values> chunk = src.asLongChunk();
-        final LongChunk<Attributes.OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -483,9 +483,9 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
-    void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
+    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final LongChunk<? extends Values> chunk = src.asLongChunk();
-        final LongChunk<Attributes.OrderedKeyIndices> keys = orderedKeys.asKeyIndicesChunk();
+        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -523,9 +523,9 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         }
     }
 
-    <T> void fillFromChunkByRanges(final @NotNull OrderedKeys orderedKeys, final Chunk<? extends Values> src, final ToLongFunction<T> mapper) {
+    <T> void fillFromChunkByRanges(final @NotNull RowSequence rowSequence, final Chunk<? extends Values> src, final ToLongFunction<T> mapper) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedKeyRanges> ranges = orderedKeys.asKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -573,9 +573,9 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         }
     }
 
-    <T> void fillFromChunkByKeys(final @NotNull OrderedKeys orderedKeys, final Chunk<? extends Values> src, final ToLongFunction<T> mapper) {
+    <T> void fillFromChunkByKeys(final @NotNull RowSequence rowSequence, final Chunk<? extends Values> src, final ToLongFunction<T> mapper) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedKeyIndices> keys = orderedKeys.asKeyIndicesChunk();
+        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -613,7 +613,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }
@@ -652,7 +652,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         }
     }
 
-    <T> void fillFromChunkUnordered(@NotNull Chunk<? extends Values> src, @NotNull LongChunk<KeyIndices> keys, final ToLongFunction<T> mapper) {
+    <T> void fillFromChunkUnordered(@NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys, final ToLongFunction<T> mapper) {
         if (keys.size() == 0) {
             return;
         }

@@ -1,5 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.config.InputTableStatusListener;
@@ -92,7 +95,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
         try (final Index addIndex = table.getIndex().clone()) {
             final long firstRow = nextRow;
             final long lastRow = firstRow + addIndex.intSize() - 1;
-            try (OrderedKeys destinations = OrderedKeys.forRange(firstRow, lastRow)) {
+            try (final RowSequence destinations = RowSequenceUtil.forRange(firstRow, lastRow)) {
                 destinations.forAllLongs(indexChangeRecorder::addIndex);
                 nextRow = lastRow + 1;
 

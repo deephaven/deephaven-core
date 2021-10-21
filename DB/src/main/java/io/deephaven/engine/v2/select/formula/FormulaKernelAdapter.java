@@ -3,10 +3,10 @@ package io.deephaven.engine.v2.select.formula;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -205,9 +205,9 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     }
 
     private void commonGetLogic(WritableChunk<Values> __dest, final long k, boolean usePrev) {
-        try (final Index ok = Index.FACTORY.getIndexByValues(k)) {
+        try (final Index rs = Index.FACTORY.getIndexByValues(k)) {
             try (final AdapterContext context = makeFillContext(1)) {
-                fillChunkHelper(context, __dest, ok, usePrev, true);
+                fillChunkHelper(context, __dest, rs, usePrev, true);
             }
         }
     }
@@ -220,29 +220,29 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     @Override
     public void fillChunk(@NotNull final FillContext __context,
             @NotNull final WritableChunk<? super Values> __destination,
-            @NotNull final OrderedKeys __orderedKeys) {
-        fillChunkHelper(__context, __destination, __orderedKeys, false, true);
+            @NotNull final RowSequence __rowSequence) {
+        fillChunkHelper(__context, __destination, __rowSequence, false, true);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext __context,
             @NotNull final WritableChunk<? super Values> __destination,
-            @NotNull final OrderedKeys __orderedKeys) {
-        fillChunkHelper(__context, __destination, __orderedKeys, true, true);
+            @NotNull final RowSequence __rowSequence) {
+        fillChunkHelper(__context, __destination, __rowSequence, true, true);
     }
 
     private void fillChunkHelper(@NotNull final FillContext __context,
             @NotNull final WritableChunk<? super Values> __destination,
-            @NotNull final OrderedKeys __orderedKeys, final boolean usePrev, final boolean lookupI) {
-        final int orderedKeysSize = __orderedKeys.intSize();
-        __destination.setSize(orderedKeysSize);
-        // Shortcut if __orderedKeys is empty
-        if (orderedKeysSize == 0) {
+            @NotNull final RowSequence __rowSequence, final boolean usePrev, final boolean lookupI) {
+        final int RowSequenceSize = __rowSequence.intSize();
+        __destination.setSize(RowSequenceSize);
+        // Shortcut if __rowSequence is empty
+        if (RowSequenceSize == 0) {
             return;
         }
         final AdapterContext __typedContext = (AdapterContext) __context;
         final Chunk<? extends Attributes.Values>[] sourceChunks = new Chunk[sourceDescriptor.sources.length];
-        try (final OrderedKeys flat = Index.FACTORY.getFlatIndex(__orderedKeys.size())) {
+        try (final RowSequence flat = Index.FACTORY.getFlatIndex(__rowSequence.size())) {
             for (int ii = 0; ii < sourceDescriptor.sources.length; ++ii) {
                 final String name = sourceDescriptor.sources[ii];
                 switch (name) {
@@ -250,35 +250,35 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
                         if (lookupI) {
                             // Potentially repeated work w.r.t. "ii".
                             __typedContext.iChunk.setSize(0);
-                            __index.invert(__orderedKeys.asIndex()).forAllLongs(longVal -> {
+                            __index.invert(__rowSequence.asIndex()).forAllLongs(longVal -> {
                                 final int i = LongSizedDataStructure.intSize("FormulaNubbin i usage", longVal);
                                 __typedContext.iChunk.add(i);
                             });
                         } else {
                             // sequential i
-                            for (int pos = 0; pos < orderedKeysSize; ++pos) {
+                            for (int pos = 0; pos < RowSequenceSize; ++pos) {
                                 __typedContext.iChunk.set(pos, pos);
                             }
-                            __typedContext.iChunk.setSize(orderedKeysSize);
+                            __typedContext.iChunk.setSize(RowSequenceSize);
                         }
                         sourceChunks[ii] = __typedContext.iChunk;
                         break;
                     }
                     case "ii": {
                         if (lookupI) {
-                            __index.invert(__orderedKeys.asIndex()).fillKeyIndicesChunk(__typedContext.iiChunk);
+                            __index.invert(__rowSequence.asIndex()).fillRowKeyChunk(__typedContext.iiChunk);
                         } else {
                             // sequential ii
-                            for (int pos = 0; pos < orderedKeysSize; ++pos) {
+                            for (int pos = 0; pos < RowSequenceSize; ++pos) {
                                 __typedContext.iiChunk.set(pos, pos);
                             }
-                            __typedContext.iiChunk.setSize(orderedKeysSize);
+                            __typedContext.iiChunk.setSize(RowSequenceSize);
                         }
                         sourceChunks[ii] = __typedContext.iiChunk;
                         break;
                     }
                     case "k": {
-                        __orderedKeys.fillKeyIndicesChunk(__typedContext.kChunk);
+                        __rowSequence.fillRowKeyChunk(__typedContext.kChunk);
                         sourceChunks[ii] = __typedContext.kChunk;
                         break;
                     }
@@ -286,7 +286,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
                         final ColumnSource cs = columnSources.get(name);
                         final ColumnSource.GetContext ctx = __typedContext.sourceContexts[ii];
                         sourceChunks[ii] =
-                                usePrev ? cs.getPrevChunk(ctx, __orderedKeys) : cs.getChunk(ctx, __orderedKeys);
+                                usePrev ? cs.getPrevChunk(ctx, __rowSequence) : cs.getChunk(ctx, __rowSequence);
                     }
                 }
             }
@@ -296,9 +296,9 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
 
     @Override
     public AdapterContext makeFillContext(final int chunkCapacity) {
-        WritableIntChunk<OrderedKeyIndices> iChunk = null;
-        WritableLongChunk<OrderedKeyIndices> iiChunk = null;
-        WritableLongChunk<OrderedKeyIndices> kChunk = null;
+        WritableIntChunk<Attributes.OrderedRowKeys> iChunk = null;
+        WritableLongChunk<OrderedRowKeys> iiChunk = null;
+        WritableLongChunk<OrderedRowKeys> kChunk = null;
 
         final String[] sources = sourceDescriptor.sources;
         // Create whichever of the three special chunks we need
@@ -331,15 +331,15 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     }
 
     private static class AdapterContext implements FillContext {
-        final WritableIntChunk<OrderedKeyIndices> iChunk;
-        final WritableLongChunk<OrderedKeyIndices> iiChunk;
-        final WritableLongChunk<OrderedKeyIndices> kChunk;
+        final WritableIntChunk<OrderedRowKeys> iChunk;
+        final WritableLongChunk<OrderedRowKeys> iiChunk;
+        final WritableLongChunk<Attributes.OrderedRowKeys> kChunk;
         final ColumnSource.GetContext[] sourceContexts;
         final FillContext kernelContext;
 
-        AdapterContext(WritableIntChunk<OrderedKeyIndices> iChunk,
-                WritableLongChunk<OrderedKeyIndices> iiChunk,
-                WritableLongChunk<OrderedKeyIndices> kChunk,
+        AdapterContext(WritableIntChunk<OrderedRowKeys> iChunk,
+                WritableLongChunk<OrderedRowKeys> iiChunk,
+                WritableLongChunk<OrderedRowKeys> kChunk,
                 ColumnSource.GetContext[] sourceContexts,
                 FillContext kernelContext) {
             this.iChunk = iChunk;

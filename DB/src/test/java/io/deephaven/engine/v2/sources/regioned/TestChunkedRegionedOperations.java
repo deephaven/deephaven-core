@@ -21,7 +21,7 @@ import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.codec.BigIntegerCodec;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * High-level unit tests for {@link RegionedColumnSource} implementations of
- * {@link io.deephaven.engine.v2.sources.ColumnSource#fillChunk(ColumnSource.FillContext, WritableChunk, OrderedKeys)}.
+ * {@link io.deephaven.engine.v2.sources.ColumnSource#fillChunk(ColumnSource.FillContext, WritableChunk, RowSequence)}.
  */
 @Category(OutOfBandTest.class)
 public class TestChunkedRegionedOperations {
@@ -305,8 +305,8 @@ public class TestChunkedRegionedOperations {
         boolean first = true;
         assertEquals(expected.size(), actual.size());
         try (final SafeCloseableList closeables = new SafeCloseableList();
-                final OrderedKeys.Iterator expectedIterator = expected.getIndex().getOrderedKeysIterator();
-                final OrderedKeys.Iterator actualIterator = actual.getIndex().getOrderedKeysIterator()) {
+                final RowSequence.Iterator expectedIterator = expected.getIndex().getRowSequenceIterator();
+                final RowSequence.Iterator actualIterator = actual.getIndex().getRowSequenceIterator()) {
             final ChunkType[] chunkTypes = expected.getDefinition().getColumnStream().map(ColumnDefinition::getDataType)
                     .map(ChunkType::fromElementType).toArray(ChunkType[]::new);
             final Equals[] equals = Arrays.stream(chunkTypes).map(Equals::make).toArray(Equals[]::new);
@@ -335,8 +335,8 @@ public class TestChunkedRegionedOperations {
 
             while (expectedIterator.hasMore()) {
                 assertTrue(actualIterator.hasMore());
-                final OrderedKeys expectedKeys = expectedIterator.getNextOrderedKeysWithLength(chunkCapacity);
-                final OrderedKeys actualKeys = actualIterator.getNextOrderedKeysWithLength(chunkCapacity);
+                final RowSequence expectedKeys = expectedIterator.getNextRowSequenceWithLength(chunkCapacity);
+                final RowSequence actualKeys = actualIterator.getNextRowSequenceWithLength(chunkCapacity);
                 for (int ci = 0; ci < expectedChunks.length; ++ci) {
                     final Equals equal = equals[ci];
                     final WritableChunk<Values> expectedChunk = expectedChunks[ci];

@@ -1,5 +1,7 @@
 package io.deephaven.engine.tables.libs;
 
+import io.deephaven.engine.structures.RowSequence;
+
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -56,7 +58,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.engine.v2.sources.chunk.WritableObjectChunk.class,
                 io.deephaven.engine.v2.sources.chunk.Context.class,
                 io.deephaven.engine.v2.select.ConditionFilter.FilterKernel.class,
-                io.deephaven.engine.v2.utils.OrderedKeys.class));
+                RowSequence.class));
     }
 
     @Override

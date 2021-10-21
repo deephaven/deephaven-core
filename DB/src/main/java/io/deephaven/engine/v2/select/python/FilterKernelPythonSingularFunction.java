@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.python;
 
 import io.deephaven.engine.v2.select.ConditionFilter.FilterKernel;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import org.jpy.PyObject;
@@ -30,9 +30,9 @@ class FilterKernelPythonSingularFunction implements FilterKernel<FilterKernel.Co
     }
 
     @Override
-    public LongChunk<OrderedKeyIndices> filter(
+    public LongChunk<OrderedRowKeys> filter(
             Context context,
-            LongChunk<OrderedKeyIndices> indices,
+            LongChunk<OrderedRowKeys> indices,
             Chunk... inputChunks) {
         final int size = indices.size();
         final Class<?>[] paramTypes = ArgumentsSingular.buildParamTypes(inputChunks);

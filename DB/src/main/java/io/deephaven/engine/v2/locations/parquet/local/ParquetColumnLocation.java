@@ -24,12 +24,13 @@ import io.deephaven.engine.v2.parquet.metadata.GroupingColumnInfo;
 import io.deephaven.engine.v2.parquet.metadata.TableInfo;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Attributes.DictionaryKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.UnorderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.UnorderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.regioned.*;
 import io.deephaven.engine.v2.utils.ChunkBoxer;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.ColumnChunkReader;
@@ -181,12 +182,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                             ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
                             makeToPage(columnTypes.get(GROUPING_KEY), ParquetInstructions.EMPTY,
                                     GROUPING_KEY, groupingKeyReader, columnDefinition)).pageStore,
-                    ColumnChunkPageStore.<UnorderedKeyIndices>create(
+                    ColumnChunkPageStore.<UnorderedRowKeys>create(
                             pageCache.castAttr(), beginPosReader,
                             ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
                             makeToPage(columnTypes.get(BEGIN_POS), ParquetInstructions.EMPTY, BEGIN_POS,
                                     beginPosReader, FIRST_KEY_COL_DEF)).pageStore,
-                    ColumnChunkPageStore.<UnorderedKeyIndices>create(pageCache.castAttr(), endPosReader,
+                    ColumnChunkPageStore.<UnorderedRowKeys>create(pageCache.castAttr(), endPosReader,
                             ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
                             makeToPage(columnTypes.get(END_POS), ParquetInstructions.EMPTY, END_POS,
                                     beginPosReader, LAST_KEY_COL_DEF)).pageStore).get();
@@ -401,14 +402,14 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private static final class MetaDataTableFactory {
 
         private final ColumnChunkPageStore<Values> keyColumn;
-        private final ColumnChunkPageStore<UnorderedKeyIndices> firstColumn;
-        private final ColumnChunkPageStore<UnorderedKeyIndices> lastColumn;
+        private final ColumnChunkPageStore<Attributes.UnorderedRowKeys> firstColumn;
+        private final ColumnChunkPageStore<Attributes.UnorderedRowKeys> lastColumn;
 
         private volatile Object metaData;
 
         private MetaDataTableFactory(@NotNull final ColumnChunkPageStore<Values> keyColumn,
-                @NotNull final ColumnChunkPageStore<UnorderedKeyIndices> firstColumn,
-                @NotNull final ColumnChunkPageStore<UnorderedKeyIndices> lastColumn) {
+                @NotNull final ColumnChunkPageStore<Attributes.UnorderedRowKeys> firstColumn,
+                @NotNull final ColumnChunkPageStore<Attributes.UnorderedRowKeys> lastColumn) {
             this.keyColumn = Require.neqNull(keyColumn, "keyColumn");
             this.firstColumn = Require.neqNull(firstColumn, "firstColumn");
             this.lastColumn = Require.neqNull(lastColumn, "lastColumn");
@@ -434,12 +435,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                 firstColumn.makeGetContext(CHUNK_SIZE);
                         final ChunkSource.GetContext lastContext =
                                 lastColumn.makeGetContext(CHUNK_SIZE);
-                        final OrderedKeys rows = OrderedKeys.forRange(0, numRows - 1);
-                        final OrderedKeys.Iterator rowsIterator = rows.getOrderedKeysIterator()) {
+                        final RowSequence rows = RowSequenceUtil.forRange(0, numRows - 1);
+                        final RowSequence.Iterator rowsIterator = rows.getRowSequenceIterator()) {
 
                     while (rowsIterator.hasMore()) {
-                        final OrderedKeys chunkRows =
-                                rowsIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
+                        final RowSequence chunkRows =
+                                rowsIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
 
                         buildGrouping.build(
                                 boxerKernel.box(keyColumn.getChunk(keyContext, chunkRows)),
@@ -455,8 +456,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
         private interface BuildGrouping extends Context {
             void build(@NotNull ObjectChunk<?, ? extends Values> keyChunk,
-                    @NotNull Chunk<? extends UnorderedKeyIndices> firstChunk,
-                    @NotNull Chunk<? extends UnorderedKeyIndices> lastChunk);
+                    @NotNull Chunk<? extends UnorderedRowKeys> firstChunk,
+                    @NotNull Chunk<? extends UnorderedRowKeys> lastChunk);
 
             Object getGrouping();
 
@@ -482,11 +483,11 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
                 @Override
                 public void build(@NotNull final ObjectChunk<?, ? extends Values> keyChunk,
-                        @NotNull final Chunk<? extends UnorderedKeyIndices> firstChunk,
-                        @NotNull final Chunk<? extends UnorderedKeyIndices> lastChunk) {
-                    final IntChunk<? extends UnorderedKeyIndices> firstIntChunk =
+                        @NotNull final Chunk<? extends UnorderedRowKeys> firstChunk,
+                        @NotNull final Chunk<? extends UnorderedRowKeys> lastChunk) {
+                    final IntChunk<? extends UnorderedRowKeys> firstIntChunk =
                             firstChunk.asIntChunk();
-                    final IntChunk<? extends UnorderedKeyIndices> lastIntChunk =
+                    final IntChunk<? extends UnorderedRowKeys> lastIntChunk =
                             lastChunk.asIntChunk();
 
                     for (int ki = 0; ki < keyChunk.size(); ++ki) {
@@ -515,11 +516,11 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
                 @Override
                 public void build(@NotNull final ObjectChunk<?, ? extends Values> keyChunk,
-                        @NotNull final Chunk<? extends UnorderedKeyIndices> firstChunk,
-                        @NotNull final Chunk<? extends UnorderedKeyIndices> lastChunk) {
-                    final LongChunk<? extends UnorderedKeyIndices> firstLongChunk =
+                        @NotNull final Chunk<? extends Attributes.UnorderedRowKeys> firstChunk,
+                        @NotNull final Chunk<? extends UnorderedRowKeys> lastChunk) {
+                    final LongChunk<? extends UnorderedRowKeys> firstLongChunk =
                             firstChunk.asLongChunk();
-                    final LongChunk<? extends UnorderedKeyIndices> lastLongChunk =
+                    final LongChunk<? extends UnorderedRowKeys> lastLongChunk =
                             lastChunk.asLongChunk();
 
                     for (int ki = 0; ki < keyChunk.size(); ++ki) {

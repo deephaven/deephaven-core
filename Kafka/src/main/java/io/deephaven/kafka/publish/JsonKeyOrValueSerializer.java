@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 
@@ -101,7 +101,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         abstract FieldContext makeContext(int size);
 
         abstract void processField(FieldContext fieldContext,
-                WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean isRemoval);
+                WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, RowSequence keys, boolean isRemoval);
     }
 
     abstract class JSONFieldProcessorImpl<ChunkType extends Chunk<Attributes.Values>> extends JSONFieldProcessor {
@@ -136,7 +136,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         void processField(
                 final FieldContext fieldContext,
                 final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                final OrderedKeys keys,
+                final RowSequence keys,
                 final boolean previous) {
             final ContextImpl contextImpl = (ContextImpl) fieldContext;
             ChunkType inputChunk;
@@ -339,7 +339,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         public void processField(
                 final FieldContext fieldContext,
                 final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                final OrderedKeys keys,
+                final RowSequence keys,
                 final boolean isRemoval) {
             final String nanosString = String.valueOf(DBDateTime.now().getNanos());
             for (int ii = 0; ii < jsonChunk.size(); ++ii) {
@@ -415,7 +415,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
      * @return A List of Strings containing all of the parsed update statements
      */
     @Override
-    public ObjectChunk<String, Attributes.Values> handleChunk(Context context, OrderedKeys toProcess,
+    public ObjectChunk<String, Attributes.Values> handleChunk(Context context, RowSequence toProcess,
             boolean previous) {
         final JsonContext jsonContext = (JsonContext) context;
 

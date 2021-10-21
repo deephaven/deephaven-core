@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -38,11 +38,11 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     void setRightSide(Index rightIndex, ColumnSource<?> valueSource) {
-        try (final OrderedKeys.Iterator okIt = rightIndex.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = rightIndex.getRowSequenceIterator();
              final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, rightIndex.size()))
         ) {
-            while (okIt.hasMore()) {
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
                 final Chunk<? extends Values> dataChunk = valueSource.getChunk(getContext, chunkOk);
                 final IntChunk<? extends Values> dataChunkAsInt = transform.apply(dataChunk);
@@ -75,12 +75,12 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         Assert.eq(valueSources.length, "valueSources.length", 1);
         final ColumnSource<?> valueSource = valueSources[0];
 
-        try (final OrderedKeys.Iterator okIt = leftIndex.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rsIt = leftIndex.getRowSequenceIterator();
              final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, leftIndex.size()))
         ) {
             long offset = 0;
-            while (okIt.hasMore()) {
-                final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
                 final Chunk<? extends Values> dataChunk = valueSource.getChunk(getContext, chunkOk);
 

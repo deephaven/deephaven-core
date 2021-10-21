@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableByteChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,12 +45,12 @@ public abstract class TstColumnRegionByte {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             WritableByteChunk<? super Attributes.Values> charDestination = destination.asWritableByteChunk();
             int size = destination.size();
-            int length = (int) orderedKeys.size();
+            int length = (int) rowSequence.size();
 
-            orderedKeys.forAllLongs(key ->
+            rowSequence.forAllLongs(key ->
             {
                 for (int i = 0; i < length; ++i) {
                     charDestination.set(size + i, (byte) key);

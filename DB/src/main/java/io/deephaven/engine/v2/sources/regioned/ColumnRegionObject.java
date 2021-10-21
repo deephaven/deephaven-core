@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -45,9 +45,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * Check if this region can expose an alternate form as paired regions of {@code long} keys and {@code DATA_TYPE}
      * values covering all of its index keys in {@code keysToVisit}.
      *
-     * <p>Both alternate regions must use the same or smaller index key space as this one. Keys fetched from the
+     * <p>Both alternate regions must use the same or smaller index key space as this one. Indices fetched from the
      * keys region must represent valid element indices in the values region. Values regions must support
-     * {@link #gatherDictionaryValuesIndex(ReadOnlyIndex.SearchIterator, OrderedKeys.Iterator, Index.SequentialBuilder)}.
+     * {@link #gatherDictionaryValuesIndex(ReadOnlyIndex.SearchIterator, RowSequence.Iterator, Index.SequentialBuilder)}.
      *
      * <p>Use {@link #getDictionaryKeysRegion()} to access the region of keys and {@link #getDictionaryValuesRegion()}
      * to access the region of values.
@@ -79,7 +79,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * @return Whether {@code keysToVisit} has been exhausted
      */
     default boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                                @NotNull final OrderedKeys.Iterator knownKeys,
+                                                @NotNull final RowSequence.Iterator knownKeys,
                                                 @NotNull final Index.SequentialBuilder sequentialBuilder) {
         throw new UnsupportedOperationException();
     }
@@ -146,7 +146,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         @Override
         public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                                   @NotNull final OrderedKeys.Iterator knownKeys,
+                                                   @NotNull final RowSequence.Iterator knownKeys,
                                                    @NotNull final Index.SequentialBuilder sequentialBuilder) {
             // Nothing to be gathered, we don't include null regions in dictionary values.
             advanceToNextPage(knownKeys);
@@ -194,7 +194,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         @Override
         public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                                   @NotNull final OrderedKeys.Iterator knownKeys,
+                                                   @NotNull final RowSequence.Iterator knownKeys,
                                                    @NotNull final Index.SequentialBuilder sequentialBuilder) {
             final long pageOnlyKey = firstRow(keysToVisit.currentValue());
             if (knownKeys.peekNextKey() != pageOnlyKey) {
@@ -243,7 +243,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         @Override
         public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                                   @NotNull final OrderedKeys.Iterator knownKeys,
+                                                   @NotNull final RowSequence.Iterator knownKeys,
                                                    @NotNull final Index.SequentialBuilder sequentialBuilder) {
             final long pageMaxKey = maxRow(keysToVisit.currentValue());
             boolean moreKeysToVisit;
@@ -320,11 +320,11 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super DictionaryKeys> destination, @NotNull final OrderedKeys orderedKeys) {
+        public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super DictionaryKeys> destination, @NotNull final RowSequence rowSequence) {
             final WritableLongChunk<? super DictionaryKeys> typed = destination.asWritableLongChunk();
             final int firstOffsetInclusive = destination.size();
-            try (final OrderedKeys.Iterator oki = orderedKeys.getOrderedKeysIterator()) {
-                wrapped.fillChunkAppend(context, destination, oki);
+            try (final RowSequence.Iterator rsi = rowSequence.getRowSequenceIterator()) {
+                wrapped.fillChunkAppend(context, destination, rsi);
             }
             final int lastOffsetExclusive = destination.size();
             for (int dki = firstOffsetInclusive; dki < lastOffsetExclusive; ++dki) {

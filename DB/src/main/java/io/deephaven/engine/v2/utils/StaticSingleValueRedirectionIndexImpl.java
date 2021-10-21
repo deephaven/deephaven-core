@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import org.jetbrains.annotations.NotNull;
@@ -48,8 +49,8 @@ public class StaticSingleValueRedirectionIndexImpl implements SingleValueRedirec
     @Override
     public void fillChunk(
             @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         final int sz = keysToMap.intSize();
         mappedKeysOut.setSize(sz);
         mappedKeysOut.fillWithValue(0, sz, value);
@@ -58,8 +59,8 @@ public class StaticSingleValueRedirectionIndexImpl implements SingleValueRedirec
     @Override
     public void fillPrevChunk(
             @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-            @NotNull final OrderedKeys keysToMap) {
+            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap) {
         // no prev
         fillChunk(fillContext, mappedKeysOut, keysToMap);
     }

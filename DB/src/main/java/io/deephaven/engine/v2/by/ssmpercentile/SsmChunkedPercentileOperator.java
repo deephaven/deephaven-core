@@ -159,7 +159,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
@@ -192,7 +192,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
@@ -300,8 +300,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
-            Chunk<? extends Values> postValues, LongChunk<? extends KeyIndices> postShiftIndices,
-            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftIndices,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
@@ -370,7 +370,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(values.size());
@@ -387,7 +387,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends RowKeys> inputIndices, long destination) {
         final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(values.size());
@@ -414,7 +414,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
-            Chunk<? extends Values> postValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
         final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(preValues.size());

@@ -4,10 +4,10 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
 public interface ChunkFilter {
     /**
@@ -19,85 +19,85 @@ public interface ChunkFilter {
      * @param values the values to filter
      * @param results a boolean chunk with true values for items that match the filter, and false otherwise
      */
-    void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results);
+    void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+            WritableLongChunk<OrderedRowKeys> results);
 
     interface CharChunkFilter extends ChunkFilter {
-        void filter(CharChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results);
+        void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             filter(values.asCharChunk(), keys, results);
         }
     }
 
     interface ByteChunkFilter extends ChunkFilter {
-        void filter(ByteChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results);
+        void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asByteChunk(), keys, results);
         }
     }
 
     interface ShortChunkFilter extends ChunkFilter {
-        void filter(ShortChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results);
+        void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             filter(values.asShortChunk(), keys, results);
         }
     }
 
     interface IntChunkFilter extends ChunkFilter {
-        void filter(IntChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results);
+        void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             filter(values.asIntChunk(), keys, results);
         }
     }
 
     interface LongChunkFilter extends ChunkFilter {
-        void filter(LongChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results);
+        void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             filter(values.asLongChunk(), keys, results);
         }
     }
 
     interface FloatChunkFilter extends ChunkFilter {
-        void filter(FloatChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results);
+        void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             filter(values.asFloatChunk(), keys, results);
         }
     }
 
     interface DoubleChunkFilter extends ChunkFilter {
-        void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results);
+        void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        default void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asDoubleChunk(), keys, results);
         }
     }
 
     interface ObjectChunkFilter<T> extends ChunkFilter {
-        void filter(ObjectChunk<T, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results);
+        void filter(ObjectChunk<T, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-                WritableLongChunk<OrderedKeyIndices> results) {
+        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<Attributes.OrderedRowKeys> results) {
             filter(values.asObjectChunk(), keys, results);
         }
     }
@@ -150,9 +150,9 @@ public interface ChunkFilter {
         long lastInterruptCheck = System.currentTimeMillis();
 
         try (final ColumnSource.GetContext getContext = columnSource.makeGetContext(contextSize);
-                final WritableLongChunk<OrderedKeyIndices> longChunk = WritableLongChunk.makeWritableChunk(contextSize);
-                final OrderedKeys.Iterator okIt = selection.getOrderedKeysIterator()) {
-            while (okIt.hasMore()) {
+                final WritableLongChunk<OrderedRowKeys> longChunk = WritableLongChunk.makeWritableChunk(contextSize);
+                final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
+            while (rsIt.hasMore()) {
                 if (filteredChunks++ == chunksBetweenChecks) {
                     if (Thread.interrupted()) {
                         throw new QueryCancellationException("interrupted while filtering data");
@@ -167,8 +167,8 @@ public interface ChunkFilter {
                     lastInterruptCheck = now;
                     filteredChunks = 0;
                 }
-                final OrderedKeys okChunk = okIt.getNextOrderedKeysWithLength(contextSize);
-                final LongChunk<OrderedKeyIndices> keyChunk = okChunk.asKeyIndicesChunk();
+                final RowSequence okChunk = rsIt.getNextRowSequenceWithLength(contextSize);
+                final LongChunk<OrderedRowKeys> keyChunk = okChunk.asRowKeyChunk();
 
                 final Chunk<? extends Values> dataChunk;
                 if (usePrev) {

@@ -24,7 +24,7 @@ import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.type.TypeUtils;
@@ -371,11 +371,11 @@ public class ParquetTableWriter {
             int runningSize = 0;
             int originalRowsCount = 0;
             try (final ChunkSource.GetContext context = lengthSource.makeGetContext(LOCAL_CHUNK_SIZE);
-                    final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+                    final RowSequence.Iterator it = index.getRowSequenceIterator()) {
                 while (it.hasMore()) {
-                    OrderedKeys ok = it.getNextOrderedKeysWithLength(LOCAL_CHUNK_SIZE);
+                    RowSequence rs = it.getNextRowSequenceWithLength(LOCAL_CHUNK_SIZE);
                     // noinspection unchecked
-                    IntChunk<Values> chunk = (IntChunk<Values>) lengthSource.getChunk(context, ok);
+                    IntChunk<Values> chunk = (IntChunk<Values>) lengthSource.getChunk(context, rs);
                     for (int i = 0; i < chunk.size(); i++) {
                         if (chunk.get(i) != Integer.MIN_VALUE) {
                             if (runningSize + chunk.get(i) > targetSize || originalRowsCount + 1 > targetSize) {
@@ -450,13 +450,13 @@ public class ParquetTableWriter {
                 final MutableInt keyCount = new MutableInt(0);
                 final MutableBoolean hasNulls = new MutableBoolean(false);
                 try (final ChunkSource.GetContext context = columnSource.makeGetContext(targetSize);
-                        final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+                        final RowSequence.Iterator it = index.getRowSequenceIterator()) {
                     for (int step = 0; step < stepsCount; step++) {
-                        final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
+                        final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.get());
                         // noinspection unchecked
                         final ObjectChunk<?, Values> chunk =
-                                (ObjectChunk<?, Values>) columnSource.getChunk(context, ok);
-                        final IntBuffer posInDictionary = IntBuffer.allocate((int) ok.size());
+                                (ObjectChunk<?, Values>) columnSource.getChunk(context, rs);
+                        final IntBuffer posInDictionary = IntBuffer.allocate((int) rs.size());
                         for (int vi = 0; vi < chunk.size(); ++vi) {
                             posInDictionary.put(keyToPos.computeIfAbsent(chunk.get(vi), o -> {
                                 if (o == null) {
@@ -484,11 +484,11 @@ public class ParquetTableWriter {
                 if (lengthSource != null) {
                     repeatCount = new ArrayList<>();
                     try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetSize);
-                            final OrderedKeys.Iterator it = lengthIndex.getOrderedKeysIterator()) {
+                            final RowSequence.Iterator it = lengthIndex.getRowSequenceIterator()) {
                         while (it.hasMore()) {
-                            final OrderedKeys ok = it.getNextOrderedKeysWithLength(rowStepGetter.get());
+                            final RowSequence rs = it.getNextRowSequenceWithLength(rowStepGetter.get());
                             // noinspection unchecked
-                            final IntChunk<Values> chunk = (IntChunk<Values>) lengthSource.getChunk(context, ok);
+                            final IntChunk<Values> chunk = (IntChunk<Values>) lengthSource.getChunk(context, rs);
                             final IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
                             chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
                             newBuffer.limit(chunk.size());
@@ -519,21 +519,21 @@ public class ParquetTableWriter {
                 final boolean supportNulls = supportNulls(columnType);
                 final Object bufferToWrite = transferObject.getBuffer();
                 final Object nullValue = getNullValue(columnType);
-                try (final OrderedKeys.Iterator lengthIndexIt =
-                        lengthIndex != null ? lengthIndex.getOrderedKeysIterator() : null;
+                try (final RowSequence.Iterator lengthIndexIt =
+                        lengthIndex != null ? lengthIndex.getRowSequenceIterator() : null;
                         final ChunkSource.GetContext lengthSourceContext =
                                 lengthSource != null ? lengthSource.makeGetContext(targetSize) : null;
-                        final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+                        final RowSequence.Iterator it = index.getRowSequenceIterator()) {
                     final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
                     for (int step = 0; step < stepsCount; ++step) {
-                        final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
-                        transferObject.fetchData(ok);
+                        final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.get());
+                        transferObject.fetchData(rs);
                         transferObject.propagateChunkData();
                         if (lengthIndexIt != null) {
                             // noinspection unchecked
                             final IntChunk<Values> lenChunk = (IntChunk<Values>) lengthSource.getChunk(
                                     lengthSourceContext,
-                                    lengthIndexIt.getNextOrderedKeysWithLength(rowStepGetter.get()));
+                                    lengthIndexIt.getNextRowSequenceWithLength(rowStepGetter.get()));
                             lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                             repeatCount.limit(lenChunk.size());
                             columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(),
@@ -662,7 +662,7 @@ public class ParquetTableWriter {
 
         int rowCount();
 
-        void fetchData(OrderedKeys ok);
+        void fetchData(RowSequence rs);
     }
 
     static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> implements TransferObject<B> {
@@ -698,8 +698,8 @@ public class ParquetTableWriter {
 
 
         @Override
-        public void fetchData(OrderedKeys ok) {
-            columnSource.fillChunk(context, chunk, ok);
+        public void fetchData(RowSequence rs) {
+            columnSource.fillChunk(context, chunk, rs);
         }
 
         @Override
@@ -743,9 +743,9 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public void fetchData(OrderedKeys ok) {
+        public void fetchData(RowSequence rs) {
             // noinspection unchecked
-            chunk = (ShortChunk<Values>) columnSource.getChunk(context, ok);
+            chunk = (ShortChunk<Values>) columnSource.getChunk(context, rs);
         }
 
         @Override
@@ -787,9 +787,9 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public void fetchData(OrderedKeys ok) {
+        public void fetchData(RowSequence rs) {
             // noinspection unchecked
-            chunk = (CharChunk<Values>) columnSource.getChunk(context, ok);
+            chunk = (CharChunk<Values>) columnSource.getChunk(context, rs);
         }
 
         @Override
@@ -831,9 +831,9 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public void fetchData(OrderedKeys ok) {
+        public void fetchData(RowSequence rs) {
             // noinspection unchecked
-            chunk = (ByteChunk<Values>) columnSource.getChunk(context, ok);
+            chunk = (ByteChunk<Values>) columnSource.getChunk(context, rs);
         }
 
         @Override
@@ -875,9 +875,9 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public void fetchData(OrderedKeys ok) {
+        public void fetchData(RowSequence rs) {
             // noinspection unchecked
-            chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, ok);
+            chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, rs);
         }
 
         @Override
@@ -921,9 +921,9 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public void fetchData(OrderedKeys ok) {
+        public void fetchData(RowSequence rs) {
             // noinspection unchecked
-            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, ok);
+            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
         }
 
         @Override
@@ -934,7 +934,7 @@ public class ParquetTableWriter {
 
 
     private static boolean isRange(Index index) {
-        return index.size() == (index.lastKey() - index.firstKey() + 1);
+        return index.size() == (index.lastRowKey() - index.firstRowKey() + 1);
     }
 
 

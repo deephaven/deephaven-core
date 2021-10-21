@@ -6,9 +6,10 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.exceptions.SizeException;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
@@ -45,9 +46,10 @@ public class ChunkUtilsTest {
     }
 
     private void tryMaxChunkSizeTest(final long limit) {
-        final LongChunk<OrderedKeyIndices> chunk = createChunk(0, 2); // mind the gap
-        final LongChunk<OrderedKeyRanges> newChunk = (limit == 0) ? ChunkUtils.convertToOrderedKeyRanges(chunk)
-                : ChunkUtils.convertToOrderedKeyRanges(chunk, limit);
+        final LongChunk<OrderedRowKeys> chunk = createChunk(0, 2); // mind the gap
+        final LongChunk<Attributes.OrderedRowKeyRanges> newChunk =
+                (limit == 0) ? ChunkUtils.convertToOrderedKeyRanges(chunk)
+                        : ChunkUtils.convertToOrderedKeyRanges(chunk, limit);
         validateChunk(newChunk, 0, 0, 2, 2);
     }
 
@@ -112,7 +114,7 @@ public class ChunkUtilsTest {
     @Test(expected = SizeException.class)
     public void testGeneratedChunkIndiciesTooLarge() {
         // since ranges are inclusive, there is one too many elements to generate an indices chunk
-        LongChunk<OrderedKeyRanges> chunk = createChunk(0, Chunk.MAXIMUM_SIZE);
+        LongChunk<OrderedRowKeyRanges> chunk = createChunk(0, Chunk.MAXIMUM_SIZE);
         ChunkUtils.convertToOrderedKeyIndices(chunk);
     }
 
@@ -131,7 +133,7 @@ public class ChunkUtilsTest {
         for (final int indexCount : new int[] {100, 1_000_000}) {
             for (final int avgElementsPerRange : new int[] {1, 4, 64, 1_000_000}) {
                 for (final int sparsityFactor : new int[] {1, 10, 1_000}) {
-                    final Pair<LongChunk<OrderedKeyRanges>, LongChunk<OrderedKeyIndices>> chunks =
+                    final Pair<LongChunk<OrderedRowKeyRanges>, LongChunk<OrderedRowKeys>> chunks =
                             generateChunks(indexCount, avgElementsPerRange, sparsityFactor);
                     validateChunk(chunks.second, ChunkUtils.convertToOrderedKeyIndices(chunks.first));
                     validateChunk(chunks.first, ChunkUtils.convertToOrderedKeyRanges(chunks.second));
@@ -162,7 +164,7 @@ public class ChunkUtilsTest {
         }
     }
 
-    private Pair<LongChunk<OrderedKeyRanges>, LongChunk<OrderedKeyIndices>> generateChunks(final int indexCount,
+    private Pair<LongChunk<OrderedRowKeyRanges>, LongChunk<OrderedRowKeys>> generateChunks(final int indexCount,
             final int avgElementsPerRange,
             final int sparsityFactor) {
         final Random random = new Random(0);

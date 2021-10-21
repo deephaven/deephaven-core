@@ -5,7 +5,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.DefaultChunkSource;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -18,16 +18,16 @@ import org.jetbrains.annotations.NotNull;
  * interface to the collection of all of its Pages.
  * <p>
  * There are two distinct use cases/types of pages. The first use case are {@code Page}s which always have a length() >
- * 0. These store length() values, which can be assessed via the {@link ChunkSource} methods. Valid {@link OrderedKeys}
+ * 0. These store length() values, which can be assessed via the {@link ChunkSource} methods. Valid {@link RowSequence}
  * passed to those methods will have their offset in the range [firstRowOffset(), firstRowOffset() + length()). Passing
  * OrderKeys with offsets outside of this range will have undefined results.
  * <p>
  * The second use case will always have length() == 0 and firstRowOffset() == 0. These represent "Null" regions which
- * return a fixed value, typically a null value, for every {@link OrderedKeys} passed into the {@link ChunkSource}
+ * return a fixed value, typically a null value, for every {@link RowSequence} passed into the {@link ChunkSource}
  * methods. In order to have this use case, override {@code length} and override {@code lastRow} as {@code maxRow}.
  * <p>
- * Though the {@link ChunkSource} methods ignore the non-offset portion of the rows in the {@link OrderedKeys}, they can
- * assume they are identical for all the passed in elements of the {@link OrderedKeys}. For instance, they can use the
+ * Though the {@link ChunkSource} methods ignore the non-offset portion of the rows in the {@link RowSequence}, they can
+ * assume they are identical for all the passed in elements of the {@link RowSequence}. For instance, they can use the
  * simple difference between the complete row value to determine a length.
  */
 public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
@@ -64,17 +64,17 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
         @FinalDefault
         default void fillChunkAppend(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super ATTR> destination,
-                @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+                @NotNull final RowSequence.Iterator RowSequenceIterator) {
             fillChunkAppend(context, destination,
-                    orderedKeysIterator.getNextOrderedKeysThrough(maxRow(orderedKeysIterator.peekNextKey())));
+                    RowSequenceIterator.getNextRowSequenceThrough(maxRow(RowSequenceIterator.peekNextKey())));
         }
 
         @Override
         @FinalDefault
         default void fillChunk(@NotNull final FillContext context,
-                @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final WritableChunk<? super ATTR> destination, @NotNull final RowSequence rowSequence) {
             destination.setSize(0);
-            fillChunkAppend(context, destination, orderedKeys);
+            fillChunkAppend(context, destination, rowSequence);
         }
 
         /**
@@ -82,7 +82,7 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
          * be entirely contained on this {@code Page}.
          */
         void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-                @NotNull OrderedKeys orderedKeys);
+                @NotNull RowSequence rowSequence);
     }
 
     /**
@@ -94,17 +94,17 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
         @FinalDefault
         default void fillChunkAppend(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super ATTR> destination,
-                @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+                @NotNull final RowSequence.Iterator RowSequenceIterator) {
             fillChunkAppend(context, destination, LongSizedDataStructure.intSize("fillChunkAppend",
-                    orderedKeysIterator.advanceAndGetPositionDistance(maxRow(orderedKeysIterator.peekNextKey()) + 1)));
+                    RowSequenceIterator.advanceAndGetPositionDistance(maxRow(RowSequenceIterator.peekNextKey()) + 1)));
         }
 
         @Override
         @FinalDefault
         default void fillChunk(@NotNull final FillContext context,
-                @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final WritableChunk<? super ATTR> destination, @NotNull final RowSequence rowSequence) {
             destination.setSize(0);
-            fillChunkAppend(context, destination, orderedKeys.intSize());
+            fillChunkAppend(context, destination, rowSequence.intSize());
         }
 
         /**
@@ -115,25 +115,25 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code orderedKeysIterator} is position at its first index key on this page, consume all keys on this
+     * Assuming {@code RowSequenceIterator} is position at its first index key on this page, consume all keys on this
      * page.
      *
-     * @param orderedKeysIterator The iterator to advance
+     * @param RowSequenceIterator The iterator to advance
      */
     @FinalDefault
-    default void advanceToNextPage(@NotNull final OrderedKeys.Iterator orderedKeysIterator) {
-        orderedKeysIterator.advance(maxRow(orderedKeysIterator.peekNextKey()) + 1);
+    default void advanceToNextPage(@NotNull final RowSequence.Iterator RowSequenceIterator) {
+        RowSequenceIterator.advance(maxRow(RowSequenceIterator.peekNextKey()) + 1);
     }
 
     /**
-     * Assuming {@code orderedKeysIterator} is position at its first index key on this page, consume all keys on this
+     * Assuming {@code RowSequenceIterator} is position at its first index key on this page, consume all keys on this
      * page and return the number of keys consumed.
      *
-     * @param orderedKeysIterator The iterator to advance
+     * @param RowSequenceIterator The iterator to advance
      */
     @FinalDefault
-    default long advanceToNextPageAndGetPositionDistance(@NotNull final OrderedKeys.Iterator orderedKeysIterator) {
-        return orderedKeysIterator.advanceAndGetPositionDistance(maxRow(orderedKeysIterator.peekNextKey()) + 1);
+    default long advanceToNextPageAndGetPositionDistance(@NotNull final RowSequence.Iterator RowSequenceIterator) {
+        return RowSequenceIterator.advanceAndGetPositionDistance(maxRow(RowSequenceIterator.peekNextKey()) + 1);
     }
 
     /**

@@ -6,12 +6,12 @@ import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.LongAbortableConsumer;
 import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
-class SoleKey implements OrderedKeys {
+class SoleKey implements RowSequence {
     private long key;
-    private final WritableLongChunk<Attributes.OrderedKeyIndices> keyIndicesChunk;
-    private final WritableLongChunk<Attributes.OrderedKeyRanges> keyRangesChunk;
+    private final WritableLongChunk<Attributes.OrderedRowKeys> keyIndicesChunk;
+    private final WritableLongChunk<Attributes.OrderedRowKeyRanges> keyRangesChunk;
 
     SoleKey(final long key) {
         keyIndicesChunk = WritableLongChunk.makeWritableChunk(1);
@@ -27,12 +27,12 @@ class SoleKey implements OrderedKeys {
     }
 
     @Override
-    public Iterator getOrderedKeysIterator() {
+    public Iterator getRowSequenceIterator() {
         return new SoleKeyIterator(key);
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByPosition(long startPositionInclusive, long length) {
+    public RowSequence getRowSequenceByPosition(long startPositionInclusive, long length) {
         if (startPositionInclusive == 0 && length > 0) {
             return this;
         }
@@ -40,8 +40,8 @@ class SoleKey implements OrderedKeys {
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByKeyRange(long startKeyInclusive, long endKeyInclusive) {
-        if (startKeyInclusive <= key && endKeyInclusive >= key) {
+    public RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive) {
+        if (startRowKeyInclusive <= key && endRowKeyInclusive >= key) {
             return this;
         }
         return Index.EMPTY;
@@ -53,23 +53,23 @@ class SoleKey implements OrderedKeys {
     }
 
     @Override
-    public LongChunk<Attributes.OrderedKeyIndices> asKeyIndicesChunk() {
+    public LongChunk<Attributes.OrderedRowKeys> asRowKeyChunk() {
         return keyIndicesChunk;
     }
 
     @Override
-    public LongChunk<Attributes.OrderedKeyRanges> asKeyRangesChunk() {
+    public LongChunk<Attributes.OrderedRowKeyRanges> asRowKeyRangesChunk() {
         return keyRangesChunk;
     }
 
     @Override
-    public void fillKeyIndicesChunk(WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
+    public void fillRowKeyChunk(WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
         chunkToFill.set(0, key);
         chunkToFill.setSize(1);
     }
 
     @Override
-    public void fillKeyRangesChunk(WritableLongChunk<Attributes.OrderedKeyRanges> chunkToFill) {
+    public void fillRowKeyRangesChunk(WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.set(0, key);
         chunkToFill.set(1, key);
         chunkToFill.setSize(2);
@@ -81,12 +81,12 @@ class SoleKey implements OrderedKeys {
     }
 
     @Override
-    public long firstKey() {
+    public long firstRowKey() {
         return key;
     }
 
     @Override
-    public long lastKey() {
+    public long lastRowKey() {
         return key;
     }
 
@@ -132,18 +132,18 @@ class SoleKey implements OrderedKeys {
         }
 
         @Override
-        public OrderedKeys getNextOrderedKeysThrough(long maxKeyInclusive) {
+        public RowSequence getNextRowSequenceThrough(long maxKeyInclusive) {
             if (!hasMore || maxKeyInclusive < key) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             hasMore = false;
             return internalFixedSoloKey;
         }
 
         @Override
-        public OrderedKeys getNextOrderedKeysWithLength(long numberOfKeys) {
+        public RowSequence getNextRowSequenceWithLength(long numberOfKeys) {
             if (!hasMore || numberOfKeys == 0) {
-                return OrderedKeys.EMPTY;
+                return RowSequence.EMPTY;
             }
             hasMore = false;
             return internalFixedSoloKey;

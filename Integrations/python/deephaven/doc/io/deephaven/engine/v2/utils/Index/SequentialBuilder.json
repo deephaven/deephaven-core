@@ -7,7 +7,7 @@
   "appendKeys": ":param it: java.util.PrimitiveIterator.OfLong",
   "appendOrderedKeyIndicesChunk": ":param chunk: io.deephaven.engine.v2.sources.chunk.LongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices>",
   "appendOrderedKeyRangesChunk": ":param chunk: io.deephaven.engine.v2.sources.chunk.LongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges>",
-  "appendOrderedKeys": ":param orderedKeys: io.deephaven.engine.v2.utils.OrderedKeys",
+  "appendRowSequence": ":param RowSequence: io.deephaven.engine.v2.utils.RowSequence",
   "appendRange": ":param rangeFirstKey: long\n:param rangeLastKey: long",
   "appendRanges": ":param it: io.deephaven.engine.v2.utils.LongRangeIterator",
   "execute": ":param value: long\n:return: boolean",

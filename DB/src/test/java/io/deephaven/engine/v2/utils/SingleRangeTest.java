@@ -1,19 +1,20 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
-import io.deephaven.engine.v2.utils.singlerange.SingleRangeOrderedKeys;
+import io.deephaven.engine.v2.utils.singlerange.SingleRangeRowSequence;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import org.junit.Test;
 
 import java.util.function.Consumer;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyIndices;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedKeyRanges;
+import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import static org.junit.Assert.*;
 
 public class SingleRangeTest {
@@ -57,23 +58,23 @@ public class SingleRangeTest {
         ix2 = new TreeIndex(SingleRange.make(start - 1, end - 1));
         ix.remove(ix2);
         assertTrue(ix.getImpl() instanceof SingleRange);
-        assertEquals(end, ix.firstKey());
-        assertEquals(end, ix.lastKey());
+        assertEquals(end, ix.firstRowKey());
+        assertEquals(end, ix.lastRowKey());
 
         ix = new TreeIndex(SingleRange.make(start, end));
         ix2 = new TreeIndex(SingleRange.make(start + 1, end + 1));
         ix.remove(ix2);
         assertTrue(ix.getImpl() instanceof SingleRange);
-        assertEquals(start, ix.firstKey());
-        assertEquals(start, ix.lastKey());
+        assertEquals(start, ix.firstRowKey());
+        assertEquals(start, ix.lastRowKey());
 
         ix = new TreeIndex(SingleRange.make(start, end));
         ix2 = new TreeIndex(SingleRange.make(start + 1, end - 1));
         ix.remove(ix2);
         assertTrue(ix.getImpl() instanceof SortedRanges);
         assertEquals(2, ix.size());
-        assertEquals(start, ix.firstKey());
-        assertEquals(end, ix.lastKey());
+        assertEquals(start, ix.firstRowKey());
+        assertEquals(end, ix.lastRowKey());
 
         ix = new TreeIndex(SingleRange.make(start, end));
         ix2 = Index.FACTORY.getEmptyIndex();
@@ -91,20 +92,20 @@ public class SingleRangeTest {
         TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
         ix.remove(9);
         assertTrue(ix.getImpl() instanceof SingleRange);
-        assertEquals(10, ix.firstKey());
-        assertEquals(21, ix.lastKey());
+        assertEquals(10, ix.firstRowKey());
+        assertEquals(21, ix.lastRowKey());
         ix.remove(22);
         assertTrue(ix.getImpl() instanceof SingleRange);
-        assertEquals(10, ix.firstKey());
-        assertEquals(21, ix.lastKey());
+        assertEquals(10, ix.firstRowKey());
+        assertEquals(21, ix.lastRowKey());
         ix.remove(10);
         assertTrue(ix.getImpl() instanceof SingleRange);
-        assertEquals(11, ix.firstKey());
-        assertEquals(21, ix.lastKey());
+        assertEquals(11, ix.firstRowKey());
+        assertEquals(21, ix.lastRowKey());
         ix.remove(21);
         assertTrue(ix.getImpl() instanceof SingleRange);
-        assertEquals(11, ix.firstKey());
-        assertEquals(20, ix.lastKey());
+        assertEquals(11, ix.firstRowKey());
+        assertEquals(20, ix.lastRowKey());
         ix.remove(12);
         assertTrue(ix.getImpl() instanceof SortedRanges);
         assertEquals(9, ix.size());
@@ -125,8 +126,8 @@ public class SingleRangeTest {
         final TreeIndex ix = new TreeIndex(SingleRange.make(start1, end1));
         Runnable check = () -> {
             assertTrue(ix.getImpl() instanceof SingleRange);
-            assertEquals(startExpected, ix.firstKey());
-            assertEquals(endExpected, ix.lastKey());
+            assertEquals(startExpected, ix.firstRowKey());
+            assertEquals(endExpected, ix.lastRowKey());
         };
         final TreeIndex ix2 = new TreeIndex(SingleRange.make(start2, end2));
         ix.insert(ix2);
@@ -148,18 +149,18 @@ public class SingleRangeTest {
         ix.insert(ix2);
         assertTrue(ix.getImpl() instanceof SortedRanges);
         assertEquals(ix.size(), end - start + 1 + 2);
-        assertEquals(start - 3, ix.firstKey());
+        assertEquals(start - 3, ix.firstRowKey());
         assertEquals(-3L, ix.find(start - 1));
-        assertEquals(end, ix.lastKey());
+        assertEquals(end, ix.lastRowKey());
 
         ix = new TreeIndex(SingleRange.make(start, end));
         ix2 = new TreeIndex(SingleRange.make(end + 2, end + 3));
         ix.insert(ix2);
         assertTrue(ix.getImpl() instanceof SortedRanges);
         assertEquals(ix.size(), end - start + 1 + 2);
-        assertEquals(start, ix.firstKey());
+        assertEquals(start, ix.firstRowKey());
         assertEquals(-12L, ix.find(end + 1));
-        assertEquals(end + 3, ix.lastKey());
+        assertEquals(end + 3, ix.lastRowKey());
     }
 
     private static void removeResultsCheck(
@@ -223,12 +224,12 @@ public class SingleRangeTest {
             check = (final Index t) -> {
                 assertTrue(((ImplementedByTreeIndexImpl) t).getImpl() instanceof SingleRange);
                 if (start1 < start2) {
-                    assertEquals(start1, t.firstKey());
-                    assertEquals(start2 - 1, t.lastKey());
+                    assertEquals(start1, t.firstRowKey());
+                    assertEquals(start2 - 1, t.lastRowKey());
                 } else {
                     // end2 < end1
-                    assertEquals(end2 + 1, t.firstKey());
-                    assertEquals(end1, t.lastKey());
+                    assertEquals(end2 + 1, t.firstRowKey());
+                    assertEquals(end1, t.lastRowKey());
                 }
             };
         }
@@ -281,7 +282,7 @@ public class SingleRangeTest {
         keys.insert(30);
         final Index r3 = ix.invert(keys, 100);
         assertEquals(1, r3.size());
-        assertEquals(20, r3.firstKey());
+        assertEquals(20, r3.firstRowKey());
     }
 
     @Test
@@ -289,21 +290,21 @@ public class SingleRangeTest {
         final long start = 10;
         final long end = 30;
         final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator();
-        final WritableLongChunk<OrderedKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2);
+        final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
+        final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2);
         int offset = 0;
         long prevRelPos = -1;
         final int step = 2;
-        while (okit.hasMore()) {
-            final long relPos = okit.getRelativePosition();
+        while (rsIt.hasMore()) {
+            final long relPos = rsIt.getRelativePosition();
             if (prevRelPos != -1) {
                 assertEquals(step, relPos - prevRelPos);
             }
             final long expectedStart = start + offset;
             final long expectedEnd = (expectedStart + 1 > end) ? expectedStart : expectedStart + 1;
-            assertEquals(expectedStart, okit.peekNextKey());
-            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(step);
-            oks.fillKeyRangesChunk(chunk);
+            assertEquals(expectedStart, rsIt.peekNextKey());
+            final RowSequence rs = rsIt.getNextRowSequenceWithLength(step);
+            rs.fillRowKeyRangesChunk(chunk);
             assertEquals(2, chunk.size());
             assertEquals(expectedStart, chunk.get(0));
             assertEquals(expectedEnd, chunk.get(1));
@@ -313,59 +314,59 @@ public class SingleRangeTest {
     }
 
     @Test
-    public void testOrderedKeys() {
+    public void testRowSequence() {
         final long start = 10;
         final long end = 30;
         final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        OrderedKeys ok = ix.getOrderedKeysByKeyRange(8, 9);
-        assertEquals(OrderedKeys.EMPTY, ok);
-        ok = ix.getOrderedKeysByKeyRange(31, 32);
-        assertEquals(OrderedKeys.EMPTY, ok);
-        ok = ix.getOrderedKeysByKeyRange(9, 10);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(10, ok.firstKey());
-        assertEquals(10, ok.lastKey());
-        ok = ix.getOrderedKeysByKeyRange(9, 11);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(10, ok.firstKey());
-        assertEquals(11, ok.lastKey());
-        ok = ix.getOrderedKeysByKeyRange(10, 11);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(10, ok.firstKey());
-        assertEquals(11, ok.lastKey());
-        ok = ix.getOrderedKeysByKeyRange(30, 31);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(30, ok.firstKey());
-        assertEquals(30, ok.lastKey());
-        ok = ix.getOrderedKeysByKeyRange(29, 31);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(29, ok.firstKey());
-        assertEquals(30, ok.lastKey());
-        ok = ix.getOrderedKeysByKeyRange(29, 30);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(29, ok.firstKey());
-        assertEquals(30, ok.lastKey());
-        ok = ix.getOrderedKeysByKeyRange(11, 29);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(11, ok.firstKey());
-        assertEquals(29, ok.lastKey());
+        RowSequence rs = ix.getRowSequenceByKeyRange(8, 9);
+        assertEquals(RowSequence.EMPTY, rs);
+        rs = ix.getRowSequenceByKeyRange(31, 32);
+        assertEquals(RowSequence.EMPTY, rs);
+        rs = ix.getRowSequenceByKeyRange(9, 10);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(10, rs.firstRowKey());
+        assertEquals(10, rs.lastRowKey());
+        rs = ix.getRowSequenceByKeyRange(9, 11);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(10, rs.firstRowKey());
+        assertEquals(11, rs.lastRowKey());
+        rs = ix.getRowSequenceByKeyRange(10, 11);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(10, rs.firstRowKey());
+        assertEquals(11, rs.lastRowKey());
+        rs = ix.getRowSequenceByKeyRange(30, 31);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(30, rs.firstRowKey());
+        assertEquals(30, rs.lastRowKey());
+        rs = ix.getRowSequenceByKeyRange(29, 31);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(29, rs.firstRowKey());
+        assertEquals(30, rs.lastRowKey());
+        rs = ix.getRowSequenceByKeyRange(29, 30);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(29, rs.firstRowKey());
+        assertEquals(30, rs.lastRowKey());
+        rs = ix.getRowSequenceByKeyRange(11, 29);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(11, rs.firstRowKey());
+        assertEquals(29, rs.lastRowKey());
 
-        ok = ix.getOrderedKeysByPosition(0, 0);
-        assertEquals(OrderedKeys.EMPTY, ok);
-        ok = ix.getOrderedKeysByPosition(0, 1);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(10, ok.firstKey());
-        assertEquals(10, ok.lastKey());
-        ok = ix.getOrderedKeysByPosition(1, 2);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(11, ok.firstKey());
-        assertEquals(12, ok.lastKey());
-        ok = ix.getOrderedKeysByPosition(20, 1);
-        assertTrue(ok instanceof SingleRangeOrderedKeys);
-        assertEquals(30, ok.firstKey());
-        assertEquals(30, ok.lastKey());
-        ok = ix.getOrderedKeysByPosition(21, 1);
-        assertEquals(OrderedKeys.EMPTY, ok);
+        rs = ix.getRowSequenceByPosition(0, 0);
+        assertEquals(RowSequence.EMPTY, rs);
+        rs = ix.getRowSequenceByPosition(0, 1);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(10, rs.firstRowKey());
+        assertEquals(10, rs.lastRowKey());
+        rs = ix.getRowSequenceByPosition(1, 2);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(11, rs.firstRowKey());
+        assertEquals(12, rs.lastRowKey());
+        rs = ix.getRowSequenceByPosition(20, 1);
+        assertTrue(rs instanceof SingleRangeRowSequence);
+        assertEquals(30, rs.firstRowKey());
+        assertEquals(30, rs.lastRowKey());
+        rs = ix.getRowSequenceByPosition(21, 1);
+        assertEquals(RowSequence.EMPTY, rs);
     }
 
     @Test
@@ -411,8 +412,8 @@ public class SingleRangeTest {
 
     private static void checkBinarySearch(final TreeIndex ix) {
         assertFalse(ix.empty());
-        final long start = ix.firstKey();
-        final long end = ix.lastKey();
+        final long start = ix.firstRowKey();
+        final long end = ix.lastRowKey();
         assertEquals(end - start + 1, ix.size());
         final Index.SearchIterator it = ix.searchIterator();
         assertTrue(it.hasNext());
@@ -444,21 +445,21 @@ public class SingleRangeTest {
         final long[] positions = new long[] {0, 1, card - 2, card - 1};
         final long[] expected = new long[] {10, 11, 29, 30};
         final long[] result = new long[4];
-        final WritableLongChunk<OrderedKeyIndices> resultsChunk = WritableLongChunk.writableChunkWrap(result);
-        final LongChunk<OrderedKeyIndices> positionsChunk = WritableLongChunk.chunkWrap(positions);
+        final WritableLongChunk<OrderedRowKeys> resultsChunk = WritableLongChunk.writableChunkWrap(result);
+        final LongChunk<OrderedRowKeys> positionsChunk = WritableLongChunk.chunkWrap(positions);
         ix.getKeysForPositions(new LongChunkIterator(positionsChunk), new LongChunkAppender(resultsChunk));
         assertArrayEquals(expected, result);
     }
 
     @Test
-    public void testOrderedKeysIteratorAdvanceRegression0() {
+    public void testRowSequenceIteratorAdvanceRegression0() {
         final long start = 1000;
         final long end = 3000;
         final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator();
-        assertTrue(okit.hasMore());
-        final boolean valid = okit.advance(500);
+        final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
+        assertTrue(rsIt.hasMore());
+        final boolean valid = rsIt.advance(500);
         assertTrue(valid);
-        assertEquals(1000, okit.peekNextKey());
+        assertEquals(1000, rsIt.peekNextKey());
     }
 }

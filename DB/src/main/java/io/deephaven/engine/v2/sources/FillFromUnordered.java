@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
@@ -18,5 +18,5 @@ public interface FillFromUnordered {
     void fillFromChunkUnordered(
             @NotNull WritableChunkSink.FillFromContext context,
             @NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends KeyIndices> keys);
+            @NotNull LongChunk<? extends Attributes.RowKeys> keys);
 }

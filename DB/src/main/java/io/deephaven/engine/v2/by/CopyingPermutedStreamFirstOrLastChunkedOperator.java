@@ -9,7 +9,8 @@ import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
@@ -59,18 +60,18 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
      * fill the output column</lI>
      * </ol>
      *
-     * @param destinations The changed (added or modified) destination slots as an {@link OrderedKeys}
+     * @param destinations The changed (added or modified) destination slots as an {@link RowSequence}
      */
-    protected void copyStreamToResult(@NotNull final OrderedKeys destinations) {
+    protected void copyStreamToResult(@NotNull final RowSequence destinations) {
         try (final SafeCloseableList toClose = new SafeCloseableList()) {
-            final OrderedKeys.Iterator destinationsIterator = toClose.add(destinations.getOrderedKeysIterator());
+            final RowSequence.Iterator destinationsIterator = toClose.add(destinations.getRowSequenceIterator());
             final ChunkSource.FillContext redirectionsContext =
                     toClose.add(redirections.makeFillContext(COPY_CHUNK_SIZE));
-            final WritableLongChunk<Attributes.KeyIndices> sourceIndices =
+            final WritableLongChunk<Attributes.RowKeys> sourceIndices =
                     toClose.add(WritableLongChunk.makeWritableChunk(COPY_CHUNK_SIZE));
             final WritableIntChunk<Attributes.ChunkPositions> sourceIndicesOrder =
                     toClose.add(WritableIntChunk.makeWritableChunk(COPY_CHUNK_SIZE));
-            final LongIntTimsortKernel.LongIntSortKernelContext<Attributes.KeyIndices, Attributes.ChunkPositions> sortKernelContext =
+            final LongIntTimsortKernel.LongIntSortKernelContext<Attributes.RowKeys, Attributes.ChunkPositions> sortKernelContext =
                     toClose.add(LongIntTimsortKernel.createContext(COPY_CHUNK_SIZE));
             final SharedContext inputSharedContext = toClose.add(SharedContext.makeSharedContext());
             final ChunkSource.GetContext[] inputContexts =
@@ -86,19 +87,19 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
                 final WritableSource<?> outputColumn = outputColumns[ci];
                 outputContexts[ci] = outputColumn.makeFillFromContext(COPY_CHUNK_SIZE);
                 outputChunks[ci] = outputColumn.getChunkType().makeWritableChunk(COPY_CHUNK_SIZE);
-                outputColumn.ensureCapacity(destinations.lastKey() + 1, false);
+                outputColumn.ensureCapacity(destinations.lastRowKey() + 1, false);
             }
 
             while (destinationsIterator.hasMore()) {
-                final OrderedKeys sliceDestinations =
-                        destinationsIterator.getNextOrderedKeysWithLength(COPY_CHUNK_SIZE);
+                final RowSequence sliceDestinations =
+                        destinationsIterator.getNextRowSequenceWithLength(COPY_CHUNK_SIZE);
                 redirections.fillChunk(redirectionsContext, WritableLongChunk.upcast(sourceIndices), sliceDestinations);
                 sourceIndicesOrder.setSize(sourceIndices.size());
                 ChunkUtils.fillInOrder(sourceIndicesOrder);
                 LongIntTimsortKernel.sort(sortKernelContext, sourceIndicesOrder, sourceIndices);
 
-                try (final OrderedKeys sliceSources =
-                        OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(WritableLongChunk.downcast(sourceIndices))) {
+                try (final RowSequence sliceSources =
+                        RowSequenceUtil.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(sourceIndices))) {
                     for (int ci = 0; ci < numResultColumns; ++ci) {
                         final Chunk<? extends Attributes.Values> inputChunk =
                                 inputColumns[ci].getChunk(inputContexts[ci], sliceSources);

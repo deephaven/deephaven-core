@@ -2,12 +2,12 @@ package io.deephaven.engine.v2.utils.singlerange;
 
 import io.deephaven.engine.v2.utils.LongAbortableConsumer;
 import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
 /**
  * This interface is really a mixin to avoid code duplication in the classes that implement it.
  */
-public interface SingleRangeMixin extends OrderedKeys {
+public interface SingleRangeMixin extends RowSequence {
     default boolean forEachLong(final LongAbortableConsumer lc) {
         for (long v = rangeStart(); v <= rangeEnd(); ++v) {
             if (!lc.accept(v)) {
@@ -21,28 +21,28 @@ public interface SingleRangeMixin extends OrderedKeys {
         return larc.accept(rangeStart(), rangeEnd());
     }
 
-    default OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive, final long length) {
+    default RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
         if (startPositionInclusive >= size() || length == 0) {
-            return OrderedKeys.EMPTY;
+            return RowSequence.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
         final long e = Math.min(s + length - 1, rangeEnd());
-        return new SingleRangeOrderedKeys(s, e);
+        return new SingleRangeRowSequence(s, e);
     }
 
-    default OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
-        if (startKeyInclusive > rangeEnd() ||
-                endKeyInclusive < rangeStart() ||
-                endKeyInclusive < startKeyInclusive) {
-            return OrderedKeys.EMPTY;
+    default RowSequence getRowSequenceByKeyRange(final long startRowKeyInclusive, final long endRowKeyInclusive) {
+        if (startRowKeyInclusive > rangeEnd() ||
+                endRowKeyInclusive < rangeStart() ||
+                endRowKeyInclusive < startRowKeyInclusive) {
+            return RowSequence.EMPTY;
         }
-        return new SingleRangeOrderedKeys(
-                Math.max(startKeyInclusive, rangeStart()),
-                Math.min(endKeyInclusive, rangeEnd()));
+        return new SingleRangeRowSequence(
+                Math.max(startRowKeyInclusive, rangeStart()),
+                Math.min(endRowKeyInclusive, rangeEnd()));
     }
 
-    default OrderedKeys.Iterator getOrderedKeysIterator() {
-        return new SingleRangeOrderedKeys.OKIterator(rangeStart(), rangeEnd());
+    default Iterator getRowSequenceIterator() {
+        return new SingleRangeRowSequence.Iterator(rangeStart(), rangeEnd());
     }
 
     default long rangesCountUpperBound() {

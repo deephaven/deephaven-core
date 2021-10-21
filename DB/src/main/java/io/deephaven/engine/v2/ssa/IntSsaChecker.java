@@ -6,7 +6,8 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.IntChunkEquals;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
-import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
@@ -19,16 +20,16 @@ public class IntSsaChecker implements SsaChecker {
     private IntSsaChecker() {} // static use only
 
     @Override
-    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends KeyIndices> tableIndexChunk) {
+    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
         checkSsa((IntSegmentedSortedArray)ssa, valueChunk.asIntChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(IntSegmentedSortedArray ssa, IntChunk<? extends Values> valueChunk, LongChunk<? extends KeyIndices> tableIndexChunk) {
+    static void checkSsa(IntSegmentedSortedArray ssa, IntChunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
         //noinspection unchecked
         final IntChunk<Values> resultChunk = (IntChunk) ssa.asIntChunk();
-        final LongChunk<KeyIndices> indexChunk = ssa.keyIndicesChunk();
+        final LongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk();
 
         Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
         Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

@@ -23,39 +23,39 @@ public class Attributes {
     }
 
     /**
-     * The chunk contains individual index keys or index ranges.
+     * The chunk contains indices, e.g. positions or keys designating indices in a data structure.
      */
-    public interface Keys extends Values {
+    public interface Indices extends Values {
     }
 
     /**
-     * The chunk contains index keys, which may be ordered or unordered.
+     * The chunk contains row keys, which may be ordered or unordered.
      */
-    public interface KeyIndices extends Keys {
+    public interface RowKeys extends Indices {
     }
 
     /**
-     * The chunk contains individual ordered index keys, which must be in strictly ascending order.
+     * The chunk contains individual ordered row keys, which must be in strictly ascending order.
      */
-    public interface OrderedKeyIndices extends KeyIndices {
+    public interface OrderedRowKeys extends RowKeys {
     }
 
     /**
-     * The chunk contains index ranges.
+     * The chunk contains row key ranges.
      *
      * These are to be represented as pairs of an inclusive start and an inclusive end in even and odd slots,
      * respectively.
      */
-    public interface OrderedKeyRanges extends Keys {
+    public interface OrderedRowKeyRanges extends Values {
     }
 
     /**
-     * The chunk contains index keys, which may be in any order (and contain duplicates).
+     * The chunk contains row keys, which may be in any order (and contain duplicates).
      */
-    public interface UnorderedKeyIndices extends KeyIndices {
+    public interface UnorderedRowKeys extends RowKeys {
     }
 
-    public interface ChunkPositions extends Keys {
+    public interface ChunkPositions extends Indices {
     }
     public interface ChunkLengths extends Any {
     }

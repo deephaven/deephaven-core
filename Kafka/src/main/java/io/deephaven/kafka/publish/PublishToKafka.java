@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -124,13 +124,13 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         }
 
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rowsToPublish.size());
-        try (final OrderedKeys.Iterator rowsIterator = rowsToPublish.getOrderedKeysIterator();
+        try (final RowSequence.Iterator rowsIterator = rowsToPublish.getRowSequenceIterator();
                 final KeyOrValueSerializer.Context keyContext =
                         keySerializer != null ? keySerializer.makeContext(chunkSize) : null;
                 final KeyOrValueSerializer.Context valueContext =
                         publishValues && valueSerializer != null ? valueSerializer.makeContext(chunkSize) : null) {
             while (rowsIterator.hasMore()) {
-                final OrderedKeys chunkRowKeys = rowsIterator.getNextOrderedKeysWithLength(chunkSize);
+                final RowSequence chunkRowKeys = rowsIterator.getNextRowSequenceWithLength(chunkSize);
 
                 final ObjectChunk<K, Attributes.Values> keyChunk;
                 if (keyContext != null) {

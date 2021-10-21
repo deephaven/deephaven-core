@@ -134,7 +134,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         final StringBuilder errorBuilder = new StringBuilder();
 
         try (final Index addIndex = table.getIndex().clone();
-                final WritableLongChunk<Attributes.KeyIndices> destinations =
+                final WritableLongChunk<Attributes.RowKeys> destinations =
                         WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
@@ -200,7 +200,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
         final SharedContext sharedContext = SharedContext.makeSharedContext();
 
-        try (final WritableLongChunk<Attributes.KeyIndices> destinations =
+        try (final WritableLongChunk<Attributes.RowKeys> destinations =
                 WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity);

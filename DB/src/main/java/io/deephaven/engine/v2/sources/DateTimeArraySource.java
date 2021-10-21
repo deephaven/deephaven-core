@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -55,73 +55,73 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
     // the ArrayBackedColumnSource fillChunk can't handle changing the type
     @Override
     public void fillChunk(@NotNull ColumnSource.FillContext context, @NotNull WritableChunk<? super Values> dest,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         final ChunkFiller filler = dest.getChunkFiller();
-        if (orderedKeys.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
-            filler.fillByRanges(this, orderedKeys, dest);
+        if (rowSequence.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
+            filler.fillByRanges(this, rowSequence, dest);
         } else {
-            filler.fillByIndices(this, orderedKeys, dest);
+            filler.fillByIndices(this, rowSequence, dest);
         }
     }
 
     @Override
     public void fillPrevChunk(@NotNull ColumnSource.FillContext context, @NotNull WritableChunk<? super Values> dest,
-            @NotNull OrderedKeys orderedKeys) {
+            @NotNull RowSequence rowSequence) {
         final ChunkFiller filler = dest.getChunkFiller();
-        if (orderedKeys.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
-            filler.fillPrevByRanges(this, orderedKeys, dest);
+        if (rowSequence.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
+            filler.fillPrevByRanges(this, rowSequence, dest);
         } else {
-            filler.fillPrevByIndices(this, orderedKeys, dest);
+            filler.fillPrevByIndices(this, rowSequence, dest);
         }
     }
 
     @Override
-    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return getChunkByFilling(context, orderedKeys);
+    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return getChunkByFilling(context, rowSequence);
     }
 
     @Override
-    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
-        return getPrevChunkByFilling(context, orderedKeys);
+    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return getPrevChunkByFilling(context, rowSequence);
     }
 
     @Override
     protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final OrderedKeys indices) {
+            @NotNull final RowSequence indices) {
         super.fillSparseChunk(destGeneric, indices, DBTimeUtils::nanosToTime);
     }
 
     @Override
     protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final OrderedKeys indices) {
+            @NotNull final RowSequence indices) {
         super.fillSparsePrevChunk(destGeneric, indices, DBTimeUtils::nanosToTime);
     }
 
     @Override
     protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final LongChunk<? extends Attributes.KeyIndices> indices) {
+            @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
         super.fillSparseChunkUnordered(destGeneric, indices, DBTimeUtils::nanosToTime);
     }
 
     @Override
     protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final LongChunk<? extends Attributes.KeyIndices> indices) {
+            @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
         super.fillSparsePrevChunkUnordered(destGeneric, indices, DBTimeUtils::nanosToTime);
     }
 
     @Override
-    public void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        super.<DBDateTime>fillFromChunkByRanges(orderedKeys, src, DBTimeUtils::nanos);
+    public void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        super.<DBDateTime>fillFromChunkByRanges(rowSequence, src, DBTimeUtils::nanos);
     }
 
     @Override
-    void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        super.<DBDateTime>fillFromChunkByKeys(orderedKeys, src, DBTimeUtils::nanos);
+    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+        super.<DBDateTime>fillFromChunkByKeys(rowSequence, src, DBTimeUtils::nanos);
     }
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull LongChunk<Attributes.KeyIndices> keys) {
+            @NotNull LongChunk<Attributes.RowKeys> keys) {
         super.<DBDateTime>fillFromChunkUnordered(src, keys, DBTimeUtils::nanos);
     }
 
@@ -171,45 +171,45 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
 
         @Override
         public void fillChunk(@NotNull final ColumnSource.FillContext context,
-                @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
             // can't defer this case to super as they will ultimately call a method on DateTimeArraySource instead of
             // AbstractLongArraySource
-            if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-                fillSparseLongChunk(destination, orderedKeys);
+            if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+                fillSparseLongChunk(destination, rowSequence);
             } else {
-                DateTimeArraySource.super.fillChunk(context, destination, orderedKeys);
+                DateTimeArraySource.super.fillChunk(context, destination, rowSequence);
             }
         }
 
         @Override
         public void fillPrevChunk(@NotNull final ColumnSource.FillContext context,
-                @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
             // can't defer these two cases to super as they will ultimately call a method on DateTimeArraySource instead
             // of AbstractLongArraySource
             if (prevFlusher == null) {
-                fillChunk(context, destination, orderedKeys);
+                fillChunk(context, destination, rowSequence);
                 return;
             }
 
-            if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-                fillSparsePrevLongChunk(destination, orderedKeys);
+            if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+                fillSparsePrevLongChunk(destination, rowSequence);
                 return;
             }
 
-            DateTimeArraySource.super.fillPrevChunk(context, destination, orderedKeys);
+            DateTimeArraySource.super.fillPrevChunk(context, destination, rowSequence);
         }
 
         @Override
         public void fillChunkUnordered(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super Values> destination,
-                @NotNull final LongChunk<? extends Attributes.KeyIndices> keyIndices) {
+                @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
             fillSparseLongChunkUnordered(destination, keyIndices);
         }
 
         @Override
         public void fillPrevChunkUnordered(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super Values> destination,
-                @NotNull final LongChunk<? extends Attributes.KeyIndices> keyIndices) {
+                @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
             fillSparsePrevLongChunkUnordered(destination, keyIndices);
         }
 
@@ -234,19 +234,19 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
 
         @Override
         public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-                @NotNull OrderedKeys orderedKeys) {
+                @NotNull RowSequence rowSequence) {
             // Note: we cannot call super.fillFromChunk here as that method will call the override versions that expect
             // ObjectChunks.
-            if (orderedKeys.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-                DateTimeArraySource.super.fillFromChunkByKeys(orderedKeys, src);
+            if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+                DateTimeArraySource.super.fillFromChunkByKeys(rowSequence, src);
             } else {
-                DateTimeArraySource.super.fillFromChunkByRanges(orderedKeys, src);
+                DateTimeArraySource.super.fillFromChunkByRanges(rowSequence, src);
             }
         }
 
         @Override
         public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-                @NotNull LongChunk<Attributes.KeyIndices> keys) {
+                @NotNull LongChunk<Attributes.RowKeys> keys) {
             DateTimeArraySource.super.fillFromChunkUnordered(context, src, keys);
         }
     }

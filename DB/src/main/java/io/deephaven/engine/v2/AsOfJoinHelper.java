@@ -2,6 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
@@ -232,7 +233,7 @@ public class AsOfJoinHelper {
 
         try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
                 rightStampSource, originalRightStampSource);
-                final ResettableWritableLongChunk<KeyIndices> keyChunk =
+                final ResettableWritableLongChunk<RowKeys> keyChunk =
                         ResettableWritableLongChunk.makeResettableChunk();
                 final ResettableWritableChunk<Values> valuesChunk =
                         rightStampSource.getChunkType().makeResettableWritableChunk()) {
@@ -312,7 +313,7 @@ public class AsOfJoinHelper {
 
                     try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch,
                             leftStampSource, rightStampSource, originalRightStampSource);
-                            final ResettableWritableLongChunk<KeyIndices> keyChunk =
+                            final ResettableWritableLongChunk<RowKeys> keyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
                             final ResettableWritableChunk<Values> valuesChunk =
                                     rightStampSource.getChunkType().makeResettableWritableChunk()) {
@@ -410,7 +411,7 @@ public class AsOfJoinHelper {
     private static void processLeftSlotWithRightCache(AsOfStampContext stampContext,
             Index leftIndex, Index rightIndex, RedirectionIndex redirectionIndex,
             ColumnSource<?> rightStampSource,
-            ResettableWritableLongChunk<KeyIndices> keyChunk, ResettableWritableChunk<Values> valuesChunk,
+            ResettableWritableLongChunk<RowKeys> keyChunk, ResettableWritableChunk<Values> valuesChunk,
             ArrayValuesCache arrayValuesCache,
             long slot) {
         final long[] rightStampKeys = arrayValuesCache.getKeys(slot);
@@ -456,8 +457,8 @@ public class AsOfJoinHelper {
             Index leftIndex,
             ColumnSource<?> leftStampSource,
             SizedSafeCloseable<ChunkSource.FillContext> fillContext,
-            SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> sortContext,
-            ResettableWritableLongChunk<KeyIndices> keyChunk, ResettableWritableChunk<Values> valuesChunk,
+            SizedSafeCloseable<LongSortKernel<Values, RowKeys>> sortContext,
+            ResettableWritableLongChunk<RowKeys> keyChunk, ResettableWritableChunk<Values> valuesChunk,
             ArrayValuesCache arrayValuesCache,
             long slot) {
         final long[] leftStampKeys = arrayValuesCache.getKeys(slot);
@@ -477,7 +478,7 @@ public class AsOfJoinHelper {
             valuesChunk.resetFromArray(leftStampArray, 0, leftSize);
 
             // noinspection unchecked
-            leftIndex.fillKeyIndicesChunk(keyChunk);
+            leftIndex.fillRowKeyChunk(keyChunk);
 
             // noinspection unchecked
             leftStampSource.fillChunk(fillContext.ensureCapacity(leftSize), valuesChunk, leftIndex);
@@ -543,18 +544,18 @@ public class AsOfJoinHelper {
         final ArrayValuesCache leftValuesCache = new ArrayValuesCache(asOfJoinStateManager.getTableSize());
         leftValuesCache.ensureOverflow(asOfJoinStateManager.getOverflowSize());
 
-        final SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> sortContext =
+        final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> sortContext =
                 new SizedSafeCloseable<>(size -> LongSortKernel.makeContext(stampChunkType, order, size, true));
         final SizedSafeCloseable<ChunkSource.FillContext> leftStampFillContext =
                 new SizedSafeCloseable<>(leftStampSource::makeFillContext);
         final SizedSafeCloseable<ChunkSource.FillContext> rightStampFillContext =
                 new SizedSafeCloseable<>(rightStampSource::makeFillContext);
         final SizedChunk<Values> rightValues = new SizedChunk<>(stampChunkType);
-        final SizedLongChunk<KeyIndices> rightKeyIndices = new SizedLongChunk<>();
-        final SizedLongChunk<KeyIndices> rightKeysForLeft = new SizedLongChunk<>();
+        final SizedLongChunk<RowKeys> rightKeyIndices = new SizedLongChunk<>();
+        final SizedLongChunk<RowKeys> rightKeysForLeft = new SizedLongChunk<>();
 
         // if we have an error the closeableList cleans up for us; if not they can be used later
-        try (final ResettableWritableLongChunk<KeyIndices> leftKeyChunk =
+        try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                 ResettableWritableLongChunk.makeResettableChunk();
                 final ResettableWritableChunk<Values> leftValuesChunk =
                         rightStampSource.getChunkType().makeResettableWritableChunk()) {
@@ -570,7 +571,7 @@ public class AsOfJoinHelper {
                     if (slotSize > 0) {
                         rightStampSource.fillChunk(rightStampFillContext.ensureCapacity(slotSize),
                                 rightValues.ensureCapacity(slotSize), rightIndex);
-                        rightIndex.fillKeyIndicesChunk(rightKeyIndices.ensureCapacity(slotSize));
+                        rightIndex.fillRowKeyChunk(rightKeyIndices.ensureCapacity(slotSize));
                         sortContext.ensureCapacity(slotSize).sort(rightKeyIndices.get(), rightValues.get());
                         ssa.insert(rightValues.get(), rightKeyIndices.get());
                     }
@@ -584,7 +585,7 @@ public class AsOfJoinHelper {
                     continue;
                 }
 
-                final WritableLongChunk<KeyIndices> rightKeysForLeftChunk =
+                final WritableLongChunk<RowKeys> rightKeysForLeftChunk =
                         rightKeysForLeft.ensureCapacity(leftIndex.intSize());
 
                 // noinspection unchecked
@@ -655,11 +656,11 @@ public class AsOfJoinHelper {
                 // with the removed redirection to the previous key.
 
 
-                try (final ResettableWritableLongChunk<KeyIndices> leftKeyChunk =
+                try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                         ResettableWritableLongChunk.makeResettableChunk();
                         final ResettableWritableChunk<Values> leftValuesChunk =
                                 rightStampSource.getChunkType().makeResettableWritableChunk();
-                        final SizedLongChunk<KeyIndices> priorRedirections = new SizedLongChunk<>()) {
+                        final SizedLongChunk<RowKeys> priorRedirections = new SizedLongChunk<>()) {
                     for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
                         final long slot = slots.getLong(slotIndex);
 
@@ -672,7 +673,7 @@ public class AsOfJoinHelper {
 
                         rightStampSource.fillPrevChunk(rightStampFillContext.ensureCapacity(slotSize),
                                 rightValues.ensureCapacity(slotSize), rightRemoved);
-                        rightRemoved.fillKeyIndicesChunk(rightKeyIndices.ensureCapacity(slotSize));
+                        rightRemoved.fillRowKeyChunk(rightKeyIndices.ensureCapacity(slotSize));
                         sortContext.ensureCapacity(slotSize).sort(rightKeyIndices.get(), rightValues.get());
 
                         getCachedLeftStampsAndKeys(asOfJoinStateManager, null, leftStampSource, leftStampFillContext,
@@ -696,7 +697,7 @@ public class AsOfJoinHelper {
                     try (final Index fullPrevIndex = rightTable.getIndex().getPrevIndex();
                             final Index previousToShift = fullPrevIndex.minus(restampRemovals)) {
                         if (previousToShift.nonempty()) {
-                            try (final ResettableWritableLongChunk<KeyIndices> leftKeyChunk =
+                            try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
                                     final ResettableWritableChunk<Values> leftValuesChunk =
                                             rightStampSource.getChunkType().makeResettableWritableChunk()) {
@@ -734,7 +735,7 @@ public class AsOfJoinHelper {
                                                     asOfJoinStateManager.getRightSsa(slot);
 
                                             slotShiftIndex
-                                                    .fillKeyIndicesChunk(rightKeyIndices.ensureCapacity(shiftSize));
+                                                    .fillRowKeyChunk(rightKeyIndices.ensureCapacity(shiftSize));
                                             sortContext.ensureCapacity(shiftSize).sort(rightKeyIndices.get(),
                                                     rightValues.get());
 
@@ -767,11 +768,11 @@ public class AsOfJoinHelper {
 
                 try (final SizedChunk<Values> nextRightValue = new SizedChunk<>(stampChunkType);
                         final SizedChunk<Values> rightStampChunk = new SizedChunk<>(stampChunkType);
-                        final SizedLongChunk<KeyIndices> insertedIndices = new SizedLongChunk<>();
+                        final SizedLongChunk<RowKeys> insertedIndices = new SizedLongChunk<>();
                         final SizedBooleanChunk<Any> retainStamps = new SizedBooleanChunk<>();
                         final SizedSafeCloseable<ColumnSource.FillContext> rightStampFillContext =
                                 new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                        final ResettableWritableLongChunk<KeyIndices> leftKeyChunk =
+                        final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                 ResettableWritableLongChunk.makeResettableChunk();
                         final ResettableWritableChunk<Values> leftValuesChunk =
                                 rightStampSource.getChunkType().makeResettableWritableChunk()) {
@@ -796,7 +797,7 @@ public class AsOfJoinHelper {
 
                         rightStampSource.fillChunk(rightStampFillContext.ensureCapacity(rightSize),
                                 rightStampChunk.ensureCapacity(rightSize), rightAdded);
-                        rightAdded.fillKeyIndicesChunk(insertedIndices.ensureCapacity(rightSize));
+                        rightAdded.fillRowKeyChunk(insertedIndices.ensureCapacity(rightSize));
                         sortContext.ensureCapacity(rightSize).sort(insertedIndices.get(), rightStampChunk.get());
 
                         final int valuesWithNext = rightSsa.insertAndGetNextValue(rightStampChunk.get(),
@@ -849,7 +850,7 @@ public class AsOfJoinHelper {
 
                                 rightStampSource.fillChunk(rightStampFillContext.ensureCapacity(rightSize),
                                         rightValues.ensureCapacity(rightSize), rightModified);
-                                rightModified.fillKeyIndicesChunk(rightKeyIndices.ensureCapacity(rightSize));
+                                rightModified.fillRowKeyChunk(rightKeyIndices.ensureCapacity(rightSize));
                                 sortContext.ensureCapacity(rightSize).sort(rightKeyIndices.get(), rightValues.get());
 
                                 getCachedLeftStampsAndKeys(asOfJoinStateManager, null, leftStampSource,
@@ -922,14 +923,14 @@ public class AsOfJoinHelper {
         // BucketedChunkedAjMergedListener
         final SizedSafeCloseable<ColumnSource.FillContext> rightStampFillContext =
                 new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-        final SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> sortKernel =
+        final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> sortKernel =
                 new SizedSafeCloseable<>(size -> LongSortKernel.makeContext(stampChunkType, order, size, true));
         final SizedSafeCloseable<ColumnSource.FillContext> leftStampFillContext =
                 new SizedSafeCloseable<>(leftStampSource::makeFillContext);
-        final SizedLongChunk<KeyIndices> leftStampKeys = new SizedLongChunk<>();
+        final SizedLongChunk<RowKeys> leftStampKeys = new SizedLongChunk<>();
         final SizedChunk<Values> leftStampValues = new SizedChunk<>(stampChunkType);
         final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampChunkType);
-        final SizedLongChunk<KeyIndices> rightStampKeys = new SizedLongChunk<>();
+        final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>();
 
         final SsaFactory rightSsaFactory = new SsaFactory() {
             @Override
@@ -942,7 +943,7 @@ public class AsOfJoinHelper {
                 final SegmentedSortedArray ssa = ssaFactory.get();
                 final int slotSize = rightIndex.intSize();
                 if (slotSize > 0) {
-                    rightIndex.fillKeyIndicesChunk(rightStampKeys.ensureCapacity(slotSize));
+                    rightIndex.fillRowKeyChunk(rightStampKeys.ensureCapacity(slotSize));
                     rightStampSource.fillChunk(rightStampFillContext.ensureCapacity(slotSize),
                             rightStampValues.ensureCapacity(slotSize), rightIndex);
                     sortKernel.ensureCapacity(slotSize).sort(rightStampKeys.get(), rightStampValues.get());
@@ -967,7 +968,7 @@ public class AsOfJoinHelper {
                     leftStampSource.fillChunk(leftStampFillContext.ensureCapacity(slotSize),
                             leftStampValues.ensureCapacity(slotSize), leftIndex);
 
-                    leftIndex.fillKeyIndicesChunk(leftStampKeys.ensureCapacity(slotSize));
+                    leftIndex.fillRowKeyChunk(leftStampKeys.ensureCapacity(slotSize));
 
                     sortKernel.ensureCapacity(slotSize).sort(leftStampKeys.get(), leftStampValues.get());
 
@@ -1097,15 +1098,15 @@ public class AsOfJoinHelper {
     private static void fillSsaWithSort(QueryTable rightTable, ColumnSource<?> stampSource, int nodeSize,
             SegmentedSortedArray ssa, SortingOrder order) {
         try (final ColumnSource.FillContext context = stampSource.makeFillContext(nodeSize);
-                final OrderedKeys.Iterator okit = rightTable.getIndex().getOrderedKeysIterator();
+                final RowSequence.Iterator rsIt = rightTable.getIndex().getRowSequenceIterator();
                 final WritableChunk<Values> stampChunk = stampSource.getChunkType().makeWritableChunk(nodeSize);
-                final WritableLongChunk<KeyIndices> keyChunk = WritableLongChunk.makeWritableChunk(nodeSize);
-                final LongSortKernel<Values, KeyIndices> sortKernel =
+                final WritableLongChunk<RowKeys> keyChunk = WritableLongChunk.makeWritableChunk(nodeSize);
+                final LongSortKernel<Values, RowKeys> sortKernel =
                         LongSortKernel.makeContext(stampSource.getChunkType(), order, nodeSize, true)) {
-            while (okit.hasMore()) {
-                final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(nodeSize);
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(nodeSize);
                 stampSource.fillChunk(context, stampChunk, chunkOk);
-                chunkOk.fillKeyIndicesChunk(keyChunk);
+                chunkOk.fillRowKeyChunk(keyChunk);
 
                 sortKernel.sort(keyChunk, stampChunk);
 
@@ -1129,19 +1130,19 @@ public class AsOfJoinHelper {
 
         final int leftSize = leftTable.intSize();
         final WritableChunk<Values> leftStampValues = stampChunkType.makeWritableChunk(leftSize);
-        final WritableLongChunk<KeyIndices> leftStampKeys = WritableLongChunk.makeWritableChunk(leftSize);
-        leftTable.getIndex().fillKeyIndicesChunk(leftStampKeys);
+        final WritableLongChunk<RowKeys> leftStampKeys = WritableLongChunk.makeWritableChunk(leftSize);
+        leftTable.getIndex().fillRowKeyChunk(leftStampKeys);
         try (final ColumnSource.FillContext context = leftStampSource.makeFillContext(leftSize)) {
             leftStampSource.fillChunk(context, leftStampValues, leftTable.getIndex());
         }
 
-        try (final LongSortKernel<Values, KeyIndices> sortKernel =
+        try (final LongSortKernel<Values, RowKeys> sortKernel =
                 LongSortKernel.makeContext(stampChunkType, order, leftSize, true)) {
             sortKernel.sort(leftStampKeys, leftStampValues);
         }
 
         final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
-        try (final WritableLongChunk<KeyIndices> rightKeysForLeft = WritableLongChunk.makeWritableChunk(leftSize)) {
+        try (final WritableLongChunk<RowKeys> rightKeysForLeft = WritableLongChunk.makeWritableChunk(leftSize)) {
             chunkSsaStamp.processEntry(leftStampValues, leftStampKeys, ssa, rightKeysForLeft, disallowExactMatch);
 
             for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
@@ -1177,7 +1178,7 @@ public class AsOfJoinHelper {
 
                         try (final ColumnSource.FillContext fillContext =
                                 rightStampSource.makeFillContext(rightChunkSize);
-                                final LongSortKernel<Values, KeyIndices> sortKernel =
+                                final LongSortKernel<Values, RowKeys> sortKernel =
                                         LongSortKernel.makeContext(stampChunkType, order, rightChunkSize, true)) {
 
                             final Index restampRemovals;
@@ -1195,17 +1196,17 @@ public class AsOfJoinHelper {
                             // in the left for the removed key to find the smallest value geq the removed right. Update
                             // all rows
                             // with the removed redirection to the previous key.
-                            try (final OrderedKeys.Iterator removeit = restampRemovals.getOrderedKeysIterator();
-                                    final WritableLongChunk<KeyIndices> priorRedirections =
+                            try (final RowSequence.Iterator removeit = restampRemovals.getRowSequenceIterator();
+                                    final WritableLongChunk<RowKeys> priorRedirections =
                                             WritableLongChunk.makeWritableChunk(rightChunkSize);
-                                    final WritableLongChunk<KeyIndices> rightKeyIndices =
+                                    final WritableLongChunk<RowKeys> rightKeyIndices =
                                             WritableLongChunk.makeWritableChunk(rightChunkSize);
                                     final WritableChunk<Values> rightStampChunk =
                                             stampChunkType.makeWritableChunk(rightChunkSize)) {
                                 while (removeit.hasMore()) {
-                                    final OrderedKeys chunkOk = removeit.getNextOrderedKeysWithLength(rightChunkSize);
+                                    final RowSequence chunkOk = removeit.getNextRowSequenceWithLength(rightChunkSize);
                                     rightStampSource.fillPrevChunk(fillContext, rightStampChunk, chunkOk);
-                                    chunkOk.fillKeyIndicesChunk(rightKeyIndices);
+                                    chunkOk.fillRowKeyChunk(rightKeyIndices);
 
                                     sortKernel.sort(rightKeyIndices, rightStampChunk);
 
@@ -1232,7 +1233,7 @@ public class AsOfJoinHelper {
                                     stampChunkType.makeWritableChunk(rightChunkSize);
                                     final WritableChunk<Values> nextRightValue =
                                             stampChunkType.makeWritableChunk(rightChunkSize);
-                                    final WritableLongChunk<KeyIndices> insertedIndices =
+                                    final WritableLongChunk<RowKeys> insertedIndices =
                                             WritableLongChunk.makeWritableChunk(rightChunkSize);
                                     final WritableBooleanChunk<Any> retainStamps =
                                             WritableBooleanChunk.makeWritableChunk(rightChunkSize)) {
@@ -1245,7 +1246,7 @@ public class AsOfJoinHelper {
                                                     (startChunk + 1) * control.rightChunkSize())) {
                                         rightStampSource.fillChunk(fillContext, stampChunk, chunkOk);
                                         insertedIndices.setSize(chunkOk.intSize());
-                                        chunkOk.fillKeyIndicesChunk(insertedIndices);
+                                        chunkOk.fillRowKeyChunk(insertedIndices);
 
                                         sortKernel.sort(insertedIndices, stampChunk);
 
@@ -1281,15 +1282,15 @@ public class AsOfJoinHelper {
                             // if the stamp was not modified, then we need to figure out the responsive rows to mark as
                             // modified
                             if (!stampModified && upstream.modified.nonempty()) {
-                                try (final OrderedKeys.Iterator modit = upstream.modified.getOrderedKeysIterator();
-                                        final WritableLongChunk<KeyIndices> rightStampIndices =
+                                try (final RowSequence.Iterator modit = upstream.modified.getRowSequenceIterator();
+                                        final WritableLongChunk<RowKeys> rightStampIndices =
                                                 WritableLongChunk.makeWritableChunk(rightChunkSize);
                                         final WritableChunk<Values> rightStampChunk =
                                                 stampChunkType.makeWritableChunk(rightChunkSize)) {
                                     while (modit.hasMore()) {
-                                        final OrderedKeys chunkOk = modit.getNextOrderedKeysWithLength(rightChunkSize);
+                                        final RowSequence chunkOk = modit.getNextRowSequenceWithLength(rightChunkSize);
                                         rightStampSource.fillChunk(fillContext, rightStampChunk, chunkOk);
-                                        chunkOk.fillKeyIndicesChunk(rightStampIndices);
+                                        chunkOk.fillRowKeyChunk(rightStampIndices);
 
                                         sortKernel.sort(rightStampIndices, rightStampChunk);
 
@@ -1333,21 +1334,21 @@ public class AsOfJoinHelper {
     }
 
     private static void rightIncrementalApplySsaShift(IndexShiftData shiftData, SegmentedSortedArray ssa,
-            LongSortKernel<Values, KeyIndices> sortKernel, ChunkSource.FillContext fillContext,
+            LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
             Index restampRemovals, QueryTable table,
             int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
-            WritableChunk<Values> leftStampValues, WritableLongChunk<KeyIndices> leftStampKeys,
+            WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
             RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
 
         try (final Index fullPrevIndex = table.getIndex().getPrevIndex();
                 final Index previousToShift = fullPrevIndex.minus(restampRemovals);
                 final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
-                final SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> shiftSortKernel =
+                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
                         new SizedSafeCloseable<>(sz -> LongSortKernel.makeContext(stampSource.getChunkType(),
                                 ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, sz, true));
                 final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
-                final SizedLongChunk<KeyIndices> rightStampKeys = new SizedLongChunk<>()) {
+                final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
 
             final IndexShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {
@@ -1360,7 +1361,7 @@ public class AsOfJoinHelper {
                     if (sit.polarityReversed()) {
                         final int shiftSize = indexToShift.intSize();
 
-                        indexToShift.fillKeyIndicesChunk(rightStampKeys.ensureCapacity(shiftSize));
+                        indexToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
                         if (chunkSize >= shiftSize) {
                             stampSource.fillPrevChunk(fillContext, rightStampValues.ensureCapacity(shiftSize),
                                     indexToShift);
@@ -1377,13 +1378,13 @@ public class AsOfJoinHelper {
                         ssa.applyShiftReverse(rightStampValues.get(), rightStampKeys.get(), sit.shiftDelta());
                     } else {
                         if (indexToShift.size() > chunkSize) {
-                            try (final OrderedKeys.Iterator shiftIt = indexToShift.getOrderedKeysIterator()) {
+                            try (final RowSequence.Iterator shiftIt = indexToShift.getRowSequenceIterator()) {
                                 while (shiftIt.hasMore()) {
-                                    final OrderedKeys chunkOk = shiftIt.getNextOrderedKeysWithLength(chunkSize);
+                                    final RowSequence chunkOk = shiftIt.getNextRowSequenceWithLength(chunkSize);
                                     stampSource.fillPrevChunk(fillContext, rightStampValues.ensureCapacity(chunkSize),
                                             chunkOk);
 
-                                    chunkOk.fillKeyIndicesChunk(rightStampKeys.ensureCapacity(chunkSize));
+                                    chunkOk.fillRowKeyChunk(rightStampKeys.ensureCapacity(chunkSize));
 
                                     sortKernel.sort(rightStampKeys.get(), rightStampValues.get());
 
@@ -1396,7 +1397,7 @@ public class AsOfJoinHelper {
                         } else {
                             stampSource.fillPrevChunk(fillContext,
                                     rightStampValues.ensureCapacity(indexToShift.intSize()), indexToShift);
-                            indexToShift.fillKeyIndicesChunk(rightStampKeys.ensureCapacity(indexToShift.intSize()));
+                            indexToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(indexToShift.intSize()));
 
                             sortKernel.sort(rightStampKeys.get(), rightStampValues.get());
 
@@ -1416,7 +1417,7 @@ public class AsOfJoinHelper {
             final RedirectionIndex redirectionIndex) {
         final Index rightIndex = rightTable.getIndex();
 
-        final WritableLongChunk<KeyIndices> rightStampKeys = WritableLongChunk.makeWritableChunk(rightIndex.intSize());
+        final WritableLongChunk<RowKeys> rightStampKeys = WritableLongChunk.makeWritableChunk(rightIndex.intSize());
         final WritableChunk<Values> rightStampValues =
                 rightStampSource.getChunkType().makeWritableChunk(rightIndex.intSize());
 
@@ -1439,7 +1440,7 @@ public class AsOfJoinHelper {
             final ModifiedColumnSet.Transformer leftTransformer =
                     leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
 
-            final WritableLongChunk<KeyIndices> compactedRightStampKeys;
+            final WritableLongChunk<RowKeys> compactedRightStampKeys;
             final WritableChunk<Values> compactedRightStampValues;
             if (rightStampKeys.size() < rightIndex.size()) {
                 compactedRightStampKeys = WritableLongChunk.makeWritableChunk(rightStampKeys.size());

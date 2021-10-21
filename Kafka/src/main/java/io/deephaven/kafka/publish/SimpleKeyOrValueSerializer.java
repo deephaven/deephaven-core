@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.utils.ChunkBoxer;
-import io.deephaven.engine.v2.utils.OrderedKeys;
+import io.deephaven.engine.structures.RowSequence;
 
 public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSerializer<SERIALIZED_TYPE> {
 
@@ -21,10 +21,10 @@ public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSe
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, OrderedKeys orderedKeys,
+    public ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, RowSequence rowSequence,
             boolean previous) {
         final SimpleContext simpleContext = (SimpleContext) context;
-        final Chunk chunk = source.getChunk(simpleContext.sourceGetContext, orderedKeys);
+        final Chunk chunk = source.getChunk(simpleContext.sourceGetContext, rowSequence);
         return boxer.box(chunk);
     }
 

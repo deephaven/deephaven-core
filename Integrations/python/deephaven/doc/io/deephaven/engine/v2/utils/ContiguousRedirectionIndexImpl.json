@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.engine.v2.utils.ContiguousRedirectionIndexImpl",
  "methods": {
-  "fillChunk": "Lookup each element in OrderedKeys and write the result to mappedKeysOut\n\n:param fillContext: (io.deephaven.engine.v2.utils.RedirectionIndex.FillContext) - the RedirectionIndex FillContext\n:param mappedKeysOut: (io.deephaven.engine.v2.sources.chunk.WritableLongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices>) - the result chunk\n:param keysToMap: (io.deephaven.engine.v2.utils.OrderedKeys) - the keys to lookup in this redirection index",
-  "fillPrevChunk": ":param fillContext: io.deephaven.engine.v2.utils.RedirectionIndex.FillContext\n:param mappedKeysOut: io.deephaven.engine.v2.sources.chunk.WritableLongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices>\n:param keysToMap: io.deephaven.engine.v2.utils.OrderedKeys",
+  "fillChunk": "Lookup each element in RowSequence and write the result to mappedKeysOut\n\n:param fillContext: (io.deephaven.engine.v2.utils.RedirectionIndex.FillContext) - the RedirectionIndex FillContext\n:param mappedKeysOut: (io.deephaven.engine.v2.sources.chunk.WritableLongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices>) - the result chunk\n:param keysToMap: (io.deephaven.engine.v2.utils.RowSequence) - the keys to lookup in this redirection index",
+  "fillPrevChunk": ":param fillContext: io.deephaven.engine.v2.utils.RedirectionIndex.FillContext\n:param mappedKeysOut: io.deephaven.engine.v2.sources.chunk.WritableLongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices>\n:param keysToMap: io.deephaven.engine.v2.utils.RowSequence",
   "get": ":param key: long\n:return: long",
   "getPrev": ":param key: long\n:return: long",
   "put": ":param key: long\n:param index: long\n:return: long",
