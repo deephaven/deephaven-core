@@ -22,7 +22,8 @@ if (runtimeVersion > 8) {
     defaultJvmOpts += ['--add-opens', 'java.base/java.nio=ALL-UNNAMED']
   }
 
-  // TODO: configure DockerJavaApplication, update docker images with runtime version
+  // TODO(deephaven-core#1369): Upgrade runtime images to JDK17
+  // configure DockerJavaApplication, update docker images with runtime version
 }
 
 if (testRuntimeVersion > 8) {
