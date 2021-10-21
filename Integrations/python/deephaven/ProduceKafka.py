@@ -146,9 +146,9 @@ def avro(schema, schema_version:str = None, column_names = None):
             "str type or avro schema type, instead got " + str(schema))
 
     if have_actual_schema:
-        return _consume_jtype_.avroSpec(schema, column_names)
+        return _produce_jtype_.avroSpec(schema, column_names)
     else:
-        return _consume_jtype_.avroSpec(schema, schema_version, column_names)
+        return _produce_jtype_.avroSpec(schema, schema_version, column_names)
 
 @_passThrough
 def json(column_names = None, field_names = None):
