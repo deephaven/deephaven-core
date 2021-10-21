@@ -7,6 +7,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.v2.by.FormulaAggregationFactory",
- "text": "An AggregationContextFactory used in the implementation of Table.applyToAllBy(java.lang.String, java.lang.String, io.deephaven.engine.v2.select.SelectColumn...).",
+ "text": "An AggregationContextFactory used in the implementation of\n Table.applyToAllBy(java.lang.String, java.lang.String, io.deephaven.engine.v2.select.SelectColumn...).",
  "typeName": "class"
 }

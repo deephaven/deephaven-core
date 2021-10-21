@@ -17,6 +17,6 @@
   "unchunkedIndex": "Whether the operator can deal with an unchunked Index more efficiently than a chunked index.\n\n:return: (boolean) true if the operator can deal with unchunked indices, false otherwise"
  },
  "path": "io.deephaven.engine.v2.by.ByChunkedOperator",
- "text": "An IterativeChunkedAggregationOperator used in the implementation of Table.by(io.deephaven.engine.v2.by.AggregationStateFactory, io.deephaven.engine.v2.select.SelectColumn...).",
+ "text": "An IterativeChunkedAggregationOperator used in the implementation of\n Table.by(io.deephaven.engine.v2.by.AggregationStateFactory, io.deephaven.engine.v2.select.SelectColumn...).",
  "typeName": "class"
 }

@@ -6,6 +6,6 @@
   "hasSymbolTable": ":param sourceIndex: (io.deephaven.engine.v2.utils.ReadOnlyIndex) - The ReadOnlyIndex whose keys must be mappable\n:return: (boolean) Whether this SymbolTableSource can provide a symbol table that covers all keys in sourceIndex."
  },
  "path": "io.deephaven.engine.v2.sources.regioned.SymbolTableSource",
- "text": "Interface for ColumnSources that can provide a Table view of their symbol\n tables, providing a many:1 or 1:1 mapping of unique long identifiers to the symbol values in this source.\n \n Such sources are also expected to be reinterpretable (ColumnSource.allowsReinterpret(Class)) as long\nColumnSources of the same identifiers.",
+ "text": "Interface for ColumnSources that can provide a Table view of their\n symbol tables, providing a many:1 or 1:1 mapping of unique long identifiers to the symbol values in this\n source.\n \n Such sources are also expected to be reinterpretable (ColumnSource.allowsReinterpret(Class)) as long\nColumnSources of the same identifiers.",
  "typeName": "interface"
 }

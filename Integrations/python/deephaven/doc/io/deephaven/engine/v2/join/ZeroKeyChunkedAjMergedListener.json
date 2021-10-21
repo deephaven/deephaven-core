@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.join.BucketedChunkedAjMergedListener",
+ "className": "io.deephaven.engine.v2.join.ZeroKeyChunkedAjMergedListener",
  "methods": {},
- "path": "io.deephaven.engine.v2.join.BucketedChunkedAjMergedListener",
+ "path": "io.deephaven.engine.v2.join.ZeroKeyChunkedAjMergedListener",
  "typeName": "class"
 }

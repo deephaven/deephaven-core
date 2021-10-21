@@ -7,6 +7,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.v2.by.ByExternalAggregationFactory",
- "text": "An AggregationContextFactory used in the implementation of Table.byExternal(boolean, java.lang.String...).",
+ "text": "An AggregationContextFactory used in the implementation of\n Table.byExternal(boolean, java.lang.String...).",
  "typeName": "class"
 }
