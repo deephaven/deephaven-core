@@ -94,7 +94,7 @@ allprojects {
     apply plugin: 'license'
 
     jacoco {
-      toolVersion = "0.8.4"
+      toolVersion = '0.8.7'
     }
 
     license {
