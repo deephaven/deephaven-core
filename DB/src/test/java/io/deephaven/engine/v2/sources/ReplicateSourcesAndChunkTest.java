@@ -4,10 +4,9 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.engine.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.deltaaware.TestCharacterDeltaAwareColumnSource;
+import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -16,34 +15,37 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
 public class ReplicateSourcesAndChunkTest {
     public static void main(String[] args) throws IOException {
         ReplicateSourcesAndChunks.main(args);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharacterArraySource.class, ReplicatePrimitiveCode.TEST_SRC);
-        fixupBooleanColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(TestCharacterArraySource.class,
-                ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterArraySource.java");
+        fixupBooleanColumnSourceTest(
+                charToBooleanAsByte("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterArraySource.java",
+                        Collections.emptyMap()));
         fixupObjectColumnSourceTest(
-                ReplicatePrimitiveCode.charToObject(TestCharacterArraySource.class, ReplicatePrimitiveCode.TEST_SRC));
+                charToObject("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterArraySource.java"));
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharacterSparseArraySource.class,
-                ReplicatePrimitiveCode.TEST_SRC);
-        fixupBooleanColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(TestCharacterSparseArraySource.class,
-                ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
-        fixupObjectColumnSourceTest(ReplicatePrimitiveCode.charToObject(TestCharacterSparseArraySource.class,
-                ReplicatePrimitiveCode.TEST_SRC));
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterSparseArraySource.java");
+        fixupBooleanColumnSourceTest(charToBooleanAsByte(
+                "DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterSparseArraySource.java",
+                Collections.emptyMap()));
+        fixupObjectColumnSourceTest(
+                charToObject("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterSparseArraySource.java"));
 
-        ReplicatePrimitiveCode.charToAll(TestCharChunk.class, ReplicatePrimitiveCode.TEST_SRC);
-        fixupChunkTest(ReplicatePrimitiveCode.charToObject(TestCharChunk.class, ReplicatePrimitiveCode.TEST_SRC));
+        charToAll("DB/src/test/java/io/deephaven/engine/v2/sources/chunk/TestCharChunk.java");
+        fixupChunkTest(charToObject("DB/src/test/java/io/deephaven/engine/v2/sources/chunk/TestCharChunk.java"));
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharacterDeltaAwareColumnSource.class,
-                ReplicatePrimitiveCode.TEST_SRC);
-        fixupBooleanDeltaAwareColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(
-                TestCharacterDeltaAwareColumnSource.class, ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
-        fixupObjectDeltaAwareColumnSourceTest(ReplicatePrimitiveCode
-                .charToObject(TestCharacterDeltaAwareColumnSource.class, ReplicatePrimitiveCode.TEST_SRC));
+        charToAllButBoolean(
+                "DB/src/test/java/io/deephaven/engine/v2/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java");
+        fixupBooleanDeltaAwareColumnSourceTest(charToBooleanAsByte(
+                "DB/src/test/java/io/deephaven/engine/v2/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java",
+                Collections.emptyMap()));
+        fixupObjectDeltaAwareColumnSourceTest(charToObject(
+                "DB/src/test/java/io/deephaven/engine/v2/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java"));
     }
 
     private static void fixupObjectColumnSourceTest(String objectPath) throws IOException {

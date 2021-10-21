@@ -10,7 +10,9 @@ import java.io.IOException;
 
 public class ReplicateKafka {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(GenericRecordCharFieldCopier.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(JsonNodeCharFieldCopier.class, ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode
+                .charToAllButBoolean("Kafka/src/main/java/io/deephaven/kafka/ingest/GenericRecordCharFieldCopier.java");
+        ReplicatePrimitiveCode
+                .charToAllButBoolean("Kafka/src/main/java/io/deephaven/kafka/ingest/JsonNodeCharFieldCopier.java");
     }
 }

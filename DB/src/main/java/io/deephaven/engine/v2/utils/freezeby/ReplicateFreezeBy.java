@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2.utils.freezeby;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import org.apache.commons.io.FileUtils;
 
@@ -11,20 +10,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
+
 public class ReplicateFreezeBy {
     public static void main(String[] args) throws IOException {
         final List<String> results =
-                ReplicatePrimitiveCode.charToAllButBoolean(CharFreezeByHelper.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/utils/freezeby/CharFreezeByHelper.java");
 
         final Optional<String> longResult = results.stream().filter(s -> s.contains("Long")).findFirst();
         // noinspection OptionalGetWithoutIsPresent
         fixupLong(longResult.get());
         final String objectResult =
-                ReplicatePrimitiveCode.charToObject(CharFreezeByHelper.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToObject("DB/src/main/java/io/deephaven/engine/v2/utils/freezeby/CharFreezeByHelper.java");
         fixupObject(objectResult);
 
         final String booleanResult =
-                ReplicatePrimitiveCode.charToBoolean(CharFreezeByHelper.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToBoolean("DB/src/main/java/io/deephaven/engine/v2/utils/freezeby/CharFreezeByHelper.java");
         fixupBoolean(booleanResult);
     }
 

@@ -15,18 +15,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.className;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
 public class ReplicateDupCompactKernel {
     public static void main(String[] args) throws IOException {
-        final List<String> kernelsToInvert =
-                ReplicatePrimitiveCode.charToAllButBoolean(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String objectDupCompact =
-                ReplicatePrimitiveCode.charToObject(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charJavaPath = "DB/src/main/java/io/deephaven/engine/v2/join/dupcompact/CharDupCompactKernel.java";
+        final List<String> kernelsToInvert = ReplicatePrimitiveCode.charToAllButBoolean(charJavaPath);
+        final String objectDupCompact = ReplicatePrimitiveCode.charToObject(charJavaPath);
         fixupObjectDupCompact(objectDupCompact);
 
-        kernelsToInvert
-                .add(ReplicatePrimitiveCode.pathForClass(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC));
+        kernelsToInvert.add(charJavaPath);
         kernelsToInvert.add(objectDupCompact);
         for (String kernel : kernelsToInvert) {
             final String dupCompactReversePath = kernel.replaceAll("DupCompactKernel", "ReverseDupCompactKernel");
@@ -34,12 +33,12 @@ public class ReplicateDupCompactKernel {
 
             if (kernel.contains("Char")) {
                 final String nullAwarePath = kernel.replace("CharDupCompactKernel", "NullAwareCharDupCompactKernel");
-                fixupCharNullComparisons(CharDupCompactKernel.class, kernel, nullAwarePath, "CharDupCompactKernel",
+                fixupCharNullComparisons(kernel, nullAwarePath, "CharDupCompactKernel",
                         "NullAwareCharDupCompactKernel", true);
 
                 final String nullAwareDescendingPath =
                         nullAwarePath.replaceAll("NullAwareCharDupCompact", "NullAwareCharReverseDupCompact");
-                fixupCharNullComparisons(CharDupCompactKernel.class, kernel, nullAwareDescendingPath,
+                fixupCharNullComparisons(kernel, nullAwareDescendingPath,
                         "CharDupCompactKernel", "NullAwareCharReverseDupCompactKernel", false);
             } else if (kernel.contains("Float")) {
                 nanFixup(kernel, "Float", true);
@@ -51,14 +50,15 @@ public class ReplicateDupCompactKernel {
         }
     }
 
-    public static String fixupCharNullComparisons(Class sourceClass, String kernel) throws IOException {
-        final String nullAwarePath = kernel.replace("Char", "NullAwareChar");
-        return fixupCharNullComparisons(sourceClass, kernel, nullAwarePath, sourceClass.getSimpleName(),
-                sourceClass.getSimpleName().replace("Char", "NullAwareChar"), true);
+    public static String fixupCharNullComparisons(String sourceClassJavaPath) throws IOException {
+        final String sourceClassName = className(sourceClassJavaPath);
+        final String nullAwarePath = sourceClassJavaPath.replace("Char", "NullAwareChar");
+        return fixupCharNullComparisons(sourceClassJavaPath, nullAwarePath, sourceClassName,
+                sourceClassName.replace("Char", "NullAwareChar"), true);
     }
 
-    private static String fixupCharNullComparisons(Class sourceClass, String path, String newPath, String oldName,
-            String newName, boolean ascending) throws IOException {
+    private static String fixupCharNullComparisons(String path, String newPath, String oldName, String newName,
+                                                   boolean ascending) throws IOException {
         final File file = new File(path);
 
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
@@ -74,7 +74,7 @@ public class ReplicateDupCompactKernel {
 
         lines.addAll(0, Arrays.asList(
                 "/* ---------------------------------------------------------------------------------------------------------------------",
-                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + sourceClass.getSimpleName()
+                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
                         + " and regenerate",
                 " * ------------------------------------------------------------------------------------------------------------------ */"));
 

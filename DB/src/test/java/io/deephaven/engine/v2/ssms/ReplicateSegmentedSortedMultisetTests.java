@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2.ssms;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import org.apache.commons.io.FileUtils;
 
@@ -9,20 +8,21 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
 public class ReplicateSegmentedSortedMultisetTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedMultiset.main(args);
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndFloats(TestCharSegmentedSortedMultiset.class,
-                ReplicatePrimitiveCode.TEST_SRC);
-        fixupFloatTests(ReplicatePrimitiveCode.charToFloat(TestCharSegmentedSortedMultiset.class,
-                ReplicatePrimitiveCode.TEST_SRC, null));
-        fixupFloatTests(ReplicatePrimitiveCode.charToDouble(TestCharSegmentedSortedMultiset.class,
-                ReplicatePrimitiveCode.TEST_SRC, null));
-        final String objectSsaTest = ReplicatePrimitiveCode.charToObject(TestCharSegmentedSortedMultiset.class,
-                ReplicatePrimitiveCode.TEST_SRC);
+        charToAllButBooleanAndFloats(
+                "DB/src/test/java/io/deephaven/engine/v2/ssms/TestCharSegmentedSortedMultiset.java");
+        fixupFloatTests(
+                charToFloat("DB/src/test/java/io/deephaven/engine/v2/ssms/TestCharSegmentedSortedMultiset.java", null));
+        fixupFloatTests(charToDouble(
+                "DB/src/test/java/io/deephaven/engine/v2/ssms/TestCharSegmentedSortedMultiset.java", null));
+        final String objectSsaTest =
+                charToObject("DB/src/test/java/io/deephaven/engine/v2/ssms/TestCharSegmentedSortedMultiset.java");
         fixupObjectSsaTest(objectSsaTest);
     }
 

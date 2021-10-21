@@ -1,27 +1,26 @@
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
-import io.deephaven.engine.v2.select.CharRangeFilter;
-import io.deephaven.engine.v2.select.FloatRangeFilter;
-
 import java.io.IOException;
 import java.util.Collections;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
+
 public class ReplicateChunkFilters {
     public static void main(String[] args) throws IOException {
-
-        ReplicatePrimitiveCode.charToShortAndByte(CharRangeComparator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToInteger(CharRangeComparator.class, ReplicatePrimitiveCode.MAIN_SRC,
+        charToShortAndByte("DB/src/main/java/io/deephaven/engine/v2/select/chunkfilters/CharRangeComparator.java");
+        charToInteger("DB/src/main/java/io/deephaven/engine/v2/select/chunkfilters/CharRangeComparator.java",
                 Collections.emptyMap());
 
-        ReplicatePrimitiveCode.charToShortAndByte(CharRangeFilter.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToInteger(CharRangeFilter.class, ReplicatePrimitiveCode.MAIN_SRC,
+        charToShortAndByte("DB/src/main/java/io/deephaven/engine/v2/select/CharRangeFilter.java");
+        charToInteger("DB/src/main/java/io/deephaven/engine/v2/select/CharRangeFilter.java",
                 Collections.emptyMap());
-        ReplicatePrimitiveCode.charToLong(CharRangeFilter.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToLong("DB/src/main/java/io/deephaven/engine/v2/select/CharRangeFilter.java");
 
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatRangeComparator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatRangeFilter.class, ReplicatePrimitiveCode.MAIN_SRC);
+        floatToAllFloatingPoints(
+                "DB/src/main/java/io/deephaven/engine/v2/select/chunkfilters/FloatRangeComparator.java");
+        floatToAllFloatingPoints("DB/src/main/java/io/deephaven/engine/v2/select/FloatRangeFilter.java");
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkMatchFilterFactory.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/select/chunkfilters/CharChunkMatchFilterFactory.java");
     }
 }

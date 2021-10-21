@@ -4,9 +4,10 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
-
 import java.io.IOException;
+
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBoolean;
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBooleanAndByte;
 
 /**
  * Code generation for tests of {@link RegionedColumnSource} implementations as well as well as the primary region
@@ -15,7 +16,8 @@ import java.io.IOException;
 public class ReplicateRegionsAndRegionedSourcesTest {
 
     public static void main(String... args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(TestRegionedColumnSourceChar.class, ReplicatePrimitiveCode.TEST_SRC);
-        ReplicatePrimitiveCode.charToAllButBooleanAndByte(TstColumnRegionChar.class, ReplicatePrimitiveCode.TEST_SRC);
+        charToAllButBoolean(
+                "DB/src/test/java/io/deephaven/engine/v2/sources/regioned/TestRegionedColumnSourceChar.java");
+        charToAllButBooleanAndByte("DB/src/test/java/io/deephaven/engine/v2/sources/regioned/TstColumnRegionChar.java");
     }
 }

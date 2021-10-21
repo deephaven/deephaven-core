@@ -38,11 +38,11 @@ public class ReplicateDbArrays {
         serialVersionUIDs.put("io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect", 3262776153086160765L);
         serialVersionUIDs.put("io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect", -8263599481663466384L);
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndFloats(DbCharArray.class, ReplicatePrimitiveCode.MAIN_SRC,
-                serialVersionUIDs);
+        final String dbCharArrayJavaPath = "DB/src/main/java/io/deephaven/engine/tables/dbarrays/DbCharArray.java";
 
-        final String floatPath = ReplicatePrimitiveCode.charToFloat(DbCharArray.class, ReplicatePrimitiveCode.MAIN_SRC,
-                serialVersionUIDs);
+        ReplicatePrimitiveCode.charToAllButBooleanAndFloats(dbCharArrayJavaPath, serialVersionUIDs);
+
+        final String floatPath = ReplicatePrimitiveCode.charToFloat(dbCharArrayJavaPath, serialVersionUIDs);
         final File floatFile = new File(floatPath);
         List<String> floatLines = FileUtils.readLines(floatFile, Charset.defaultCharset());
         floatLines = ReplicateUtilities.simpleFixup(floatLines, "elementEquals",
@@ -50,8 +50,7 @@ public class ReplicateDbArrays {
                 "Float.floatToIntBits(aArray.get(ei)) != Float.floatToIntBits(bArray.get(ei))");
         FileUtils.writeLines(floatFile, floatLines);
 
-        final String doublePath = ReplicatePrimitiveCode.charToDouble(DbCharArray.class,
-                ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
+        final String doublePath = ReplicatePrimitiveCode.charToDouble(dbCharArrayJavaPath, serialVersionUIDs);
         final File doubleFile = new File(doublePath);
         List<String> doubleLines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
         doubleLines = ReplicateUtilities.simpleFixup(doubleLines, "elementEquals",
@@ -59,11 +58,14 @@ public class ReplicateDbArrays {
                 "Double.doubleToLongBits(aArray.get(ei)) != Double.doubleToLongBits(bArray.get(ei))");
         FileUtils.writeLines(doubleFile, doubleLines);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayDirect.class, ReplicatePrimitiveCode.MAIN_SRC,
+        ReplicatePrimitiveCode.charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/tables/dbarrays/DbCharArrayDirect.java",
                 serialVersionUIDs);
-        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArraySlice.class, ReplicatePrimitiveCode.MAIN_SRC,
+        ReplicatePrimitiveCode.charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/tables/dbarrays/DbCharArraySlice.java",
                 serialVersionUIDs);
-        ReplicatePrimitiveCode.charToAllButBoolean(DbSubCharArray.class, ReplicatePrimitiveCode.MAIN_SRC,
+        ReplicatePrimitiveCode.charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/tables/dbarrays/DbSubCharArray.java",
                 serialVersionUIDs);
 
         // Uncomment if running from the IDE:

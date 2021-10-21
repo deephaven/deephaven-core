@@ -7,14 +7,16 @@ package io.deephaven.libs.primitives;
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 
 import java.io.IOException;
+import java.util.List;
+
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.floatToAllFloatingPoints;
 
 public class ReplicateTst {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharPrimitives.class, ReplicatePrimitiveCode.TEST_SRC);
-        ReplicatePrimitiveCode.shortToAllIntegralTypes(TestShortNumericPrimitives.class,
-                ReplicatePrimitiveCode.TEST_SRC);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(TestFloatNumericPrimitives.class,
-                ReplicatePrimitiveCode.TEST_SRC);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(TestFloatFpPrimitives.class, ReplicatePrimitiveCode.TEST_SRC);
+        charToAllButBoolean("DB/src/test/java/io/deephaven/libs/primitives/TestCharPrimitives.java");
+        shortToAllIntegralTypes("DB/src/main/test/io/deephaven/libs/primitives/TestShortNumericPrimitives.java");
+        floatToAllFloatingPoints("DB/src/main/test/io/deephaven/libs/primitives/TestFloatNumericPrimitives.java");
+        floatToAllFloatingPoints("DB/src/main/test/io/deephaven/libs/primitives/TestFloatFpPrimitives.java");
     }
 }

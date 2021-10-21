@@ -1,16 +1,17 @@
 package io.deephaven.engine.util.tuples;
 
-import static io.deephaven.compilertools.ReplicatePrimitiveCode.MAIN_SRC;
-
+import gnu.trove.map.TIntObjectMap;
 import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
 import io.deephaven.engine.util.serialization.SerializationUtils;
 import io.deephaven.engine.util.serialization.StreamingExternalizable;
 import io.deephaven.util.text.Indenter;
-import gnu.trove.map.TIntObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -29,7 +30,7 @@ public class TupleCodeGenerator {
 
     private static final String OUTPUT_PACKAGE = TupleCodeGenerator.class.getPackage().getName() + ".generated";
     private static final File OUTPUT_RELATIVE_PATH =
-            new File(new File("DB", MAIN_SRC), OUTPUT_PACKAGE.replace('.', File.separatorChar));
+            new File("DB/src/main/java/io/deephaven/engine/util/tuples/generated");
 
     private static final String LHS = "$lhs$";
     private static final String RHS = "$rhs$";
@@ -69,7 +70,7 @@ public class TupleCodeGenerator {
           SHORT(  "Short",   short.class, LHS + " == " + RHS                        ,      "Short.hashCode(" + VAL + ")", "DBLanguageFunctionUtil.compareTo("             + LHS + ", "             + RHS + ")", OUT + ".writeShort("  + VAL + ')', IN + ".readShort()" , DBLanguageFunctionUtil.class               ),
             INT(    "Int",     int.class, LHS + " == " + RHS                        ,    "Integer.hashCode(" + VAL + ")", "DBLanguageFunctionUtil.compareTo("             + LHS + ", "             + RHS + ")", OUT + ".writeInt("    + VAL + ')', IN + ".readInt()"   , DBLanguageFunctionUtil.class               ),
            LONG(   "Long",    long.class, LHS + " == " + RHS                        ,       "Long.hashCode(" + VAL + ")", "DBLanguageFunctionUtil.compareTo("             + LHS + ", "             + RHS + ")", OUT + ".writeLong("   + VAL + ')', IN + ".readLong()"  , DBLanguageFunctionUtil.class               ),
-          FLOAT(  "Float",   float.class, LHS + " == " + RHS                        ,      "Float.hashCode(" + VAL + ")", "DBLanguageFunctionUtil.compareTo("             + LHS + ", "             + RHS + ")", OUT + ".writeFloat("  + VAL + ')', IN + ".readFloat()" , DBLanguageFunctionUtil.class               ),
+          FLOAT(  "Float",    float.class, LHS + " == " + RHS                        ,      "Float.hashCode(" + VAL + ")", "DBLanguageFunctionUtil.compareTo("             + LHS + ", "             + RHS + ")", OUT + ".writeFloat("  + VAL + ')', IN + ".readFloat()" , DBLanguageFunctionUtil.class               ),
          DOUBLE( "Double",  double.class, LHS + " == " + RHS                        ,     "Double.hashCode(" + VAL + ")", "DBLanguageFunctionUtil.compareTo("             + LHS + ", "             + RHS + ")", OUT + ".writeDouble(" + VAL + ')', IN + ".readDouble()", DBLanguageFunctionUtil.class               ),
            CHAR(   "Char",    char.class, LHS + " == " + RHS                        ,  "Character.hashCode(" + VAL + ")", "DBLanguageFunctionUtil.compareTo("             + LHS + ", "             + RHS + ")", OUT + ".writeChar("   + VAL + ')', IN + ".readChar()"  , DBLanguageFunctionUtil.class               ),
          OBJECT( "Object",  Object.class, "Objects.equals(" + LHS + ", " + RHS + ")",    "Objects.hashCode(" + VAL + ")", "DBLanguageFunctionUtil.compareTo((Comparable)" + LHS + ", (Comparable)" + RHS + ")", OUT + ".writeObject(" + VAL + ')', IN + ".readObject()", DBLanguageFunctionUtil.class, Objects.class),

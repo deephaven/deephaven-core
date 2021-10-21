@@ -1,13 +1,7 @@
 package io.deephaven.engine.v2.sort.timsort;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
-import io.deephaven.engine.v2.sort.megamerge.TestCharLongMegaMerge;
-import io.deephaven.engine.v2.sort.partition.CharPartitionKernelBenchmark;
 import io.deephaven.engine.v2.sort.ReplicateSortKernel;
-import io.deephaven.engine.v2.sort.permute.TestCharPermuteKernel;
-import io.deephaven.engine.v2.sources.ObjectArraySource;
-
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,28 +12,30 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBoolean;
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToObject;
+
 public class ReplicateSortKernelTests {
     public static void main(String[] args) throws IOException {
         ReplicateSortKernel.main(args);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharTimSortKernel.class, ReplicatePrimitiveCode.TEST_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(BaseTestCharTimSortKernel.class, ReplicatePrimitiveCode.TEST_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(CharSortKernelBenchmark.class, ReplicatePrimitiveCode.BENCHMARK_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(CharPartitionKernelBenchmark.class,
-                ReplicatePrimitiveCode.BENCHMARK_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharPermuteKernel.class, ReplicatePrimitiveCode.TEST_SRC);
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/sort/timsort/TestCharTimSortKernel.java");
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/sort/timsort/BaseTestCharTimSortKernel.java");
+        charToAllButBoolean("DB/benchmark/io/deephaven/engine/v2/sort/timsort/CharSortKernelBenchmark.java");
+        charToAllButBoolean("DB/benchmark/io/deephaven/engine/v2/sort/partition/CharPartitionKernelBenchmark.java");
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/sort/permute/TestCharPermuteKernel.java");
 
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharLongMegaMerge.class, ReplicatePrimitiveCode.TEST_SRC);
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/sort/megamerge/TestCharLongMegaMerge.java");
 
         final String baseTestPath =
-                ReplicatePrimitiveCode.charToObject(BaseTestCharTimSortKernel.class, ReplicatePrimitiveCode.TEST_SRC);
+                charToObject("DB/src/test/java/io/deephaven/engine/v2/sort/timsort/BaseTestCharTimSortKernel.java");
         fixupObject(baseTestPath);
-        ReplicatePrimitiveCode.charToObject(TestCharTimSortKernel.class, ReplicatePrimitiveCode.TEST_SRC);
-        ReplicatePrimitiveCode.charToObject(CharSortKernelBenchmark.class, ReplicatePrimitiveCode.BENCHMARK_SRC);
+        charToObject("DB/src/test/java/io/deephaven/engine/v2/sort/timsort/TestCharTimSortKernel.java");
+        charToObject("DB/benchmark/io/deephaven/engine/v2/sort/timsort/CharSortKernelBenchmark.java");
 
         final String objectMegaMergePath =
-                ReplicatePrimitiveCode.charToObject(TestCharLongMegaMerge.class, ReplicatePrimitiveCode.TEST_SRC);
+                charToObject("DB/src/test/java/io/deephaven/engine/v2/sort/megamerge/TestCharLongMegaMerge.java");
         fixupObjectMegaMerge(objectMegaMergePath);
     }
 

@@ -1,13 +1,12 @@
 package io.deephaven.engine.v2.tuples;
 
-import static io.deephaven.compilertools.ReplicatePrimitiveCode.MAIN_SRC;
 
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.util.tuples.TupleCodeGenerator;
+import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.util.text.Indenter;
@@ -30,7 +29,7 @@ public class TupleSourceCodeGenerator {
 
     private static final String OUTPUT_PACKAGE = TupleSourceCodeGenerator.class.getPackage().getName() + ".generated";
     private static final File OUTPUT_RELATIVE_PATH =
-            new File(new File("DB", MAIN_SRC), OUTPUT_PACKAGE.replace('.', File.separatorChar));
+            new File("DB/src/main/java/io/deephaven/engine/v2/tuples/generated");
 
     private static final String CS = "$cs$";
     private static final String VAL = "$val$";
@@ -59,18 +58,18 @@ public class TupleSourceCodeGenerator {
     enum ColumnSourceType {
 
         // @formatter:off
-              BYTE(                 "Byte",       byte.class,        null,       null, false,                                 CS + ".getByte("    + IK + ")" ,                                 CS + ".getPrevByte("    + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Byte)"      + VAL, TypeUtils.class                                     ),
-             SHORT(                "Short",      short.class,        null,       null, false,                                 CS + ".getShort("   + IK + ")" ,                                 CS + ".getPrevShort("   + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Short)"     + VAL, TypeUtils.class                                     ),
-               INT(              "Integer",        int.class,        null,       null, false,                                 CS + ".getInt("     + IK + ")" ,                                 CS + ".getPrevInt("     + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Integer)"   + VAL, TypeUtils.class                                     ),
-              LONG(                 "Long",       long.class,        null,       null, false,                                 CS + ".getLong("    + IK + ")" ,                                 CS + ".getPrevLong("    + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Long)"      + VAL, TypeUtils.class                                     ),
-             FLOAT(                "Float",      float.class,        null,       null, false,                                 CS + ".getFloat("   + IK + ")" ,                                 CS + ".getPrevFloat("   + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Float)"     + VAL, TypeUtils.class                                     ),
-            DOUBLE(               "Double",     double.class,        null,       null, false,                                 CS + ".getDouble("  + IK + ")" ,                                 CS + ".getPrevDouble("  + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Double)"    + VAL, TypeUtils.class                                     ),
-              CHAR(            "Character",       char.class,        null,       null, false,                                 CS + ".getChar("    + IK + ")" ,                                 CS + ".getPrevChar("    + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Character)" + VAL, TypeUtils.class                                     ),
-            OBJECT(               "Object",     Object.class,        null,       null, false,                                 CS + ".get("        + IK + ")" ,                                 CS + ".getPrev("        + IK + ")" ,                                         VAL      ,                                            VAL       ,                      VAL                                                     ),
+              BYTE(                 "Byte",       byte.class,        null,       null, false,                                 CS + ".getByte("    + IK + ")" ,                                 CS + ".getPrevByte("    + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Byte)"       + VAL, TypeUtils.class                                     ),
+             SHORT(                "Short",      short.class,        null,       null, false,                                 CS + ".getShort("   + IK + ")" ,                                 CS + ".getPrevShort("   + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Short)"      + VAL, TypeUtils.class                                     ),
+               INT(              "Integer",        int.class,        null,       null, false,                                 CS + ".getInt("     + IK + ")" ,                                 CS + ".getPrevInt("     + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Integer)"    + VAL, TypeUtils.class                                     ),
+              LONG(                 "Long",       long.class,        null,       null, false,                                 CS + ".getLong("    + IK + ")" ,                                 CS + ".getPrevLong("    + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Long)"       + VAL, TypeUtils.class                                     ),
+             FLOAT(                "Float",       float.class,        null,       null, false,                                 CS + ".getFloat("   + IK + ")" ,                                 CS + ".getPrevFloat("   + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Float)"      + VAL, TypeUtils.class                                     ),
+            DOUBLE(               "Double",     double.class,        null,       null, false,                                 CS + ".getDouble("  + IK + ")" ,                                 CS + ".getPrevDouble("  + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Double)"     + VAL, TypeUtils.class                                     ),
+              CHAR(            "Character",       char.class,        null,       null, false,                                 CS + ".getChar("    + IK + ")" ,                                 CS + ".getPrevChar("    + IK + ")" , "TypeUtils.box("              + VAL + ')', "TypeUtils.unbox("               + VAL + ')', "(Character)"  + VAL, TypeUtils.class                                     ),
+            OBJECT(               "Object",     Object.class,        null,       null, false,                                 CS + ".get("        + IK + ")" ,                                 CS + ".getPrev("        + IK + ")" ,                                 VAL      ,                                    VAL      ,                  VAL                                                      ),
          R_BOOLEAN( "ReinterpretedBoolean",       byte.class,        null,       null,  true,                                 CS + ".getByte("    + IK + ")" ,                                 CS + ".getPrevByte("    + IK + ")" , "BooleanUtils.byteAsBoolean(" + VAL + ')', "BooleanUtils.booleanAsByte("    + VAL + ')', "(Boolean)"    + VAL, BooleanUtils.class, TypeUtils.class                 ),
-           BOOLEAN(              "Boolean",    Boolean.class,                    byte.class,                  R_BOOLEAN, false, "BooleanUtils.booleanAsByte(" + CS + ".getBoolean(" + IK + "))", "BooleanUtils.booleanAsByte(" + CS + ".getPrevBoolean(" + IK + "))", "BooleanUtils.byteAsBoolean(" + VAL + ')', "BooleanUtils.booleanAsByte("    + VAL + ')', "(Boolean)"    + VAL, BooleanUtils.class                                  ),
+           BOOLEAN(              "Boolean",    Boolean.class,  byte.class,  R_BOOLEAN, false, "BooleanUtils.booleanAsByte(" + CS + ".getBoolean(" + IK + "))", "BooleanUtils.booleanAsByte(" + CS + ".getPrevBoolean(" + IK + "))", "BooleanUtils.byteAsBoolean(" + VAL + ')', "BooleanUtils.booleanAsByte("    + VAL + ')', "(Boolean)"    + VAL, BooleanUtils.class                                  ),
         R_DATETIME("ReinterpretedDateTime",       long.class,        null,       null,  true,                                 CS + ".getLong("    + IK + ")" ,                                 CS + ".getPrevLong("    + IK + ")" , "DBTimeUtils.nanosToTime("    + VAL + ')', "DBTimeUtils.nanos("             + VAL + ')', "(DBDateTime)" + VAL, DBDateTime.class, DBTimeUtils.class, TypeUtils.class),
-          DATETIME(             "DateTime", DBDateTime.class,                    long.class,                 R_DATETIME, false,          "DBTimeUtils.nanos(" + CS + ".get("        + IK + "))",          "DBTimeUtils.nanos(" + CS + ".getPrev("        + IK + "))", "DBTimeUtils.nanosToTime("    + VAL + ')', "DBTimeUtils.nanos("             + VAL + ')', "(DBDateTime)" + VAL,  DBDateTime.class, DBTimeUtils.class                 ),
+          DATETIME(             "DateTime", DBDateTime.class,  long.class, R_DATETIME, false,          "DBTimeUtils.nanos(" + CS + ".get("        + IK + "))",          "DBTimeUtils.nanos(" + CS + ".getPrev("        + IK + "))", "DBTimeUtils.nanosToTime("    + VAL + ')', "DBTimeUtils.nanos("             + VAL + ')', "(DBDateTime)" + VAL, DBDateTime.class, DBTimeUtils.class                 ),
         ;
         // @formatter:on
 

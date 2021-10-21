@@ -1,8 +1,6 @@
 package io.deephaven.engine.v2.hashing;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
-import io.deephaven.engine.v2.utils.compact.CharCompactKernel;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -14,22 +12,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
 public class ReplicateHashing {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAll(CharChunkHasher.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/hashing/CharChunkHasher.java");
         final String objectHasher =
-                ReplicatePrimitiveCode.charToObject(CharChunkHasher.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToObject("DB/src/main/java/io/deephaven/engine/v2/hashing/CharChunkHasher.java");
         fixupObjectChunkHasher(objectHasher);
 
-        ReplicatePrimitiveCode.charToIntegers(CharToIntegerCast.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToIntegers(CharToLongCast.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToIntegers(CharToIntegerCastWithOffset.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToIntegers(CharToLongCastWithOffset.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToIntegers("DB/src/main/java/io/deephaven/engine/v2/hashing/CharToIntegerCast.java");
+        charToIntegers("DB/src/main/java/io/deephaven/engine/v2/hashing/CharToLongCast.java");
+        charToIntegers("DB/src/main/java/io/deephaven/engine/v2/hashing/CharToIntegerCastWithOffset.java");
+        charToIntegers("DB/src/main/java/io/deephaven/engine/v2/hashing/CharToLongCastWithOffset.java");
 
-        final List<String> paths =
-                ReplicatePrimitiveCode.charToAll(CharChunkEquals.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final List<String> paths = charToAll(
+                "DB/src/main/java/io/deephaven/engine/v2/hashing/CharChunkEquals.java");
         final String floatPath =
                 paths.stream().filter(p -> p.contains("Float")).findFirst().orElseThrow(FileNotFoundException::new);
         final String doublePath =
@@ -39,17 +38,17 @@ public class ReplicateHashing {
         fixupDoubleChunkEquals(doublePath);
 
         final String objectIdentityEquals =
-                ReplicatePrimitiveCode.charToObject(CharChunkEquals.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToObject("DB/src/main/java/io/deephaven/engine/v2/hashing/CharChunkEquals.java");
         fixupObjectChunkIdentityEquals(objectIdentityEquals);
 
         final String objectEquals =
-                ReplicatePrimitiveCode.charToObject(CharChunkEquals.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToObject("DB/src/main/java/io/deephaven/engine/v2/hashing/CharChunkEquals.java");
         fixupObjectChunkEquals(objectEquals);
 
         final List<String> compactKernels =
-                ReplicatePrimitiveCode.charToAll(CharCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToAll("DB/src/main/java/io/deephaven/engine/v2/utils/compact/CharCompactKernel.java");
         final String objectCompact =
-                ReplicatePrimitiveCode.charToObject(CharCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToObject("DB/src/main/java/io/deephaven/engine/v2/utils/compact/CharCompactKernel.java");
         fixupObjectCompact(objectCompact);
         // noinspection OptionalGetWithoutIsPresent
         fixupBooleanCompact(compactKernels.stream().filter(x -> x.contains("Boolean")).findFirst().get());

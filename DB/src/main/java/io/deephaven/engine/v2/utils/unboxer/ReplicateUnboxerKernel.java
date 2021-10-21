@@ -6,6 +6,7 @@ import java.io.IOException;
 
 public class ReplicateUnboxerKernel {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(CharUnboxer.class, ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode
+                .charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/utils/unboxer/CharUnboxer.java");
     }
 }

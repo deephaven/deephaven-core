@@ -11,9 +11,11 @@ import java.io.IOException;
 public class ReplicateRegionsAndRegionedSources extends ReplicatePrimitiveCode {
 
     public static void main(String... args) throws IOException {
-        charToAllButBooleanAndByte(ColumnRegionChar.class, ReplicatePrimitiveCode.MAIN_SRC);
-        charToAllButBooleanAndByte(DeferredColumnRegionChar.class, ReplicatePrimitiveCode.MAIN_SRC);
-        charToAllButBooleanAndByte(ParquetColumnRegionChar.class, ReplicatePrimitiveCode.MAIN_SRC);
-        charToAllButBoolean(RegionedColumnSourceChar.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBooleanAndByte("DB/src/main/java/io/deephaven/engine/v2/sources/regioned/ColumnRegionChar.java");
+        charToAllButBooleanAndByte(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/regioned/DeferredColumnRegionChar.java");
+        charToAllButBooleanAndByte(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/regioned/ParquetColumnRegionChar.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/regioned/RegionedColumnSourceChar.java");
     }
 }

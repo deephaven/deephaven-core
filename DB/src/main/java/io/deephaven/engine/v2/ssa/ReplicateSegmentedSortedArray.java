@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import io.deephaven.engine.v2.join.dupcompact.ReplicateDupCompactKernel;
 import io.deephaven.engine.v2.sort.ReplicateSortKernel;
@@ -12,25 +11,23 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBoolean;
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToObject;
 import static io.deephaven.compilertools.ReplicateUtilities.globalReplacements;
 import static io.deephaven.compilertools.ReplicateUtilities.simpleFixup;
 
 public class ReplicateSegmentedSortedArray {
     public static void main(String[] args) throws IOException {
-        final List<String> ssas = ReplicatePrimitiveCode.charToAllButBoolean(CharSegmentedSortedArray.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-
-        final String charSsaPath =
-                ReplicatePrimitiveCode.pathForClass(CharSegmentedSortedArray.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charSsaPath = "DB/src/main/java/io/deephaven/engine/v2/ssa/CharSegmentedSortedArray.java";
+        final List<String> ssas = charToAllButBoolean(charSsaPath);
         ssas.add(charSsaPath);
+
         invertSense(charSsaPath, descendingPath(charSsaPath));
 
-        final String charNullSsaPath =
-                ReplicateDupCompactKernel.fixupCharNullComparisons(CharSegmentedSortedArray.class, charSsaPath);
+        final String charNullSsaPath = ReplicateDupCompactKernel.fixupCharNullComparisons(charSsaPath);
         invertSense(charNullSsaPath, descendingPath(charNullSsaPath));
 
-        final String objectSsa =
-                ReplicatePrimitiveCode.charToObject(CharSegmentedSortedArray.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectSsa = charToObject(charSsaPath);
         fixupObjectSsa(objectSsa, true);
 
         ssas.add(objectSsa);
@@ -47,14 +44,14 @@ public class ReplicateSegmentedSortedArray {
             }
         }
 
-        final List<String> chunkSsaStamps =
-                ReplicatePrimitiveCode.charToAllButBoolean(CharChunkSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String charChunkSsaStampPath =
-                ReplicatePrimitiveCode.pathForClass(CharChunkSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charChunkSsaStampPath = "DB/src/main/java/io/deephaven/engine/v2/ssa/CharChunkSsaStamp.java";
+        final List<String> chunkSsaStamps = charToAllButBoolean(charChunkSsaStampPath);
+        chunkSsaStamps.add(charChunkSsaStampPath);
+
         invertSense(charChunkSsaStampPath, descendingPath(charChunkSsaStampPath));
 
         final String charNullChunkSsaStampPath =
-                ReplicateDupCompactKernel.fixupCharNullComparisons(CharChunkSsaStamp.class, charChunkSsaStampPath);
+                ReplicateDupCompactKernel.fixupCharNullComparisons(charChunkSsaStampPath);
         final String descendingCharNullChunkSsaStampPath = descendingPath(charNullChunkSsaStampPath);
         invertSense(charNullChunkSsaStampPath, descendingCharNullChunkSsaStampPath);
         fixupSsaName(charNullChunkSsaStampPath, CharSegmentedSortedArray.class.getSimpleName(),
@@ -62,8 +59,7 @@ public class ReplicateSegmentedSortedArray {
         fixupSsaName(descendingCharNullChunkSsaStampPath, CharReverseSegmentedSortedArray.class.getSimpleName(),
                 NullAwareCharReverseSegmentedSortedArray.class.getSimpleName());
 
-        final String objectSsaStamp =
-                ReplicatePrimitiveCode.charToObject(CharChunkSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectSsaStamp = charToObject(charChunkSsaStampPath);
         fixupObjectSsa(objectSsaStamp, true);
         chunkSsaStamps.add(objectSsaStamp);
 
@@ -80,14 +76,13 @@ public class ReplicateSegmentedSortedArray {
             }
         }
 
-        final List<String> ssaSsaStamps =
-                ReplicatePrimitiveCode.charToAllButBoolean(CharSsaSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String charSsaSsaStampPath =
-                ReplicatePrimitiveCode.pathForClass(CharSsaSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charSsaSsaStampPath = "DB/src/main/java/io/deephaven/engine/v2/ssa/CharSsaSsaStamp.java";
+        final List<String> ssaSsaStamps = charToAllButBoolean(charSsaSsaStampPath);
+        ssaSsaStamps.add(charSsaSsaStampPath);
+
         invertSense(charSsaSsaStampPath, descendingPath(charSsaSsaStampPath));
 
-        final String charNullSsaSsaStampPath =
-                ReplicateDupCompactKernel.fixupCharNullComparisons(CharSsaSsaStamp.class, charSsaSsaStampPath);
+        final String charNullSsaSsaStampPath = ReplicateDupCompactKernel.fixupCharNullComparisons(charSsaSsaStampPath);
         final String descendingCharNullSsaSsaStampPath = descendingPath(charNullSsaSsaStampPath);
         invertSense(charNullSsaSsaStampPath, descendingCharNullSsaSsaStampPath);
         fixupSsaName(charNullSsaSsaStampPath, CharSegmentedSortedArray.class.getSimpleName(),
@@ -95,8 +90,7 @@ public class ReplicateSegmentedSortedArray {
         fixupSsaName(descendingCharNullSsaSsaStampPath, CharReverseSegmentedSortedArray.class.getSimpleName(),
                 NullAwareCharReverseSegmentedSortedArray.class.getSimpleName());
 
-        final String objectSsaSsaStamp =
-                ReplicatePrimitiveCode.charToObject(CharSsaSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectSsaSsaStamp = charToObject(charSsaSsaStampPath);
         fixupObjectSsa(objectSsaSsaStamp, true);
         ssaSsaStamps.add(objectSsaSsaStamp);
 
@@ -113,14 +107,13 @@ public class ReplicateSegmentedSortedArray {
             }
         }
 
-        final List<String> ssaCheckers =
-                ReplicatePrimitiveCode.charToAllButBoolean(CharSsaChecker.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String charSsaCheckerPath =
-                ReplicatePrimitiveCode.pathForClass(CharSsaChecker.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charSsaCheckerPath = "DB/src/main/java/io/deephaven/engine/v2/ssa/CharSsaChecker.java";
+        final List<String> ssaCheckers = charToAllButBoolean(charSsaCheckerPath);
+        ssaCheckers.add(charSsaCheckerPath);
+
         invertSense(charSsaCheckerPath, descendingPath(charSsaCheckerPath));
 
-        final String objectSsaChecker =
-                ReplicatePrimitiveCode.charToObject(CharSsaChecker.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectSsaChecker = charToObject(charSsaCheckerPath);
         fixupObjectSsa(objectSsaChecker, true);
         ssaCheckers.add(objectSsaChecker);
 

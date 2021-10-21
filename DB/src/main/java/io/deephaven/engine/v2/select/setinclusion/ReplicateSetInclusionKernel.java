@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.select.setinclusion;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
-
 import java.io.IOException;
+
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBoolean;
 
 public class ReplicateSetInclusionKernel {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(CharSetInclusionKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/select/setinclusion/CharSetInclusionKernel.java");
     }
 }

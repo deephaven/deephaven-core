@@ -12,9 +12,9 @@ import java.util.List;
 
 public class ReplicateDupExpandKernel {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAll(CharDupExpandKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectDupCompact(
-                ReplicatePrimitiveCode.charToObject(CharDupExpandKernel.class, ReplicatePrimitiveCode.MAIN_SRC));
+        final String charClassPath = "DB/src/main/java/io/deephaven/engine/v2/join/dupexpand/CharDupExpandKernel.java";
+        ReplicatePrimitiveCode.charToAll(charClassPath);
+        fixupObjectDupCompact(ReplicatePrimitiveCode.charToObject(charClassPath));
     }
 
     private static void fixupObjectDupCompact(String objectPath) throws IOException {

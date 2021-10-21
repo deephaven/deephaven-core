@@ -4,14 +4,14 @@
 
 package io.deephaven.engine.v2.dbarrays;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
-
 import java.io.IOException;
+
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBoolean;
 
 public class ReplicateDbArrayColumnWrappers {
 
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayColumnWrapper.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(DbPrevCharArrayColumnWrapper.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/dbarrays/DbCharArrayColumnWrapper.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/dbarrays/DbPrevCharArrayColumnWrapper.java");
     }
 }

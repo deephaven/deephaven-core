@@ -1,17 +1,8 @@
 package io.deephaven.engine.v2.sort;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import io.deephaven.engine.util.DhCharComparisons;
-import io.deephaven.engine.v2.sort.findruns.CharFindRunsKernel;
-import io.deephaven.engine.v2.sort.partition.CharPartitionKernel;
-import io.deephaven.engine.v2.sort.permute.CharPermuteKernel;
-import io.deephaven.engine.v2.sort.radix.BooleanLongRadixSortKernel;
-import io.deephaven.engine.v2.sort.timsort.CharIntTimsortKernel;
-import io.deephaven.engine.v2.sort.megamerge.CharLongMegaMergeKernel;
-import io.deephaven.engine.v2.sort.timsort.CharLongTimsortKernel;
 import io.deephaven.util.QueryConstants;
-
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,37 +15,38 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
 public class ReplicateSortKernel {
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
-        doCharReplication(CharLongTimsortKernel.class);
-        doCharReplication(CharIntTimsortKernel.class);
+        doCharReplication("DB/src/main/java/io/deephaven/engine/v2/sort/timsort/CharLongTimsortKernel.java");
+        doCharReplication("DB/src/main/java/io/deephaven/engine/v2/sort/timsort/CharIntTimsortKernel.java");
 
 
-        doCharMegaMergeReplication(CharLongMegaMergeKernel.class);
-        ReplicatePrimitiveCode.charToAllButBoolean(CharFindRunsKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        doCharMegaMergeReplication(
+                "DB/src/main/java/io/deephaven/engine/v2/sort/megamerge/CharLongMegaMergeKernel.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sort/findruns/CharFindRunsKernel.java");
         final String objectRunPath =
-                ReplicatePrimitiveCode.charToObject(CharFindRunsKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToObject("DB/src/main/java/io/deephaven/engine/v2/sort/findruns/CharFindRunsKernel.java");
         fixupObjectRuns(objectRunPath);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharPartitionKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sort/partition/CharPartitionKernel.java");
         final String objectPartitionPath =
-                ReplicatePrimitiveCode.charToObject(CharPartitionKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToObject("DB/src/main/java/io/deephaven/engine/v2/sort/partition/CharPartitionKernel.java");
         fixupObjectPartition(objectPartitionPath);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharPermuteKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectPermute(
-                ReplicatePrimitiveCode.charToObject(CharPermuteKernel.class, ReplicatePrimitiveCode.MAIN_SRC));
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sort/permute/CharPermuteKernel.java");
+        fixupObjectPermute(charToObject("DB/src/main/java/io/deephaven/engine/v2/sort/permute/CharPermuteKernel.java"));
     }
 
-    private static void doCharReplication(Class<?> sourceClass) throws IOException {
+    private static void doCharReplication(@NotNull final String sourceClassJavaPath) throws IOException {
         // replicate char to each of the other types
         final List<String> timsortPaths =
-                ReplicatePrimitiveCode.charToAllButBoolean(sourceClass, ReplicatePrimitiveCode.MAIN_SRC);
-        final String objectSortPath = ReplicatePrimitiveCode.charToObject(sourceClass, ReplicatePrimitiveCode.MAIN_SRC);
-        timsortPaths.add(ReplicatePrimitiveCode.pathForClass(sourceClass, ReplicatePrimitiveCode.MAIN_SRC));
+                charToAllButBoolean(sourceClassJavaPath);
+        final String objectSortPath = charToObject(sourceClassJavaPath);
+        timsortPaths.add(sourceClassJavaPath);
         timsortPaths.add(objectSortPath);
 
         // now replicate each type to a descending kernel, and swap the sense of gt, lt, geq, and leq
@@ -73,16 +65,17 @@ public class ReplicateSortKernel {
                 fixupNanComparisons(descendingPath, true);
                 invertSense(path, descendingPath);
             } else if (path.contains("Char")) {
-                final String sourceName = sourceClass.getSimpleName();
-                final String nullAwareAscendingName = "NullAware" + sourceName;
-                final String nullAwarePath = path.replace(sourceName, nullAwareAscendingName);
+                final String sourceClassName = className(sourceClassJavaPath);
+                final String nullAwareAscendingName = "NullAware" + sourceClassName;
+                final String nullAwarePath = path.replace(sourceClassName, nullAwareAscendingName);
                 final String nullAwareDescendingPath =
                         nullAwarePath.replaceAll("TimsortKernel", "TimsortDescendingKernel");
 
-                fixupCharNullComparisons(sourceClass, path, nullAwarePath, sourceName, nullAwareAscendingName, true);
+                fixupCharNullComparisons(sourceClassJavaPath, path, nullAwarePath, sourceClassName,
+                        nullAwareAscendingName, true);
                 // we are going to fix it up ascending, then follow it up with a sense inversion
-                fixupCharNullComparisons(sourceClass, path, nullAwareDescendingPath, sourceName, nullAwareAscendingName,
-                        true);
+                fixupCharNullComparisons(sourceClassJavaPath, path, nullAwareDescendingPath, sourceClassName,
+                        nullAwareAscendingName, true);
                 invertSense(nullAwareDescendingPath, nullAwareDescendingPath);
             } else if (path.contains("Object")) {
                 FileUtils.copyFile(new File(path), new File(descendingPath));
@@ -97,12 +90,11 @@ public class ReplicateSortKernel {
         }
     }
 
-    private static void doCharMegaMergeReplication(Class<?> sourceClass) throws IOException {
+    private static void doCharMegaMergeReplication(String sourceClassJavaPath) throws IOException {
         // replicate char to each of the other types
-        final List<String> megaMergePaths =
-                ReplicatePrimitiveCode.charToAllButBoolean(sourceClass, ReplicatePrimitiveCode.MAIN_SRC);
-        final String objectSortPath = ReplicatePrimitiveCode.charToObject(sourceClass, ReplicatePrimitiveCode.MAIN_SRC);
-        megaMergePaths.add(ReplicatePrimitiveCode.pathForClass(sourceClass, ReplicatePrimitiveCode.MAIN_SRC));
+        final List<String> megaMergePaths = charToAllButBoolean(sourceClassJavaPath);
+        final String objectSortPath = charToObject(sourceClassJavaPath);
+        megaMergePaths.add(sourceClassJavaPath);
         megaMergePaths.add(objectSortPath);
 
         // now replicate each type to a descending kernel, and swap the sense of gt, lt, geq, and leq
@@ -119,11 +111,13 @@ public class ReplicateSortKernel {
     }
 
     private static void replicateLongToInt() throws IOException {
-        final String intSortKernelPath =
-                ReplicatePrimitiveCode.longToInt(LongSortKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String intSortKernelPath = longToInt(
+                "DB/src/main/java/io/deephaven/engine/v2/sort/LongSortKernel.java");
         fixupIntSortKernel(intSortKernelPath);
-        ReplicatePrimitiveCode.longToInt(CharLongTimsortKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.longToInt(BooleanLongRadixSortKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        longToInt(
+                "DB/src/main/java/io/deephaven/engine/v2/sort/timsort/CharLongTimsortKernel.java");
+        longToInt(
+                "DB/src/main/java/io/deephaven/engine/v2/sort/radix/BooleanLongRadixSortKernel.java");
     }
 
     private static void fixupIntSortKernel(String intSortKernelPath) throws IOException {
@@ -142,8 +136,8 @@ public class ReplicateSortKernel {
 
     private static void replicateLongInt() throws IOException {
         // our special fancy LongInt sort kernel for use in a multicolumn sort
-        final String targetName =
-                ReplicatePrimitiveCode.charLongToLongInt(CharLongTimsortKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String targetName = charLongToLongInt(
+                "DB/src/main/java/io/deephaven/engine/v2/sort/timsort/CharLongTimsortKernel.java");
         fixupLongInt(targetName);
         final File longIntDest = new File(targetName.replace("LongTimsortKernel", "LongIntTimsortKernel"));
         // noinspection ResultOfMethodCallIgnored
@@ -152,8 +146,8 @@ public class ReplicateSortKernel {
     }
 
     private static void replicateIntInt() throws IOException {
-        final String targetName =
-                ReplicatePrimitiveCode.charLongToIntInt(CharLongTimsortKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String targetName = charLongToIntInt(
+                "DB/src/main/java/io/deephaven/engine/v2/sort/timsort/CharLongTimsortKernel.java");
         fixupIntInt(targetName);
         final File intIntDest = new File(targetName.replace("IntTimsortKernel", "IntIntTimsortKernel"));
         // noinspection ResultOfMethodCallIgnored
@@ -310,7 +304,8 @@ public class ReplicateSortKernel {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static void fixupCharNullComparisons(Class sourceClass, String path, String newPath, String oldName,
+    private static void fixupCharNullComparisons(String sourceClassJavaPath, String path, String newPath,
+            String oldName,
             String newName, boolean ascending) throws IOException {
         final File file = new File(path);
 
@@ -322,7 +317,7 @@ public class ReplicateSortKernel {
 
         lines.addAll(0, Arrays.asList(
                 "/* ---------------------------------------------------------------------------------------------------------------------",
-                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + sourceClass.getSimpleName()
+                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
                         + " and regenerate",
                 " * ------------------------------------------------------------------------------------------------------------------ */"));
 

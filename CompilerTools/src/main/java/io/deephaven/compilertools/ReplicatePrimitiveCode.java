@@ -4,6 +4,7 @@
 
 package io.deephaven.compilertools;
 
+import io.deephaven.base.verify.Require;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -13,40 +14,36 @@ import java.util.Map;
 
 public class ReplicatePrimitiveCode {
 
-    public static final String MAIN_SRC = "src/main/java";
-    public static final String TEST_SRC = "src/test/java";
-    public static final String BENCHMARK_SRC = "benchmark";
-
-    private static String replicateCodeBasedOnChar(Class sourceClass, Map<String, Long> serialVersionUIDs,
-            String exemptions[], String upperCharacterReplace, String upperCharReplace,
-            String characterReplace, String charReplace, String root, String allCapsCharReplace) throws IOException {
-        String pairs[][] = new String[][] {
+    private static String replicateCodeBasedOnChar(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+            String[] exemptions, String upperCharacterReplace, String upperCharReplace,
+            String characterReplace, String charReplace, String allCapsCharReplace) throws IOException {
+        String[][] pairs = new String[][] {
                 {"Character", upperCharacterReplace},
                 {"Char", upperCharReplace},
                 {"char", charReplace},
                 {"character", characterReplace},
                 {"CHAR", allCapsCharReplace}
         };
-        return replaceAll(sourceClass, serialVersionUIDs, exemptions, root, pairs);
+        return replaceAll(sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    private static String replicateCodeBasedOnInt(Class sourceClass, Map<String, Long> serialVersionUIDs,
-            String exemptions[], String upperCharacterReplace, String upperCharReplace,
-            String characterReplace, String charReplace, String root, String allCapsCharReplace) throws IOException {
-        String pairs[][] = new String[][] {
+    private static String replicateCodeBasedOnInt(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+            String[] exemptions, String upperCharacterReplace, String upperCharReplace,
+            String characterReplace, String charReplace, String allCapsCharReplace) throws IOException {
+        String[][] pairs = new String[][] {
                 {"Integer", upperCharacterReplace},
                 {"Int", upperCharReplace},
                 {"integer", characterReplace},
                 {"int", charReplace},
                 {"INT", allCapsCharReplace}
         };
-        return replaceAll(sourceClass, serialVersionUIDs, exemptions, root, pairs);
+        return replaceAll(sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    private static void replicateCodeBasedOnShort(Class sourceClass, Map<String, Long> serialVersionUIDs,
-            String exemptions[], String upperCharacterReplace,
-            String charReplace, String root, String allCapsCharReplace, String[]... extraPairs) throws IOException {
-        final String pairs[][];
+    private static void replicateCodeBasedOnShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+            String[] exemptions, String upperCharacterReplace,
+            String charReplace, String allCapsCharReplace, String[]... extraPairs) throws IOException {
+        final String[][] pairs;
         final int extraPairsLength;
         if (extraPairs != null) {
             extraPairsLength = extraPairs.length;
@@ -59,76 +56,77 @@ public class ReplicatePrimitiveCode {
         pairs[extraPairsLength] = new String[] {"Short", upperCharacterReplace};
         pairs[extraPairsLength + 1] = new String[] {"short", charReplace};
         pairs[extraPairsLength + 2] = new String[] {"SHORT", allCapsCharReplace};
-        replaceAll(sourceClass, serialVersionUIDs, exemptions, root, pairs);
+        replaceAll(sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    private static void replicateCodeBasedOnFloat(Class sourceClass, Map<String, Long> serialVersionUIDs,
-            String exemptions[], String upperCharacterReplace,
-            String charReplace, String root, String allCapsCharReplace) throws IOException {
-        String pairs[][] = new String[][] {
+    private static void replicateCodeBasedOnFloat(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+            String[] exemptions, String upperCharacterReplace,
+            String charReplace, String allCapsCharReplace) throws IOException {
+        String[][] pairs = new String[][] {
                 {"Float", upperCharacterReplace},
                 {"float", charReplace},
                 {"FLOAT", allCapsCharReplace}
         };
-        replaceAll(sourceClass, serialVersionUIDs, exemptions, root, pairs);
+        replaceAll(sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    public static String charToBoolean(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static String charToBoolean(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Boolean", "Boolean", "boolean",
-                "boolean", root, "BOOLEAN");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Boolean", "Boolean", "boolean", "boolean", "BOOLEAN");
     }
 
-    public static String charToBooleanAsByte(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static String charToBooleanAsByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Boolean", "Boolean", "boolean",
-                "byte", root, "BOOLEAN");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Boolean", "Boolean", "boolean", "byte", "BOOLEAN");
     }
 
-    private static String charToObject(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String charToObject(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Object", "Object", "Object",
-                "Object", root, "OBJECT");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Object", "Object", "Object", "Object", "OBJECT");
     }
 
-    private static String charToByte(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String charToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Byte", "Byte", "byte", "byte",
-                root, "BYTE");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Byte", "Byte", "byte", "byte", "BYTE");
     }
 
-    public static String charToDouble(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static String charToDouble(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Double", "Double", "double",
-                "double", root, "DOUBLE");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Double", "Double", "double", "double", "DOUBLE");
     }
 
-    public static String charToFloat(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static String charToFloat(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Float", "Float", "float", "float",
-                root, "FLOAT");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Float", "Float", "float", "float", "FLOAT");
     }
 
-    public static String charToInteger(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static String charToInteger(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Integer", "Int", "integer", "int",
-                root, "INT");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Integer", "Int", "integer", "int", "INT");
     }
 
-    public static String charToLong(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static String charToLong(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Long", "Long", "long", "long",
-                root, "LONG");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Long", "Long", "long", "long", "LONG");
     }
 
-    private static String charToShort(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String charToShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnChar(sourceClass, serialVersionUIDs, exemptions, "Short", "Short", "short", "short",
-                root, "SHORT");
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Short", "Short", "short", "short", "SHORT");
     }
 
-    public static String charLongToLongInt(Class sourceClass, String root, String... exemptions) throws IOException {
-        final String pairs[][] = new String[][] {
+    public static String charLongToLongInt(String sourceClassJavaPath, String... exemptions)
+            throws IOException {
+        final String[][] pairs = new String[][] {
                 // these happen in order, so we want to turn our longs to ints first, then do char to long, we can't
                 // actually discriminate between "Long" as text and "Long" as a type,
                 // so we are going to fail for integers here, but it is hopefully enough to use just for the Timsort
@@ -142,11 +140,11 @@ public class ReplicatePrimitiveCode {
                 {"character", "long"},
                 {"CHAR", "LONG"}
         };
-        return replaceAll(sourceClass, null, exemptions, root, pairs);
+        return replaceAll(sourceClassJavaPath, null, exemptions, pairs);
     }
 
-    public static String longToInt(Class sourceClass, String root, String... exemptions) throws IOException {
-        final String pairs[][] = new String[][] {
+    public static String longToInt(String sourceClassJavaPath, String... exemptions) throws IOException {
+        final String[][] pairs = new String[][] {
                 // these happen in order, so we want to turn our longs to ints first, then do char to long, we can't
                 // actually discriminate between "Long" as text and "Long" as a type,
                 // so we are going to fail for integers here, but it is hopefully enough to use just for the Timsort
@@ -155,11 +153,12 @@ public class ReplicatePrimitiveCode {
                 {"long", "int"},
                 {"LONG", "INT"},
         };
-        return replaceAll(sourceClass, null, exemptions, root, pairs);
+        return replaceAll(sourceClassJavaPath, null, exemptions, pairs);
     }
 
-    public static String charLongToIntInt(Class sourceClass, String root, String... exemptions) throws IOException {
-        final String pairs[][] = new String[][] {
+    public static String charLongToIntInt(String sourceClassJavaPath, String... exemptions)
+            throws IOException {
+        final String[][] pairs = new String[][] {
                 // these happen in order, so we want to turn our longs to ints first, then do char to long, we can't
                 // actually discriminate between "Long" as text and "Long" as a type,
                 // so we are going to fail for integers here, but it is hopefully enough to use just for the Timsort
@@ -173,267 +172,271 @@ public class ReplicatePrimitiveCode {
                 {"character", "int"},
                 {"CHAR", "INT"}
         };
-        return replaceAll(sourceClass, null, exemptions, root, pairs);
+        return replaceAll(sourceClassJavaPath, null, exemptions, pairs);
     }
 
-    public static String intToObject(Class sourceClass, String root, String... exemptions) throws IOException {
-        return replicateCodeBasedOnInt(sourceClass, null, exemptions, "Object", "Object", "Object", "Object", root,
-                "OBJECT");
+    public static String intToObject(String sourceClassJavaPath, String... exemptions) throws IOException {
+        return replicateCodeBasedOnInt(sourceClassJavaPath, null, exemptions,
+                "Object", "Object", "Object", "Object", "OBJECT");
     }
 
-    private static String intToObject(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String intToObject(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnInt(sourceClass, serialVersionUIDs, exemptions, "Object", "Object", "Object",
-                "Object", root, "OBJECT");
+        return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Object", "Object", "Object", "Object", "OBJECT");
     }
 
-    private static String intToChar(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String intToChar(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnInt(sourceClass, serialVersionUIDs, exemptions, "Character", "Char", "char", "char",
-                root, "CHAR");
+        return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Character", "Char", "char", "char", "CHAR");
     }
 
-    private static String intToByte(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String intToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnInt(sourceClass, serialVersionUIDs, exemptions, "Byte", "Byte", "byte", "byte", root,
-                "BYTE");
+        return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Byte", "Byte", "byte", "byte", "BYTE");
     }
 
-    private static String intToDouble(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String intToDouble(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnInt(sourceClass, serialVersionUIDs, exemptions, "Double", "Double", "double",
-                "double", root, "DOUBLE");
+        return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Double", "Double", "double", "double", "DOUBLE");
     }
 
-    private static String intToFloat(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String intToFloat(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnInt(sourceClass, serialVersionUIDs, exemptions, "Float", "Float", "float", "float",
-                root, "FLOAT");
+        return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Float", "Float", "float", "float", "FLOAT");
     }
 
-    private static String intToLong(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String intToLong(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnInt(sourceClass, serialVersionUIDs, exemptions, "Long", "Long", "long", "long", root,
-                "LONG");
+        return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Long", "Long", "long", "long", "LONG");
     }
 
-    private static String intToShort(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static String intToShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnInt(sourceClass, serialVersionUIDs, exemptions, "Short", "Short", "short", "short",
-                root, "SHORT");
+        return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Short", "Short", "short", "short", "SHORT");
     }
 
-    private static void shortToByte(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void shortToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnShort(sourceClass, serialVersionUIDs, exemptions, "Byte", "byte", root, "BYTE");
+        replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Byte", "byte", "BYTE");
     }
 
-    private static void shortToDouble(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void shortToDouble(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnShort(sourceClass, serialVersionUIDs, exemptions, "Double", "double", root, "DOUBLE");
+        replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Double", "double", "DOUBLE");
     }
 
-    private static void shortToFloat(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void shortToFloat(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnShort(sourceClass, serialVersionUIDs, exemptions, "Float", "float", root, "FLOAT");
+        replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Float", "float", "FLOAT");
     }
 
-    private static void shortToInteger(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void shortToInteger(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnShort(sourceClass, serialVersionUIDs, exemptions, "Integer", "int", root, "INT",
+        replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Integer", "int", "INT",
                 new String[][] {{"DbShortArray", "DbIntArray"}});
     }
 
-    private static void shortToLong(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void shortToLong(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnShort(sourceClass, serialVersionUIDs, exemptions, "Long", "long", root, "LONG",
+        replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Long", "long", "LONG",
                 new String[][] {{"Integer.signum", "Long.signum"}});
     }
 
-    private static void floatToDouble(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void floatToDouble(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnFloat(sourceClass, serialVersionUIDs, exemptions, "Double", "double", root, "DOUBLE");
+        replicateCodeBasedOnFloat(sourceClassJavaPath, serialVersionUIDs, exemptions, "Double", "double", "DOUBLE");
     }
 
-    public static List<String> charToAll(Class sourceClass, String root, String... exemptions) throws IOException {
-        return charToAll(sourceClass, root, null, exemptions);
+    public static List<String> charToAll(String sourceClassJavaPath, String... exemptions)
+            throws IOException {
+        return charToAll(sourceClassJavaPath, null, exemptions);
     }
 
-    private static List<String> charToAll(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static List<String> charToAll(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         final List<String> results = new ArrayList<>();
-        results.add(charToBoolean(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(charToByte(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(charToDouble(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(charToFloat(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(charToInteger(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(charToLong(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(charToShort(sourceClass, root, serialVersionUIDs, exemptions));
+        results.add(charToBoolean(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(charToByte(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(charToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(charToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(charToLong(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions));
         return results;
     }
 
-    public static List<String> charToIntegers(Class sourceClass, String root, String... exemptions) throws IOException {
-        return charToIntegers(sourceClass, root, null, exemptions);
-    }
-
-    public static List<String> charToAllButBoolean(Class sourceClass, String root, String... exemptions)
+    public static List<String> charToIntegers(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        return charToAllButBoolean(sourceClass, root, null, exemptions);
+        return charToIntegers(sourceClassJavaPath, null, exemptions);
     }
 
-    public static String charToByte(Class sourceClass, String root, String... exemptions) throws IOException {
-        return charToByte(sourceClass, root, null, exemptions);
-    }
-
-    public static String charToObject(Class sourceClass, String root, String... exemptions) throws IOException {
-        return charToObject(sourceClass, root, null, exemptions);
-    }
-
-    public static String charToBoolean(Class sourceClass, String root, String... exemptions) throws IOException {
-        return charToBoolean(sourceClass, root, null, exemptions);
-    }
-
-    public static String charToLong(Class sourceClass, String root, String... exemptions) throws IOException {
-        return charToLong(sourceClass, root, null, exemptions);
-    }
-
-    public static void charToAllButBooleanAndLong(Class sourceClass, String root, String... exemptions)
+    public static List<String> charToAllButBoolean(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        charToAllButBooleanAndLong(sourceClass, root, null, exemptions);
+        return charToAllButBoolean(sourceClassJavaPath, null, exemptions);
     }
 
-    public static List<String> charToAllButBoolean(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static String charToByte(String sourceClassJavaPath, String... exemptions) throws IOException {
+        return charToByte(sourceClassJavaPath, null, exemptions);
+    }
+
+    public static String charToObject(String sourceClassJavaPath, String... exemptions) throws IOException {
+        return charToObject(sourceClassJavaPath, null, exemptions);
+    }
+
+    public static String charToBoolean(String sourceClassJavaPath, String... exemptions) throws IOException {
+        return charToBoolean(sourceClassJavaPath, null, exemptions);
+    }
+
+    public static String charToLong(String sourceClassJavaPath, String... exemptions) throws IOException {
+        return charToLong(sourceClassJavaPath, null, exemptions);
+    }
+
+    public static void charToAllButBooleanAndLong(String sourceClassJavaPath, String... exemptions)
+            throws IOException {
+        charToAllButBooleanAndLong(sourceClassJavaPath, null, exemptions);
+    }
+
+    public static List<String> charToAllButBoolean(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         final List<String> resultFiles = new ArrayList<>();
-        resultFiles.add(charToByte(sourceClass, root, serialVersionUIDs, exemptions));
-        resultFiles.add(charToDouble(sourceClass, root, serialVersionUIDs, exemptions));
-        resultFiles.add(charToFloat(sourceClass, root, serialVersionUIDs, exemptions));
-        resultFiles.add(charToInteger(sourceClass, root, serialVersionUIDs, exemptions));
-        resultFiles.add(charToLong(sourceClass, root, serialVersionUIDs, exemptions));
-        resultFiles.add(charToShort(sourceClass, root, serialVersionUIDs, exemptions));
+        resultFiles.add(charToByte(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToLong(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions));
 
         return resultFiles;
     }
 
-    public static List<String> charToIntegers(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static List<String> charToIntegers(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         final List<String> resultFiles = new ArrayList<>();
-        resultFiles.add(charToByte(sourceClass, root, serialVersionUIDs, exemptions));
-        resultFiles.add(charToShort(sourceClass, root, serialVersionUIDs, exemptions));
-        resultFiles.add(charToInteger(sourceClass, root, serialVersionUIDs, exemptions));
-        resultFiles.add(charToLong(sourceClass, root, serialVersionUIDs, exemptions));
+        resultFiles.add(charToByte(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToLong(sourceClassJavaPath, serialVersionUIDs, exemptions));
         return resultFiles;
     }
 
-    private static void charToAllButBooleanAndLong(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void charToAllButBooleanAndLong(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        charToByte(sourceClass, root, serialVersionUIDs, exemptions);
-        charToDouble(sourceClass, root, serialVersionUIDs, exemptions);
-        charToFloat(sourceClass, root, serialVersionUIDs, exemptions);
-        charToInteger(sourceClass, root, serialVersionUIDs, exemptions);
-        charToShort(sourceClass, root, serialVersionUIDs, exemptions);
+        charToByte(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static void charToAllButBooleanAndByte(Class sourceClass, String root, String... exemptions)
+    public static void charToAllButBooleanAndByte(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        charToAllButBooleanAndByte(sourceClass, root, null, exemptions);
+        charToAllButBooleanAndByte(sourceClassJavaPath, null, exemptions);
     }
 
-    private static void charToAllButBooleanAndByte(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void charToAllButBooleanAndByte(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        charToDouble(sourceClass, root, serialVersionUIDs, exemptions);
-        charToFloat(sourceClass, root, serialVersionUIDs, exemptions);
-        charToInteger(sourceClass, root, serialVersionUIDs, exemptions);
-        charToLong(sourceClass, root, serialVersionUIDs, exemptions);
-        charToShort(sourceClass, root, serialVersionUIDs, exemptions);
+        charToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static void charToAllButBooleanAndFloats(Class sourceClass, String root, String... exemptions)
+    public static void charToAllButBooleanAndFloats(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        charToAllButBooleanAndFloats(sourceClass, root, null, exemptions);
+        charToAllButBooleanAndFloats(sourceClassJavaPath, null, exemptions);
     }
 
-    public static void charToShortAndByte(Class sourceClass, String root, String... exemptions) throws IOException {
-        charToByte(sourceClass, root, null, exemptions);
-        charToShort(sourceClass, root, null, exemptions);
-    }
-
-    public static void charToAllButBooleanAndFloats(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
-            String... exemptions) throws IOException {
-        charToInteger(sourceClass, root, serialVersionUIDs, exemptions);
-        charToByte(sourceClass, root, serialVersionUIDs, exemptions);
-        charToLong(sourceClass, root, serialVersionUIDs, exemptions);
-        charToShort(sourceClass, root, serialVersionUIDs, exemptions);
-    }
-
-
-    public static void shortToAllNumericals(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
-            String... exemptions) throws IOException {
-        shortToByte(sourceClass, root, serialVersionUIDs, exemptions);
-        shortToDouble(sourceClass, root, serialVersionUIDs, exemptions);
-        shortToFloat(sourceClass, root, serialVersionUIDs, exemptions);
-        shortToInteger(sourceClass, root, serialVersionUIDs, exemptions);
-        shortToLong(sourceClass, root, serialVersionUIDs, exemptions);
-    }
-
-    public static void intToAllNumericals(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
-            String... exemptions) throws IOException {
-        intToByte(sourceClass, root, serialVersionUIDs, exemptions);
-        intToDouble(sourceClass, root, serialVersionUIDs, exemptions);
-        intToFloat(sourceClass, root, serialVersionUIDs, exemptions);
-        intToLong(sourceClass, root, serialVersionUIDs, exemptions);
-        intToShort(sourceClass, root, serialVersionUIDs, exemptions);
-    }
-
-    public static List<String> intToAllButBoolean(Class sourceClass, String root, String... exemptions)
+    public static void charToShortAndByte(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        return intToAllButBoolean(sourceClass, root, null, exemptions);
+        charToByte(sourceClassJavaPath, null, exemptions);
+        charToShort(sourceClassJavaPath, null, exemptions);
     }
 
-    public static List<String> intToAllButBoolean(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static void charToAllButBooleanAndFloats(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
+            String... exemptions) throws IOException {
+        charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToByte(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
+    }
+
+
+    public static void shortToAllNumericals(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+            String... exemptions) throws IOException {
+        shortToByte(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        shortToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        shortToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        shortToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        shortToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
+    }
+
+    public static void intToAllNumericals(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+            String... exemptions) throws IOException {
+        intToByte(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        intToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        intToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        intToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        intToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
+    }
+
+    public static List<String> intToAllButBoolean(String sourceClassJavaPath, String... exemptions)
+            throws IOException {
+        return intToAllButBoolean(sourceClassJavaPath, null, exemptions);
+    }
+
+    public static List<String> intToAllButBoolean(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         final List<String> results = new ArrayList<>();
-        results.add(intToChar(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(intToByte(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(intToLong(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(intToShort(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(intToDouble(sourceClass, root, serialVersionUIDs, exemptions));
-        results.add(intToFloat(sourceClass, root, serialVersionUIDs, exemptions));
+        results.add(intToChar(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToByte(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToLong(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToShort(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions));
         return results;
     }
 
-    public static void shortToAllIntegralTypes(Class sourceClass, String root, String... exemptions)
+    public static void shortToAllIntegralTypes(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        shortToAllIntegralTypes(sourceClass, root, null, exemptions);
+        shortToAllIntegralTypes(sourceClassJavaPath, null, exemptions);
     }
 
-    private static void shortToAllIntegralTypes(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void shortToAllIntegralTypes(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        shortToByte(sourceClass, root, serialVersionUIDs, exemptions);
-        shortToInteger(sourceClass, root, serialVersionUIDs, exemptions);
-        shortToLong(sourceClass, root, serialVersionUIDs, exemptions);
+        shortToByte(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        shortToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        shortToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static void floatToAllFloatingPoints(Class sourceClass, String root, String... exemptions)
+    public static void floatToAllFloatingPoints(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        floatToAllFloatingPoints(sourceClass, root, null, exemptions);
+        floatToAllFloatingPoints(sourceClassJavaPath, null, exemptions);
     }
 
-    private static void floatToAllFloatingPoints(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    private static void floatToAllFloatingPoints(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        floatToDouble(sourceClass, root, serialVersionUIDs, exemptions);
+        floatToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static String replaceAll(Class sourceClass, Map<String, Long> serialVersionUIDs, String exemptions[],
-            String root, String[]... pairs) throws IOException {
-        final String basePath = basePathForClass(sourceClass, root);
-        InputStream inputStream;
-        final String path = basePath + File.separator + sourceClass.getSimpleName() + ".java";
-        try {
-            inputStream = new FileInputStream(path);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("File not found: " + path + " (CWD=" + System.getProperty("user.dir") + ")", e);
-        }
+    public static String replaceAll(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+            String[] exemptions, String[]... pairs) throws IOException {
+        final InputStream inputStream = new FileInputStream(sourceClassJavaPath);
         int nextChar;
         final StringBuilder inputText = new StringBuilder();
         while ((nextChar = inputStream.read()) != -1) {
@@ -441,37 +444,66 @@ public class ReplicatePrimitiveCode {
         }
         inputStream.close();
 
-        final String className = replaceAll(sourceClass.getSimpleName(), null, exemptions, pairs);
-        final String fullClassName = sourceClass.getPackage().getName() + "." + className;
-        Long serialVersionUID = serialVersionUIDs == null ? null : serialVersionUIDs.get(fullClassName);
+        final String sourceClassName = className(sourceClassJavaPath);
+        final String packageName = packageName(sourceClassJavaPath);
 
-        String fullPath = basePath + "/" + className + ".java";
-        System.out.println("Generating java file " + fullPath);
-        PrintWriter out = new PrintWriter(fullPath);
+        final String resultClassName = replaceAllInternal(sourceClassName, null, exemptions, pairs);
+        final String fullResultClassName = packageName + '.' + resultClassName;
+        final Long serialVersionUID = serialVersionUIDs == null ? null : serialVersionUIDs.get(fullResultClassName);
+        final String resultClassJavaPath = basePath(sourceClassJavaPath) + '/' + resultClassName + ".java";
+
+
+        System.out.println("Generating java file " + resultClassJavaPath);
+        PrintWriter out = new PrintWriter(resultClassJavaPath);
         out.println(
                 "/* ---------------------------------------------------------------------------------------------------------------------");
         out.println(" * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit "
-                + sourceClass.getSimpleName() + " and regenerate");
+                + sourceClassName + " and regenerate");
         out.println(
                 " * ------------------------------------------------------------------------------------------------------------------ */");
-        out.print(replaceAll(inputText.toString(), serialVersionUID, exemptions, pairs));
+        out.print(replaceAllInternal(inputText.toString(), serialVersionUID, exemptions, pairs));
         out.flush();
         out.close();
 
-        return fullPath;
+        return resultClassJavaPath;
     }
 
     @NotNull
-    public static String basePathForClass(Class sourceClass, String root) {
-        return getModuleName(sourceClass) + "/" + root + "/" + sourceClass.getPackage().getName().replace('.', '/');
+    public static String basePath(@NotNull final String sourceClassJavaPath) {
+        Require.requirement(sourceClassJavaPath.endsWith(".java"),
+                "sourceClassJavaPath.endsWith(\".java\")");
+        return new File(sourceClassJavaPath).getParent();
     }
 
     @NotNull
-    public static String pathForClass(Class sourceClass, String root) {
-        return basePathForClass(sourceClass, root) + "/" + sourceClass.getSimpleName() + ".java";
+    public static String javaFileName(@NotNull final String sourceClassJavaPath) {
+        Require.requirement(sourceClassJavaPath.endsWith(".java"),
+                "sourceClassJavaPath.endsWith(\".java\")");
+        return new File(sourceClassJavaPath).getName();
     }
 
-    public static String replaceAll(String inputText, Long serialVersionUID, String exemptions[], String[]... pairs) {
+    @NotNull
+    public static String packageName(@NotNull final String sourceClassJavaPath) {
+        final String basePath = basePath(sourceClassJavaPath);
+        final int indexOfJava = basePath.indexOf("/java/");
+        Require.requirement(indexOfJava >= 0, "source class java file path contains \"/java/\"");
+        final String packagePath = basePath.substring(indexOfJava + "/java/".length());
+        return packagePath.replace('/', '.');
+    }
+
+    @NotNull
+    public static String className(@NotNull final String sourceClassJavaPath) {
+        final String javaFileName = javaFileName(sourceClassJavaPath);
+        return javaFileName.substring(0, javaFileName.length() - ".java".length());
+    }
+
+    @NotNull
+    public static String fullClassName(@NotNull final String sourceClassJavaPath) {
+        return packageName(sourceClassJavaPath) + '.' + className(sourceClassJavaPath);
+    }
+
+    public static String replaceAllInternal(String inputText, Long serialVersionUID, String[] exemptions,
+            String[]... pairs) {
         String result = inputText;
         for (int i = 0; i < exemptions.length; i++) {
             String exemption = exemptions[i];
@@ -499,41 +531,16 @@ public class ReplicatePrimitiveCode {
         return result;
     }
 
-    private static String getModuleName(Class sourceClass) {
-        for (File file : new File(".").listFiles()) {
-            // there is a folder 'lib' that exists during the build process that matches the fourth startsWith
-            // If we are in this package, don't bother looking at the other two.
-            if (sourceClass.getName().startsWith("io.deephaven.libs.primitives")) {
-                if (file.isDirectory() && file.getName().equals("DB")) {
-                    return file.getPath();
-                }
-            } else if (sourceClass.getName().startsWith("io.deephaven.kafka.ingest")) {
-                if (file.isDirectory() && file.getName().equals("Kafka")) {
-                    return file.getPath();
-                }
-            } else if (sourceClass.getName().startsWith("io.deephaven.extensions.barrage")) {
-                if (file.isDirectory() && file.getName().equals("extensions")) {
-                    return file.getPath() + File.separator + "barrage";
-                }
-            } else {
-                if (file.isDirectory() && sourceClass.getName()
-                        .startsWith("io.deephaven." + file.getName().toLowerCase().replace('-', '_') + ".")) {
-                    return file.getPath();
-                }
-            }
-        }
-        throw new RuntimeException("Unable to find " + sourceClass);
-    }
-
-    public static void intToLongAndFloatingPoints(Class sourceClass, String root, Map<String, Long> serialVersionUIDs,
+    public static void intToLongAndFloatingPoints(String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        intToDouble(sourceClass, root, serialVersionUIDs, exemptions);
-        intToFloat(sourceClass, root, serialVersionUIDs, exemptions);
-        intToLong(sourceClass, root, serialVersionUIDs, exemptions);
+        intToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        intToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        intToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static void intToLongAndFloatingPoints(Class sourceClass, String root, String... exemptions)
+    public static void intToLongAndFloatingPoints(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        intToLongAndFloatingPoints(sourceClass, root, null, exemptions);
+        intToLongAndFloatingPoints(sourceClassJavaPath, null, exemptions);
     }
 }

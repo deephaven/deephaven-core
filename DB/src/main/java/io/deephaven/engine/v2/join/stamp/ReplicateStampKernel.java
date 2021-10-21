@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2.join.stamp;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.engine.v2.join.dupcompact.ReplicateDupCompactKernel;
 import io.deephaven.engine.v2.sort.ReplicateSortKernel;
 import org.apache.commons.io.FileUtils;
@@ -12,36 +11,32 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicateUtilities.globalReplacements;
 
 public class ReplicateStampKernel {
     public static void main(String[] args) throws IOException {
-        final List<String> stampKernels =
-                ReplicatePrimitiveCode.charToAllButBoolean(CharStampKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final List<String> noExactStampKernels = ReplicatePrimitiveCode
-                .charToAllButBoolean(CharNoExactStampKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charStampPath = "DB/src/main/java/io/deephaven/engine/v2/join/stamp/CharStampKernel.java";
+        final String charNoExactStampPath =
+                "DB/src/main/java/io/deephaven/engine/v2/join/stamp/CharNoExactStampKernel.java";
+        final List<String> stampKernels = charToAllButBoolean(charStampPath);
+        final List<String> noExactStampKernels = charToAllButBoolean(charNoExactStampPath);
 
         stampKernels.addAll(noExactStampKernels);
-        final String charStampPath =
-                ReplicatePrimitiveCode.pathForClass(CharStampKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
         stampKernels.add(charStampPath);
-        final String charNoExactStampPath =
-                ReplicatePrimitiveCode.pathForClass(CharNoExactStampKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
         stampKernels.add(charNoExactStampPath);
 
-        final String objectStamp =
-                ReplicatePrimitiveCode.charToObject(CharStampKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectStamp = charToObject(charStampPath);
         fixupObjectStamp(objectStamp);
-        final String objectNoExactStamp =
-                ReplicatePrimitiveCode.charToObject(CharNoExactStampKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectNoExactStamp = charToObject(charNoExactStampPath);
         fixupObjectStamp(objectNoExactStamp);
 
         stampKernels.add(objectStamp);
         stampKernels.add(objectNoExactStamp);
 
-        stampKernels.add(ReplicateDupCompactKernel.fixupCharNullComparisons(CharStampKernel.class, charStampPath));
-        stampKernels.add(
-                ReplicateDupCompactKernel.fixupCharNullComparisons(CharNoExactStampKernel.class, charNoExactStampPath));
+        stampKernels.add(ReplicateDupCompactKernel.fixupCharNullComparisons(charStampPath));
+        stampKernels.add(ReplicateDupCompactKernel.fixupCharNullComparisons(
+                charNoExactStampPath));
 
         for (String stampKernel : stampKernels) {
             final String stampReversePath = stampKernel.replaceAll("StampKernel", "ReverseStampKernel");

@@ -4,21 +4,10 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.util.DhObjectComparisons;
-import io.deephaven.engine.v2.sources.aggregate.CharAggregateColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.page.CharChunkPage;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedCharChunk;
-import io.deephaven.engine.v2.sources.chunk.util.factories.CharChunkFactory;
-import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.CharChunkFiller;
-import io.deephaven.engine.v2.sources.chunk.util.pools.CharChunkPool;
-import io.deephaven.engine.v2.sources.chunkcolumnsource.CharChunkColumnSource;
-import io.deephaven.engine.v2.sources.immutable.ImmutableCharArraySource;
-import io.deephaven.engine.v2.sources.sparse.CharOneOrN;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -29,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
 public class ReplicateSourcesAndChunks {
@@ -37,18 +27,15 @@ public class ReplicateSourcesAndChunks {
         replicateSparseArraySources();
 
         replicateSingleValues();
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharacterArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(CharAggregateColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedCharArrayColumnSource.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedCharDbArrayColumnSource.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedBoxedCharDbArrayColumnSource.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedBoxedCharArrayColumnSource.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(ImmutableCharArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAll(SizedCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBooleanAndLong("DB/src/main/java/io/deephaven/engine/v2/sources/CharacterArraySource.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/aggregate/CharAggregateColumnSource.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedCharArrayColumnSource.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedCharDbArrayColumnSource.java");
+        charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedBoxedCharDbArrayColumnSource.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedBoxedCharArrayColumnSource.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/immutable/ImmutableCharArraySource.java");
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/sized/SizedCharChunk.java");
 
         replicateChunks();
         replicateWritableChunks();
@@ -63,25 +50,25 @@ public class ReplicateSourcesAndChunks {
         replicateResettableWritableChunkChunks();
 
         replicateFactories();
-        ReplicatePrimitiveCode.charToAll(CharChunkPool.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/util/pools/CharChunkPool.java");
 
         replicateChunkFillers();
 
-        ReplicatePrimitiveCode.charToAll(CharChunkPage.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/page/CharChunkPage.java");
 
         replicateChunkColumnSource();
     }
 
     private static void replicateSingleValues() throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(CharacterSingleValueSource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/CharacterSingleValueSource.java");
         replicateObjectSingleValue();
     }
 
     private static void replicateObjectSingleValue() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(CharacterSingleValueSource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final File classFile = new File(className);
-        List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
+        final String resultClassJavaPath = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/CharacterSingleValueSource.java");
+        final File resultClassJavaFile = new File(resultClassJavaPath);
+        List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
                 "class ObjectSingleValueSource", "class ObjectSingleValueSource<T>",
                 "<Object>", "<T>",
@@ -102,19 +89,20 @@ public class ReplicateSourcesAndChunks {
                 "        current = null;",
                 "        prev = null;",
                 "    }"));
-        FileUtils.writeLines(classFile, lines);
+        FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
     private static void replicateChunkColumnSource() throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunkcolumnsource/CharChunkColumnSource.java");
         replicateObjectChunkColumnSource();
     }
 
     private static void replicateObjectChunkColumnSource() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(CharChunkColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final File classFile = new File(className);
-        List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
+        final String resultClassJavaPath = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunkcolumnsource/CharChunkColumnSource.java");
+        final File resultClassJavaFile = new File(resultClassJavaPath);
+        List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
                 "class ObjectChunkColumnSource", "class ObjectChunkColumnSource<T>",
                 "<Object>", "<T>",
@@ -136,14 +124,13 @@ public class ReplicateSourcesAndChunks {
 
         ));
 
-        FileUtils.writeLines(classFile, lines);
+        FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
     private static void replicateSparseArraySources() throws IOException {
         replicateOneOrN();
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharacterSparseArraySource.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBooleanAndLong("DB/src/main/java/io/deephaven/engine/v2/sources/CharacterSparseArraySource.java");
         replicateSparseLongSource();
 
         replicateSparseBooleanSource();
@@ -151,14 +138,14 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateChunks() throws IOException {
-        ReplicatePrimitiveCode.charToAllButBooleanAndByte(CharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBooleanAndByte("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/CharChunk.java");
         replicateByteChunks();
         replicateBooleanChunks();
         replicateObjectChunks();
     }
 
     private static void replicateByteChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToByte(CharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToByte("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/CharChunk.java");
         final File classFile = new File(className);
 
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
@@ -178,7 +165,7 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateBooleanChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToBoolean(CharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/CharChunk.java");
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
         classLines = ReplicateUtilities.removeRegion(classLines, "BufferImports");
@@ -187,7 +174,7 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(CharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/CharChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -216,13 +203,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateChunkChunks() throws IOException {
-        ReplicatePrimitiveCode.charToAll(CharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/CharChunkChunk.java");
         replicateObjectChunkChunks();
     }
 
     private static void replicateObjectChunkChunks() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(CharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/CharChunkChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -242,7 +229,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateWritableChunks() throws IOException {
         final List<String> files =
-                ReplicatePrimitiveCode.charToAllButBoolean(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+                charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/WritableCharChunk.java");
         for (String fileName : files) {
             final File classFile = new File(fileName);
             List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
@@ -254,8 +241,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateWritableBooleanChunks() throws IOException {
-        final String writableBooleanChunkClassName =
-                ReplicatePrimitiveCode.charToBoolean(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String writableBooleanChunkClassName = charToBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/WritableCharChunk.java");
         final File writableBooleanChunkClassFile = new File(writableBooleanChunkClassName);
         List<String> writableBooleanChunkClassLines =
                 FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
@@ -272,8 +259,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateWritableObjectChunks() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/WritableCharChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -305,14 +292,14 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateWritableChunkChunks() throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(WritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/WritableCharChunkChunk.java");
         replicateWritableBooleanChunkChunks();
         replicateWritableObjectChunkChunks();
     }
 
     private static void replicateWritableBooleanChunkChunks() throws IOException {
-        final String writableBooleanChunkClassName =
-                ReplicatePrimitiveCode.charToBoolean(WritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String writableBooleanChunkClassName = charToBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/WritableCharChunkChunk.java");
         final File writableBooleanChunkClassFile = new File(writableBooleanChunkClassName);
         List<String> writableBooleanChunkClassLines =
                 FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
@@ -329,8 +316,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateWritableObjectChunkChunks() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(WritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/WritableCharChunkChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -350,13 +337,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableChunks() throws IOException {
-        ReplicatePrimitiveCode.charToAll(ResettableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/ResettableCharChunk.java");
         replicateResettableObjectChunks();
     }
 
     private static void replicateResettableObjectChunks() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(ResettableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/ResettableCharChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -373,13 +360,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableWritableChunks() throws IOException {
-        ReplicatePrimitiveCode.charToAll(ResettableWritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/ResettableWritableCharChunk.java");
         replicateResettableWritableObjectChunks();
     }
 
     private static void replicateResettableWritableObjectChunks() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(ResettableWritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/ResettableWritableCharChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -396,13 +383,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableWritableChunkChunks() throws IOException {
-        ReplicatePrimitiveCode.charToAll(ResettableWritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/ResettableWritableCharChunkChunk.java");
         replicateResettableWritableObjectChunkChunks();
     }
 
     private static void replicateResettableWritableObjectChunkChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(ResettableWritableCharChunkChunk.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/ResettableWritableCharChunkChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -421,13 +408,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableChunkChunks() throws IOException {
-        ReplicatePrimitiveCode.charToAll(ResettableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/ResettableCharChunkChunk.java");
         replicateResettableObjectChunkChunks();
     }
 
     private static void replicateResettableObjectChunkChunks() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(ResettableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/ResettableCharChunkChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -441,9 +428,10 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateFactories() throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkFactory.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String className =
-                ReplicatePrimitiveCode.charToBoolean(CharChunkFactory.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/util/factories/CharChunkFactory.java");
+        final String className = charToBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/util/factories/CharChunkFactory.java");
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
         classLines = ReplicateUtilities.replaceRegion(classLines, "dbArrayWrap", Arrays.asList(
@@ -462,13 +450,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateChunkFillers() throws IOException {
-        ReplicatePrimitiveCode.charToAll(CharChunkFiller.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/util/chunkfillers/CharChunkFiller.java");
         replicateObjectChunkFiller();
     }
 
     private static void replicateObjectChunkFiller() throws IOException {
-        final String className =
-                ReplicatePrimitiveCode.charToObject(CharChunkFiller.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/util/chunkfillers/CharChunkFiller.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -479,18 +467,14 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateSparseLongSource() throws IOException {
-        // this is super hokey, but we need to preserve the Long thing that we replicate to
-        final String longBasePath =
-                ReplicatePrimitiveCode.basePathForClass(LongSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
-
-        final File longSparseArraySourceFile =
-                new File(longBasePath, LongSparseArraySource.class.getSimpleName() + ".java");
-        final File abstractLongSparseArraySourceFile =
-                new File(longBasePath, AbstractSparseLongArraySource.class.getSimpleName() + ".java");
+        final File longSparseArraySourceFile = new File(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/LongSparseArraySource.java");
+        final File abstractLongSparseArraySourceFile = new File(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/AbstractSparseLongArraySource.java");
 
 
         final String longSparseCode = FileUtils.readFileToString(longSparseArraySourceFile, Charset.defaultCharset());
-        ReplicatePrimitiveCode.charToLong(CharacterSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC,
+        charToLong("DB/src/main/java/io/deephaven/engine/v2/sources/CharacterSparseArraySource.java",
                 Collections.emptyMap());
 
         Files.delete(abstractLongSparseArraySourceFile.toPath());
@@ -518,8 +502,9 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateSparseBooleanSource() throws IOException {
-        final String booleanPath = ReplicatePrimitiveCode.charToBooleanAsByte(CharacterSparseArraySource.class,
-                ReplicatePrimitiveCode.MAIN_SRC, Collections.emptyMap());
+        final String booleanPath = charToBooleanAsByte(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/CharacterSparseArraySource.java",
+                Collections.emptyMap());
         final File booleanFile = new File(booleanPath);
         List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
 
@@ -854,8 +839,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateSparseObjectSource() throws IOException {
-        final String objectPath =
-                ReplicatePrimitiveCode.charToObject(CharacterSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectPath = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/CharacterSparseArraySource.java");
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
@@ -943,9 +928,9 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateOneOrN() throws IOException {
-        ReplicatePrimitiveCode.charToAll(CharOneOrN.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String objectOneOrNPath =
-                ReplicatePrimitiveCode.charToObject(CharOneOrN.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/sparse/CharOneOrN.java");
+        final String objectOneOrNPath = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/sources/sparse/CharOneOrN.java");
         final File oneOrNFile = new File(objectOneOrNPath);
         List<String> lines = FileUtils.readLines(oneOrNFile, Charset.defaultCharset());
 

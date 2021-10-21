@@ -1,24 +1,13 @@
 package io.deephaven.engine.v2.ssms;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
+import gnu.trove.set.hash.THashSet;
 import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.v2.by.ssmcountdistinct.CharSsmBackedSource;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DbDateTimeSsmSourceWrapper;
-import io.deephaven.engine.v2.by.ssmcountdistinct.count.CharChunkedCountDistinctOperator;
-import io.deephaven.engine.v2.by.ssmcountdistinct.count.CharRollupCountDistinctOperator;
-import io.deephaven.engine.v2.by.ssmcountdistinct.distinct.CharChunkedDistinctOperator;
-import io.deephaven.engine.v2.by.ssmcountdistinct.distinct.CharRollupDistinctOperator;
-import io.deephaven.engine.v2.by.ssmcountdistinct.unique.CharChunkedUniqueOperator;
-import io.deephaven.engine.v2.by.ssmcountdistinct.unique.CharRollupUniqueOperator;
-import io.deephaven.engine.v2.by.ssmpercentile.CharPercentileTypeHelper;
-import io.deephaven.engine.v2.by.ssmpercentile.CharPercentileTypeMedianHelper;
-import io.deephaven.engine.v2.by.ssmpercentile.FloatPercentileTypeMedianHelper;
 import io.deephaven.engine.v2.sort.ReplicateSortKernel;
 import io.deephaven.engine.v2.sources.BoxedColumnSource;
-import gnu.trove.set.hash.THashSet;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -29,88 +18,99 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
 //
 public class ReplicateSegmentedSortedMultiset {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharSegmentedSortedMultiset.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        insertDbDateTimeExtensions(
-                ReplicatePrimitiveCode.charToLong(CharSegmentedSortedMultiset.class, ReplicatePrimitiveCode.MAIN_SRC));
+        charToAllButBooleanAndLong("DB/src/main/java/io/deephaven/engine/v2/ssms/CharSegmentedSortedMultiset.java");
+        insertDbDateTimeExtensions(charToLong(
+                "DB/src/main/java/io/deephaven/engine/v2/ssms/CharSegmentedSortedMultiset.java"));
 
-        String objectSsm =
-                ReplicatePrimitiveCode.charToObject(CharSegmentedSortedMultiset.class, ReplicatePrimitiveCode.MAIN_SRC);
+        String objectSsm = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
                 ReplicateSegmentedSortedMultiset::fixupDbArrays, ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(io.deephaven.engine.v2.by.ssmminmax.CharSetResult.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectSsm(ReplicatePrimitiveCode.charToObject(io.deephaven.engine.v2.by.ssmminmax.CharSetResult.class,
-                ReplicatePrimitiveCode.MAIN_SRC), ReplicateSegmentedSortedMultiset::fixupNulls);
-
-        ReplicatePrimitiveCode.charToAllButBoolean(CharPercentileTypeHelper.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectSsm(
-                ReplicatePrimitiveCode.charToObject(CharPercentileTypeHelper.class, ReplicatePrimitiveCode.MAIN_SRC),
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/by/ssmminmax/CharSetResult.java");
+        fixupObjectSsm(charToObject("DB/src/main/java/io/deephaven/engine/v2/by/ssmminmax/CharSetResult.java"),
                 ReplicateSegmentedSortedMultiset::fixupNulls);
 
-        ReplicatePrimitiveCode.charToIntegers(CharPercentileTypeMedianHelper.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatPercentileTypeMedianHelper.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/by/ssmpercentile/CharPercentileTypeHelper.java");
+        fixupObjectSsm(
+                charToObject("DB/src/main/java/io/deephaven/engine/v2/by/ssmpercentile/CharPercentileTypeHelper.java"),
+                ReplicateSegmentedSortedMultiset::fixupNulls);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharSsmBackedSource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        objectSsm = ReplicatePrimitiveCode.charToObject(CharSsmBackedSource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToIntegers("DB/src/main/java/io/deephaven/engine/v2/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
+        floatToAllFloatingPoints(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmpercentile/FloatPercentileTypeMedianHelper.java");
+
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/CharSsmBackedSource.java");
+        objectSsm = charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/CharSsmBackedSource.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupDbArrays,
                 ReplicateSegmentedSortedMultiset::fixupSourceConstructor,
                 (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
                         "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE, Object.class));")));
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkedCountDistinctOperator.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharChunkedCountDistinctOperator.class,
-                ReplicatePrimitiveCode.MAIN_SRC), "ssms");
-
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharChunkedDistinctOperator.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        fixupLongKernelOperator(
-                ReplicatePrimitiveCode.charToLong(CharChunkedDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
-                "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
+        charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");
         fixupObjectKernelOperator(
-                ReplicatePrimitiveCode.charToObject(CharChunkedDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
-                "internalResult");
-
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharChunkedUniqueOperator.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        fixupLongKernelOperator(
-                ReplicatePrimitiveCode.charToLong(CharChunkedUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
-                "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
-        fixupObjectKernelOperator(
-                ReplicatePrimitiveCode.charToObject(CharChunkedUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                charToObject(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java"),
                 "ssms");
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharRollupCountDistinctOperator.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharRollupCountDistinctOperator.class,
-                ReplicatePrimitiveCode.MAIN_SRC), "ssms");
-
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharRollupDistinctOperator.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBooleanAndLong(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java");
         fixupLongKernelOperator(
-                ReplicatePrimitiveCode.charToLong(CharRollupDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                charToLong(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
                 "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
-                ReplicatePrimitiveCode.charToObject(CharRollupDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                charToObject(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
                 "internalResult");
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharRollupUniqueOperator.class,
-                ReplicatePrimitiveCode.MAIN_SRC);
+        charToAllButBooleanAndLong(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java");
         fixupLongKernelOperator(
-                ReplicatePrimitiveCode.charToLong(CharRollupUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                charToLong(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
                 "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
         fixupObjectKernelOperator(
-                ReplicatePrimitiveCode.charToObject(CharRollupUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                charToObject(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
+                "ssms");
+
+        charToAllButBoolean(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java");
+        fixupObjectKernelOperator(charToObject(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java"),
+                "ssms");
+
+        charToAllButBooleanAndLong(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java");
+        fixupLongKernelOperator(
+                charToLong(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
+                "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
+        fixupObjectKernelOperator(
+                charToObject(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
+                "internalResult");
+
+        charToAllButBooleanAndLong(
+                "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java");
+        fixupLongKernelOperator(
+                charToLong(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
+                "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
+        fixupObjectKernelOperator(
+                charToObject(
+                        "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "ssms");
     }
 

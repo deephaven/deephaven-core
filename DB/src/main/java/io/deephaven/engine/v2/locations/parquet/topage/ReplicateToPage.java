@@ -1,8 +1,9 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
-
 import java.io.IOException;
+
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToShortAndByte;
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.intToLongAndFloatingPoints;
 
 /**
  * Code generation for basic {@link ToPage} implementations.
@@ -10,8 +11,8 @@ import java.io.IOException;
 public class ReplicateToPage {
 
     public static void main(String... args) throws IOException {
-        ReplicatePrimitiveCode.intToLongAndFloatingPoints(ToIntPage.class, ReplicatePrimitiveCode.MAIN_SRC,
+        intToLongAndFloatingPoints("DB/src/main/java/io/deephaven/engine/v2/locations/parquet/topage/ToIntPage.java",
                 "interface");
-        ReplicatePrimitiveCode.charToShortAndByte(ToCharPageFromInt.class, ReplicatePrimitiveCode.MAIN_SRC);
+        charToShortAndByte("DB/src/main/java/io/deephaven/engine/v2/locations/parquet/topage/ToCharPageFromInt.java");
     }
 }

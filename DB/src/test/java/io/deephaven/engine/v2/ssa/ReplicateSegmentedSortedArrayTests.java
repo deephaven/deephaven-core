@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import org.apache.commons.io.FileUtils;
 
@@ -9,13 +8,16 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBoolean;
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToObject;
+
 public class ReplicateSegmentedSortedArrayTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedArray.main(args);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharSegmentedSortedArray.class, ReplicatePrimitiveCode.TEST_SRC);
-        final String objectSsaTest = ReplicatePrimitiveCode.charToObject(TestCharSegmentedSortedArray.class,
-                ReplicatePrimitiveCode.TEST_SRC);
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/ssa/TestCharSegmentedSortedArray.java");
+        final String objectSsaTest =
+                charToObject("DB/src/test/java/io/deephaven/engine/v2/ssa/TestCharSegmentedSortedArray.java");
         fixupObjectSsaTest(objectSsaTest);
     }
 

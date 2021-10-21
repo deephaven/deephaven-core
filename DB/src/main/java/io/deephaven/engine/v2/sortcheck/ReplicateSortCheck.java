@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2.sortcheck;
 
-import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import io.deephaven.engine.v2.sort.ReplicateSortKernel;
 import org.apache.commons.io.FileUtils;
@@ -12,6 +11,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBoolean;
+import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToObject;
 import static io.deephaven.compilertools.ReplicateUtilities.globalReplacements;
 import static io.deephaven.compilertools.ReplicateUtilities.simpleFixup;
 
@@ -19,11 +20,10 @@ public class ReplicateSortCheck {
     public static void main(String[] args) throws IOException {
         final List<String> invertList = new ArrayList<>();
 
-        invertList.add(ReplicatePrimitiveCode.pathForClass(CharSortCheck.class, ReplicatePrimitiveCode.MAIN_SRC));
-        invertList.addAll(
-                ReplicatePrimitiveCode.charToAllButBoolean(CharSortCheck.class, ReplicatePrimitiveCode.MAIN_SRC));
-        final String objectPath =
-                ReplicatePrimitiveCode.charToObject(CharSortCheck.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charSortCheckPath = "DB/src/main/java/io/deephaven/engine/v2/sortcheck/CharSortCheck.java";
+        invertList.add(charSortCheckPath);
+        invertList.addAll(charToAllButBoolean(charSortCheckPath));
+        final String objectPath = charToObject(charSortCheckPath);
         invertList.add(objectPath);
         ReplicateUtilities.fixupChunkAttributes(objectPath);
 
