@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.hashing;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 
 /**

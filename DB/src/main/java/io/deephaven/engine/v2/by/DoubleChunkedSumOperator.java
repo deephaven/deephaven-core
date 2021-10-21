@@ -12,6 +12,7 @@ import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
+import io.deephaven.engine.v2.sources.DoubleArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.OrderedKeys;

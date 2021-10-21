@@ -5,6 +5,8 @@ package io.deephaven.engine.v2.ssa;
 
 import java.util.Objects;
 
+import java.util.Objects;
+
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.ObjectChunkEquals;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;

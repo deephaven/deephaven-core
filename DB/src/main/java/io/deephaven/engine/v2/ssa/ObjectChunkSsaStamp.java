@@ -3,6 +3,8 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
+import java.util.Objects;
+
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;

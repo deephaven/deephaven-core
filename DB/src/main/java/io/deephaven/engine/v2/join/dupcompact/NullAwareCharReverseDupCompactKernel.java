@@ -3,6 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.dupcompact;
 
+import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.DhCharComparisons;
 
 import io.deephaven.engine.v2.sources.chunk.*;

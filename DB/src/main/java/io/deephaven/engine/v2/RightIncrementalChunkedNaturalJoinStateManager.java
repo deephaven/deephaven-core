@@ -18,6 +18,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.*;
 
 
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports

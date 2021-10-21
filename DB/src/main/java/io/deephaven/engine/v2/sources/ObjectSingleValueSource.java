@@ -7,6 +7,7 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;

@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.sources.chunk;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.utils.ChunkUtils;
+import org.jetbrains.annotations.NotNull;
 
 // region ApplyDecoderImports
 // endregion ApplyDecoderImports

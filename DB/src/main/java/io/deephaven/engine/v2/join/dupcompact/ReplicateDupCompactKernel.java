@@ -58,7 +58,7 @@ public class ReplicateDupCompactKernel {
     }
 
     private static String fixupCharNullComparisons(String path, String newPath, String oldName, String newName,
-                                                   boolean ascending) throws IOException {
+            boolean ascending) throws IOException {
         final File file = new File(path);
 
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());

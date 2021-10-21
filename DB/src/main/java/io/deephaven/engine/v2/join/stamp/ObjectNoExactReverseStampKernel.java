@@ -5,6 +5,8 @@ package io.deephaven.engine.v2.join.stamp;
 
 import java.util.Objects;
 
+import java.util.Objects;
+
 import io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;

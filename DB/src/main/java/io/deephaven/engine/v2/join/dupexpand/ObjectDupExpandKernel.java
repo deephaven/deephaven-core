@@ -3,6 +3,8 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.dupexpand;
 
+import java.util.Objects;
+
 import io.deephaven.engine.v2.sources.chunk.*;
 
 public class ObjectDupExpandKernel implements DupExpandKernel {

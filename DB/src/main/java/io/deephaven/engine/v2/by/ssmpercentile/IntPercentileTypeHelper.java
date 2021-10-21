@@ -9,6 +9,7 @@ import io.deephaven.engine.v2.sources.IntegerArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.ssms.IntSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 import org.apache.commons.lang3.mutable.MutableInt;

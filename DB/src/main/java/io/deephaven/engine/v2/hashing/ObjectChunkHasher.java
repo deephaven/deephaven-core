@@ -8,6 +8,7 @@ import java.util.Objects;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.engine.v2.hashing.ChunkHasher.scrambleHash;
 import static io.deephaven.engine.v2.sources.chunk.Attributes.*;

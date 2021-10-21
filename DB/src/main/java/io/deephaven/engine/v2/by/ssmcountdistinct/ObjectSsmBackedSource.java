@@ -4,6 +4,9 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
 import io.deephaven.engine.tables.dbarrays.DbArray;
+import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+
+import java.util.Objects;
 
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;

@@ -9,6 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
 import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.tuples.AbstractTupleSource;
