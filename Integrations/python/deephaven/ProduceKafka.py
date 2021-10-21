@@ -80,10 +80,10 @@ def produceFromTable(
     :param topic: The topic name
     :param key: A specification for how to map table column(s) to the Key field in produced
            Kafka messages.  This should be the result of calling one of the methods
-           simple, avro or json in this module.
+           simple, avro or json in this module, or the constant IGNORE.
     :param value: A specification for how to map table column(s) to the Value field in produced
            Kafka messages.  This should be the result of calling one of the methods
-           simple, avro or json in this module.
+           simple, avro or json in this module, or the constant IGNORE.
     :param last_by_key_columns:  Whether to publish only the last record for each unique key.
            Ignored if key is IGNORE.  If key is not IGNORE and last_by_key_columns is false,
            it is expected that table updates will not produce any row shifts; that is, the publisher

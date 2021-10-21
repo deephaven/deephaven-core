@@ -1087,7 +1087,7 @@ public class KafkaTools {
      *         reference to this return value to ensure liveliness.
      */
     @SuppressWarnings("unused")
-    public Procedure.Nullary produceFromTable(
+    public static Procedure.Nullary produceFromTable(
             @NotNull final Table table,
             @NotNull final Properties kafkaConsumerProperties,
             @NotNull final String topic,
