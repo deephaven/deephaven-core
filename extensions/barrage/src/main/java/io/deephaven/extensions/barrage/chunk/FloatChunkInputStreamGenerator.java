@@ -9,11 +9,11 @@ package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.engine.v2.sources.chunk.FloatChunk;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.FloatChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.WritableFloatChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
