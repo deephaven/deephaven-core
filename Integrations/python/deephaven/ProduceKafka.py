@@ -65,16 +65,17 @@ except Exception as e:
 
 @_passThrough
 def produceFromTable(
-        t,
+        table,
         kafka_config:dict,
         topic:str,
         key,
         value,
+        last_by_key_columns = True
 ):
     """
     Produce to Kafka from a Deephaven table.
 
-    :param t
+    :param table: a Deephaven table used as a source of rows to publish to Kafka.
     :param kafka_config: Dictionary with properties to configure the associated kafka producer.
     :param topic: The topic name
     :param key: A specification for how to map table column(s) to the Key field in produced
@@ -83,6 +84,10 @@ def produceFromTable(
     :param value: A specification for how to map table column(s) to the Value field in produced
            Kafka messages.  This should be the result of calling one of the methods
            simple, avro or json in this module.
+    :param last_by_key_columns:  Whether to publish only the last record for each unique key.
+           Ignored if key is IGNORE.  If key is not IGNORE and last_by_key_columns is false,
+           it is expected that table updates will not produce any row shifts; that is, the publisher
+           expects keyed tables to be streams, add-only, or aggregated.
     :return: A callback object that, when invoked, stops publishing.
              Users should hold to this object to ensure liveleness for publishing
              for as long as this publishing is desired, and once not desired anymore they should
@@ -102,7 +107,7 @@ def produceFromTable(
             "at least one argument for 'key' or 'value' must be different from IGNORE")
 
     kafka_config = _dictToProperties(kafka_config)
-    return _java_type_.produceFromTable(kafka_config, topic, key, value)
+    return _java_type_.produceFromTable(table, kafka_config, topic, key, value, last_by_key_columns)
 
 @_passThrough
 def avro(schema, schema_version:str = None, column_names = None):
@@ -114,7 +119,7 @@ def avro(schema, schema_version:str = None, column_names = None):
        associated kafka_config dict in the call to consumeToTable should include the key
        'schema.registry.url' with the associated value of the Schema Server URL for fetching the schema
        definition.
-    :param schema_version:   If a string schema name is provided, the version to fetch from schema
+    :param schema_version:  If a string schema name is provided, the version to fetch from schema
        service; if not specified, a default of 'latest' is assumed.
     :param column_names: A list of strings each corresponding to an schema field, in order,
        indicating which Deephaven column nanmes to use for the corresponding Avro field,

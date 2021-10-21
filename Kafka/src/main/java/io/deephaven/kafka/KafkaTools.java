@@ -1079,8 +1079,8 @@ public class KafkaTools {
      * @param topic Kafka topic name
      * @param keySpec Conversion specification for Kafka record keys from table column data.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
-     * @param collapseByKeyColumns Whether to publish only the last record for each unique key. Ignored when
-     *        {@code keySpec} is {@code null}. If {@code keySpec != null && !collapseByKeyColumns}, it is expected that
+     * @param lastByKeyColumns Whether to publish only the last record for each unique key. Ignored when
+     *        {@code keySpec} is {@code null}. If {@code keySpec != null && !lastByKeyColumns}, it is expected that
      *        {@code table} will not produce any row shifts; that is, the publisher expects keyed tables to be streams,
      *        add-only, or aggregated.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
@@ -1093,7 +1093,7 @@ public class KafkaTools {
             @NotNull final String topic,
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
-            final boolean collapseByKeyColumns) {
+            final boolean lastByKeyColumns) {
         if (table.isLive()
                 && !LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
                 && !LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
@@ -1104,7 +1104,7 @@ public class KafkaTools {
         final String[] keyColumns = keySpec.getColumnNames();
         final String[] valueColumns = valueSpec.getColumnNames();
 
-        final Table effectiveTable = (collapseByKeyColumns)
+        final Table effectiveTable = (lastByKeyColumns)
                 ? table.lastBy(keyColumns)
                 : table.coalesce();
 
