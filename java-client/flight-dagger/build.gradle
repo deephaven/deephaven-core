@@ -31,4 +31,5 @@ dependencies {
 test {
 }
 
+apply plugin: 'io.deephaven.java-open-nio'
 apply plugin: 'io.deephaven.java-publishing-conventions'

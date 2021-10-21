@@ -108,3 +108,5 @@ dockerCreateDockerfile.dependsOn grpcApiBase
 
 assemble.dependsOn dockerBuildImage
 dockerBuildImage.outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
+
+apply plugin: 'io.deephaven.java-open-nio'

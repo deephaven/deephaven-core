@@ -23,6 +23,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * A bucket for queuing up requests on Tables to be sent all at once.
@@ -264,19 +268,34 @@ public class RequestBatcher {
                     return;
                 }
 
-                // any table which has that state active should fire a failed event
+                // find the state that applies to this ticket
                 ClientTableState state = allStates()
                         .filter(cts -> cts.getHandle().makeTicket().getTicket_asB64().equals(ticket.getTicket_asB64()))
                         .first();
-                // state.getHandle().setState(TableTicket.State.EXPORTED);
-                for (JsTable table : allInterestedTables().filter(t -> t.state() == state)) {
-                    // check what state it was in previously to use for firing an event
-                    ClientTableState lastVisibleState = table.lastVisibleState();
 
-                    // mark the table as ready to go
-                    state.applyTableCreationResponse(response);
-                    state.forActiveTables(t -> t.maybeRevive(state));
-                    state.setResolution(ClientTableState.ResolutionState.RUNNING);
+                if (state.isEmpty()) {
+                    // we are no longer interested in this update, ignore it - assume that the release was racing the
+                    // response.
+                    return;
+                }
+
+                // Before we mark it as successfully running and give it its new schema, track the previous CTS
+                // that each table was using. Identify which table to watch based on its current state, even if
+                // not visible, but then track the last visible state, so we know which events to fire.
+                Map<JsTable, ClientTableState> activeTablesAndStates =
+                        StreamSupport.stream(allInterestedTables().spliterator(), false)
+                                .filter(JsTable::isAlive)
+                                .filter(t -> t.state() == state)
+                                .collect(Collectors.toMap(Function.identity(), JsTable::lastVisibleState));
+
+                // Mark the table as ready to go
+                state.applyTableCreationResponse(response);
+                state.forActiveTables(t -> t.maybeRevive(state));
+                state.setResolution(ClientTableState.ResolutionState.RUNNING);
+
+                // Let each table know that what has changed since it has a previous state
+                for (JsTable table : activeTablesAndStates.keySet()) {
+                    ClientTableState lastVisibleState = activeTablesAndStates.get(table);
 
                     // fire any events that are necessary
                     boolean sortChanged = !lastVisibleState.getSorts().equals(state.getSorts());
@@ -304,6 +323,9 @@ public class RequestBatcher {
                 } else {
                     failed(reject, status.getDetails());
                 }
+
+                // Tell anybody who was orphaned to check if they should release their subscriptions / handles
+                orphans.forEach(ClientTableState::cleanup);
             });
         });
     }

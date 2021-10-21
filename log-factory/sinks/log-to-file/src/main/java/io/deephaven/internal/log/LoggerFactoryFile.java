@@ -4,7 +4,7 @@ import io.deephaven.io.log.LogBufferPool;
 import io.deephaven.io.log.LogEntryPool;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.log.LogSink;
-import io.deephaven.io.log.impl.DynamicDelayedLogEntryUnsafePoolImpl;
+import io.deephaven.io.log.impl.DynamicDelayedLogEntryPoolImpl;
 import io.deephaven.io.log.impl.DynamicLogBufferPoolImpl;
 import io.deephaven.io.log.impl.LogOutputCsvImpl;
 import io.deephaven.io.log.impl.LogSinkImpl;
@@ -52,7 +52,7 @@ public final class LoggerFactoryFile extends LoggerFactorySingleCache {
         // todo: parameterize based on config
         final LogBufferPool bufferPool = new DynamicLogBufferPoolImpl("LogBufferPool", 1024, 1024);
         final LogEntryPool logEntryPool =
-                new DynamicDelayedLogEntryUnsafePoolImpl("LogEntryPool", 32768);
+                new DynamicDelayedLogEntryPoolImpl("LogEntryPool", 32768, new NullLoggerTimeSource());
         // note: this calls a thread per call; need to change dynamics
         final String header = null;
         final LogSink<?> logSink = new LogSinkImpl<>(getPath(), Integer.MAX_VALUE, null,

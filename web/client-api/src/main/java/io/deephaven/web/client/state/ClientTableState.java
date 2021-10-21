@@ -643,7 +643,7 @@ public final class ClientTableState extends TableConfig {
             }
         }
 
-        if (isFlat() != flat) {
+        if (!flat && isFlat()) {
             return false;
         }
 

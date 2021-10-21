@@ -99,6 +99,13 @@ public class BatchBuilder {
             return getCustomColumns() != null && !getCustomColumns().isEmpty();
         }
 
+        public boolean hasViewColumns() {
+            return getViewColumns() != null && !getViewColumns().isEmpty();
+        }
+
+        public boolean hasDropColumns() {
+            return getDropColumns() != null && !getDropColumns().isEmpty();
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -167,10 +174,6 @@ public class BatchBuilder {
     }
 
     public JsArray<Operation> serializable() {
-        if (ops.isEmpty()) {
-            return new JsArray<>();
-        }
-
         JsArray<Operation> send = new JsArray<>();
         for (BatchOp op : ops) {
             if (!op.hasHandles()) {
@@ -216,13 +219,14 @@ public class BatchBuilder {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
-            lastOp[0].accept(op.getNewId().makeTicket());
+            if (!operations.isEmpty()) {
+                lastOp[0].accept(op.getNewId().makeTicket());
 
-            // after building the entire collection, append to the set of steps we'll send
-            for (int i = 0; i < operations.size(); i++) {
-                send.push(operations.get(i));
+                // after building the entire collection, append to the set of steps we'll send
+                for (int i = 0; i < operations.size(); i++) {
+                    send.push(operations.get(i));
+                }
             }
-
         }
         return send;
     }
