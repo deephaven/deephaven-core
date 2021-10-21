@@ -35,7 +35,7 @@ sourceSets {
 
     test {
         java {
-            srcDirs 'test', 'benchmark'
+            srcDirs 'src/benchmark/java', 'src/test/java'
         }
         resources {
             srcDirs += [ 'test-resources' ]
