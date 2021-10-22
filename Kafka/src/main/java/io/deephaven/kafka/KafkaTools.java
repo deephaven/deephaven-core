@@ -650,7 +650,7 @@ public class KafkaTools {
                 private Json(
                         final String[] columnNames,
                         final String[] fieldNames) {
-                    this(columnNames, fieldNames, "|", false, null);
+                    this(columnNames, fieldNames, null, false, null);
                 }
 
                 @Override
@@ -1092,7 +1092,7 @@ public class KafkaTools {
      * @param keySpec Conversion specification for Kafka record keys from table column data.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
      * @param lastByKeyColumns Whether to publish only the last record for each unique key. Ignored when
-     *        {@code keySpec} is {@code null}. If {@code keySpec != null && !lastByKeyColumns}, it is expected that
+     *        {@code keySpec} is {@code IGNORE}. If {@code keySpec != null && !lastByKeyColumns}, it is expected that
      *        {@code table} will not produce any row shifts; that is, the publisher expects keyed tables to be streams,
      *        add-only, or aggregated.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
@@ -1100,13 +1100,13 @@ public class KafkaTools {
      */
     @SuppressWarnings("unused")
     public static Procedure.Nullary produceFromTable(
-            @NotNull final Table tableArg,
+            @NotNull final Table table,
             @NotNull final Properties kafkaProrerties,
             @NotNull final String topic,
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
-        if (tableArg.isLive()
+        if (table.isLive()
                 && !LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
                 && !LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
             throw new KafkaPublisherException(
@@ -1119,15 +1119,15 @@ public class KafkaTools {
             throw new IllegalArgumentException(
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
         }
-        setSerIfNotSet(kafkaProrerties, KeyOrValue.KEY, keySpec, tableArg);
-        setSerIfNotSet(kafkaProrerties, KeyOrValue.VALUE, valueSpec, tableArg);
+        setSerIfNotSet(kafkaProrerties, KeyOrValue.KEY, keySpec, table);
+        setSerIfNotSet(kafkaProrerties, KeyOrValue.VALUE, valueSpec, table);
 
         final String[] keyColumns = keySpec.getColumnNames();
         final String[] valueColumns = valueSpec.getColumnNames();
 
-        final Table effectiveTable = (lastByKeyColumns)
-                ? tableArg.lastBy(keyColumns)
-                : tableArg.coalesce();
+        final Table effectiveTable = (!ignoreKey && lastByKeyColumns)
+                ? table.lastBy(keyColumns)
+                : table.coalesce();
 
         final KeyOrValueSerializer<?> keySerializer = getSerializer(effectiveTable, kafkaProrerties, keySpec);
         final KeyOrValueSerializer<?> valueSerializer = getSerializer(effectiveTable, kafkaProrerties, valueSpec);

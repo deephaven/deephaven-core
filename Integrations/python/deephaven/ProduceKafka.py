@@ -70,7 +70,7 @@ def produceFromTable(
         topic:str,
         key,
         value,
-        last_by_key_columns:bool = True
+        last_by_key_columns:bool = False
 ):
     """
     Produce to Kafka from a Deephaven table.
