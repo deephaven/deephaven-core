@@ -1,5 +1,7 @@
 package io.deephaven.util;
 
+import java.lang.Math;
+
 /**
  * Constants for primitive types within the Deephaven engine. These constants include null values, ranges of values,
  * infinite values, and NaN values.
@@ -152,7 +154,7 @@ public class QueryConstants {
     /**
      * Minimum finite value of type float.
      */
-    public static final float MIN_FLOAT = Float.valueOf("-0x1.fffffdp127");
+    public static final float MIN_FLOAT = Math.nextUp(-Float.MAX_VALUE);
 
     /**
      * Positive infinity of type float.
@@ -190,7 +192,7 @@ public class QueryConstants {
     /**
      * Minimum finite value of type double.
      */
-    public static final double MIN_DOUBLE = Double.valueOf("-0x1.ffffffffffffep1023");
+    public static final double MIN_DOUBLE = Math.nextUp(-Double.MAX_VALUE);
 
     /**
      * Positive infinity of type double.
