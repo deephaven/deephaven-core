@@ -7,6 +7,7 @@ package io.deephaven.kafka;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
 import io.deephaven.base.Procedure;
@@ -43,6 +44,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.errors.IllegalSaslStateException;
 import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -77,6 +80,15 @@ public class KafkaTools {
     public static final String STRING_DESERIALIZER = StringDeserializer.class.getName();
     public static final String BYTE_BUFFER_DESERIALIZER = ByteBufferDeserializer.class.getName();
     public static final String DESERIALIZER_FOR_IGNORE = BYTE_BUFFER_DESERIALIZER;
+    public static final String SHORT_SERIALIZER = ShortSerializer.class.getName();
+    public static final String INT_SERIALIZER = IntegerSerializer.class.getName();
+    public static final String LONG_SERIALIZER = LongSerializer.class.getName();
+    public static final String FLOAT_SERIALIZER = FloatSerializer.class.getName();
+    public static final String DOUBLE_SERIALIZER = DoubleSerializer.class.getName();
+    public static final String BYTE_ARRAY_SERIALIZER = ByteArraySerializer.class.getName();
+    public static final String STRING_SERIALIZER = StringSerializer.class.getName();
+    public static final String BYTE_BUFFER_SERIALIZER = ByteBufferSerializer.class.getName();
+    public static final String SERIALIZER_FOR_IGNORE = BYTE_BUFFER_SERIALIZER;
     public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
     public static final String AVRO_LATEST_VERSION = "latest";
 
@@ -880,7 +892,7 @@ public class KafkaTools {
     /**
      * Consume from Kafka to a Deephaven table.
      *
-     * @param kafkaConsumerProperties Properties to configure this table and also to be passed to create the
+     * @param kafkaProperties Properties to configure this table and also to be passed to create the
      *        KafkaConsumer
      * @param topic Kafka topic name
      * @param partitionFilter A predicate returning true for the partitions to consume
@@ -892,7 +904,7 @@ public class KafkaTools {
      */
     @SuppressWarnings("unused")
     public static Table consumeToTable(
-            @NotNull final Properties kafkaConsumerProperties,
+            @NotNull final Properties kafkaProperties,
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
             @NotNull final IntToLongFunction partitionToInitialOffset,
@@ -906,14 +918,14 @@ public class KafkaTools {
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
         }
         if (ignoreKey) {
-            setDeserIfNotSet(kafkaConsumerProperties, KeyOrValue.KEY, DESERIALIZER_FOR_IGNORE);
+            setDeserIfNotSet(kafkaProperties, KeyOrValue.KEY, DESERIALIZER_FOR_IGNORE);
         }
         if (ignoreValue) {
-            setDeserIfNotSet(kafkaConsumerProperties, KeyOrValue.VALUE, DESERIALIZER_FOR_IGNORE);
+            setDeserIfNotSet(kafkaProperties, KeyOrValue.VALUE, DESERIALIZER_FOR_IGNORE);
         }
 
         final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
-        getCommonCols(commonColumns, 0, kafkaConsumerProperties);
+        getCommonCols(commonColumns, 0, kafkaProperties);
         final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>();
         int[] commonColumnIndices = new int[3];
         int nextColumnIndex = 0;
@@ -928,9 +940,9 @@ public class KafkaTools {
 
         final MutableInt nextColumnIndexMut = new MutableInt(nextColumnIndex);
         final KeyOrValueIngestData keyIngestData =
-                getIngestData(KeyOrValue.KEY, kafkaConsumerProperties, columnDefinitions, nextColumnIndexMut, keySpec);
+                getIngestData(KeyOrValue.KEY, kafkaProperties, columnDefinitions, nextColumnIndexMut, keySpec);
         final KeyOrValueIngestData valueIngestData =
-                getIngestData(KeyOrValue.VALUE, kafkaConsumerProperties, columnDefinitions, nextColumnIndexMut,
+                getIngestData(KeyOrValue.VALUE, kafkaProperties, columnDefinitions, nextColumnIndexMut,
                         valueSpec);
 
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
@@ -996,7 +1008,7 @@ public class KafkaTools {
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
-                kafkaConsumerProperties,
+                kafkaProperties,
                 topic,
                 partitionFilter,
                 partitionToConsumer,
@@ -1075,7 +1087,7 @@ public class KafkaTools {
      * Consume from Kafka to a Deephaven table.
      *
      * @param table The table used as a source of data to be sent to Kafka.
-     * @param kafkaConsumerProperties Properties to be passed to create the associated KafkaProducer.
+     * @param kafkaProrerties Properties to be passed to create the associated KafkaProducer.
      * @param topic Kafka topic name
      * @param keySpec Conversion specification for Kafka record keys from table column data.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
@@ -1088,30 +1100,39 @@ public class KafkaTools {
      */
     @SuppressWarnings("unused")
     public static Procedure.Nullary produceFromTable(
-            @NotNull final Table table,
-            @NotNull final Properties kafkaConsumerProperties,
+            @NotNull final Table tableArg,
+            @NotNull final Properties kafkaProrerties,
             @NotNull final String topic,
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
-        if (table.isLive()
+        if (tableArg.isLive()
                 && !LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
                 && !LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
             throw new KafkaPublisherException(
                     "Calling thread must hold an exclusive or shared LiveTableMonitor lock to publish live sources");
         }
 
+        final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
+        final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
+        if (ignoreKey && ignoreValue) {
+            throw new IllegalArgumentException(
+                    "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
+        }
+        setSerIfNotSet(kafkaProrerties, KeyOrValue.KEY, keySpec, tableArg);
+        setSerIfNotSet(kafkaProrerties, KeyOrValue.VALUE, valueSpec, tableArg);
+
         final String[] keyColumns = keySpec.getColumnNames();
         final String[] valueColumns = valueSpec.getColumnNames();
 
         final Table effectiveTable = (lastByKeyColumns)
-                ? table.lastBy(keyColumns)
-                : table.coalesce();
+                ? tableArg.lastBy(keyColumns)
+                : tableArg.coalesce();
 
-        final KeyOrValueSerializer<?> keySerializer = getSerializer(table, kafkaConsumerProperties, keySpec);
-        final KeyOrValueSerializer<?> valueSerializer = getSerializer(table, kafkaConsumerProperties, valueSpec);
+        final KeyOrValueSerializer<?> keySerializer = getSerializer(effectiveTable, kafkaProrerties, keySpec);
+        final KeyOrValueSerializer<?> valueSerializer = getSerializer(effectiveTable, kafkaProrerties, valueSpec);
         final PublishToKafka producer = new PublishToKafka(
-                kafkaConsumerProperties, table, topic, keyColumns, keySerializer, valueColumns, valueSerializer);
+                kafkaProrerties, effectiveTable, topic, keyColumns, keySerializer, valueColumns, valueSerializer);
         final Procedure.Nullary shutdownCallback = new Procedure.Nullary() {
             volatile PublishToKafka liveProducer = producer;
 
@@ -1125,6 +1146,65 @@ public class KafkaTools {
             }
         };
         return shutdownCallback;
+    }
+
+    private static void setSerIfNotSet(
+            @NotNull final Properties prop,
+            @NotNull final KeyOrValue keyOrValue,
+            @NotNull final Produce.KeyOrValueSpec spec,
+            @NotNull final Table table) {
+        final String propKey = (keyOrValue == KeyOrValue.KEY)
+                ? ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG
+                : ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
+        if (prop.containsKey(propKey)) {
+            return;
+        }
+        final String value;
+        switch (spec.dataFormat()) {
+            case IGNORE:
+                value = SERIALIZER_FOR_IGNORE;
+                break;
+            case SIMPLE:
+                value = getSerializerNameForSimpleSpec(keyOrValue, (Produce.KeyOrValueSpec.Simple) spec, table);
+                break;
+            case JSON:
+                value = STRING_SERIALIZER;
+                break;
+            case AVRO:
+                value = KafkaAvroSerializer.class.getName();
+                break;
+            default:
+                throw new IllegalSaslStateException("Unknown dataFormat=" + spec.dataFormat());
+        }
+        prop.setProperty(propKey, value);
+    }
+
+    private static String getSerializerNameForSimpleSpec(
+            @NotNull final KeyOrValue keyOrValue,
+            @NotNull final Produce.KeyOrValueSpec.Simple simpleSpec,
+            @NotNull final Table table) {
+        final Class<?> dataType = table.getDefinition().getColumn(simpleSpec.columnName).getDataType();
+        if (dataType == short.class) {
+            return SHORT_SERIALIZER;
+        }
+        if (dataType == int.class) {
+            return INT_SERIALIZER;
+        }
+        if (dataType == long.class) {
+            return LONG_SERIALIZER;
+        }
+        if (dataType == float.class) {
+            return FLOAT_SERIALIZER;
+        }
+        if (dataType == double.class) {
+            return DOUBLE_SERIALIZER;
+        }
+        if (dataType == String.class) {
+            return STRING_SERIALIZER;
+        }
+        throw new UncheckedDeephavenException(
+                "Serializer for " + keyOrValue + " not set in kafka consumer properties " +
+                        "and can't automatically set it for type " + dataType);
     }
 
     private static class StreamTableMap extends LocalTableMap implements LiveTable {
