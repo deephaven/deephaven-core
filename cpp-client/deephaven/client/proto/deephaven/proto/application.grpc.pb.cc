@@ -26,7 +26,7 @@ namespace backplane {
 namespace grpc {
 
 static const char* ApplicationService_method_names[] = {
-  "/io.deephaven.proto.backplane.grpc.ApplicationService/listFields",
+  "/io.deephaven.proto.backplane.grpc.ApplicationService/ListFields",
 };
 
 std::unique_ptr< ApplicationService::Stub> ApplicationService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -36,23 +36,23 @@ std::unique_ptr< ApplicationService::Stub> ApplicationService::NewStub(const std
 }
 
 ApplicationService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
-  : channel_(channel), rpcmethod_listFields_(ApplicationService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  : channel_(channel), rpcmethod_ListFields_(ApplicationService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   {}
 
-::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* ApplicationService::Stub::listFieldsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest& request) {
-  return ::grpc::internal::ClientReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(channel_.get(), rpcmethod_listFields_, context, request);
+::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* ApplicationService::Stub::ListFieldsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest& request) {
+  return ::grpc::internal::ClientReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(channel_.get(), rpcmethod_ListFields_, context, request);
 }
 
-void ApplicationService::Stub::experimental_async::listFields(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest* request, ::grpc::experimental::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* reactor) {
-  ::grpc::internal::ClientCallbackReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(stub_->channel_.get(), stub_->rpcmethod_listFields_, context, request, reactor);
+void ApplicationService::Stub::experimental_async::ListFields(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest* request, ::grpc::experimental::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(stub_->channel_.get(), stub_->rpcmethod_ListFields_, context, request, reactor);
 }
 
-::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* ApplicationService::Stub::AsynclistFieldsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(channel_.get(), cq, rpcmethod_listFields_, context, request, true, tag);
+::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* ApplicationService::Stub::AsyncListFieldsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(channel_.get(), cq, rpcmethod_ListFields_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* ApplicationService::Stub::PrepareAsynclistFieldsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(channel_.get(), cq, rpcmethod_listFields_, context, request, false, nullptr);
+::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* ApplicationService::Stub::PrepareAsyncListFieldsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(channel_.get(), cq, rpcmethod_ListFields_, context, request, false, nullptr);
 }
 
 ApplicationService::Service::Service() {
@@ -64,14 +64,14 @@ ApplicationService::Service::Service() {
              ::grpc::ServerContext* ctx,
              const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest* req,
              ::grpc::ServerWriter<::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* writer) {
-               return service->listFields(ctx, req, writer);
+               return service->ListFields(ctx, req, writer);
              }, this)));
 }
 
 ApplicationService::Service::~Service() {
 }
 
-::grpc::Status ApplicationService::Service::listFields(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest* request, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* writer) {
+::grpc::Status ApplicationService::Service::ListFields(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest* request, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* writer) {
   (void) context;
   (void) request;
   (void) writer;
