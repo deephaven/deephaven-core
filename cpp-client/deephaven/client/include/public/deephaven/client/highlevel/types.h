@@ -3,6 +3,7 @@
 #include <limits>
 #include <cstdint>
 #include <ostream>
+#include <math.h>
 
 namespace deephaven {
 namespace client {
@@ -10,11 +11,14 @@ namespace highlevel {
 class DeephavenConstants {
 public:
   static constexpr const char16_t NULL_CHAR = std::numeric_limits<char16_t>::max() - 1;
-  static constexpr const char16_t MIN_CHAR = std::numeric_limits<char16_t>::min();
-  static constexpr const char16_t MAX_CHAR = std::numeric_limits<char16_t>::max();
+
+  static constexpr const float NULL_FLOAT = -std::numeric_limits<float>::max();
+  static constexpr const float MIN_FLOAT = std::nextafter(-std::numeric_limits<float>::max(), 0.0f);
+  static constexpr const float MAX_FLOAT = std::numeric_limits<float>::max();
 
   static constexpr const double NULL_DOUBLE = -std::numeric_limits<double>::max();
-  static constexpr const float NULL_FLOAT = -std::numeric_limits<float>::max();
+  static constexpr const double MIN_DOUBLE = std::nextafter(-std::numeric_limits<double>::max(), 0.0);
+  static constexpr const double MAX_DOUBLE = std::numeric_limits<double>::max(); 
 
   static constexpr const int8_t NULL_BYTE = std::numeric_limits<int8_t>::min();
   static constexpr const int8_t MIN_BYTE = std::numeric_limits<int8_t>::min() + 1;

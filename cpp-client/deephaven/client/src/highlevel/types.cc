@@ -4,11 +4,14 @@ namespace deephaven {
 namespace client {
 namespace highlevel {
 const char16_t DeephavenConstants::NULL_CHAR;
-const char16_t DeephavenConstants::MIN_CHAR;
-const char16_t DeephavenConstants::MAX_CHAR;
+
+const float DeephavenConstants::NULL_FLOAT;
+const float DeephavenConstants::MIN_FLOAT;
+const float DeephavenConstants::MAX_FLOAT;
 
 const double DeephavenConstants::NULL_DOUBLE;
-const float DeephavenConstants::NULL_FLOAT;
+const double DeephavenConstants::MIN_DOUBLE;
+const double DeephavenConstants::MAX_DOUBLE;
 
 const int8_t DeephavenConstants::NULL_BYTE;
 const int8_t DeephavenConstants::MIN_BYTE;
