@@ -54,6 +54,10 @@ docker {
         '-XX:MinRAMPercentage=70.0',
         // the percentage of system memory that the JVM will use as maximum
         '-XX:MaxRAMPercentage=80.0',
+
+        // TODO(deephaven-core#1493): add-opens Docker application based on plugin conventions
+        '--add-opens', 'java.base/java.nio=ALL-UNNAMED',
+
         '-XshowSettings:vm'
     ]
   }

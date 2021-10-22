@@ -6,7 +6,7 @@ def archivesBaseNamePrefix = 'deephaven-'
 
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '17')
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '8')
-def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '8')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '17')
 def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '17')
 
 if (languageLevel > compilerVersion) {
