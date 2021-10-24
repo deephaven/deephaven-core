@@ -14,6 +14,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
@@ -24,10 +25,6 @@ import org.apache.arrow.flatbuf.FieldNode;
 import org.apache.arrow.flatbuf.RecordBatch;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.ExternalizableIndexUtils;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -140,14 +137,14 @@ public class BarrageStreamGenerator implements
                 modColumnData[i] = new ModColumnData(message.modColumnData[i]);
             }
 
-            if (message.snapshotIndex != null) {
-                message.snapshotIndex.close();
+            if (message.snapshotRowSet != null) {
+                message.snapshotRowSet.close();
             }
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while creating barrage message stream", e);
         } finally {
-            if (message.snapshotIndex != null) {
-                message.snapshotIndex.close();
+            if (message.snapshotRowSet != null) {
+                message.snapshotRowSet.close();
             }
         }
     }
@@ -189,8 +186,8 @@ public class BarrageStreamGenerator implements
     @Override
     public SubView getSubView(final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
-            @Nullable final Index viewport,
-            @Nullable final Index keyspaceViewport,
+            @Nullable final TrackingMutableRowSet viewport,
+            @Nullable final TrackingMutableRowSet keyspaceViewport,
             @Nullable final BitSet subscribedColumns) {
         return new SubView(this, options, isInitialSnapshot, viewport, keyspaceViewport, subscribedColumns);
     }
@@ -211,8 +208,8 @@ public class BarrageStreamGenerator implements
         public final BarrageStreamGenerator generator;
         public final BarrageSubscriptionOptions options;
         public final boolean isInitialSnapshot;
-        public final Index viewport;
-        public final Index keyspaceViewport;
+        public final TrackingMutableRowSet viewport;
+        public final TrackingMutableRowSet keyspaceViewport;
         public final BitSet subscribedColumns;
         public final boolean hasAddBatch;
         public final boolean hasModBatch;
@@ -220,8 +217,8 @@ public class BarrageStreamGenerator implements
         public SubView(final BarrageStreamGenerator generator,
                 final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
-                @Nullable final Index viewport,
-                @Nullable final Index keyspaceViewport,
+                @Nullable final TrackingMutableRowSet viewport,
+                @Nullable final TrackingMutableRowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.generator = generator;
             this.options = options;
@@ -408,7 +405,7 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         // Added Chunk Data:
-        final Index myAddedOffsets;
+        final TrackingMutableRowSet myAddedOffsets;
         if (view.isViewport()) {
             // only include added rows that are within the viewport
             myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport.intersect(rowsIncluded.original));
@@ -438,7 +435,7 @@ public class BarrageStreamGenerator implements
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (final ModColumnData mcd : modColumnData) {
-            Index myModOffsets = null;
+            TrackingMutableRowSet myModOffsets = null;
             if (view.isViewport()) {
                 // only include added rows that are within the viewport
                 myModOffsets =
@@ -460,7 +457,7 @@ public class BarrageStreamGenerator implements
 
     private boolean doesSubViewHaveMods(final SubView view) {
         for (final ModColumnData mcd : modColumnData) {
-            Index myModOffsets = null;
+            TrackingMutableRowSet myModOffsets = null;
             if (view.isViewport()) {
                 // only include added rows that are within the viewport
                 if (view.keyspaceViewport.overlaps(mcd.rowsModified.original)) {
@@ -492,7 +489,7 @@ public class BarrageStreamGenerator implements
 
         final int rowsAddedOffset;
         if (isSnapshot && !view.isInitialSnapshot) {
-            // client's don't need/want to receive the full index on every snapshot
+            // client's don't need/want to receive the full rowSet on every snapshot
             rowsAddedOffset = EmptyIndexGenerator.INSTANCE.addToFlatBuffer(metadata);
         } else {
             rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
@@ -562,14 +559,14 @@ public class BarrageStreamGenerator implements
     }
 
     public static class IndexGenerator extends ByteArrayGenerator implements SafeCloseable {
-        public final Index original;
+        public final TrackingMutableRowSet original;
 
-        public IndexGenerator(final Index index) throws IOException {
-            this.original = index.clone();
+        public IndexGenerator(final TrackingMutableRowSet rowSet) throws IOException {
+            this.original = rowSet.clone();
             // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, index);
+                ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, rowSet);
                 oos.flush();
                 raw = baos.peekBuffer();
                 len = baos.size();
@@ -586,13 +583,13 @@ public class BarrageStreamGenerator implements
         }
 
         /**
-         * Appends the intersection of the viewport and the originally provided index.
+         * Appends the intersection of the viewport and the originally provided rowSet.
          *
          * @param viewport the key-space version of the viewport
          * @param builder the flatbuffer builder
          * @return offset of the item in the flatbuffer
          */
-        protected int addToFlatBuffer(final Index viewport, final FlatBufferBuilder builder) throws IOException {
+        protected int addToFlatBuffer(final TrackingMutableRowSet viewport, final FlatBufferBuilder builder) throws IOException {
             if (original.subsetOf(viewport)) {
                 return addToFlatBuffer(builder);
             }
@@ -602,7 +599,7 @@ public class BarrageStreamGenerator implements
             // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos);
-                    final Index viewOfOriginal = original.intersect(viewport)) {
+                    final TrackingMutableRowSet viewOfOriginal = original.intersect(viewport)) {
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, viewOfOriginal);
                 oos.flush();
                 nraw = baos.peekBuffer();
@@ -641,9 +638,9 @@ public class BarrageStreamGenerator implements
         public IndexShiftDataGenerator(final IndexShiftData shifted) throws IOException {
             this.original = shifted;
 
-            final Index.SequentialBuilder sRangeBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder eRangeBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder destBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder sRangeBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder eRangeBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder destBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
 
             if (shifted != null) {
                 for (int i = 0; i < shifted.size(); ++i) {
@@ -661,11 +658,11 @@ public class BarrageStreamGenerator implements
             }
 
             // noinspection UnstableApiUsage
-            try (final Index sRange = sRangeBuilder.getIndex();
-                    final Index eRange = eRangeBuilder.getIndex();
-                    final Index dest = destBuilder.getIndex();
-                    final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+            try (final TrackingMutableRowSet sRange = sRangeBuilder.build();
+                 final TrackingMutableRowSet eRange = eRangeBuilder.build();
+                 final TrackingMutableRowSet dest = destBuilder.build();
+                 final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                 final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, sRange);
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, eRange);
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, dest);
@@ -774,7 +771,7 @@ public class BarrageStreamGenerator implements
         }
 
         EmptyIndexGenerator() throws IOException {
-            super(Index.CURRENT_FACTORY.getEmptyIndex());
+            super(TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet());
         }
 
         @Override

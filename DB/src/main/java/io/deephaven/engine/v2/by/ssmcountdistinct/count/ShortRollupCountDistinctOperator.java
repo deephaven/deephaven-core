@@ -23,8 +23,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.ShortSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.ShortCompactKernel;
 import io.deephaven.util.QueryConstants;
@@ -46,7 +46,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
     private final boolean countNull;
 
     private UpdateCommitter<ShortRollupCountDistinctOperator> prevFlusher = null;
-    private Index touchedStates;
+    private TrackingMutableRowSet touchedStates;
 
     public ShortRollupCountDistinctOperator(
                                            // region Constructor
@@ -491,7 +491,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();
@@ -521,7 +521,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
         }
 
         prevFlusher = new UpdateCommitter<>(this, ShortRollupCountDistinctOperator::flushPrevious);
-        touchedStates = Index.CURRENT_FACTORY.getEmptyIndex();
+        touchedStates = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         ssms.startTrackingPrevValues();
         resultColumn.startTrackingPrevValues();
     }

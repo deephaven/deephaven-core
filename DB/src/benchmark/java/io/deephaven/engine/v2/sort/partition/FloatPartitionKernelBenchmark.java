@@ -6,7 +6,8 @@ package io.deephaven.engine.v2.sort.partition;
 import io.deephaven.engine.util.tuples.generated.FloatLongTuple;
 import io.deephaven.engine.v2.sort.timsort.BaseTestFloatTimSortKernel;
 import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.List;
@@ -67,16 +68,16 @@ public class FloatPartitionKernelBenchmark {
         final Random random = new Random(0);
         final List<FloatLongTuple> stuffToSort = generate.generate(random, dataSize);
 
-        final Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         stuffToSort.stream().mapToLong(FloatLongTuple::getSecondElement).forEach(sequentialBuilder::appendKey);
-        final Index index = sequentialBuilder.getIndex();
+        final TrackingMutableRowSet rowSet = sequentialBuilder.build();
         final int numPartitionsValue;
         if ("sqrt".equals(numPartitions)) {
             numPartitionsValue = (int) Math.sqrt(stuffToSort.size());
         } else {
             numPartitionsValue = Integer.parseInt(numPartitions);
         }
-        final BaseTestFloatTimSortKernel.FloatPartitionKernelStuff partitionStuff = new BaseTestFloatTimSortKernel.FloatPartitionKernelStuff(stuffToSort, index, chunkSize, numPartitionsValue, preserveEquality);
+        final BaseTestFloatTimSortKernel.FloatPartitionKernelStuff partitionStuff = new BaseTestFloatTimSortKernel.FloatPartitionKernelStuff(stuffToSort, rowSet, chunkSize, numPartitionsValue, preserveEquality);
         doPartition = partitionStuff::run;
     }
 

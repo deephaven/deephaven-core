@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.liveness.Liveness;
 import io.deephaven.engine.v2.by.AggregationStateFactory;
@@ -15,7 +16,6 @@ import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -123,7 +123,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Index getIndex() {
+    public TrackingMutableRowSet getIndex() {
         return coalesce().getIndex();
     }
 
@@ -174,8 +174,8 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table getSubTable(Index index) {
-        return coalesce().getSubTable(index);
+    public Table getSubTable(TrackingMutableRowSet rowSet) {
+        return coalesce().getSubTable(rowSet);
     }
 
     @Override

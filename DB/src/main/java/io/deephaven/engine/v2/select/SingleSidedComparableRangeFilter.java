@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.TestUseOnly;
 
 public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
@@ -161,7 +161,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
+    TrackingMutableRowSet binarySearch(TrackingMutableRowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
         if (selection.isEmpty()) {
             return selection;
         }
@@ -174,9 +174,9 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
                 selection.size(), pivot, lowerInclusive, compareSign, isGreaterThan == reverse);
 
         if (isGreaterThan == reverse) {
-            return selection.subindexByPos(0, lowerBoundMin);
+            return selection.subSetByPositionRange(0, lowerBoundMin);
         } else {
-            return selection.subindexByPos(lowerBoundMin, selection.size());
+            return selection.subSetByPositionRange(lowerBoundMin, selection.size());
         }
     }
 }

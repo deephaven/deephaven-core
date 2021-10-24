@@ -244,7 +244,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
         final int size = getSeries().size();
 
         if (series < 0 || series >= size) {
-            throw new PlotRuntimeException("Series index is out of range: key=" + series + " range=[0," + size + "]", this);
+            throw new PlotRuntimeException("Series rowSet is out of range: key=" + series + " range=[0," + size + "]", this);
         }
 
         return getSeries().get(series);

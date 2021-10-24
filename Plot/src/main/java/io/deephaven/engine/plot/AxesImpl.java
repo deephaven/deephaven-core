@@ -426,7 +426,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
             return null;
         }
         if(dim < 0 | dim >= axes.length) {
-            throw new PlotIllegalArgumentException("Axis not found: index=" + dim + ", required in range = [0," + (axes.length-1) + "]", this);
+            throw new PlotIllegalArgumentException("Axis not found: rowSet=" + dim + ", required in range = [0," + (axes.length-1) + "]", this);
         }
         return axes[dim];
     }

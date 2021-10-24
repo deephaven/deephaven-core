@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.StandaloneTableLocationKey;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +53,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
     private TableLocationProvider locationProvider;
     private TableLocation tableLocation;
 
-    private Index expectedIndex;
+    private TrackingMutableRowSet expectedRowSet;
 
     private SimpleSourceTable SUT;
 
@@ -103,7 +103,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
             }
         });
 
-        expectedIndex = Index.FACTORY.getEmptyIndex();
+        expectedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
 
         // Since TestPAST covers refreshing SourceTables, let this cover the static case.
         SUT = new SimpleSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider, null);
@@ -151,9 +151,9 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
             @SuppressWarnings("SameParameterValue") final boolean coalesce) {
         Assert.assertion(!(throwException && !coalesce), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
-        final Index toAdd =
-                Index.FACTORY.getIndexByRange(expectedIndex.lastRowKey() + 1,
-                        expectedIndex.lastRowKey() + INDEX_INCREMENT);
+        final TrackingMutableRowSet toAdd =
+                TrackingMutableRowSet.FACTORY.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
+                        expectedRowSet.lastRowKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
             {
@@ -169,11 +169,11 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 }
             }
         });
-        expectedIndex.insert(toAdd);
+        expectedRowSet.insert(toAdd);
         if (coalesce) {
-            final Index index;
+            final TrackingMutableRowSet rowSet;
             try {
-                index = SUT.getIndex();
+                rowSet = SUT.getIndex();
                 if (throwException) {
                     fail("Expected exception");
                 }
@@ -184,7 +184,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                     throw exception;
                 }
             }
-            assertIndexEquals(expectedIndex, index);
+            assertIndexEquals(expectedRowSet, rowSet);
             assertIsSatisfied();
         }
     }
@@ -220,7 +220,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(Index.FACTORY.getEmptyIndex()));
+                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices1)));
             }
@@ -253,7 +253,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(Index.FACTORY.getEmptyIndex()));
+                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices2)));
             }
@@ -295,7 +295,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(Index.FACTORY.getEmptyIndex()));
+                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices3)));
             }

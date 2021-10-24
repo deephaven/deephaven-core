@@ -22,15 +22,15 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class IndexIterationRaw {
 
-    // Generate index as ranges and as individual position
-    // Build and index for it
+    // Generate rowSet as ranges and as individual position
+    // Build and rowSet for it
     // Generate 4 double arrays
     // Have chunk fetching:
     // - using RowSequence, range, direct,
     // - using fetched long chunk range/direct,
     // - iteration over array of indices/ranges with chunk get,
     // - direct iteration over array of indices/ranges
-    // - iteration over Index with by elements or by ranges
+    // - iteration over TrackingMutableRowSet with by elements or by ranges
     // - Params: spars
 
     @Param({/* 100", "10000", */ "1000000", "10000000"})
@@ -48,7 +48,7 @@ public class IndexIterationRaw {
 
     long indexPoints[];
     long indexRanges[];
-    Index rspIndex;
+    TrackingMutableRowSet rspRowSet;
 
     private WritableLongChunk<Attributes.OrderedRowKeys> indexChunk;
     private WritableLongChunk<Attributes.OrderedRowKeyRanges> rangeChunk;
@@ -83,7 +83,7 @@ public class IndexIterationRaw {
             indexPoints[j] = indexPoints[j - 1] + 1;
             j++;
         }
-        rspIndex = Index.FACTORY.getIndexByValues(indexPoints);
+        rspRowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexPoints);
 
         indexChunk = WritableLongChunk.makeWritableChunk(chunkSize);
         rangeChunk = WritableLongChunk.makeWritableChunk(2 * chunkSize);
@@ -125,7 +125,7 @@ public class IndexIterationRaw {
         return sum;
     }
 
-    private long fillChunkByIndexIterator(Index.Iterator it, int size) {
+    private long fillChunkByIndexIterator(TrackingMutableRowSet.Iterator it, int size) {
         long sum = 0;
         for (int i = 0; i < size; i++) {
             sum += it.nextLong();
@@ -133,7 +133,7 @@ public class IndexIterationRaw {
         return sum;
     }
 
-    private long[] fillChunkByIndexRangeIterator(Index.RangeIterator it, int rangeStart, int size) {
+    private long[] fillChunkByIndexRangeIterator(TrackingMutableRowSet.RangeIterator it, int rangeStart, int size) {
         long sum = 0;
         int pos = 0;
         int rangeEnd = (int) it.currentRangeEnd() + 1;
@@ -181,13 +181,13 @@ public class IndexIterationRaw {
 
     @Benchmark
     public void rspRowSequenceByRange(Blackhole bh) {
-        RowSequenceByRange(bh, rspIndex);
+        RowSequenceByRange(bh, rspRowSet);
     }
 
-    private void RowSequenceByRange(Blackhole bh, Index index) {
+    private void RowSequenceByRange(Blackhole bh, TrackingMutableRowSet rowSet) {
         long sum = 0;
         final int stepCount = indexCount / chunkSize;
-        final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
+        final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
         for (int step = 0; step < stepCount; step++) {
             final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
             sum += fillChunkByRowSequenceRange(rs);
@@ -211,13 +211,13 @@ public class IndexIterationRaw {
 
     @Benchmark
     public void rspRowSequenceByItems(Blackhole bh) {
-        RowSequenceByItems(bh, rspIndex);
+        RowSequenceByItems(bh, rspRowSet);
     }
 
-    public void RowSequenceByItems(Blackhole bh, Index index) {
+    public void RowSequenceByItems(Blackhole bh, TrackingMutableRowSet rowSet) {
         long sum = 0;
         final int stepCount = indexCount / chunkSize;
-        final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
+        final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
         for (int step = 0; step < stepCount; step++) {
             final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
             sum += fillChunkByRowSequenceItems(rs);
@@ -352,13 +352,13 @@ public class IndexIterationRaw {
 
     @Benchmark
     public void rspIndexByIndexIterator(Blackhole bh) {
-        indexByIndexIterator(bh, rspIndex);
+        indexByIndexIterator(bh, rspRowSet);
     }
 
-    public void indexByIndexIterator(Blackhole bh, Index index) {
+    public void indexByIndexIterator(Blackhole bh, TrackingMutableRowSet rowSet) {
         long sum = 0;
         int stepCount = indexCount / chunkSize;
-        Index.Iterator it = index.iterator();
+        TrackingMutableRowSet.Iterator it = rowSet.iterator();
 
 
         for (int step = 0; step < stepCount; step++) {
@@ -372,13 +372,13 @@ public class IndexIterationRaw {
 
     @Benchmark
     public void rspIndexByIndexRangeIterator(Blackhole bh) {
-        indexByIndexRangeIterator(bh, rspIndex);
+        indexByIndexRangeIterator(bh, rspRowSet);
     }
 
-    public void indexByIndexRangeIterator(Blackhole bh, Index index) {
+    public void indexByIndexRangeIterator(Blackhole bh, TrackingMutableRowSet rowSet) {
         long sum = 0;
         int stepCount = indexCount / chunkSize;
-        Index.RangeIterator it = index.rangeIterator();
+        TrackingMutableRowSet.RangeIterator it = rowSet.rangeIterator();
         int rangeStart = (int) it.currentRangeStart();
         for (int step = 0; step < stepCount; step++) {
 

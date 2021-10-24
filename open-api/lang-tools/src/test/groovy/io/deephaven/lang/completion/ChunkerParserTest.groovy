@@ -177,7 +177,7 @@ g = t.update(${q}Day = Timestamp - 100000000$q) // whatever...
         src.length().times{
             i ->
                 Node n = doc.findNode(i)
-                assert n : "No node found at index $i"
+                assert n : "No node found at rowSet $i"
                 assert ! (n instanceof ChunkerDocument) : "Should never findNode() the root document"
         }
         1 + q == "1$q"
@@ -212,7 +212,7 @@ t = engine.
         src.length().times{
             i ->
                 Node n = doc.findNode(i)
-                assert n : "No node found at index $i"
+                assert n : "No node found at rowSet $i"
                 assert ! (n instanceof ChunkerDocument) : "Should never findNode() the root document"
         }
         1 + q == "1$q"

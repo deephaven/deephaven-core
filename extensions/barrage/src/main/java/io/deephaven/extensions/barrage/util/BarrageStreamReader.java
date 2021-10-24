@@ -13,13 +13,13 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.engine.v2.utils.ExternalizableIndexUtils;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -95,7 +95,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                         if (msg.isSnapshot) {
                             final ByteBuffer effectiveViewport = metadata.effectiveViewportAsByteBuffer();
                             if (effectiveViewport != null) {
-                                msg.snapshotIndex = extractIndex(effectiveViewport);
+                                msg.snapshotRowSet = extractIndex(effectiveViewport);
                             }
                             msg.snapshotColumns = extractBitSet(metadata.effectiveColumnSetAsByteBuffer());
                         }
@@ -227,9 +227,9 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         }
     }
 
-    private static Index extractIndex(final ByteBuffer bb) throws IOException {
+    private static TrackingMutableRowSet extractIndex(final ByteBuffer bb) throws IOException {
         if (bb == null) {
-            return Index.FACTORY.getEmptyIndex();
+            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         }
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
@@ -245,18 +245,18 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
     private static IndexShiftData extractIndexShiftData(final ByteBuffer bb) throws IOException {
         final IndexShiftData.Builder builder = new IndexShiftData.Builder();
 
-        final Index sIndex, eIndex, dIndex;
+        final TrackingMutableRowSet sRowSet, eRowSet, dRowSet;
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
-            sIndex = ExternalizableIndexUtils.readExternalCompressedDelta(is);
-            eIndex = ExternalizableIndexUtils.readExternalCompressedDelta(is);
-            dIndex = ExternalizableIndexUtils.readExternalCompressedDelta(is);
+            sRowSet = ExternalizableIndexUtils.readExternalCompressedDelta(is);
+            eRowSet = ExternalizableIndexUtils.readExternalCompressedDelta(is);
+            dRowSet = ExternalizableIndexUtils.readExternalCompressedDelta(is);
         }
 
-        try (final Index.Iterator sit = sIndex.iterator();
-                final Index.Iterator eit = eIndex.iterator();
-                final Index.Iterator dit = dIndex.iterator()) {
+        try (final TrackingMutableRowSet.Iterator sit = sRowSet.iterator();
+             final TrackingMutableRowSet.Iterator eit = eRowSet.iterator();
+             final TrackingMutableRowSet.Iterator dit = dRowSet.iterator()) {
             while (sit.hasNext()) {
                 if (!eit.hasNext() || !dit.hasNext()) {
                     throw new IllegalStateException("IndexShiftData is inconsistent");

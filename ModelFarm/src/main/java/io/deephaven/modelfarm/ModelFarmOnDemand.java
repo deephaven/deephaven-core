@@ -6,12 +6,12 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.NotificationStepSource;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.util.FunctionalInterfaces;
 
 import java.util.ArrayDeque;
@@ -103,16 +103,16 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
         final Queue<DATATYPE> dataToEval = new ArrayDeque<>(keys != null ? keys.size() : dataManagerTable.intSize());
         // get data for all keys under the same lock
         DO_LOCKED_FUNCTION.accept((usePrev) -> {
-            final Index index = dataManagerTable.getIndex();
+            final TrackingMutableRowSet rowSet = dataManagerTable.getIndex();
 
-            if (index.empty()) {
+            if (rowSet.empty()) {
                 log.warn().append(ModelFarmOnDemand.class.getSimpleName() + ": ")
                         .append("Table is empty. Nothing to price.").endl();
                 callback.run();
                 return;
             }
 
-            for (Index.Iterator iter = index.iterator(); iter.hasNext();) {
+            for (TrackingMutableRowSet.Iterator iter = rowSet.iterator(); iter.hasNext();) {
                 final long idx = iter.nextLong();
 
                 // if a `keys` set was provided, then only enqueue keys in the `dataManager` that are also in the set.

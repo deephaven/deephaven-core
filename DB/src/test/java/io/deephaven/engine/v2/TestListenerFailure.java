@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.FormulaEvaluationException;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import junit.framework.TestCase;
 
 import java.util.List;
@@ -48,7 +48,7 @@ public class TestListenerFailure extends LiveTableTestCase {
             ((DynamicTable) updated)
                     .listenForUpdates(new InstrumentedListenerAdapter("Dummy", (QueryTable) updated, false) {
                         @Override
-                        public void onUpdate(Index added, Index removed, Index modified) {}
+                        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {}
                     }, false);
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {

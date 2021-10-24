@@ -7,6 +7,8 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.count;
 
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
@@ -24,8 +26,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.ShortSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.ShortCompactKernel;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +44,7 @@ public class ShortChunkedCountDistinctOperator implements IterativeChunkedAggreg
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
     private final boolean exposeInternal;
-    private Index touchedStates;
+    private TrackingMutableRowSet touchedStates;
     private UpdateCommitter<ShortChunkedCountDistinctOperator> prevFlusher = null;
 
     private final ShortSsmBackedSource ssms;
@@ -229,7 +229,7 @@ public class ShortChunkedCountDistinctOperator implements IterativeChunkedAggreg
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();
@@ -276,7 +276,7 @@ public class ShortChunkedCountDistinctOperator implements IterativeChunkedAggreg
 
             ssms.startTrackingPrevValues();
             prevFlusher = new UpdateCommitter<>(this, ShortChunkedCountDistinctOperator::flushPrevious);
-            touchedStates = Index.CURRENT_FACTORY.getEmptyIndex();
+            touchedStates = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         }
     }
 

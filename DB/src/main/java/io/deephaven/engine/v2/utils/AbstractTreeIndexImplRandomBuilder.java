@@ -85,7 +85,7 @@ public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImp
 
     private void newRange(final long firstKey, final long lastKey) {
         if (firstKey > lastKey) {
-            if (Index.BAD_RANGES_AS_ERROR) {
+            if (TrackingMutableRowSet.BAD_RANGES_AS_ERROR) {
                 throw new IllegalArgumentException("Illegal range start=" + firstKey + " > end=" + lastKey + ".");
             }
             // Ignore.
@@ -154,13 +154,13 @@ public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImp
         });
     }
 
-    public void addIndex(final Index idx) {
+    public void addRowSet(final RowSet rowSet) {
         flushPendingRange();
-        if (idx instanceof TreeIndex) {
-            TreeIndex.add(this, (TreeIndex) idx);
+        if (rowSet instanceof TrackingMutableRowSetImpl) {
+            TrackingMutableRowSetImpl.add(this, (TrackingMutableRowSetImpl) rowSet);
             return;
         }
-        idx.forEachLongRange((final long start, final long end) -> {
+        rowSet.forEachLongRange((final long start, final long end) -> {
             addRange(start, end);
             return true;
         });

@@ -22,8 +22,8 @@ public class SingleRangeTest {
     public void testIterator() {
         final long start = 10;
         final long end = 21;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        final Index.Iterator it = ix.iterator();
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        final TrackingMutableRowSet.Iterator it = ix.iterator();
         long expected = start;
         while (it.hasNext()) {
             assertEquals(expected, it.nextLong());
@@ -36,8 +36,8 @@ public class SingleRangeTest {
     public void testRangeIterator() {
         final long start = 10;
         final long end = 21;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        final Index.RangeIterator it = ix.rangeIterator();
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        final TrackingMutableRowSet.RangeIterator it = ix.rangeIterator();
         assertTrue(it.hasNext());
         it.next();
         assertEquals(start, it.currentRangeStart());
@@ -49,35 +49,35 @@ public class SingleRangeTest {
     public void testRemoveIndex() {
         final long start = 10;
         final long end = 21;
-        TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        Index ix2 = new TreeIndex(SingleRange.make(start - 1, end + 1));
+        TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        TrackingMutableRowSet ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start - 1, end + 1));
         ix.remove(ix2);
         assertEquals(TreeIndexImpl.EMPTY, ix.getImpl());
 
-        ix = new TreeIndex(SingleRange.make(start, end));
-        ix2 = new TreeIndex(SingleRange.make(start - 1, end - 1));
+        ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start - 1, end - 1));
         ix.remove(ix2);
         assertTrue(ix.getImpl() instanceof SingleRange);
         assertEquals(end, ix.firstRowKey());
         assertEquals(end, ix.lastRowKey());
 
-        ix = new TreeIndex(SingleRange.make(start, end));
-        ix2 = new TreeIndex(SingleRange.make(start + 1, end + 1));
+        ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start + 1, end + 1));
         ix.remove(ix2);
         assertTrue(ix.getImpl() instanceof SingleRange);
         assertEquals(start, ix.firstRowKey());
         assertEquals(start, ix.lastRowKey());
 
-        ix = new TreeIndex(SingleRange.make(start, end));
-        ix2 = new TreeIndex(SingleRange.make(start + 1, end - 1));
+        ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start + 1, end - 1));
         ix.remove(ix2);
         assertTrue(ix.getImpl() instanceof SortedRanges);
         assertEquals(2, ix.size());
         assertEquals(start, ix.firstRowKey());
         assertEquals(end, ix.lastRowKey());
 
-        ix = new TreeIndex(SingleRange.make(start, end));
-        ix2 = Index.FACTORY.getEmptyIndex();
+        ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        ix2 = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix2.insertRange(10, 10);
         ix2.insertRange(21, 21);
         ix.remove(ix2);
@@ -89,7 +89,7 @@ public class SingleRangeTest {
     public void testRemoveKey() {
         final long start = 10;
         final long end = 21;
-        TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
+        TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         ix.remove(9);
         assertTrue(ix.getImpl() instanceof SingleRange);
         assertEquals(10, ix.firstRowKey());
@@ -111,7 +111,7 @@ public class SingleRangeTest {
         assertEquals(9, ix.size());
         assertTrue(ix.containsRange(11, 11));
         assertTrue(ix.containsRange(13, 20));
-        TreeIndex ix2 = new TreeIndex(SingleRange.make(9, 9));
+        TrackingMutableRowSetImpl ix2 = new TrackingMutableRowSetImpl(SingleRange.make(9, 9));
         ix2.remove(9);
         assertEquals(ix2.getImpl(), TreeIndexImpl.EMPTY);
     }
@@ -123,13 +123,13 @@ public class SingleRangeTest {
             final long end2,
             final long startExpected,
             final long endExpected) {
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start1, end1));
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start1, end1));
         Runnable check = () -> {
             assertTrue(ix.getImpl() instanceof SingleRange);
             assertEquals(startExpected, ix.firstRowKey());
             assertEquals(endExpected, ix.lastRowKey());
         };
-        final TreeIndex ix2 = new TreeIndex(SingleRange.make(start2, end2));
+        final TrackingMutableRowSetImpl ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start2, end2));
         ix.insert(ix2);
         check.run();
         ix.clear();
@@ -144,8 +144,8 @@ public class SingleRangeTest {
         insertResultsInSingle(10, 20, 8, 9, 8, 20);
         final long start = 10;
         final long end = 20;
-        TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        TreeIndex ix2 = new TreeIndex(SingleRange.make(start - 3, start - 2));
+        TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        TrackingMutableRowSetImpl ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start - 3, start - 2));
         ix.insert(ix2);
         assertTrue(ix.getImpl() instanceof SortedRanges);
         assertEquals(ix.size(), end - start + 1 + 2);
@@ -153,8 +153,8 @@ public class SingleRangeTest {
         assertEquals(-3L, ix.find(start - 1));
         assertEquals(end, ix.lastRowKey());
 
-        ix = new TreeIndex(SingleRange.make(start, end));
-        ix2 = new TreeIndex(SingleRange.make(end + 2, end + 3));
+        ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        ix2 = new TrackingMutableRowSetImpl(SingleRange.make(end + 2, end + 3));
         ix.insert(ix2);
         assertTrue(ix.getImpl() instanceof SortedRanges);
         assertEquals(ix.size(), end - start + 1 + 2);
@@ -168,9 +168,9 @@ public class SingleRangeTest {
             final long end1,
             final long start2,
             final long end2,
-            final Consumer<Index> check) {
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start1, end1));
-        final TreeIndex ix2 = new TreeIndex(SingleRange.make(start2, end2));
+            final Consumer<TrackingMutableRowSet> check) {
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start1, end1));
+        final TrackingMutableRowSetImpl ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start2, end2));
         ix.remove(ix2);
         check.accept(ix);
         ix.clear();
@@ -179,7 +179,7 @@ public class SingleRangeTest {
         check.accept(ix);
         ix.clear();
         ix.insertRange(start1, end1);
-        final Index ix3 = ix.minus(ix2);
+        final TrackingMutableRowSet ix3 = ix.minus(ix2);
         check.accept(ix3);
     }
 
@@ -188,14 +188,14 @@ public class SingleRangeTest {
             final long end1,
             final long start2,
             final long end2) {
-        final Consumer<Index> check;
+        final Consumer<TrackingMutableRowSet> check;
         if (start1 < start2 && end2 < end1) {
             // hole.
-            check = (final Index t) -> {
+            check = (final TrackingMutableRowSet t) -> {
                 final TreeIndexImpl timpl = ((ImplementedByTreeIndexImpl) t).getImpl();
                 assertTrue((timpl instanceof RspBitmap) || (timpl instanceof SortedRanges));
                 int rangeCount = 0;
-                final Index.RangeIterator it = t.rangeIterator();
+                final TrackingMutableRowSet.RangeIterator it = t.rangeIterator();
                 while (it.hasNext()) {
                     it.next();
                     final long start = it.currentRangeStart();
@@ -215,13 +215,13 @@ public class SingleRangeTest {
             };
         } else if (start2 <= start1 && end1 <= end2) {
             // completely removed
-            check = (final Index t) -> {
+            check = (final TrackingMutableRowSet t) -> {
                 assertTrue(((ImplementedByTreeIndexImpl) t).getImpl() == TreeIndexImpl.EMPTY);
                 assertTrue(t.empty());
             };
         } else {
             // results in single range
-            check = (final Index t) -> {
+            check = (final TrackingMutableRowSet t) -> {
                 assertTrue(((ImplementedByTreeIndexImpl) t).getImpl() instanceof SingleRange);
                 if (start1 < start2) {
                     assertEquals(start1, t.firstRowKey());
@@ -245,8 +245,8 @@ public class SingleRangeTest {
         removeResultsCheck(10, 20, 10, 20);
         removeResultsCheck(10, 20, 8, 11);
         removeResultsCheck(10, 20, 15, 25);
-        TreeIndex ix = new TreeIndex(SingleRange.make(10, 20));
-        TreeIndex ix2 = new TreeIndex(SingleRange.make(10, 20));
+        TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(10, 20));
+        TrackingMutableRowSetImpl ix2 = new TrackingMutableRowSetImpl(SingleRange.make(10, 20));
         ix.remove(ix2);
         assertEquals(TreeIndexImpl.EMPTY, ix.getImpl());
         ix.insertRange(10, 20);
@@ -262,25 +262,25 @@ public class SingleRangeTest {
     public void testInvert() {
         final long start = 10;
         final long end = 30;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         final RspBitmap rb = new RspBitmap();
         for (long i = start + 1; i <= end; i += 2) {
             rb.add(i);
         }
-        final Index keys = new TreeIndex(rb);
-        final Index r = ix.invert(keys, 10);
+        final TrackingMutableRowSet keys = new TrackingMutableRowSetImpl(rb);
+        final TrackingMutableRowSet r = ix.invert(keys, 10);
         assertEquals(5, r.size());
-        assertTrue(r.subsetOf(Index.FACTORY.getIndexByValues(1, 3, 5, 7, 9)));
+        assertTrue(r.subsetOf(TrackingMutableRowSet.FACTORY.getRowSetByValues(1, 3, 5, 7, 9)));
 
         keys.clear();
         keys.insertRange(10, 30);
-        final Index r2 = ix.invert(keys, 10);
+        final TrackingMutableRowSet r2 = ix.invert(keys, 10);
         assertEquals(11, r2.size());
-        assertTrue(r.subsetOf(Index.FACTORY.getIndexByRange(0, 10)));
+        assertTrue(r.subsetOf(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 10)));
 
         keys.clear();
         keys.insert(30);
-        final Index r3 = ix.invert(keys, 100);
+        final TrackingMutableRowSet r3 = ix.invert(keys, 100);
         assertEquals(1, r3.size());
         assertEquals(20, r3.firstRowKey());
     }
@@ -289,7 +289,7 @@ public class SingleRangeTest {
     public void testOrderedKeyIterator() {
         final long start = 10;
         final long end = 30;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
         final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2);
         int offset = 0;
@@ -317,7 +317,7 @@ public class SingleRangeTest {
     public void testRowSequence() {
         final long start = 10;
         final long end = 30;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         RowSequence rs = ix.getRowSequenceByKeyRange(8, 9);
         assertEquals(RowSequence.EMPTY, rs);
         rs = ix.getRowSequenceByKeyRange(31, 32);
@@ -373,49 +373,49 @@ public class SingleRangeTest {
     public void testSubindexByKey() {
         final long start = 10;
         final long end = 30;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        Index r = ix.subindexByKey(5, 15);
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        TrackingMutableRowSet r = ix.subSetByKeyRange(5, 15);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(10, 15)));
-        r = ix.subindexByKey(5, 15);
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(10, 15)));
+        r = ix.subSetByKeyRange(5, 15);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(10, 15)));
-        r = ix.subindexByKey(15, 20);
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(10, 15)));
+        r = ix.subSetByKeyRange(15, 20);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(15, 20)));
-        r = ix.subindexByKey(25, 35);
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(15, 20)));
+        r = ix.subSetByKeyRange(25, 35);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(25, 30)));
-        r = ix.subindexByKey(11, 29);
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(25, 30)));
+        r = ix.subSetByKeyRange(11, 29);
         assertEquals(19, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(11, 29)));
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(11, 29)));
     }
 
     @Test
     public void testSubindexByPos() {
         final long start = 10;
         final long end = 30;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
-        Index r = ix.subindexByPos(0, 5 + 1);
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
+        TrackingMutableRowSet r = ix.subSetByPositionRange(0, 5 + 1);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(10, 15)));
-        r = ix.subindexByPos(5, 10 + 1);
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(10, 15)));
+        r = ix.subSetByPositionRange(5, 10 + 1);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(15, 20)));
-        r = ix.subindexByPos(15, 35 + 1);
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(15, 20)));
+        r = ix.subSetByPositionRange(15, 35 + 1);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(25, 30)));
-        r = ix.subindexByPos(1, 19 + 1);
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(25, 30)));
+        r = ix.subSetByPositionRange(1, 19 + 1);
         assertEquals(19, r.size());
-        assertTrue(r.overlaps(Index.FACTORY.getIndexByRange(11, 29)));
+        assertTrue(r.overlaps(TrackingMutableRowSet.FACTORY.getRowSetByRange(11, 29)));
     }
 
-    private static void checkBinarySearch(final TreeIndex ix) {
+    private static void checkBinarySearch(final TrackingMutableRowSetImpl ix) {
         assertFalse(ix.empty());
         final long start = ix.firstRowKey();
         final long end = ix.lastRowKey();
         assertEquals(end - start + 1, ix.size());
-        final Index.SearchIterator it = ix.searchIterator();
+        final TrackingMutableRowSet.SearchIterator it = ix.searchIterator();
         assertTrue(it.hasNext());
         assertEquals(-1, it.binarySearchValue((final long key, final int dir) -> (int) ((start - 1) - key), 1));
         for (long v = start; v <= end; ++v) {
@@ -430,9 +430,9 @@ public class SingleRangeTest {
     public void testSimpleBinarySearch() {
         final long start = 10;
         final long end = 30;
-        final TreeIndex six = new TreeIndex(SingleRange.make(start, end));
+        final TrackingMutableRowSetImpl six = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         checkBinarySearch(six);
-        final TreeIndex rbix = new TreeIndex(new RspBitmap(start, end));
+        final TrackingMutableRowSetImpl rbix = new TrackingMutableRowSetImpl(new RspBitmap(start, end));
         checkBinarySearch(rbix);
     }
 
@@ -441,7 +441,7 @@ public class SingleRangeTest {
         final long start = 10;
         final long end = 30;
         final long card = end - start + 1;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         final long[] positions = new long[] {0, 1, card - 2, card - 1};
         final long[] expected = new long[] {10, 11, 29, 30};
         final long[] result = new long[4];
@@ -455,7 +455,7 @@ public class SingleRangeTest {
     public void testRowSequenceIteratorAdvanceRegression0() {
         final long start = 1000;
         final long end = 3000;
-        final TreeIndex ix = new TreeIndex(SingleRange.make(start, end));
+        final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
         assertTrue(rsIt.hasMore());
         final boolean valid = rsIt.advance(500);

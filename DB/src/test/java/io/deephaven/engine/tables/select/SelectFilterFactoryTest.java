@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.select.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -76,7 +76,7 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Opra in `opra1`, `opra2`, `opra3`,`opra4`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        Index idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        TrackingMutableRowSet idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
         assertEquals(3, idx.size());
 
         f = SelectFilterFactory.getExpression("Opra in `opra1`, `Opra4`");
@@ -163,7 +163,7 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Timestamp in '" + mon + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        Index idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        TrackingMutableRowSet idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
         assertEquals(1, idx.size());
         assertEquals(mon, t.getColumn(0).get(idx.firstRowKey()));
         // match one of two items
@@ -341,51 +341,51 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Phrase icase includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        Index result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        TrackingMutableRowSet result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
         assertEquals(12, result.size());
-        assertEquals(Index.FACTORY.getIndexByValues(0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 13), result);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase includes all `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
         assertEquals(4, result.size());
-        assertEquals(Index.FACTORY.getIndexByValues(7, 9, 10, 11), result);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(7, 9, 10, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
-        assertEquals(Index.FACTORY.getIndexByValues(0, 1, 2, 6, 7, 9, 10, 11), result);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1, 2, 6, 7, 9, 10, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase includes all `T1`, `t2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
-        assertEquals(Index.FACTORY.getIndexByValues(7, 11), result);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(7, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase not includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
-        assertEquals(Index.FACTORY.getIndexByValues(0, 1, 2, 3, 4, 5, 6, 8, 12, 13), result);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1, 2, 3, 4, 5, 6, 8, 12, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase not includes all `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
-        assertEquals(Index.FACTORY.getIndexByValues(5, 12), result);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 12), result);
 
         f = SelectFilterFactory.getExpression("Phrase not includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
-        assertEquals(Index.FACTORY.getIndexByValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13), result);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase not includes all `T1`, `t2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
-        assertEquals(Index.FACTORY.getIndexByValues(1, 3, 5, 12), result);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(1, 3, 5, 12), result);
     }
 }

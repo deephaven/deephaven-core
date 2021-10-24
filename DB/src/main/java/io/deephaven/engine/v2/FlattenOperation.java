@@ -6,7 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import io.deephaven.engine.v2.utils.WrappedIndexRedirectionIndexImpl;
@@ -35,17 +35,17 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final Index index = parent.getIndex();
+        final TrackingMutableRowSet rowSet = parent.getIndex();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
-        final RedirectionIndex redirectionIndex = new WrappedIndexRedirectionIndexImpl(index);
+        final RedirectionIndex redirectionIndex = new WrappedIndexRedirectionIndexImpl(rowSet);
 
-        final long size = usePrev ? index.sizePrev() : index.size();
+        final long size = usePrev ? rowSet.sizePrev() : rowSet.size();
 
         for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
             resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, entry.getValue()));
         }
 
-        resultTable = new QueryTable(Index.FACTORY.getFlatIndex(size), resultColumns);
+        resultTable = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(size), resultColumns);
         resultTable.setFlat();
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Flatten);
 
@@ -76,31 +76,31 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
     private void onUpdate(final ShiftAwareListener.Update upstream) {
         // Note: we can safely ignore shifted since shifts do not change data AND shifts are not allowed to reorder.
-        final Index index = parent.getIndex();
-        final long newSize = index.size();
+        final TrackingMutableRowSet rowSet = parent.getIndex();
+        final long newSize = rowSet.size();
 
         final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
         downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
         mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
 
         // Check to see if we can simply invert and pass-down.
-        downstream.modified = index.invert(upstream.modified);
+        downstream.modified = rowSet.invert(upstream.modified);
         if (upstream.added.empty() && upstream.removed.empty()) {
-            downstream.added = Index.FACTORY.getEmptyIndex();
-            downstream.removed = Index.FACTORY.getEmptyIndex();
+            downstream.added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            downstream.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             downstream.shifted = IndexShiftData.EMPTY;
             resultTable.notifyListeners(downstream);
             return;
         }
 
-        downstream.added = index.invert(upstream.added);
-        try (final Index prevIndex = index.getPrevIndex()) {
-            downstream.removed = prevIndex.invert(upstream.removed);
+        downstream.added = rowSet.invert(upstream.added);
+        try (final TrackingMutableRowSet prevRowSet = rowSet.getPrevIndex()) {
+            downstream.removed = prevRowSet.invert(upstream.removed);
         }
         final IndexShiftData.Builder outShifted = new IndexShiftData.Builder();
 
         // Helper to ensure that we can prime iterators and still detect the end.
-        final Consumer<MutableObject<Index.RangeIterator>> updateIt = (it) -> {
+        final Consumer<MutableObject<TrackingMutableRowSet.RangeIterator>> updateIt = (it) -> {
             if (it.getValue().hasNext()) {
                 it.getValue().next();
             } else {
@@ -109,8 +109,8 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         };
 
         // Create our range iterators and prime them.
-        final MutableObject<Index.RangeIterator> rmIt = new MutableObject<>(downstream.removed.rangeIterator());
-        final MutableObject<Index.RangeIterator> addIt = new MutableObject<>(downstream.added.rangeIterator());
+        final MutableObject<TrackingMutableRowSet.RangeIterator> rmIt = new MutableObject<>(downstream.removed.rangeIterator());
+        final MutableObject<TrackingMutableRowSet.RangeIterator> addIt = new MutableObject<>(downstream.added.rangeIterator());
         updateIt.accept(rmIt);
         updateIt.accept(addIt);
 
@@ -119,9 +119,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         long currMarker = 0; // everything less than this marker is accounted for
 
         while (rmIt.getValue() != null || addIt.getValue() != null) {
-            final long nextRm = rmIt.getValue() == null ? Index.NULL_KEY
+            final long nextRm = rmIt.getValue() == null ? TrackingMutableRowSet.NULL_ROW_KEY
                     : rmIt.getValue().currentRangeStart();
-            final long nextAdd = addIt.getValue() == null ? Index.NULL_KEY
+            final long nextAdd = addIt.getValue() == null ? TrackingMutableRowSet.NULL_ROW_KEY
                     : addIt.getValue().currentRangeStart() - currDelta;
 
             if (nextRm == nextAdd) { // note neither can be null in this case
@@ -137,7 +137,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
                 updateIt.accept(rmIt);
                 updateIt.accept(addIt);
-            } else if (nextAdd == Index.NULL_KEY || (nextRm != Index.NULL_KEY && nextRm < nextAdd)) {
+            } else if (nextAdd == TrackingMutableRowSet.NULL_ROW_KEY || (nextRm != TrackingMutableRowSet.NULL_ROW_KEY && nextRm < nextAdd)) {
                 // rmIt cannot be null
                 final long dtRm = rmIt.getValue().currentRangeEnd() - rmIt.getValue().currentRangeStart() + 1;
 

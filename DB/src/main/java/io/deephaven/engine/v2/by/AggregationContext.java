@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.UpdateSizeCalculator;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 
@@ -72,7 +72,7 @@ class AggregationContext {
     private final AggregationContextTransformer[] transformers;
 
     /**
-     * For a given operator index, the first slot that the column exists in. If the value in index oi is equal to oi,
+     * For a given operator rowSet, the first slot that the column exists in. If the value in rowSet oi is equal to oi,
      * then we will read from this column. If the value is not equal to oi (because it is -1 for a null column or a
      * value less than oi), we will reuse an already read value.
      */
@@ -272,7 +272,7 @@ class AggregationContext {
      * @param newDestinations New destinations added on this update
      */
     void propagateChangesToOperators(@NotNull final ShiftAwareListener.Update downstream,
-            @NotNull final ReadOnlyIndex newDestinations) {
+            @NotNull final RowSet newDestinations) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.propagateUpdates(downstream, newDestinations);
         }

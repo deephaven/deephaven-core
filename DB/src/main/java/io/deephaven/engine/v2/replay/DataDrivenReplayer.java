@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.replay;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.list.array.TLongArrayList;
 
 public class DataDrivenReplayer extends Replayer {
@@ -28,18 +28,18 @@ public class DataDrivenReplayer extends Replayer {
     TLongArrayList allTimestamp = new TLongArrayList();
 
     @Override
-    public void registerTimeSource(Index index, ColumnSource<DBDateTime> timestampSource) {
+    public void registerTimeSource(TrackingMutableRowSet rowSet, ColumnSource<DBDateTime> timestampSource) {
         long prevValue = -1;
         if (timestampSource.allowsReinterpret(long.class)) {
             ColumnSource<Long> longColumn = timestampSource.reinterpret(long.class);
-            for (Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
+            for (TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
                 long currentValue = longColumn.getLong(iterator.nextLong());
                 if (currentValue != prevValue) {
                     allTimestamp.add(prevValue = currentValue);
                 }
             }
         } else {
-            for (Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
+            for (TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
                 long currentValue = timestampSource.get(iterator.nextLong()).getNanos();
                 if (currentValue != prevValue) {
                     allTimestamp.add(prevValue = currentValue);

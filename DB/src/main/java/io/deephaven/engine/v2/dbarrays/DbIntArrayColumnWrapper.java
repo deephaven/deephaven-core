@@ -12,8 +12,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -23,19 +23,19 @@ public class DbIntArrayColumnWrapper extends DbIntArray.Indirect {
     private static final long serialVersionUID = -2715269662143763674L;
 
     private final ColumnSource<Integer> columnSource;
-    private final Index index;
+    private final TrackingMutableRowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public DbIntArrayColumnWrapper(@NotNull final ColumnSource<Integer> columnSource, @NotNull final Index index){
-        this(columnSource, index, 0, 0);
+    public DbIntArrayColumnWrapper(@NotNull final ColumnSource<Integer> columnSource, @NotNull final TrackingMutableRowSet rowSet){
+        this(columnSource, rowSet, 0, 0);
     }
 
-    public DbIntArrayColumnWrapper(@NotNull final ColumnSource<Integer> columnSource, @NotNull final Index index,
+    public DbIntArrayColumnWrapper(@NotNull final ColumnSource<Integer> columnSource, @NotNull final TrackingMutableRowSet rowSet,
                                     final long startPadding, final long endPadding){
-        Assert.neqNull(index, "index");
+        Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
-        this.index = index;
+        this.rowSet = rowSet;
         this.startPadding = startPadding;
         this.endPadding = endPadding;
     }
@@ -44,22 +44,22 @@ public class DbIntArrayColumnWrapper extends DbIntArray.Indirect {
     public int get(long i) {
         i-= startPadding;
 
-        if (i<0 || i> index.size()-1) {
+        if (i<0 || i> rowSet.size()-1) {
             return NULL_INT;
         }
 
-        return columnSource.getInt(index.get(i));
+        return columnSource.getInt(rowSet.get(i));
     }
 
     @Override
     public int getPrev(long i) {
         i-= startPadding;
 
-        if (i<0 || i> index.size()-1) {
+        if (i<0 || i> rowSet.size()-1) {
             return NULL_INT;
         }
 
-        return columnSource.getPrevInt(index.get(i));
+        return columnSource.getPrevInt(rowSet.get(i));
     }
 
     @Override
@@ -67,28 +67,28 @@ public class DbIntArrayColumnWrapper extends DbIntArray.Indirect {
         fromIndex-=startPadding;
         toIndex-=startPadding;
 
-        final long realFrom = ClampUtil.clampLong(0, index.size(), fromIndex);
-        final long realTo = ClampUtil.clampLong(0, index.size(), toIndex);
+        final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndex);
+        final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndex);
 
         long newStartPadding=toIndex<0 ? toIndex-fromIndex : Math.max(0, -fromIndex);
-        long newEndPadding= fromIndex>= index.size() ? toIndex-fromIndex : Math.max(0, toIndex - index.size());
+        long newEndPadding= fromIndex>= rowSet.size() ? toIndex-fromIndex : Math.max(0, toIndex - rowSet.size());
 
-        return new DbIntArrayColumnWrapper(columnSource, index.subindexByPos(realFrom, realTo), newStartPadding, newEndPadding);
+        return new DbIntArrayColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo), newStartPadding, newEndPadding);
     }
 
     @Override
     public DbIntArray subArrayByPositions(long [] positions) {
-        IndexBuilder builder = Index.FACTORY.getRandomBuilder();
+        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
         for (long position : positions) {
             final long realPos = position - startPadding;
 
-            if (realPos < index.size()) {
-                builder.addKey(index.get(realPos));
+            if (realPos < rowSet.size()) {
+                builder.addKey(rowSet.get(realPos));
             }
         }
 
-        return new DbIntArrayColumnWrapper(columnSource, builder.getIndex(), 0, 0);
+        return new DbIntArrayColumnWrapper(columnSource, builder.build(), 0, 0);
     }
 
     @Override
@@ -113,7 +113,7 @@ public class DbIntArrayColumnWrapper extends DbIntArray.Indirect {
 
     @Override
     public long size() {
-        return startPadding + index.size() + endPadding;
+        return startPadding + rowSet.size() + endPadding;
     }
 
 }

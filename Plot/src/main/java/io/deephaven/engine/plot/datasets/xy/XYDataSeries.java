@@ -12,7 +12,7 @@ import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.Shape;
 
 /**
- * {@link DataSeries} with two numerical components, x and y. Data points are numbered and are accessed with an index.
+ * {@link DataSeries} with two numerical components, x and y. Data points are numbered and are accessed with an rowSet.
  */
 public interface XYDataSeries extends DataSeries {
 
@@ -99,7 +99,7 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors colors. The color for data point i comes from index i.
+     * @param colors colors. The color for data point i comes from rowSet i.
      * @param <T> data type of the {@code colors}
      * @return this XYDataSeries
      */
@@ -108,7 +108,7 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors colors. The color for data point i comes from index i.
+     * @param colors colors. The color for data point i comes from rowSet i.
      * @return this XYDataSeries
      */
     XYDataSeries pointColor(Paint... colors);
@@ -116,7 +116,7 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors colors. The color for data point i comes from index i.
+     * @param colors colors. The color for data point i comes from rowSet i.
      * @return this XYDataSeries
      */
     XYDataSeries pointColorInteger(final IndexableData<Integer> colors);
@@ -124,7 +124,7 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
+     * @param colors color palette indices. The color for data point i comes from rowSet i. A value of 3 corresponds to
      *        the 3rd color from the color pallette.
      * @return this XYDataSeries
      */
@@ -133,7 +133,7 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
+     * @param colors color palette indices. The color for data point i comes from rowSet i. A value of 3 corresponds to
      *        the 3rd color from the color pallette.
      * @return this XYDataSeries
      */
@@ -142,7 +142,7 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors color names. The color for data point i comes from index i.
+     * @param colors color names. The color for data point i comes from rowSet i.
      * @return this XYDataSeries
      */
     XYDataSeries pointColor(String... colors);
@@ -170,7 +170,7 @@ public interface XYDataSeries extends DataSeries {
 
 
     /**
-     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param labels labels
@@ -179,7 +179,7 @@ public interface XYDataSeries extends DataSeries {
     XYDataSeries pointLabel(IndexableData<?> labels);
 
     /**
-     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param labels labels
@@ -188,7 +188,7 @@ public interface XYDataSeries extends DataSeries {
     XYDataSeries pointLabel(Object... labels);
 
     /**
-     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param t table containing labels
@@ -198,7 +198,7 @@ public interface XYDataSeries extends DataSeries {
     XYDataSeries pointLabel(Table t, String columnName);
 
     /**
-     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing labels
@@ -213,7 +213,7 @@ public interface XYDataSeries extends DataSeries {
 
 
     /**
-     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param shapes shapes
@@ -222,7 +222,7 @@ public interface XYDataSeries extends DataSeries {
     XYDataSeries pointShape(IndexableData<String> shapes);
 
     /**
-     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param shapes shapes
@@ -231,7 +231,7 @@ public interface XYDataSeries extends DataSeries {
     XYDataSeries pointShape(String... shapes);
 
     /**
-     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param shapes shapes
@@ -240,7 +240,7 @@ public interface XYDataSeries extends DataSeries {
     XYDataSeries pointShape(Shape... shapes);
 
     /**
-     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param t table containing shapes
@@ -250,7 +250,7 @@ public interface XYDataSeries extends DataSeries {
     XYDataSeries pointShape(Table t, String columnName);
 
     /**
-     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing shapes

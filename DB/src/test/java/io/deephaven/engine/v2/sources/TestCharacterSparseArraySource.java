@@ -5,7 +5,8 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.CharChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableCharChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import org.junit.After;
 import org.junit.Before;
@@ -51,7 +52,7 @@ public class TestCharacterSparseArraySource {
         final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
         final WritableCharChunk<Values> dest = WritableCharChunk.makeWritableChunk(chunkSize);
 
-        source.fillChunk(fillContext, dest, Index.FACTORY.getIndexByRange(0, 1023));
+        source.fillChunk(fillContext, dest, TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 1023));
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_CHAR, dest.get(ii));
         }
@@ -83,8 +84,8 @@ public class TestCharacterSparseArraySource {
 
             // lets make a few random indices
             for (int seed = 0; seed < 100; ++seed) {
-                final Index index = generateIndex(random, expectations.length, 1 + random.nextInt(31));
-                checkRandomFill(chunkSize, source, fillContext, dest, expectations, index, usePrev);
+                final TrackingMutableRowSet rowSet = generateIndex(random, expectations.length, 1 + random.nextInt(31));
+                checkRandomFill(chunkSize, source, fillContext, dest, expectations, rowSet, usePrev);
             }
         }
 
@@ -106,7 +107,7 @@ public class TestCharacterSparseArraySource {
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final CharChunk<Values> result = source.getChunk(getContext, Index.FACTORY.getIndexByRange(0, 1023)).asCharChunk();
+        final CharChunk<Values> result = source.getChunk(getContext, TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 1023)).asCharChunk();
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_CHAR, result.get(ii));
         }
@@ -145,8 +146,8 @@ public class TestCharacterSparseArraySource {
         getContext.close();
     }
 
-    private Index generateIndex(Random random, int maxsize, int runLength) {
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+    private TrackingMutableRowSet generateIndex(Random random, int maxsize, int runLength) {
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         int nextKey = random.nextInt(runLength);
         while (nextKey < maxsize) {
             int lastKey;
@@ -160,12 +161,12 @@ public class TestCharacterSparseArraySource {
             nextKey = lastKey + 1 + random.nextInt(runLength + 1);
         }
 
-        return builder.getIndex();
+        return builder.build();
     }
 
     private void checkRandomFill(int chunkSize, CharacterSparseArraySource source, ColumnSource.FillContext fillContext,
-                                 WritableCharChunk<Values> dest, char[] expectations, Index index, boolean usePrev) {
-        for (final RowSequence.Iterator rsIt = index.getRowSequenceIterator(); rsIt.hasMore(); ) {
+                                 WritableCharChunk<Values> dest, char[] expectations, TrackingMutableRowSet rowSet, boolean usePrev) {
+        for (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator(); rsIt.hasMore(); ) {
             final RowSequence nextOk = rsIt.getNextRowSequenceWithLength(chunkSize);
 
             if (usePrev) {
@@ -175,7 +176,7 @@ public class TestCharacterSparseArraySource {
             }
 
             int ii = 0;
-            for (final Index.Iterator indexIt = nextOk.asIndex().iterator(); indexIt.hasNext(); ii++) {
+            for (final TrackingMutableRowSet.Iterator indexIt = nextOk.asIndex().iterator(); indexIt.hasNext(); ii++) {
                 final long next = indexIt.nextLong();
                 checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int)next], dest.get(ii));
             }
@@ -185,9 +186,9 @@ public class TestCharacterSparseArraySource {
     private void checkRangeFill(int chunkSize, CharacterSparseArraySource source, ColumnSource.FillContext fillContext,
                                 WritableCharChunk<Values> dest, char[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final Index index = Index.FACTORY.getIndexByRange(firstKey, lastKey);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey);
         offset = firstKey;
-        for (final RowSequence.Iterator it = index.getRowSequenceIterator(); it.hasMore(); ) {
+        for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
             if (usePrev) {
@@ -202,9 +203,9 @@ public class TestCharacterSparseArraySource {
 
     private void checkRangeGet(int chunkSize, CharacterSparseArraySource source, ColumnSource.GetContext getContext, char[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final Index index = Index.FACTORY.getIndexByRange(firstKey, lastKey);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey);
         offset = firstKey;
-        for (final RowSequence.Iterator it = index.getRowSequenceIterator(); it.hasMore(); ) {
+        for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
             final CharChunk<Values> result;
@@ -268,8 +269,8 @@ public class TestCharacterSparseArraySource {
         // super hack
         final char[] peekedBlock = source.ensureBlock(0, 0, 0);
 
-        try (Index srcKeys = Index.FACTORY.getIndexByRange(rangeStart, rangeEnd)) {
-            try (Index destKeys = Index.FACTORY.getIndexByRange(rangeStart + 1, rangeEnd + 1)) {
+        try (TrackingMutableRowSet srcKeys = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart, rangeEnd)) {
+            try (TrackingMutableRowSet destKeys = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -300,7 +301,7 @@ public class TestCharacterSparseArraySource {
         final CharacterSparseArraySource src = new CharacterSparseArraySource();
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final Index keys = Index.FACTORY.getEmptyIndex();
+        try (final TrackingMutableRowSet keys = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
              final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);

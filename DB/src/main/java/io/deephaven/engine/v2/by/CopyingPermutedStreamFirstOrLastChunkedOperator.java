@@ -47,7 +47,7 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
 
     /**
      * <p>
-     * For each destination slot, map to the latest source index key and copy source values to destination slots for all
+     * For each destination slot, map to the latest source rowSet key and copy source values to destination slots for all
      * result columns.
      *
      * <p>

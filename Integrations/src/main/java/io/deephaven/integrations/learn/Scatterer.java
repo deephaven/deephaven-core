@@ -27,8 +27,8 @@ public class Scatterer {
      * Applies the scatter function of each output to the result of a deferred calculation to get the result into a
      * column.
      *
-     * @param idx index of the particular output in the list of outputs to use for scattering.
-     * @param fo FutureOffset that contains the results of the deferred calculation as well as the index of the row.
+     * @param idx rowSet of the particular output in the list of outputs to use for scattering.
+     * @param fo FutureOffset that contains the results of the deferred calculation as well as the rowSet of the row.
      *        that calculation belongs to.
      * @return result of the deferred calculation to be stored into a column.
      */

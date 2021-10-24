@@ -26,7 +26,7 @@ public class IndexCreationRandomPerfTest {
         il.doneAdding();
     }
 
-    public Index getIndex() {
+    public TrackingMutableRowSet getIndex() {
         if (il instanceof IndexLike.ActualIndex) {
             return ((IndexLike.ActualIndex) il).getIndex();
         }

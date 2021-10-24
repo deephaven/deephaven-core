@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.Nullable;
@@ -107,11 +107,11 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
      * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
      * notifications for all other listeners.
      *
-     * @param added index values added to the table
-     * @param removed index values removed from the table
-     * @param modified index values modified in the table.
+     * @param added rowSet values added to the table
+     * @param removed rowSet values removed from the table
+     * @param modified rowSet values modified in the table.
      */
-    default void notifyListeners(Index added, Index removed, Index modified) {
+    default void notifyListeners(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
         notifyListeners(new ShiftAwareListener.Update(added, removed, modified, IndexShiftData.EMPTY,
                 modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
     }

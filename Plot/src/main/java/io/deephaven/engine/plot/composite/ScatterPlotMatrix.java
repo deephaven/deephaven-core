@@ -103,12 +103,12 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of the plot at index {@code plotIndex}.
+     * Sets the point size of the plot at rowSet {@code plotIndex}.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
-     * @param plotIndex index
+     * @param plotIndex rowSet
      * @param factor point size
      * @return this ScatterPlotMatrix
      */
@@ -117,12 +117,12 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of the plot at index {@code plotIndex}.
+     * Sets the point size of the plot at rowSet {@code plotIndex}.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
-     * @param plotIndex index
+     * @param plotIndex rowSet
      * @param factor point size
      * @return this ScatterPlotMatrix
      */
@@ -131,18 +131,18 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of the plot at index {@code plotIndex}.
+     * Sets the point size of the plot at rowSet {@code plotIndex}.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
-     * @param plotIndex index
+     * @param plotIndex rowSet
      * @param factor point size
      * @return this ScatterPlotMatrix
      */
     public ScatterPlotMatrix pointSize(final int plotIndex, double factor) {
         if (plotIndex < 0 || plotIndex >= this.numCols * this.numCols) {
-            throw new PlotIllegalArgumentException("Plot index out of bounds", this);
+            throw new PlotIllegalArgumentException("Plot rowSet out of bounds", this);
         }
 
         final FigureImpl result = new FigureImpl(this)
@@ -155,18 +155,18 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of the plot at index {@code plotIndex}.
+     * Sets the point size of the plot at rowSet {@code plotIndex}.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
-     * @param plotIndex index
+     * @param plotIndex rowSet
      * @param factor point size
      * @return this ScatterPlotMatrix
      */
     public ScatterPlotMatrix pointSize(final int plotIndex, final Number factor) {
         if (plotIndex < 0 || plotIndex >= this.numCols * this.numCols) {
-            throw new PlotIllegalArgumentException("Plot index out of bounds", this);
+            throw new PlotIllegalArgumentException("Plot rowSet out of bounds", this);
         }
 
         final FigureImpl result = new FigureImpl(this)
@@ -179,14 +179,14 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of the plot at index {@code plotIndex}.
+     * Sets the point size of the plot at rowSet {@code plotIndex}.
      *
      * Row and column numbers start at 0 in the upper left hand corner of the grid and increase going top to bottom and
      * left to right respectively. For example, in a 2x2 ScatterPlotMatrix the coordinates would be [(0,0), (0,1)]
      * [(1,0), (1,1)]
      *
-     * @param row row index of this Figure's grid
-     * @param col column index of this Figure's grid
+     * @param row row rowSet of this Figure's grid
+     * @param col column rowSet of this Figure's grid
      * @param factor point size
      * @return this ScatterPlotMatrix
      */
@@ -195,14 +195,14 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of the plot at index {@code plotIndex}.
+     * Sets the point size of the plot at rowSet {@code plotIndex}.
      *
      * Row and column numbers start at 0 in the upper left hand corner of the grid and increase going top to bottom and
      * left to right respectively. For example, in a 2x2 ScatterPlotMatrix the coordinates would be [(0,0), (0,1)]
      * [(1,0), (1,1)]
      *
-     * @param row row index of this Figure's grid
-     * @param col column index of this Figure's grid
+     * @param row row rowSet of this Figure's grid
+     * @param col column rowSet of this Figure's grid
      * @param factor point size
      * @return this ScatterPlotMatrix
      */
@@ -211,14 +211,14 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of the plot at index {@code plotIndex}.
+     * Sets the point size of the plot at rowSet {@code plotIndex}.
      *
      * Row and column numbers start at 0 in the upper left hand corner of the grid and increase going top to bottom and
      * left to right respectively. For example, in a 2x2 ScatterPlotMatrix the coordinates would be [(0,0), (0,1)]
      * [(1,0), (1,1)]
      *
-     * @param row row index of this Figure's grid
-     * @param col column index of this Figure's grid
+     * @param row row rowSet of this Figure's grid
+     * @param col column rowSet of this Figure's grid
      * @param factor point size
      * @return this ScatterPlotMatrix
      */
@@ -228,14 +228,14 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of the plot at index {@code plotIndex}.
+     * Sets the point size of the plot at rowSet {@code plotIndex}.
      *
      * Row and column numbers start at 0 in the upper left hand corner of the grid and increase going top to bottom and
      * left to right respectively. For example, in a 2x2 ScatterPlotMatrix the coordinates would be [(0,0), (0,1)]
      * [(1,0), (1,1)]
      *
-     * @param row row index of this Figure's grid
-     * @param col column index of this Figure's grid
+     * @param row row rowSet of this Figure's grid
+     * @param col column rowSet of this Figure's grid
      * @param factor point size
      * @return this ScatterPlotMatrix
      */
@@ -245,9 +245,9 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of plot i as the factor in {@code factors} at index i.
+     * Sets the point size of plot i as the factor in {@code factors} at rowSet i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
@@ -269,9 +269,9 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of plot i as the factor in {@code factors} at index i.
+     * Sets the point size of plot i as the factor in {@code factors} at rowSet i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
@@ -284,9 +284,9 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of plot i as the factor in {@code factors} at index i.
+     * Sets the point size of plot i as the factor in {@code factors} at rowSet i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
@@ -299,9 +299,9 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of plot i as the factor in {@code factors} at index i.
+     * Sets the point size of plot i as the factor in {@code factors} at rowSet i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
@@ -314,9 +314,9 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     }
 
     /**
-     * Sets the point size of plot i as the factor in {@code factors} at index i.
+     * Sets the point size of plot i as the factor in {@code factors} at rowSet i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * The rowSet starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
      * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of

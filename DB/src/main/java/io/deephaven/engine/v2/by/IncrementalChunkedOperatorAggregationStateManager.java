@@ -124,7 +124,7 @@ class IncrementalChunkedOperatorAggregationStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right Index
+    // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource overflowStateSource
@@ -498,7 +498,7 @@ class IncrementalChunkedOperatorAggregationStateManager
         outputPositions.setSize(buildIndex.intSize());
         int maxAddedPosition = -1;
         bc.addedSlotsByPosition.setSize(outputPositions.size());
-        bc.addedSlotsByPosition.fillWithValue(0, bc.addedSlotsByPosition.size(), Index.NULL_KEY);
+        bc.addedSlotsByPosition.fillWithValue(0, bc.addedSlotsByPosition.size(), TrackingMutableRowSet.NULL_ROW_KEY);
         bc.duplicatePositions.setSize(0);
 
         if (reincarnatedPositions != null) {
@@ -814,7 +814,7 @@ class IncrementalChunkedOperatorAggregationStateManager
                 outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + maxAddedPosition + 1);
                 for (int ii = 0; ii <= maxAddedPosition; ++ii) {
                     final long longSlot = bc.addedSlotsByPosition.get(ii);
-                    if (longSlot != Index.NULL_KEY) {
+                    if (longSlot != TrackingMutableRowSet.NULL_ROW_KEY) {
                         final int intSlot = (int) longSlot;
 
                         outputPositions.set(ii, nextOutputPosition.intValue());
@@ -1070,7 +1070,7 @@ class IncrementalChunkedOperatorAggregationStateManager
              final WritableIntChunk stateChunk = WritableIntChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = stateSource.makeFillContext(maxSize)) {
 
-            stateSource.fillChunk(fillContext, stateChunk, Index.FACTORY.getFlatIndex(tableHashPivot));
+            stateSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1309,7 +1309,7 @@ class IncrementalChunkedOperatorAggregationStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableIntChunk<Values>\E
         final WritableIntChunk<Values> workingStateEntries;

@@ -4,11 +4,11 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.utils.Index;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -40,7 +40,7 @@ public final class LongValueTracker extends ValueTracker {
     }
 
     @Override
-    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls) {
+    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls) {
         final long val = valuesChunk.asLongChunk().get(indexInChunk);
         if (val == NULL_LONG) {
             if (nulls != null) {
@@ -66,7 +66,7 @@ public final class LongValueTracker extends ValueTracker {
     }
 
     @Override
-    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls) {
+    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls) {
         long val = valuesChunk.asLongChunk().get(indexInChunk);
         if (val == NULL_LONG) {
             if (nulls != null) {
@@ -124,10 +124,10 @@ public final class LongValueTracker extends ValueTracker {
     }
 
     @Override
-    public void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls) {
+    public void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls) {
         long val = valuesChunk.asLongChunk().get(indexInChunk);
         if (val == NULL_LONG) {
-            // can't check if our min/max is valid, or anything about positions, only can confirm that this index is in nulls
+            // can't check if our min/max is valid, or anything about positions, only can confirm that this rowSet is in nulls
             if (nulls != null) {
                 Assert.eqTrue(nulls.containsRange(rowIndex, rowIndex), "nulls.containsRange(rowIndex, rowIndex)");
             }

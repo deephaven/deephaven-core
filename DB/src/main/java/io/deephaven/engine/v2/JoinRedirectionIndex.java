@@ -7,11 +7,11 @@ import io.deephaven.engine.v2.utils.RedirectionIndex;
 import io.deephaven.engine.v2.utils.RedirectionIndexLockFreeImpl;
 
 /**
- * Makes a redirection Index based on the type provided by the join control.
+ * Makes a redirection TrackingMutableRowSet based on the type provided by the join control.
  */
 public class JoinRedirectionIndex {
     /**
-     * A utility function that makes a redirection index based on the type determined by the JoinControl.
+     * A utility function that makes a redirection rowSet based on the type determined by the JoinControl.
      *
      * @param control the JoinControl that determines the redirection type
      * @param leftTable the left table of the join, which the join control examines and determines our result size

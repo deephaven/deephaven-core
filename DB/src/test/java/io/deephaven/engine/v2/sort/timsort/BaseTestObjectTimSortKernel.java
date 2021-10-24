@@ -7,6 +7,8 @@ package io.deephaven.engine.v2.sort.timsort;
 import java.util.Objects;
 
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.tuples.generated.ObjectLongLongTuple;
 import io.deephaven.engine.util.tuples.generated.ObjectLongTuple;
@@ -16,7 +18,6 @@ import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.Index;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
@@ -69,12 +70,12 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
     public static class ObjectPartitionKernelStuff extends PartitionKernelStuff<ObjectLongTuple> {
         final WritableObjectChunk valuesChunk;
         private final ObjectPartitionKernel.PartitionKernelContext context;
-        private final Index index;
+        private final TrackingMutableRowSet rowSet;
         private final ColumnSource<Object> columnSource;
 
-        public ObjectPartitionKernelStuff(List<ObjectLongTuple> javaTuples, Index index, int chunkSize, int nPartitions, boolean preserveEquality) {
+        public ObjectPartitionKernelStuff(List<ObjectLongTuple> javaTuples, TrackingMutableRowSet rowSet, int chunkSize, int nPartitions, boolean preserveEquality) {
             super(javaTuples.size());
-            this.index = index;
+            this.rowSet = rowSet;
             final int size = javaTuples.size();
             valuesChunk = WritableObjectChunk.makeWritableChunk(size);
 
@@ -94,7 +95,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
                 // endregion tuple column source
             };
 
-            context = ObjectPartitionKernel.createContext(index, columnSource, chunkSize, nPartitions, preserveEquality);
+            context = ObjectPartitionKernel.createContext(rowSet, columnSource, chunkSize, nPartitions, preserveEquality);
 
             prepareObjectChunks(javaTuples, valuesChunk, indexKeys);
         }
@@ -106,7 +107,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
 
         @Override
         void check(List<ObjectLongTuple> expected) {
-            verifyPartition(context, index, expected.size(), expected, valuesChunk, indexKeys, columnSource);
+            verifyPartition(context, rowSet, expected.size(), expected, valuesChunk, indexKeys, columnSource);
         }
     }
 
@@ -186,12 +187,12 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
             if (offsetsOut.size() > 0) {
                 // the secondary context is actually just bogus at this point, it is no longer parallel,
                 // what we need to do is fetch the things from that columnsource, but only the things needed to break
-                // ties, and then put them in chunks that would be parallel to the index chunk based on offsetsOut and lengthsOut
+                // ties, and then put them in chunks that would be parallel to the rowSet chunk based on offsetsOut and lengthsOut
                 //
                 // after some consideration, I think the next stage of the sort is:
-                // (1) using the chunk of index keys that are relevant, build a second chunk that indicates their position
-                // (2) use the LongTimsortKernel to sort by the index key; using the position keys as our as our "indexKeys"
-                //     argument.  The sorted index keys can be used as input to an index builder for filling a chunk.
+                // (1) using the chunk of rowSet keys that are relevant, build a second chunk that indicates their position
+                // (2) use the LongTimsortKernel to sort by the rowSet key; using the position keys as our as our "indexKeys"
+                //     argument.  The sorted rowSet keys can be used as input to an rowSet builder for filling a chunk.
                 // (3) After the chunk of secondary keys is filled, the second sorted indexKeys (really positions that
                 //     we care about), will then be used to permute the resulting chunk into a parallel chunk
                 //     to our actual indexKeys.
@@ -324,21 +325,21 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
             final long javaIndex = javaTuples.get(ii).getSecondElement();
 
             TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
-            TestCase.assertEquals("index[" + ii + "]", javaIndex, timIndex);
+            TestCase.assertEquals("rowSet[" + ii + "]", javaIndex, timIndex);
         }
     }
 
-    static private void verifyPartition(ObjectPartitionKernel.PartitionKernelContext context, Index source, int size, List<ObjectLongTuple> javaTuples, ObjectChunk ObjectChunk, LongChunk indexKeys, ColumnSource<Object> columnSource) {
+    static private void verifyPartition(ObjectPartitionKernel.PartitionKernelContext context, TrackingMutableRowSet source, int size, List<ObjectLongTuple> javaTuples, ObjectChunk ObjectChunk, LongChunk indexKeys, ColumnSource<Object> columnSource) {
 
         final ObjectLongTuple [] pivots = context.getPivots();
 
-        final Index [] results = context.getPartitions(true);
+        final TrackingMutableRowSet[] results = context.getPartitions(true);
 
-        final Index reconstructed = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet reconstructed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
 
-        // make sure that each partition is a subset of the index and is disjoint
+        // make sure that each partition is a subset of the rowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {
-            final Index partition = results[ii];
+            final TrackingMutableRowSet partition = results[ii];
             TestCase.assertTrue("partition[" + ii + "].subsetOf(source)", partition.subsetOf(source));
             TestCase.assertFalse("reconstructed[\" + ii + \"]..overlaps(partition)", reconstructed.overlaps(partition));
             reconstructed.insert(partition);
@@ -354,7 +355,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
 //        System.out.println(javaTuples);
 
         for (int ii = 0; ii < results.length - 1; ii++) {
-            final Index partition = results[ii];
+            final TrackingMutableRowSet partition = results[ii];
 
             final Object expectedPivotValue = pivots[ii].getFirstElement();
             final long expectedPivotKey = pivots[ii].getSecondElement();
@@ -376,7 +377,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
         int lastSize = 0;
 
         for (int ii = 0; ii < results.length; ii++) {
-            final Index partition = results[ii];
+            final TrackingMutableRowSet partition = results[ii];
 
 //            System.out.println("Partition[" + ii + "] " + partition.size());
 
@@ -385,16 +386,16 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
             lastSize += partition.intSize();
 //            System.out.println("Expected Partition Max: " + expectedPartition.get(expectedPartition.size() - 1));
 
-            final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
             expectedPartition.stream().mapToLong(ObjectLongTuple::getSecondElement).forEach(builder::addKey);
-            final Index expectedIndex = builder.getIndex();
+            final TrackingMutableRowSet expectedRowSet = builder.build();
 
-            if (!expectedIndex.equals(partition)) {
-                System.out.println("partition.minus(expected): " + partition.minus(expectedIndex));
-                System.out.println("expectedIndex.minus(partition): " + expectedIndex.minus(partition));
+            if (!expectedRowSet.equals(partition)) {
+                System.out.println("partition.minus(expected): " + partition.minus(expectedRowSet));
+                System.out.println("expectedRowSet.minus(partition): " + expectedRowSet.minus(partition));
             }
 
-            TestCase.assertEquals(expectedIndex, partition);
+            TestCase.assertEquals(expectedRowSet, partition);
         }
 
 //
@@ -406,7 +407,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
 //            final long javaIndex = javaTuples.get(ii).getSecondElement();
 //
 //            TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
-//            TestCase.assertEquals("index[" + ii + "]", javaIndex, timIndex);
+//            TestCase.assertEquals("rowSet[" + ii + "]", javaIndex, timIndex);
 //        }
     }
 
@@ -422,7 +423,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
             final long javaIndex = javaTuples.get(ii).getThirdElement();
 
             TestCase.assertEquals("values[" + ii + "]", javaSorted, timSortedPrimary);
-            TestCase.assertEquals("index[" + ii + "]", javaIndex, timIndex);
+            TestCase.assertEquals("rowSet[" + ii + "]", javaIndex, timIndex);
         }
     }
 

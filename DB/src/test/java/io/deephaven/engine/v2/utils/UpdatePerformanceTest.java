@@ -34,7 +34,7 @@ public class UpdatePerformanceTest {
         Factory getFactory();
 
         // Since tests will run multiple times, and creation time is high (higher than individual operations),
-        // we create the base index one and clone it before every run of update.
+        // we create the base rowSet one and clone it before every run of update.
         void cloneBase();
 
         TestValues.Builder baseBuilder();
@@ -66,14 +66,14 @@ public class UpdatePerformanceTest {
     }
 
     static class IndexUpdateStrategy implements UpdateStrategy {
-        private Index ix[] = new Index[4];
+        private TrackingMutableRowSet ix[] = new TrackingMutableRowSet[4];
         private final Runnable[] runners = new Runnable[] {
                 getParallelRunner(), getSequentialRunner()
         };
 
         private TestValues.Builder builder(final int i) {
             return new TestValues.Builder() {
-                private final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
+                private final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
                 @Override
                 public void add(long v) {
@@ -82,7 +82,7 @@ public class UpdatePerformanceTest {
 
                 @Override
                 public void done() {
-                    ix[i] = b.getIndex();
+                    ix[i] = b.build();
                 }
             };
         }
@@ -146,7 +146,7 @@ public class UpdatePerformanceTest {
 
                 @Override
                 public String toString() {
-                    return "Index Parallel Update";
+                    return "TrackingMutableRowSet Parallel Update";
                 }
             };
         }
@@ -161,7 +161,7 @@ public class UpdatePerformanceTest {
 
                 @Override
                 public String toString() {
-                    return "Index Sequential Update";
+                    return "TrackingMutableRowSet Sequential Update";
                 }
             };
         }
@@ -174,7 +174,7 @@ public class UpdatePerformanceTest {
         @Override
         public long getBaseCrc32() {
             final CRC32 crc32 = new CRC32();
-            Index.RangeIterator it = ix[0].rangeIterator();
+            TrackingMutableRowSet.RangeIterator it = ix[0].rangeIterator();
             while (it.hasNext()) {
                 it.next();
                 for (long v = it.currentRangeStart(); v <= it.currentRangeEnd(); ++v) {
@@ -377,7 +377,7 @@ public class UpdatePerformanceTest {
             pm.reset();
         }
         final double factor = 1 / s2ns;
-        final String pos = " " + c.name + " " + stepName + " index len=" + nf(sz) + ", seconds:";
+        final String pos = " " + c.name + " " + stepName + " rowSet len=" + nf(sz) + ", seconds:";
         final long t0 = System.nanoTime();
         final PerfStats pStats = new PerfStats(runs);
         for (int si = 0; si < sn; ++si) {

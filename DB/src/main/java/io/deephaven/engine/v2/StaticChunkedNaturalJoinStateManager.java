@@ -80,7 +80,7 @@ class StaticChunkedNaturalJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right Index
+    // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QLongArraySource\E
     private final LongArraySource overflowRightIndexSource
@@ -646,7 +646,7 @@ class StaticChunkedNaturalJoinStateManager
                             final long rightValue;
                             if (isLeftSide) {
                                 sourceChunkLeftHashSlots.set(chunkPosition, overflowLocationToHashLocation(allocatedOverflowLocation));
-                                // we set the right index to indicate it is empty, but exists
+                                // we set the right rowSet to indicate it is empty, but exists
                                 rightValue = NO_RIGHT_ENTRY_VALUE;
                             } else {
                                 rightValue = rightSourceIndexKeys.get(chunkPosition);
@@ -819,13 +819,13 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     @Override
-    void decorateLeftSide(Index leftIndex, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections)  {
-        if (leftIndex.isEmpty()) {
+    void decorateLeftSide(TrackingMutableRowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections)  {
+        if (leftRowSet.isEmpty()) {
             return;
         }
-        leftRedirections.ensureCapacity(leftIndex.size());
-        try (final ProbeContext pc = makeProbeContext(leftSources, leftIndex.size(), true))  {
-            decorationProbe(pc, leftIndex, leftSources, leftRedirections);
+        leftRedirections.ensureCapacity(leftRowSet.size());
+        try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size(), true))  {
+            decorationProbe(pc, leftRowSet, leftSources, leftRedirections);
         }
     }
     // endregion probe wrappers
@@ -848,7 +848,7 @@ class StaticChunkedNaturalJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableLongChunk<Values>\E
         final WritableLongChunk<Values> workingStateEntries;
@@ -1022,7 +1022,7 @@ class StaticChunkedNaturalJoinStateManager
 
                 // region probe loop initialization
                 if (isLeftSide) {
-                    workingLeftRedirections.fillWithValue(0, chunkSize, Index.NULL_KEY);
+                    workingLeftRedirections.fillWithValue(0, chunkSize, TrackingMutableRowSet.NULL_ROW_KEY);
                     workingLeftRedirections.setSize(chunkSize);
                 } else {
                     chunkOk.fillRowKeyChunk(rightKeyIndices);
@@ -1195,19 +1195,19 @@ class StaticChunkedNaturalJoinStateManager
         return buildRedirectionIndex(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
     }
 
-    RedirectionIndex buildGroupedRedirectionIndex(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<Index> leftIndices, JoinControl.RedirectionType redirectionType) {
+    RedirectionIndex buildGroupedRedirectionIndex(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<TrackingMutableRowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
-                    throw new IllegalStateException("Left table is not flat for contiguous redirection index build!");
+                    throw new IllegalStateException("Left table is not flat for contiguous redirection rowSet build!");
                 }
                 // we can use an array, which is perfect for a small enough flat table
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
                 for (int ii = 0; ii < groupingSize; ++ii) {
                     final long rightSide = getStateValue(leftHashSlots, ii);
                     checkExactMatch(exactMatch, ii, rightSide);
-                    final Index leftIndexForKey = leftIndices.get(ii);
-                    leftIndexForKey.forAllLongs((long ll) -> innerIndex[(int) ll] = rightSide);
+                    final TrackingMutableRowSet leftRowSetForKey = leftIndices.get(ii);
+                    leftRowSetForKey.forAllLongs((long ll) -> innerIndex[(int) ll] = rightSide);
                 }
                 return new ContiguousRedirectionIndexImpl(innerIndex);
             }
@@ -1219,8 +1219,8 @@ class StaticChunkedNaturalJoinStateManager
 
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final Index leftIndexForKey = leftIndices.get(ii);
-                        leftIndexForKey.forAllLongs((long ll) -> sparseRedirections.set(ll, rightSide));
+                        final TrackingMutableRowSet leftRowSetForKey = leftIndices.get(ii);
+                        leftRowSetForKey.forAllLongs((long ll) -> sparseRedirections.set(ll, rightSide));
                     }
                 }
                 return new LongColumnSourceRedirectionIndex(sparseRedirections);
@@ -1233,8 +1233,8 @@ class StaticChunkedNaturalJoinStateManager
 
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final Index leftIndexForKey = leftIndices.get(ii);
-                        leftIndexForKey.forAllLongs((long ll) -> redirectionIndex.put(ll, rightSide));
+                        final TrackingMutableRowSet leftRowSetForKey = leftIndices.get(ii);
+                        leftRowSetForKey.forAllLongs((long ll) -> redirectionIndex.put(ll, rightSide));
                     }
                 }
 

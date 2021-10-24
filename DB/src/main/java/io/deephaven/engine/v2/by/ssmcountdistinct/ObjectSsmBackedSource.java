@@ -4,16 +4,13 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
 import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
-
-import java.util.Objects;
 
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.ObjectSegmentedSortedMultiset;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 /**
  * A {@link SsmBackedColumnSource} for Objects.
@@ -89,7 +86,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<DbArray>
     }
 
     @Override
-    public void clearDeltas(Index indices) {
+    public void clearDeltas(TrackingMutableRowSet indices) {
         indices.iterator().forEachLong(key -> {
             final ObjectSegmentedSortedMultiset ssm = getCurrentSsm(key);
             if(ssm != null) {

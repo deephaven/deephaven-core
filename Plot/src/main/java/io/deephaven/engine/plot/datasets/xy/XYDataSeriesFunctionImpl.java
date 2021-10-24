@@ -193,7 +193,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     @Override
     public double getX(int i) {
         if (i < 0 || i > size()) {
-            throw new IndexOutOfBoundsException("Index out of bounds. index=" + i + " size=" + size());
+            throw new IndexOutOfBoundsException("TrackingMutableRowSet out of bounds. rowSet=" + i + " size=" + size());
         }
 
         return currentData[0][i];
@@ -202,7 +202,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     @Override
     public double getY(int i) {
         if (i < 0 || i > size()) {
-            throw new IndexOutOfBoundsException("Index out of bounds. index=" + i + " size=" + size());
+            throw new IndexOutOfBoundsException("TrackingMutableRowSet out of bounds. rowSet=" + i + " size=" + size());
         }
 
         return currentData[1][i];

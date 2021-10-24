@@ -106,7 +106,7 @@ public final class KeyValuePartitionLayout<TLK extends TableLocationKey> impleme
                                 if (columnCount > columnKeys.size()) {
                                     columnKeys.add(columnKey);
                                 } else if (!columnKeys.get(columnIndex).equals(columnKey)) {
-                                    throw new TableDataException("Column name mismatch at index " + columnIndex
+                                    throw new TableDataException("Column name mismatch at rowSet " + columnIndex
                                             + ": expected " + columnKeys.get(columnIndex) + " found " + columnKey
                                             + " at " + dir);
                                 }

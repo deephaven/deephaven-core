@@ -314,7 +314,7 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
     true when replaying the initial snapshot and false during normal updates.
 
     See the Deephaven listener documentation for details on processing update events.  This documentation covers the
-    details of the added, removed, and modified indices; index shift information; as well as the details of how to apply
+    details of the added, removed, and modified indices; rowSet shift information; as well as the details of how to apply
     the update object.  It also has examples on how to access current and previous-tick table values.
 
     :param t: dynamic table to listen to.

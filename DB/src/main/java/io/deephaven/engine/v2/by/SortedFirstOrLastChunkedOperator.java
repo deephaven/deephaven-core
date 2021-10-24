@@ -213,14 +213,14 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
             final boolean changed = newValue != oldValue;
             // if we just shifted something, then this is not a true modification (and modifyIndices will catch it
             // later);
-            // if on the other hand, our index changed, then we must mark the state as modified
+            // if on the other hand, our rowSet changed, then we must mark the state as modified
             final int chunkLocationOfRelevance = isFirst ? startPosition : startPosition + runLength - 1;
             final long chunkNewValue = context.sortedPostIndices.get(chunkLocationOfRelevance);
             if (chunkNewValue == newValue) {
                 final int chunkIndex =
                         binarySearch(postShiftIndices, chunkNewValue, startPosition, startPosition + runLength);
                 final long chunkOldValue = preShiftIndices.get(chunkIndex);
-                // if the index was modified, then we must set modification to true; otherwise we depend on the
+                // if the rowSet was modified, then we must set modification to true; otherwise we depend on the
                 // modifyIndices call to catch if the row was modified
                 if (chunkOldValue != oldValue) {
                     stateModified.set(ii, true);
@@ -354,7 +354,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
             // We are the new value; we need to determine if we were also the old value
             final int newChunkIndex = binarySearch(postInputIndices, chunkNewValue, 0, inputSize);
             final long oldChunkValue = preInputIndices.get(newChunkIndex);
-            // if the index changed, then we are modified; for cases where the index did not change, then we are
+            // if the rowSet changed, then we are modified; for cases where the rowSet did not change, then we are
             // depending on the modifyIndices call to catch this row's modification
             return oldChunkValue != oldValue;
         }

@@ -73,13 +73,13 @@ public class TailInitializationFilter {
     }
 
     private static Table mostRecentLong(final Table table, final LongUnaryOperator getValue, final long nanos) {
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         // we are going to binary search each partition of this table, because the different partitions have
         // non-contiguous indices, but values within a partition are contiguous indices.
         table.getIndex().forEachLongRange((s, e) -> {
             final long lastValue = getValue.applyAsLong(e);
             if (lastValue == QueryConstants.NULL_LONG) {
-                throw new IllegalArgumentException("Found null timestamp at index " + e);
+                throw new IllegalArgumentException("Found null timestamp at rowSet " + e);
             }
             final long threshold = lastValue - nanos;
             long firstIndex = s;
@@ -88,7 +88,7 @@ public class TailInitializationFilter {
                 final long mid = (firstIndex + lastIndex) / 2;
                 final long midValue = getValue.applyAsLong(mid);
                 if (midValue == QueryConstants.NULL_LONG) {
-                    throw new IllegalArgumentException("Found null timestamp at index " + mid);
+                    throw new IllegalArgumentException("Found null timestamp at rowSet " + mid);
                 }
                 if (midValue < threshold) {
                     firstIndex = mid + 1;
@@ -101,17 +101,17 @@ public class TailInitializationFilter {
             }
             return true;
         });
-        final Index resultIndex = builder.getIndex();
-        final QueryTable result = new QueryTable(table.getDefinition(), resultIndex, table.getColumnSourceMap());
+        final TrackingMutableRowSet resultRowSet = builder.build();
+        final QueryTable result = new QueryTable(table.getDefinition(), resultRowSet, table.getColumnSourceMap());
         if (table.isLive()) {
             // TODO: Assert AddOnly in T+, propagate AddOnly in Treasure
             final InstrumentedListener listener =
                     new BaseTable.ListenerImpl("TailInitializationFilter", (DynamicTable) table, result) {
                         @Override
-                        public void onUpdate(Index added, Index removed, Index modified) {
+                        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
                             Assert.assertion(removed.empty(), "removed.empty()");
                             Assert.assertion(modified.empty(), "modified.empty()");
-                            resultIndex.insert(added);
+                            resultRowSet.insert(added);
                             result.notifyListeners(added.clone(), removed, modified);
                         }
                     };

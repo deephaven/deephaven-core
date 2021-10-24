@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 public interface SsaSsaStamp {
@@ -59,16 +59,16 @@ public interface SsaSsaStamp {
             boolean disallowExactMatch);
 
     void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-            LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections,
-            RedirectionIndex redirectionIndex, Index.RandomBuilder modifiedBuilder, boolean disallowExactMatch);
+                         LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections,
+                         RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-            LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex,
-            Index.RandomBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
+                          LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex,
+                          RowSetBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
 
     void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex,
-            Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices,
-            Index.RandomBuilder modifiedBuilder, boolean disallowExactMatch);
+                      Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices,
+                      RowSetBuilder modifiedBuilder, boolean disallowExactMatch);
 
     void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
             LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex,

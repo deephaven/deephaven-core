@@ -16,7 +16,7 @@ import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -95,7 +95,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+    public List<String> initInputs(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         // noinspection unchecked
         final ColumnSource<S> localSourceColumnSource = (ColumnSource<S>) columnsOfInterest.get(sourceName);
         if (localSourceColumnSource == null) {

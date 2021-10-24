@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.type.TypeUtils;
 
@@ -29,21 +29,21 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     private final Map<Object, Object> __lazyResultCache;
 
 
-    public FormulaSample(final Index index,
+    public FormulaSample(final TrackingMutableRowSet rowSet,
             final boolean __lazy,
             final java.util.Map<String, ? extends io.deephaven.engine.v2.sources.ColumnSource> __columnsToData,
             final io.deephaven.engine.tables.select.Param... __params) {
-        super(index);
+        super(rowSet);
         II = __columnsToData.get("II");
         I = __columnsToData.get("I");
-        II_ = new io.deephaven.engine.v2.dbarrays.DbLongArrayColumnWrapper(__columnsToData.get("II"), __index);
+        II_ = new io.deephaven.engine.v2.dbarrays.DbLongArrayColumnWrapper(__columnsToData.get("II"), __rowSet);
         q = (java.lang.Integer) __params[0].getValue();
         __lazyResultCache = __lazy ? new ConcurrentHashMap<>() : null;
     }
 
     @Override
     public long getLong(final long k) {
-        final long findResult = __index.find(k);
+        final long findResult = __rowSet.find(k);
         final int i = __intSize(findResult);
         final long ii = findResult;
         final long __temp0 = II.getLong(k);
@@ -58,7 +58,7 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     @Override
     public long getPrevLong(final long k) {
         final long findResult;
-        try (final Index prev = __index.getPrevIndex()) {
+        try (final TrackingMutableRowSet prev = __rowSet.getPrevIndex()) {
             findResult = prev.find(k);
         }
         final int i = __intSize(findResult);
@@ -107,8 +107,8 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
                                  final WritableChunk<? super Attributes.Values> __destination,
                                  final RowSequence __rowSequence, LongChunk<? extends Attributes.Values> __chunk__col__II, IntChunk<? extends Attributes.Values> __chunk__col__I) {
         final WritableLongChunk<? super Attributes.Values> __typedDestination = __destination.asWritableLongChunk();
-        try (final Index prev = __usePrev ? __index.getPrevIndex() : null;
-                final Index inverted = ((prev != null) ? prev : __index).invert(__rowSequence.asIndex())) {
+        try (final TrackingMutableRowSet prev = __usePrev ? __rowSet.getPrevIndex() : null;
+             final TrackingMutableRowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asIndex())) {
             __context.__iChunk.setSize(0);
             inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
             inverted.fillRowKeyChunk(__context.__iiChunk);

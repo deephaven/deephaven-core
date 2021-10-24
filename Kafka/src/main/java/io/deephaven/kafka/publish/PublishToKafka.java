@@ -9,9 +9,9 @@ import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.apache.kafka.clients.producer.Callback;
@@ -117,8 +117,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                 : ((BaseTable) table).newModifiedColumnSet(columns);
     }
 
-    private void publishMessages(@NotNull final ReadOnlyIndex rowsToPublish, final boolean usePrevious,
-            final boolean publishValues, @NotNull final Callback callback) {
+    private void publishMessages(@NotNull final RowSet rowsToPublish, final boolean usePrevious,
+                                 final boolean publishValues, @NotNull final Callback callback) {
         if (rowsToPublish.isEmpty()) {
             return;
         }
@@ -248,7 +248,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                 publishMessages(upstream.removed, true, false, guard);
                 if (keysModified.containsAny(upstream.modifiedColumnSet)
                         || valuesModified.containsAny(upstream.modifiedColumnSet)) {
-                    try (final Index addedAndModified = upstream.added.union(upstream.modified)) {
+                    try (final TrackingMutableRowSet addedAndModified = upstream.added.union(upstream.modified)) {
                         publishMessages(addedAndModified, false, true, guard);
                     }
                 } else {

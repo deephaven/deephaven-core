@@ -96,8 +96,8 @@ public class ReplicateSortKernelTests {
     private static List<String> fixupTupleColumnSource(List<String> lines) {
         return ReplicateUtilities.replaceRegion(lines, "tuple column source", Arrays.asList(
                 "                @Override",
-                "                public Object get(long index) {",
-                "                    return javaTuples.get(((int)index) / 10).getFirstElement();",
+                "                public Object get(long rowSet) {",
+                "                    return javaTuples.get(((int)rowSet) / 10).getFirstElement();",
                 "                }"));
     }
 

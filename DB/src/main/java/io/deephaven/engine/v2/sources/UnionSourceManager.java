@@ -16,10 +16,8 @@ import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.ListenerRecorder;
 import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.ShiftAwareListener;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.UpdateCommitter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,7 +26,7 @@ import java.util.*;
 public class UnionSourceManager {
 
     private final UnionColumnSource<?>[] sources;
-    private final Index index;
+    private final TrackingMutableRowSet rowSet;
     private final List<ModifiedColumnSet.Transformer> modColumnTransformers = new ArrayList<>();
     private final ModifiedColumnSet modifiedColumnSet;
 
@@ -54,8 +52,8 @@ public class UnionSourceManager {
         names = tableDefinition.getColumnList().stream().map(ColumnDefinition::getName).toArray(String[]::new);
         this.parentDependency = parentDependency;
 
-        index = Index.FACTORY.getEmptyIndex();
-        result = new QueryTable(index, getColumnSources());
+        rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        result = new QueryTable(rowSet, getColumnSources());
         modifiedColumnSet = result.newModifiedColumnSet(names);
 
         mergedListener = new MergedUnionListener(listeners, "TableTools.merge()", result);
@@ -153,15 +151,15 @@ public class UnionSourceManager {
             if (onNewTableMapKey) {
                 // synthetically invoke onUpdate lest our MergedUnionListener#process never fires.
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update(
-                        table.getIndex().clone(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(),
+                        table.getIndex().clone(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
                         IndexShiftData.EMPTY, ModifiedColumnSet.ALL);
                 listener.onUpdate(update);
                 update.release();
             }
         }
 
-        try (final Index shifted = getShiftedIndex(table.getIndex(), tableId)) {
-            index.insert(shifted);
+        try (final TrackingMutableRowSet shifted = getShiftedIndex(table.getIndex(), tableId)) {
+            rowSet.insert(shifted);
         }
     }
 
@@ -173,12 +171,12 @@ public class UnionSourceManager {
         return result;
     }
 
-    private Index getShiftedIndex(final Index index, final int tableId) {
-        return index.shift(unionRedirection.startOfIndices[tableId]);
+    private TrackingMutableRowSet getShiftedIndex(final TrackingMutableRowSet rowSet, final int tableId) {
+        return rowSet.shift(unionRedirection.startOfIndices[tableId]);
     }
 
-    private Index getShiftedPrevIndex(final Index index, final int tableId) {
-        return index.shift(unionRedirection.prevStartOfIndices[tableId]);
+    private TrackingMutableRowSet getShiftedPrevIndex(final TrackingMutableRowSet rowSet, final int tableId) {
+        return rowSet.shift(unionRedirection.prevStartOfIndices[tableId]);
     }
 
     public Collection<Table> getComponentTables() {
@@ -239,22 +237,22 @@ public class UnionSourceManager {
             if (accumulatedShift > 0) {
                 final int maxTableId = tables.size() - 1;
 
-                final Index.SequentialBuilder builder = Index.CURRENT_FACTORY.getSequentialBuilder();
-                index.removeRange(unionRedirection.prevStartOfIndices[firstShiftingTable], Long.MAX_VALUE);
+                final SequentialRowSetBuilder builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+                rowSet.removeRange(unionRedirection.prevStartOfIndices[firstShiftingTable], Long.MAX_VALUE);
 
                 for (int tableId = firstShiftingTable; tableId <= maxTableId; ++tableId) {
                     final long startOfShift = unionRedirection.startOfIndices[tableId];
-                    builder.appendIndexWithOffset(tables.get(tableId).getIndex(), startOfShift);
+                    builder.appendRowSetWithOffset(tables.get(tableId).getIndex(), startOfShift);
                 }
 
-                index.insert(builder.getIndex());
+                rowSet.insert(builder.build());
             }
 
-            final Index.SequentialBuilder updateAddedBuilder = Index.FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder shiftAddedBuilder = Index.FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder shiftRemoveBuilder = Index.FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder updateRemovedBuilder = Index.FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder updateModifiedBuilder = Index.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder updateAddedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder shiftAddedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder shiftRemoveBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder updateRemovedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder updateModifiedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
             // listeners should be quiescent by the time we are processing this notification, because of the dependency
             // tracking
@@ -284,38 +282,38 @@ public class UnionSourceManager {
 
                 final IndexShiftData shiftData = listener.getShifted();
 
-                updateAddedBuilder.appendIndexWithOffset(listener.getAdded(), unionRedirection.startOfIndices[tableId]);
-                updateModifiedBuilder.appendIndexWithOffset(listener.getModified(),
+                updateAddedBuilder.appendRowSetWithOffset(listener.getAdded(), unionRedirection.startOfIndices[tableId]);
+                updateModifiedBuilder.appendRowSetWithOffset(listener.getModified(),
                         unionRedirection.startOfIndices[tableId]);
 
                 if (shiftDelta == 0) {
-                    try (final Index newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
-                        updateRemovedBuilder.appendIndex(newRemoved);
-                        index.remove(newRemoved);
+                    try (final TrackingMutableRowSet newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
+                        updateRemovedBuilder.appendRowSet(newRemoved);
+                        rowSet.remove(newRemoved);
                     }
                 } else {
-                    // If the shiftDelta is non-zero we have already updated the index above (because we used the new
-                    // index),
+                    // If the shiftDelta is non-zero we have already updated the rowSet above (because we used the new
+                    // rowSet),
                     // otherwise we need to apply the removals (adjusted by the table's starting key)
-                    updateRemovedBuilder.appendIndexWithOffset(listener.getRemoved(),
+                    updateRemovedBuilder.appendRowSetWithOffset(listener.getRemoved(),
                             unionRedirection.prevStartOfIndices[tableId]);
                 }
 
                 // Apply and process shifts.
                 final long firstTableKey = unionRedirection.startOfIndices[tableId];
                 final long lastTableKey = unionRedirection.startOfIndices[tableId + 1] - 1;
-                if (shiftData.nonempty() && index.overlapsRange(firstTableKey, lastTableKey)) {
+                if (shiftData.nonempty() && rowSet.overlapsRange(firstTableKey, lastTableKey)) {
                     final long prevCardinality = unionRedirection.prevStartOfIndices[tableId + 1] - offset;
                     final long currCardinality = unionRedirection.startOfIndices[tableId + 1] - currOffset;
                     shiftedBuilder.appendShiftData(shiftData, offset, prevCardinality, currOffset, currCardinality);
 
-                    // if the entire table was shifted, we've already applied the index update
+                    // if the entire table was shifted, we've already applied the rowSet update
                     if (shiftDelta == 0) {
                         // it is possible that shifts occur outside of our reserved keyspace for this table; we must
                         // protect from shifting keys that belong to other tables by clipping the shift space
                         final long lastLegalKey = unionRedirection.prevStartOfIndices[tableId + 1] - 1;
 
-                        try (RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
+                        try (RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
                             for (int idx = 0; idx < shiftData.size(); ++idx) {
                                 final long beginRange = shiftData.getBeginRange(idx) + offset;
                                 if (beginRange > lastLegalKey) {
@@ -346,18 +344,18 @@ public class UnionSourceManager {
             }
 
             update.modifiedColumnSet = modifiedColumnSet;
-            update.added = updateAddedBuilder.getIndex();
-            update.removed = updateRemovedBuilder.getIndex();
-            update.modified = updateModifiedBuilder.getIndex();
+            update.added = updateAddedBuilder.build();
+            update.removed = updateRemovedBuilder.build();
+            update.modified = updateModifiedBuilder.build();
             update.shifted = shiftedBuilder.build();
 
-            // Finally add the new keys to the index in post-shift key-space.
-            try (Index shiftRemoveIndex = shiftRemoveBuilder.getIndex();
-                    Index shiftAddedIndex = shiftAddedBuilder.getIndex()) {
-                index.remove(shiftRemoveIndex);
-                index.insert(shiftAddedIndex);
+            // Finally add the new keys to the rowSet in post-shift key-space.
+            try (TrackingMutableRowSet shiftRemoveRowSet = shiftRemoveBuilder.build();
+                 TrackingMutableRowSet shiftAddedRowSet = shiftAddedBuilder.build()) {
+                rowSet.remove(shiftRemoveRowSet);
+                rowSet.insert(shiftAddedRowSet);
             }
-            index.insert(update.added);
+            rowSet.insert(update.added);
 
             result.notifyListeners(update);
         }

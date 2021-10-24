@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -85,7 +85,7 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream,
-            @NotNull ReadOnlyIndex newDestinations) {
+            @NotNull RowSet newDestinations) {
         if (downstream.removed.nonempty()) {
             helper.clearIndex(downstream.removed);
         }

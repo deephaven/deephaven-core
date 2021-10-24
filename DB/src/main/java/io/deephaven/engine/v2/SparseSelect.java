@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseablePair;
@@ -25,11 +25,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * A simpler version of {@link Table#select} that is guaranteed to preserve the original table's index.
+ * A simpler version of {@link Table#select} that is guaranteed to preserve the original table's rowSet.
  *
  * <p>
  * Like select, the sparseSelected table's columns will be materialized in memory. Unlike select(), sparseSelect
- * guarantees the original Table's index is preserved. Formula columns are not supported, only the names of columns to
+ * guarantees the original Table's rowSet is preserved. Formula columns are not supported, only the names of columns to
  * copy into the output table. This means that each output column is independent of every other output column, which
  * enables column-level parallelism.
  * </p>
@@ -192,7 +192,7 @@ public class SparseSelect {
                                 final Update downstream = upstream.copy();
                                 downstream.modifiedColumnSet = modifiedColumnSetForUpdates;
                                 if (sparseObjectSources.length > 0) {
-                                    try (final Index removedOnly = upstream.removed.minus(upstream.added)) {
+                                    try (final TrackingMutableRowSet removedOnly = upstream.removed.minus(upstream.added)) {
                                         for (final ObjectSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {
                                             objectSparseArraySource.remove(removedOnly);
                                         }
@@ -213,11 +213,11 @@ public class SparseSelect {
                                 }
 
                                 if (anyModified) {
-                                    try (final Index addedAndModified = upstream.added.union(upstream.modified)) {
+                                    try (final TrackingMutableRowSet addedAndModified = upstream.added.union(upstream.modified)) {
                                         if (upstream.shifted.nonempty()) {
-                                            try (final Index currentWithoutAddsOrModifies =
+                                            try (final TrackingMutableRowSet currentWithoutAddsOrModifies =
                                                     source.getIndex().minus(addedAndModified);
-                                                    final SafeCloseablePair<Index, Index> shifts = upstream.shifted
+                                                    final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts = upstream.shifted
                                                             .extractParallelShiftedRowsFromPostShiftIndex(
                                                                     currentWithoutAddsOrModifies)) {
                                                 doShift(shifts, outputSources, modifiedColumns);
@@ -232,8 +232,8 @@ public class SparseSelect {
                                     invert(modifiedColumns);
 
                                     if (upstream.shifted.nonempty()) {
-                                        try (final Index currentWithoutAdds = source.getIndex().minus(upstream.added);
-                                                final SafeCloseablePair<Index, Index> shifts =
+                                        try (final TrackingMutableRowSet currentWithoutAdds = source.getIndex().minus(upstream.added);
+                                             final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts =
                                                         upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(
                                                                 currentWithoutAdds)) {
                                             doShift(shifts, outputSources, modifiedColumns);
@@ -260,8 +260,8 @@ public class SparseSelect {
                 });
     }
 
-    private static void doShift(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource<?>[] outputSources,
-            boolean[] toShift) {
+    private static void doShift(SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts, SparseArrayColumnSource<?>[] outputSources,
+                                boolean[] toShift) {
         if (executor == null) {
             doShiftSingle(shifts, outputSources, toShift);
         } else {
@@ -269,9 +269,9 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopy(Index addedAndModified, ColumnSource<?>[] inputSources,
-            WritableSource<?>[] outputSources,
-            boolean[] toCopy) {
+    private static void doCopy(TrackingMutableRowSet addedAndModified, ColumnSource<?>[] inputSources,
+                               WritableSource<?>[] outputSources,
+                               boolean[] toCopy) {
         if (executor == null) {
             doCopySingle(addedAndModified, inputSources, outputSources, toCopy);
         } else {
@@ -279,8 +279,8 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopySingle(Index addedAndModified, ColumnSource<?>[] inputSources,
-            WritableSource<?>[] outputSources, boolean[] toCopy) {
+    private static void doCopySingle(TrackingMutableRowSet addedAndModified, ColumnSource<?>[] inputSources,
+                                     WritableSource<?>[] outputSources, boolean[] toCopy) {
         final ChunkSource.GetContext[] gcs = new ChunkSource.GetContext[inputSources.length];
         final WritableChunkSink.FillFromContext[] ffcs = new WritableChunkSink.FillFromContext[inputSources.length];
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(gcs);
@@ -306,8 +306,8 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopyThreads(Index addedAndModified, ColumnSource<?>[] inputSources,
-            WritableSource<?>[] outputSources, boolean[] toCopy) {
+    private static void doCopyThreads(TrackingMutableRowSet addedAndModified, ColumnSource<?>[] inputSources,
+                                      WritableSource<?>[] outputSources, boolean[] toCopy) {
         final Future<?>[] futures = new Future[inputSources.length];
         for (int columnIndex = 0; columnIndex < inputSources.length; columnIndex++) {
             if (toCopy == null || toCopy[columnIndex]) {
@@ -329,8 +329,8 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopySource(Index addedAndModified, WritableSource<?> outputSource,
-            ColumnSource<?> inputSource) {
+    private static void doCopySource(TrackingMutableRowSet addedAndModified, WritableSource<?> outputSource,
+                                     ColumnSource<?> inputSource) {
         try (final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
                 final WritableChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
@@ -343,7 +343,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftSingle(SafeCloseablePair<Index, Index> shifts,
+    private static void doShiftSingle(SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts,
             SparseArrayColumnSource<?>[] outputSources,
             boolean[] toShift) {
         // noinspection unchecked
@@ -379,7 +379,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftThreads(SafeCloseablePair<Index, Index> shifts,
+    private static void doShiftThreads(SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts,
             SparseArrayColumnSource<?>[] outputSources,
             boolean[] toShift) {
         final Future<?>[] futures = new Future[outputSources.length];
@@ -402,7 +402,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftSource(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource<?> outputSource) {
+    private static void doShiftSource(SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts, SparseArrayColumnSource<?> outputSource) {
         try (final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
                 final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator();
                 final WritableChunkSink.FillFromContext ffc =

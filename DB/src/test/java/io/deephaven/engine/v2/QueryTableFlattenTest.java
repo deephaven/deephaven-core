@@ -6,7 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import junit.framework.TestCase;
@@ -252,12 +252,12 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             showWithIndex(sourceTable);
         }
 
-        void modAndValidate(final Runnable modTable, final Index added, final Index removed, final Index modified) {
+        void modAndValidate(final Runnable modTable, final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
             modAndValidate(modTable, added, removed, modified, IndexShiftData.EMPTY);
         }
 
-        void modAndValidate(final Runnable modTable, final Index added, final Index removed, final Index modified,
-                final IndexShiftData shifted) {
+        void modAndValidate(final Runnable modTable, final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified,
+                            final IndexShiftData shifted) {
             ++updateCount;
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(modTable::run);
@@ -272,8 +272,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
     }
 
-    private static Index indexByRange(long firstKey, long lastKey) {
-        return Index.FACTORY.getIndexByRange(firstKey, lastKey);
+    private static TrackingMutableRowSet indexByRange(long firstKey, long lastKey) {
+        return TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey);
     }
 
     private static IndexShiftData shiftDataByValues(long... values) {
@@ -287,16 +287,16 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         return builder.build();
     }
 
-    private static void validate(final SimpleListener listener, final long count, final Index added,
-            final Index removed, final Index modified) {
+    private static void validate(final SimpleListener listener, final long count, final TrackingMutableRowSet added,
+                                 final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.removed);
         Assert.assertEquals("simpleListener.modified", modified, listener.modified);
     }
 
-    private static void validate(final SimpleShiftAwareListener listener, final long count, final Index added,
-            final Index removed, final Index modified, final IndexShiftData shifted) {
+    private static void validate(final SimpleShiftAwareListener listener, final long count, final TrackingMutableRowSet added,
+                                 final TrackingMutableRowSet removed, final TrackingMutableRowSet modified, final IndexShiftData shifted) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.update.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.update.removed);
@@ -305,7 +305,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     /**
-     * Makes sure that the index of our table is actually contiguous.
+     * Makes sure that the rowSet of our table is actually contiguous.
      */
     protected static class FlatChecker implements EvalNuggetInterface {
         private Table t1;

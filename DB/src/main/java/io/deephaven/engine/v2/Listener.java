@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 /**
  * Listener for table changes.
@@ -18,7 +18,7 @@ public interface Listener extends ListenerBase {
      * @param removed rows removed
      * @param modified rows modified
      */
-    void onUpdate(Index added, Index removed, Index modified);
+    void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified);
 
     /**
      * Creates a notification for the table changes.
@@ -28,12 +28,12 @@ public interface Listener extends ListenerBase {
      * @param modified rows modified
      * @return table change notification
      */
-    NotificationQueue.IndexUpdateNotification getNotification(Index added, Index removed, Index modified);
+    NotificationQueue.IndexUpdateNotification getNotification(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified);
 
     /**
-     * Sets the index for the initial data.
+     * Sets the rowSet for the initial data.
      *
      * @param initialImage initial image
      */
-    void setInitialImage(Index initialImage);
+    void setInitialImage(TrackingMutableRowSet initialImage);
 }

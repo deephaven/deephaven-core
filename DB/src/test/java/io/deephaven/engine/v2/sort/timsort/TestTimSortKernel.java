@@ -2,7 +2,8 @@ package io.deephaven.engine.v2.sort.timsort;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.PerfStats;
 
 import org.jetbrains.annotations.Nullable;
@@ -161,8 +162,8 @@ public abstract class TestTimSortKernel {
 
     @FunctionalInterface
     interface PartitionKernelStuffFactory<T> {
-        PartitionKernelStuff<T> apply(List<T> javaTuples, Index index, int chunkSize, int nPartitions,
-                boolean preserveEquality);
+        PartitionKernelStuff<T> apply(List<T> javaTuples, TrackingMutableRowSet rowSet, int chunkSize, int nPartitions,
+                                      boolean preserveEquality);
     }
 
     <T> void partitionCorrectnessTest(int dataSize, int chunkSize, int nPartitions,
@@ -174,14 +175,14 @@ public abstract class TestTimSortKernel {
 
             final List<T> javaTuples = tupleListGenerator.generate(random, dataSize);
 
-            final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
                 builder.appendKey(ii * 10);
             }
-            final Index index = builder.getIndex();
+            final TrackingMutableRowSet rowSet = builder.build();
 
             final PartitionKernelStuff<T> partitionStuff =
-                    prepareFunction.apply(javaTuples, index, chunkSize, nPartitions, false);
+                    prepareFunction.apply(javaTuples, rowSet, chunkSize, nPartitions, false);
 
             partitionStuff.run();
 

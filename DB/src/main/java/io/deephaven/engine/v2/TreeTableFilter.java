@@ -2,6 +2,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
@@ -12,8 +14,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
@@ -71,17 +72,17 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         private final BaseTable source;
 
         /**
-         * The complete index of our result table.
+         * The complete rowSet of our result table.
          */
-        private Index resultIndex;
+        private TrackingMutableRowSet resultRowSet;
         /**
-         * The index of values that match our desired filter.
+         * The rowSet of values that match our desired filter.
          */
-        private Index valuesIndex;
+        private TrackingMutableRowSet valuesRowSet;
         /**
-         * The index of ancestors of matching values.
+         * The rowSet of ancestors of matching values.
          */
-        private Index parentIndex;
+        private TrackingMutableRowSet parentRowSet;
         /**
          * For each parent key, a set of rows which directly descend from the parent.
          */
@@ -139,16 +140,16 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         private void doInitialFilter(final boolean usePrev) {
-            valuesIndex = doValueFilter(usePrev, source.getIndex());
+            valuesRowSet = doValueFilter(usePrev, source.getIndex());
 
-            parentReferences = new HashMap<>(valuesIndex.intSize("parentReferenceMap"));
-            parentIndex = computeParents(usePrev, valuesIndex);
-            resultIndex = valuesIndex.union(parentIndex);
-            resultIndex.initializePreviousValue();
+            parentReferences = new HashMap<>(valuesRowSet.intSize("parentReferenceMap"));
+            parentRowSet = computeParents(usePrev, valuesRowSet);
+            resultRowSet = valuesRowSet.union(parentRowSet);
+            resultRowSet.initializePreviousValue();
 
             validateState(usePrev);
 
-            filteredRaw = (QueryTable) source.getSubTable(resultIndex);
+            filteredRaw = (QueryTable) source.getSubTable(resultRowSet);
             if (swapListener != null) {
                 treeListener = new TreeTableFilterListener("treeTable filter", source, filteredRaw);
                 swapListener.setListenerAndResult(treeListener, filteredRaw);
@@ -170,31 +171,31 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 return;
             }
 
-            final Index union = valuesIndex.union(parentIndex);
+            final TrackingMutableRowSet union = valuesRowSet.union(parentRowSet);
 
-            if (!union.equals(resultIndex)) {
+            if (!union.equals(resultRowSet)) {
                 throw new IllegalStateException();
             }
 
-            final Index expectedIndex = doValueFilter(usePrev, source.getIndex());
+            final TrackingMutableRowSet expectedRowSet = doValueFilter(usePrev, source.getIndex());
 
             final Map<Object, TLongSet> expectedParents = new HashMap<>();
 
-            if (!expectedIndex.subsetOf(source.getIndex())) {
+            if (!expectedRowSet.subsetOf(source.getIndex())) {
                 throw new IllegalStateException("Bad refilter!");
             }
 
-            if (!expectedIndex.equals(valuesIndex)) {
-                final Index missing = expectedIndex.minus(valuesIndex);
-                final Index extraValues = valuesIndex.minus(expectedIndex);
+            if (!expectedRowSet.equals(valuesRowSet)) {
+                final TrackingMutableRowSet missing = expectedRowSet.minus(valuesRowSet);
+                final TrackingMutableRowSet extraValues = valuesRowSet.minus(expectedRowSet);
                 throw new IllegalStateException("Inconsistent included Values: missing=" + missing + ", extra="
-                        + extraValues + ", expected=" + expectedIndex + ", valuesIndex=" + valuesIndex);
+                        + extraValues + ", expected=" + expectedRowSet + ", valuesRowSet=" + valuesRowSet);
             }
 
             TLongArrayList parentsToProcess = new TLongArrayList();
-            expectedIndex.forEach(parentsToProcess::add);
+            expectedRowSet.forEach(parentsToProcess::add);
 
-            final Index sourceIndex = usePrev ? source.getIndex().getPrevIndex() : source.getIndex();
+            final TrackingMutableRowSet sourceRowSet = usePrev ? source.getIndex().getPrevIndex() : source.getIndex();
             do {
                 final TLongArrayList newParentKeys = new TLongArrayList();
                 for (final TLongIterator it = parentsToProcess.iterator(); it.hasNext();) {
@@ -209,16 +210,16 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                     if (parentRow == reverseLookupListener.getNoEntryValue()) {
                         continue;
                     }
-                    if (sourceIndex.find(parentRow) < 0) {
+                    if (sourceRowSet.find(parentRow) < 0) {
                         throw new IllegalStateException("Reverse Lookup Listener points at row " + parentRow + " for "
-                                + parent + ", but the row is not in the index=" + source.getIndex());
+                                + parent + ", but the row is not in the rowSet=" + source.getIndex());
                     }
                     newParentKeys.add(parentRow);
                 }
                 parentsToProcess = newParentKeys;
             } while (!parentsToProcess.isEmpty());
 
-            final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
             parentReferences.forEach((parentValue, set) -> {
                 final TLongSet actualSet = parentReferences.get(parentValue);
@@ -231,9 +232,9 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 final long parentKey =
                         usePrev ? reverseLookupListener.getPrev(parentValue) : reverseLookupListener.get(parentValue);
                 if (parentKey != reverseLookupListener.getNoEntryValue()) {
-                    // then we should have it in our index
+                    // then we should have it in our rowSet
                     builder.addKey(parentKey);
-                    final long position = parentIndex.find(parentKey);
+                    final long position = parentRowSet.find(parentKey);
                     if (position < 0) {
                         throw new IllegalStateException(
                                 "Could not find parent in our result: " + parentValue + ", key=" + parentKey);
@@ -241,21 +242,21 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 }
             });
 
-            final Index expectedParentIndex = builder.getIndex();
-            if (!expectedParentIndex.equals(parentIndex)) {
+            final TrackingMutableRowSet expectedParentRowSet = builder.build();
+            if (!expectedParentRowSet.equals(parentRowSet)) {
                 throw new IllegalStateException();
             }
         }
 
-        private void removeValues(Index rowsToRemove) {
-            valuesIndex.remove(rowsToRemove);
+        private void removeValues(TrackingMutableRowSet rowsToRemove) {
+            valuesRowSet.remove(rowsToRemove);
             removeParents(rowsToRemove);
         }
 
-        private void removeParents(Index rowsToRemove) {
+        private void removeParents(TrackingMutableRowSet rowsToRemove) {
             final Map<Object, TLongSet> parents = generateParentReferenceMap(rowsToRemove, parentSource::getPrev);
 
-            final IndexBuilder builder = Index.FACTORY.getRandomBuilder();
+            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
             while (!parents.isEmpty()) {
                 final Iterator<Map.Entry<Object, TLongSet>> iterator = parents.entrySet().iterator();
                 final Map.Entry<Object, TLongSet> entry = iterator.next();
@@ -274,7 +275,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                         if (parentKey != reverseLookupListener.getNoEntryValue()) {
                             builder.addKey(parentKey);
 
-                            if (valuesIndex.find(parentKey) < 0) {
+                            if (valuesRowSet.find(parentKey) < 0) {
                                 final Object grandParentId = parentSource.getPrev(parentKey);
                                 if (grandParentId != null) {
                                     parents.computeIfAbsent(grandParentId, x -> new TLongHashSet()).add(parentKey);
@@ -285,10 +286,10 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 }
             }
 
-            parentIndex.remove(builder.getIndex());
+            parentRowSet.remove(builder.build());
         }
 
-        private Index doValueFilter(boolean usePrev, Index rowsToFilter) {
+        private TrackingMutableRowSet doValueFilter(boolean usePrev, TrackingMutableRowSet rowsToFilter) {
             for (final SelectFilter filter : filters) {
                 rowsToFilter = filter.filter(rowsToFilter, source.getIndex(), source, usePrev);
             }
@@ -296,10 +297,10 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             return rowsToFilter;
         }
 
-        private Index checkForResurrectedParent(Index rowsToCheck) {
-            final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        private TrackingMutableRowSet checkForResurrectedParent(TrackingMutableRowSet rowsToCheck) {
+            final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
-            for (final Index.Iterator it = rowsToCheck.iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rowsToCheck.iterator(); it.hasNext();) {
                 final long key = it.nextLong();
                 final Object id = idSource.get(key);
 
@@ -308,14 +309,14 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 }
             }
 
-            return builder.getIndex();
+            return builder.build();
         }
 
-        private Index computeParents(final boolean usePrev, @NotNull final Index rowsToParent) {
+        private TrackingMutableRowSet computeParents(final boolean usePrev, @NotNull final TrackingMutableRowSet rowsToParent) {
             final Map<Object, TLongSet> parents =
                     generateParentReferenceMap(rowsToParent, usePrev ? parentSource::getPrev : parentSource::get);
 
-            final IndexBuilder builder = Index.FACTORY.getRandomBuilder();
+            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
             while (!parents.isEmpty()) {
                 final Iterator<Map.Entry<Object, TLongSet>> iterator = parents.entrySet().iterator();
                 final Map.Entry<Object, TLongSet> entry = iterator.next();
@@ -337,13 +338,13 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 parentReferences.computeIfAbsent(parent, x -> new TLongHashSet()).addAll(references);
             }
 
-            return builder.getIndex();
+            return builder.build();
         }
 
         @NotNull
-        private Map<Object, TLongSet> generateParentReferenceMap(Index rowsToParent, LongFunction<Object> getValue) {
+        private Map<Object, TLongSet> generateParentReferenceMap(TrackingMutableRowSet rowsToParent, LongFunction<Object> getValue) {
             final Map<Object, TLongSet> parents = new LinkedHashMap<>(rowsToParent.intSize());
-            for (final Index.Iterator it = rowsToParent.iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rowsToParent.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object parentId = getValue.apply(row);
                 if (parentId != null) {
@@ -384,22 +385,22 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 final boolean useModified = upstream.modifiedColumnSet.containsAny(inputColumns);
 
                 // Must take care of removed here, because these rows are not valid in post shift space.
-                downstream.removed = resultIndex.extract(upstream.removed);
+                downstream.removed = resultRowSet.extract(upstream.removed);
 
-                try (final Index allRemoved =
+                try (final TrackingMutableRowSet allRemoved =
                         useModified ? upstream.removed.union(upstream.getModifiedPreShift()) : null;
-                        final Index valuesToRemove =
-                                (useModified ? allRemoved : upstream.removed).intersect(valuesIndex);
-                        final Index removedParents =
-                                (useModified ? allRemoved : upstream.removed).intersect(parentIndex)) {
+                     final TrackingMutableRowSet valuesToRemove =
+                                (useModified ? allRemoved : upstream.removed).intersect(valuesRowSet);
+                     final TrackingMutableRowSet removedParents =
+                                (useModified ? allRemoved : upstream.removed).intersect(parentRowSet)) {
 
                     removeValues(valuesToRemove);
-                    parentIndex.remove(removedParents);
+                    parentRowSet.remove(removedParents);
                     removeParents(removedParents);
                 }
 
                 // Now we must shift all maintained state.
-                upstream.shifted.forAllInIndex(resultIndex, (key, delta) -> {
+                upstream.shifted.forAllInIndex(resultRowSet, (key, delta) -> {
                     final Object parentId = parentSource.getPrev(key);
                     if (parentId == null) {
                         return;
@@ -412,31 +413,31 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                         parentSet.add(key + delta);
                     }
                 });
-                upstream.shifted.apply(valuesIndex);
-                upstream.shifted.apply(parentIndex);
-                upstream.shifted.apply(resultIndex);
+                upstream.shifted.apply(valuesRowSet);
+                upstream.shifted.apply(parentRowSet);
+                upstream.shifted.apply(resultRowSet);
 
                 // Finally handle added sets.
-                try (final Index addedAndModified = upstream.added.union(upstream.modified);
-                        final Index newFiltered = doValueFilter(false, addedAndModified);
-                        final Index resurrectedParents = checkForResurrectedParent(addedAndModified);
-                        final Index newParents = computeParents(false, newFiltered);
-                        final Index newResurrectedParents = computeParents(false, resurrectedParents)) {
+                try (final TrackingMutableRowSet addedAndModified = upstream.added.union(upstream.modified);
+                     final TrackingMutableRowSet newFiltered = doValueFilter(false, addedAndModified);
+                     final TrackingMutableRowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
+                     final TrackingMutableRowSet newParents = computeParents(false, newFiltered);
+                     final TrackingMutableRowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
-                    valuesIndex.insert(newFiltered);
-                    parentIndex.insert(newParents);
-                    parentIndex.insert(resurrectedParents);
-                    parentIndex.insert(newResurrectedParents);
+                    valuesRowSet.insert(newFiltered);
+                    parentRowSet.insert(newParents);
+                    parentRowSet.insert(resurrectedParents);
+                    parentRowSet.insert(newResurrectedParents);
                 }
 
                 // Compute expected results and the sets we will propagate to child listeners.
-                try (final Index result = valuesIndex.union(parentIndex);
-                        final Index resultRemovals = resultIndex.minus(result)) {
-                    downstream.added = result.minus(resultIndex);
-                    resultIndex.update(downstream.added, resultRemovals);
+                try (final TrackingMutableRowSet result = valuesRowSet.union(parentRowSet);
+                     final TrackingMutableRowSet resultRemovals = resultRowSet.minus(result)) {
+                    downstream.added = result.minus(resultRowSet);
+                    resultRowSet.update(downstream.added, resultRemovals);
 
-                    downstream.modified = upstream.modified.intersect(resultIndex);
+                    downstream.modified = upstream.modified.intersect(resultRowSet);
                     downstream.modified.remove(downstream.added);
 
                     // convert post filter removals into pre-shift space -- note these rows must have previously existed

@@ -457,8 +457,8 @@ public class TestChunkedRegionedOperations {
         // final SymbolTableSource<String> symbolTableSource = (SymbolTableSource<String>)
         // actual.getColumnSource("Sym");
         //
-        // assertTrue(symbolTableSource.hasSymbolTable(actual.getIndex()));
-        // final Table symbolTable = symbolTableSource.getStaticSymbolTable(actual.getIndex(), false);
+        // assertTrue(symbolTableSource.hasSymbolTable(actual.build()));
+        // final Table symbolTable = symbolTableSource.getStaticSymbolTable(actual.build(), false);
         //
         // assertTableEquals(expected.view("PC", "Sym").where("Sym != null").firstBy("PC", "Sym").dropColumns("PC"),
         // symbolTable.view("Sym = Symbol").where("Sym != null"));

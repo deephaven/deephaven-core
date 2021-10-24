@@ -11,9 +11,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.KeyRangeGroupingProvider;
-import io.deephaven.engine.v2.utils.CurrentOnlyIndex;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.SoftReference;
@@ -215,8 +213,8 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
             this.lastKey = lastKey;
         }
 
-        private void updateBuilder(@NotNull final Map<DATA_TYPE, Index.SequentialBuilder> valueToBuilder) {
-            valueToBuilder.computeIfAbsent(value, v -> Index.FACTORY.getSequentialBuilder()).appendRange(firstKey,
+        private void updateBuilder(@NotNull final Map<DATA_TYPE, SequentialRowSetBuilder> valueToBuilder) {
+            valueToBuilder.computeIfAbsent(value, v -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendRange(firstKey,
                     lastKey);
         }
     }
@@ -225,13 +223,13 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
 
     @Override
     public void addSource(@NotNull final ColumnLocation columnLocation,
-            @NotNull final ReadOnlyIndex locationIndexInTable) {
+            @NotNull final RowSet locationIndexInTable) {
         final long firstKey = locationIndexInTable.firstRowKey();
         final long lastKey = locationIndexInTable.lastRowKey();
         if (lastKey - firstKey + 1 != locationIndexInTable.size()) {
             /*
              * TODO (https://github.com/deephaven/deephaven-core/issues/816): This constraint is valid for all existing
-             * formats that support grouping. Address when we integrate grouping/index tables.
+             * formats that support grouping. Address when we integrate grouping/rowSet tables.
              */
             throw new IllegalArgumentException(
                     ParallelDeferredGroupingProvider.class + " only supports a single range per location");
@@ -239,7 +237,7 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
         sources.add(new Source<>(columnLocation, firstKey, lastKey));
     }
 
-    private Map<DATA_TYPE, Index> buildGrouping(@NotNull final List<Source<DATA_TYPE, ?>> includedSources) {
+    private Map<DATA_TYPE, TrackingMutableRowSet> buildGrouping(@NotNull final List<Source<DATA_TYPE, ?>> includedSources) {
         return QueryPerformanceRecorder.withNugget("Build deferred grouping", () -> {
             // noinspection unchecked
             final List<GroupingItem<DATA_TYPE>>[] perSourceGroupingLists =
@@ -248,9 +246,9 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
                                     .map(source -> source.getTransformedMetadata(columnDefinition))
                                     .toArray(List[]::new));
 
-            final Map<DATA_TYPE, Index.SequentialBuilder> valueToBuilder =
+            final Map<DATA_TYPE, SequentialRowSetBuilder> valueToBuilder =
                     QueryPerformanceRecorder.withNugget("Integrate grouping metadata", () -> {
-                        final Map<DATA_TYPE, Index.SequentialBuilder> result = new LinkedHashMap<>();
+                        final Map<DATA_TYPE, SequentialRowSetBuilder> result = new LinkedHashMap<>();
                         for (final List<GroupingItem<DATA_TYPE>> groupingList : perSourceGroupingLists) {
                             if (groupingList == null) {
                                 return null;
@@ -267,21 +265,21 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
 
             return QueryPerformanceRecorder.withNugget("Build and aggregate group indexes",
                     () -> valueToBuilder.entrySet().parallelStream()
-                            .map(e -> new Pair<>(e.getKey(), e.getValue().getIndex()))
+                            .map(e -> new Pair<>(e.getKey(), e.getValue().build()))
                             .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked,
                                     LinkedHashMap::new)));
         });
     }
 
     @Override
-    public Map<DATA_TYPE, Index> getGroupToRange() {
+    public Map<DATA_TYPE, TrackingMutableRowSet> getGroupToRange() {
         return buildGrouping(sources);
     }
 
     @Override
-    public Pair<Map<DATA_TYPE, Index>, Boolean> getGroupToRange(@NotNull final Index hint) {
+    public Pair<Map<DATA_TYPE, TrackingMutableRowSet>, Boolean> getGroupToRange(@NotNull final TrackingMutableRowSet hint) {
         final List<Source<DATA_TYPE, ?>> includedSources = sources.stream()
-                .filter(source -> CurrentOnlyIndex.FACTORY.getIndexByRange(source.firstKey, source.lastKey)
+                .filter(source -> MutableRowSetImpl.FACTORY.getIndexByRange(source.firstKey, source.lastKey)
                         .overlaps(hint))
                 .collect(Collectors.toList());
         return new Pair<>(buildGrouping(includedSources), includedSources.size() == sources.size());

@@ -68,7 +68,7 @@ public class ColumnHandlerFactory implements Serializable {
         /**
          * Gets the object in row {@code i} of the column.
          *
-         * @param i index
+         * @param i rowSet
          * @return object in row {@code i} of the column
          */
         Object get(final int i);
@@ -92,7 +92,7 @@ public class ColumnHandlerFactory implements Serializable {
          *
          *
          * @throws UnsupportedOperationException if the value in the column can not be converted to double
-         * @param i index
+         * @param i rowSet
          * @return column's value at row {@code i} as a double
          */
         double getDouble(int i);

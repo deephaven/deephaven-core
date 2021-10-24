@@ -67,7 +67,7 @@ import org.jetbrains.annotations.NotNull;
 // deltaChunk = {d5, d9, d15}
 //
 // To get these values back in the right spot, we analyze baselineKeysBs and deltaKeysBS. We take advantage of the
-// property that these two sets do not intersect; furthermore, that their union is the original index requested by
+// property that these two sets do not intersect; furthermore, that their union is the original rowSet requested by
 // the caller. To do this, we simply count the number of consecutive (not necessarily adjacent) baseline items not
 // interrupted by delta; and likewise the number of consecutive (not necessarily adjacent) delta items not
 // interrupted by baseline. In our example:
@@ -120,7 +120,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      * field is volatile because we want concurrent lockfree getters to see correct values from "get()" even though we
      * might be in the middle of commitValues().
      */
-    private volatile Index deltaRows;
+    private volatile TrackingMutableRowSet deltaRows;
     /**
      * The maximum key inserted into deltaRows during this phase. We use this to make sure that keys are not inserted
      * out of numerical order.
@@ -235,7 +235,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     private Chunk<? super Values> getOrFillChunk(@NotNull DAContext context, WritableChunk<? super Values> optionalDest,
             @NotNull RowSequence rowSequence) {
         // Do the volatile read once
-        final Index dRows = deltaRows;
+        final TrackingMutableRowSet dRows = deltaRows;
         // Optimization if we're not tracking prev or if there are no deltas.
         if (dRows == null || dRows.empty()) {
             return getOrFillSimple(baseline, context.baseline, optionalDest, rowSequence);
@@ -244,10 +244,10 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         // baselineKeysBS: (rowSequence - deltaRows): baseline keys in the baseline coordinate space
         // deltaKeysBS: (rowSequence intersect deltaRows) delta keys, also in the baseline coordinate space
         // deltaKeysDS: the above, translated to the delta coordinate space
-        final Index[] splitResult = new Index[2];
+        final TrackingMutableRowSet[] splitResult = new TrackingMutableRowSet[2];
         splitKeys(rowSequence, dRows, splitResult);
-        final Index baselineKeysBS = splitResult[1];
-        final Index deltaKeysBS = splitResult[0];
+        final TrackingMutableRowSet baselineKeysBS = splitResult[1];
+        final TrackingMutableRowSet deltaKeysBS = splitResult[0];
 
         // If one or the other is empty, shortcut here
         if (deltaKeysBS.empty()) {
@@ -255,7 +255,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
             return getOrFillSimple(baseline, context.baseline, optionalDest, baselineKeysBS);
         }
 
-        final Index deltaKeysDS = dRows.invert(deltaKeysBS);
+        final TrackingMutableRowSet deltaKeysDS = dRows.invert(deltaKeysBS);
         if (baselineKeysBS.empty()) {
             return getOrFillSimple(delta, context.delta, optionalDest, deltaKeysDS);
         }
@@ -483,9 +483,9 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     /**
      * @param index The key to look up.
-     * @return The index, translated into delta space, that the caller should use, or -1 if the caller should use the
-     *         original index in baseline space. Will return -1 if either startTrackingPrevValues() has not been called
-     *         yet, or if the index does not exist in the deltaRows.
+     * @return The rowSet, translated into delta space, that the caller should use, or -1 if the caller should use the
+     *         original rowSet in baseline space. Will return -1 if either startTrackingPrevValues() has not been called
+     *         yet, or if the rowSet does not exist in the deltaRows.
      */
     private long lookupIndexInDeltaSpace(final long index) {
         assertIndexValid(index);
@@ -498,8 +498,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * @param index The key to look up.
      * @return If we're not tracking previous values yet, simply return the key (note 1). Otherwise, if the key already
-     *         exists in the 'deltaRows' set, return its index. Otherwise allocate a new element of the deltaRows set
-     *         and return that index.
+     *         exists in the 'deltaRows' set, return its rowSet. Otherwise allocate a new element of the deltaRows set
+     *         and return that rowSet.
      */
     private long lookupOrCreateIndexInDeltaSpace(final long index) {
         assertIndexValid(index);
@@ -510,7 +510,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         }
 
         // Do the volatile read once.
-        final Index dRows = deltaRows;
+        final TrackingMutableRowSet dRows = deltaRows;
 
         // Otherwise, we need to either update a key or append a key
         final long existing = dRows.find(index);
@@ -563,7 +563,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
                 baseline.fillFromChunk(baselineCtx, data, baselineOk);
             }
         }
-        deltaRows = Index.FACTORY.getEmptyIndex();
+        deltaRows = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         maxKey = Long.MIN_VALUE;
     }
 
@@ -578,7 +578,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         this.delta = delta;
         deltaCapacityEnsurer = delta::ensureCapacity;
 
-        deltaRows = Index.FACTORY.getEmptyIndex();
+        deltaRows = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         maxKey = Long.MIN_VALUE;
         /*
          * When 'delta' changes, we need a way to notify all the ChunkAdapters about its new value. We say "all the
@@ -616,10 +616,10 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      * @param results Allocated by the caller. {@code results[0]} will be set to (lhs intersect rhs). {@code results[1]}
      *        will be set to (lhs minus rhs).
      */
-    private static void splitKeys(RowSequence lhs, Index rhs, Index[] results) {
-        final Index lhsIndex = lhs.asIndex();
-        results[0] = lhsIndex.intersect(rhs);
-        results[1] = lhsIndex.minus(rhs);
+    private static void splitKeys(RowSequence lhs, TrackingMutableRowSet rhs, TrackingMutableRowSet[] results) {
+        final TrackingMutableRowSet lhsRowSet = lhs.asIndex();
+        results[0] = lhsRowSet.intersect(rhs);
+        results[1] = lhsRowSet.minus(rhs);
     }
 
     private static class DAContext implements ChunkSource.GetContext, ChunkSource.FillContext {

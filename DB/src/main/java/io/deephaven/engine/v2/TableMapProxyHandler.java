@@ -11,7 +11,7 @@ import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationHandler;
@@ -456,9 +456,9 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
             checkSanity(upstream.modified);
         }
 
-        private void checkSanity(Index index) {
+        private void checkSanity(TrackingMutableRowSet rowSet) {
             synchronized (joinKeyToTableKey) {
-                for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+                for (final TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
                     final long indexKey = it.nextLong();
                     final Object joinKey = TableTools.getKey(keyColumns, indexKey);
                     final Object existing = joinKeyToTableKey.putIfAbsent(joinKey, tableKey);

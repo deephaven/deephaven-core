@@ -3,6 +3,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.tables.ColumnDefinition;
@@ -14,7 +16,6 @@ import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
@@ -78,13 +79,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
             final int foffset = offset;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final Index addIndex = Index.FACTORY.getIndexByRange(foffset, foffset + leftJoinKey.length - 1);
-                addToTable(leftTable, addIndex, stringCol("JoinKey", leftJoinKey),
+                final TrackingMutableRowSet addRowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(foffset, foffset + leftJoinKey.length - 1);
+                addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
-                leftTable.notifyListeners(addIndex, i(), i());
+                leftTable.notifyListeners(addRowSet, i(), i());
 
 
-                final Index.SequentialBuilder modIndexBuilder = Index.FACTORY.getSequentialBuilder();
+                final SequentialRowSetBuilder modIndexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
                 int slot = random.nextInt(foffset / 100);
                 for (int ii = 0; ii < 100; ++ii) {
@@ -95,12 +96,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     }
                 }
 
-                final Index modIndex = modIndexBuilder.getIndex();
-                final String[] rightModifications = new String[modIndex.intSize()];
-                final int[] rightModifySentinel = new int[modIndex.intSize()];
+                final TrackingMutableRowSet modRowSet = modIndexBuilder.build();
+                final String[] rightModifications = new String[modRowSet.intSize()];
+                final int[] rightModifySentinel = new int[modRowSet.intSize()];
 
                 final MutableInt position = new MutableInt();
-                modIndex.forAllLongs((long ll) -> {
+                modRowSet.forAllLongs((long ll) -> {
                     final int ii = (int) ll;
                     if (ii % 2 == 0) {
                         // make something that exists go away
@@ -113,11 +114,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     position.increment();
                 });
 
-                addToTable(rightTable, addIndex, stringCol("JoinKey", rightJoinKey),
+                addToTable(rightTable, addRowSet, stringCol("JoinKey", rightJoinKey),
                         intCol("RightSentinel", rightSentinel));
-                addToTable(rightTable, modIndex, stringCol("JoinKey", rightModifications),
+                addToTable(rightTable, modRowSet, stringCol("JoinKey", rightModifications),
                         intCol("RightSentinel", rightModifySentinel));
-                rightTable.notifyListeners(addIndex, i(), modIndex);
+                rightTable.notifyListeners(addRowSet, i(), modRowSet);
             });
             TstUtils.validate(en);
         }
@@ -353,8 +354,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table leftFlat = leftTable.flatten();
         final ColumnSource flatGrouped = leftFlat.getColumnSource("I1");
-        final Index flatIndex = leftFlat.getIndex();
-        final Map<Object, Index> grouping = flatIndex.getGrouping(flatGrouped);
+        final TrackingMutableRowSet flatRowSet = leftFlat.getIndex();
+        final Map<Object, TrackingMutableRowSet> grouping = flatRowSet.getGrouping(flatGrouped);
         // noinspection unchecked
         ((AbstractColumnSource) flatGrouped).setGroupToRange(grouping);
 
@@ -1116,7 +1117,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     private void dumpComplete(QueryTable queryTable, String... columns) {
-        final Index index = queryTable.getIndex();
+        final TrackingMutableRowSet rowSet = queryTable.getIndex();
 
         final ColumnSource[] columnSources = new ColumnSource[columns.length];
         for (int ii = 0; ii < columns.length; ++ii) {
@@ -1125,9 +1126,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("Complete Table has ").append(index.size()).append(" rows:\n");
-        sb.append("Index=").append(index).append("\n");
-        for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+        sb.append("Complete Table has ").append(rowSet.size()).append(" rows:\n");
+        sb.append("TrackingMutableRowSet=").append(rowSet).append("\n");
+        for (final TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             final long value = it.nextLong();
             final Object[] keyValues = new Object[columns.length];
             for (int ii = 0; ii < columns.length; ++ii) {
@@ -1136,10 +1137,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             sb.append(value).append("=").append(new SmartKey(keyValues)).append("\n");
         }
 
-        final Index prevIndex = index.getPrevIndex();
-        sb.append("Complete Previous Table has ").append(prevIndex.size()).append(" rows:\n");
-        sb.append("Index=").append(index).append("\n");
-        for (final Index.Iterator it = prevIndex.iterator(); it.hasNext();) {
+        final TrackingMutableRowSet prevRowSet = rowSet.getPrevIndex();
+        sb.append("Complete Previous Table has ").append(prevRowSet.size()).append(" rows:\n");
+        sb.append("TrackingMutableRowSet=").append(rowSet).append("\n");
+        for (final TrackingMutableRowSet.Iterator it = prevRowSet.iterator(); it.hasNext();) {
             final long value = it.nextLong();
             final Object[] keyValues = new Object[columns.length];
             for (int ii = 0; ii < columns.length; ++ii) {

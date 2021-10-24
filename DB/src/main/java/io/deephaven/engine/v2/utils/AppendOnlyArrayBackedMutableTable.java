@@ -51,7 +51,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      */
     public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues) {
-        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(),
+        return make(new QueryTable(definition, TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
                 NullValueColumnSource.createColumnSourceMap(definition)), enumValues);
     }
 
@@ -86,15 +86,15 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
 
     private AppendOnlyArrayBackedMutableTable(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
-        super(Index.FACTORY.getEmptyIndex(), makeColumnSourceMap(definition), enumValues, processPendingUpdater);
+        super(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), makeColumnSourceMap(definition), enumValues, processPendingUpdater);
     }
 
     @Override
     protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder,
             Consumer<String> errorNotifier) {
-        try (final Index addIndex = table.getIndex().clone()) {
+        try (final TrackingMutableRowSet addRowSet = table.getIndex().clone()) {
             final long firstRow = nextRow;
-            final long lastRow = firstRow + addIndex.intSize() - 1;
+            final long lastRow = firstRow + addRowSet.intSize() - 1;
             try (final RowSequence destinations = RowSequenceUtil.forRange(firstRow, lastRow)) {
                 destinations.forAllLongs(indexChangeRecorder::addIndex);
                 nextRow = lastRow + 1;
@@ -111,7 +111,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
                             final ChunkSource.GetContext getContext =
                                     sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
                         final Chunk<? extends Attributes.Values> valuesChunk =
-                                sourceColumnSource.getChunk(getContext, addIndex);
+                                sourceColumnSource.getChunk(getContext, addRowSet);
                         arrayBackedColumnSource.fillFromChunk(ffc, valuesChunk, destinations);
                     }
                 });

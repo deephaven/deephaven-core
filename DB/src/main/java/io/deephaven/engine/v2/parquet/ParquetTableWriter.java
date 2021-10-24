@@ -23,7 +23,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.codec.ObjectCodec;
@@ -340,16 +340,16 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> void writeColumnSource(
-            final Index tableIndex,
+            final TrackingMutableRowSet tableRowSet,
             final RowGroupWriter rowGroupWriter,
             final String name,
             final ColumnSource<DATA_TYPE> columnSourceIn,
             final ColumnDefinition<DATA_TYPE> columnDefinition,
             final ParquetInstructions writeInstructions) throws IllegalAccessException, IOException {
-        Index index = tableIndex;
+        TrackingMutableRowSet rowSet = tableRowSet;
         ColumnSource<DATA_TYPE> columnSource = columnSourceIn;
         ColumnSource<?> lengthSource = null;
-        Index lengthIndex = null;
+        TrackingMutableRowSet lengthRowSet = null;
         int targetSize = getTargetSize(columnSource.getType());
         Supplier<Integer> rowStepGetter;
         Supplier<Integer> valuesStepGetter;
@@ -360,18 +360,18 @@ public class ParquetTableWriter {
             targetSize = getTargetSize(columnSource.getComponentType());
             HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
-            Table t = new QueryTable(index, columns);
+            Table t = new QueryTable(rowSet, columns);
             lengthSource = t
                     .view("len= ((Object)array) == null?null:(int)array."
                             + (DbArrayBase.class.isAssignableFrom(columnSource.getType()) ? "size()" : "length"))
                     .getColumnSource("len");
-            lengthIndex = index;
+            lengthRowSet = rowSet;
             List<Integer> valueChunkSize = new ArrayList<>();
             List<Integer> originalChunkSize = new ArrayList<>();
             int runningSize = 0;
             int originalRowsCount = 0;
             try (final ChunkSource.GetContext context = lengthSource.makeGetContext(LOCAL_CHUNK_SIZE);
-                    final RowSequence.Iterator it = index.getRowSequenceIterator()) {
+                    final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                 while (it.hasMore()) {
                     RowSequence rs = it.getNextRowSequenceWithLength(LOCAL_CHUNK_SIZE);
                     // noinspection unchecked
@@ -415,12 +415,12 @@ public class ParquetTableWriter {
             };
             stepsCount = valueChunkSize.size();
             Table array = t.ungroup("array");
-            index = array.getIndex();
+            rowSet = array.getIndex();
             columnSource = array.getColumnSource("array");
         } else {
             int finalTargetSize = targetSize;
             rowStepGetter = valuesStepGetter = () -> finalTargetSize;
-            stepsCount = (int) (index.size() / finalTargetSize + ((index.size() % finalTargetSize) == 0 ? 0 : 1));
+            stepsCount = (int) (rowSet.size() / finalTargetSize + ((rowSet.size() % finalTargetSize) == 0 ? 0 : 1));
         }
         Class<DATA_TYPE> columnType = columnSource.getType();
         if (columnType == DBDateTime.class) {
@@ -450,7 +450,7 @@ public class ParquetTableWriter {
                 final MutableInt keyCount = new MutableInt(0);
                 final MutableBoolean hasNulls = new MutableBoolean(false);
                 try (final ChunkSource.GetContext context = columnSource.makeGetContext(targetSize);
-                        final RowSequence.Iterator it = index.getRowSequenceIterator()) {
+                        final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                     for (int step = 0; step < stepsCount; step++) {
                         final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.get());
                         // noinspection unchecked
@@ -484,7 +484,7 @@ public class ParquetTableWriter {
                 if (lengthSource != null) {
                     repeatCount = new ArrayList<>();
                     try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetSize);
-                            final RowSequence.Iterator it = lengthIndex.getRowSequenceIterator()) {
+                            final RowSequence.Iterator it = lengthRowSet.getRowSequenceIterator()) {
                         while (it.hasMore()) {
                             final RowSequence rs = it.getNextRowSequenceWithLength(rowStepGetter.get());
                             // noinspection unchecked
@@ -520,10 +520,10 @@ public class ParquetTableWriter {
                 final Object bufferToWrite = transferObject.getBuffer();
                 final Object nullValue = getNullValue(columnType);
                 try (final RowSequence.Iterator lengthIndexIt =
-                        lengthIndex != null ? lengthIndex.getRowSequenceIterator() : null;
-                        final ChunkSource.GetContext lengthSourceContext =
+                        lengthRowSet != null ? lengthRowSet.getRowSequenceIterator() : null;
+                     final ChunkSource.GetContext lengthSourceContext =
                                 lengthSource != null ? lengthSource.makeGetContext(targetSize) : null;
-                        final RowSequence.Iterator it = index.getRowSequenceIterator()) {
+                     final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                     final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
                     for (int step = 0; step < stepsCount; ++step) {
                         final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.get());
@@ -933,8 +933,8 @@ public class ParquetTableWriter {
     }
 
 
-    private static boolean isRange(Index index) {
-        return index.size() == (index.lastRowKey() - index.firstRowKey() + 1);
+    private static boolean isRange(TrackingMutableRowSet rowSet) {
+        return rowSet.size() == (rowSet.lastRowKey() - rowSet.firstRowKey() + 1);
     }
 
 
@@ -977,7 +977,7 @@ public class ParquetTableWriter {
 
 
     private static Table groupingAsTable(Table tableToSave, String columnName) {
-        Map<?, Index> grouping = tableToSave.getIndex().getGrouping(tableToSave.getColumnSource(columnName));
+        Map<?, TrackingMutableRowSet> grouping = tableToSave.getIndex().getGrouping(tableToSave.getColumnSource(columnName));
         RangeCollector collector;
         QueryScope.getScope().putParam("__range_collector_" + columnName + "__", collector = new RangeCollector());
         Table firstOfTheKey =

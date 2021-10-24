@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.LongAbortableConsumer;
 import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
 import io.deephaven.engine.v2.utils.LongRangeConsumer;
@@ -57,13 +57,13 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
     RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive);
 
     /**
-     * Get an {@link Index} representation of this {@code RowSequence}.
+     * Get an {@link TrackingMutableRowSet} representation of this {@code RowSequence}.
      *
-     * @return An {@link Index} representation for the same row keys in the same order
+     * @return An {@link TrackingMutableRowSet} representation for the same row keys in the same order
      * @apiNote If you use the result across clock ticks, you may observe inconsistencies.
      * @apiNote You must not mutate the result.
      */
-    Index asIndex();
+    TrackingMutableRowSet asIndex();
 
     /**
      * Get a {@link LongChunk} representation of the individual row keys in this {@code RowSequence}.
@@ -115,14 +115,14 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
     /**
      * Get the first row key in this {@code RowSequence}.
      *
-     * @return The first row key, or {@link Index#NULL_KEY} if there is none.
+     * @return The first row key, or {@link TrackingMutableRowSet#NULL_ROW_KEY} if there is none.
      */
     long firstRowKey();
 
     /**
      * Get the last row key in this {@code RowSequence}.
      *
-     * @return The last row key, or {@link Index#NULL_KEY} if there is none.
+     * @return The last row key, or {@link TrackingMutableRowSet#NULL_ROW_KEY} if there is none.
      */
     long lastRowKey();
 
@@ -209,7 +209,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
          * Peek at the next row key that would be returned by {@link #getNextRowSequenceThrough(long)} or
          * {@link #getNextRowSequenceWithLength(long)}. Does not advance the position.
          *
-         * @return The next row key that would be returned, or {@link Index#NULL_KEY} if this iterator is exhausted
+         * @return The next row key that would be returned, or {@link TrackingMutableRowSet#NULL_ROW_KEY} if this iterator is exhausted
          */
         long peekNextKey();
 
@@ -303,7 +303,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
 
             @Override
             public long peekNextKey() {
-                return Index.NULL_KEY;
+                return TrackingMutableRowSet.NULL_ROW_KEY;
             }
 
             @Override
@@ -349,8 +349,8 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
         }
 
         @Override
-        public Index asIndex() {
-            return Index.FACTORY.getEmptyIndex();
+        public TrackingMutableRowSet asIndex() {
+            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         }
 
         @Override
@@ -380,12 +380,12 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
 
         @Override
         public long firstRowKey() {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
 
         @Override
         public long lastRowKey() {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
 
         @Override

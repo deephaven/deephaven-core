@@ -5,8 +5,8 @@
 package io.deephaven.engine.v2.replay;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 import java.util.Map;
@@ -14,9 +14,9 @@ import java.util.Map;
 public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
     private int redirIndexSize;
 
-    public ReplayGroupedFullTable(Index index, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
-            Replayer replayer, String groupingColumn) {
-        super(index, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex((int) index.size()),
+    public ReplayGroupedFullTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
+                                  Replayer replayer, String groupingColumn) {
+        super(rowSet, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex((int) rowSet.size()),
                 new String[] {groupingColumn});
         redirIndexSize = 0;
         // We do not modify existing entries in the RedirectionIndex (we only add at the end), so there's no need to
@@ -28,21 +28,21 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
         if (allIterators.isEmpty()) {
             return;
         }
-        IndexBuilder indexBuilder = Index.FACTORY.getBuilder();
+        RowSetBuilder rowSetBuilder = TrackingMutableRowSet.FACTORY.getBuilder();
         while (!allIterators.isEmpty() && allIterators.peek().lastTime.getNanos() < replayer.currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
             final long key = redirIndexSize++;
             redirectionIndex.put(key, currentIt.lastIndex);
-            indexBuilder.addKey(key);
+            rowSetBuilder.addKey(key);
             currentIt = currentIt.next();
             if (currentIt != null) {
                 allIterators.add(currentIt);
             }
         }
-        final Index added = indexBuilder.getIndex();
+        final TrackingMutableRowSet added = rowSetBuilder.build();
         if (added.size() > 0) {
             getIndex().insert(added);
-            notifyListeners(added, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+            notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
         }
     }
 

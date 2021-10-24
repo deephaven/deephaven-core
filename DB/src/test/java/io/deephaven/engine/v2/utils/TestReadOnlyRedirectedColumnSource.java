@@ -79,7 +79,7 @@ public class TestReadOnlyRedirectedColumnSource {
             final WritableObjectChunk<String, Values> chunk,
             final int sz) {
         final ColumnSource cs = t.getColumnSource(col);
-        final Index ix = t.getIndex();
+        final TrackingMutableRowSet ix = t.getIndex();
         try (final ColumnSource.FillContext fc = cs.makeFillContext(sz);
                 final RowSequence.Iterator it = ix.getRowSequenceIterator()) {
             long offset = 0;
@@ -128,7 +128,7 @@ public class TestReadOnlyRedirectedColumnSource {
         QueryScope.addParam("ids6196_values", ids6196_values);
 
         final QueryTable qt =
-                TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(6), intCol("IntVal", 0, 1, 2, 3, 4, 5));
+                TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(6), intCol("IntVal", 0, 1, 2, 3, 4, 5));
 
         final Table a = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
                 () -> qt.update("I2=3+IntVal", "BoolVal=ids6196_values[IntVal % ids6196_values.length]"));
@@ -200,8 +200,8 @@ public class TestReadOnlyRedirectedColumnSource {
         TableTools.showWithIndex(captured);
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        TstUtils.addToTable(qt, Index.FACTORY.getFlatIndex(3), intCol("IntVal", 1, 2, 3));
-        qt.notifyListeners(Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getFlatIndex(3));
+        TstUtils.addToTable(qt, TrackingMutableRowSet.FACTORY.getFlatIndex(3), intCol("IntVal", 1, 2, 3));
+        qt.notifyListeners(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getFlatIndex(3));
 
         LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests();
 

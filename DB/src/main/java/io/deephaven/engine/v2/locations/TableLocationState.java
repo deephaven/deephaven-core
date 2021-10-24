@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations;
 
 import io.deephaven.engine.v2.sources.regioned.RegionedColumnSource;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,14 +22,14 @@ public interface TableLocationState {
     Object getStateLock();
 
     /**
-     * @return The (possibly-empty) {@link ReadOnlyIndex index} of a table location, or {@code null} if index
+     * @return The (possibly-empty) {@link RowSet rowSet} of a table location, or {@code null} if rowSet
      *         information is unknown or does not exist for this table location.
-     * @implNote This index must not have any key larger than
+     * @implNote This rowSet must not have any key larger than
      *           {@link RegionedColumnSource#ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK the region mask}.
-     * @apiNote The returned index will be a "clone", meaning the caller must {@link ReadOnlyIndex#close()} it when
+     * @apiNote The returned rowSet will be a "clone", meaning the caller must {@link RowSet#close()} it when
      *          finished.
      */
-    ReadOnlyIndex getIndex();
+    RowSet getIndex();
 
     /**
      * @return The size of a table location: <br>

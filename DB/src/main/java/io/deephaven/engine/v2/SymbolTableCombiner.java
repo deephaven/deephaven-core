@@ -115,7 +115,7 @@ class SymbolTableCombiner
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right Index
+    // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource overflowUniqueIdentifierSource
@@ -225,27 +225,27 @@ class SymbolTableCombiner
         addSymbols(symbolTable, symbolTable.getIndex(), symbolMapper);
     }
 
-    void addSymbols(final Table symbolTable, Index index, IntegerSparseArraySource symbolMapper) {
+    void addSymbols(final Table symbolTable, TrackingMutableRowSet rowSet, IntegerSparseArraySource symbolMapper) {
         if (symbolTable.isEmpty()) {
             return;
         }
         final ColumnSource symbolSource = symbolTable.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
         final ColumnSource idSource = symbolTable.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
         // noinspection unchecked
-        addSymbols(index, symbolSource, idSource, symbolMapper);
+        addSymbols(rowSet, symbolSource, idSource, symbolMapper);
     }
 
-    private void addSymbols(final Index index, ColumnSource<String> symbolSource, ColumnSource<Long> idSource, IntegerSparseArraySource symbolMapper) {
+    private void addSymbols(final TrackingMutableRowSet rowSet, ColumnSource<String> symbolSource, ColumnSource<Long> idSource, IntegerSparseArraySource symbolMapper) {
         final IntegerArraySource resultIdentifiers = new IntegerArraySource();
-        resultIdentifiers.ensureCapacity(index.size());
+        resultIdentifiers.ensureCapacity(rowSet.size());
 
         final ColumnSource[] symbolSourceArray = {symbolSource};
-        try (final BuildContext bc = makeBuildContext(symbolSourceArray, index.size())) {
-            buildTable(bc, index, symbolSourceArray, resultIdentifiers);
+        try (final BuildContext bc = makeBuildContext(symbolSourceArray, rowSet.size())) {
+            buildTable(bc, rowSet, symbolSourceArray, resultIdentifiers);
         }
 
         final MutableLong position = new MutableLong();
-        index.forAllLongs((long ll) -> {
+        rowSet.forAllLongs((long ll) -> {
             final int uniqueIdentifier = resultIdentifiers.getInt(position.longValue());
             position.increment();
             symbolMapper.set(idSource.getLong(ll), uniqueIdentifier);
@@ -1002,7 +1002,7 @@ class SymbolTableCombiner
              final WritableIntChunk stateChunk = WritableIntChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = uniqueIdentifierSource.makeFillContext(maxSize)) {
 
-            uniqueIdentifierSource.fillChunk(fillContext, stateChunk, Index.FACTORY.getFlatIndex(tableHashPivot));
+            uniqueIdentifierSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1246,7 +1246,7 @@ class SymbolTableCombiner
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableIntChunk<Values>\E
         final WritableIntChunk<Values> workingStateEntries;
@@ -1615,8 +1615,8 @@ class SymbolTableCombiner
         final WritableIntChunk<HashCode> overflowHashChunk = WritableIntChunk.makeWritableChunk(nextOverflowLocation);
 
 
-        final RowSequence tableLocations = Index.FACTORY.getIndexByRange(0, tableSize - 1);
-        final RowSequence overflowLocations = nextOverflowLocation > 0 ? Index.FACTORY.getIndexByRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
+        final RowSequence tableLocations = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, tableSize - 1);
+        final RowSequence overflowLocations = nextOverflowLocation > 0 ? TrackingMutableRowSet.FACTORY.getRowSetByRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             dumpChunks[ii] = keyChunkTypes[ii].makeWritableChunk(tableSize);

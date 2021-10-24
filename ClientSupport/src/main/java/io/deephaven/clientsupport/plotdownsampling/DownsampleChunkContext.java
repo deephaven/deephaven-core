@@ -97,7 +97,7 @@ public class DownsampleChunkContext implements AutoCloseable {
     /**
      * Requests a chunk of data from the specified Y column source, using the internally tracked GetContexts.
      * 
-     * @param yColIndex the index of the column from the original yColumnSources to get data from
+     * @param yColIndex the rowSet of the column from the original yColumnSources to get data from
      * @param keys the keys in the column that values are needed for
      * @param usePrev whether or not previous values should be fetched
      * @return a chunk containing the values specified

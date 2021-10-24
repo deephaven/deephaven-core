@@ -167,7 +167,7 @@ public class UpdatePerformanceTracker {
     private void finishInterval(final long intervalStartTimeMillis, final long intervalEndTimeMillis,
             final long intervalDurationNanos) {
         /*
-         * Visit all entry references. For entries that no longer exist: Remove by index from the entry list. For
+         * Visit all entry references. For entries that no longer exist: Remove by rowSet from the entry list. For
          * entries that still exist: If the entry had non-zero usage in this interval, add it to the report. Reset the
          * entry for the next interval.
          */
@@ -335,8 +335,8 @@ public class UpdatePerformanceTracker {
             RuntimeMemory.getInstance().read(startSample);
         }
 
-        public final void onUpdateStart(final Index added, final Index removed, final Index modified,
-                final IndexShiftData shifted) {
+        public final void onUpdateStart(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified,
+                                        final IndexShiftData shifted) {
             intervalAdded += added.size();
             intervalRemoved += removed.size();
             intervalModified += modified.size();

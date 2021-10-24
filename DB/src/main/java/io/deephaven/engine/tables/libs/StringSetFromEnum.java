@@ -24,7 +24,7 @@ public class StringSetFromEnum {
 
     /**
      * Create a converter for the sequence of {@code enums}, where the i-th enum in the sequence is associated with the
-     * value {@code Math.pow(2,i)} (starting with index 0 and value 1).
+     * value {@code Math.pow(2,i)} (starting with rowSet 0 and value 1).
      */
     public StringSetFromEnum(String enums[]) {
         strings = Arrays.copyOf(enums, enums.length);

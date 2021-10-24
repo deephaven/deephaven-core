@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.iterators;
 import io.deephaven.base.Procedure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
@@ -17,8 +17,8 @@ import java.util.PrimitiveIterator;
  */
 public class ShortColumnIterator extends ColumnIterator<Short> implements PrimitiveIterator<Short, Procedure.UnaryShort> {
 
-    public ShortColumnIterator(@NotNull final Index index, @NotNull final ColumnSource<Short> columnSource) {
-        super(index, columnSource);
+    public ShortColumnIterator(@NotNull final TrackingMutableRowSet rowSet, @NotNull final ColumnSource<Short> columnSource) {
+        super(rowSet, columnSource);
     }
 
     public ShortColumnIterator(@NotNull final Table table, @NotNull final String columnName) {

@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -41,7 +41,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     public void testZeroKeyJoinBitExpansionOnAdd() {
-        // Looking to force our index space to need more keys.
+        // Looking to force our rowSet space to need more keys.
         final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
@@ -73,7 +73,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     public void testZeroKeyJoinBitExpansionOnBoundaryShift() {
-        // Looking to force our index space to need more keys.
+        // Looking to force our rowSet space to need more keys.
         final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
@@ -111,7 +111,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     public void testZeroKeyJoinBitExpansionWithInnerShift() {
-        // Looking to force our index space to need more keys.
+        // Looking to force our rowSet space to need more keys.
         final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
@@ -310,21 +310,21 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         final QueryTable left;
         if (leftTicking) {
-            left = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(nextLeftRow),
+            left = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(nextLeftRow),
                     c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("leftData", leftData.toArray(new Long[] {})));
         } else {
-            left = TstUtils.testTable(Index.FACTORY.getFlatIndex(nextLeftRow),
+            left = TstUtils.testTable(TrackingMutableRowSet.FACTORY.getFlatIndex(nextLeftRow),
                     c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("leftData", leftData.toArray(new Long[] {})));
         }
         final QueryTable right;
         if (rightTicking) {
-            right = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(nextRightRow),
+            right = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(nextRightRow),
                     c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("rightData", rightData.toArray(new Long[] {})));
         } else {
-            right = TstUtils.testTable(Index.FACTORY.getFlatIndex(nextRightRow),
+            right = TstUtils.testTable(TrackingMutableRowSet.FACTORY.getFlatIndex(nextRightRow),
                     c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("rightData", rightData.toArray(new Long[] {})));
         }
@@ -394,9 +394,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     public void testStaticVsNaturalJoin2() {
         final int size = 10000;
 
-        final QueryTable xqt = new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
+        final QueryTable xqt = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(size), Collections.emptyMap());
         xqt.setRefreshing(true);
-        final QueryTable yqt = new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
+        final QueryTable yqt = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(size), Collections.emptyMap());
         yqt.setRefreshing(true);
 
         final Table x = xqt.update("Col1=i");
@@ -409,14 +409,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             xqt.getIndex().insertRange(size, size * 2);
-            xqt.notifyListeners(Index.FACTORY.getIndexByRange(size, size * 2), i(), i());
+            xqt.notifyListeners(TrackingMutableRowSet.FACTORY.getRowSetByRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             yqt.getIndex().insertRange(size, size * 2);
-            yqt.notifyListeners(Index.FACTORY.getIndexByRange(size, size * 2), i(), i());
+            yqt.notifyListeners(TrackingMutableRowSet.FACTORY.getRowSetByRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
@@ -582,9 +582,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                         ResettableWritableIntChunk.makeResettableChunk()) {
 
             rdest.resetFromChunk(dest, 0, 4);
-            column.fillChunk(context, rdest, jt.getIndex().subindexByPos(0, 4));
+            column.fillChunk(context, rdest, jt.getIndex().subSetByPositionRange(0, 4));
             rdest.resetFromChunk(dest, 0, 2);
-            column.fillChunk(context, rdest, jt.getIndex().subindexByPos(0, 2));
+            column.fillChunk(context, rdest, jt.getIndex().subSetByPositionRange(0, 2));
         }
     }
 
@@ -642,7 +642,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 for (int i = 0; i <= numSteps.getValue(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking, Index.FACTORY.getIndexByRange(rightOffset, rightOffset + numSteps.getValue()),
+                addToTable(rightTicking, TrackingMutableRowSet.FACTORY.getRowSetByRange(rightOffset, rightOffset + numSteps.getValue()),
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
@@ -653,9 +653,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 up.added = i(rightOffset + numSteps.getValue());
                 up.removed = i();
                 if (numSteps.getValue() == 0) {
-                    up.modified = Index.FACTORY.getEmptyIndex();
+                    up.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                 } else {
-                    up.modified = Index.FACTORY.getIndexByRange(rightOffset, rightOffset + numSteps.getValue() - 1);
+                    up.modified = TrackingMutableRowSet.FACTORY.getRowSetByRange(rightOffset, rightOffset + numSteps.getValue() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);

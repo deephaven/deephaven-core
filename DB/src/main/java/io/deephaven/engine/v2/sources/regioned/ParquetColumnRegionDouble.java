@@ -26,7 +26,7 @@ public final class ParquetColumnRegionDouble<ATTR extends Any> extends ParquetCo
         try {
             return page.asDoubleChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving double at table double index " + elementIndex
+            throw new TableDataException("Error retrieving double at table double rowSet " + elementIndex
                     + ", from a parquet table", e);
         }
     }

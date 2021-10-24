@@ -93,7 +93,7 @@ public class ObjectFloatObjectColumnTupleSource extends AbstractTupleSource<Obje
             writableSource.set(destinationIndexKey, (ELEMENT_TYPE) tuple.getThirdElement());
             return;
         }
-        throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
+        throw new IndexOutOfBoundsException("Invalid element rowSet " + elementIndex + " for export");
     }
 
     @Override

@@ -50,7 +50,7 @@ public class RedirectionIndexTest extends LiveTableTestCase {
     public void testContiguous() {
         final RedirectionIndex redirectionIndex = new ContiguousRedirectionIndexImpl(10);
 
-        // Fill redirection index with values 100 + ii * 2
+        // Fill redirection rowSet with values 100 + ii * 2
         for (int ii = 0; ii < 100; ++ii) {
             redirectionIndex.put(ii, 100 + ii * 2);
         }

@@ -20,7 +20,7 @@ public class StreamPublisherImpl implements StreamPublisher {
      * StreamPublisherImpl.
      *
      * @param chunkFactory a supplier of WritableChunks that is acceptable to our consumer
-     * @param chunkTypeIntFunction a function from column index to ChunkType
+     * @param chunkTypeIntFunction a function from column rowSet to ChunkType
      */
     public void setChunkFactory(Supplier<WritableChunk[]> chunkFactory, IntFunction<ChunkType> chunkTypeIntFunction) {
         if (this.chunkFactory != null) {

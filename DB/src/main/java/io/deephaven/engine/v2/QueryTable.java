@@ -128,7 +128,7 @@ public class QueryTable extends BaseTable {
 
     private static final Pattern COLUMN_NAME = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
 
-    private final Index index;
+    private final TrackingMutableRowSet rowSet;
     private final LinkedHashMap<String, ColumnSource<?>> columns;
     protected transient ModifiedColumnSet modifiedColumnSet;
 
@@ -156,8 +156,8 @@ public class QueryTable extends BaseTable {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectSelect", false);
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
-     * may be spread out across many blocks depending on the input Index). However, the select() can become slower
-     * because it must look things up in a redirection index.
+     * may be spread out across many blocks depending on the input TrackingMutableRowSet). However, the select() can become slower
+     * because it must look things up in a redirection rowSet.
      *
      * Values less than zero disable overhead checking, and result in never flattening the input.
      *
@@ -166,7 +166,7 @@ public class QueryTable extends BaseTable {
     private static final double MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD =
             Configuration.getInstance().getDoubleWithDefault("QueryTable.maximumStaticSelectMemoryOverhead", 1.1);
 
-    // Should we track the entire index of firstBy and lastBy operations.
+    // Should we track the entire rowSet of firstBy and lastBy operations.
     @VisibleForTesting
     public static boolean TRACKED_LAST_BY =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.trackLastBy", false);
@@ -183,33 +183,33 @@ public class QueryTable extends BaseTable {
     // Cached results
     transient Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations;
 
-    public QueryTable(Index index, Map<String, ? extends ColumnSource<?>> columns) {
-        this(TableDefinition.inferFrom(columns), index, columns);
+    public QueryTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
+        this(TableDefinition.inferFrom(columns), rowSet, columns);
     }
 
     /**
      * Creates a new abstract table, reusing a definition but creating a new column source map.
      *
      * @param definition the definition to use for this table
-     * @param index the index of the new table
+     * @param rowSet the rowSet of the new table
      * @param columns the column source map for the table, which will be copied into a new column source map
      */
-    public QueryTable(TableDefinition definition, Index index, Map<String, ? extends ColumnSource<?>> columns) {
-        this(definition, Require.neqNull(index, "index"), new LinkedHashMap<>(columns), null);
+    public QueryTable(TableDefinition definition, TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
+        this(definition, Require.neqNull(rowSet, "rowSet"), new LinkedHashMap<>(columns), null);
     }
 
     /**
      * Creates a new abstract table, reusing a definition and column source map.
      *
      * @param definition the definition to use for this table
-     * @param index the index of the new table
+     * @param rowSet the rowSet of the new table
      * @param columns the column source map for the table, which is not copied.
      * @param modifiedColumnSet optional {@link ModifiedColumnSet} that should be re-used if supplied
      */
-    private QueryTable(TableDefinition definition, Index index, LinkedHashMap<String, ColumnSource<?>> columns,
-            @Nullable ModifiedColumnSet modifiedColumnSet) {
+    private QueryTable(TableDefinition definition, TrackingMutableRowSet rowSet, LinkedHashMap<String, ColumnSource<?>> columns,
+                       @Nullable ModifiedColumnSet modifiedColumnSet) {
         super(definition, "QueryTable"); // TODO: Better descriptions composed from query chain
-        this.index = index;
+        this.rowSet = rowSet;
         this.columns = columns;
         this.modifiedColumnSet = modifiedColumnSet;
         initializeTransientFields();
@@ -249,13 +249,13 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Index getIndex() {
-        return index;
+    public TrackingMutableRowSet getIndex() {
+        return rowSet;
     }
 
     @Override
     public long size() {
-        return index.size();
+        return rowSet.size();
     }
 
     @Override
@@ -331,7 +331,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Object[] getRecord(long rowNo, String... columnNames) {
-        final long key = index.get(rowNo);
+        final long key = rowSet.get(rowNo);
         return (columnNames.length > 0 ? Arrays.stream(columnNames).map(this::getColumnSource)
                 : columns.values().stream()).map(cs -> cs.get(key)).toArray(Object[]::new);
     }
@@ -447,7 +447,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table slice(final long firstPositionInclusive, final long lastPositionExclusive) {
         if (firstPositionInclusive == lastPositionExclusive) {
-            return getSubTable(Index.FACTORY.getEmptyIndex());
+            return getSubTable(TrackingMutableRowSet.FACTORY.getEmptyRowSet());
         }
         return getResult(SliceLikeOperation.slice(this, firstPositionInclusive, lastPositionExclusive, "slice"));
     }
@@ -660,7 +660,7 @@ public class QueryTable extends BaseTable {
             } else if (isSelectDistinct) {
                 if (getColumnSourceMap().isEmpty()) {
                     // if we have no input columns, then the only thing we can do is have an empty result
-                    return new QueryTable(Index.FACTORY.getEmptyIndex(), Collections.emptyMap());
+                    return new QueryTable(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), Collections.emptyMap());
                 }
                 return ChunkedOperatorAggregationHelper.aggregation(new KeyOnlyAggregationFactory(), this,
                         groupByColumns);
@@ -832,7 +832,7 @@ public class QueryTable extends BaseTable {
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
-        public FilteredTable(final Index currentMapping, final QueryTable source, final SelectFilter[] filters) {
+        public FilteredTable(final TrackingMutableRowSet currentMapping, final QueryTable source, final SelectFilter[] filters) {
             super(source.getDefinition(), currentMapping, source.columns, null);
             this.source = source;
             this.filters = filters;
@@ -883,52 +883,52 @@ public class QueryTable extends BaseTable {
         /**
          * Refilter relevant rows.
          *
-         * @param upstreamAdded index of keys that were added upstream
-         * @param upstreamRemoved index of keys that were removed
-         * @param upstreamModified index of keys that were modified upstream
+         * @param upstreamAdded rowSet of keys that were added upstream
+         * @param upstreamRemoved rowSet of keys that were removed
+         * @param upstreamModified rowSet of keys that were modified upstream
          * @param shiftData sequence of shifts that apply to keyspace
          * @param modifiedColumnSet the set of columns that have any changes to indices in {@code modified}
          */
-        private void doRefilter(final Index upstreamAdded, final Index upstreamRemoved, final Index upstreamModified,
-                final IndexShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
+        private void doRefilter(final TrackingMutableRowSet upstreamAdded, final TrackingMutableRowSet upstreamRemoved, final TrackingMutableRowSet upstreamModified,
+                                final IndexShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.modifiedColumnSet = modifiedColumnSet;
 
             // Remove upstream keys first, so that keys at rows that were removed and then added are propagated as such.
             // Note that it is a failure to propagate these as modifies, since modifiedColumnSet may not mark that all
             // columns have changed.
-            update.removed = upstreamRemoved == null ? Index.FACTORY.getEmptyIndex()
+            update.removed = upstreamRemoved == null ? TrackingMutableRowSet.FACTORY.getEmptyRowSet()
                     : upstreamRemoved.intersect(getIndex());
             getIndex().remove(update.removed);
 
-            // Update our index and compute removals due to splatting.
+            // Update our rowSet and compute removals due to splatting.
             if (shiftData != null) {
-                final Index index = getIndex();
+                final TrackingMutableRowSet rowSet = getIndex();
                 shiftData.apply((beginRange, endRange, shiftDelta) -> {
-                    final Index toShift = index.subindexByKey(beginRange, endRange);
-                    index.removeRange(beginRange, endRange);
-                    update.removed.insert(index.subindexByKey(beginRange + shiftDelta, endRange + shiftDelta));
-                    index.removeRange(beginRange + shiftDelta, endRange + shiftDelta);
-                    index.insert(toShift.shift(shiftDelta));
+                    final TrackingMutableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange);
+                    rowSet.removeRange(beginRange, endRange);
+                    update.removed.insert(rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta));
+                    rowSet.removeRange(beginRange + shiftDelta, endRange + shiftDelta);
+                    rowSet.insert(toShift.shift(shiftDelta));
                 });
             }
 
-            final Index newMapping;
+            final TrackingMutableRowSet newMapping;
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
                 newMapping = whereInternal(source.getIndex().clone(), source.getIndex(), false, filters);
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
-                // things that are added or removed are already reflected in source.getIndex
-                final Index unmatchedRows = source.getIndex().minus(getIndex());
+                // things that are added or removed are already reflected in source.build
+                final TrackingMutableRowSet unmatchedRows = source.getIndex().minus(getIndex());
                 // we must check rows that have been modified instead of just preserving them
                 if (upstreamModified != null) {
                     unmatchedRows.insert(upstreamModified);
                 }
-                final Index unmatchedClone = unmatchedRows.clone();
+                final TrackingMutableRowSet unmatchedClone = unmatchedRows.clone();
                 newMapping = whereInternal(unmatchedClone, unmatchedRows, false, filters);
 
                 // add back what we previously matched, but for modifications and removals
-                try (final Index previouslyMatched = getIndex().clone()) {
+                try (final TrackingMutableRowSet previouslyMatched = getIndex().clone()) {
                     if (upstreamAdded != null) {
                         previouslyMatched.remove(upstreamAdded);
                     }
@@ -940,16 +940,16 @@ public class QueryTable extends BaseTable {
 
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
-                // we need to take removed rows out of our index so we do not read them; and also examine added or
+                // we need to take removed rows out of our rowSet so we do not read them; and also examine added or
                 // modified rows
-                final Index matchedRows = getIndex().clone();
+                final TrackingMutableRowSet matchedRows = getIndex().clone();
                 if (upstreamAdded != null) {
                     matchedRows.insert(upstreamAdded);
                 }
                 if (upstreamModified != null) {
                     matchedRows.insert(upstreamModified);
                 }
-                final Index matchedClone = matchedRows.clone();
+                final TrackingMutableRowSet matchedClone = matchedRows.clone();
                 newMapping = whereInternal(matchedClone, matchedRows, false, filters);
                 refilterMatchedRequested = false;
             } else {
@@ -958,9 +958,9 @@ public class QueryTable extends BaseTable {
 
             // Compute added/removed in post-shift keyspace.
             update.added = newMapping.minus(getIndex());
-            final Index postShiftRemovals = getIndex().minus(newMapping);
+            final TrackingMutableRowSet postShiftRemovals = getIndex().minus(newMapping);
 
-            // Update our index in post-shift keyspace.
+            // Update our rowSet in post-shift keyspace.
             getIndex().update(update.added, postShiftRemovals);
 
             // Note that removed must be propagated to listeners in pre-shift keyspace.
@@ -970,7 +970,7 @@ public class QueryTable extends BaseTable {
             update.removed.insert(postShiftRemovals);
 
             if (upstreamModified == null || upstreamModified.empty()) {
-                update.modified = Index.FACTORY.getEmptyIndex();
+                update.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             } else {
                 update.modified = upstreamModified.intersect(newMapping);
                 update.modified.remove(update.added);
@@ -1029,10 +1029,10 @@ public class QueryTable extends BaseTable {
                         initializeWithSnapshot("where", swapListener,
                                 (prevRequested, beforeClock) -> {
                                     final boolean usePrev = prevRequested && isRefreshing();
-                                    final Index indexToUse = usePrev ? index.getPrevIndex() : index;
-                                    final Index currentMapping;
+                                    final TrackingMutableRowSet rowSetToUpdate = usePrev ? rowSet.getPrevIndex() : rowSet;
+                                    final TrackingMutableRowSet currentMapping;
 
-                                    currentMapping = whereInternal(indexToUse.clone(), indexToUse, usePrev, filters);
+                                    currentMapping = whereInternal(rowSetToUpdate.clone(), rowSetToUpdate, usePrev, filters);
                                     Assert.eq(currentMapping.getPrevIndex().size(),
                                             "currentMapping.getPrevIndex.size()", currentMapping.size(),
                                             "currentMapping.size()");
@@ -1086,7 +1086,7 @@ public class QueryTable extends BaseTable {
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected Index whereInternal(Index currentMapping, Index fullSet, boolean usePrev, SelectFilter... filters) {
+    protected TrackingMutableRowSet whereInternal(TrackingMutableRowSet currentMapping, TrackingMutableRowSet fullSet, boolean usePrev, SelectFilter... filters) {
         for (SelectFilter filter : filters) {
             if (Thread.interrupted()) {
                 throw new QueryCancellationException("interrupted while filtering");
@@ -1122,7 +1122,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table flatten() {
-        if (!isFlat() && !isRefreshing() && index.size() - 1 == index.lastRowKey()) {
+        if (!isFlat() && !isRefreshing() && rowSet.size() - 1 == rowSet.lastRowKey()) {
             // We're already flat, and we'll never update; so we can just return ourselves, after setting ourselves flat
             setFlat();
         }
@@ -1144,8 +1144,8 @@ public class QueryTable extends BaseTable {
     @Override
     public boolean isFlat() {
         if (flat) {
-            Assert.assertion(index.lastRowKey() == index.size() - 1, "index.lastRowKey() == index.size() - 1", index,
-                    "index");
+            Assert.assertion(rowSet.lastRowKey() == rowSet.size() - 1, "rowSet.lastRowKey() == rowSet.size() - 1", rowSet,
+                    "rowSet");
         }
         return flat;
     }
@@ -1210,7 +1210,7 @@ public class QueryTable extends BaseTable {
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = Arrays.stream(selectColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new);
         SelectAndViewAnalyzer analyzer = SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns,
-                index, modifiedColumnSet, true, clones);
+                rowSet, modifiedColumnSet, true, clones);
         return new SelectValidationResult(analyzer, clones);
     }
 
@@ -1233,20 +1233,20 @@ public class QueryTable extends BaseTable {
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
                     final SelectAndViewAnalyzer analyzer =
-                            SelectAndViewAnalyzer.create(mode, columns, index, modifiedColumnSet,
+                            SelectAndViewAnalyzer.create(mode, columns, rowSet, modifiedColumnSet,
                                     publishTheseSources, selectColumns);
 
                     // Init all the rows by cooking up a fake Update
-                    final Index emptyIndex = Index.FACTORY.getEmptyIndex();
+                    final TrackingMutableRowSet emptyRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                     final ShiftAwareListener.Update fakeUpdate =
-                            new ShiftAwareListener.Update(index, emptyIndex, emptyIndex,
+                            new ShiftAwareListener.Update(rowSet, emptyRowSet, emptyRowSet,
                                     IndexShiftData.EMPTY, ModifiedColumnSet.ALL);
                     try (final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                            new SelectAndViewAnalyzer.UpdateHelper(emptyIndex, fakeUpdate)) {
-                        analyzer.applyUpdate(fakeUpdate, emptyIndex, updateHelper);
+                            new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
+                        analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper);
                     }
 
-                    final QueryTable resultTable = new QueryTable(index, analyzer.getPublishedColumnSources());
+                    final QueryTable resultTable = new QueryTable(rowSet, analyzer.getPublishedColumnSources());
                     if (isRefreshing()) {
                         analyzer.startTrackingPrev();
                         final Map<String, String[]> effects = analyzer.calcEffects();
@@ -1304,8 +1304,8 @@ public class QueryTable extends BaseTable {
                                 (DeferredGroupingColumnSource<?>) selectedColumnSource;
                         // noinspection unchecked,rawtypes
                         deferredGroupingSelectedSource.setGroupToRange((Map) originalColumnSource.getGroupToRange());
-                    } else if (index.hasGrouping(originalColumnSource)) {
-                        index.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
+                    } else if (rowSet.hasGrouping(originalColumnSource)) {
+                        rowSet.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
                     }
                 }
             }
@@ -1353,9 +1353,9 @@ public class QueryTable extends BaseTable {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
                                 final SelectAndViewAnalyzer analyzer =
                                         SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_EAGER,
-                                                columns, index, modifiedColumnSet, publishTheseSources, viewColumns);
+                                                columns, rowSet, modifiedColumnSet, publishTheseSources, viewColumns);
                                 final QueryTable queryTable =
-                                        new QueryTable(index, analyzer.getPublishedColumnSources());
+                                        new QueryTable(rowSet, analyzer.getPublishedColumnSources());
                                 if (swapListener != null) {
                                     final Map<String, String[]> effects = analyzer.calcEffects();
                                     final ShiftAwareListener listener =
@@ -1465,10 +1465,10 @@ public class QueryTable extends BaseTable {
             // - clear only the keys that no longer exist
             // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
-            try (final Index toClear = dependent.index.getPrevIndex();
-                    final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                            new SelectAndViewAnalyzer.UpdateHelper(dependent.index, upstream)) {
-                toClear.remove(dependent.index);
+            try (final TrackingMutableRowSet toClear = dependent.rowSet.getPrevIndex();
+                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                            new SelectAndViewAnalyzer.UpdateHelper(dependent.rowSet, upstream)) {
+                toClear.remove(dependent.rowSet);
                 analyzer.applyUpdate(upstream, toClear, updateHelper);
 
                 final Update downstream = upstream.copy();
@@ -1487,8 +1487,8 @@ public class QueryTable extends BaseTable {
 
                     final SelectAndViewAnalyzer analyzer =
                             SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_LAZY,
-                                    columns, index, modifiedColumnSet, true, selectColumns);
-                    final QueryTable result = new QueryTable(index, analyzer.getPublishedColumnSources());
+                                    columns, rowSet, modifiedColumnSet, true, selectColumns);
+                    final QueryTable result = new QueryTable(rowSet, analyzer.getPublishedColumnSources());
                     if (isRefreshing()) {
                         listenForUpdates(new ShiftAwareListenerImpl(
                                 "lazyUpdate(" + Arrays.deepToString(selectColumns) + ')', this, result));
@@ -1524,7 +1524,7 @@ public class QueryTable extends BaseTable {
                             createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
 
                     initializeWithSnapshot("dropColumns", swapListener, (usePrev, beforeClockValue) -> {
-                        final QueryTable resultTable = new QueryTable(index, newColumns);
+                        final QueryTable resultTable = new QueryTable(rowSet, newColumns);
                         propagateFlatness(resultTable);
 
                         copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
@@ -1547,7 +1547,7 @@ public class QueryTable extends BaseTable {
                                         downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                         if (downstream.modified.nonempty()) {
                                             downstream.modified.close();
-                                            downstream.modified = Index.FACTORY.getEmptyIndex();
+                                            downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                                         }
                                     } else {
                                         downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
@@ -1608,7 +1608,7 @@ public class QueryTable extends BaseTable {
                         newColumns.put(newName, columnSource);
                     }
 
-                    final QueryTable queryTable = new QueryTable(index, newColumns);
+                    final QueryTable queryTable = new QueryTable(rowSet, newColumns);
                     if (isRefreshing()) {
                         final ModifiedColumnSet.Transformer mcsTransformer =
                                 newModifiedColumnSetTransformer(queryTable, modifiedColumnSetPairs);
@@ -1856,44 +1856,44 @@ public class QueryTable extends BaseTable {
 
     /**
      * The leftColumns are the column sources for the snapshot-triggering table. The rightColumns are the column sources
-     * for the table being snapshotted. The leftIndex refers to snapshots that we want to take. Typically this index is
-     * expected to have size 1, but in some cases it could be larger. The rightIndex refers to the index of the current
-     * table. Therefore we want to take leftIndex.size() snapshots, each of which being rightIndex.size() in size.
+     * for the table being snapshotted. The leftRowSet refers to snapshots that we want to take. Typically this rowSet is
+     * expected to have size 1, but in some cases it could be larger. The rightRowSet refers to the rowSet of the current
+     * table. Therefore we want to take leftRowSet.size() snapshots, each of which being rightRowSet.size() in size.
      *
      * @param leftColumns Columns making up the triggering data
-     * @param leftIndex The currently triggering rows
+     * @param leftRowSet The currently triggering rows
      * @param rightColumns Columns making up the data being snapshotted
-     * @param rightIndex The data to snapshot
+     * @param rightRowSet The data to snapshot
      * @param dest The ColumnSources in which to store the data. The keys are drawn from leftColumns.keys() and\
      *        rightColumns.keys()
      * @param destOffset The offset in the 'dest' ColumnSources at which to write data
-     * @return The new dest ColumnSource size, calculated as {@code destOffset + leftIndex.size() * rightIndex.size()}
+     * @return The new dest ColumnSource size, calculated as {@code destOffset + leftRowSet.size() * rightRowSet.size()}
      */
     private static long snapshotHistoryInternal(
-            @NotNull Map<String, ? extends ColumnSource<?>> leftColumns, @NotNull Index leftIndex,
-            @NotNull Map<String, ? extends ColumnSource<?>> rightColumns, @NotNull Index rightIndex,
+            @NotNull Map<String, ? extends ColumnSource<?>> leftColumns, @NotNull TrackingMutableRowSet leftRowSet,
+            @NotNull Map<String, ? extends ColumnSource<?>> rightColumns, @NotNull TrackingMutableRowSet rightRowSet,
             @NotNull Map<String, ? extends WritableSource<?>> dest, long destOffset) {
         assert leftColumns.size() + rightColumns.size() == dest.size();
-        if (leftIndex.empty() || rightIndex.empty()) {
+        if (leftRowSet.empty() || rightRowSet.empty()) {
             // Nothing to do.
             return destOffset;
         }
 
-        final long newCapacity = destOffset + leftIndex.size() * rightIndex.size();
+        final long newCapacity = destOffset + leftRowSet.size() * rightRowSet.size();
         // Ensure all the capacities
         for (WritableSource<?> ws : dest.values()) {
             ws.ensureCapacity(newCapacity);
         }
 
-        final int rightSize = rightIndex.intSize();
+        final int rightSize = rightRowSet.intSize();
         long[] destOffsetHolder = new long[] {destOffset};
         // For each key on the snapshotting side
-        leftIndex.forAllLongs(snapshotKey -> {
+        leftRowSet.forAllLongs(snapshotKey -> {
             final long doff = destOffsetHolder[0];
             destOffsetHolder[0] += rightSize;
-            try (final Index destIndex = Index.FACTORY.getIndexByRange(doff, doff + rightSize - 1)) {
-                SnapshotUtils.copyStampColumns(leftColumns, snapshotKey, dest, destIndex);
-                SnapshotUtils.copyDataColumns(rightColumns, rightIndex, dest, destIndex, false);
+            try (final TrackingMutableRowSet destRowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(doff, doff + rightSize - 1)) {
+                SnapshotUtils.copyStampColumns(leftColumns, snapshotKey, dest, destRowSet);
+                SnapshotUtils.copyDataColumns(rightColumns, rightRowSet, dest, destRowSet, false);
             }
         });
         return newCapacity;
@@ -1917,14 +1917,14 @@ public class QueryTable extends BaseTable {
             final long initialSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), leftTable.getIndex(),
                     rightTable.getColumnSourceMap(), rightTable.getIndex(),
                     resultColumns, 0);
-            final Index resultIndex = Index.FACTORY.getFlatIndex(initialSize);
-            final QueryTable result = new QueryTable(resultIndex, resultColumns);
+            final TrackingMutableRowSet resultRowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(initialSize);
+            final QueryTable result = new QueryTable(resultRowSet, resultColumns);
             if (isRefreshing()) {
                 listenForUpdates(new ListenerImpl("snapshotHistory" + resultColumns.keySet().toString(), this, result) {
-                    private long lastKey = index.lastRowKey();
+                    private long lastKey = rowSet.lastRowKey();
 
                     @Override
-                    public void onUpdate(final Index added, final Index removed, final Index modified) {
+                    public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
                         Assert.assertion(removed.size() == 0, "removed.size() == 0",
                                 removed, "removed");
                         Assert.assertion(modified.size() == 0, "modified.size() == 0",
@@ -1934,15 +1934,15 @@ public class QueryTable extends BaseTable {
                         }
                         Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey",
                                 lastKey, "lastRowKey", added, "added");
-                        final long oldSize = resultIndex.size();
+                        final long oldSize = resultRowSet.size();
                         final long newSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), added,
                                 rightTable.getColumnSourceMap(), rightTable.getIndex(),
                                 resultColumns, oldSize);
-                        final Index addedSnapshots = Index.FACTORY.getIndexByRange(oldSize, newSize - 1);
-                        resultIndex.insert(addedSnapshots);
-                        lastKey = index.lastRowKey();
-                        result.notifyListeners(addedSnapshots, Index.FACTORY.getEmptyIndex(),
-                                Index.FACTORY.getEmptyIndex());
+                        final TrackingMutableRowSet addedSnapshots = TrackingMutableRowSet.FACTORY.getRowSetByRange(oldSize, newSize - 1);
+                        resultRowSet.insert(addedSnapshots);
+                        lastKey = rowSet.lastRowKey();
+                        result.notifyListeners(addedSnapshots, TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                                TrackingMutableRowSet.FACTORY.getEmptyRowSet());
                     }
 
                     @Override
@@ -2029,10 +2029,10 @@ public class QueryTable extends BaseTable {
             throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
         }
 
-        final Index resultIndex = Index.FACTORY.getEmptyIndex();
-        final QueryTable result = new QueryTable(resultIndex, allColumns);
+        final TrackingMutableRowSet resultRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final QueryTable result = new QueryTable(resultRowSet, allColumns);
         final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, tableToSnapshot,
-                result, resultLeftColumns, resultRightColumns, resultIndex);
+                result, resultLeftColumns, resultRightColumns, resultRowSet);
 
         if (doInitialSnapshot) {
             if (!isRefreshing() && tableToSnapshot.isLive() && !lazySnapshot) {
@@ -2041,7 +2041,7 @@ public class QueryTable extends BaseTable {
                         ConstructSnapshot.makeSnapshotControl(false, (NotificationStepSource) tableToSnapshot),
                         (usePrev, beforeClockUnused) -> {
                             listener.doSnapshot(false, usePrev);
-                            resultIndex.initializePreviousValue();
+                            resultRowSet.initializePreviousValue();
                             return true;
                         });
 
@@ -2106,9 +2106,9 @@ public class QueryTable extends BaseTable {
                         throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
                     }
 
-                    final Index resultIndex = Index.FACTORY.getEmptyIndex();
+                    final TrackingMutableRowSet resultRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
 
-                    final QueryTable resultTable = new QueryTable(resultIndex, resultColumns);
+                    final QueryTable resultTable = new QueryTable(resultRowSet, resultColumns);
 
                     if (isRefreshing() && rightTable.isRefreshing()) {
 
@@ -2162,7 +2162,7 @@ public class QueryTable extends BaseTable {
                                                 QueryTable.this, rightTable, leftColumns, resultColumns);
                                         resultTable.getIndex().insert(rightTable.getIndex());
                                         resultTable.notifyListeners(resultTable.getIndex(),
-                                                Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+                                                TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
                                         removeUpdateListener(this);
                                     }
                                 });
@@ -2285,7 +2285,7 @@ public class QueryTable extends BaseTable {
                         }
                     }
                     final long[] sizes = new long[intSize("ungroup")];
-                    long maxSize = computeMaxSize(index, arrayColumns, dbArrayColumns, null, sizes, nullFill);
+                    long maxSize = computeMaxSize(rowSet, arrayColumns, dbArrayColumns, null, sizes, nullFill);
                     final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), minimumUngroupBase);
                     final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase);
 
@@ -2305,7 +2305,7 @@ public class QueryTable extends BaseTable {
                         resultMap.put(name, result);
                     }
                     final QueryTable result = new QueryTable(
-                            getUngroupIndex(sizes, Index.FACTORY.getRandomBuilder(), initialBase, index).getIndex(),
+                            getUngroupIndex(sizes, TrackingMutableRowSet.FACTORY.getRandomBuilder(), initialBase, rowSet).build(),
                             resultMap);
                     if (isRefreshing()) {
                         startTrackingPrev(resultMap.values());
@@ -2314,13 +2314,13 @@ public class QueryTable extends BaseTable {
                                 this, result) {
 
                             @Override
-                            public void onUpdate(final Index added, final Index removed, final Index modified) {
+                            public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
                                 intSize("ungroup");
 
                                 int newBase = shiftState.getNumShiftBits();
-                                Index.RandomBuilder ungroupAdded = Index.FACTORY.getRandomBuilder();
-                                Index.RandomBuilder ungroupModified = Index.FACTORY.getRandomBuilder();
-                                Index.RandomBuilder ungroupRemoved = Index.FACTORY.getRandomBuilder();
+                                RowSetBuilder ungroupAdded = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+                                RowSetBuilder ungroupModified = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+                                RowSetBuilder ungroupRemoved = TrackingMutableRowSet.FACTORY.getRandomBuilder();
                                 newBase = evaluateIndex(added, ungroupAdded, newBase);
                                 newBase = evaluateModified(modified, ungroupModified, ungroupAdded, ungroupRemoved,
                                         newBase);
@@ -2328,27 +2328,27 @@ public class QueryTable extends BaseTable {
                                     rebase(newBase + 1);
                                 } else {
                                     evaluateRemovedIndex(removed, ungroupRemoved);
-                                    final Index removedIndex = ungroupRemoved.getIndex();
-                                    final Index addedIndex = ungroupAdded.getIndex();
-                                    result.getIndex().update(addedIndex, removedIndex);
-                                    final Index modifiedIndex = ungroupModified.getIndex();
+                                    final TrackingMutableRowSet removedRowSet = ungroupRemoved.build();
+                                    final TrackingMutableRowSet addedRowSet = ungroupAdded.build();
+                                    result.getIndex().update(addedRowSet, removedRowSet);
+                                    final TrackingMutableRowSet modifiedRowSet = ungroupModified.build();
 
-                                    if (!modifiedIndex.subsetOf(result.getIndex())) {
-                                        final Index missingModifications = modifiedIndex.minus(result.getIndex());
-                                        log.error().append("Result Index: ").append(result.getIndex().toString())
+                                    if (!modifiedRowSet.subsetOf(result.getIndex())) {
+                                        final TrackingMutableRowSet missingModifications = modifiedRowSet.minus(result.getIndex());
+                                        log.error().append("Result TrackingMutableRowSet: ").append(result.getIndex().toString())
                                                 .endl();
                                         log.error().append("Missing modifications: ")
                                                 .append(missingModifications.toString()).endl();
-                                        log.error().append("Added: ").append(addedIndex.toString()).endl();
-                                        log.error().append("Modified: ").append(modifiedIndex.toString()).endl();
-                                        log.error().append("Removed: ").append(removedIndex.toString()).endl();
+                                        log.error().append("Added: ").append(addedRowSet.toString()).endl();
+                                        log.error().append("Modified: ").append(modifiedRowSet.toString()).endl();
+                                        log.error().append("Removed: ").append(removedRowSet.toString()).endl();
 
                                         for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
                                             ColumnSource<?> arrayColumn = es.getValue();
                                             String name = es.getKey();
 
-                                            Index.Iterator iterator = index.iterator();
-                                            for (int i = 0; i < index.size(); i++) {
+                                            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                                            for (int i = 0; i < rowSet.size(); i++) {
                                                 final long next = iterator.nextLong();
                                                 int size = (arrayColumn.get(next) == null ? 0
                                                         : Array.getLength(arrayColumn.get(next)));
@@ -2362,9 +2362,9 @@ public class QueryTable extends BaseTable {
                                         for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
                                             ColumnSource<?> arrayColumn = es.getValue();
                                             String name = es.getKey();
-                                            Index.Iterator iterator = index.iterator();
+                                            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
 
-                                            for (int i = 0; i < index.size(); i++) {
+                                            for (int i = 0; i < rowSet.size(); i++) {
                                                 final long next = iterator.nextLong();
                                                 long size = (arrayColumn.get(next) == null ? 0
                                                         : ((DbArrayBase<?>) arrayColumn.get(next)).size());
@@ -2375,8 +2375,8 @@ public class QueryTable extends BaseTable {
                                             }
                                         }
 
-                                        Assert.assertion(false, "modifiedIndex.subsetOf(result.getIndex())",
-                                                modifiedIndex, "modifiedIndex", result.getIndex(), "result.getIndex()",
+                                        Assert.assertion(false, "modifiedRowSet.subsetOf(result.build())",
+                                                modifiedRowSet, "modifiedRowSet", result.getIndex(), "result.build()",
                                                 shiftState.getNumShiftBits(), "shiftState.getNumShiftBits()", newBase,
                                                 "newBase");
                                     }
@@ -2387,21 +2387,21 @@ public class QueryTable extends BaseTable {
                                         }
                                     }
 
-                                    result.notifyListeners(addedIndex, removedIndex, modifiedIndex);
+                                    result.notifyListeners(addedRowSet, removedRowSet, modifiedRowSet);
                                 }
                             }
 
                             private void rebase(final int newBase) {
-                                final Index newIndex = getUngroupIndex(
+                                final TrackingMutableRowSet newRowSet = getUngroupIndex(
                                         computeSize(getIndex(), arrayColumns, dbArrayColumns, nullFill),
-                                        Index.FACTORY.getRandomBuilder(), newBase, getIndex())
-                                                .getIndex();
-                                final Index index = result.getIndex();
-                                final Index added = newIndex.minus(index);
-                                final Index removed = index.minus(newIndex);
-                                final Index modified = newIndex;
-                                modified.retain(index);
-                                index.update(added, removed);
+                                        TrackingMutableRowSet.FACTORY.getRandomBuilder(), newBase, getIndex())
+                                                .build();
+                                final TrackingMutableRowSet rowSet = result.getIndex();
+                                final TrackingMutableRowSet added = newRowSet.minus(rowSet);
+                                final TrackingMutableRowSet removed = rowSet.minus(newRowSet);
+                                final TrackingMutableRowSet modified = newRowSet;
+                                modified.retain(rowSet);
+                                rowSet.update(added, removed);
                                 for (ColumnSource<?> source : resultMap.values()) {
                                     if (source instanceof UngroupedColumnSource) {
                                         ((UngroupedColumnSource<?>) source).setBase(newBase);
@@ -2411,35 +2411,35 @@ public class QueryTable extends BaseTable {
                                 result.notifyListeners(added, removed, modified);
                             }
 
-                            private int evaluateIndex(final Index index, final Index.RandomBuilder ungroupBuilder,
-                                    final int newBase) {
-                                if (index.size() > 0) {
-                                    final long[] modifiedSizes = new long[index.intSize("ungroup")];
-                                    final long maxSize = computeMaxSize(index, arrayColumns, dbArrayColumns, null,
+                            private int evaluateIndex(final TrackingMutableRowSet rowSet, final RowSetBuilder ungroupBuilder,
+                                                      final int newBase) {
+                                if (rowSet.size() > 0) {
+                                    final long[] modifiedSizes = new long[rowSet.intSize("ungroup")];
+                                    final long maxSize = computeMaxSize(rowSet, arrayColumns, dbArrayColumns, null,
                                             modifiedSizes, nullFill);
                                     final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-                                    getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(), index);
+                                    getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(), rowSet);
                                     return Math.max(newBase, minBase);
                                 }
                                 return newBase;
                             }
 
-                            private void evaluateRemovedIndex(final Index index,
-                                    final Index.RandomBuilder ungroupBuilder) {
-                                if (index.size() > 0) {
-                                    final long[] modifiedSizes = new long[index.intSize("ungroup")];
-                                    computePrevSize(index, arrayColumns, dbArrayColumns, modifiedSizes, nullFill);
-                                    getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(), index);
+                            private void evaluateRemovedIndex(final TrackingMutableRowSet rowSet,
+                                    final RowSetBuilder ungroupBuilder) {
+                                if (rowSet.size() > 0) {
+                                    final long[] modifiedSizes = new long[rowSet.intSize("ungroup")];
+                                    computePrevSize(rowSet, arrayColumns, dbArrayColumns, modifiedSizes, nullFill);
+                                    getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(), rowSet);
                                 }
                             }
 
-                            private int evaluateModified(final Index index,
-                                    final Index.RandomBuilder modifyBuilder,
-                                    final Index.RandomBuilder addedBuilded,
-                                    final Index.RandomBuilder removedBuilder,
+                            private int evaluateModified(final TrackingMutableRowSet rowSet,
+                                    final RowSetBuilder modifyBuilder,
+                                    final RowSetBuilder addedBuilded,
+                                    final RowSetBuilder removedBuilder,
                                     final int newBase) {
-                                if (index.size() > 0) {
-                                    final long maxSize = computeModifiedIndicesAndMaxSize(index, arrayColumns,
+                                if (rowSet.size() > 0) {
+                                    final long maxSize = computeModifiedIndicesAndMaxSize(rowSet, arrayColumns,
                                             dbArrayColumns, null, modifyBuilder, addedBuilded, removedBuilder,
                                             shiftState.getNumShiftBits(), nullFill);
                                     final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
@@ -2453,23 +2453,23 @@ public class QueryTable extends BaseTable {
                 });
     }
 
-    private long computeModifiedIndicesAndMaxSize(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
-            Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base, boolean nullFill) {
+    private long computeModifiedIndicesAndMaxSize(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                                  Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, RowSetBuilder modifyBuilder,
+                                                  RowSetBuilder addedBuilded, RowSetBuilder removedBuilder, long base, boolean nullFill) {
         if (nullFill) {
-            return computeModifiedIndicesAndMaxSizeNullFill(index, arrayColumns, dbArrayColumns, referenceColumn,
+            return computeModifiedIndicesAndMaxSizeNullFill(rowSet, arrayColumns, dbArrayColumns, referenceColumn,
                     modifyBuilder, addedBuilded, removedBuilder, base);
         }
-        return computeModifiedIndicesAndMaxSizeNormal(index, arrayColumns, dbArrayColumns, referenceColumn,
+        return computeModifiedIndicesAndMaxSizeNormal(rowSet, arrayColumns, dbArrayColumns, referenceColumn,
                 modifyBuilder, addedBuilded, removedBuilder, base);
     }
 
-    private long computeModifiedIndicesAndMaxSizeNullFill(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
-            Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base) {
+    private long computeModifiedIndicesAndMaxSizeNullFill(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                                          Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, RowSetBuilder modifyBuilder,
+                                                          RowSetBuilder addedBuilded, RowSetBuilder removedBuilder, long base) {
         long maxSize = 0;
-        final Index.Iterator iterator = index.iterator();
-        for (int i = 0; i < index.size(); i++) {
+        final TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+        for (int i = 0; i < rowSet.size(); i++) {
             long maxCur = 0;
             long maxPrev = 0;
             final long next = iterator.nextLong();
@@ -2497,20 +2497,20 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private long computeModifiedIndicesAndMaxSizeNormal(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
-            Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base) {
+    private long computeModifiedIndicesAndMaxSizeNormal(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                                        Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, RowSetBuilder modifyBuilder,
+                                                        RowSetBuilder addedBuilded, RowSetBuilder removedBuilder, long base) {
         long maxSize = 0;
         boolean sizeIsInitialized = false;
-        long[] sizes = new long[index.intSize("ungroup")];
+        long[] sizes = new long[rowSet.intSize("ungroup")];
         for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
             ColumnSource<?> arrayColumn = es.getValue();
             String name = es.getKey();
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
                 referenceColumn = name;
-                Index.Iterator iterator = index.iterator();
-                for (int i = 0; i < index.size(); i++) {
+                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                for (int i = 0; i < rowSet.size(); i++) {
                     final long next = iterator.nextLong();
                     Object array = arrayColumn.get(next);
                     sizes[i] = (array == null ? 0 : Array.getLength(array));
@@ -2520,8 +2520,8 @@ public class QueryTable extends BaseTable {
                             next, prevSize, base);
                 }
             } else {
-                Index.Iterator iterator = index.iterator();
-                for (int i = 0; i < index.size(); i++) {
+                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                for (int i = 0; i < rowSet.size(); i++) {
                     long k = iterator.nextLong();
                     Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(k)),
                             "sizes[i] == Array.getLength(arrayColumn.get(k))",
@@ -2536,8 +2536,8 @@ public class QueryTable extends BaseTable {
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
                 referenceColumn = name;
-                Index.Iterator iterator = index.iterator();
-                for (int i = 0; i < index.size(); i++) {
+                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                for (int i = 0; i < rowSet.size(); i++) {
                     final long next = iterator.nextLong();
                     DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.get(next);
                     sizes[i] = (array == null ? 0 : array.size());
@@ -2547,8 +2547,8 @@ public class QueryTable extends BaseTable {
                             next, prevSize, base);
                 }
             } else {
-                Index.Iterator iterator = index.iterator();
-                for (int i = 0; i < index.size(); i++) {
+                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                for (int i = 0; i < rowSet.size(); i++) {
                     final long next = iterator.nextLong();
                     Assert.assertion(sizes[i] == 0 && arrayColumn.get(next) == null ||
                             sizes[i] == ((DbArrayBase<?>) arrayColumn.get(next)).size(),
@@ -2560,8 +2560,8 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private long maxAndIndexUpdateForRow(Index.RandomBuilder modifyBuilder, Index.RandomBuilder addedBuilded,
-            Index.RandomBuilder removedBuilder, long maxSize, long size, long rowKey, long prevSize, long base) {
+    private long maxAndIndexUpdateForRow(RowSetBuilder modifyBuilder, RowSetBuilder addedBuilded,
+                                         RowSetBuilder removedBuilder, long maxSize, long size, long rowKey, long prevSize, long base) {
         rowKey = rowKey << base;
         Require.requirement(rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0)),
                 "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
@@ -2585,20 +2585,20 @@ public class QueryTable extends BaseTable {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static long computeMaxSize(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, long[] sizes, boolean nullFill) {
+    private static long computeMaxSize(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                       Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, long[] sizes, boolean nullFill) {
         if (nullFill) {
-            return computeMaxSizeNullFill(index, arrayColumns, dbArrayColumns, sizes);
+            return computeMaxSizeNullFill(rowSet, arrayColumns, dbArrayColumns, sizes);
         }
 
-        return computeMaxSizeNormal(index, arrayColumns, dbArrayColumns, referenceColumn, sizes);
+        return computeMaxSizeNormal(rowSet, arrayColumns, dbArrayColumns, referenceColumn, sizes);
     }
 
-    private static long computeMaxSizeNullFill(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
+    private static long computeMaxSizeNullFill(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                               Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
         long maxSize = 0;
-        final Index.Iterator iterator = index.iterator();
-        for (int i = 0; i < index.size(); i++) {
+        final TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+        for (int i = 0; i < rowSet.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
             for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
@@ -2629,8 +2629,8 @@ public class QueryTable extends BaseTable {
     }
 
 
-    private static long computeMaxSizeNormal(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, long[] sizes) {
+    private static long computeMaxSizeNormal(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                             Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, long[] sizes) {
         long maxSize = 0;
         boolean sizeIsInitialized = false;
         for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
@@ -2639,15 +2639,15 @@ public class QueryTable extends BaseTable {
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
                 referenceColumn = name;
-                Index.Iterator iterator = index.iterator();
-                for (int i = 0; i < index.size(); i++) {
+                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                for (int i = 0; i < rowSet.size(); i++) {
                     Object array = arrayColumn.get(iterator.nextLong());
                     sizes[i] = (array == null ? 0 : Array.getLength(array));
                     maxSize = Math.max(maxSize, sizes[i]);
                 }
             } else {
-                Index.Iterator iterator = index.iterator();
-                for (int i = 0; i < index.size(); i++) {
+                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                for (int i = 0; i < rowSet.size(); i++) {
                     Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(iterator.nextLong())),
                             "sizes[i] == Array.getLength(arrayColumn.get(i))",
                             referenceColumn, "referenceColumn", name, "name", i, "row");
@@ -2664,8 +2664,8 @@ public class QueryTable extends BaseTable {
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
                 referenceColumn = name;
-                Index.Iterator iterator = index.iterator();
-                for (int ii = 0; ii < index.size(); ii++) {
+                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                for (int ii = 0; ii < rowSet.size(); ii++) {
                     if (isUngroupable) {
                         sizes[ii] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                     } else {
@@ -2675,8 +2675,8 @@ public class QueryTable extends BaseTable {
                     maxSize = Math.max(maxSize, sizes[ii]);
                 }
             } else {
-                Index.Iterator iterator = index.iterator();
-                for (int i = 0; i < index.size(); i++) {
+                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                for (int i = 0; i < rowSet.size(); i++) {
                     final long expectedSize;
                     if (isUngroupable) {
                         expectedSize = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
@@ -2692,19 +2692,19 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private static void computePrevSize(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes, boolean nullFill) {
+    private static void computePrevSize(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                        Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes, boolean nullFill) {
         if (nullFill) {
-            computePrevSizeNullFill(index, arrayColumns, dbArrayColumns, sizes);
+            computePrevSizeNullFill(rowSet, arrayColumns, dbArrayColumns, sizes);
         } else {
-            computePrevSizeNormal(index, arrayColumns, dbArrayColumns, sizes);
+            computePrevSizeNormal(rowSet, arrayColumns, dbArrayColumns, sizes);
         }
     }
 
-    private static void computePrevSizeNullFill(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
-        final Index.Iterator iterator = index.iterator();
-        for (int i = 0; i < index.size(); i++) {
+    private static void computePrevSizeNullFill(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                                Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
+        final TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+        for (int i = 0; i < rowSet.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
             for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
@@ -2731,11 +2731,11 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static void computePrevSizeNormal(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
+    private static void computePrevSizeNormal(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                              Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
         for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
-            Index.Iterator iterator = index.iterator();
-            for (int i = 0; i < index.size(); i++) {
+            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+            for (int i = 0; i < rowSet.size(); i++) {
                 Object array = arrayColumn.getPrev(iterator.nextLong());
                 sizes[i] = (array == null ? 0 : Array.getLength(array));
             }
@@ -2745,8 +2745,8 @@ public class QueryTable extends BaseTable {
             final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                     && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
-            Index.Iterator iterator = index.iterator();
-            for (int i = 0; i < index.size(); i++) {
+            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+            for (int i = 0; i < rowSet.size(); i++) {
                 if (isUngroupable) {
                     sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(iterator.nextLong());
                 } else {
@@ -2758,20 +2758,20 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static long[] computeSize(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns, boolean nullFill) {
+    private static long[] computeSize(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                      Map<String, ColumnSource<?>> dbArrayColumns, boolean nullFill) {
         if (nullFill) {
-            return computeSizeNullFill(index, arrayColumns, dbArrayColumns);
+            return computeSizeNullFill(rowSet, arrayColumns, dbArrayColumns);
         }
 
-        return computeSizeNormal(index, arrayColumns, dbArrayColumns);
+        return computeSizeNormal(rowSet, arrayColumns, dbArrayColumns);
     }
 
-    private static long[] computeSizeNullFill(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns) {
-        final long[] sizes = new long[index.intSize("ungroup")];
-        final Index.Iterator iterator = index.iterator();
-        for (int i = 0; i < index.size(); i++) {
+    private static long[] computeSizeNullFill(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                              Map<String, ColumnSource<?>> dbArrayColumns) {
+        final long[] sizes = new long[rowSet.intSize("ungroup")];
+        final TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+        for (int i = 0; i < rowSet.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
             for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
@@ -2799,12 +2799,12 @@ public class QueryTable extends BaseTable {
         return sizes;
     }
 
-    private static long[] computeSizeNormal(Index index, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> dbArrayColumns) {
-        final long[] sizes = new long[index.intSize("ungroup")];
+    private static long[] computeSizeNormal(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+                                            Map<String, ColumnSource<?>> dbArrayColumns) {
+        final long[] sizes = new long[rowSet.intSize("ungroup")];
         for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
-            Index.Iterator iterator = index.iterator();
-            for (int i = 0; i < index.size(); i++) {
+            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+            for (int i = 0; i < rowSet.size(); i++) {
                 Object array = arrayColumn.get(iterator.nextLong());
                 sizes[i] = (array == null ? 0 : Array.getLength(array));
             }
@@ -2814,8 +2814,8 @@ public class QueryTable extends BaseTable {
             final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                     && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
-            Index.Iterator iterator = index.iterator();
-            for (int i = 0; i < index.size(); i++) {
+            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+            for (int i = 0; i < rowSet.size(); i++) {
                 if (isUngroupable) {
                     sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                 } else {
@@ -2828,11 +2828,11 @@ public class QueryTable extends BaseTable {
         return null;
     }
 
-    private IndexBuilder getUngroupIndex(
-            final long[] sizes, final Index.RandomBuilder indexBuilder, final long base, final Index index) {
+    private RowSetBuilder getUngroupIndex(
+            final long[] sizes, final RowSetBuilder indexBuilder, final long base, final TrackingMutableRowSet rowSet) {
         Assert.assertion(base >= 0 && base <= 63, "base >= 0 && base <= 63", base, "base");
         long mask = ((1L << base) - 1) << (64 - base);
-        long lastKey = index.lastRowKey();
+        long lastKey = rowSet.lastRowKey();
         if ((lastKey > 0) && ((lastKey & mask) != 0)) {
             throw new IllegalStateException(
                     "Key overflow detected, perhaps you should flatten your table before calling ungroup.  "
@@ -2840,7 +2840,7 @@ public class QueryTable extends BaseTable {
         }
 
         int pos = 0;
-        for (Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
+        for (TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             long nextShift = next << base;
             if (sizes[pos] != 0) {
@@ -2861,16 +2861,16 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public QueryTable getSubTable(Index index) {
-        return getSubTable(index, null, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+    public QueryTable getSubTable(TrackingMutableRowSet rowSet) {
+        return getSubTable(rowSet, null, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
     }
 
-    public QueryTable getSubTable(@NotNull final Index index, @Nullable final ModifiedColumnSet resultModifiedColumnSet,
-            @NotNull final Object... parents) {
+    public QueryTable getSubTable(@NotNull final TrackingMutableRowSet rowSet, @Nullable final ModifiedColumnSet resultModifiedColumnSet,
+                                  @NotNull final Object... parents) {
         return QueryPerformanceRecorder.withNugget("getSubTable", sizeForInstrumentation(), () -> {
-            // there is no operation check here, because byExternal calls it internally; and the Index results are
+            // there is no operation check here, because byExternal calls it internally; and the TrackingMutableRowSet results are
             // not updated internally, but rather externally.
-            final QueryTable result = new QueryTable(definition, index, columns, resultModifiedColumnSet);
+            final QueryTable result = new QueryTable(definition, rowSet, columns, resultModifiedColumnSet);
             for (Object parent : parents) {
                 result.addParentReference(parent);
             }
@@ -2927,7 +2927,7 @@ public class QueryTable extends BaseTable {
         private final QueryTable parent;
 
         private CopiedTable(TableDefinition definition, QueryTable parent) {
-            super(definition, parent.index, parent.columns, null);
+            super(definition, parent.rowSet, parent.columns, null);
             this.parent = parent;
         }
 
@@ -3092,7 +3092,7 @@ public class QueryTable extends BaseTable {
 
     private class WhereListener extends MergedListener {
         private final FilteredTable result;
-        private final Index currentMapping;
+        private final TrackingMutableRowSet currentMapping;
         private final SelectFilter[] filters;
         private final ModifiedColumnSet filterColumns;
         private final ListenerRecorder recorder;
@@ -3141,12 +3141,12 @@ public class QueryTable extends BaseTable {
             recorder.getShifted().apply(currentMapping);
 
             // compute added against filters
-            update.added = whereInternal(recorder.getAdded().clone(), index, false, filters);
+            update.added = whereInternal(recorder.getAdded().clone(), rowSet, false, filters);
 
             // check which modified keys match filters (Note: filterColumns will be null if we must always check)
             final boolean runFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
-            final Index matchingModifies = !runFilters ? Index.FACTORY.getEmptyIndex()
-                    : whereInternal(recorder.getModified(), index, false, filters);
+            final TrackingMutableRowSet matchingModifies = !runFilters ? TrackingMutableRowSet.FACTORY.getEmptyRowSet()
+                    : whereInternal(recorder.getModified(), rowSet, false, filters);
 
             // which propagate as mods?
             update.modified = (runFilters ? matchingModifies : recorder.getModified()).intersect(currentMapping);
@@ -3154,9 +3154,9 @@ public class QueryTable extends BaseTable {
             // remaining matchingModifies are adds
             update.added.insert(matchingModifies.minus(update.modified));
 
-            final Index modsToRemove;
+            final TrackingMutableRowSet modsToRemove;
             if (!runFilters) {
-                modsToRemove = Index.FACTORY.getEmptyIndex();
+                modsToRemove = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             } else {
                 modsToRemove = recorder.getModified().minus(matchingModifies);
                 modsToRemove.retain(currentMapping);

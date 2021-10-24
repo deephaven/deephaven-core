@@ -449,7 +449,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return true;
     }
 
-    private static final class Iterator implements Index.Iterator {
+    private static final class Iterator implements TrackingMutableRowSet.Iterator {
         private int nextRangeIdx = 0;
         private long rangeCurr = -1;
         private long rangeEnd = -1;
@@ -505,7 +505,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public final Index.Iterator getIterator() {
+    public final TrackingMutableRowSet.Iterator getIterator() {
         return new Iterator(this);
     }
 
@@ -602,7 +602,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public static final class RangeIterator extends RangeIteratorBase implements Index.RangeIterator {
+    public static final class RangeIterator extends RangeIteratorBase implements TrackingMutableRowSet.RangeIterator {
         private RangeIterator(final SortedRanges sar) {
             super(sar);
         }
@@ -644,11 +644,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public Index.RangeIterator getRangeIterator() {
+    public TrackingMutableRowSet.RangeIterator getRangeIterator() {
         return new RangeIterator(this);
     }
 
-    private static final class SearchIterator extends RangeIteratorBase implements Index.SearchIterator {
+    private static final class SearchIterator extends RangeIteratorBase implements TrackingMutableRowSet.SearchIterator {
         private boolean pendingNext = false;
 
         private SearchIterator(final SortedRanges sar) {
@@ -742,7 +742,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
 
         @Override
-        public long binarySearchValue(final ReadOnlyIndex.TargetComparator comp, final int dir) {
+        public long binarySearchValue(final RowSet.TargetComparator comp, final int dir) {
             pendingNext = false;
             boolean rollbackNextIfNotFound = false;
             if (currRangeStart == -1) {
@@ -810,11 +810,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public final Index.SearchIterator getSearchIterator() {
+    public final TrackingMutableRowSet.SearchIterator getSearchIterator() {
         return new SearchIterator(this);
     }
 
-    private static final class ReverseIterator implements ReadOnlyIndex.SearchIterator {
+    private static final class ReverseIterator implements RowSet.SearchIterator {
         private int nextRangeIdx = -1;
         private long rangeCurr = -1;
         private long rangeStart = -1;
@@ -941,12 +941,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
 
         @Override
-        public long binarySearchValue(ReadOnlyIndex.TargetComparator comp, int dir) {
+        public long binarySearchValue(RowSet.TargetComparator comp, int dir) {
             throw new UnsupportedOperationException("Reverse iterator does not support binary search.");
         }
     }
 
-    public final Index.SearchIterator getReverseIterator() {
+    public final TrackingMutableRowSet.SearchIterator getReverseIterator() {
         return new ReverseIterator(this);
     }
 
@@ -1121,8 +1121,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return overlapsRangeInternal(0, packedStart, packedEnd) == -1;
     }
 
-    // startIdx is the array position index where to begin the search for packedStart.
-    // returns -1 if this array overlaps the provided range, or if it doesn't, returns the array position index
+    // startIdx is the array position rowSet where to begin the search for packedStart.
+    // returns -1 if this array overlaps the provided range, or if it doesn't, returns the array position rowSet
     // where to begin a subsequent call for a later range that might overlap.
     private int overlapsRangeInternal(final int startIdx, final long packedStart, final long packedEnd) {
         final int iStart = absRawBinarySearch(packedStart, startIdx, count - 1);
@@ -1137,7 +1137,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return iStart;
     }
 
-    public final boolean overlaps(final Index.RangeIterator rangeIter) {
+    public final boolean overlaps(final TrackingMutableRowSet.RangeIterator rangeIter) {
         if (isEmpty()) {
             return false;
         }
@@ -1230,7 +1230,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // sar.first() <= start && end <= sar.last()
     // returns null if we exceed maxCapacity in the process of building the answer
     // (which can happen if you have, say, a big single range and retain a gazillion individual elements).
-    // Writes to iStartOut an array position index into sar where to continue the intersection for ranges after
+    // Writes to iStartOut an array position rowSet into sar where to continue the intersection for ranges after
     // the one provided.
     private static SortedRanges intersectRangeImplStep(
             SortedRanges out,
@@ -1480,8 +1480,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final boolean takeComplement) {
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
-        try (ReadOnlyIndex.RangeIterator it1 = sr.getRangeIterator();
-                ReadOnlyIndex.RangeIterator it2 = takeComplement
+        try (RowSet.RangeIterator it1 = sr.getRangeIterator();
+             RowSet.RangeIterator it2 = takeComplement
                         ? new ComplementRangeIterator(tix.ixRangeIterator())
                         : tix.ixRangeIterator()) {
             it1.next();
@@ -1596,8 +1596,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     private static SortedRangesLong union(final SortedRanges sr1, final SortedRanges sr2) {
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
-        try (ReadOnlyIndex.RangeIterator it1 = sr1.getRangeIterator();
-                ReadOnlyIndex.RangeIterator it2 = sr2.getRangeIterator()) {
+        try (RowSet.RangeIterator it1 = sr1.getRangeIterator();
+             RowSet.RangeIterator it2 = sr2.getRangeIterator()) {
             it1.next();
             it2.next();
             long s1 = it1.currentRangeStart();
@@ -1731,7 +1731,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     private static boolean retainLegacy(final MutableObject<SortedRanges> sarOut, final TreeIndexImpl tix) {
-        try (ReadOnlyIndex.RangeIterator rangeIter = tix.ixRangeIterator()) {
+        try (RowSet.RangeIterator rangeIter = tix.ixRangeIterator()) {
             SortedRanges sar = sarOut.getValue();
             final long first = sar.first();
             final boolean valid = rangeIter.advance(first);
@@ -1795,8 +1795,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return count;
     }
 
-    public final boolean subsetOf(final Index.RangeIterator ritOther) {
-        try (final Index.RangeIterator rit = getRangeIterator()) {
+    public final boolean subsetOf(final TrackingMutableRowSet.RangeIterator ritOther) {
+        try (final TrackingMutableRowSet.RangeIterator rit = getRangeIterator()) {
             while (rit.hasNext()) {
                 rit.next();
                 final long start = rit.currentRangeStart();
@@ -1828,7 +1828,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return makeTreeIndexImplFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
     }
 
-    private SortedRanges minusOnNewLegacy(final Index.RangeIterator ritOther) {
+    private SortedRanges minusOnNewLegacy(final TrackingMutableRowSet.RangeIterator ritOther) {
         SortedRanges ans = makeMyTypeAndOffset(2);
         int i = 0;
         long iData = unpackedGet(0);
@@ -1967,8 +1967,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 unionLast,
                 sar.isDense() && otherSar.isDense());
         if (out != null) {
-            try (final Index.RangeIterator sarIter = sar.getRangeIterator();
-                    final Index.RangeIterator otherIter = otherSar.getRangeIterator()) {
+            try (final TrackingMutableRowSet.RangeIterator sarIter = sar.getRangeIterator();
+                 final TrackingMutableRowSet.RangeIterator otherIter = otherSar.getRangeIterator()) {
                 SortedRanges.unionOnNewHelper(out, sarIter, otherIter);
             }
         }
@@ -1976,8 +1976,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     // {riter1, riter2}.hasNext() true on entry.
-    private static void unionOnNewHelper(SortedRanges out, final Index.RangeIterator riter1,
-            final Index.RangeIterator riter2) {
+    private static void unionOnNewHelper(SortedRanges out, final TrackingMutableRowSet.RangeIterator riter1,
+            final TrackingMutableRowSet.RangeIterator riter2) {
         riter1.next();
         long start1 = riter1.currentRangeStart();
         long end1 = riter1.currentRangeEnd();
@@ -2163,7 +2163,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // left in sarOut can be used to repeat the operation (presumably on a different TreeIndexImpl type)
     // to produce the correct result.
     // !isEmpty() && rit.hasNext() true on entry.
-    static boolean removeLegacy(final MutableObject<SortedRanges> sarOut, final Index.RangeIterator rit) {
+    static boolean removeLegacy(final MutableObject<SortedRanges> sarOut, final TrackingMutableRowSet.RangeIterator rit) {
         try {
             final MutableInt iRm = new MutableInt(0);
             SortedRanges sar = sarOut.getValue();
@@ -2274,7 +2274,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     // !isEmpty() && rit.hasNext() true on entry.
     public final boolean invertOnNew(
-            final Index.RangeIterator rit,
+            final TrackingMutableRowSet.RangeIterator rit,
             final TreeIndexImplSequentialBuilder builder,
             final long maxPosition) {
         rit.next();
@@ -2625,7 +2625,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     private static SortedRanges intersectLegacy(
-            final SortedRanges sar, final long last, final Index.RangeIterator rangeIter) {
+            final SortedRanges sar, final long last, final TrackingMutableRowSet.RangeIterator rangeIter) {
         try {
             // We could do better wrt offset...
             SortedRanges out = sar.makeMyTypeAndOffset(sar.count);
@@ -4099,7 +4099,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final long packedStart, final long packedEnd,
             final long start, final long end,
             final MutableInt iStartOut, final boolean writeCheck) {
-        // iStart will be adjusted to be the start index of the positions to be eliminated from the array.
+        // iStart will be adjusted to be the start rowSet of the positions to be eliminated from the array.
         if (iStart >= sar.count) {
             if (iStartOut != null) {
                 iStartOut.setValue(sar.count);
@@ -4173,7 +4173,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         int i = iStart;
         boolean iNeg = iStartNeg;
         long iValue = iStartValue;
-        // iEndExclusive will be set to mark the end index (exclusive) of the positions to be eliminated from the array.
+        // iEndExclusive will be set to mark the end rowSet (exclusive) of the positions to be eliminated from the array.
         int iEndExclusive = -1;
         while (true) {
             if (packedEnd <= iValue) {
@@ -4492,12 +4492,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     @Override
     public final long ixLastKey() {
-        return isEmpty() ? Index.NULL_KEY : last();
+        return isEmpty() ? TrackingMutableRowSet.NULL_ROW_KEY : last();
     }
 
     @Override
     public final long ixFirstKey() {
-        return isEmpty() ? Index.NULL_KEY : first();
+        return isEmpty() ? TrackingMutableRowSet.NULL_ROW_KEY : first();
     }
 
     @Override
@@ -4548,22 +4548,22 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final ReadOnlyIndex.Iterator ixIterator() {
+    public final RowSet.Iterator ixIterator() {
         return getIterator();
     }
 
     @Override
-    public final ReadOnlyIndex.SearchIterator ixSearchIterator() {
+    public final RowSet.SearchIterator ixSearchIterator() {
         return getSearchIterator();
     }
 
     @Override
-    public final ReadOnlyIndex.SearchIterator ixReverseIterator() {
+    public final RowSet.SearchIterator ixReverseIterator() {
         return getReverseIterator();
     }
 
     @Override
-    public final ReadOnlyIndex.RangeIterator ixRangeIterator() {
+    public final RowSet.RangeIterator ixRangeIterator() {
         return getRangeIterator();
     }
 
@@ -4627,7 +4627,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     public final TreeIndexImpl remove(final TreeIndexImpl removed) {
         if (!USE_RANGES_ARRAY) {
-            try (final ReadOnlyIndex.RangeIterator removedIter = removed.ixRangeIterator()) {
+            try (final RowSet.RangeIterator removedIter = removed.ixRangeIterator()) {
                 final MutableObject<SortedRanges> holder = new MutableObject<>(this);
                 final boolean valid = removeLegacy(holder, removedIter);
                 if (!valid) {
@@ -4724,7 +4724,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return TreeIndexImpl.EMPTY;
         }
         if (!USE_RANGES_ARRAY) {
-            final ReadOnlyIndex.RangeIterator rangeIter = toIntersect.ixRangeIterator();
+            final RowSet.RangeIterator rangeIter = toIntersect.ixRangeIterator();
             rangeIter.advance(first());
             final long last = last();
             final SortedRanges sr = intersectLegacy(this, last, rangeIter);
@@ -4756,7 +4756,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (impl instanceof SingleRange) {
             return overlapsRange(impl.ixFirstKey(), impl.ixLastKey());
         }
-        final Index.RangeIterator it = impl.ixRangeIterator();
+        final TrackingMutableRowSet.RangeIterator it = impl.ixRangeIterator();
         return overlaps(it);
     }
 
@@ -4789,7 +4789,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (getCardinality() > other.ixCardinality()) {
             return false;
         }
-        final Index.RangeIterator rit = other.ixRangeIterator();
+        final TrackingMutableRowSet.RangeIterator rit = other.ixRangeIterator();
         return subsetOf(rit);
     }
 
@@ -4989,13 +4989,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return r;
             }
         } else {
-            final Index.RangeIterator rit = keys.ixRangeIterator();
+            final TrackingMutableRowSet.RangeIterator rit = keys.ixRangeIterator();
             final TreeIndexImplSequentialBuilder builder = new TreeIndexImplSequentialBuilder();
             if (invertOnNew(rit, builder, maxPosition)) {
                 return builder.getTreeIndexImpl();
             }
         }
-        throw new IllegalArgumentException("keys argument has elements not in the index");
+        throw new IllegalArgumentException("keys argument has elements not in the rowSet");
     }
 
     @Override

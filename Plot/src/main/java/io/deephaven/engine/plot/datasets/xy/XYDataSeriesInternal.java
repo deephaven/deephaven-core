@@ -11,7 +11,7 @@ import io.deephaven.gui.shape.Shape;
 
 /**
  * {@link DataSeriesInternal} with two numerical components, x and y. Data points are numbered and are accessed with an
- * index.
+ * rowSet.
  */
 public interface XYDataSeriesInternal extends XYDataSeries, DataSeriesInternal {
 
@@ -21,50 +21,50 @@ public interface XYDataSeriesInternal extends XYDataSeries, DataSeriesInternal {
     XYDataSeriesInternal copy(final AxesImpl axes);
 
     /**
-     * Gets the x value of the data point at index {@code i}.
+     * Gets the x value of the data point at rowSet {@code i}.
      *
-     * @param i index
-     * @return x value of this data point at index {@code i}
+     * @param i rowSet
+     * @return x value of this data point at rowSet {@code i}
      */
     double getX(int i);
 
     /**
-     * Gets the y value of the data point at index {@code i}.
+     * Gets the y value of the data point at rowSet {@code i}.
      *
-     * @param i index
-     * @return x value of this data point at index {@code i}
+     * @param i rowSet
+     * @return x value of this data point at rowSet {@code i}
      */
     double getY(int i);
 
     /**
-     * Gets the size of the data point at index {@code i}.
+     * Gets the size of the data point at rowSet {@code i}.
      *
-     * @param i index
-     * @return size of this data point at index {@code i}
+     * @param i rowSet
+     * @return size of this data point at rowSet {@code i}
      */
     Double getPointSize(int i);
 
     /**
-     * Gets the color of the data point at index {@code i}.
+     * Gets the color of the data point at rowSet {@code i}.
      *
-     * @param i index
-     * @return color of this data point at index {@code i}
+     * @param i rowSet
+     * @return color of this data point at rowSet {@code i}
      */
     Paint getPointColor(int i);
 
     /**
-     * Gets the label of the data point at index {@code i}.
+     * Gets the label of the data point at rowSet {@code i}.
      *
-     * @param i index
-     * @return label of this data point at index {@code i}
+     * @param i rowSet
+     * @return label of this data point at rowSet {@code i}
      */
     String getPointLabel(int i);
 
     /**
-     * Gets the shape of the data point at index {@code i}.
+     * Gets the shape of the data point at rowSet {@code i}.
      *
-     * @param i index
-     * @return shape of this data point at index {@code i}
+     * @param i rowSet
+     * @return shape of this data point at rowSet {@code i}
      */
     Shape getPointShape(int i);
 

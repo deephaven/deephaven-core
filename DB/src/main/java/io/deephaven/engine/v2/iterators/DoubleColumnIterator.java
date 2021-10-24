@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.iterators;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
@@ -16,8 +16,8 @@ import java.util.PrimitiveIterator;
  */
 public class DoubleColumnIterator extends ColumnIterator<Double> implements PrimitiveIterator.OfDouble {
 
-    public DoubleColumnIterator(@NotNull final Index index, @NotNull final ColumnSource<Double> columnSource) {
-        super(index, columnSource);
+    public DoubleColumnIterator(@NotNull final TrackingMutableRowSet rowSet, @NotNull final ColumnSource<Double> columnSource) {
+        super(rowSet, columnSource);
     }
 
     public DoubleColumnIterator(@NotNull final Table table, @NotNull final String columnName) {

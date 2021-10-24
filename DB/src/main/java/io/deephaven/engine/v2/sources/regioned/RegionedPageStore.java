@@ -45,9 +45,9 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     }
 
     /**
-     * Get the region index.
+     * Get the region rowSet.
      *
-     * @return The region index for an element index.
+     * @return The region rowSet for an element rowSet.
      */
     @FinalDefault
     default int getRegionIndex(final long elementIndex) {
@@ -62,17 +62,17 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     int getRegionCount();
 
     /**
-     * Map from a region index to its corresponding region.
+     * Map from a region rowSet to its corresponding region.
      *
-     * @param regionIndex The region index
-     * @return The region for the supplied region index
+     * @param regionIndex The region rowSet
+     * @return The region for the supplied region rowSet
      */
     REGION_TYPE getRegion(int regionIndex);
 
     /**
-     * Perform region lookup for an element index.
+     * Perform region lookup for an element rowSet.
      *
-     * @param elementIndex The element index to get the region for
+     * @param elementIndex The element rowSet to get the region for
      * @return The appropriate region
      */
     @FinalDefault

@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.DhShortComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.ShortRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
@@ -80,7 +80,7 @@ public class ShortRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
+    TrackingMutableRowSet binarySearch(TrackingMutableRowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
         if (selection.isEmpty()) {
             return selection;
         }
@@ -97,10 +97,10 @@ public class ShortRangeFilter extends AbstractRangeFilter {
         long lowerBoundMin = bound(selection, usePrev, shortColumnSource, 0, selection.size(), startValue, startInclusive, compareSign, false);
         long upperBoundMin = bound(selection, usePrev, shortColumnSource, lowerBoundMin, selection.size(), endValue, endInclusive, compareSign, true);
 
-        return selection.subindexByPos(lowerBoundMin, upperBoundMin);
+        return selection.subSetByPositionRange(lowerBoundMin, upperBoundMin);
     }
 
-    private long bound(Index selection, boolean usePrev, ColumnSource<Short> longColumnSource, long minPosition, long maxPosition, short targetValue, boolean inclusive, int compareSign, boolean end) {
+    private long bound(TrackingMutableRowSet selection, boolean usePrev, ColumnSource<Short> longColumnSource, long minPosition, long maxPosition, short targetValue, boolean inclusive, int compareSign, boolean end) {
         while (minPosition < maxPosition) {
             final long midPos = (minPosition + maxPosition) / 2;
             final long midIdx = selection.get(midPos);

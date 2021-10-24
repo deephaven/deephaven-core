@@ -171,7 +171,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     /**
      * Queries whether this IndexShiftData is non-empty (i.e. has at least one shift).
      * 
-     * @return true if the size() of this Index greater than zero, false if the size is zero
+     * @return true if the size() of this TrackingMutableRowSet greater than zero, false if the size is zero
      */
     public final boolean nonempty() {
         return !empty();
@@ -282,14 +282,14 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Apply all shifts to the provided index. Moves index from pre-shift keyspace to post-shift keyspace.
+     * Apply all shifts to the provided rowSet. Moves rowSet from pre-shift keyspace to post-shift keyspace.
      * 
-     * @param index the index to shift
+     * @param rowSet the rowSet to shift
      */
-    public void apply(final Index index) {
-        final Index.SequentialBuilder toRemove = Index.FACTORY.getSequentialBuilder();
-        final Index.SequentialBuilder toInsert = Index.FACTORY.getSequentialBuilder();
-        try (final RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
+    public void apply(final TrackingMutableRowSet rowSet) {
+        final SequentialRowSetBuilder toRemove = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder toInsert = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {
                 final long beginRange = getBeginRange(idx);
                 final long endRange = getEndRange(idx);
@@ -306,44 +306,44 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
             }
         }
 
-        try (final Index remove = toRemove.getIndex();
-                final Index insert = toInsert.getIndex()) {
-            index.remove(remove);
-            index.insert(insert);
+        try (final TrackingMutableRowSet remove = toRemove.build();
+             final TrackingMutableRowSet insert = toInsert.build()) {
+            rowSet.remove(remove);
+            rowSet.insert(insert);
         }
     }
 
     /**
-     * Apply a shift to the provided index. Moves index from pre-shift keyspace to post-shift keyspace.
+     * Apply a shift to the provided rowSet. Moves rowSet from pre-shift keyspace to post-shift keyspace.
      *
-     * @param index The index to apply the shift to
+     * @param rowSet The rowSet to apply the shift to
      * @param beginRange start of range (inclusive)
      * @param endRange end of range (inclusive)
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
      */
-    public static boolean applyShift(@NotNull final Index index, final long beginRange, final long endRange,
-            final long shiftDelta) {
-        try (final Index toShift = index.subindexByKey(beginRange, endRange)) {
+    public static boolean applyShift(@NotNull final TrackingMutableRowSet rowSet, final long beginRange, final long endRange,
+                                     final long shiftDelta) {
+        try (final TrackingMutableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
             if (toShift.empty()) {
                 return false;
             }
-            index.removeRange(beginRange, endRange);
+            rowSet.removeRange(beginRange, endRange);
             toShift.shiftInPlace(shiftDelta);
-            index.insert(toShift);
+            rowSet.insert(toShift);
             return true;
         }
     }
 
     /**
-     * Unapply all shifts to the provided index. Moves index from post-shift keyspace to pre-shift keyspace.
+     * Unapply all shifts to the provided rowSet. Moves rowSet from post-shift keyspace to pre-shift keyspace.
      * 
-     * @param index the index to shift
+     * @param rowSet the rowSet to shift
      */
-    public void unapply(final Index index) {
-        final Index.SequentialBuilder toRemove = Index.FACTORY.getSequentialBuilder();
-        final Index.SequentialBuilder toInsert = Index.FACTORY.getSequentialBuilder();
-        try (final RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
+    public void unapply(final TrackingMutableRowSet rowSet) {
+        final SequentialRowSetBuilder toRemove = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder toInsert = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {
                 final long beginRange = getBeginRange(idx);
                 final long endRange = getEndRange(idx);
@@ -360,45 +360,45 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
             }
         }
 
-        try (final Index remove = toRemove.getIndex();
-                final Index insert = toInsert.getIndex()) {
-            index.remove(remove);
-            index.insert(insert);
+        try (final TrackingMutableRowSet remove = toRemove.build();
+             final TrackingMutableRowSet insert = toInsert.build()) {
+            rowSet.remove(remove);
+            rowSet.insert(insert);
         }
     }
 
     /**
-     * Unapply all shifts to the provided index. Moves index from post-shift keyspace to pre-shift keyspace.
+     * Unapply all shifts to the provided rowSet. Moves rowSet from post-shift keyspace to pre-shift keyspace.
      * 
-     * @param index the index to shift
+     * @param rowSet the rowSet to shift
      * @param offset an additional offset to apply to all shifts (such as when applying to a wrapped table)
      */
-    public void unapply(final Index index, final long offset) {
+    public void unapply(final TrackingMutableRowSet rowSet, final long offset) {
         // NB: This is an unapply callback, and beginRange, endRange, and shiftDelta have been adjusted so that this is
         // a reversed shift,
         // hence we use the applyShift helper.
-        unapply((beginRange, endRange, shiftDelta) -> applyShift(index, beginRange + offset, endRange + offset,
+        unapply((beginRange, endRange, shiftDelta) -> applyShift(rowSet, beginRange + offset, endRange + offset,
                 shiftDelta));
     }
 
     /**
-     * Unapply a shift to the provided index. Moves index from post-shift keyspace to pre-shift keyspace.
+     * Unapply a shift to the provided rowSet. Moves rowSet from post-shift keyspace to pre-shift keyspace.
      *
-     * @param index The index to apply the shift to
+     * @param rowSet The rowSet to apply the shift to
      * @param beginRange start of range (inclusive)
      * @param endRange end of range (inclusive)
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
      */
-    public static boolean unapplyShift(@NotNull final Index index, final long beginRange, final long endRange,
-            final long shiftDelta) {
-        try (final Index toShift = index.subindexByKey(beginRange + shiftDelta, endRange + shiftDelta)) {
+    public static boolean unapplyShift(@NotNull final TrackingMutableRowSet rowSet, final long beginRange, final long endRange,
+                                       final long shiftDelta) {
+        try (final TrackingMutableRowSet toShift = rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta)) {
             if (toShift.empty()) {
                 return false;
             }
-            index.removeRange(beginRange + shiftDelta, endRange + shiftDelta);
+            rowSet.removeRange(beginRange + shiftDelta, endRange + shiftDelta);
             toShift.shiftInPlace(-shiftDelta);
-            index.insert(toShift);
+            rowSet.insert(toShift);
             return true;
         }
     }
@@ -414,9 +414,9 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         void shift(long key, long shiftDelta);
     }
 
-    public void forAllInIndex(final ReadOnlyIndex filterIndex, final SingleElementShiftCallback callback) {
+    public void forAllInIndex(final RowSet filterIndex, final SingleElementShiftCallback callback) {
         boolean hasReverseShift = false;
-        ReadOnlyIndex.SearchIterator it = filterIndex.reverseIterator();
+        RowSet.SearchIterator it = filterIndex.reverseIterator();
         FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
             final long delta = getShiftDelta(ii);
             if (delta < 0) {
@@ -573,16 +573,16 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Intersects this IndexShiftData against the provided Index.
+     * Intersects this IndexShiftData against the provided TrackingMutableRowSet.
      * 
-     * @param index the index to test for intersections (pre-shift keyspace)
+     * @param rowSet the rowSet to test for intersections (pre-shift keyspace)
      * @return an IndexShiftData containing only non-empty shifts
      */
-    public IndexShiftData intersect(final Index index) {
+    public IndexShiftData intersect(final TrackingMutableRowSet rowSet) {
         final Builder builder = new Builder();
 
         for (int idx = 0; idx < size(); ++idx) {
-            if (index.overlapsRange(getBeginRange(idx), getEndRange(idx))) {
+            if (rowSet.overlapsRange(getBeginRange(idx), getEndRange(idx))) {
                 builder.shiftRange(getBeginRange(idx), getEndRange(idx), getShiftDelta(idx));
             }
         }
@@ -609,9 +609,9 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         }
 
         /**
-         * Gets the last index assigned to a shift.
+         * Gets the last rowSet assigned to a shift.
          * 
-         * @return The greatest index assigned to a shift or -1 if no shifts exist yet.
+         * @return The greatest rowSet assigned to a shift or -1 if no shifts exist yet.
          */
         public long lastShiftEnd() {
             return shiftData.size() > 0 ? shiftData.getEndRange(shiftData.size() - 1) : -1;
@@ -646,7 +646,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 return;
             }
 
-            // If previous shift has different sign than shiftDelta, we must add current index to split run into chunks
+            // If previous shift has different sign than shiftDelta, we must add current rowSet to split run into chunks
             if ((shiftData.getShiftDelta(prevIdx) < 0 ? -1 : 1) * shiftDelta < 0) {
                 shiftData.polaritySwapIndices.add(shiftData.size() - 1); // note the -1 excludes the new range
             }
@@ -715,7 +715,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
             long watermarkKey = 0; // id space of source table
 
             // These bounds seem weird. We are going to insert a shift for the keyspace prior to the shift with
-            // index sidx. Thus, the first and last sidx are to cover shifting via `indexSpaceInserted` on the
+            // rowSet sidx. Thus, the first and last sidx are to cover shifting via `indexSpaceInserted` on the
             // outside of shifts. Note that we use the knowledge/contract that shift data is ordered by key.
             for (int sidx = 0; sidx < innerShiftData.size() + 1; ++sidx) {
                 final long nextShiftEnd;
@@ -804,24 +804,24 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         /**
          * The pre shift keys of the table we are generating shift data for.
          */
-        private ReadOnlyIndex preShiftKeys;
+        private RowSet preShiftKeys;
         /**
          * A forward iterator, which is used for all shifts that do not have reversed polarity (i.e. negative delta). We
          * create this on the first negative delta shift and reuse it until we are closed.
          */
-        private ReadOnlyIndex.SearchIterator preShiftKeysIteratorForward;
+        private RowSet.SearchIterator preShiftKeysIteratorForward;
         /**
          * For each run of shifts that have reversed polarity (positive delta), we create a new reverse iterator. We
          * reuse this until we find a negative delta shift and then close it.
          */
-        private ReadOnlyIndex.SearchIterator preShiftKeysIteratorReverse;
+        private RowSet.SearchIterator preShiftKeysIteratorReverse;
         /**
          * The resultant shift data.
          */
         private IndexShiftData shiftData;
 
         /**
-         * The index of the first range that needs to be reversed. -1 if there is no range to reverse at the moment.
+         * The rowSet of the first range that needs to be reversed. -1 if there is no range to reverse at the moment.
          */
         private int rangeToReverseStart = -1;
 
@@ -841,14 +841,14 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         /**
          * The next key after our last shift range. We record this value so that if two subsequent shifts have the same
          * delta, but do not include the intervening key we do not permit coalescing. If there is no intervening key, we
-         * permit coalescing. ReadOnlyIndex.NULL_KEY indicates there is no intervening key of interest.
+         * permit coalescing. RowSet.NULL_KEY indicates there is no intervening key of interest.
          */
-        private long interveningKey = ReadOnlyIndex.NULL_KEY;
+        private long interveningKey = RowSet.NULL_ROW_KEY;
 
         /**
          * The last point at which we started the reverse iterator.
          */
-        private long lastReverseIteratorStart = ReadOnlyIndex.NULL_KEY;
+        private long lastReverseIteratorStart = RowSet.NULL_ROW_KEY;
 
         /**
          * Make a builder that tries to coalesce non-adjacent ranges with the same delta if there are no intervening
@@ -856,7 +856,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
          *
          * @param preShiftKeys The pre-shift ordered keys for the space being shifted.
          */
-        public SmartCoalescingBuilder(@NotNull final ReadOnlyIndex preShiftKeys) {
+        public SmartCoalescingBuilder(@NotNull final RowSet preShiftKeys) {
             this.preShiftKeys = preShiftKeys;
             shiftData = new IndexShiftData();
         }
@@ -885,7 +885,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
             final boolean reinitializeReverseIterator =
                     polarityReversed && (polarityChanged || beginRange > lastReverseIteratorStart);
             if (polarityChanged || reinitializeReverseIterator) {
-                interveningKey = ReadOnlyIndex.NULL_KEY;
+                interveningKey = RowSet.NULL_ROW_KEY;
                 if (lastPolarityReversed) {
                     maybeReverseLastRun();
                     if (preShiftKeysIteratorReverse != null) {
@@ -903,7 +903,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 preShiftKeysIteratorReverse = preShiftKeys.reverseIterator();
                 lastReverseIteratorStart = endRange;
                 if (!preShiftKeysIteratorReverse.advance(endRange)) {
-                    nextReverseKey = ReadOnlyIndex.NULL_KEY;
+                    nextReverseKey = RowSet.NULL_ROW_KEY;
                 } else {
                     nextReverseKey = preShiftKeysIteratorReverse.currentValue();
                 }
@@ -916,26 +916,26 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 if (preShiftKeysIteratorForward.hasNext()) {
                     nextForwardKey = preShiftKeysIteratorForward.nextLong();
                 } else {
-                    nextForwardKey = ReadOnlyIndex.NULL_KEY;
+                    nextForwardKey = RowSet.NULL_ROW_KEY;
                 }
             }
 
             final long nextInterveningKey;
             if (polarityReversed) {
-                if (nextReverseKey == ReadOnlyIndex.NULL_KEY || nextReverseKey < beginRange) {
+                if (nextReverseKey == RowSet.NULL_ROW_KEY || nextReverseKey < beginRange) {
                     return;
                 }
                 if (beginRange == 0 || !preShiftKeysIteratorReverse.advance(beginRange - 1)) {
-                    nextInterveningKey = nextReverseKey = ReadOnlyIndex.NULL_KEY;
+                    nextInterveningKey = nextReverseKey = RowSet.NULL_ROW_KEY;
                 } else {
                     nextInterveningKey = nextReverseKey = preShiftKeysIteratorReverse.currentValue();
                 }
             } else {
-                if (nextForwardKey == ReadOnlyIndex.NULL_KEY || nextForwardKey > endRange) {
+                if (nextForwardKey == RowSet.NULL_ROW_KEY || nextForwardKey > endRange) {
                     return;
                 }
                 if (endRange == Long.MAX_VALUE || !preShiftKeysIteratorForward.advance(endRange + 1)) {
-                    nextInterveningKey = nextForwardKey = ReadOnlyIndex.NULL_KEY;
+                    nextInterveningKey = nextForwardKey = RowSet.NULL_ROW_KEY;
                 } else {
                     nextInterveningKey = nextForwardKey = preShiftKeysIteratorForward.currentValue();
                 }
@@ -947,7 +947,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 // if we had an intervening key between the last end (or begin) and the current begin (or end); then
                 // these two ranges can not be coalesced
                 if (polarityReversed) {
-                    if (interveningKey == ReadOnlyIndex.NULL_KEY || interveningKey <= endRange) {
+                    if (interveningKey == RowSet.NULL_ROW_KEY || interveningKey <= endRange) {
                         // we must merge these ranges; this is not as simple as the forward case, because if we had the
                         // same reverse iterator as last time (i.e. the polarity was applied "correctly"), we should
                         // simply be able to update the beginning of the range. However, if the existing range is
@@ -970,7 +970,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                         }
                     }
                 } else {
-                    if (interveningKey == ReadOnlyIndex.NULL_KEY || interveningKey >= beginRange) {
+                    if (interveningKey == RowSet.NULL_ROW_KEY || interveningKey >= beginRange) {
                         shiftData.payload.set(currentRangeIndex * 3 + 1, endRange);
                         interveningKey = nextInterveningKey;
                         return;
@@ -988,7 +988,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 return;
             }
 
-            // If previous shift has different sign than shiftDelta, we must add current index to split run into chunks.
+            // If previous shift has different sign than shiftDelta, we must add current rowSet to split run into chunks.
             final boolean polaritySwap = (shiftData.getShiftDelta(currentRangeIndex) < 0 ? -1 : 1) * shiftDelta < 0;
             if (polaritySwap) {
                 shiftData.polaritySwapIndices.add(shiftData.size() - 1); // NB: The -1 excludes the new range.
@@ -1098,23 +1098,23 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * This method creates two parallel Index structures that contain postShiftIndex keys affected by shifts. The two
-     * Indexes have the same size. An element at position k in the first index is the pre-shift key for the same row
-     * whose post-shift key is at position k in the second index.
+     * This method creates two parallel TrackingMutableRowSet structures that contain postShiftIndex keys affected by shifts. The two
+     * Indexes have the same size. An element at position k in the first rowSet is the pre-shift key for the same row
+     * whose post-shift key is at position k in the second rowSet.
      *
-     * @param postShiftIndex The index of keys that were shifted in post-shift keyspace. It should not contain rows that
+     * @param postShiftIndex The rowSet of keys that were shifted in post-shift keyspace. It should not contain rows that
      *        did not exist prior to the shift.
      * @return A SafeCloseablePair of preShiftedKeys and postShiftedKeys that intersect this IndexShiftData with
      *         postShiftIndex.
      */
-    public SafeCloseablePair<Index, Index> extractParallelShiftedRowsFromPostShiftIndex(
-            final ReadOnlyIndex postShiftIndex) {
+    public SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> extractParallelShiftedRowsFromPostShiftIndex(
+            final RowSet postShiftIndex) {
         if (empty()) {
-            return SafeCloseablePair.of(Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+            return SafeCloseablePair.of(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
         }
 
-        final Index.SequentialBuilder preShiftBuilder = Index.FACTORY.getSequentialBuilder();
-        final Index.SequentialBuilder postShiftBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder preShiftBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder postShiftBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
         try (final RowSequence.Iterator rsIt = postShiftIndex.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {
@@ -1133,8 +1133,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
             }
         }
 
-        final SafeCloseablePair<Index, Index> retVal =
-                SafeCloseablePair.of(preShiftBuilder.getIndex(), postShiftBuilder.getIndex());
+        final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> retVal =
+                SafeCloseablePair.of(preShiftBuilder.build(), postShiftBuilder.build());
         Assert.eq(retVal.first.size(), "retVal.first.size()", retVal.second.size(), "retVal.second.size()");
         return retVal;
     }

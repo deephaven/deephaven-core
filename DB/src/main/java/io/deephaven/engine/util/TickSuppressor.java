@@ -10,7 +10,8 @@ import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -58,7 +59,7 @@ public class TickSuppressor {
                 final Update downstream = upstream.copy();
                 downstream.added = upstream.added.union(upstream.modified);
                 downstream.removed = upstream.removed.union(upstream.getModifiedPreShift());
-                downstream.modified = Index.FACTORY.getEmptyIndex();
+                downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 resultTable.notifyListeners(downstream);
             }
@@ -137,7 +138,7 @@ public class TickSuppressor {
                         final WritableBooleanChunk[] changedCellsArray = new WritableBooleanChunk[columnCount];
                         final boolean[] changedColumns = new boolean[columnCount];
 
-                        final Index.SequentialBuilder builder = Index.CURRENT_FACTORY.getSequentialBuilder();
+                        final SequentialRowSetBuilder builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
 
                         try (final SafeCloseableArray<ChunkSource.GetContext> ignored =
                                 new SafeCloseableArray<>(getContextArray);
@@ -205,7 +206,7 @@ public class TickSuppressor {
                             }
                         }
 
-                        downstream.modified = builder.getIndex();
+                        downstream.modified = builder.build();
 
                         downstream.modifiedColumnSet.clear();
                         if (downstream.modified.nonempty()) {

@@ -276,7 +276,7 @@ public class ChunkerCompleter implements CompletionHandler {
         range.setStart(start.build()).setEnd(requested);
         edit.setRange(range);
         StringBuilder b = new StringBuilder();
-        // now, from here, gobble up the token contents as we advance the position to the requested index.
+        // now, from here, gobble up the token contents as we advance the position to the requested rowSet.
         while (LspTools.lessThan(start, requested)) {
             if (LspTools.lessOrEqual(tok.positionEnd(false), start)) {
                 // find next non-empty token
@@ -322,7 +322,7 @@ public class ChunkerCompleter implements CompletionHandler {
         range.setStart(start.build()).setEnd(requested);
         edit.setRange(range);
         StringBuilder b = new StringBuilder();
-        // now, from here, gobble up the token contents as we advance the position to the requested index.
+        // now, from here, gobble up the token contents as we advance the position to the requested rowSet.
         while (LspTools.lessThan(start, requested)) {
             if (LspTools.lessOrEqual(tok.positionEnd(false), start)) {
                 // find next non-empty token
@@ -1227,7 +1227,7 @@ public class ChunkerCompleter implements CompletionHandler {
                 // we are inside a method(
             }
         } else {
-            // The document index of the start of the String str;
+            // The document rowSet of the start of the String str;
             if (node.isWellFormed()) {
                 // we are inside a method(''[)] <- optional ), we don't really care, since we have an argument for
                 // reference

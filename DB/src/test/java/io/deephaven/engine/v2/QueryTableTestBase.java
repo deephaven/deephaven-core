@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableDiff;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.text.SimpleDateFormat;
@@ -127,9 +127,9 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
     final JoinIncrement[] joinIncrementorsShift = new JoinIncrement[] {leftStep, rightStep, leftRightStep,
             leftStepShift, rightStepShift, leftRightStepShift, leftRightConcurrentStepShift};
 
-    protected Index added;
-    protected Index removed;
-    protected Index modified;
+    protected TrackingMutableRowSet added;
+    protected TrackingMutableRowSet removed;
+    protected TrackingMutableRowSet modified;
 
     protected interface JoinIncrement {
         void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
@@ -179,7 +179,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
 
         int count;
-        Index added, removed, modified;
+        TrackingMutableRowSet added, removed, modified;
 
         void reset() {
             freeResources();
@@ -190,7 +190,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
 
         @Override
-        public void onUpdate(Index added, Index removed, Index modified) {
+        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
             freeResources();
             // Need to clone to save IndexShiftDataExpander indices that are destroyed at the end of the LTM cycle.
             this.added = added.clone();
@@ -233,8 +233,8 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
     }
 
     protected static class CoalescingListener extends InstrumentedListenerAdapter {
-        Index lastAdded, lastModified, lastRemoved;
-        Index.LegacyIndexUpdateCoalescer indexUpdateCoalescer = new Index.LegacyIndexUpdateCoalescer();
+        TrackingMutableRowSet lastAdded, lastModified, lastRemoved;
+        ShiftObliviousUpdateCoalescer indexUpdateCoalescer = new ShiftObliviousUpdateCoalescer();
 
         protected CoalescingListener(DynamicTable source) {
             super(source, false);
@@ -255,7 +255,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
 
         @Override
-        public void onUpdate(final Index added, final Index removed, final Index modified) {
+        public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
             if (lastAdded != null) {
                 lastAdded.close();
             }
@@ -297,7 +297,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
 
         @Override
-        public void onUpdate(final Index added, final Index removed, final Index modified) {
+        public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
             QueryTableTestBase.this.added = added;
             QueryTableTestBase.this.removed = removed;
             QueryTableTestBase.this.modified = modified;

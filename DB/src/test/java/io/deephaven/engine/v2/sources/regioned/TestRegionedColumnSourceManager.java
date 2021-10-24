@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -67,16 +67,16 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
 
     private TableLocation duplicateTableLocation0A;
 
-    private Map<String, Index> partitioningColumnGrouping;
+    private Map<String, TrackingMutableRowSet> partitioningColumnGrouping;
     private KeyRangeGroupingProvider groupingColumnGroupingProvider;
 
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
     private int regionCount;
     private TIntIntMap locationIndexToRegionIndex;
-    private Index expectedIndex;
-    private Index expectedAddedIndex;
-    private Map<String, Index> expectedPartitioningColumnGrouping;
+    private TrackingMutableRowSet expectedRowSet;
+    private TrackingMutableRowSet expectedAddedRowSet;
+    private Map<String, TrackingMutableRowSet> expectedPartitioningColumnGrouping;
 
     private RegionedColumnSourceManager SUT;
 
@@ -139,8 +139,8 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         Arrays.fill(lastSizes, -1); // Not null size
         regionCount = 0;
         locationIndexToRegionIndex = new TIntIntHashMap(4, 0.5f, -1, -1);
-        expectedIndex = Index.FACTORY.getEmptyIndex();
-        expectedAddedIndex = Index.FACTORY.getEmptyIndex();
+        expectedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        expectedAddedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
     }
 
@@ -174,7 +174,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                 will(new CustomAction("Return last size") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        return Index.CURRENT_FACTORY.getFlatIndex(lastSizes[li]);
+                        return TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(lastSizes[li]);
                     }
                 });
             }
@@ -247,7 +247,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
     }
 
     private void setSizeExpectations(final boolean refreshing, final long... sizes) {
-        final Index newExpectedIndex = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet newExpectedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
         IntStream.range(0, sizes.length).forEachOrdered(li -> {
             final long size = sizes[li];
@@ -320,28 +320,28 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                         }
                     }));
                 }
-                newExpectedIndex.insertRange(
+                newExpectedRowSet.insertRange(
                         RegionedColumnSource.getFirstElementIndex(regionIndex),
                         RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);
-                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> Index.FACTORY.getEmptyIndex())
+                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> TrackingMutableRowSet.FACTORY.getEmptyRowSet())
                         .insertRange(
                                 RegionedColumnSource.getFirstElementIndex(regionIndex),
                                 RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);
             }
         });
-        expectedAddedIndex = newExpectedIndex.minus(expectedIndex);
-        expectedIndex = newExpectedIndex;
+        expectedAddedRowSet = newExpectedRowSet.minus(expectedRowSet);
+        expectedRowSet = newExpectedRowSet;
     }
 
-    private void checkIndexes(@NotNull final Index addedIndex) {
+    private void checkIndexes(@NotNull final TrackingMutableRowSet addedRowSet) {
         assertIsSatisfied();
-        assertIndexEquals(expectedAddedIndex, addedIndex);
+        assertIndexEquals(expectedAddedRowSet, addedRowSet);
         if (partitioningColumnGrouping == null) {
             assertTrue(expectedPartitioningColumnGrouping.isEmpty());
         } else {
             assertEquals(expectedPartitioningColumnGrouping.keySet(), partitioningColumnGrouping.keySet());
-            expectedPartitioningColumnGrouping.forEach((final String columnPartition, final Index expectedGrouping) -> {
-                final Index grouping = partitioningColumnGrouping.get(columnPartition);
+            expectedPartitioningColumnGrouping.forEach((final String columnPartition, final TrackingMutableRowSet expectedGrouping) -> {
+                final TrackingMutableRowSet grouping = partitioningColumnGrouping.get(columnPartition);
                 assertIndexEquals(expectedGrouping, grouping);
             });
         }

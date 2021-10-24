@@ -5,7 +5,7 @@ import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkBoxer;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -56,7 +56,7 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
 
     @Override
     public final SmartKey createTuple(final long indexKey) {
-        if (indexKey == Index.NULL_KEY) {
+        if (indexKey == TrackingMutableRowSet.NULL_ROW_KEY) {
             return null;
         }
         final int length = columnSources.length;
@@ -69,7 +69,7 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
 
     @Override
     public final SmartKey createPreviousTuple(final long indexKey) {
-        if (indexKey == Index.NULL_KEY) {
+        if (indexKey == TrackingMutableRowSet.NULL_ROW_KEY) {
             return null;
         }
         final int length = columnSources.length;

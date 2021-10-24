@@ -21,9 +21,9 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
      * Create a type-appropriate RedirectedColumnSource for the supplied {@link RedirectionIndex} and inner
      * {@link ColumnSource}.
      *
-     * @param redirectionIndex The redirection index to use
+     * @param redirectionIndex The redirection rowSet to use
      * @param innerSource The column source to redirect
-     * @param maxInnerIndex The maximum index key available in innerSource
+     * @param maxInnerIndex The maximum rowSet key available in innerSource
      */
     public RedirectedColumnSource(@NotNull final RedirectionIndex redirectionIndex,
             @NotNull final ColumnSource<T> innerSource,

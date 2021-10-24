@@ -213,9 +213,9 @@ public class DoublePrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index index of the value to return.
+     * @param index rowSet of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the index is outside of the array's index range.
+     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
     static public double nth(int index, DbDoubleArray values){
         if(index < 0 || index >= values.size()){
@@ -228,9 +228,9 @@ public class DoublePrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index index of the value to return.
+     * @param index rowSet of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the index is outside of the array's index range.
+     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
     static public double nth(int index, double[] values){
         return nth(index, array(values));

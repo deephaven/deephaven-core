@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 
 import java.util.function.LongToIntFunction;
 
@@ -49,7 +49,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(final ShiftAwareListener.Update upstream, final ReadOnlyIndex toClear,
+    public void applyUpdate(final ShiftAwareListener.Update upstream, final RowSet toClear,
             final UpdateHelper helper) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
@@ -65,8 +65,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 upstream.modified.nonempty() && upstream.modifiedColumnSet.containsAny(myModifiedColumnSet);
 
         // We include modifies in our shifted sets if we are not going to process them separately.
-        final ReadOnlyIndex preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
-        final ReadOnlyIndex postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
+        final RowSet preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
+        final RowSet postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
 
         final long lastKey = Math.max(postMoveKeys.empty() ? -1 : postMoveKeys.lastRowKey(),
                 upstream.added.empty() ? -1 : upstream.added.lastRowKey());
@@ -140,7 +140,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    private void clearObjectsAtThisLevel(ReadOnlyIndex keys) {
+    private void clearObjectsAtThisLevel(RowSet keys) {
         // Only bother doing this if we're holding on to references.
         if (!writableSource.getType().isPrimitive() && (writableSource.getType() != DBDateTime.class)) {
             ChunkUtils.fillWithNullValue(writableSource, keys);

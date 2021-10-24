@@ -8,7 +8,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
@@ -33,13 +33,13 @@ class TableShowTools {
             final ColumnSource[] columnSources =
                     Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
-            final Index index = source.getIndex();
+            final TrackingMutableRowSet rowSet = source.getIndex();
             int lineLen = 0;
             final Set<Integer> columnLimits = new HashSet<>();
             if (showIndex) {
                 out.print("  Position");
                 out.print(delimiter);
-                out.print("     Index");
+                out.print("     TrackingMutableRowSet");
                 out.print(delimiter);
                 columnLimits.add(10);
                 columnLimits.add(21);
@@ -53,7 +53,7 @@ class TableShowTools {
                     columnLimits.add(lineLen);
                     lineLen++;
                 }
-                final int columnLen = columnLengths[i] = getColumnLen(column, columnSources[i], index);
+                final int columnLen = columnLengths[i] = getColumnLen(column, columnSources[i], rowSet);
                 while (columnLen > column.length()) {
                     column = " " + column;
                 }
@@ -80,7 +80,7 @@ class TableShowTools {
             final ColumnPrinter positionPrinter = new DefaultPrinter(10);
             final ColumnPrinter indexPrinter = new DefaultPrinter(10);
             long ri = 0;
-            for (final Index.Iterator indexIterator = index.iterator(); ri < lastRowExclusive
+            for (final TrackingMutableRowSet.Iterator indexIterator = rowSet.iterator(); ri < lastRowExclusive
                     && indexIterator.hasNext(); ++ri) {
                 final long key = indexIterator.nextLong();
                 if (ri < firstRow) {
@@ -108,7 +108,7 @@ class TableShowTools {
         }
     }
 
-    private static int getColumnLen(String name, ColumnSource columnSource, Index index) {
+    private static int getColumnLen(String name, ColumnSource columnSource, TrackingMutableRowSet rowSet) {
         int len = name.length();
         if (columnSource.getType().isArray()) {
             len = Math.max(len, 40);
@@ -132,7 +132,7 @@ class TableShowTools {
         }
         if (columnSource.getType() == String.class) {
             int ri = 0;
-            for (final Index.Iterator ii = index.iterator(); ri < 100 && ii.hasNext(); ++ri) {
+            for (final TrackingMutableRowSet.Iterator ii = rowSet.iterator(); ri < 100 && ii.hasNext(); ++ri) {
                 String s = (String) columnSource.get(ii.nextLong());
                 if (s != null) {
                     len = Math.min(Math.max(s.length(), len), 100);

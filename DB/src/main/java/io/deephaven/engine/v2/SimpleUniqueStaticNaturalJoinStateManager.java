@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -33,13 +33,13 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         this.transform = transform;
         rightIndexSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < tableSize; ++ii) {
-            rightIndexSource.set(ii, Index.NULL_KEY);
+            rightIndexSource.set(ii, TrackingMutableRowSet.NULL_ROW_KEY);
         }
     }
 
-    void setRightSide(Index rightIndex, ColumnSource<?> valueSource) {
-        try (final RowSequence.Iterator rsIt = rightIndex.getRowSequenceIterator();
-             final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, rightIndex.size()))
+    void setRightSide(TrackingMutableRowSet rightRowSet, ColumnSource<?> valueSource) {
+        try (final RowSequence.Iterator rsIt = rightRowSet.getRowSequenceIterator();
+             final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, rightRowSet.size()))
         ) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -55,7 +55,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                         return true;
                     }
                     final long existingRight = rightIndexSource.getLong(tableLocation);
-                    if (existingRight == Index.NULL_KEY) {
+                    if (existingRight == TrackingMutableRowSet.NULL_ROW_KEY) {
                         rightIndexSource.set(tableLocation, keyIndex);
                     } else {
                         rightIndexSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
@@ -67,16 +67,16 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @Override
-    void decorateLeftSide(Index leftIndex, ColumnSource<?> [] valueSources, LongArraySource leftRedirections) {
-        if (leftIndex.isEmpty()) {
+    void decorateLeftSide(TrackingMutableRowSet leftRowSet, ColumnSource<?> [] valueSources, LongArraySource leftRedirections) {
+        if (leftRowSet.isEmpty()) {
             return;
         }
 
         Assert.eq(valueSources.length, "valueSources.length", 1);
         final ColumnSource<?> valueSource = valueSources[0];
 
-        try (final RowSequence.Iterator rsIt = leftIndex.getRowSequenceIterator();
-             final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, leftIndex.size()))
+        try (final RowSequence.Iterator rsIt = leftRowSet.getRowSequenceIterator();
+             final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, leftRowSet.size()))
         ) {
             long offset = 0;
             while (rsIt.hasMore()) {
@@ -93,7 +93,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     final long existingRight = rightIndexSource.getLong(tableLocation);
 
                     if (existingRight == DUPLICATE_RIGHT_VALUE) {
-                        throw new IllegalStateException("More than one right side mapping for key " + keySourcesForErrorMessages[0].get(leftIndex.get(offset + ii)));
+                        throw new IllegalStateException("More than one right side mapping for key " + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));
                     }
                     leftRedirections.set(offset + ii, existingRight);
                 }

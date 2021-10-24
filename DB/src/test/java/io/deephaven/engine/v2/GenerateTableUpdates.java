@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.apache.commons.lang3.mutable.MutableLong;
 
@@ -25,7 +25,7 @@ public class GenerateTableUpdates {
 
     static public void generateTableUpdates(int size, Random random, QueryTable table,
             TstUtils.ColumnInfo[] columnInfo) {
-        final Index[] result = computeTableUpdates(size, random, table, columnInfo);
+        final TrackingMutableRowSet[] result = computeTableUpdates(size, random, table, columnInfo);
         table.notifyListeners(result[0], result[1], result[2]);
     }
 
@@ -33,7 +33,7 @@ public class GenerateTableUpdates {
             TstUtils.ColumnInfo[] columnInfos) {
         final long firstKey = table.getIndex().lastRowKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
-        final Index keysToAdd = Index.FACTORY.getIndexByRange(firstKey, firstKey + randomSize - 1);
+        final TrackingMutableRowSet keysToAdd = TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, firstKey + randomSize - 1);
         final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnAdditions.length; i++) {
             columnAdditions[i] = columnInfos[i].populateMapAndC(keysToAdd, random);
@@ -51,17 +51,17 @@ public class GenerateTableUpdates {
                 throw new RuntimeException(e);
             }
         }
-        table.notifyListeners(keysToAdd, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+        table.notifyListeners(keysToAdd, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
     }
 
-    static public Index[] computeTableUpdates(int size, Random random, QueryTable table,
-            TstUtils.ColumnInfo[] columnInfo) {
+    static public TrackingMutableRowSet[] computeTableUpdates(int size, Random random, QueryTable table,
+                                                              TstUtils.ColumnInfo[] columnInfo) {
         return computeTableUpdates(size, random, table, columnInfo, true, true, true);
     }
 
-    static public Index[] computeTableUpdates(int size, Random random, QueryTable table,
-            TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
-        final Index keysToRemove;
+    static public TrackingMutableRowSet[] computeTableUpdates(int size, Random random, QueryTable table,
+                                                              TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
+        final TrackingMutableRowSet keysToRemove;
         if (remove && table.getIndex().size() > 0) {
             keysToRemove = TstUtils.selectSubIndexSet(random.nextInt(table.getIndex().intSize() + 1), table.getIndex(),
                     random);
@@ -69,17 +69,17 @@ public class GenerateTableUpdates {
             keysToRemove = TstUtils.i();
         }
 
-        final Index keysToAdd =
+        final TrackingMutableRowSet keysToAdd =
                 add ? TstUtils.newIndex(random.nextInt(size / 2 + 1), table.getIndex(), random) : TstUtils.i();
         TstUtils.removeRows(table, keysToRemove);
-        for (final Index.Iterator iterator = keysToRemove.iterator(); iterator.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator iterator = keysToRemove.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             for (final TstUtils.ColumnInfo info : columnInfo) {
                 info.remove(next);
             }
         }
 
-        final Index keysToModify;
+        final TrackingMutableRowSet keysToModify;
         if (modify && table.getIndex().size() > 0) {
             keysToModify =
                     TstUtils.selectSubIndexSet(random.nextInt((int) table.getIndex().size()), table.getIndex(), random);
@@ -110,7 +110,7 @@ public class GenerateTableUpdates {
             }
         }
 
-        return new Index[] {keysToAdd, keysToRemove, keysToModify};
+        return new TrackingMutableRowSet[] {keysToAdd, keysToRemove, keysToModify};
     }
 
     public static class SimulationProfile {
@@ -146,7 +146,7 @@ public class GenerateTableUpdates {
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
 
-        try (final Index index = table.getIndex().clone()) {
+        try (final TrackingMutableRowSet rowSet = table.getIndex().clone()) {
             final TstUtils.ColumnInfo<?, ?>[] mutableColumns =
                     Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(TstUtils.ColumnInfo[]::new);
             final boolean hasImmutableColumns = columnInfo.length > mutableColumns.length;
@@ -154,10 +154,10 @@ public class GenerateTableUpdates {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
 
             // Removes in pre-shift keyspace.
-            if (index.size() > 0) {
-                update.removed = TstUtils.selectSubIndexSet(Math.min(index.intSize(), random.nextInt(targetUpdateSize)),
-                        index, random);
-                index.remove(update.removed); // remove blatted and explicit removals
+            if (rowSet.size() > 0) {
+                update.removed = TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
+                        rowSet, random);
+                rowSet.remove(update.removed); // remove blatted and explicit removals
             } else {
                 update.removed = TstUtils.i();
             }
@@ -194,30 +194,30 @@ public class GenerateTableUpdates {
                 };
 
                 int shiftStrategy = random.nextInt(100);
-                if (shiftStrategy < profile.SHIFT_10_PERCENT_KEY_SPACE && index.nonempty()) {
+                if (shiftStrategy < profile.SHIFT_10_PERCENT_KEY_SPACE && rowSet.nonempty()) {
                     // 10% of keyspace
-                    final long startKey = nextLong(random, index.lastRowKey() + 1);
-                    final long lastKey = Math.min(startKey + (long) (index.lastRowKey() * 0.1), index.lastRowKey());
+                    final long startKey = nextLong(random, rowSet.lastRowKey() + 1);
+                    final long lastKey = Math.min(startKey + (long) (rowSet.lastRowKey() * 0.1), rowSet.lastRowKey());
                     shiftConsumer.accept(startKey, lastKey);
                 }
                 shiftStrategy -= profile.SHIFT_10_PERCENT_KEY_SPACE;
 
-                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_10_PERCENT_POS_SPACE && index.nonempty()) {
+                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_10_PERCENT_POS_SPACE && rowSet.nonempty()) {
                     // 10% of keys
-                    final long startIdx = nextLong(random, index.size());
-                    final long lastIdx = Math.min(index.size() - 1, startIdx + (index.size() / 10));
-                    shiftConsumer.accept(index.get(startIdx), index.get(lastIdx));
+                    final long startIdx = nextLong(random, rowSet.size());
+                    final long lastIdx = Math.min(rowSet.size() - 1, startIdx + (rowSet.size() / 10));
+                    shiftConsumer.accept(rowSet.get(startIdx), rowSet.get(lastIdx));
                 }
                 shiftStrategy -= profile.SHIFT_10_PERCENT_POS_SPACE;
 
-                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_AGGRESSIVELY && index.nonempty()) {
+                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_AGGRESSIVELY && rowSet.nonempty()) {
                     // aggressive shifting
                     long currIdx = 0;
-                    while (currIdx < index.size()) {
-                        final long startIdx = currIdx + (nextLong(random, index.size() - currIdx));
-                        final long lastIdx = startIdx + (long) (Math.sqrt(nextLong(random, index.size() - startIdx)));
-                        shiftConsumer.accept(index.get(startIdx), index.get(lastIdx));
-                        currIdx = 1 + lastIdx + (long) (Math.sqrt(nextLong(random, index.size() - lastIdx)));
+                    while (currIdx < rowSet.size()) {
+                        final long startIdx = currIdx + (nextLong(random, rowSet.size() - currIdx));
+                        final long lastIdx = startIdx + (long) (Math.sqrt(nextLong(random, rowSet.size() - startIdx)));
+                        shiftConsumer.accept(rowSet.get(startIdx), rowSet.get(lastIdx));
+                        currIdx = 1 + lastIdx + (long) (Math.sqrt(nextLong(random, rowSet.size() - lastIdx)));
                     }
                 }
                 shiftStrategy -= profile.SHIFT_AGGRESSIVELY;
@@ -225,25 +225,25 @@ public class GenerateTableUpdates {
             update.shifted = shiftBuilder.build();
 
             // Compute what data needs to be removed otherwise the shift generated would be invalid. We must also update
-            // our cloned index so we can pick appropriate added and modified sets.
-            final int preShiftIndexSize = index.intSize();
+            // our cloned rowSet so we can pick appropriate added and modified sets.
+            final int preShiftIndexSize = rowSet.intSize();
             update.shifted.apply((start, end, delta) -> {
                 // Remove any keys that are going to be splatted all over thanks to a shift.
                 final long blatStart = delta < 0 ? start + delta : end;
                 final long blatEnd = delta < 0 ? start - 1 : end + delta;
-                try (final Index blattedRows =
-                        index.extract(Index.CURRENT_FACTORY.getIndexByRange(blatStart, blatEnd))) {
+                try (final TrackingMutableRowSet blattedRows =
+                        rowSet.extract(TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(blatStart, blatEnd))) {
                     update.removed.insert(blattedRows);
                 }
             });
-            final int numRowsBlattedByShift = preShiftIndexSize - index.intSize();
+            final int numRowsBlattedByShift = preShiftIndexSize - rowSet.intSize();
 
-            update.shifted.apply(index);
+            update.shifted.apply(rowSet);
 
             // Modifies and Adds in post-shift keyspace.
-            if (index.nonempty()) {
+            if (rowSet.nonempty()) {
                 update.modified = TstUtils.selectSubIndexSet(
-                        Math.min(index.intSize(), random.nextInt(targetUpdateSize * 2)), index, random);
+                        Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize * 2)), rowSet, random);
             } else {
                 update.modified = TstUtils.i();
             }
@@ -266,7 +266,7 @@ public class GenerateTableUpdates {
                 update.modifiedColumnSet.setAll(modifiedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             }
 
-            update.added = TstUtils.newIndex(numRowsBlattedByShift + random.nextInt(targetUpdateSize), index, random);
+            update.added = TstUtils.newIndex(numRowsBlattedByShift + random.nextInt(targetUpdateSize), rowSet, random);
 
             generateTableUpdates(update, random, table, columnInfo);
         }
@@ -275,27 +275,27 @@ public class GenerateTableUpdates {
     static public void generateTableUpdates(final ShiftAwareListener.Update update,
             final Random random, final QueryTable table,
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
-        final Index index = table.getIndex();
+        final TrackingMutableRowSet rowSet = table.getIndex();
 
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println();
-            System.out.println("Index: " + index);
+            System.out.println("TrackingMutableRowSet: " + rowSet);
         }
 
         // Remove data:
         TstUtils.removeRows(table, update.removed);
-        for (final Index.Iterator iterator = update.removed.iterator(); iterator.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator iterator = update.removed.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             for (final TstUtils.ColumnInfo<?, ?> info : columnInfo) {
                 info.remove(next);
             }
         }
-        index.remove(update.removed);
+        rowSet.remove(update.removed);
 
         // Shift data:
         update.shifted.apply((start, end, delta) -> {
             // Move data!
-            final Index.SearchIterator iter = (delta < 0) ? index.searchIterator() : index.reverseIterator();
+            final TrackingMutableRowSet.SearchIterator iter = (delta < 0) ? rowSet.searchIterator() : rowSet.reverseIterator();
             if (iter.advance((delta < 0) ? start : end)) {
                 long idx = iter.currentValue();
                 do {
@@ -305,8 +305,8 @@ public class GenerateTableUpdates {
                     for (final TstUtils.ColumnInfo<?, ?> info : columnInfo) {
                         info.move(idx, idx + delta);
                     }
-                    idx = iter.hasNext() ? iter.nextLong() : Index.NULL_KEY;
-                } while (idx != Index.NULL_KEY);
+                    idx = iter.hasNext() ? iter.nextLong() : TrackingMutableRowSet.NULL_ROW_KEY;
+                } while (idx != TrackingMutableRowSet.NULL_ROW_KEY);
             }
             for (final ColumnSource<?> column : table.getColumnSources()) {
                 if (column instanceof TreeMapSource) {
@@ -318,7 +318,7 @@ public class GenerateTableUpdates {
                 }
             }
         });
-        update.shifted.apply(index);
+        update.shifted.apply(rowSet);
 
         // Modifies and Adds in post-shift keyspace.
         final ColumnHolder[] cModsOnly = new ColumnHolder[columnInfo.length];
@@ -327,13 +327,13 @@ public class GenerateTableUpdates {
         final BitSet dirtyColumns = update.modifiedColumnSet.extractAsBitSet();
         for (int i = 0; i < columnInfo.length; i++) {
             final TstUtils.ColumnInfo<?, ?> ci = columnInfo[i];
-            final Index keys = dirtyColumns.get(i) ? update.modified : TstUtils.i();
+            final TrackingMutableRowSet keys = dirtyColumns.get(i) ? update.modified : TstUtils.i();
             cModsOnly[i] = ci.populateMapAndC(keys, random);
             cAddsOnly[i] = ci.populateMapAndC(update.added, random);
         }
         TstUtils.addToTable(table, update.added, cAddsOnly);
         TstUtils.addToTable(table, update.modified, cModsOnly);
-        index.insert(update.added);
+        rowSet.insert(update.added);
 
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println("Add: " + update.added);

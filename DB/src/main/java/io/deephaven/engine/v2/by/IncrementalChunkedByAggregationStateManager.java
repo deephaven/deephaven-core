@@ -67,7 +67,7 @@ class IncrementalChunkedByAggregationStateManager
          *
          * @param cookie    The current cookie for the state, or 0 on insert
          * @param stateSlot The state slot (in main table space)
-         * @param index     The built or probed index key
+         * @param index     The built or probed rowSet key
          * @return The new cookie for the state
          */
         long invoke(long cookie, int stateSlot, long index);
@@ -102,7 +102,7 @@ class IncrementalChunkedByAggregationStateManager
 
     @ReplicateHashTable.EmptyStateValue
     // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QIndex\E
-    private static final Index EMPTY_VALUE = null;
+    private static final TrackingMutableRowSet EMPTY_VALUE = null;
 
     // mixin getStateValue
     // region overflow pivot
@@ -152,22 +152,22 @@ class IncrementalChunkedByAggregationStateManager
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<Index>\E
-    private final ObjectArraySource<Index> indexSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(Index.class)\E
-            = new ObjectArraySource<>(Index.class);
+    // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
+    private final ObjectArraySource<TrackingMutableRowSet> indexSource
+            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
+            = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
     // the keys for overflow
     private int nextOverflowLocation = 0;
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right Index
+    // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<Index>\E
-    private final ObjectArraySource<Index> overflowIndexSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(Index.class)\E
-            = new ObjectArraySource<>(Index.class);
+    // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
+    private final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource
+            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
+            = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
     // the type of each of our key chunks
     private final ChunkType[] keyChunkTypes;
@@ -284,23 +284,23 @@ class IncrementalChunkedByAggregationStateManager
 
     void buildInitialTableFromPrevious(@NotNull final Table sourceTable, @NotNull final ColumnSource<?>[] keySources, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
         final ColumnSource<?>[] prevKeySources;
-        try (final Index prevIndex = sourceTable.getIndex().getPrevIndex()) {
-            if (prevIndex.isEmpty()) {
+        try (final TrackingMutableRowSet prevRowSet = sourceTable.getIndex().getPrevIndex()) {
+            if (prevRowSet.isEmpty()) {
                 return;
             }
             prevKeySources = Arrays.stream(keySources).map((UnaryOperator<ColumnSource<?>>) PrevColumnSource::new).toArray(ColumnSource[]::new);
-            try (final BuildContext bc = makeBuildContext(prevKeySources, prevIndex.size())) {
-                buildTable(bc, prevIndex, prevKeySources, aggregationUpdateTracker::processInitialAdd, aggregationUpdateTracker::processStateMove);
+            try (final BuildContext bc = makeBuildContext(prevKeySources, prevRowSet.size())) {
+                buildTable(bc, prevRowSet, prevKeySources, aggregationUpdateTracker::processInitialAdd, aggregationUpdateTracker::processStateMove);
             }
         }
     }
 
-    void processAdds(@NotNull final ColumnSource[] keySources, @NotNull final Index addedIndex, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
-        if (addedIndex.isEmpty()) {
+    void processAdds(@NotNull final ColumnSource[] keySources, @NotNull final TrackingMutableRowSet addedRowSet, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
+        if (addedRowSet.isEmpty()) {
             return;
         }
-        try (final BuildContext bc = makeBuildContext(keySources, addedIndex.size())) {
-            buildTable(bc, addedIndex, keySources, aggregationUpdateTracker::processAdd, aggregationUpdateTracker::processStateMove);
+        try (final BuildContext bc = makeBuildContext(keySources, addedRowSet.size())) {
+            buildTable(bc, addedRowSet, keySources, aggregationUpdateTracker::processAdd, aggregationUpdateTracker::processStateMove);
         }
     }
     // endregion build wrappers
@@ -345,8 +345,8 @@ class IncrementalChunkedByAggregationStateManager
         final WritableLongChunk<RowKeys> overflowLocationForEqualityCheck;
 
         // the chunk of state values that we read from the hash table
-        // @WritableStateChunkType@ from \QWritableObjectChunk<Index,Values>\E
-        final WritableObjectChunk<Index,Values> workingStateEntries;
+        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
+        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
 
         // the chunks for getting key values from the hash table
         final WritableChunk<Values>[] workingKeyChunks;
@@ -536,7 +536,7 @@ class IncrementalChunkedByAggregationStateManager
              // endregion build initialization try
         ) {
             // region build initialization
-            // Index keys extracted from the input index, parallel to the sourceKeyChunks
+            // TrackingMutableRowSet keys extracted from the input rowSet, parallel to the sourceKeyChunks
             final WritableLongChunk<OrderedRowKeys> sourceChunkIndexKeys = WritableLongChunk.makeWritableChunk(bc.chunkSize);
             // endregion build initialization
 
@@ -616,7 +616,7 @@ class IncrementalChunkedByAggregationStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    indexSource.set(currentHashLocation, Index.FACTORY.getEmptyIndex());
+                    indexSource.set(currentHashLocation, TrackingMutableRowSet.FACTORY.getEmptyRowSet());
                     cookieSource.set(currentHashLocation, trackingCallback.invoke(NULL_COOKIE, (int) currentHashLocation, sourceChunkIndexKeys.get(firstChunkPositionForHashLocation)));
                     // endregion main insert
                     // mixin rehash
@@ -759,7 +759,7 @@ class IncrementalChunkedByAggregationStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            overflowIndexSource.set(allocatedOverflowLocation, Index.FACTORY.getEmptyIndex());
+                            overflowIndexSource.set(allocatedOverflowLocation, TrackingMutableRowSet.FACTORY.getEmptyRowSet());
                             overflowCookieSource.set(allocatedOverflowLocation, trackingCallback.invoke(NULL_COOKIE, overflowLocationToHashLocation(allocatedOverflowLocation), sourceChunkIndexKeys.get(chunkPosition)));
                             // endregion build overflow insert
 
@@ -909,7 +909,7 @@ class IncrementalChunkedByAggregationStateManager
                     }
 
                     // @StateValueType@ from \QIndex\E
-                    final Index stateValueToMove = indexSource.getUnsafe(oldHashLocation);
+                    final TrackingMutableRowSet stateValueToMove = indexSource.getUnsafe(oldHashLocation);
                     indexSource.set(newHashLocation, stateValueToMove);
                     indexSource.set(oldHashLocation, EMPTY_VALUE);
                                 // region rehash move values
@@ -1040,7 +1040,7 @@ class IncrementalChunkedByAggregationStateManager
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = indexSource.makeFillContext(maxSize)) {
 
-            indexSource.fillChunk(fillContext, stateChunk, Index.FACTORY.getFlatIndex(tableHashPivot));
+            indexSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1237,30 +1237,30 @@ class IncrementalChunkedByAggregationStateManager
     // endmixin prev
 
     // region probe wrappers
-    void processRemoves(@NotNull final ColumnSource<?>[] keySources, @NotNull final Index removedIndex, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
-        if (removedIndex.empty()) {
+    void processRemoves(@NotNull final ColumnSource<?>[] keySources, @NotNull final TrackingMutableRowSet removedRowSet, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
+        if (removedRowSet.empty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(keySources, removedIndex.size())) {
-            decorationProbe(pc, removedIndex, keySources, true, aggregationUpdateTracker::processRemove);
+        try (final ProbeContext pc = makeProbeContext(keySources, removedRowSet.size())) {
+            decorationProbe(pc, removedRowSet, keySources, true, aggregationUpdateTracker::processRemove);
         }
     }
 
-    void processShift(@NotNull final ColumnSource<?>[] keySources, @NotNull final Index preShiftedIndex, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
-        if (preShiftedIndex.empty()) {
+    void processShift(@NotNull final ColumnSource<?>[] keySources, @NotNull final TrackingMutableRowSet preShiftedRowSet, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
+        if (preShiftedRowSet.empty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(keySources, preShiftedIndex.size())) {
-            decorationProbe(pc, preShiftedIndex, keySources, true, aggregationUpdateTracker::processShift);
+        try (final ProbeContext pc = makeProbeContext(keySources, preShiftedRowSet.size())) {
+            decorationProbe(pc, preShiftedRowSet, keySources, true, aggregationUpdateTracker::processShift);
         }
     }
 
-    void processModifies(@NotNull final ColumnSource<?>[] keySources, @NotNull final Index modifiedIndex, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
-        if (modifiedIndex.empty()) {
+    void processModifies(@NotNull final ColumnSource<?>[] keySources, @NotNull final TrackingMutableRowSet modifiedRowSet, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
+        if (modifiedRowSet.empty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(keySources, modifiedIndex.size())) {
-            decorationProbe(pc, modifiedIndex, keySources, false, aggregationUpdateTracker::processModify);
+        try (final ProbeContext pc = makeProbeContext(keySources, modifiedRowSet.size())) {
+            decorationProbe(pc, modifiedRowSet, keySources, false, aggregationUpdateTracker::processModify);
         }
     }
     // endregion probe wrappers
@@ -1283,10 +1283,10 @@ class IncrementalChunkedByAggregationStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
-        // @WritableStateChunkType@ from \QWritableObjectChunk<Index,Values>\E
-        final WritableObjectChunk<Index,Values> workingStateEntries;
+        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
+        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
         final WritableLongChunk<RowKeys> overflowLocationsToFetch;
@@ -1585,17 +1585,17 @@ class IncrementalChunkedByAggregationStateManager
     }
 
     // region extraction functions
-    ObjectArraySource<Index> getIndexSource() {
+    ObjectArraySource<TrackingMutableRowSet> getIndexSource() {
         return indexSource;
     }
 
-    ObjectArraySource<Index> getOverflowIndexSource() {
+    ObjectArraySource<TrackingMutableRowSet> getOverflowIndexSource() {
         return overflowIndexSource;
     }
 
-    ColumnSource<Index> getIndexHashTableSource() {
+    ColumnSource<TrackingMutableRowSet> getIndexHashTableSource() {
         //noinspection unchecked
-        final ColumnSource<Index> indexHashTableSource = new HashTableColumnSource(Index.class, indexSource, overflowIndexSource);
+        final ColumnSource<TrackingMutableRowSet> indexHashTableSource = new HashTableColumnSource(TrackingMutableRowSet.class, indexSource, overflowIndexSource);
         indexHashTableSource.startTrackingPrevValues();
         return indexHashTableSource;
     }
@@ -1614,13 +1614,13 @@ class IncrementalChunkedByAggregationStateManager
                     @NotNull final ShiftAppliedCallback shiftAppliedCallback) {
         if (isOverflowLocation(stateSlot)) {
             final int overflowSlot = hashLocationToOverflowLocation(stateSlot);
-            final Index overflowStateIndex = overflowIndexSource.get(overflowSlot);
-            if (IndexShiftData.applyShift(overflowStateIndex, beginRange, endRange, shiftDelta)) {
+            final TrackingMutableRowSet overflowStateRowSet = overflowIndexSource.get(overflowSlot);
+            if (IndexShiftData.applyShift(overflowStateRowSet, beginRange, endRange, shiftDelta)) {
                 overflowCookieSource.set(overflowSlot, shiftAppliedCallback.invoke(overflowCookieSource.getLong(overflowSlot), stateSlot));
             }
         } else {
-            final Index stateIndex = indexSource.get(stateSlot);
-            if (IndexShiftData.applyShift(stateIndex, beginRange, endRange, shiftDelta)) {
+            final TrackingMutableRowSet stateRowSet = indexSource.get(stateSlot);
+            if (IndexShiftData.applyShift(stateRowSet, beginRange, endRange, shiftDelta)) {
                 cookieSource.set(stateSlot, shiftAppliedCallback.invoke(cookieSource.getLong(stateSlot), stateSlot));
             }
         }

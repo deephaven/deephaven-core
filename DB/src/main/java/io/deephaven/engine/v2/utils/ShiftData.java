@@ -16,22 +16,22 @@ public class ShiftData {
     private int runningSize = 0;
     private long runningOffset = 0;
 
-    public Index getAddedPos() {
+    public TrackingMutableRowSet getAddedPos() {
         return addedPos;
     }
 
-    private Index addedPos;
+    private TrackingMutableRowSet addedPos;
 
-    public ShiftData(Index index, Index removed, Index added) {
-        TLongList[] removedKeys = index.findMissing(removed);
-        addedPos = index.invert(added);
+    public ShiftData(TrackingMutableRowSet rowSet, TrackingMutableRowSet removed, TrackingMutableRowSet added) {
+        TLongList[] removedKeys = rowSet.findMissing(removed);
+        addedPos = rowSet.invert(added);
         endIndex = new TLongArrayList();
         startIndex = new TLongArrayList();
         offsets = new TLongArrayList();
         int removedIndex = 0;
         TLongList removedPositions = removedKeys[0];
         TLongList removedCount = removedKeys[1];
-        for (Index.RangeIterator addedIt = addedPos.rangeIterator(); addedIt.hasNext();) {
+        for (TrackingMutableRowSet.RangeIterator addedIt = addedPos.rangeIterator(); addedIt.hasNext();) {
             addedIt.next();
             int startOffset = (int) addedIt.currentRangeStart();
             int endOffset = (int) addedIt.currentRangeEnd();
@@ -51,8 +51,8 @@ public class ShiftData {
             removedIndex++;
         }
         if (runningSize > 0) {
-            if (startIndex.get(runningSize - 1) <= (index.size() - added.size() + removed.size() - 1)) {
-                endIndex.set(runningSize - 1, (int) (index.size() - added.size() + removed.size() - 1));
+            if (startIndex.get(runningSize - 1) <= (rowSet.size() - added.size() + removed.size() - 1)) {
+                endIndex.set(runningSize - 1, (int) (rowSet.size() - added.size() + removed.size() - 1));
             } else {
                 runningSize--;
             }

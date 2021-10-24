@@ -19,7 +19,7 @@ import io.deephaven.engine.v2.HierarchicalTableInfo;
 import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.v2.TableMap;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -89,8 +89,8 @@ class SnapshotState {
     // endregion
 
     interface Copier {
-        void copy(boolean usePrev, ColumnSource columnSource, Index.Iterator it, Object target, int offset, Table table,
-                TableMap tableMap, BitSet childPresenceColumn);
+        void copy(boolean usePrev, ColumnSource columnSource, TrackingMutableRowSet.Iterator it, Object target, int offset, Table table,
+                  TableMap tableMap, BitSet childPresenceColumn);
     }
 
     SnapshotState(HierarchicalTable baseTable, String hierarchicalColumnName) {
@@ -179,35 +179,35 @@ class SnapshotState {
      *           it's table key, so that clients can map rows back into the tree structure.
      *
      * @param usePrev if the snapshot should use previous values.
-     * @param snapshotIndex An index containing the rows to copy from the source table.
+     * @param snapshotRowSet An rowSet containing the rows to copy from the source table.
      */
-    void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap, Index snapshotIndex) {
-        Assert.leq(copied + snapshotIndex.size(), "dataOffset + snapshotIndex.size()", actualViewportSize,
+    void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap, TrackingMutableRowSet snapshotRowSet) {
+        Assert.leq(copied + snapshotRowSet.size(), "dataOffset + snapshotRowSet.size()", actualViewportSize,
                 "viewport size");
 
         if (table.hasAttribute(Table.ROLLUP_LEAF_ATTRIBUTE) && includeConstituents) {
-            addToSnapshotConstituent(usePrev, table, tableMap, snapshotIndex);
+            addToSnapshotConstituent(usePrev, table, tableMap, snapshotRowSet);
         } else {
-            addToSnapshotNormal(usePrev, table, tableMap, snapshotIndex);
+            addToSnapshotNormal(usePrev, table, tableMap, snapshotRowSet);
         }
 
         // Associate the rows with this table.
-        Arrays.fill(tableKeyColumn, copied, copied + snapshotIndex.intSize(), tableKey);
+        Arrays.fill(tableKeyColumn, copied, copied + snapshotRowSet.intSize(), tableKey);
 
-        copied += snapshotIndex.size();
+        copied += snapshotRowSet.size();
     }
 
     /**
      * Copy data directly from the table in question.
      */
-    private void addToSnapshotNormal(boolean usePrev, Table table, TableMap tableMap, Index snapshotIndex) {
+    private void addToSnapshotNormal(boolean usePrev, Table table, TableMap tableMap, TrackingMutableRowSet snapshotRowSet) {
         for (int ii = 0; ii < data.size(); ii++) {
             if (!columns.get(ii)) {
                 continue;
             }
 
             final ColumnSource cs = table.getColumnSource(data.get(ii).first);
-            columnCopiers[ii].copy(usePrev, cs, snapshotIndex.iterator(), data.get(ii).second, copied, table, tableMap,
+            columnCopiers[ii].copy(usePrev, cs, snapshotRowSet.iterator(), data.get(ii).second, copied, table, tableMap,
                     childPresenceColumn);
         }
     }
@@ -216,11 +216,11 @@ class SnapshotState {
      * Copy the data from the table in question, assuming that the table is a constituent table. This means that we need
      * to copy the data to the alternate data set because column types may be reused or changed.
      */
-    private void addToSnapshotConstituent(boolean usePrev, Table table, TableMap tableMap, Index snapshotIndex) {
+    private void addToSnapshotConstituent(boolean usePrev, Table table, TableMap tableMap, TrackingMutableRowSet snapshotRowSet) {
         includesLeafData = true;
         includedConstituentColumns.forEach(cn -> {
             final ColumnSource<?> cs = table.getColumnSource(cn);
-            constituentCopiers.get(cn).copy(usePrev, cs, snapshotIndex.iterator(), constituentData.get(cn).getSecond(),
+            constituentCopiers.get(cn).copy(usePrev, cs, snapshotRowSet.iterator(), constituentData.get(cn).getSecond(),
                     copied, table, tableMap, childPresenceColumn);
         });
 
@@ -237,7 +237,7 @@ class SnapshotState {
                 // so we'll allow those to not exist and be null-filled
                 final ColumnSource<?> cs = columnSourceMap.get(columnName);
                 if (cs != null) {
-                    columnCopiers[ii].copy(usePrev, cs, snapshotIndex.iterator(), data.get(ii).second, copied, table,
+                    columnCopiers[ii].copy(usePrev, cs, snapshotRowSet.iterator(), data.get(ii).second, copied, table,
                             tableMap, childPresenceColumn);
                 } else if (!ColumnFormattingValues.isFormattingColumn(columnName)) {
                     throw new UncheckedTableException(

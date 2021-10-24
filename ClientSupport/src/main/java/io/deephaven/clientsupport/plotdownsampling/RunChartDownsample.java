@@ -2,6 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
@@ -18,7 +19,6 @@ import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.libs.primitives.LongNumericPrimitives;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -110,13 +110,13 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         //
         // baseTable.initializeWithSnapshot("downsample", swapListener, (prevRequested, beforeClock) -> {
         // final boolean usePrev = prevRequested && baseTable.isRefreshing();
-        // final Index indexToUse = usePrev ? baseTable.getIndex().getPrevIndex() : baseTable.getIndex();
+        // final TrackingMutableRowSet indexToUse = usePrev ? baseTable.build().getPrevIndex() : baseTable.build();
         //
         // // process existing rows
         // handleAdded(indexToUse, columnSourceToBin, getNanosPerPx(minBins, usePrev, indexToUse, columnSourceToBin),
         // valueColumnSource, states, usePrev);
         //
-        // // construct the initial index, table
+        // // construct the initial rowSet, table
         // //TODO copy def, columns that we actually need here
         // QueryTable resultTable = new QueryTable(buildIndexFromGroups(states), baseTable.getColumnSourceMap());
         // result.setValue(resultTable);
@@ -223,13 +223,13 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         public static DownsamplerListener of(final QueryTable sourceTable, final DownsampleKey key) {
-            final Index index = Index.FACTORY.getEmptyIndex();
-            final QueryTable resultTable = sourceTable.getSubTable(index);
+            final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            final QueryTable resultTable = sourceTable.getSubTable(rowSet);
             return new DownsamplerListener(sourceTable, resultTable, key);
         }
 
         private final QueryTable sourceTable;
-        private final Index index;
+        private final TrackingMutableRowSet rowSet;
         private final QueryTable resultTable;
         private final DownsampleKey key;
         private IndexMode indexMode = IndexMode.DOWNSAMPLE;
@@ -244,7 +244,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         private final ColumnSource<Long> xColumnSource;
 
         private final ValueTracker[] values;
-        private final Index availableSlots = Index.FACTORY.getSequentialBuilder().getIndex();
+        private final TrackingMutableRowSet availableSlots = TrackingMutableRowSet.FACTORY.getSequentialBuilder().build();
         private int nextSlot;
 
         private final int[] allYColumnIndexes;
@@ -274,7 +274,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 final DownsampleKey key) {
             super("downsample listener", sourceTable, resultTable);
             this.sourceTable = sourceTable;
-            this.index = resultTable.getIndex();
+            this.rowSet = resultTable.getIndex();
             this.resultTable = resultTable;
             this.key = key;
 
@@ -343,9 +343,9 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                         tail.validate(false, context, allYColumnIndexes);
                     }
                     states.values().forEach(state -> state.validate(false, context, allYColumnIndexes));
-                    if (!index.subsetOf(sourceTable.getIndex())) {
-                        throw new IllegalStateException("index.subsetOf(sourceTable.getIndex()) is false, extra items= "
-                                + index.minus(sourceTable.getIndex()));
+                    if (!rowSet.subsetOf(sourceTable.getIndex())) {
+                        throw new IllegalStateException("rowSet.subsetOf(sourceTable.build()) is false, extra items= "
+                                + rowSet.minus(sourceTable.getIndex()));
                     }
                 }
 
@@ -367,9 +367,9 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 rerange();
                 handleAdded(context, sourceTable.getIndex());
 
-                Assert.assertion(this.index.empty(), "this.index.empty()");
+                Assert.assertion(this.rowSet.empty(), "this.rowSet.empty()");
 
-                // notify downstream tables that the index was swapped
+                // notify downstream tables that the rowSet was swapped
                 notifyResultTable(upstream, sourceTable.getIndex());
             } else if (indexMode == IndexMode.DOWNSAMPLE && sourceTable.size() < key.bins) {
                 log.info().append("Switching from DOWNSAMPLE to PASSTHROUGH ").append(sourceTable.size())
@@ -380,15 +380,15 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
 
                 states.clear();
 
-                final Index addToResultTable = sourceTable.getIndex().minus(index);
-                final Index removed = index.union(upstream.removed);
-                final Index modified = index.union(upstream.modified);
-                index.clear();
+                final TrackingMutableRowSet addToResultTable = sourceTable.getIndex().minus(rowSet);
+                final TrackingMutableRowSet removed = rowSet.union(upstream.removed);
+                final TrackingMutableRowSet modified = rowSet.union(upstream.modified);
+                rowSet.clear();
 
                 availableSlots.clear();// TODO optionally, clear out value trackers?
                 nextSlot = 1;
 
-                // notify downstream tables that the index changed, add all missing rows from the source table, since
+                // notify downstream tables that the rowSet changed, add all missing rows from the source table, since
                 // we're un-downsampling
                 // TODO
                 final Update switchToPassThrough =
@@ -397,7 +397,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             } else if (indexMode == IndexMode.PASSTHROUGH) {
                 log.info().append("PASSTHROUGH update ").append(upstream).endl();
                 // send the event along directly
-                Assert.assertion(this.index.empty(), "this.index.empty()");
+                Assert.assertion(this.rowSet.empty(), "this.rowSet.empty()");
                 resultTable.notifyListeners(upstream);
             } else {
                 log.info().append("DOWNSAMPLE update ").append(upstream).endl();
@@ -433,10 +433,10 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                     // if (we needed to rebucket last time && still need to rebucket) {
                     // rerange();
                     // states.clear();
-                    // index.clear();
+                    // rowSet.clear();
                     // availableSlots.clear();//TODO tell the value trackers to nuke content?
                     // nextSlot = 1;
-                    // handleAdded(sourceTable.getIndex());
+                    // handleAdded(sourceTable.build());
                     //
                     // notifyResultTable(upstream);
                     // } else {
@@ -464,7 +464,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 handleAdded(context, usePrev, sourceTable.getIndex());
                 if (VALIDATE) {
                     Consumer<BucketState> validate = state -> {
-                        // prebuild the index so we can log details
+                        // prebuild the rowSet so we can log details
                         state.makeIndex();
 
                         // check that the state is sane
@@ -478,12 +478,12 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 }
             }
 
-            Assert.assertion(index.empty(), "this.index.empty()");
-            final Index initialIndex = indexFromStates();
-            // log.info().append("initial downsample index.size()=").append(initialIndex.size()).append(",
-            // index=").append(initialIndex).endl();
+            Assert.assertion(rowSet.empty(), "this.rowSet.empty()");
+            final TrackingMutableRowSet initialRowSet = indexFromStates();
+            // log.info().append("initial downsample rowSet.size()=").append(initialRowSet.size()).append(",
+            // rowSet=").append(initialRowSet).endl();
 
-            index.insert(initialIndex);
+            rowSet.insert(initialRowSet);
         }
 
         private int nextPosition() {
@@ -515,9 +515,9 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 first = key.zoomRange[0];
                 last = key.zoomRange[1];
             } else {
-                final Index index = usePrev ? sourceTable.getIndex().getPrevIndex() : sourceTable.getIndex();
-                first = xColumnSource.getLong(index.firstRowKey());
-                last = xColumnSource.getLong(index.lastRowKey());
+                final TrackingMutableRowSet rowSet = usePrev ? sourceTable.getIndex().getPrevIndex() : sourceTable.getIndex();
+                first = xColumnSource.getLong(rowSet.firstRowKey());
+                last = xColumnSource.getLong(rowSet.lastRowKey());
             }
 
             // take the difference between first and last, divide by the requested number of bins,
@@ -525,9 +525,9 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             nanosPerPx = (long) (1.1 * (last - first) / key.bins);
         }
 
-        private void handleAdded(final DownsampleChunkContext context, final boolean usePrev, final Index addedIndex) {
-            final Index index = usePrev ? addedIndex.getPrevIndex() : addedIndex;
-            if (index.empty()) {
+        private void handleAdded(final DownsampleChunkContext context, final boolean usePrev, final TrackingMutableRowSet addedRowSet) {
+            final TrackingMutableRowSet rowSet = usePrev ? addedRowSet.getPrevIndex() : addedRowSet;
+            if (rowSet.empty()) {
                 return;
             }
 
@@ -535,7 +535,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             final int[] all = this.allYColumnIndexes;
             context.addYColumnsOfInterest(all);
 
-            final RowSequence.Iterator it = index.getRowSequenceIterator();
+            final RowSequence.Iterator it = rowSet.getRowSequenceIterator();
             while (it.hasMore()) {
                 final RowSequence next = it.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final LongChunk<Attributes.Values> xValueChunk = context.getXValues(next, usePrev);
@@ -557,11 +557,11 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             }
         }
 
-        private void handleAdded(final DownsampleChunkContext context, final Index addedIndex) {
-            handleAdded(context, false, addedIndex);
+        private void handleAdded(final DownsampleChunkContext context, final TrackingMutableRowSet addedRowSet) {
+            handleAdded(context, false, addedRowSet);
         }
 
-        private void handleRemoved(final DownsampleChunkContext context, final Index removed) {
+        private void handleRemoved(final DownsampleChunkContext context, final TrackingMutableRowSet removed) {
             if (removed.empty()) {
                 return;
             }
@@ -587,7 +587,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
 
         }
 
-        private void handleModified(final DownsampleChunkContext context, final Index modified,
+        private void handleModified(final DownsampleChunkContext context, final TrackingMutableRowSet modified,
                 final ModifiedColumnSet modifiedColumnSet) {
             // TODO use MCS here
             if (modified.empty()/* || !modifiedColumnSet.containsAny(interestedColumns) */) {
@@ -687,33 +687,33 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
          * change will be our state map (i.e. there is
          * 
          * @param upstream the change that happened upstream
-         * @param lastIndex the base index to use when considering what items to tell the result table changed. if
-         *        this.index, then update it normally, otherwise this.index must be empty and this.index should be
+         * @param lastRowSet the base rowSet to use when considering what items to tell the result table changed. if
+         *        this.rowSet, then update it normally, otherwise this.rowSet must be empty and this.rowSet should be
          *        populated.
          */
-        private void notifyResultTable(final Update upstream, final Index lastIndex) {
-            final Index resultIndex = indexFromStates();
+        private void notifyResultTable(final Update upstream, final TrackingMutableRowSet lastRowSet) {
+            final TrackingMutableRowSet resultRowSet = indexFromStates();
 
-            final Index removed = lastIndex.minus(resultIndex);
-            final Index added = resultIndex.minus(lastIndex);
-            final Index modified = resultIndex.intersect(lastIndex).intersect(upstream.modified);
+            final TrackingMutableRowSet removed = lastRowSet.minus(resultRowSet);
+            final TrackingMutableRowSet added = resultRowSet.minus(lastRowSet);
+            final TrackingMutableRowSet modified = resultRowSet.intersect(lastRowSet).intersect(upstream.modified);
 
-            if (lastIndex == this.index) {
-                this.index.update(added, removed);
+            if (lastRowSet == this.rowSet) {
+                this.rowSet.update(added, removed);
             } else {
-                // switching modes, need to populate the index
-                Assert.assertion(this.index.empty(), "this.index.empty()");
-                this.index.insert(resultIndex);
+                // switching modes, need to populate the rowSet
+                Assert.assertion(this.rowSet.empty(), "this.rowSet.empty()");
+                this.rowSet.insert(resultRowSet);
             }
-            // log.info().append("After downsample update, index.size=").append(index.size()).append(",
-            // index=").endl();//.append(index).endl();
+            // log.info().append("After downsample update, rowSet.size=").append(rowSet.size()).append(",
+            // rowSet=").endl();//.append(rowSet).endl();
 
             final Update update = new Update(added, removed, modified, upstream.shifted, upstream.modifiedColumnSet);
             // log.info().append("resultTable.notifyListeners").append(update).endl();
             resultTable.notifyListeners(update);
         }
 
-        private Index indexFromStates() {
+        private TrackingMutableRowSet indexFromStates() {
             // TODO this couldnt be uglier if i tried
             if (rangeMode == RangeMode.ZOOM) {
                 return Stream.concat(
@@ -721,25 +721,25 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                                                                                   // since states shouldn't contain
                                                                                   // empty indexes anyway
                         states.values().stream())
-                        .reduce(Index.FACTORY.getRandomBuilder(), (builder, state) -> {
-                            builder.addIndex(state.makeIndex());
+                        .reduce(TrackingMutableRowSet.FACTORY.getRandomBuilder(), (builder, state) -> {
+                            builder.addRowSet(state.makeIndex());
                             return builder;
                         }, (b1, b2) -> {
-                            b1.addIndex(b2.getIndex());
+                            b1.addRowSet(b2.build());
                             return b1;
-                        }).getIndex();
+                        }).build();
             }
-            return states.values().stream().reduce(Index.FACTORY.getRandomBuilder(), (builder, state) -> {
-                builder.addIndex(state.makeIndex());
+            return states.values().stream().reduce(TrackingMutableRowSet.FACTORY.getRandomBuilder(), (builder, state) -> {
+                builder.addRowSet(state.makeIndex());
                 return builder;
             }, (b1, b2) -> {
-                b1.addIndex(b2.getIndex());
+                b1.addRowSet(b2.build());
                 return b1;
-            }).getIndex();
+            }).build();
         }
 
         private void notifyResultTable(final Update upstream) {
-            notifyResultTable(upstream, index);
+            notifyResultTable(upstream, rowSet);
         }
     }
 

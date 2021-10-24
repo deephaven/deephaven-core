@@ -8,8 +8,8 @@ import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Maintains a map from key column values to their index.
+ * Maintains a map from key column values to their rowSet.
  *
  * This allows you to quickly find a row based on a unique key on a ticking table, without the need for searching the
  * entire table.
@@ -56,7 +56,7 @@ public class ReverseLookupListener extends LivenessArtifact
         }
 
         @Override
-        public void onUpdate(final Index added, final Index removed, final Index modified) {
+        public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
             synchronized (ReverseLookupListener.this) {
                 // Note that lastNotificationStep will change before we are technically satisfied, but it doesn't
                 // matter; we aren't fully updated yet, but we rely on synchronization on the enclosing RLL to prevent
@@ -72,8 +72,8 @@ public class ReverseLookupListener extends LivenessArtifact
             }
         }
 
-        private void removeEntries(Index index) {
-            for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+        private void removeEntries(TrackingMutableRowSet rowSet) {
+            for (final TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object keyToReverse = getPrevKey(row);
                 if (ignoreNull && keyToReverse == null) {
@@ -89,8 +89,8 @@ public class ReverseLookupListener extends LivenessArtifact
             }
         }
 
-        private void modifyEntries(Index index) {
-            for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+        private void modifyEntries(TrackingMutableRowSet rowSet) {
+            for (final TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object keyToReverse = getPrevKey(row);
                 final Object newKey = getKey(row);
@@ -237,7 +237,7 @@ public class ReverseLookupListener extends LivenessArtifact
         this.columns = Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
         map = new TObjectLongHashMap<>(2 * source.intSize(), 0.75f, NO_ENTRY_VALUE);
-        try (final ReadOnlyIndex prevIndex = usePrev ? source.getIndex().getPrevIndex() : null) {
+        try (final RowSet prevIndex = usePrev ? source.getIndex().getPrevIndex() : null) {
             addEntries(usePrev ? prevIndex : source.getIndex(), usePrev, () -> {
                 if (source.isRefreshing()) {
                     ConstructSnapshot.failIfConcurrentAttemptInconsistent();
@@ -282,7 +282,7 @@ public class ReverseLookupListener extends LivenessArtifact
     /**
      * Gets the key for a given row.
      * 
-     * @param row the index value to retrieve the key for
+     * @param row the rowSet value to retrieve the key for
      * @return an individual object or SmartKey for multi-column keys
      */
     protected Object getKey(long row) {
@@ -292,16 +292,16 @@ public class ReverseLookupListener extends LivenessArtifact
     /**
      * Gets the previous key for a given row.
      * 
-     * @param row the index value to retrieve the previous key for
+     * @param row the rowSet value to retrieve the previous key for
      * @return an individual object or SmartKey for multi-column keys
      */
     private Object getPrevKey(long row) {
         return TableTools.getPrevKey(columns, row);
     }
 
-    private void addEntries(@NotNull final ReadOnlyIndex index, final boolean usePrev,
-            @NotNull final Runnable consistencyChecker) {
-        for (final ReadOnlyIndex.Iterator it = index.iterator(); it.hasNext();) {
+    private void addEntries(@NotNull final RowSet index, final boolean usePrev,
+                            @NotNull final Runnable consistencyChecker) {
+        for (final RowSet.Iterator it = index.iterator(); it.hasNext();) {
             final long row = it.nextLong();
             final Object keyToReverse = usePrev ? getPrevKey(row) : getKey(row);
             if (ignoreNull && keyToReverse == null) {

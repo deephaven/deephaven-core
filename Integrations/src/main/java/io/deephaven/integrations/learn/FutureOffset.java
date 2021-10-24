@@ -3,7 +3,7 @@ package io.deephaven.integrations.learn;
 import io.deephaven.base.verify.Require;
 
 /**
- * FutureOffset pairs a deferred calculation with an offset, an index that indicates the location in the calculated
+ * FutureOffset pairs a deferred calculation with an offset, an rowSet that indicates the location in the calculated
  * result.
  */
 public class FutureOffset {
@@ -29,7 +29,7 @@ public class FutureOffset {
     /**
      * Gets the offset.
      *
-     * @return the offset, indicating where in the calculated result to find the result for a given row index.
+     * @return the offset, indicating where in the calculated result to find the result for a given row rowSet.
      */
     public int getOffset() {
         return offset;

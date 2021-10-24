@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.SortHelpers;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.RollingReleaseFilter;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
@@ -144,8 +144,8 @@ public class SortBenchmark {
 
         rollingSortTable = inputTable.where(rollingReleaseFilter).sort(sortCol);
 
-        rollingInputIndex = Index.FACTORY.getEmptyIndex();
-        rollingInputTable = (QueryTable) inputTable.getSubTable(rollingInputIndex);
+        rollingInputRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        rollingInputTable = (QueryTable) inputTable.getSubTable(rollingInputRowSet);
         rollingInputTable.setRefreshing(true);
         rollingOutputTable = rollingInputTable.sort(sortCol);
 
@@ -176,7 +176,7 @@ public class SortBenchmark {
         return rollingSortTable;
     }
 
-    private Index rollingInputIndex;
+    private TrackingMutableRowSet rollingInputRowSet;
     private QueryTable rollingInputTable;
     private Table rollingOutputTable;
 
@@ -188,21 +188,21 @@ public class SortBenchmark {
         currStep = (currStep + 1) % numSteps;
 
         ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-        update.added = inputTable.getIndex().subindexByPos(addMarker, addMarker + sizePerStep - 1);
-        update.modified = inputTable.getIndex().subindexByPos(modMarker, modMarker + sizePerStep - 1);
-        update.removed = inputTable.getIndex().subindexByPos(rmMarker, rmMarker + sizePerStep - 1);
-        update.modified.retain(rollingInputIndex);
-        update.removed.retain(rollingInputIndex);
+        update.added = inputTable.getIndex().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
+        update.modified = inputTable.getIndex().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
+        update.removed = inputTable.getIndex().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
+        update.modified.retain(rollingInputRowSet);
+        update.removed.retain(rollingInputRowSet);
         update.modifiedColumnSet = mcsWithoutSortColumn;
         update.shifted = IndexShiftData.EMPTY;
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            rollingInputIndex.update(update.added, update.removed);
+            rollingInputRowSet.update(update.added, update.removed);
             rollingInputTable.notifyListeners(update);
         });
 
-        Assert.eq(rollingOutputTable.getIndex().size(), "rollingOutputTable.getIndex().size()",
-                rollingInputIndex.size(), "rollingInputIndex.size()");
+        Assert.eq(rollingOutputTable.getIndex().size(), "rollingOutputTable.build().size()",
+                rollingInputRowSet.size(), "rollingInputRowSet.size()");
         return rollingOutputTable;
     }
 
@@ -214,21 +214,21 @@ public class SortBenchmark {
         currStep = (currStep + 1) % numSteps;
 
         ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-        update.added = inputTable.getIndex().subindexByPos(addMarker, addMarker + sizePerStep - 1);
-        update.modified = inputTable.getIndex().subindexByPos(modMarker, modMarker + sizePerStep - 1);
-        update.removed = inputTable.getIndex().subindexByPos(rmMarker, rmMarker + sizePerStep - 1);
-        update.modified.retain(rollingInputIndex);
-        update.removed.retain(rollingInputIndex);
+        update.added = inputTable.getIndex().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
+        update.modified = inputTable.getIndex().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
+        update.removed = inputTable.getIndex().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
+        update.modified.retain(rollingInputRowSet);
+        update.removed.retain(rollingInputRowSet);
         update.modifiedColumnSet = mcsWithSortColumn;
         update.shifted = IndexShiftData.EMPTY;
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            rollingInputIndex.update(update.added, update.removed);
+            rollingInputRowSet.update(update.added, update.removed);
             rollingInputTable.notifyListeners(update);
         });
 
-        Assert.eq(rollingOutputTable.getIndex().size(), "rollingOutputTable.getIndex().size()",
-                rollingInputIndex.size(), "rollingInputIndex.size()");
+        Assert.eq(rollingOutputTable.getIndex().size(), "rollingOutputTable.build().size()",
+                rollingInputRowSet.size(), "rollingInputRowSet.size()");
         return rollingOutputTable;
     }
 

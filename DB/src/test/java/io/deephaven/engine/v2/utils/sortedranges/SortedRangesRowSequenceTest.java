@@ -21,7 +21,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
                 throw new IllegalStateException();
             }
         }
-        return new TreeIndex(sar);
+        return new TrackingMutableRowSetImpl(sar);
     }
 
     @Test
@@ -69,7 +69,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAdvanceBugSr() {
-        advanceBug(TreeIndex.makeEmptySr());
+        advanceBug(TrackingMutableRowSetImpl.makeEmptySr());
     }
 
     @Test
@@ -84,7 +84,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
             assertEquals(10, rs2.size());
             final RowSequence rs3 = it.getNextRowSequenceWithLength(10);
             assertEquals(2, rs3.size());
-            final Index ix = rs3.asIndex();
+            final TrackingMutableRowSet ix = rs3.asIndex();
             assertEquals(2, ix.size());
             assertEquals(12, ix.firstRowKey());
             assertEquals(14, ix.lastRowKey());
@@ -125,7 +125,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
                 final String m = "i==" + i;
                 assertEquals(m, 1, rs.size());
                 assertEquals(m, expected[i], rs.firstRowKey());
-                final Index ix = rs.asIndex();
+                final TrackingMutableRowSet ix = rs.asIndex();
                 assertEquals(m, 1, ix.size());
                 ++i;
             }
@@ -145,8 +145,8 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
                 while (rsIt.hasMore()) {
                     final String m2 = m + " && accum==" + accum;
                     final RowSequence rs = rsIt.getNextRowSequenceWithLength(step);
-                    final Index expected = new TreeIndex(sr.ixSubindexByPosOnNew(accum, accum + step));
-                    final Index fromOk = rs.asIndex();
+                    final TrackingMutableRowSet expected = new TrackingMutableRowSetImpl(sr.ixSubindexByPosOnNew(accum, accum + step));
+                    final TrackingMutableRowSet fromOk = rs.asIndex();
                     assertEquals(m2, expected.size(), fromOk.size());
                     assertTrue(m2, expected.subsetOf(fromOk));
                     accum += step;

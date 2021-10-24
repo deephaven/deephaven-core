@@ -10,9 +10,9 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -63,12 +63,12 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public boolean addIndex(final SingletonContext context,
-            @NotNull final Index index,
+            @NotNull final TrackingMutableRowSet rowSet,
             final long destination) {
-        if (index.isEmpty()) {
+        if (rowSet.isEmpty()) {
             return false;
         }
-        redirections.set(destination, index.lastRowKey());
+        redirections.set(destination, rowSet.lastRowKey());
         return true;
     }
 
@@ -80,7 +80,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-            @NotNull final ReadOnlyIndex newDestinations) {
+            @NotNull final RowSet newDestinations) {
         Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
         try (final RowSequence changedDestinations = downstream.modified.union(downstream.added)) {

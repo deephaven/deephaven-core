@@ -3,7 +3,8 @@ package io.deephaven.engine.v2.sort.partition;
 import io.deephaven.engine.util.tuples.generated.CharLongTuple;
 import io.deephaven.engine.v2.sort.timsort.BaseTestCharTimSortKernel;
 import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.List;
@@ -64,16 +65,16 @@ public class CharPartitionKernelBenchmark {
         final Random random = new Random(0);
         final List<CharLongTuple> stuffToSort = generate.generate(random, dataSize);
 
-        final Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         stuffToSort.stream().mapToLong(CharLongTuple::getSecondElement).forEach(sequentialBuilder::appendKey);
-        final Index index = sequentialBuilder.getIndex();
+        final TrackingMutableRowSet rowSet = sequentialBuilder.build();
         final int numPartitionsValue;
         if ("sqrt".equals(numPartitions)) {
             numPartitionsValue = (int) Math.sqrt(stuffToSort.size());
         } else {
             numPartitionsValue = Integer.parseInt(numPartitions);
         }
-        final BaseTestCharTimSortKernel.CharPartitionKernelStuff partitionStuff = new BaseTestCharTimSortKernel.CharPartitionKernelStuff(stuffToSort, index, chunkSize, numPartitionsValue, preserveEquality);
+        final BaseTestCharTimSortKernel.CharPartitionKernelStuff partitionStuff = new BaseTestCharTimSortKernel.CharPartitionKernelStuff(stuffToSort, rowSet, chunkSize, numPartitionsValue, preserveEquality);
         doPartition = partitionStuff::run;
     }
 

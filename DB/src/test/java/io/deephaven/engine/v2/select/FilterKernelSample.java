@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.ShortChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.*;
 import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
@@ -23,7 +23,7 @@ public class FilterKernelSample implements io.deephaven.engine.v2.select.Conditi
     private final float p2;
     private final java.lang.String p3;
 
-    public FilterKernelSample(Table table, Index fullSet, Param... params) {
+    public FilterKernelSample(Table table, TrackingMutableRowSet fullSet, Param... params) {
         this.p1 = (java.lang.Integer) params[0].getValue();
         this.p2 = (java.lang.Float) params[1].getValue();
         this.p3 = (java.lang.String) params[2].getValue();

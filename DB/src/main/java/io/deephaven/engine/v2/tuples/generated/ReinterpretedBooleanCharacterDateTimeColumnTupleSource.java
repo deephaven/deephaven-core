@@ -97,7 +97,7 @@ public class ReinterpretedBooleanCharacterDateTimeColumnTupleSource extends Abst
             writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getThirdElement()));
             return;
         }
-        throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
+        throw new IndexOutOfBoundsException("Invalid element rowSet " + elementIndex + " for export");
     }
 
     @Override

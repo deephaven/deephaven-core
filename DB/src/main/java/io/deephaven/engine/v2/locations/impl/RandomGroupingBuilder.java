@@ -5,7 +5,8 @@
 package io.deephaven.engine.v2.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
@@ -17,9 +18,9 @@ import java.util.Map;
  */
 public class RandomGroupingBuilder<DATA_TYPE> {
 
-    private Map<DATA_TYPE, Index.RandomBuilder> groupToIndexBuilder = new LinkedHashMap<>();
+    private Map<DATA_TYPE, RowSetBuilder> groupToIndexBuilder = new LinkedHashMap<>();
 
-    private Map<DATA_TYPE, Index> groupToIndex;
+    private Map<DATA_TYPE, TrackingMutableRowSet> groupToIndex;
 
     /**
      * Add a mapping from value [firstRowKey, lastRowKey] to the groupings under construction.
@@ -33,23 +34,23 @@ public class RandomGroupingBuilder<DATA_TYPE> {
         Require.eqNull(groupToIndex, "groupToIndex");
         Require.neqNull(groupToIndexBuilder, "groupToIndexBuilder");
 
-        final Index.RandomBuilder indexBuilder =
-                groupToIndexBuilder.computeIfAbsent(value, (k) -> Index.FACTORY.getRandomBuilder());
+        final RowSetBuilder indexBuilder =
+                groupToIndexBuilder.computeIfAbsent(value, (k) -> TrackingMutableRowSet.FACTORY.getRandomBuilder());
         indexBuilder.addRange(firstKey, lastKey);
     }
 
     /**
      * Get the groupings under construction in a form usable by AbstractColumnSource implementations.
      *
-     * @return A mapping from grouping value to its matching Index
+     * @return A mapping from grouping value to its matching TrackingMutableRowSet
      */
-    public Map<DATA_TYPE, Index> getGroupToIndex() {
+    public Map<DATA_TYPE, TrackingMutableRowSet> getGroupToIndex() {
         if (groupToIndex != null) {
             return groupToIndex;
         }
         groupToIndex = new LinkedHashMap<>(groupToIndexBuilder.size() * 4 / 3 + 1);
-        for (Map.Entry<DATA_TYPE, Index.RandomBuilder> entry : groupToIndexBuilder.entrySet()) {
-            groupToIndex.put(entry.getKey(), entry.getValue().getIndex());
+        for (Map.Entry<DATA_TYPE, RowSetBuilder> entry : groupToIndexBuilder.entrySet()) {
+            groupToIndex.put(entry.getKey(), entry.getValue().build());
         }
         groupToIndexBuilder = null;
         return groupToIndex;

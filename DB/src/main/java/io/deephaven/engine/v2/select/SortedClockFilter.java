@@ -7,7 +7,8 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,8 +50,9 @@ public class SortedClockFilter extends ClockFilter {
     }
 
     @Override
-    protected @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection, @NotNull final Index fullSet,
-            @NotNull final Table table) {
+    protected @Nullable
+    TrackingMutableRowSet initializeAndGetInitialIndex(@NotNull final TrackingMutableRowSet selection, @NotNull final TrackingMutableRowSet fullSet,
+                                                       @NotNull final Table table) {
         // External code is required to have sorted according to column before calling this, so we expect the input to
         // be flat. This is not actually a guarantee of the sort() method, but is something that happens to be true
         // because the input table must be historical, and the historical sort implementation uses a
@@ -69,12 +71,13 @@ public class SortedClockFilter extends ClockFilter {
     }
 
     @Override
-    protected @Nullable Index updateAndGetAddedIndex() {
+    protected @Nullable
+    TrackingMutableRowSet updateAndGetAddedIndex() {
         if (range.isEmpty()) {
             return null;
         }
-        final Index.RandomBuilder addedBuilder =
+        final RowSetBuilder addedBuilder =
                 range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeMicros() * 1000L, null);
-        return addedBuilder == null ? null : addedBuilder.getIndex();
+        return addedBuilder == null ? null : addedBuilder.build();
     }
 }

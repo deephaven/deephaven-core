@@ -12,9 +12,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.OrderedChunkUtils;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.LongAbortableConsumer;
-import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
+import io.deephaven.engine.v2.utils.*;
 
 public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
@@ -313,12 +311,12 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     }
 
     @Override
-    public Index asIndex() {
+    public TrackingMutableRowSet asIndex() {
         if (backingChunk.size() == 0) {
-            return Index.FACTORY.getEmptyIndex();
+            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         }
 
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final long chunkFirst = backingChunk.get(0);
         final long chunkLast = backingChunk.get(backingChunk.size() - 1);
         final boolean specialStart = minKeyValue > chunkFirst;
@@ -332,13 +330,13 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         // note it me be true that innerLength < 0 if there is a single range and both min and max keys restrict
         final int innerLength = backingChunk.size() - startOffset - (specialEnd ? 2 : 0);
         if (innerLength > 0) {
-            builder.appendOrderedKeyRangesChunk(backingChunk.slice(startOffset, innerLength));
+            builder.appendOrderedRowKeyRangesChunk(backingChunk.slice(startOffset, innerLength));
         }
         if (specialEnd && backingChunk.size() > 2) {
             builder.appendRange(backingChunk.get(backingChunk.size() - 2),
                     Math.min(maxKeyValue, backingChunk.get(backingChunk.size() - 1)));
         }
-        return builder.getIndex();
+        return builder.build();
     }
 
     @Override
@@ -399,13 +397,13 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
     @Override
     public long firstRowKey() {
-        return backingChunk.size() == 0 ? Index.NULL_KEY : Math.max(minKeyValue, backingChunk.get(0));
+        return backingChunk.size() == 0 ? TrackingMutableRowSet.NULL_ROW_KEY : Math.max(minKeyValue, backingChunk.get(0));
     }
 
     @Override
     public long lastRowKey() {
         final int sz = backingChunk.size();
-        return sz == 0 ? Index.NULL_KEY : Math.min(maxKeyValue, backingChunk.get(sz - 1));
+        return sz == 0 ? TrackingMutableRowSet.NULL_ROW_KEY : Math.min(maxKeyValue, backingChunk.get(sz - 1));
     }
 
     @Override

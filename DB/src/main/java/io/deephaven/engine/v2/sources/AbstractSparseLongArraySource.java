@@ -11,7 +11,8 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
@@ -76,11 +77,11 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region serialization
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final Index.SequentialBuilder sb = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder sb = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         blocks.enumerate(NULL_LONG, sb::appendKey);
-        final Index index = sb.getIndex();
+        final TrackingMutableRowSet rowSet = sb.build();
 
-        final int size = index.intSize();
+        final int size = rowSet.intSize();
         final long[] data = (long[])new long[size];
         // noinspection unchecked
         final ColumnSource<T> reinterpreted = (ColumnSource<T>) reinterpretForSerialization();
@@ -88,22 +89,22 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
              final ResettableWritableLongChunk<Values> destChunk = ResettableWritableLongChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
             // noinspection unchecked
-            reinterpreted.fillChunk(context, destChunk, index);
+            reinterpreted.fillChunk(context, destChunk, rowSet);
         }
-        out.writeObject(index);
+        out.writeObject(rowSet);
         out.writeObject(data);
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         blocks = new LongOneOrN.Block0();
 
-        final Index index = (Index)in.readObject();
+        final TrackingMutableRowSet rowSet = (TrackingMutableRowSet)in.readObject();
         final long[] data = (long[])in.readObject();
         final LongChunk<Values> srcChunk = LongChunk.chunkWrap(data);
         // noinspection unchecked
         final WritableSource<Long> reinterpreted = (WritableSource<Long>) reinterpretForSerialization();
-        try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
-            reinterpreted.fillFromChunk(context, srcChunk, index);
+        try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
+            reinterpreted.fillFromChunk(context, srcChunk, rowSet);
         }
     }
     // endregion serialization
@@ -133,8 +134,8 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     }
 
     @Override
-    public void shift(final Index keysToShift, final long shiftDelta) {
-        final Index.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
+    public void shift(final TrackingMutableRowSet keysToShift, final long shiftDelta) {
+        final TrackingMutableRowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, getLong(i));
             set(i, NULL_LONG);
@@ -143,7 +144,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     }
 
     @Override
-    public void remove(Index toRemove) {
+    public void remove(TrackingMutableRowSet toRemove) {
         toRemove.forEachLong((i) -> { set(i, NULL_LONG); return true; });
     }
 
@@ -370,7 +371,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     /**
     * Decides whether to record the previous value.
-    * @param key the index to record
+    * @param key the rowSet to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -494,7 +495,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final WritableLongChunk<? super Values> longChunk = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == Index.NULL_KEY) {
+            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                 longChunk.set(ii++, NULL_LONG);
                 continue;
             }
@@ -528,7 +529,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final WritableLongChunk<? super Values> longChunk = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == Index.NULL_KEY) {
+            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                 longChunk.set(ii++, NULL_LONG);
                 continue;
             }

@@ -4,8 +4,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class IndexTest {
-    private static class FakeIterator implements Index.Iterator {
+public class TrackingMutableRowSetTest {
+    private static class FakeIterator implements TrackingMutableRowSet.Iterator {
         long curr = 10;
 
         @Override
@@ -24,13 +24,13 @@ public class IndexTest {
 
     @Test
     public void testNegReturnValueIteratorForEach() {
-        final Index.Iterator it = new FakeIterator();
+        final TrackingMutableRowSet.Iterator it = new FakeIterator();
         assertFalse(it.forEachLong((v) -> false));
     }
 
     @Test
     public void testPosReturnValueIteratorForEach() {
-        final Index.Iterator it = new FakeIterator();
+        final TrackingMutableRowSet.Iterator it = new FakeIterator();
         assertTrue(it.forEachLong((v) -> true));
     }
 }

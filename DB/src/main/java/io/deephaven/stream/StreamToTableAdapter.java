@@ -18,7 +18,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunkcolumnsource.ChunkColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -44,7 +44,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private final String name;
 
     private final QueryTable table;
-    private final Index index;
+    private final TrackingMutableRowSet rowSet;
     private final SwitchColumnSource<?>[] switchSources;
 
     /** To start out when we have no data, we use null value column sources which are cheap and singletons. */
@@ -81,9 +81,9 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         final LinkedHashMap<String, ColumnSource<?>> visibleSources = new LinkedHashMap<>();
         switchSources = makeSwitchSources(tableDefinition, nullColumnSources, visibleSources);
 
-        index = Index.FACTORY.getEmptyIndex();
+        rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
 
-        table = new QueryTable(index, visibleSources) {
+        table = new QueryTable(rowSet, visibleSources) {
             {
                 setFlat();
                 setRefreshing(true);
@@ -119,9 +119,9 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     /**
-     * Return the ChunkType for a given column index.
+     * Return the ChunkType for a given column rowSet.
      *
-     * @param idx the column index to get the ChunkType for
+     * @param idx the column rowSet to get the ChunkType for
      * @return the ChunkType for the specified column
      */
     public ChunkType chunkTypeForIndex(int idx) {
@@ -291,9 +291,9 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         }
 
         streamPublisher.flush();
-        // Switch columns, update index, deliver notification
+        // Switch columns, update rowSet, deliver notification
 
-        final long oldSize = index.size();
+        final long oldSize = rowSet.size();
         final long newSize;
 
         final ChunkColumnSource<?>[] capturedBufferSources;
@@ -323,13 +323,13 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         currentChunkSources = capturedBufferSources;
 
         if (oldSize < newSize) {
-            index.insertRange(oldSize, newSize - 1);
+            rowSet.insertRange(oldSize, newSize - 1);
         } else if (oldSize > newSize) {
-            index.removeRange(newSize, oldSize - 1);
+            rowSet.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(new ShiftAwareListener.Update(Index.CURRENT_FACTORY.getFlatIndex(newSize),
-                Index.CURRENT_FACTORY.getFlatIndex(oldSize), Index.CURRENT_FACTORY.getEmptyIndex(),
+        table.notifyListeners(new ShiftAwareListener.Update(TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(newSize),
+                TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(oldSize), TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(),
                 IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }
 

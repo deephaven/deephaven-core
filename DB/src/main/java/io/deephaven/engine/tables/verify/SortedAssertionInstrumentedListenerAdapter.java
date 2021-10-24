@@ -10,10 +10,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 
 public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftAwareListenerImpl {
     private static final int CHUNK_SIZE = 1 << 16;
@@ -21,7 +19,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
     private final String column;
     private final SortingOrder order;
     private final ModifiedColumnSet parentColumnSet;
-    private final Index parentIndex;
+    private final TrackingMutableRowSet parentRowSet;
     private final ColumnSource<?> parentColumnSource;
     private final SortCheck sortCheck;
 
@@ -36,7 +34,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
         this.description = description;
         this.column = columnName;
         this.order = order;
-        parentIndex = parent.getIndex();
+        parentRowSet = parent.getIndex();
         parentColumnSource = parent.getColumnSource(columnName);
         parentColumnSet = parent.newModifiedColumnSet(columnName);
         sortCheck = SortCheck.make(parentColumnSource.getChunkType(), order == SortingOrder.Descending);
@@ -47,23 +45,23 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
         final boolean modifiedRows =
                 upstream.modified.nonempty() && upstream.modifiedColumnSet.containsAny(parentColumnSet);
         if (upstream.added.nonempty() || modifiedRows) {
-            final Index rowsOfInterest = modifiedRows ? upstream.added.union(upstream.modified) : upstream.added;
-            try (final Index ignored = modifiedRows ? rowsOfInterest : null;
-                    final Index toProcess = makeAdjacentIndex(rowsOfInterest)) {
-                Assert.assertion(toProcess.subsetOf(parentIndex), "toProcess.subsetOf(parentIndex)",
-                        makeAdjacentIndex(rowsOfInterest), "toProcess", parentIndex, "parentIndex");
+            final TrackingMutableRowSet rowsOfInterest = modifiedRows ? upstream.added.union(upstream.modified) : upstream.added;
+            try (final TrackingMutableRowSet ignored = modifiedRows ? rowsOfInterest : null;
+                 final TrackingMutableRowSet toProcess = makeAdjacentIndex(rowsOfInterest)) {
+                Assert.assertion(toProcess.subsetOf(parentRowSet), "toProcess.subsetOf(parentRowSet)",
+                        makeAdjacentIndex(rowsOfInterest), "toProcess", parentRowSet, "parentRowSet");
                 doCheck(toProcess);
             }
         }
         super.onUpdate(upstream);
     }
 
-    private void doCheck(Index toProcess) {
+    private void doCheck(TrackingMutableRowSet toProcess) {
         doCheckStatic(toProcess, parentColumnSource, sortCheck, description, column, order);
     }
 
-    public static void doCheckStatic(Index toProcess, ColumnSource<?> parentColumnSource, SortCheck sortCheck,
-            String description, String column, SortingOrder order) {
+    public static void doCheckStatic(TrackingMutableRowSet toProcess, ColumnSource<?> parentColumnSource, SortCheck sortCheck,
+                                     String description, String column, SortingOrder order) {
         final int contextSize = (int) Math.min(CHUNK_SIZE, toProcess.size());
 
         try (final ChunkSource.GetContext getContext = parentColumnSource.makeGetContext(contextSize);
@@ -83,12 +81,12 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
         }
     }
 
-    private Index makeAdjacentIndex(Index rowsOfInterest) {
-        try (final Index inverted = parentIndex.invert(rowsOfInterest)) {
-            final Index.SequentialBuilder processBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
-            long lastPosition = parentIndex.size() - 1;
+    private TrackingMutableRowSet makeAdjacentIndex(TrackingMutableRowSet rowsOfInterest) {
+        try (final TrackingMutableRowSet inverted = parentRowSet.invert(rowsOfInterest)) {
+            final SequentialRowSetBuilder processBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+            long lastPosition = parentRowSet.size() - 1;
             long lastUsedPosition = 0;
-            for (ReadOnlyIndex.RangeIterator rangeIterator = inverted.rangeIterator(); rangeIterator.hasNext();) {
+            for (RowSet.RangeIterator rangeIterator = inverted.rangeIterator(); rangeIterator.hasNext();) {
                 rangeIterator.next();
                 long start = rangeIterator.currentRangeStart();
                 long end = rangeIterator.currentRangeEnd();
@@ -103,8 +101,8 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
                 processBuilder.appendRange(start, end);
                 lastUsedPosition = end;
             }
-            try (final Index positions = processBuilder.getIndex()) {
-                return parentIndex.subindexByPos(positions);
+            try (final TrackingMutableRowSet positions = processBuilder.build()) {
+                return parentRowSet.subSetForPositions(positions);
             }
         }
     }

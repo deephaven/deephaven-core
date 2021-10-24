@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.tables.live.NotificationQueue;
 
 /**
- * Common base class for index update notifications.
+ * Common base class for rowSet update notifications.
  */
 public abstract class AbstractIndexUpdateNotification extends AbstractNotification
         implements NotificationQueue.IndexUpdateNotification {

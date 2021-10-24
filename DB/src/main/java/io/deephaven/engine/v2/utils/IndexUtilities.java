@@ -10,11 +10,11 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 public class IndexUtilities {
-    static String toString(Index index, int maxNodes) {
+    static String toString(RowSet rowSet, int maxNodes) {
         int count = 0;
         final StringBuilder result = new StringBuilder("{");
         boolean isFirst = true;
-        try (final Index.RangeIterator it = index.rangeIterator()) {
+        try (final TrackingMutableRowSet.RangeIterator it = rowSet.rangeIterator()) {
             while (it.hasNext()) {
                 it.next();
                 result.append(isFirst ? "" : ",").append(it.currentRangeStart())
@@ -30,7 +30,7 @@ public class IndexUtilities {
         return result.toString();
     }
 
-    public static void fillKeyIndicesChunk(final ReadOnlyIndex index,
+    public static void fillKeyIndicesChunk(final RowSet index,
             final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
         chunkToFill.setSize(0); // so that we can actually add from the beginning.
         index.forEachLong((final long v) -> {
@@ -39,7 +39,7 @@ public class IndexUtilities {
         });
     }
 
-    public static void fillKeyRangesChunk(final ReadOnlyIndex index,
+    public static void fillKeyRangesChunk(final RowSet index,
             final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
         index.forAllLongRanges((final long start, final long end) -> {
@@ -48,7 +48,7 @@ public class IndexUtilities {
         });
     }
 
-    static TLongArrayList[] findMissing(final ReadOnlyIndex base, final ReadOnlyIndex keys) {
+    static TLongArrayList[] findMissing(final RowSet base, final RowSet keys) {
         final TLongArrayList indices = new TLongArrayList();
         final TLongArrayList counts = new TLongArrayList();
 
@@ -56,7 +56,7 @@ public class IndexUtilities {
         long currentCount = 0;
         long lastPos = -2;
 
-        for (final Index.RangeIterator iterator = keys.rangeIterator(); iterator.hasNext();) {
+        for (final TrackingMutableRowSet.RangeIterator iterator = keys.rangeIterator(); iterator.hasNext();) {
             iterator.next();
             final long currentRangeStart = iterator.currentRangeStart();
 
@@ -76,7 +76,7 @@ public class IndexUtilities {
         return new TLongArrayList[] {indices, counts};
     }
 
-    public static LogOutput append(final LogOutput logOutput, final Index.RangeIterator it) {
+    public static LogOutput append(final LogOutput logOutput, final TrackingMutableRowSet.RangeIterator it) {
         int count = 0;
         logOutput.append("{");
         boolean isFirst = true;
@@ -103,9 +103,9 @@ public class IndexUtilities {
         return logOutput;
     }
 
-    static boolean equalsDeepImpl(final ReadOnlyIndex index, final ReadOnlyIndex other) {
-        final Index.RangeIterator it1 = other.rangeIterator();
-        final Index.RangeIterator it2 = index.rangeIterator();
+    static boolean equalsDeepImpl(final RowSet index, final RowSet other) {
+        final TrackingMutableRowSet.RangeIterator it1 = other.rangeIterator();
+        final TrackingMutableRowSet.RangeIterator it2 = index.rangeIterator();
         while (it1.hasNext() && it2.hasNext()) {
             it1.next();
             it2.next();
@@ -116,12 +116,12 @@ public class IndexUtilities {
         return !(it1.hasNext() || it2.hasNext());
     }
 
-    static boolean equals(final ReadOnlyIndex index, final Object other) {
-        if (!(other instanceof ReadOnlyIndex)) {
+    static boolean equals(final RowSet index, final Object other) {
+        if (!(other instanceof TrackingMutableRowSet)) {
             return false;
         }
-        final ReadOnlyIndex otherIndex = (ReadOnlyIndex) other;
-        return index.size() == otherIndex.size() && IndexUtilities.equalsDeepImpl(index, otherIndex);
+        final TrackingMutableRowSet otherRowSet = (TrackingMutableRowSet) other;
+        return index.size() == otherRowSet.size() && IndexUtilities.equalsDeepImpl(index, otherRowSet);
     }
 
     public interface Comparator {
@@ -177,21 +177,21 @@ public class IndexUtilities {
     }
 
     /**
-     * This is equivalent to `sourceIndex.invert(destIndex).forAllLongRanges(lrc)`, but requires O(1) space. Note that
+     * This is equivalent to `sourceRowSet.invert(destRowSet).forAllLongRanges(lrc)`, but requires O(1) space. Note that
      * coalescing adjacent position-space runs enables callers to make minimal System.arraycopy calls.
      *
-     * @param sourceIndex index to find the destIndex keys in - ranges in the callback will be on this index
-     * @param destIndex index values to look for within sourceIndex
+     * @param sourceRowSet rowSet to find the destRowSet keys in - ranges in the callback will be on this rowSet
+     * @param destRowSet rowSet values to look for within sourceRowSet
      * @param lrc consumer to handle each inverted range that is encountered
      */
-    public static void forAllInvertedLongRanges(final Index sourceIndex, final Index destIndex,
-            final LongRangeConsumer lrc) {
+    public static void forAllInvertedLongRanges(final TrackingMutableRowSet sourceRowSet, final TrackingMutableRowSet destRowSet,
+                                                final LongRangeConsumer lrc) {
         final MutableBoolean hasPending = new MutableBoolean();
-        final MutableLong pendingStart = new MutableLong(Index.NULL_KEY);
-        final MutableLong pendingEnd = new MutableLong(Index.NULL_KEY);
-        final RowSequence.Iterator sourceProbe = sourceIndex.getRowSequenceIterator();
+        final MutableLong pendingStart = new MutableLong(TrackingMutableRowSet.NULL_ROW_KEY);
+        final MutableLong pendingEnd = new MutableLong(TrackingMutableRowSet.NULL_ROW_KEY);
+        final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
-        destIndex.forAllLongRanges((start, end) -> {
+        destRowSet.forAllLongRanges((start, end) -> {
             final long sourceStart = sourceOffset.getValue() + sourceProbe.advanceAndGetPositionDistance(start);
             final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
             if (!hasPending.booleanValue()) {

@@ -8,6 +8,8 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -23,7 +25,6 @@ import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
@@ -183,7 +184,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     public void init(TableDefinition tableDefinition) {}
 
     @Override
-    public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -240,19 +241,19 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         throw Assert.statementNeverExecuted();
     }
 
-    private Index filterGrouping(Index selection, TupleSource tupleSource) {
-        final Index matchingKeys = selection.getSubIndexForKeySet(liveValues, tupleSource);
+    private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, TupleSource tupleSource) {
+        final TrackingMutableRowSet matchingKeys = selection.getSubIndexForKeySet(liveValues, tupleSource);
         return inclusion ? matchingKeys : selection.minus(matchingKeys);
     }
 
-    private Index filterGrouping(Index selection, Table table) {
+    private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, Table table) {
         final ColumnSource[] keyColumns =
                 Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         return filterGrouping(selection, tupleSource);
     }
 
-    private Index filterLinear(Index selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
+    private TrackingMutableRowSet filterLinear(TrackingMutableRowSet selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
         if (keyColumns.length == 1) {
             return filterLinearOne(selection, keyColumns[0]);
         } else {
@@ -260,9 +261,9 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         }
     }
 
-    private Index filterLinearOne(Index selection, ColumnSource keyColumn) {
+    private TrackingMutableRowSet filterLinearOne(TrackingMutableRowSet selection, ColumnSource keyColumn) {
         if (selection.empty()) {
-            return Index.FACTORY.getEmptyIndex();
+            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         }
 
         if (!kernelValid) {
@@ -270,7 +271,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
             kernelValid = true;
         }
 
-        final Index.SequentialBuilder indexBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
         try (final ColumnSource.GetContext getContext = keyColumn.makeGetContext(CHUNK_SIZE);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
@@ -296,13 +297,13 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         }
 
 
-        return indexBuilder.getIndex();
+        return indexBuilder.build();
     }
 
-    private Index filterLinearTuple(Index selection, TupleSource tupleSource) {
-        final Index.SequentialBuilder indexBuilder = Index.FACTORY.getSequentialBuilder();
+    private TrackingMutableRowSet filterLinearTuple(TrackingMutableRowSet selection, TupleSource tupleSource) {
+        final SequentialRowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
-        for (final Index.Iterator it = selection.iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = selection.iterator(); it.hasNext();) {
             final long row = it.nextLong();
             final Object tuple = tupleSource.createTuple(row);
             if (liveValues.contains(tuple) == inclusion) {
@@ -310,7 +311,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
             }
         }
 
-        return indexBuilder.getIndex();
+        return indexBuilder.build();
     }
 
     @Override

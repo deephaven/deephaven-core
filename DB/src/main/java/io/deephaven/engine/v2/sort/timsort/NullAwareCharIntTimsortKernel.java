@@ -587,8 +587,8 @@ public class NullAwareCharIntTimsortKernel {
 //            }
 //            else if (newCheck == lastCheck) {
 //                if (indexKeys.get(jj) < indexKeys.get(jj - 1)) {
-//                    dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
-//                    dumpKeys(indexKeys, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
+//                    dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad rowSet loop at " + jj);
+//                    dumpKeys(indexKeys, startCheck, mergeEnd - startCheck, "Bad rowSet loop at " + jj);
 //                    throw new IllegalStateException();
 //                }
 //            }

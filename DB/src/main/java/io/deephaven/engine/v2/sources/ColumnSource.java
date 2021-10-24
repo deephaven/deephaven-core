@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.tuples.TupleSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +21,7 @@ import java.util.Map;
  * A "source" for column data - allows cell values to be looked up by (long) keys.
  *
  * <p>
- * Note for implementors: All {@link ColumnSource} implementations must map {@link Index#NULL_KEY} to a null value for
+ * Note for implementors: All {@link ColumnSource} implementations must map {@link TrackingMutableRowSet#NULL_ROW_KEY} to a null value for
  * all {@code get} and {@code getPrev} methods.
  */
 public interface ColumnSource<T>
@@ -42,9 +42,9 @@ public interface ColumnSource<T>
         return ChunkType.fromElementType(dataType);
     }
 
-    Index match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, Index mapper, final Object... keys);
+    TrackingMutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, TrackingMutableRowSet mapper, final Object... keys);
 
-    Map<T, Index> getValuesMapping(Index subRange);
+    Map<T, TrackingMutableRowSet> getValuesMapping(TrackingMutableRowSet subRange);
 
     /**
      * ColumnSource implementations that track previous values have the option to not actually start tracking previous
@@ -63,22 +63,22 @@ public interface ColumnSource<T>
     /**
      * Compute grouping information for all keys present in this column source.
      *
-     * @return A map from distinct data values to an index that contains those values
+     * @return A map from distinct data values to an rowSet that contains those values
      */
-    Map<T, Index> getGroupToRange();
+    Map<T, TrackingMutableRowSet> getGroupToRange();
 
     /**
-     * Compute grouping information for (at least) all keys present in index.
+     * Compute grouping information for (at least) all keys present in rowSet.
      *
-     * @param index The index to consider
-     * @return A map from distinct data values to an index that contains those values
+     * @param rowSet The rowSet to consider
+     * @return A map from distinct data values to an rowSet that contains those values
      */
-    Map<T, Index> getGroupToRange(Index index);
+    Map<T, TrackingMutableRowSet> getGroupToRange(TrackingMutableRowSet rowSet);
 
     /**
-     * Determine if this column source is immutable, meaning that the values at a given index key never change.
+     * Determine if this column source is immutable, meaning that the values at a given rowSet key never change.
      *
-     * @return true if the values at a given index of the column source never change, false otherwise
+     * @return true if the values at a given rowSet of the column source never change, false otherwise
      */
     boolean isImmutable();
 

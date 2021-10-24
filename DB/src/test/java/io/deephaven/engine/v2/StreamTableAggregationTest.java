@@ -7,7 +7,7 @@ import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.ShiftAwareListener.Update;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import io.deephaven.engine.v2.utils.WrappedIndexRedirectionIndexImpl;
@@ -49,32 +49,32 @@ public class StreamTableAggregationTest {
      * Execute a table operator ending in an aggregation.
      *
      * @param operator The operator to apply
-     * @param windowed Whether the stream table index should be a sliding window (if {@code true}) or zero-based (if
+     * @param windowed Whether the stream table rowSet should be a sliding window (if {@code true}) or zero-based (if
      *        {@code false})
      */
     private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed) {
-        final QueryTable normal = new QueryTable(Index.FACTORY.getEmptyIndex(), source.getColumnSourceMap());
+        final QueryTable normal = new QueryTable(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), source.getColumnSourceMap());
         normal.setRefreshing(true);
 
         final QueryTable addOnly = (QueryTable) normal.copy();
         addOnly.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
 
-        final Index streamInternalIndex;
+        final TrackingMutableRowSet streamInternalRowSet;
         final Map<String, ? extends ColumnSource<?>> streamSources;
         if (windowed) {
-            streamInternalIndex = null;
+            streamInternalRowSet = null;
             streamSources = source.getColumnSourceMap();
         } else {
-            // Redirecting so we can present a zero-based Index from the stream table
-            streamInternalIndex = Index.FACTORY.getEmptyIndex();
-            final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalIndex);
+            // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
+            streamInternalRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
                     (entry -> new ReadOnlyRedirectedColumnSource<>(streamRedirections, entry.getValue())),
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }
-        final QueryTable stream = new QueryTable(Index.FACTORY.getEmptyIndex(), streamSources);
+        final QueryTable stream = new QueryTable(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), streamSources);
         stream.setRefreshing(true);
         stream.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 
@@ -93,37 +93,37 @@ public class StreamTableAggregationTest {
 
         int step = 0;
         long usedSize = 0;
-        Index streamLastInserted = Index.CURRENT_FACTORY.getEmptyIndex();
+        TrackingMutableRowSet streamLastInserted = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
-            final Index normalStepInserted = refreshSize == 0
-                    ? Index.CURRENT_FACTORY.getEmptyIndex()
-                    : Index.CURRENT_FACTORY.getIndexByRange(usedSize, usedSize + refreshSize - 1);
-            final Index streamStepInserted = streamInternalIndex == null ? normalStepInserted
+            final TrackingMutableRowSet normalStepInserted = refreshSize == 0
+                    ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()
+                    : TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(usedSize, usedSize + refreshSize - 1);
+            final TrackingMutableRowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted
                     : refreshSize == 0
-                            ? Index.CURRENT_FACTORY.getEmptyIndex()
-                            : Index.CURRENT_FACTORY.getIndexByRange(0, refreshSize - 1);
+                            ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()
+                            : TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, refreshSize - 1);
 
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             try {
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (normalStepInserted.nonempty()) {
                         normal.getIndex().insert(normalStepInserted);
-                        normal.notifyListeners(new Update(normalStepInserted, Index.CURRENT_FACTORY.getEmptyIndex(),
-                                Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                        normal.notifyListeners(new Update(normalStepInserted, TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(),
+                                TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
-                final Index finalStreamLastInserted = streamLastInserted;
+                final TrackingMutableRowSet finalStreamLastInserted = streamLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (streamStepInserted.nonempty() || finalStreamLastInserted.nonempty()) {
-                        if (streamInternalIndex != null) {
-                            streamInternalIndex.clear();
-                            streamInternalIndex.insert(normalStepInserted);
+                        if (streamInternalRowSet != null) {
+                            streamInternalRowSet.clear();
+                            streamInternalRowSet.insert(normalStepInserted);
                         }
                         stream.getIndex().clear();
                         stream.getIndex().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted,
-                                Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                                TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
             } finally {

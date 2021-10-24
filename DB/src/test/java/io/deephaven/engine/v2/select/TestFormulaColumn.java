@@ -661,7 +661,7 @@ public class TestFormulaColumn {
      *
      * @param formulaString The formula to check
      * @param expectedResult The expected result. Must be a boxed type (e.g. {@link Integer}, {@link Character}, etc.
-     * @param index The index to check
+     * @param index The rowSet to check
      */
     private void checkPrimitive(int index, String formulaString, Object expectedResult) {
         Class<?> unboxedType = expectedResult == null ? null : TypeUtils.getUnboxedType(expectedResult.getClass());
@@ -694,7 +694,7 @@ public class TestFormulaColumn {
     }
 
     /**
-     * @param index The index of {@link #testDataTable} at which {@code formulaString} should be evaluateds
+     * @param index The rowSet of {@link #testDataTable} at which {@code formulaString} should be evaluateds
      * @param exceptionTypeToExpect Expect an exception of this type, and not of any other (i.e. runtime or compilation)
      *        exception. If null, any {@code Exception} is expected.
      * @param formulaString The formula to evaluate

@@ -115,7 +115,7 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
      */
     private static final long BASELINE_KEY_NOT_FOUND = -1L;
     static {
-        Assert.eq(BASELINE_KEY_NOT_FOUND, "BASELINE_KEY_NOT_FOUND", Index.NULL_KEY, "Index.NULL_KEY");
+        Assert.eq(BASELINE_KEY_NOT_FOUND, "BASELINE_KEY_NOT_FOUND", TrackingMutableRowSet.NULL_ROW_KEY, "TrackingMutableRowSet.NULL_KEY");
     }
     private static final long UPDATES_KEY_NOT_FOUND = -2L;
 

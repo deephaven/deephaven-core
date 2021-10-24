@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.join.stamp;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 
 public class IntNoExactReverseStampKernel implements StampKernel {
@@ -22,7 +22,7 @@ public class IntNoExactReverseStampKernel implements StampKernel {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {
-            leftRedirections.fillWithValue(0, leftSize, Index.NULL_KEY);
+            leftRedirections.fillWithValue(0, leftSize, TrackingMutableRowSet.NULL_ROW_KEY);
             leftRedirections.setSize(leftSize);
             return;
         }
@@ -35,7 +35,7 @@ public class IntNoExactReverseStampKernel implements StampKernel {
         for (int li = 0; li < leftSize; ) {
             final int leftValue = leftStamps.get(li);
             if (leq(leftValue, rightLowValue)) {
-                leftRedirections.set(li++, Index.NULL_KEY);
+                leftRedirections.set(li++, TrackingMutableRowSet.NULL_ROW_KEY);
                 continue;
             }
 

@@ -192,9 +192,9 @@ public class ColumnsToRowsTransform {
             }
         }
 
-        final Index resultIndex = transformIndex(source.getIndex(), fanout, fanoutPow2);
+        final TrackingMutableRowSet resultRowSet = transformIndex(source.getIndex(), fanout, fanoutPow2);
 
-        final QueryTable result = new QueryTable(resultIndex, resultMap);
+        final QueryTable result = new QueryTable(resultRowSet, resultMap);
 
         if (source.isLive()) {
             final DynamicTable dynamicSource = (DynamicTable) source;
@@ -271,10 +271,10 @@ public class ColumnsToRowsTransform {
                             }
                         }
                     } else {
-                        downstream.modified = Index.FACTORY.getEmptyIndex();
+                        downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                     }
 
-                    resultIndex.remove(downstream.removed);
+                    resultRowSet.remove(downstream.removed);
 
                     if (upstream.shifted.empty()) {
                         downstream.shifted = IndexShiftData.EMPTY;
@@ -290,11 +290,11 @@ public class ColumnsToRowsTransform {
                         }
 
                         downstream.shifted = shiftBuilder.build();
-                        downstream.shifted.apply(resultIndex);
+                        downstream.shifted.apply(resultRowSet);
                     }
 
 
-                    resultIndex.insert(downstream.added);
+                    resultRowSet.insert(downstream.added);
 
                     transformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
                     result.notifyListeners(downstream);
@@ -305,23 +305,23 @@ public class ColumnsToRowsTransform {
         return result;
     }
 
-    private static Index transformIndex(final Index index, final int fanout, final int fanoutPow2) {
-        final Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
-        index.forAllLongs(idx -> sequentialBuilder.appendRange(idx * fanoutPow2, idx * fanoutPow2 + fanout - 1));
-        return sequentialBuilder.getIndex();
+    private static TrackingMutableRowSet transformIndex(final TrackingMutableRowSet rowSet, final int fanout, final int fanoutPow2) {
+        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        rowSet.forAllLongs(idx -> sequentialBuilder.appendRange(idx * fanoutPow2, idx * fanoutPow2 + fanout - 1));
+        return sequentialBuilder.build();
     }
 
-    private static Index transformIndex(final Index index, final int fanoutPow2, final boolean[] rowModified,
-            final int maxModified) {
-        final Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
-        index.forAllLongs(idx -> {
+    private static TrackingMutableRowSet transformIndex(final TrackingMutableRowSet rowSet, final int fanoutPow2, final boolean[] rowModified,
+                                                        final int maxModified) {
+        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        rowSet.forAllLongs(idx -> {
             for (int ii = 0; ii <= maxModified; ++ii) {
                 if (rowModified[ii]) {
                     sequentialBuilder.appendKey(idx * fanoutPow2 + ii);
                 }
             }
         });
-        return sequentialBuilder.getIndex();
+        return sequentialBuilder.build();
     }
 
     private static class LabelColumnSource extends AbstractColumnSource.DefaultedImmutable<String> {

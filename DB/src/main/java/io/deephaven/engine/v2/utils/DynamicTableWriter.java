@@ -333,7 +333,7 @@ public class DynamicTableWriter implements TableWriter {
     private DynamicTableWriter(final Map<String, ColumnSource<?>> sources, final Map<String, Object> constantValues,
             final int allocatedSize) {
         this.allocatedSize = 256;
-        this.table = new LiveQueryTable(Index.FACTORY.getIndexByValues(), sources);
+        this.table = new LiveQueryTable(TrackingMutableRowSet.FACTORY.getRowSetByValues(), sources);
         final int nCols = sources.size();;
         this.columnNames = new String[nCols];
         this.arrayColumnSources = new ArrayBackedColumnSource[nCols];
@@ -705,7 +705,7 @@ public class DynamicTableWriter implements TableWriter {
             ensureCapacity(row);
             setterMap.values().forEach((x) -> x.setRow(row));
 
-            // The row has been committed during set, we just need to insert the index into the table
+            // The row has been committed during set, we just need to insert the rowSet into the table
             if (doFlush) {
                 DynamicTableWriter.this.addRangeToTableIndex(lastCommittedRow + 1, row);
                 lastCommittedRow = row;

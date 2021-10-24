@@ -59,11 +59,11 @@ public class SequentialIndexBuilderBench {
 
     @Benchmark
     public void b01_buildAndPopulateWithSequentialBuilderKeyIndices(final Blackhole bh) {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (int i = 0; i < sz; ++i) {
             b.appendKey(values[i]);
         }
-        bh.consume(b.getIndex());
+        bh.consume(b.build());
     }
 
     @Benchmark
@@ -79,12 +79,12 @@ public class SequentialIndexBuilderBench {
 
     @Benchmark
     public void c01_buildAndPopulateWithSequentialBuilderKeyRanges(final Blackhole bh) {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (int i = 0; i < sz; ++i) {
             final long v = values[i];
             b.appendRange(v, v + rangeStep);
         }
-        bh.consume(b.getIndex());
+        bh.consume(b.build());
     }
 
     public static void main(String[] args) throws RunnerException {

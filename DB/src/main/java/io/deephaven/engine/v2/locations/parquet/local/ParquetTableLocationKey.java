@@ -33,7 +33,7 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
      * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
      *
      * @param file The parquet file that backs the keyed location. Will be adjusted to an absolute path.
-     * @param order Explicit ordering index, taking precedence over other fields
+     * @param order Explicit ordering rowSet, taking precedence over other fields
      * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
      *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
      *        be made, so the calling code is free to mutate the map after this call

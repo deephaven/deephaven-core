@@ -117,7 +117,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     }
 
     @Override
-    public Index asIndex() {
+    public TrackingMutableRowSet asIndex() {
         return wrappedOK.asIndex().shift(shiftAmount);
     }
 

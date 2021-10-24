@@ -14,7 +14,7 @@ import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +31,7 @@ import java.util.Collection;
  *
  * <p>
  * To store the blocks, we use a multi-level page table like structure. Each entry that exists is complete, i.e. we
- * never reallocate partial blocks, we always allocate the complete block. The index key is divided as follows:
+ * never reallocate partial blocks, we always allocate the complete block. The rowSet key is divided as follows:
  * </p>
  * <table>
  * <tr>
@@ -55,7 +55,7 @@ import java.util.Collection;
  * <td>25-8</td>
  * </tr>
  * <tr>
- * <td>Index Within Block</td>
+ * <td>TrackingMutableRowSet Within Block</td>
  * <td>8</td>
  * <td>7-0</td>
  * </tr>
@@ -113,7 +113,7 @@ public abstract class SparseArrayColumnSource<T>
     // the bitset size (64), so we have the additional constraint that LOG_BLOCK_SIZE >= LOG_INUSE_BITSET_SIZE.
 
     static {
-        // we must completely use the 63-bit address space of index keys (negative numbers are defined to be null)
+        // we must completely use the 63-bit address space of rowSet keys (negative numbers are defined to be null)
         Assert.eq(LOG_BLOCK_SIZE + LOG_BLOCK0_SIZE + LOG_BLOCK1_SIZE + LOG_BLOCK2_SIZE,
                 "LOG_BLOCK_SIZE + LOG_BLOCK0_SIZE + LOG_BLOCK1_SIZE + LOG_BLOCK2_SIZE", 63);
         Assert.geq(LOG_BLOCK_SIZE, "LOG_BLOCK_SIZE", LOG_INUSE_BITSET_SIZE);
@@ -196,11 +196,11 @@ public abstract class SparseArrayColumnSource<T>
         throw new UnsupportedOperationException();
     }
 
-    public void shift(Index keysToShift, long shiftDelta) {
+    public void shift(TrackingMutableRowSet keysToShift, long shiftDelta) {
         throw new UnsupportedOperationException();
     }
 
-    public void remove(Index toRemove) {
+    public void remove(TrackingMutableRowSet toRemove) {
         throw new UnsupportedOperationException();
     }
 

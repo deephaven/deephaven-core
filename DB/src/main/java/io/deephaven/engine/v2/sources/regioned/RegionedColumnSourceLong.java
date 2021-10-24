@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
@@ -28,7 +28,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
 
     @Override
     public long getLong(final long elementIndex) {
-        return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
+        return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
     }
 
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionLong<Values>> {
@@ -65,7 +65,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
 
         @Override
         public long getLong(final long elementIndex) {
-            return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
+            return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
         }
 
         static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {

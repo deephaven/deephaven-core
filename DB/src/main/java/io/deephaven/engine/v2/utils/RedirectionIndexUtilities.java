@@ -3,12 +3,12 @@ package io.deephaven.engine.v2.utils;
 public class RedirectionIndexUtilities {
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;
 
-    static void applyRedirectionShift(final RedirectionIndex redirectionIndex, final ReadOnlyIndex filterIndex,
+    static void applyRedirectionShift(final RedirectionIndex redirectionIndex, final RowSet filterIndex,
             final IndexShiftData shiftData) {
 
         final IndexShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {
             final long oldKey = redirectionIndex.remove(key);
-            if (oldKey != Index.NULL_KEY) {
+            if (oldKey != TrackingMutableRowSet.NULL_ROW_KEY) {
                 redirectionIndex.putVoid(key + delta, oldKey);
             }
         };

@@ -598,7 +598,7 @@ public class TestLongChunk {
 
     private static <ATTR extends Values> void verifyChunkEqualsArray(LongChunk<ATTR> chunk, long[] data, int offset, int size) {
         for (int ii = 0; ii < size; ++ii) {
-            TestCase.assertEquals(String.format("At index %d", ii), data[ii + offset], chunk.get(ii));
+            TestCase.assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));
         }
     }
 

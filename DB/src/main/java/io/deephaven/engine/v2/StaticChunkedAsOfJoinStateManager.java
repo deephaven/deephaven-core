@@ -119,7 +119,7 @@ class StaticChunkedAsOfJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right Index
+    // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource overflowStateSource
@@ -145,12 +145,12 @@ class StaticChunkedAsOfJoinStateManager
     private static final byte ENTRY_EXISTS = 1;
 
 
-    private final ObjectArraySource<Index.SequentialBuilder> leftIndexSource;
-    private final ObjectArraySource<Index.SequentialBuilder> overflowLeftIndexSource;
+    private final ObjectArraySource<SequentialRowSetBuilder> leftIndexSource;
+    private final ObjectArraySource<SequentialRowSetBuilder> overflowLeftIndexSource;
 
     /**
      * For the ticking case we need to reuse our right indices for more than one update.  We convert the
-     * SequentialBuilders into actual Index objects.  Before the conversion (which must be during the build phase)
+     * SequentialBuilders into actual TrackingMutableRowSet objects.  Before the conversion (which must be during the build phase)
      * we put the sequential builders into rightIndexSource and overflowRightIndexSource.  After the conversion, the
      * sources store actual indices.
      */
@@ -203,8 +203,8 @@ class StaticChunkedAsOfJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexSource = new ObjectArraySource<>(Index.SequentialBuilder.class);
-        overflowLeftIndexSource = new ObjectArraySource<>(Index.SequentialBuilder.class);
+        leftIndexSource = new ObjectArraySource<>(SequentialRowSetBuilder.class);
+        overflowLeftIndexSource = new ObjectArraySource<>(SequentialRowSetBuilder.class);
         rightIndexSource = new ObjectArraySource<>(Object.class);
         overflowRightIndexSource = new ObjectArraySource<>(Object.class);
         // endregion constructor
@@ -268,11 +268,11 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    private static boolean addIndex(ObjectArraySource<Index.SequentialBuilder> source, long location, long keyToAdd) {
+    private static boolean addIndex(ObjectArraySource<SequentialRowSetBuilder> source, long location, long keyToAdd) {
         boolean addedSlot = false;
-        Index.SequentialBuilder builder = source.getUnsafe(location);
+        SequentialRowSetBuilder builder = source.getUnsafe(location);
         if (builder == null) {
-            source.set(location, builder = Index.CURRENT_FACTORY.getSequentialBuilder());
+            source.set(location, builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder());
             addedSlot = true;
         }
         builder.appendKey(keyToAdd);
@@ -280,14 +280,14 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     /**
-     * Returns true if this is the first left index added to this slot.
+     * Returns true if this is the first left rowSet added to this slot.
      */
     private boolean addLeftIndex(long tableLocation, long keyToAdd) {
         return addIndex(leftIndexSource, tableLocation, keyToAdd);
     }
 
     /**
-     * Returns true if this is the first left index added to this slot.
+     * Returns true if this is the first left rowSet added to this slot.
      */
     private boolean addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
         return addIndex(overflowLeftIndexSource, overflowLocation, keyToAdd);
@@ -1122,7 +1122,7 @@ class StaticChunkedAsOfJoinStateManager
              final WritableByteChunk stateChunk = WritableByteChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = stateSource.makeFillContext(maxSize)) {
 
-            stateSource.fillChunk(fillContext, stateChunk, Index.FACTORY.getFlatIndex(tableHashPivot));
+            stateSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1333,7 +1333,7 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, Index.RandomBuilder foundBuilder)  {
+    int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilder foundBuilder)  {
         if (leftIndex.isEmpty()) {
             return 0;
         }
@@ -1372,7 +1372,7 @@ class StaticChunkedAsOfJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableByteChunk<Values>\E
         final WritableByteChunk<Values> workingStateEntries;
@@ -1500,7 +1500,7 @@ class StaticChunkedAsOfJoinStateManager
                                 , final boolean isLeftSide
                                 , final LongArraySource slots
                                 , final MutableInt slotCount
-                                , final Index.RandomBuilder foundBuilder
+                                , final RowSetBuilder foundBuilder
                                  // endregion additional probe arguments
     )  {
         // region probe start
@@ -1701,18 +1701,18 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     /**
-     * When we get the left index out of our source (after a build or probe); we do it by pulling a sequential builder
-     * and then calling getIndex().  We also null out the value in the column source, thus freeing the builder's
+     * When we get the left rowSet out of our source (after a build or probe); we do it by pulling a sequential builder
+     * and then calling build().  We also null out the value in the column source, thus freeing the builder's
      * memory.
      *
      * This also results in clearing out the left hand side of the table between each probe phase for the
      * left refreshing case.
      *
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
-     * @return the Index for this slot
+     * @return the TrackingMutableRowSet for this slot
      */
-    Index getLeftIndex(long slot) {
-        final Index.SequentialBuilder builder;
+    TrackingMutableRowSet getLeftIndex(long slot) {
+        final SequentialRowSetBuilder builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             builder = overflowLeftIndexSource.getUnsafe(overflowLocation);
@@ -1724,7 +1724,7 @@ class StaticChunkedAsOfJoinStateManager
         if (builder == null) {
             return null;
         }
-        return builder.getIndex();
+        return builder.build();
     }
 
     void convertRightBuildersToIndex(LongArraySource slots, int slotCount) {
@@ -1732,31 +1732,31 @@ class StaticChunkedAsOfJoinStateManager
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                final Index.SequentialBuilder sequentialBuilder = (Index.SequentialBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
+                final SequentialRowSetBuilder sequentialBuilder = (SequentialRowSetBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
                 if (sequentialBuilder != null) {
-                    overflowRightIndexSource.set(overflowLocation, sequentialBuilder.getIndex());
+                    overflowRightIndexSource.set(overflowLocation, sequentialBuilder.build());
                 }
             } else {
-                final Index.SequentialBuilder sequentialBuilder = (Index.SequentialBuilder)rightIndexSource.getUnsafe(slot);
+                final SequentialRowSetBuilder sequentialBuilder = (SequentialRowSetBuilder)rightIndexSource.getUnsafe(slot);
                 if (sequentialBuilder != null) {
-                    rightIndexSource.set(slot, sequentialBuilder.getIndex());
+                    rightIndexSource.set(slot, sequentialBuilder.build());
                 }
             }
         }
         rightBuildersConverted = true;
     }
 
-    void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<Index> indexSource) {
+    void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<TrackingMutableRowSet> indexSource) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                final Index.SequentialBuilder sequentialBuilder = (Index.SequentialBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
+                final SequentialRowSetBuilder sequentialBuilder = (SequentialRowSetBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
                 if (sequentialBuilder != null) {
                     overflowRightIndexSource.set(overflowLocation, getGroupedIndex(indexSource, sequentialBuilder));
                 }
             } else {
-                final Index.SequentialBuilder sequentialBuilder = (Index.SequentialBuilder)rightIndexSource.getUnsafe(slot);
+                final SequentialRowSetBuilder sequentialBuilder = (SequentialRowSetBuilder)rightIndexSource.getUnsafe(slot);
                 if (sequentialBuilder != null) {
                     rightIndexSource.set(slot, getGroupedIndex(indexSource, sequentialBuilder));
                 }
@@ -1765,37 +1765,37 @@ class StaticChunkedAsOfJoinStateManager
         rightBuildersConverted = true;
     }
 
-    private Index getGroupedIndex(ObjectArraySource<Index> indexSource, Index.SequentialBuilder sequentialBuilder) {
-        final Index groupedIndex = sequentialBuilder.getIndex();
-        if (groupedIndex.size() != 1) {
-            throw new IllegalStateException("Grouped index should have exactly one value: " + groupedIndex);
+    private TrackingMutableRowSet getGroupedIndex(ObjectArraySource<TrackingMutableRowSet> indexSource, SequentialRowSetBuilder sequentialBuilder) {
+        final TrackingMutableRowSet groupedRowSet = sequentialBuilder.build();
+        if (groupedRowSet.size() != 1) {
+            throw new IllegalStateException("Grouped rowSet should have exactly one value: " + groupedRowSet);
         }
-        return indexSource.getUnsafe(groupedIndex.get(0));
+        return indexSource.getUnsafe(groupedRowSet.get(0));
     }
 
-    Index getRightIndex(long slot) {
+    TrackingMutableRowSet getRightIndex(long slot) {
         if (rightBuildersConverted) {
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                return (Index)overflowRightIndexSource.getUnsafe(overflowLocation);
+                return (TrackingMutableRowSet)overflowRightIndexSource.getUnsafe(overflowLocation);
             } else {
-                return (Index)rightIndexSource.getUnsafe(slot);
+                return (TrackingMutableRowSet)rightIndexSource.getUnsafe(slot);
             }
         }
 
-        final Index.SequentialBuilder builder;
+        final SequentialRowSetBuilder builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
-            builder = (Index.SequentialBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
+            builder = (SequentialRowSetBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
             overflowRightIndexSource.set(overflowLocation, null);
         } else {
-            builder = (Index.SequentialBuilder)rightIndexSource.getUnsafe(slot);
+            builder = (SequentialRowSetBuilder)rightIndexSource.getUnsafe(slot);
             rightIndexSource.set(slot, null);
         }
         if (builder == null) {
             return null;
         }
-        return builder.getIndex();
+        return builder.build();
     }
 
     String keyString(long slot) {

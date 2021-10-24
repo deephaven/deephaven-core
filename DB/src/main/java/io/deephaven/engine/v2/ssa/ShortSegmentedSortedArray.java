@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -19,14 +19,14 @@ import java.util.function.LongConsumer;
 
 /**
  * For keeping track of incremental states of sorted values, we would ideally like to hold them in an Array or a Chunk;
- * with parallel index keys.  However, if we just put them in an array we can not insert or remove values without
+ * with parallel rowSet keys.  However, if we just put them in an array we can not insert or remove values without
  * unnecessarily shifting everything.
  *
  * The segmented array allows us to either insert or remove elements and only shift values in a "leaf" block and
  * possibly a "directory" block.  It can be thought of as similar to a single-level b+ tree with only keys.
  *
  * We must be totally ordered, which is accomplished by sorting on the short values, and then on the corresponding
- * index key.
+ * rowSet key.
  */
 public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
     final private int leafSize;
@@ -73,7 +73,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
     /**
      * Find the next value for each stamp.
      *
-     * @param stampValues  the stamp values to search for (must be sorted, with ties broken by the index)
+     * @param stampValues  the stamp values to search for (must be sorted, with ties broken by the rowSet)
      * @param stampIndices the stamp indices to search for (parallel to stampValues)
      * @param nextValues    the next value after a given stamp
      * @param <T>          the type of our chunks
@@ -141,7 +141,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
     /**
      * Insert new valuesToInsert into this SSA.  The valuesToInsert to insert must be sorted.
      *
-     * @param valuesToInsert the valuesToInsert to insert (must be sorted, with ties broken by the index)
+     * @param valuesToInsert the valuesToInsert to insert (must be sorted, with ties broken by the rowSet)
      * @param indicesToInsert the corresponding indicesToInsert
      */
     void insert(ShortChunk<? extends Any> valuesToInsert, LongChunk<? extends Attributes.RowKeys> indicesToInsert) {
@@ -811,8 +811,8 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * @param lo              inclusive first position
      * @param hi              exclusive last position
      * @param searchValue     the value to search for
-     * @param searchIndex     the index value to search for
-     * @return the highest index with a value greater than searchValue
+     * @param searchIndex     the rowSet value to search for
+     * @return the highest rowSet with a value greater than searchValue
      */
     private static int bound(short [] valuesToSearch, long [] indicesToSearch, final short searchValue, long searchIndex, int lo, int hi) {
         while (lo < hi) {
@@ -865,14 +865,14 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         }
         if (removeSize == size) {
             if (priorRedirections != null) {
-                priorRedirections.fillWithValue(0, valuesToRemove.size(), Index.NULL_KEY);
+                priorRedirections.fillWithValue(0, valuesToRemove.size(), TrackingMutableRowSet.NULL_ROW_KEY);
             }
             clear();
             return;
         }
         Assert.gtZero(leafCount, "leafCount");
         if (leafCount == 1) {
-            removeFromLeaf(size, directoryValues, valuesToRemove, directoryIndex, indicesToRemove, priorRedirections, Index.NULL_KEY);
+            removeFromLeaf(size, directoryValues, valuesToRemove, directoryIndex, indicesToRemove, priorRedirections, TrackingMutableRowSet.NULL_ROW_KEY);
         } else {
             try (final ResettableShortChunk<Any> leafValuesRemoveChunk = ResettableShortChunk.makeResettableChunk();
                  final ResettableLongChunk<RowKeys> leafKeysRemoveChunk = ResettableLongChunk.makeResettableChunk();
@@ -900,7 +900,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
                     if (count == leafSizes[firstLeaf]) {
                         // we are going to remove the whole leaf
-                        final long firstPrior = priorRedirections == null ? Index.NULL_KEY : getFirstPrior(firstLeaf);
+                        final long firstPrior = priorRedirections == null ? TrackingMutableRowSet.NULL_ROW_KEY : getFirstPrior(firstLeaf);
                         leavesToRemove.add(firstLeaf);
                         leafSizes[firstLeaf] = 0;
                         if (priorRedirections != null) {
@@ -914,7 +914,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                             priorRedirectionsSlice.resetFromTypedChunk(priorRedirections, firstValuesPosition, count);
                         }
 
-                        final long firstPrior = priorRedirections == null ? Index.NULL_KEY : getFirstPrior(firstLeaf);
+                        final long firstPrior = priorRedirections == null ? TrackingMutableRowSet.NULL_ROW_KEY : getFirstPrior(firstLeaf);
                         removeFromLeaf(leafSizes[firstLeaf], leafValues[firstLeaf], leafValuesRemoveChunk, leafIndices[firstLeaf], leafKeysRemoveChunk, priorRedirectionsSlice, firstPrior);
                         leafSizes[firstLeaf] -= count;
 
@@ -957,7 +957,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                             priorRedirectionsSlice.resetFromTypedChunk(priorRedirections, firstValuesPosition, remainingRemovals);
                         }
 
-                        removeFromLeaf(size - totalCount, directoryValues, leafValuesRemoveChunk, directoryIndex, leafKeysRemoveChunk, priorRedirectionsSlice, Index.NULL_KEY);
+                        removeFromLeaf(size - totalCount, directoryValues, leafValuesRemoveChunk, directoryIndex, leafKeysRemoveChunk, priorRedirectionsSlice, TrackingMutableRowSet.NULL_ROW_KEY);
                         totalCount += remainingRemovals;
                         firstValuesPosition += remainingRemovals + 1;
                     }
@@ -1011,7 +1011,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             priorLeaf--;
         }
         if (priorLeaf < 0) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         } else {
             return leafIndices[priorLeaf][leafSizes[priorLeaf] - 1];
         }
@@ -1733,7 +1733,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
     @Override
     public long getFirst() {
         if (size == 0) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
         if (leafCount == 1) {
             return directoryIndex[0];
@@ -1743,7 +1743,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
     public long getLast() {
         if (size == 0) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
         if (leafCount == 1) {
             return directoryIndex[size - 1];

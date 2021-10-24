@@ -12,9 +12,9 @@ import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -34,7 +34,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
     private final boolean live;
-    private final ObjectArraySource<Index> indices;
+    private final ObjectArraySource<TrackingMutableRowSet> indices;
     private final String[] inputColumnNames;
     private final Map<String, AggregateColumnSource<?, ?>> resultColumns;
     private final ModifiedColumnSet resultInputsModifiedColumnSet;
@@ -48,7 +48,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
         live = inputTable.isRefreshing();
-        indices = new ObjectArraySource<>(Index.class);
+        indices = new ObjectArraySource<>(TrackingMutableRowSet.class);
         // noinspection unchecked
         resultColumns = Arrays.stream(resultColumnPairs).collect(Collectors.toMap(MatchPair::left,
                 matchPair -> (AggregateColumnSource<?, ?>) AggregateColumnSource
@@ -157,9 +157,9 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public boolean addIndex(SingletonContext context, Index index, long destination) {
-        someKeyHasAddsOrRemoves |= index.nonempty();
-        addIndex(index, destination);
+    public boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
+        someKeyHasAddsOrRemoves |= rowSet.nonempty();
+        addIndex(rowSet, destination);
         return true;
     }
 
@@ -209,34 +209,34 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
-        final Index index = indexForSlot(destination);
-        index.insert(indices, start, length);
+        final TrackingMutableRowSet rowSet = indexForSlot(destination);
+        rowSet.insert(indices, start, length);
     }
 
-    private void addIndex(@NotNull final Index addIndex, final long destination) {
-        indexForSlot(destination).insert(addIndex);
+    private void addIndex(@NotNull final TrackingMutableRowSet addRowSet, final long destination) {
+        indexForSlot(destination).insert(addRowSet);
     }
 
     private void removeChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
-        final Index index = indexForSlot(destination);
-        index.remove(indices, start, length);
+        final TrackingMutableRowSet rowSet = indexForSlot(destination);
+        rowSet.remove(indices, start, length);
     }
 
     private void doShift(@NotNull final LongChunk<OrderedRowKeys> preShiftIndices,
             @NotNull final LongChunk<OrderedRowKeys> postShiftIndices,
             final int startPosition, final int runLength, final long destination) {
-        final Index index = indexForSlot(destination);
-        index.remove(preShiftIndices, startPosition, runLength);
-        index.insert(postShiftIndices, startPosition, runLength);
+        final TrackingMutableRowSet rowSet = indexForSlot(destination);
+        rowSet.remove(preShiftIndices, startPosition, runLength);
+        rowSet.insert(postShiftIndices, startPosition, runLength);
     }
 
-    private Index indexForSlot(final long destination) {
-        Index index = indices.getUnsafe(destination);
-        if (index == null) {
-            indices.set(destination, index = (live ? Index.FACTORY : Index.CURRENT_FACTORY).getEmptyIndex());
+    private TrackingMutableRowSet indexForSlot(final long destination) {
+        TrackingMutableRowSet rowSet = indices.getUnsafe(destination);
+        if (rowSet == null) {
+            indices.set(destination, rowSet = (live ? TrackingMutableRowSet.FACTORY : TrackingMutableRowSet.CURRENT_FACTORY).getEmptyRowSet());
         }
-        return index;
+        return rowSet;
     }
 
     @Override
@@ -320,7 +320,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-            @NotNull final ReadOnlyIndex newDestinations) {
+            @NotNull final RowSet newDestinations) {
         initializeNewIndexPreviousValues(newDestinations);
     }
 
@@ -337,7 +337,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
                 // it is an ArrayBackedColumnSource), allowing getChunk to skip a copy.
                 final RowSequence newDestinationsSlice =
                         newDestinationsIterator.getNextRowSequenceThrough(nextBlockEnd);
-                final ObjectChunk<Index, Values> indicesChunk =
+                final ObjectChunk<TrackingMutableRowSet, Values> indicesChunk =
                         indices.getChunk(indicesGetContext, newDestinationsSlice).asObjectChunk();
                 final int indicesChunkSize = indicesChunk.size();
                 for (int ii = 0; ii < indicesChunkSize; ++ii) {

@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.SelectFilter;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
 
@@ -153,8 +153,8 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
 
     @Override
     boolean verifyChild(TableDetails parentDetail, TableDetails childDetail, long childKeyPos, boolean usePrev) {
-        final Index parentIndex = parentDetail.getTable().getIndex();
-        return usePrev ? parentIndex.getPrevIndex().find(childKeyPos) >= 0
-                : parentIndex.find(childKeyPos) >= 0;
+        final TrackingMutableRowSet parentRowSet = parentDetail.getTable().getIndex();
+        return usePrev ? parentRowSet.getPrevIndex().find(childKeyPos) >= 0
+                : parentRowSet.find(childKeyPos) >= 0;
     }
 }

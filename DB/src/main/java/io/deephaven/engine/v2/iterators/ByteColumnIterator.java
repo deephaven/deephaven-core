@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.iterators;
 import io.deephaven.base.Procedure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
@@ -17,8 +17,8 @@ import java.util.PrimitiveIterator;
  */
 public class ByteColumnIterator extends ColumnIterator<Byte> implements PrimitiveIterator<Byte, Procedure.UnaryByte> {
 
-    public ByteColumnIterator(@NotNull final Index index, @NotNull final ColumnSource<Byte> columnSource) {
-        super(index, columnSource);
+    public ByteColumnIterator(@NotNull final TrackingMutableRowSet rowSet, @NotNull final ColumnSource<Byte> columnSource) {
+        super(rowSet, columnSource);
     }
 
     public ByteColumnIterator(@NotNull final Table table, @NotNull final String columnName) {

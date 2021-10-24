@@ -7,9 +7,9 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -28,17 +28,17 @@ public interface ShiftAwareListener extends ListenerBase {
         /**
          * rows added (post-shift keyspace)
          */
-        public Index added;
+        public TrackingMutableRowSet added;
 
         /**
          * rows removed (pre-shift keyspace)
          */
-        public Index removed;
+        public TrackingMutableRowSet removed;
 
         /**
          * rows modified (post-shift keyspace)
          */
-        public Index modified;
+        public TrackingMutableRowSet modified;
 
         /**
          * rows that shifted to new indices
@@ -46,12 +46,12 @@ public interface ShiftAwareListener extends ListenerBase {
         public IndexShiftData shifted;
 
         /**
-         * the set of columns that might have changed for rows in the {@code modified()} index
+         * the set of columns that might have changed for rows in the {@code modified()} rowSet
          */
         public ModifiedColumnSet modifiedColumnSet;
 
-        // Cached version of prevModified index.
-        private volatile Index prevModified;
+        // Cached version of prevModified rowSet.
+        private volatile TrackingMutableRowSet prevModified;
 
         // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
         // each instance.
@@ -63,8 +63,8 @@ public interface ShiftAwareListener extends ListenerBase {
 
         public Update() {}
 
-        public Update(final Index added, final Index removed, final Index modified, final IndexShiftData shifted,
-                final ModifiedColumnSet modifiedColumnSet) {
+        public Update(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified, final IndexShiftData shifted,
+                      final ModifiedColumnSet modifiedColumnSet) {
             this.added = added;
             this.removed = removed;
             this.modified = modified;
@@ -126,13 +126,13 @@ public interface ShiftAwareListener extends ListenerBase {
         }
 
         /**
-         * @return a cached copy of the modified index in pre-shift keyspace
+         * @return a cached copy of the modified rowSet in pre-shift keyspace
          */
-        public Index getModifiedPreShift() {
+        public TrackingMutableRowSet getModifiedPreShift() {
             if (shifted.empty()) {
                 return modified;
             }
-            Index localPrevModified = prevModified;
+            TrackingMutableRowSet localPrevModified = prevModified;
             if (localPrevModified == null) {
                 synchronized (this) {
                     localPrevModified = prevModified;
@@ -148,14 +148,14 @@ public interface ShiftAwareListener extends ListenerBase {
         }
 
         /**
-         * This helper iterates through the modified index and supplies both the pre-shift and post-shift keys per row.
+         * This helper iterates through the modified rowSet and supplies both the pre-shift and post-shift keys per row.
          * 
          * @param consumer a consumer to feed the modified pre-shift and post-shift key values to.
          */
         public void forAllModified(final BiConsumer<Long, Long> consumer) {
-            final Index prevModified = getModifiedPreShift();
-            final Index.Iterator it = modified.iterator();
-            final Index.Iterator pit = prevModified.iterator();
+            final TrackingMutableRowSet prevModified = getModifiedPreShift();
+            final TrackingMutableRowSet.Iterator it = modified.iterator();
+            final TrackingMutableRowSet.Iterator pit = prevModified.iterator();
 
             while (it.hasNext() && pit.hasNext()) {
                 consumer.accept(pit.nextLong(), it.next());

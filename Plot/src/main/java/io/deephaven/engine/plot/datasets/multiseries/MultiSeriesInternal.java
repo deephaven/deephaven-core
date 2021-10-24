@@ -69,7 +69,7 @@ public interface MultiSeriesInternal<T extends DataSeriesInternal> extends Multi
     /**
      * Gets the specified series from this multi-series.
      *
-     * @param series series index
+     * @param series series rowSet
      * @return specified series
      */
     T get(final int series);

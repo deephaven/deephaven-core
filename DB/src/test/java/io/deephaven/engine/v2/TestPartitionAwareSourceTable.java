@@ -22,7 +22,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
@@ -81,7 +81,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     private ShiftAwareListener listener;
     private final TstUtils.TstNotification notification = new TstUtils.TstNotification();
 
-    private Index expectedIndex;
+    private TrackingMutableRowSet expectedRowSet;
 
     private PartitionAwareSourceTable SUT;
 
@@ -144,7 +144,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             }
         });
 
-        expectedIndex = Index.FACTORY.getEmptyIndex();
+        expectedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
 
         SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider,
                 LiveTableMonitor.DEFAULT);
@@ -229,9 +229,9 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             @NotNull final ConcurrentInstantiationType ciType) {
         Assert.assertion(!(throwException && !coalesceAndListen), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
-        final Index toAdd =
-                Index.FACTORY.getIndexByRange(expectedIndex.lastRowKey() + 1,
-                        expectedIndex.lastRowKey() + INDEX_INCREMENT);
+        final TrackingMutableRowSet toAdd =
+                TrackingMutableRowSet.FACTORY.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
+                        expectedRowSet.lastRowKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
             {
@@ -260,7 +260,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             }
         }));
 
-        expectedIndex.insert(toAdd);
+        expectedRowSet.insert(toAdd);
         if (coalesceAndListen) {
             if (ciType == ConcurrentInstantiationType.UpdatingClosed
                     || ciType == ConcurrentInstantiationType.UpdatingOpen) {
@@ -281,7 +281,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 }
             }
             assertIsSatisfied();
-            assertIndexEquals(expectedIndex, SUT.getIndex());
+            assertIndexEquals(expectedRowSet, SUT.getIndex());
             if (ciType == ConcurrentInstantiationType.UpdatingClosed) {
                 LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
             }
@@ -303,9 +303,9 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     }
 
     private void doRefreshChangedCheck() {
-        final Index toAdd =
-                Index.FACTORY.getIndexByRange(expectedIndex.lastRowKey() + 1,
-                        expectedIndex.lastRowKey() + INDEX_INCREMENT);
+        final TrackingMutableRowSet toAdd =
+                TrackingMutableRowSet.FACTORY.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
+                        expectedRowSet.lastRowKey() + INDEX_INCREMENT);
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
@@ -319,8 +319,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                                 final ShiftAwareListener.Update update =
                                         (ShiftAwareListener.Update) invocation.getParameter(0);
                                 assertIndexEquals(toAdd, update.added);
-                                assertIndexEquals(Index.FACTORY.getEmptyIndex(), update.removed);
-                                assertIndexEquals(Index.FACTORY.getEmptyIndex(), update.modified);
+                                assertIndexEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), update.removed);
+                                assertIndexEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), update.modified);
                                 assertTrue(update.shifted.empty());
                                 return notification;
                             }
@@ -341,15 +341,15 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         }
         assertIsSatisfied();
         notification.assertInvoked();
-        expectedIndex.insert(toAdd);
-        assertIndexEquals(expectedIndex, SUT.getIndex());
+        expectedRowSet.insert(toAdd);
+        assertIndexEquals(expectedRowSet, SUT.getIndex());
     }
 
     private void doRefreshUnchangedCheck() {
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(Index.FACTORY.getEmptyIndex()));
+                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
             }
         });
 
@@ -358,7 +358,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         assertIsSatisfied();
         notification.assertNotInvoked();
 
-        assertIndexEquals(expectedIndex, SUT.getIndex());
+        assertIndexEquals(expectedRowSet, SUT.getIndex());
     }
 
     private void doRefreshExceptionCheck() {
@@ -384,7 +384,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         assertIsSatisfied();
         notification.assertInvoked();
 
-        assertIndexEquals(expectedIndex, SUT.getIndex());
+        assertIndexEquals(expectedRowSet, SUT.getIndex());
     }
 
     private void doAddLocationsRefreshCheck(final ImmutableTableLocationKey[] tableLocationKeys,
@@ -455,7 +455,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(Index.FACTORY.getEmptyIndex()));
+                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns1)
@@ -499,7 +499,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(Index.FACTORY.getEmptyIndex()));
+                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns2)
@@ -552,7 +552,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(Index.FACTORY.getEmptyIndex()));
+                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns3)
@@ -629,7 +629,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 oneOf(columnSourceManager).disableGrouping();
             }
         });
-        assertIndexEquals(expectedIndex, SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getIndex());
+        assertIndexEquals(expectedRowSet, SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getIndex());
         assertIsSatisfied();
     }
 
@@ -675,7 +675,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 });
             }
         });
-        assertIndexEquals(expectedIndex, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
+        assertIndexEquals(expectedRowSet, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
                 .where(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getIndex());
         assertIsSatisfied();
     }
@@ -712,7 +712,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 });
             }
         });
-        assertIndexEquals(expectedIndex, SUT
+        assertIndexEquals(expectedRowSet, SUT
                 .where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`", INTEGER_COLUMN_DEFINITION.getName() + ">0")
                 .getIndex());
         assertIsSatisfied();

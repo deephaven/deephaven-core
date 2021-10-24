@@ -5,6 +5,8 @@ import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -21,7 +23,6 @@ import io.deephaven.engine.v2.by.SortedFirstBy;
 import io.deephaven.engine.v2.by.SortedLastBy;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.PrevColumnSource;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
@@ -136,15 +137,15 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         try {
 
-            final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10),
+            final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
                     col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
-            final QueryTable source2 = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(11),
+            final QueryTable source2 = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(11),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT),
                     col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
-            final QueryTable source3 = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(12),
+            final QueryTable source3 = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(12),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
                     col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
@@ -329,11 +330,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         try {
 
-            final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10),
+            final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
                     col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
-            final QueryTable source2 = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(11),
+            final QueryTable source2 = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(11),
                     col("Sentinel", 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
                     col("Parent", NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
                     col("Extra", "bb", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
@@ -479,7 +480,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableSimpleFilter() {
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10),
+        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
@@ -571,7 +572,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testOrphanPromoterSimple() {
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(4),
+        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(4),
                 col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
 
         final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
@@ -621,7 +622,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableEdgeCases() {
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(4),
+        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(4),
                 col("Sentinel", 0, 1, 2, 3),
                 col("Filter", 0, 0, 0, 0),
                 col("Parent", NULL_INT, NULL_INT, NULL_INT, NULL_INT));
@@ -718,10 +719,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         }
 
         @Override
-        public TreeMap<Long, IdParentPair> populateMap(TreeMap<Long, IdParentPair> values, Index toAdd, Random random) {
+        public TreeMap<Long, IdParentPair> populateMap(TreeMap<Long, IdParentPair> values, TrackingMutableRowSet toAdd, Random random) {
             final TreeMap<Long, IdParentPair> result = new TreeMap<>();
 
-            for (final Index.Iterator it = toAdd.iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = toAdd.iterator(); it.hasNext();) {
                 add(random, values, result, it.nextLong());
             }
 
@@ -931,12 +932,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final TableMap actualMap = actualMapSource.call(actualValue);
         final TableMap expectedMap = expectedMapSource.call(expectedValue);
 
-        final Index actualIndex = indexOrPrev(actualValue, actualPrev);
-        final Index expectedIndex = indexOrPrev(expectedValue, expectedPrev);
-        assertEquals(expectedIndex.size(), actualIndex.size());
+        final TrackingMutableRowSet actualRowSet = indexOrPrev(actualValue, actualPrev);
+        final TrackingMutableRowSet expectedRowSet = indexOrPrev(expectedValue, expectedPrev);
+        assertEquals(expectedRowSet.size(), actualRowSet.size());
 
-        final Index.Iterator oit = actualIndex.iterator();
-        final Index.Iterator rit = expectedIndex.iterator();
+        final TrackingMutableRowSet.Iterator oit = actualRowSet.iterator();
+        final TrackingMutableRowSet.Iterator rit = expectedRowSet.iterator();
 
         for (; oit.hasNext();) {
             assertTrue(rit.hasNext());
@@ -974,7 +975,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         return usePrev ? new PrevColumnSource(table.getColumnSource(columnName)) : table.getColumnSource(columnName);
     }
 
-    private static Index indexOrPrev(Table table, boolean usePrev) {
+    private static TrackingMutableRowSet indexOrPrev(Table table, boolean usePrev) {
         return usePrev ? table.getIndex().getPrevIndex() : table.getIndex();
     }
 
@@ -1150,7 +1151,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             return;
         }
 
-        for (final Index.Iterator it = indexOrPrev(root, usePrev).iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = indexOrPrev(root, usePrev).iterator(); it.hasNext();) {
             final long key = it.nextLong();
             Object childKey = children.get(key);
             if (childKey == null) {
@@ -1546,7 +1547,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     private void testIncrementalSimple(ComboBy comboBy) {
         final QueryTable table =
-                TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(6), col("G1", "A", "A", "A", "B", "B", "B"),
+                TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(6), col("G1", "A", "A", "A", "B", "B", "B"),
                         col("G2", "C", "C", "D", "D", "E", "E"), col("IntCol", 1, 2, 3, 4, 5, 6));
 
         final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
@@ -1720,7 +1721,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         int nextHid = 11;
         long index = 2;
 
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(1), longCol("Sentinel", 1),
+        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(1), longCol("Sentinel", 1),
                 stringCol("hid", "a"), stringCol("hpos", "1"), col("open", true), doubleCol("rand", 1.0));
 
         final List<String> openHid = new ArrayList<>();
@@ -1744,7 +1745,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
             final int numChanges = random.nextInt(100);
-            final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
             for (int count = 0; count < numChanges; ++count) {
                 assertEquals(openHid.size(), hidToPos.size());
@@ -1815,10 +1816,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 assertEquals(openHid.size(), hidToPos.size());
             }
 
-            final Index newIndex = builder.getIndex();
-            source.notifyListeners(newIndex, i(), i());
+            final TrackingMutableRowSet newRowSet = builder.build();
+            source.notifyListeners(newRowSet, i(), i());
 
-            // TableTools.showWithIndex(source.getSubTable(newIndex));
+            // TableTools.showWithIndex(source.getSubTable(newRowSet));
 
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 

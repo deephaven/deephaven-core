@@ -14,7 +14,7 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 import java.util.BitSet;
@@ -24,9 +24,9 @@ import java.util.Map;
 public class InitialSnapshotTable extends QueryTable {
     protected final Setter<?>[] setters;
     protected int capacity;
-    protected Index freeset = Index.FACTORY.getEmptyIndex();
-    protected final Index populatedRows;
-    protected final Index[] populatedCells;
+    protected TrackingMutableRowSet freeset = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+    protected final TrackingMutableRowSet populatedRows;
+    protected final TrackingMutableRowSet[] populatedCells;
     protected WritableSource<?>[] writableSources;
     protected RedirectionIndex redirectionIndex;
 
@@ -34,17 +34,17 @@ public class InitialSnapshotTable extends QueryTable {
 
     protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources,
             RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
-        super(Index.FACTORY.getEmptyIndex(), result);
+        super(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
         this.setters = new Setter[writableSources.length];
-        this.populatedCells = new Index[writableSources.length];
+        this.populatedCells = new TrackingMutableRowSet[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
             setters[ii] = getSetter(writableSources[ii]);
-            this.populatedCells[ii] = Index.CURRENT_FACTORY.getIndexByValues();
+            this.populatedCells[ii] = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues();
         }
         this.redirectionIndex = redirectionIndex;
-        this.populatedRows = Index.CURRENT_FACTORY.getIndexByValues();
+        this.populatedRows = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues();
     }
 
     public BitSet getSubscribedColumns() {
@@ -82,20 +82,20 @@ public class InitialSnapshotTable extends QueryTable {
     }
 
     protected void processInitialSnapshot(InitialSnapshot snapshot) {
-        final Index viewPort = snapshot.viewport;
-        final Index addedIndex = snapshot.rowsIncluded;
-        final Index newlyPopulated = viewPort == null ? addedIndex : snapshot.index.subindexByPos(viewPort);
+        final TrackingMutableRowSet viewPort = snapshot.viewport;
+        final TrackingMutableRowSet addedRowSet = snapshot.rowsIncluded;
+        final TrackingMutableRowSet newlyPopulated = viewPort == null ? addedRowSet : snapshot.rowSet.subSetForPositions(viewPort);
         if (viewPort != null) {
-            newlyPopulated.retain(addedIndex);
+            newlyPopulated.retain(addedRowSet);
         }
 
-        final Index destinationIndex = getFreeRows(newlyPopulated.size());
+        final TrackingMutableRowSet destinationRowSet = getFreeRows(newlyPopulated.size());
 
-        final Index.Iterator addedIt = addedIndex.iterator();
-        final Index.Iterator destIt = destinationIndex.iterator();
+        final TrackingMutableRowSet.Iterator addedIt = addedRowSet.iterator();
+        final TrackingMutableRowSet.Iterator destIt = destinationRowSet.iterator();
 
         long nextInViewport = -1;
-        final Index.Iterator populationIt;
+        final TrackingMutableRowSet.Iterator populationIt;
         if (viewPort == null) {
             populationIt = null;
         } else {
@@ -129,20 +129,20 @@ public class InitialSnapshotTable extends QueryTable {
 
         for (int ii = 0; ii < setters.length; ii++) {
             if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
-                final Index ix = populatedCells[ii];
+                final TrackingMutableRowSet ix = populatedCells[ii];
                 ix.insert(newlyPopulated);
             }
         }
         populatedRows.insert(newlyPopulated);
 
-        getIndex().insert(snapshot.index);
+        getIndex().insert(snapshot.rowSet);
     }
 
-    protected Index getFreeRows(long size) {
+    protected TrackingMutableRowSet getFreeRows(long size) {
         boolean needsResizing = false;
         if (capacity == 0) {
             capacity = Integer.highestOneBit((int) Math.max(size * 2, 8));
-            freeset = Index.FACTORY.getFlatIndex(capacity);
+            freeset = TrackingMutableRowSet.FACTORY.getFlatIndex(capacity);
             needsResizing = true;
         } else if (freeset.size() < size) {
             int allocatedSize = (int) (capacity - freeset.size());
@@ -158,9 +158,9 @@ public class InitialSnapshotTable extends QueryTable {
                 ((WritableSource<?>) source).ensureCapacity(capacity);
             }
         }
-        Index result = freeset.subindexByPos(0, (int) size);
+        TrackingMutableRowSet result = freeset.subSetByPositionRange(0, (int) size);
         Assert.assertion(result.size() == size, "result.size() == size");
-        freeset = freeset.subindexByPos((int) size, (int) freeset.size());
+        freeset = freeset.subSetByPositionRange((int) size, (int) freeset.size());
         return result;
     }
 
@@ -195,7 +195,7 @@ public class InitialSnapshotTable extends QueryTable {
             finalColumns.put(columns[i].getName(),
                     new RedirectedColumnSource<>(redirectionIndex, writableSources[i], 0));
         }
-        // This table does not refresh, so we don't need to tell our redirection index or column source to start
+        // This table does not refresh, so we don't need to tell our redirection rowSet or column source to start
         // tracking
         // prev values.
 

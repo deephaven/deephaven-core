@@ -200,32 +200,32 @@ export function unionToType(
 
 export function unionListToType(
   type: Type, 
-  accessor: (index: number, obj:org.apache.arrow.flatbuf.Binary|org.apache.arrow.flatbuf.Bool|org.apache.arrow.flatbuf.Date|org.apache.arrow.flatbuf.Decimal|org.apache.arrow.flatbuf.Duration|org.apache.arrow.flatbuf.FixedSizeBinary|org.apache.arrow.flatbuf.FixedSizeList|org.apache.arrow.flatbuf.FloatingPoint|org.apache.arrow.flatbuf.Int|org.apache.arrow.flatbuf.Interval|org.apache.arrow.flatbuf.LargeBinary|org.apache.arrow.flatbuf.LargeList|org.apache.arrow.flatbuf.LargeUtf8|org.apache.arrow.flatbuf.List|org.apache.arrow.flatbuf.Map|org.apache.arrow.flatbuf.Null|org.apache.arrow.flatbuf.Struct_|org.apache.arrow.flatbuf.Time|org.apache.arrow.flatbuf.Timestamp|org.apache.arrow.flatbuf.Union|org.apache.arrow.flatbuf.Utf8) => org.apache.arrow.flatbuf.Binary|org.apache.arrow.flatbuf.Bool|org.apache.arrow.flatbuf.Date|org.apache.arrow.flatbuf.Decimal|org.apache.arrow.flatbuf.Duration|org.apache.arrow.flatbuf.FixedSizeBinary|org.apache.arrow.flatbuf.FixedSizeList|org.apache.arrow.flatbuf.FloatingPoint|org.apache.arrow.flatbuf.Int|org.apache.arrow.flatbuf.Interval|org.apache.arrow.flatbuf.LargeBinary|org.apache.arrow.flatbuf.LargeList|org.apache.arrow.flatbuf.LargeUtf8|org.apache.arrow.flatbuf.List|org.apache.arrow.flatbuf.Map|org.apache.arrow.flatbuf.Null|org.apache.arrow.flatbuf.Struct_|org.apache.arrow.flatbuf.Time|org.apache.arrow.flatbuf.Timestamp|org.apache.arrow.flatbuf.Union|org.apache.arrow.flatbuf.Utf8|null, 
-  index: number
+  accessor: (rowSet: number, obj:org.apache.arrow.flatbuf.Binary|org.apache.arrow.flatbuf.Bool|org.apache.arrow.flatbuf.Date|org.apache.arrow.flatbuf.Decimal|org.apache.arrow.flatbuf.Duration|org.apache.arrow.flatbuf.FixedSizeBinary|org.apache.arrow.flatbuf.FixedSizeList|org.apache.arrow.flatbuf.FloatingPoint|org.apache.arrow.flatbuf.Int|org.apache.arrow.flatbuf.Interval|org.apache.arrow.flatbuf.LargeBinary|org.apache.arrow.flatbuf.LargeList|org.apache.arrow.flatbuf.LargeUtf8|org.apache.arrow.flatbuf.List|org.apache.arrow.flatbuf.Map|org.apache.arrow.flatbuf.Null|org.apache.arrow.flatbuf.Struct_|org.apache.arrow.flatbuf.Time|org.apache.arrow.flatbuf.Timestamp|org.apache.arrow.flatbuf.Union|org.apache.arrow.flatbuf.Utf8) => org.apache.arrow.flatbuf.Binary|org.apache.arrow.flatbuf.Bool|org.apache.arrow.flatbuf.Date|org.apache.arrow.flatbuf.Decimal|org.apache.arrow.flatbuf.Duration|org.apache.arrow.flatbuf.FixedSizeBinary|org.apache.arrow.flatbuf.FixedSizeList|org.apache.arrow.flatbuf.FloatingPoint|org.apache.arrow.flatbuf.Int|org.apache.arrow.flatbuf.Interval|org.apache.arrow.flatbuf.LargeBinary|org.apache.arrow.flatbuf.LargeList|org.apache.arrow.flatbuf.LargeUtf8|org.apache.arrow.flatbuf.List|org.apache.arrow.flatbuf.Map|org.apache.arrow.flatbuf.Null|org.apache.arrow.flatbuf.Struct_|org.apache.arrow.flatbuf.Time|org.apache.arrow.flatbuf.Timestamp|org.apache.arrow.flatbuf.Union|org.apache.arrow.flatbuf.Utf8|null,
+  rowSet: number
 ): org.apache.arrow.flatbuf.Binary|org.apache.arrow.flatbuf.Bool|org.apache.arrow.flatbuf.Date|org.apache.arrow.flatbuf.Decimal|org.apache.arrow.flatbuf.Duration|org.apache.arrow.flatbuf.FixedSizeBinary|org.apache.arrow.flatbuf.FixedSizeList|org.apache.arrow.flatbuf.FloatingPoint|org.apache.arrow.flatbuf.Int|org.apache.arrow.flatbuf.Interval|org.apache.arrow.flatbuf.LargeBinary|org.apache.arrow.flatbuf.LargeList|org.apache.arrow.flatbuf.LargeUtf8|org.apache.arrow.flatbuf.List|org.apache.arrow.flatbuf.Map|org.apache.arrow.flatbuf.Null|org.apache.arrow.flatbuf.Struct_|org.apache.arrow.flatbuf.Time|org.apache.arrow.flatbuf.Timestamp|org.apache.arrow.flatbuf.Union|org.apache.arrow.flatbuf.Utf8|null {
   switch(org.apache.arrow.flatbuf.Type[type]) {
     case 'NONE': return null; 
-    case 'Null': return accessor(index, new org.apache.arrow.flatbuf.Null())! as org.apache.arrow.flatbuf.Null;
-    case 'Int': return accessor(index, new org.apache.arrow.flatbuf.Int())! as org.apache.arrow.flatbuf.Int;
-    case 'FloatingPoint': return accessor(index, new org.apache.arrow.flatbuf.FloatingPoint())! as org.apache.arrow.flatbuf.FloatingPoint;
-    case 'Binary': return accessor(index, new org.apache.arrow.flatbuf.Binary())! as org.apache.arrow.flatbuf.Binary;
-    case 'Utf8': return accessor(index, new org.apache.arrow.flatbuf.Utf8())! as org.apache.arrow.flatbuf.Utf8;
-    case 'Bool': return accessor(index, new org.apache.arrow.flatbuf.Bool())! as org.apache.arrow.flatbuf.Bool;
-    case 'Decimal': return accessor(index, new org.apache.arrow.flatbuf.Decimal())! as org.apache.arrow.flatbuf.Decimal;
-    case 'Date': return accessor(index, new org.apache.arrow.flatbuf.Date())! as org.apache.arrow.flatbuf.Date;
-    case 'Time': return accessor(index, new org.apache.arrow.flatbuf.Time())! as org.apache.arrow.flatbuf.Time;
-    case 'Timestamp': return accessor(index, new org.apache.arrow.flatbuf.Timestamp())! as org.apache.arrow.flatbuf.Timestamp;
-    case 'Interval': return accessor(index, new org.apache.arrow.flatbuf.Interval())! as org.apache.arrow.flatbuf.Interval;
-    case 'List': return accessor(index, new org.apache.arrow.flatbuf.List())! as org.apache.arrow.flatbuf.List;
-    case 'Struct_': return accessor(index, new org.apache.arrow.flatbuf.Struct_())! as org.apache.arrow.flatbuf.Struct_;
-    case 'Union': return accessor(index, new org.apache.arrow.flatbuf.Union())! as org.apache.arrow.flatbuf.Union;
-    case 'FixedSizeBinary': return accessor(index, new org.apache.arrow.flatbuf.FixedSizeBinary())! as org.apache.arrow.flatbuf.FixedSizeBinary;
-    case 'FixedSizeList': return accessor(index, new org.apache.arrow.flatbuf.FixedSizeList())! as org.apache.arrow.flatbuf.FixedSizeList;
-    case 'Map': return accessor(index, new org.apache.arrow.flatbuf.Map())! as org.apache.arrow.flatbuf.Map;
-    case 'Duration': return accessor(index, new org.apache.arrow.flatbuf.Duration())! as org.apache.arrow.flatbuf.Duration;
-    case 'LargeBinary': return accessor(index, new org.apache.arrow.flatbuf.LargeBinary())! as org.apache.arrow.flatbuf.LargeBinary;
-    case 'LargeUtf8': return accessor(index, new org.apache.arrow.flatbuf.LargeUtf8())! as org.apache.arrow.flatbuf.LargeUtf8;
-    case 'LargeList': return accessor(index, new org.apache.arrow.flatbuf.LargeList())! as org.apache.arrow.flatbuf.LargeList;
+    case 'Null': return accessor(rowSet, new org.apache.arrow.flatbuf.Null())! as org.apache.arrow.flatbuf.Null;
+    case 'Int': return accessor(rowSet, new org.apache.arrow.flatbuf.Int())! as org.apache.arrow.flatbuf.Int;
+    case 'FloatingPoint': return accessor(rowSet, new org.apache.arrow.flatbuf.FloatingPoint())! as org.apache.arrow.flatbuf.FloatingPoint;
+    case 'Binary': return accessor(rowSet, new org.apache.arrow.flatbuf.Binary())! as org.apache.arrow.flatbuf.Binary;
+    case 'Utf8': return accessor(rowSet, new org.apache.arrow.flatbuf.Utf8())! as org.apache.arrow.flatbuf.Utf8;
+    case 'Bool': return accessor(rowSet, new org.apache.arrow.flatbuf.Bool())! as org.apache.arrow.flatbuf.Bool;
+    case 'Decimal': return accessor(rowSet, new org.apache.arrow.flatbuf.Decimal())! as org.apache.arrow.flatbuf.Decimal;
+    case 'Date': return accessor(rowSet, new org.apache.arrow.flatbuf.Date())! as org.apache.arrow.flatbuf.Date;
+    case 'Time': return accessor(rowSet, new org.apache.arrow.flatbuf.Time())! as org.apache.arrow.flatbuf.Time;
+    case 'Timestamp': return accessor(rowSet, new org.apache.arrow.flatbuf.Timestamp())! as org.apache.arrow.flatbuf.Timestamp;
+    case 'Interval': return accessor(rowSet, new org.apache.arrow.flatbuf.Interval())! as org.apache.arrow.flatbuf.Interval;
+    case 'List': return accessor(rowSet, new org.apache.arrow.flatbuf.List())! as org.apache.arrow.flatbuf.List;
+    case 'Struct_': return accessor(rowSet, new org.apache.arrow.flatbuf.Struct_())! as org.apache.arrow.flatbuf.Struct_;
+    case 'Union': return accessor(rowSet, new org.apache.arrow.flatbuf.Union())! as org.apache.arrow.flatbuf.Union;
+    case 'FixedSizeBinary': return accessor(rowSet, new org.apache.arrow.flatbuf.FixedSizeBinary())! as org.apache.arrow.flatbuf.FixedSizeBinary;
+    case 'FixedSizeList': return accessor(rowSet, new org.apache.arrow.flatbuf.FixedSizeList())! as org.apache.arrow.flatbuf.FixedSizeList;
+    case 'Map': return accessor(rowSet, new org.apache.arrow.flatbuf.Map())! as org.apache.arrow.flatbuf.Map;
+    case 'Duration': return accessor(rowSet, new org.apache.arrow.flatbuf.Duration())! as org.apache.arrow.flatbuf.Duration;
+    case 'LargeBinary': return accessor(rowSet, new org.apache.arrow.flatbuf.LargeBinary())! as org.apache.arrow.flatbuf.LargeBinary;
+    case 'LargeUtf8': return accessor(rowSet, new org.apache.arrow.flatbuf.LargeUtf8())! as org.apache.arrow.flatbuf.LargeUtf8;
+    case 'LargeList': return accessor(rowSet, new org.apache.arrow.flatbuf.LargeList())! as org.apache.arrow.flatbuf.LargeList;
     default: return null;
   }
 }
@@ -236,7 +236,7 @@ export function unionListToType(
  * Dictionary encoding metadata
  * Maintained for forwards compatibility, in the future
  * Dictionaries might be explicit maps between integers and values
- * allowing for non-contiguous index values
+ * allowing for non-contiguous rowSet values
  *
  * @enum {number}
  */
@@ -744,12 +744,12 @@ mode():org.apache.arrow.flatbuf.UnionMode {
 };
 
 /**
- * @param number index
+ * @param number rowSet
  * @returns number
  */
-typeIds(index: number):number|null {
+typeIds(rowSet: number):number|null {
   var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? this.bb!.readInt32(this.bb!.__vector(this.bb_pos + offset) + index * 4) : 0;
+  return offset ? this.bb!.readInt32(this.bb!.__vector(this.bb_pos + offset) + rowSet * 4) : 0;
 };
 
 /**
@@ -2340,13 +2340,13 @@ dictionary(obj?:org.apache.arrow.flatbuf.DictionaryEncoding):org.apache.arrow.fl
  * children apply only to nested data types like Struct, List and Union. For
  * primitive types children will have length 0.
  *
- * @param number index
+ * @param number rowSet
  * @param org.apache.arrow.flatbuf.Field= obj
  * @returns org.apache.arrow.flatbuf.Field
  */
-children(index: number, obj?:org.apache.arrow.flatbuf.Field):org.apache.arrow.flatbuf.Field|null {
+children(rowSet: number, obj?:org.apache.arrow.flatbuf.Field):org.apache.arrow.flatbuf.Field|null {
   var offset = this.bb!.__offset(this.bb_pos, 14);
-  return offset ? (obj || new org.apache.arrow.flatbuf.Field()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+  return offset ? (obj || new org.apache.arrow.flatbuf.Field()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + rowSet * 4), this.bb!) : null;
 };
 
 /**
@@ -2360,13 +2360,13 @@ childrenLength():number {
 /**
  * User-defined metadata
  *
- * @param number index
+ * @param number rowSet
  * @param org.apache.arrow.flatbuf.KeyValue= obj
  * @returns org.apache.arrow.flatbuf.KeyValue
  */
-customMetadata(index: number, obj?:org.apache.arrow.flatbuf.KeyValue):org.apache.arrow.flatbuf.KeyValue|null {
+customMetadata(rowSet: number, obj?:org.apache.arrow.flatbuf.KeyValue):org.apache.arrow.flatbuf.KeyValue|null {
   var offset = this.bb!.__offset(this.bb_pos, 16);
-  return offset ? (obj || new org.apache.arrow.flatbuf.KeyValue()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+  return offset ? (obj || new org.apache.arrow.flatbuf.KeyValue()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + rowSet * 4), this.bb!) : null;
 };
 
 /**
@@ -2614,13 +2614,13 @@ endianness():org.apache.arrow.flatbuf.Endianness {
 };
 
 /**
- * @param number index
+ * @param number rowSet
  * @param org.apache.arrow.flatbuf.Field= obj
  * @returns org.apache.arrow.flatbuf.Field
  */
-fields(index: number, obj?:org.apache.arrow.flatbuf.Field):org.apache.arrow.flatbuf.Field|null {
+fields(rowSet: number, obj?:org.apache.arrow.flatbuf.Field):org.apache.arrow.flatbuf.Field|null {
   var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? (obj || new org.apache.arrow.flatbuf.Field()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+  return offset ? (obj || new org.apache.arrow.flatbuf.Field()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + rowSet * 4), this.bb!) : null;
 };
 
 /**
@@ -2632,13 +2632,13 @@ fieldsLength():number {
 };
 
 /**
- * @param number index
+ * @param number rowSet
  * @param org.apache.arrow.flatbuf.KeyValue= obj
  * @returns org.apache.arrow.flatbuf.KeyValue
  */
-customMetadata(index: number, obj?:org.apache.arrow.flatbuf.KeyValue):org.apache.arrow.flatbuf.KeyValue|null {
+customMetadata(rowSet: number, obj?:org.apache.arrow.flatbuf.KeyValue):org.apache.arrow.flatbuf.KeyValue|null {
   var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? (obj || new org.apache.arrow.flatbuf.KeyValue()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+  return offset ? (obj || new org.apache.arrow.flatbuf.KeyValue()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + rowSet * 4), this.bb!) : null;
 };
 
 /**
@@ -2652,12 +2652,12 @@ customMetadataLength():number {
 /**
  * Features used in the stream/file.
  *
- * @param number index
+ * @param number rowSet
  * @returns flatbuffers.Long
  */
-features(index: number):flatbuffers.Long|null {
+features(rowSet: number):flatbuffers.Long|null {
   var offset = this.bb!.__offset(this.bb_pos, 10);
-  return offset ? /**  */ (this.bb!.readInt64(this.bb!.__vector(this.bb_pos + offset) + index * 8)) : this.bb!.createLong(0, 0);
+  return offset ? /**  */ (this.bb!.readInt64(this.bb!.__vector(this.bb_pos + offset) + rowSet * 8)) : this.bb!.createLong(0, 0);
 };
 
 /**

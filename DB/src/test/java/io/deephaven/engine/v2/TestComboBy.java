@@ -13,6 +13,7 @@ import io.deephaven.engine.tables.dbarrays.DbCharArray;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -22,7 +23,6 @@ import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.MinMaxByStateFactoryImpl;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 
 import java.io.IOException;
@@ -422,7 +422,7 @@ public class TestComboBy extends LiveTableTestCase {
         assertArrayEquals(new char[] {'d'}, cs.get(3).toArray());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Index toAdd = i(4, 5, 6, 7);
+            final TrackingMutableRowSet toAdd = i(4, 5, 6, 7);
             addToTable(dataTable, toAdd,
                     intCol("Grp", 1, 2, 3, 4),
                     charCol("Let", 'e', 'f', 'g', 'h'));
@@ -435,7 +435,7 @@ public class TestComboBy extends LiveTableTestCase {
         assertArrayEquals(new char[] {'d', 'h'}, cs.get(3).toArray());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Index toAdd = i(8, 9, 10, 11);
+            final TrackingMutableRowSet toAdd = i(8, 9, 10, 11);
             addToTable(dataTable, toAdd,
                     intCol("Grp", 1, 2, 3, 4),
                     charCol("Let", 'i', 'j', 'k', 'l'));
@@ -447,7 +447,7 @@ public class TestComboBy extends LiveTableTestCase {
         assertArrayEquals(new char[] {'d', 'h', 'l'}, cs.get(3).toArray());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Index toAdd = i(12, 13, 14, 15);
+            final TrackingMutableRowSet toAdd = i(12, 13, 14, 15);
             addToTable(dataTable, toAdd,
                     intCol("Grp", 1, 2, 3, 4),
                     charCol("Let", 'm', 'n', 'o', 'p'));

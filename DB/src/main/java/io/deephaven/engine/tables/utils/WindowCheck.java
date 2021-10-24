@@ -12,7 +12,8 @@ import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.TimeProvider;
 import io.deephaven.base.RAPriQueue;
@@ -112,7 +113,7 @@ public class WindowCheck {
         private final RAPriQueue<Entry> priorityQueue;
         /** a map from table indices to our entries. */
         private final TLongObjectHashMap<Entry> indexToEntry;
-        private final Index EMPTY_INDEX = Index.FACTORY.getEmptyIndex();
+        private final TrackingMutableRowSet EMPTY_ROW_SET = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         private final ModifiedColumnSet.Transformer mcsTransformer;
         private final ModifiedColumnSet mcsNewColumns;
         private final ModifiedColumnSet reusableModifiedColumnSet;
@@ -127,11 +128,11 @@ public class WindowCheck {
             int pos;
             /** the timestamp */
             long nanos;
-            /** the index within the source (and result) table */
+            /** the rowSet within the source (and result) table */
             long index;
 
             Entry(long index, long timestamp) {
-                this.index = Require.geqZero(index, "index");
+                this.index = Require.geqZero(index, "rowSet");
                 this.nanos = timestamp;
             }
 
@@ -139,7 +140,7 @@ public class WindowCheck {
             public String toString() {
                 return "Entry{" +
                         "nanos=" + nanos +
-                        ", index=" + index +
+                        ", rowSet=" + index +
                         '}';
             }
         }
@@ -192,11 +193,11 @@ public class WindowCheck {
                 removeIndex(upstream.removed);
 
                 // anything that was shifted needs to be placed in the proper slots
-                final Index preShiftIndex = source.getIndex().getPrevIndex();
+                final TrackingMutableRowSet preShiftRowSet = source.getIndex().getPrevIndex();
                 upstream.shifted.apply((start, end, delta) -> {
-                    final Index subIndex = preShiftIndex.subindexByKey(start, end);
+                    final TrackingMutableRowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
 
-                    final Index.SearchIterator it = delta < 0 ? subIndex.searchIterator() : subIndex.reverseIterator();
+                    final TrackingMutableRowSet.SearchIterator it = delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
                     while (it.hasNext()) {
                         final long idx = it.nextLong();
                         final Entry entry = indexToEntry.remove(idx);
@@ -210,7 +211,7 @@ public class WindowCheck {
                 // TODO: improve performance with getChunk
                 // TODO: reinterpret inWindowColumnSource so that it compares longs instead of objects
 
-                // figure out for all the modified indices if the timestamp or index changed
+                // figure out for all the modified indices if the timestamp or rowSet changed
                 upstream.forAllModified((oldIndex, newIndex) -> {
                     final DBDateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(newIndex);
                     final DBDateTime prevTimestamp = inWindowColumnSource.timeStampSource.getPrev(oldIndex);
@@ -224,7 +225,7 @@ public class WindowCheck {
 
                 final ShiftAwareListener.Update downstream = upstream.copy();
 
-                try (final Index modifiedByTime = recomputeModified()) {
+                try (final TrackingMutableRowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.nonempty()) {
                         downstream.modified.insert(modifiedByTime);
                     }
@@ -240,12 +241,12 @@ public class WindowCheck {
                 }
                 result.notifyListeners(downstream);
             } else {
-                final Index modifiedByTime = recomputeModified();
+                final TrackingMutableRowSet modifiedByTime = recomputeModified();
                 if (modifiedByTime.nonempty()) {
                     final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
                     downstream.modified = modifiedByTime;
-                    downstream.added = EMPTY_INDEX;
-                    downstream.removed = EMPTY_INDEX;
+                    downstream.added = EMPTY_ROW_SET;
+                    downstream.removed = EMPTY_ROW_SET;
                     downstream.shifted = IndexShiftData.EMPTY;
                     downstream.modifiedColumnSet = reusableModifiedColumnSet;
                     downstream.modifiedColumnSet.clear();
@@ -284,7 +285,7 @@ public class WindowCheck {
         /**
          * If the value of the timestamp is within the window, insert it into the queue and map.
          *
-         * @param index the index inserted into the table
+         * @param index the rowSet inserted into the table
          */
         private void addIndex(long index) {
             final DBDateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(index);
@@ -301,10 +302,10 @@ public class WindowCheck {
         /**
          * If the keys are in the window, remove them from the map and queue.
          *
-         * @param index the indices to remove
+         * @param rowSet the indices to remove
          */
-        private void removeIndex(final Index index) {
-            index.forAllLongs((final long key) -> {
+        private void removeIndex(final TrackingMutableRowSet rowSet) {
+            rowSet.forAllLongs((final long key) -> {
                 final Entry e = indexToEntry.remove(key);
                 if (e != null) {
                     priorityQueue.remove(e);
@@ -323,8 +324,8 @@ public class WindowCheck {
             notifyChanges();
         }
 
-        private Index recomputeModified() {
-            final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+        private TrackingMutableRowSet recomputeModified() {
+            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
             while (true) {
                 final Entry entry = priorityQueue.top();
@@ -343,24 +344,24 @@ public class WindowCheck {
                 }
             }
 
-            return builder.getIndex();
+            return builder.build();
         }
 
         void validateQueue() {
-            final Index resultIndex = result.getIndex();
-            final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+            final TrackingMutableRowSet resultRowSet = result.getIndex();
+            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
             final Entry[] entries = new Entry[priorityQueue.size()];
             priorityQueue.dump(entries, 0);
             Arrays.stream(entries).mapToLong(entry -> entry.index).forEach(builder::addKey);
 
-            final Index inQueue = builder.getIndex();
+            final TrackingMutableRowSet inQueue = builder.build();
             Assert.eq(inQueue.size(), "inQueue.size()", priorityQueue.size(), "priorityQueue.size()");
-            final boolean condition = inQueue.subsetOf(resultIndex);
+            final boolean condition = inQueue.subsetOf(resultRowSet);
             if (!condition) {
                 // noinspection ConstantConditions
-                Assert.assertion(condition, "inQueue.subsetOf(resultIndex)", inQueue, "inQueue", resultIndex,
-                        "resultIndex", inQueue.minus(resultIndex), "inQueue.minus(resultIndex)");
+                Assert.assertion(condition, "inQueue.subsetOf(resultRowSet)", inQueue, "inQueue", resultRowSet,
+                        "resultRowSet", inQueue.minus(resultRowSet), "inQueue.minus(resultRowSet)");
             }
         }
 

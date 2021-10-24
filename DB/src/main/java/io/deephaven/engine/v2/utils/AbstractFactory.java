@@ -8,44 +8,44 @@ import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import gnu.trove.list.array.TLongArrayList;
 
 /**
- * This is the base class for factories that construct {@link Index Indexes.
+ * This is the base class for factories that construct {@link TrackingMutableRowSet Indexes.
  */
-public abstract class AbstractFactory implements Index.Factory {
+public abstract class AbstractFactory implements RowSetFactory {
     @Override
-    public Index getIndexByValues(final long... keys) {
-        if (keys.length == 0) {
-            return getEmptyIndex();
+    public TrackingMutableRowSet getRowSetByValues(final long... rowKeys) {
+        if (rowKeys.length == 0) {
+            return getEmptyRowSet();
         }
-        if (keys.length == 1) {
-            return getIndexByRange(keys[0], keys[0]);
+        if (rowKeys.length == 1) {
+            return getRowSetByRange(rowKeys[0], rowKeys[0]);
         }
-        final Index.RandomBuilder indexBuilder = getRandomBuilder();
-        for (long key : keys) {
+        final RowSetBuilder indexBuilder = getRandomBuilder();
+        for (long key : rowKeys) {
             indexBuilder.addKey(key);
         }
-        return indexBuilder.getIndex();
+        return indexBuilder.build();
     }
 
     @Override
-    public Index getIndexByValues(long key) {
-        return getIndexByRange(key, key);
+    public TrackingMutableRowSet getRowSetByValues(long key) {
+        return getRowSetByRange(key, key);
     }
 
     @Override
-    public Index getIndexByValues(final TLongArrayList list) {
+    public TrackingMutableRowSet getRowSetByValues(final TLongArrayList list) {
         list.sort();
-        final Index.SequentialBuilder builder = getSequentialBuilder();
+        final SequentialRowSetBuilder builder = getSequentialBuilder();
         list.forEach(builder);
-        return builder.getIndex();
+        return builder.build();
     }
 
     @Override
-    public Index getIndexByRange(final long firstKey, final long lastKey) {
-        return new TreeIndex(SingleRange.make(firstKey, lastKey));
+    public TrackingMutableRowSet getRowSetByRange(final long firstRowKey, final long lastRowKey) {
+        return new TrackingMutableRowSetImpl(SingleRange.make(firstRowKey, lastRowKey));
     }
 
     @Override
-    public Index getFlatIndex(final long size) {
-        return size <= 0 ? getEmptyIndex() : getIndexByRange(0, size - 1);
+    public TrackingMutableRowSet getFlatIndex(final long size) {
+        return size <= 0 ? getEmptyRowSet() : getRowSetByRange(0, size - 1);
     }
 }

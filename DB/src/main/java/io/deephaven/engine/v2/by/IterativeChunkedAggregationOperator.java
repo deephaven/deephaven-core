@@ -13,8 +13,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -236,7 +236,7 @@ public interface IterativeChunkedAggregationOperator {
 
 
     /**
-     * Whether the operator can deal with an unchunked Index more efficiently than a chunked index.
+     * Whether the operator can deal with an unchunked TrackingMutableRowSet more efficiently than a chunked rowSet.
      *
      * @return true if the operator can deal with unchunked indices, false otherwise
      */
@@ -244,7 +244,7 @@ public interface IterativeChunkedAggregationOperator {
         return false;
     }
 
-    default boolean addIndex(SingletonContext context, Index index, long destination) {
+    default boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
         throw new UnsupportedOperationException();
     }
 
@@ -307,7 +307,7 @@ public interface IterativeChunkedAggregationOperator {
      * @param newDestinations New destinations added on this update
      */
     default void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-            @NotNull final ReadOnlyIndex newDestinations) {}
+            @NotNull final RowSet newDestinations) {}
 
     /**
      * Called on error to propagate listener failure to this operator.

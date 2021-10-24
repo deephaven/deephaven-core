@@ -684,11 +684,11 @@ def makeJavaArray(data, name, convertUnknownToString=False):
 def _handleCategorical(data, columnName, convertUnknownToString=False):
     # assumed to only be called by _convertNdarrayToImmutableSource
     # fetch the underlying "codes"
-    indices = data._get_codes()  # this is the "index" array - integer type of appropriate bit depth
+    indices = data._get_codes()  # this is the "rowSet" array - integer type of appropriate bit depth
     # fetch the "values"
     values = data.categories.values  # if this isn't a primitive type, then it will very likely be of dtype object
 
-    # actually null values are represented by an index of -1, we should address this, if necessary
+    # actually null values are represented by an rowSet of -1, we should address this, if necessary
     if -1 in indices:
         # I'm fairly sure that dtype of values will either be an appropriate primitive, or object
         if values.dtype.name in _nullValues:
@@ -1047,16 +1047,16 @@ def _tupleToColDef(t):
         raise Exception('Only 2 or 3 element tuples expected, got ' + len(t))
     col_name = t[0]
     if not _isStr(col_name):
-        raise Exception('Element at index 0 (' + col_name + ') for column name is not of string type')
+        raise Exception('Element at rowSet 0 (' + col_name + ') for column name is not of string type')
     type_name = t[1]
     if not _isStr(type_name):
-        raise Exception('Element at index 1 (' + type_name + ') for type name is not of string type')
+        raise Exception('Element at rowSet 1 (' + type_name + ') for type name is not of string type')
     type_class = _typeFromName(type_name)
     if len(t) == 2:
         return _col_def_.fromGenericType(col_name, type_class)
     component_type_name = t[2]
     if not _isStr(component_type_name):
-        raise Exception('Element at index 2 (' + component_type_name + ') for component type name is not of string type')
+        raise Exception('Element at rowSet 2 (' + component_type_name + ') for component type name is not of string type')
     component_type_class = _typeFromName(component_type_name)
     return _col_def_.fromGenericType(col_name, type_class, component_type_class)
 

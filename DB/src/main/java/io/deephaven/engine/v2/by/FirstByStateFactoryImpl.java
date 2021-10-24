@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by;
 
 /**
- * State factory for firstBy using an InterativeIndexState to create a redirection Index.
+ * State factory for firstBy using an InterativeIndexState to create a redirection TrackingMutableRowSet.
  */
 public class FirstByStateFactoryImpl extends IterativeIndexStateFactory {
     public FirstByStateFactoryImpl() {
@@ -29,7 +29,7 @@ public class FirstByStateFactoryImpl extends IterativeIndexStateFactory {
     }
 
     /**
-     * Sort the results by the original index when aggregating on state.
+     * Sort the results by the original rowSet when aggregating on state.
      */
     @Override
     ReaggregatableStatefactory rollupFactory() {

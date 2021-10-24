@@ -8,7 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.locations.impl.ParallelDeferredGroupingProvider;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -35,11 +35,11 @@ public interface GroupingProvider<DATA_TYPE> {
      *
      * @return a Map from grouping keys to Indices, or null if the group could not be constructed
      */
-    Map<DATA_TYPE, Index> getGroupToRange();
+    Map<DATA_TYPE, TrackingMutableRowSet> getGroupToRange();
 
     /**
      * Returns a grouping structure, possibly constructed on-demand; the grouping is only required to include groupings
-     * for values that exist within the hint Index; but it may include more. The hint allows the underlying
+     * for values that exist within the hint TrackingMutableRowSet; but it may include more. The hint allows the underlying
      * implementation to optionally optimize out groupings that do not overlap hint.
      * <p>
      * The return value is a pair, containing a "complete" indicator. If the complete indicator is true, then the caller
@@ -49,5 +49,5 @@ public interface GroupingProvider<DATA_TYPE> {
      * @return a Pair containing a Map from grouping keys to Indices, which includes at least the hint indices; and a
      *         Boolean which indicates that the grouping is complete
      */
-    Pair<Map<DATA_TYPE, Index>, Boolean> getGroupToRange(Index hint);
+    Pair<Map<DATA_TYPE, TrackingMutableRowSet>, Boolean> getGroupToRange(TrackingMutableRowSet hint);
 }

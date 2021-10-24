@@ -10,26 +10,26 @@ package io.deephaven.engine.plot.datasets.histogram;
 public interface DiscretizedRange {
 
     /**
-     * Gets the min value of the bin at {@code index}.
+     * Gets the min value of the bin at {@code rowSet}.
      *
-     * @param index index
-     * @return min value of the bin specified by {@code index}
+     * @param index rowSet
+     * @return min value of the bin specified by {@code rowSet}
      */
     double binMin(long index);
 
     /**
-     * Gets the max value of the bin at {@code index}.
+     * Gets the max value of the bin at {@code rowSet}.
      *
-     * @param index index
-     * @return max value of the bin specified by {@code index}
+     * @param index rowSet
+     * @return max value of the bin specified by {@code rowSet}
      */
     double binMax(long index);
 
     /**
-     * Gets the index of the bin the {@code value} lies in.
+     * Gets the rowSet of the bin the {@code value} lies in.
      *
      * @param value value
-     * @return max value of the bin specified by {@code index}
+     * @return max value of the bin specified by {@code rowSet}
      */
     long index(double value);
 }

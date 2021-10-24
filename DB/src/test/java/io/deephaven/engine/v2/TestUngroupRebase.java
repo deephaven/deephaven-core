@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.io.IOException;
 import java.util.Random;
@@ -35,9 +35,9 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // don't remove or add anything, let's just do one step
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            Index keysToRemove = Index.FACTORY.getEmptyIndex();
-            Index keysToAdd = Index.FACTORY.getEmptyIndex();
-            Index keysToModify = Index.FACTORY.getEmptyIndex();
+            TrackingMutableRowSet keysToRemove = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            TrackingMutableRowSet keysToAdd = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            TrackingMutableRowSet keysToModify = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
             TableTools.show(table);
@@ -45,7 +45,7 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // Now let's modify the first row, but not cause a rebase
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToModify = Index.FACTORY.getIndexByValues(0);
+            keysToModify = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
             ColumnHolder keyModifications = TstUtils.c("X", 1);
             ColumnHolder valueModifications = TstUtils.c("Y", new int[] {10, 20, 30});
             TstUtils.addToTable(table, keysToModify, keyModifications, valueModifications);
@@ -57,7 +57,7 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // Now let's modify the first row such that we will cause a rebasing operation
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToModify = Index.FACTORY.getIndexByValues(0);
+            keysToModify = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
             valueModifications = TstUtils.c("Y", new int[] {10, 20, 30, 40, 50, 60});
             TstUtils.addToTable(table, keysToModify, keyModifications, valueModifications);
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
@@ -81,9 +81,9 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // let's remove the second row, so that we can add something to it on the next step
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = Index.FACTORY.getIndexByValues(1);
-            keysToAdd = Index.FACTORY.getIndexByValues();
-            keysToModify = Index.FACTORY.getIndexByValues();
+            keysToRemove = TrackingMutableRowSet.FACTORY.getRowSetByValues(1);
+            keysToAdd = TrackingMutableRowSet.FACTORY.getRowSetByValues();
+            keysToModify = TrackingMutableRowSet.FACTORY.getRowSetByValues();
             TstUtils.removeRows(table2, keysToRemove);
             table2.notifyListeners(keysToAdd, keysToRemove, keysToModify);
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
@@ -92,9 +92,9 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // now we want to add it back, causing a rebase, and modify another
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = Index.FACTORY.getIndexByValues();
-            keysToAdd = Index.FACTORY.getIndexByValues(1);
-            keysToModify = Index.FACTORY.getIndexByValues(2, 3);
+            keysToRemove = TrackingMutableRowSet.FACTORY.getRowSetByValues();
+            keysToAdd = TrackingMutableRowSet.FACTORY.getRowSetByValues(1);
+            keysToModify = TrackingMutableRowSet.FACTORY.getRowSetByValues(2, 3);
 
             ColumnHolder keyAdditions = TstUtils.c("X", 2);
             ColumnHolder valueAdditions = TstUtils.c("Y", new int[] {210, 220, 230, 240, 250, 260});
@@ -110,9 +110,9 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // an empty step
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = Index.FACTORY.getIndexByValues();
-            keysToAdd = Index.FACTORY.getIndexByValues();
-            keysToModify = Index.FACTORY.getIndexByValues();
+            keysToRemove = TrackingMutableRowSet.FACTORY.getRowSetByValues();
+            keysToAdd = TrackingMutableRowSet.FACTORY.getRowSetByValues();
+            keysToModify = TrackingMutableRowSet.FACTORY.getRowSetByValues();
             TstUtils.addToTable(table2, keysToModify, intCol("X"), TstUtils.c("Y"));
             table2.notifyListeners(keysToAdd, keysToRemove, keysToModify);
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
@@ -121,9 +121,9 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // and another step, to make sure everything is fine post rebase
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = Index.FACTORY.getIndexByValues();
-            keysToAdd = Index.FACTORY.getIndexByValues();
-            keysToModify = Index.FACTORY.getIndexByValues(2, 3);
+            keysToRemove = TrackingMutableRowSet.FACTORY.getRowSetByValues();
+            keysToAdd = TrackingMutableRowSet.FACTORY.getRowSetByValues();
+            keysToModify = TrackingMutableRowSet.FACTORY.getRowSetByValues(2, 3);
             TstUtils.addToTable(table2, keysToModify, keyModifications, valueModifications);
             table2.notifyListeners(keysToAdd, keysToRemove, keysToModify);
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();

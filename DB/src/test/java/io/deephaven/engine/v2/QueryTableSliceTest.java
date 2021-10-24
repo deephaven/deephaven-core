@@ -4,7 +4,7 @@ import io.deephaven.base.Procedure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
@@ -360,11 +360,11 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 final int ii = i;
                 final int jj = j;
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    Index added = Index.FACTORY.getIndexByRange(ii * jj, (ii + 1) * jj - 1);
+                    TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getIndex().insert(added);
                     ShiftAwareListener.Update update =
-                            new ShiftAwareListener.Update(added, Index.FACTORY.getEmptyIndex(),
-                                    Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                            new ShiftAwareListener.Update(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                                    TrackingMutableRowSet.FACTORY.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
                     upTable.notifyListeners(update);
                 });
 
@@ -380,7 +380,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testZeroHead() {
-        final QueryTable table = TstUtils.testRefreshingTable(Index.FACTORY.getIndexByRange(10, 35),
+        final QueryTable table = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(10, 35),
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
         final Table noRows = table.head(0);
         assertEquals(0, noRows.size());
@@ -391,7 +391,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testSlice() {
-        final QueryTable table = TstUtils.testRefreshingTable(Index.FACTORY.getIndexByRange(10, 35),
+        final QueryTable table = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(10, 35),
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
 
         doSliceTest(table, "abcdefghij", 0, 10);

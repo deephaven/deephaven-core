@@ -9,8 +9,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.ReversedColumnSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 
 import java.util.LinkedHashMap;
@@ -22,7 +22,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     private QueryTable resultTable;
     private ModifiedColumnSet.Transformer mcsTransformer;
 
-    // minimum pivot is index container size -- this guarantees that we only generate container shifts
+    // minimum pivot is rowSet container size -- this guarantees that we only generate container shifts
     private static final long MINIMUM_PIVOT = UnionRedirection.CHUNK_MULTIPLE;
     // since we are using highest one bit, this should be a power of two
     private static final int PIVOT_GROWTH_FACTOR = 4;
@@ -67,8 +67,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final Index indexToReverse = usePrev ? parent.getIndex().getPrevIndex() : parent.getIndex();
-        prevPivot = pivotPoint = computePivot(indexToReverse.lastRowKey());
+        final TrackingMutableRowSet rowSetToReverse = usePrev ? parent.getIndex().getPrevIndex() : parent.getIndex();
+        prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
@@ -76,11 +76,11 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
 
-        final Index index = transform(indexToReverse);
-        resultSize = index.size();
-        Assert.eq(resultSize, "resultSize", indexToReverse.size(), "indexToReverse.size()");
+        final TrackingMutableRowSet rowSet = transform(rowSetToReverse);
+        resultSize = rowSet.size();
+        Assert.eq(resultSize, "resultSize", rowSetToReverse.size(), "rowSetToReverse.size()");
 
-        resultTable = new QueryTable(parent.getDefinition(), index, resultMap);
+        resultTable = new QueryTable(parent.getDefinition(), rowSet, resultMap);
         mcsTransformer = parent.newModifiedColumnSetIdentityTransformer(resultTable);
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Reverse);
 
@@ -100,16 +100,16 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private void onUpdate(final ShiftAwareListener.Update upstream) {
-        final Index index = resultTable.getIndex();
-        final Index parentIndex = parent.getIndex();
-        Assert.eq(resultSize, "resultSize", index.size(), "index.size()");
+        final TrackingMutableRowSet rowSet = resultTable.getIndex();
+        final TrackingMutableRowSet parentRowSet = parent.getIndex();
+        Assert.eq(resultSize, "resultSize", rowSet.size(), "rowSet.size()");
 
-        if (parentIndex.size() != (index.size() + upstream.added.size() - upstream.removed.size())) {
+        if (parentRowSet.size() != (rowSet.size() + upstream.added.size() - upstream.removed.size())) {
             QueryTable.log.error()
-                    .append("Size Mismatch: Result index: ")
-                    .append(index).append(" size=").append(index.size())
-                    .append(", Original index: ")
-                    .append(parentIndex).append(" size=").append(parentIndex.size())
+                    .append("Size Mismatch: Result rowSet: ")
+                    .append(rowSet).append(" size=").append(rowSet.size())
+                    .append(", Original rowSet: ")
+                    .append(parentRowSet).append(" size=").append(parentRowSet.size())
                     .append(", Added: ").append(upstream.added).append(" size=").append(upstream.added.size())
                     .append(", Removed: ").append(upstream.removed).append(" size=").append(upstream.removed.size())
                     .endl();
@@ -120,11 +120,11 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
         // removed is in pre-shift keyspace
         downstream.removed = transform(upstream.removed);
-        index.remove(downstream.removed);
+        rowSet.remove(downstream.removed);
 
-        // transform shifted and apply to our index
+        // transform shifted and apply to our rowSet
         final long newShift =
-                (parentIndex.lastRowKey() > pivotPoint) ? computePivot(parentIndex.lastRowKey()) - pivotPoint : 0;
+                (parentRowSet.lastRowKey() > pivotPoint) ? computePivot(parentRowSet.lastRowKey()) - pivotPoint : 0;
         if (upstream.shifted.nonempty() || newShift > 0) {
             long watermarkKey = 0;
             final IndexShiftData.Builder oShiftedBuilder = new IndexShiftData.Builder();
@@ -162,7 +162,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             downstream.shifted = oShiftedBuilder.build();
-            downstream.shifted.apply(index);
+            downstream.shifted.apply(rowSet);
 
             // Update pivot logic.
             lastPivotChange = LogicalClock.DEFAULT.currentStep();
@@ -174,7 +174,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
         // added/modified are in post-shift keyspace
         downstream.added = transform(upstream.added);
-        index.insert(downstream.added);
+        rowSet.insert(downstream.added);
         downstream.modified = transform(upstream.modified);
 
         Assert.eq(downstream.added.size(), "update.added.size()", upstream.added.size(), "upstream.added.size()");
@@ -189,18 +189,18 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             mcsTransformer.transform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
         }
 
-        if (index.size() != parentIndex.size()) {
+        if (rowSet.size() != parentRowSet.size()) {
             QueryTable.log.error()
-                    .append("Size Mismatch: Result index: ").append(index)
-                    .append("Original index: ").append(parentIndex)
+                    .append("Size Mismatch: Result rowSet: ").append(rowSet)
+                    .append("Original rowSet: ").append(parentRowSet)
                     .append("Upstream update: ").append(upstream)
                     .append("Downstream update: ").append(downstream)
                     .endl();
-            Assert.neq(index.size(), "index.size()", parentIndex.size(), "parent.getIndex().size()");
+            Assert.neq(rowSet.size(), "rowSet.size()", parentRowSet.size(), "parent.build().size()");
         }
 
         resultTable.notifyListeners(downstream);
-        resultSize = index.size();
+        resultSize = rowSet.size();
     }
 
     private long computePivot(long maxInnerIndex) {
@@ -221,30 +221,30 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     /**
-     * Transform an outer (reversed) index to the inner (unreversed) index, or vice versa.
+     * Transform an outer (reversed) rowSet to the inner (unreversed) rowSet, or vice versa.
      *
-     * @param indexToTransform the outer index
-     * @return the corresponding inner index
+     * @param rowSetToTransform the outer rowSet
+     * @return the corresponding inner rowSet
      */
-    public Index transform(final Index indexToTransform) {
-        return transform(indexToTransform, false);
+    public TrackingMutableRowSet transform(final TrackingMutableRowSet rowSetToTransform) {
+        return transform(rowSetToTransform, false);
     }
 
     /**
-     * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle, or vice versa.
+     * Transform an outer (reversed) rowSet to the inner (unreversed) rowSet as of the previous cycle, or vice versa.
      *
-     * @param outerIndex the outer index
-     * @return the corresponding inner index
+     * @param outerRowSet the outer rowSet
+     * @return the corresponding inner rowSet
      */
-    public Index transformPrev(final Index outerIndex) {
-        return transform(outerIndex, true);
+    public TrackingMutableRowSet transformPrev(final TrackingMutableRowSet outerRowSet) {
+        return transform(outerRowSet, true);
     }
 
-    private Index transform(final Index outerIndex, final boolean usePrev) {
+    private TrackingMutableRowSet transform(final TrackingMutableRowSet outerRowSet, final boolean usePrev) {
         final long pivot = usePrev ? getPivotPrev() : pivotPoint;
-        final IndexBuilder reversedBuilder = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder reversedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
-        for (final Index.RangeIterator rangeIterator = outerIndex.rangeIterator(); rangeIterator.hasNext();) {
+        for (final TrackingMutableRowSet.RangeIterator rangeIterator = outerRowSet.rangeIterator(); rangeIterator.hasNext();) {
             rangeIterator.next();
             final long startValue = rangeIterator.currentRangeStart();
             final long endValue = rangeIterator.currentRangeEnd();
@@ -256,24 +256,24 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             reversedBuilder.addRange(transformedEnd, transformedStart);
         }
 
-        return reversedBuilder.getIndex();
+        return reversedBuilder.build();
     }
 
     /**
-     * Transform an outer (reversed) index to the inner (unreversed) index, or vice versa.
+     * Transform an outer (reversed) rowSet to the inner (unreversed) rowSet, or vice versa.
      *
-     * @param outerIndex the outer index
-     * @return the corresponding inner index
+     * @param outerIndex the outer rowSet
+     * @return the corresponding inner rowSet
      */
     public long transform(long outerIndex) {
         return (outerIndex < 0) ? outerIndex : pivotPoint - outerIndex;
     }
 
     /**
-     * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle, or vice versa.
+     * Transform an outer (reversed) rowSet to the inner (unreversed) rowSet as of the previous cycle, or vice versa.
      *
-     * @param outerIndex the outer index
-     * @return the corresponding inner index
+     * @param outerIndex the outer rowSet
+     * @return the corresponding inner rowSet
      */
     public long transformPrev(long outerIndex) {
         return (outerIndex < 0) ? outerIndex : getPivotPrev() - outerIndex;

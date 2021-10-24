@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;
@@ -17,7 +18,6 @@ import io.deephaven.engine.tables.live.LiveTableRegistrar;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.internal.log.LoggerFactory;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -43,7 +43,7 @@ public abstract class SourceTable extends RedefinableTable {
     final SourceTableComponentFactory componentFactory;
 
     /**
-     * A column source manager to maintain our column sources and define how our index is updated.
+     * A column source manager to maintain our column sources and define how our rowSet is updated.
      */
     final ColumnSourceManager columnSourceManager;
 
@@ -63,14 +63,14 @@ public abstract class SourceTable extends RedefinableTable {
     private volatile boolean locationsInitialized;
 
     /**
-     * Whether we've done our initial location size fetches and initialized our index.
+     * Whether we've done our initial location size fetches and initialized our rowSet.
      */
     private volatile boolean locationSizesInitialized;
 
     /**
-     * The index that backs this table, shared with all child tables.
+     * The rowSet that backs this table, shared with all child tables.
      */
-    private Index index;
+    private TrackingMutableRowSet rowSet;
 
     /**
      * The LiveTable object for refreshing locations and location sizes.
@@ -110,7 +110,7 @@ public abstract class SourceTable extends RedefinableTable {
     }
 
     /**
-     * Force this table to determine its initial state (available locations, size, index) if it hasn't already done so.
+     * Force this table to determine its initial state (available locations, size, rowSet) if it hasn't already done so.
      */
     private void initialize() {
         initializeAvailableLocations();
@@ -170,13 +170,13 @@ public abstract class SourceTable extends RedefinableTable {
             }
             QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
                     () -> {
-                        Assert.eqNull(index, "index");
-                        index = refreshLocationSizes();
-                        setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, index.empty());
+                        Assert.eqNull(rowSet, "rowSet");
+                        rowSet = refreshLocationSizes();
+                        setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, rowSet.empty());
                         if (!isRefreshing()) {
                             return;
                         }
-                        index.initializePreviousValue();
+                        rowSet.initializePreviousValue();
                         final long currentClockValue = LogicalClock.DEFAULT.currentValue();
                         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                                 ? LogicalClock.getStep(currentClockValue) - 1
@@ -186,7 +186,7 @@ public abstract class SourceTable extends RedefinableTable {
         }
     }
 
-    private Index refreshLocationSizes() {
+    private TrackingMutableRowSet refreshLocationSizes() {
         try {
             return columnSourceManager.refresh();
         } catch (Exception e) {
@@ -210,19 +210,19 @@ public abstract class SourceTable extends RedefinableTable {
                 // NB: The availableLocationsLiveTable previously had functionality to notify
                 // "location listeners", but it was never used - resurrect from git history if needed.
                 if (!locationSizesInitialized) {
-                    // We don't want to start polling size changes until the initial Index has been computed.
+                    // We don't want to start polling size changes until the initial TrackingMutableRowSet has been computed.
                     return;
                 }
-                final boolean wasEmpty = index.empty();
-                final Index added = refreshLocationSizes();
+                final boolean wasEmpty = rowSet.empty();
+                final TrackingMutableRowSet added = refreshLocationSizes();
                 if (added.size() == 0) {
                     return;
                 }
                 if (wasEmpty) {
                     setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, false);
                 }
-                index.insert(added);
-                notifyListeners(added, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+                rowSet.insert(added);
+                notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
             } catch (Exception e) {
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);
@@ -266,7 +266,7 @@ public abstract class SourceTable extends RedefinableTable {
 
         final Mutable<QueryTable> result = new MutableObject<>();
         initializeWithSnapshot("SourceTable.coalesce", swapListener, (usePrev, beforeClockValue) -> {
-            final QueryTable resultTable = new QueryTable(definition, index, columnSourceManager.getColumnSources());
+            final QueryTable resultTable = new QueryTable(definition, rowSet, columnSourceManager.getColumnSources());
             copyAttributes(resultTable, CopyAttributeOperation.Coalesce);
 
             if (swapListener != null) {

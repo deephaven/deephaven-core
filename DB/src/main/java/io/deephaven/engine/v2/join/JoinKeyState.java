@@ -4,18 +4,18 @@
 
 package io.deephaven.engine.v2.join;
 
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 interface JoinKeyState {
-    void addLeftIndices(Index leftIndices);
+    void addLeftIndices(TrackingMutableRowSet leftIndices);
 
-    void removeLeftIndices(Index leftIndices);
+    void removeLeftIndices(TrackingMutableRowSet leftIndices);
 
-    void addRightIndices(Index rightIndices);
+    void addRightIndices(TrackingMutableRowSet rightIndices);
 
-    void removeRightIndices(Index rightIndices);
+    void removeRightIndices(TrackingMutableRowSet rightIndices);
 
-    void modifyByRightIndices(Index rightIndex);// Informs the state the right index at that position was modified
+    void modifyByRightIndices(TrackingMutableRowSet rightRowSet);// Informs the state the right rowSet at that position was modified
 
     /**
      * After the right side has been changed (all additions, modifications, removals, etc.) have been completed; each

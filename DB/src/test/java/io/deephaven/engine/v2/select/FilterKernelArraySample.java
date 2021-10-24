@@ -9,7 +9,7 @@ import static io.deephaven.engine.v2.select.ConditionFilter.FilterKernel;
 
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.*;
 import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
@@ -22,7 +22,7 @@ public class FilterKernelArraySample implements io.deephaven.engine.v2.select.Co
     private final io.deephaven.engine.tables.dbarrays.DbShortArray v1_;
 
 
-    public FilterKernelArraySample(Table table, Index fullSet, Param... params) {
+    public FilterKernelArraySample(Table table, TrackingMutableRowSet fullSet, Param... params) {
 
         // Array Column Variables
         v2_ = new io.deephaven.engine.v2.dbarrays.DbDoubleArrayColumnWrapper(table.getColumnSource("v2"), fullSet);

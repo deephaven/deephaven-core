@@ -252,7 +252,7 @@ without burdening the client with extra state or callback management.
 ```
 class TableView {
 
-    // Given a table with columns: type(String), index(Number), created(Date), modified(Date),
+    // Given a table with columns: type(String), rowSet(Number), created(Date), modified(Date),
     // setSort(columns.type.asc(), columns.created.desc())
     setSort() {
         // all arguments should be dh.Sort objects.
@@ -587,7 +587,7 @@ column.
  * `sort():Sort` - Creates a sort builder object, to be used when sorting by this column.
 
 ###### Properties
- * `Number index` - Deprecated, do not use. Internal index of the column in the table, to be used as a key on the Row.
+ * `Number rowSet` - Deprecated, do not use. Internal rowSet of the column in the table, to be used as a key on the Row.
  * `String type` - Type of the row data that can be found in this column.
  * `String name` - Label for this column.
  * `boolean isPartitionColumn` - True if this column is a partition column. Partition columns are used for filtering
@@ -722,7 +722,7 @@ determined. Do not assume that the first row in `rows` is the first visible row,
 scrolling without going to the server.
 
 ##### Properties
- * `Number offset` - The index of the first returned row.
+ * `Number offset` - The rowSet of the first returned row.
  * `Row[] rows` - An array of rows of data.
  * `Column[] columns` - A list of columns describing the data types in each row.
 
@@ -888,9 +888,9 @@ and count of children at each level of the hierarchy, and differences in the dat
 
 ###### Methods
  * `expand(Number|TreeRow)` - Expands the given node, so that its children are visible when they are in the viewport. 
- The parameter can be the row index, or the row object itself. Equivalent to `setExpanded(row, true)`.
+ The parameter can be the row rowSet, or the row object itself. Equivalent to `setExpanded(row, true)`.
  * `collapse(Number|TreeRow)` - Collapses the given node, so that its children and descendents are not visible in the
- size or the viewport. The parameter can be the row index, or the row object itself. Equivalent to 
+ size or the viewport. The parameter can be the row rowSet, or the row object itself. Equivalent to 
  `setExpanded(row, false)`.
  * `setExpanded(Number|TreeRow, boolean)` - Specifies if the given node should be expanded or collapsed. If this node has
  children, and the value is changed, the size of the table will change.
@@ -988,10 +988,10 @@ Those LongWrapper objects can be passed to the various methods on this instance 
  * `RangeSet updated` - The ordered set of row indexes updated since the last update.
 
 ###### Methods
- * `get(LongWrapper index):Row` - Reads a row object from the table, from which any subscribed column can be read.
- * `getData(LongWrapper index, Column column):Object` - Reads a specific cell from the table, from the specified row and
+ * `get(LongWrapper rowSet):Row` - Reads a row object from the table, from which any subscribed column can be read.
+ * `getData(LongWrapper rowSet, Column column):Object` - Reads a specific cell from the table, from the specified row and
  column.
- * `getFormat(LongWrapper index, Column column):Format` - Reads the Format to use for a cell from the specified row and
+ * `getFormat(LongWrapper rowSet, Column column):Format` - Reads the Format to use for a cell from the specified row and
  column.
  
 ##### Class `RangeSet`

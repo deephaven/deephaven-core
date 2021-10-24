@@ -18,7 +18,7 @@ public interface IntervalXYDataSeriesInternal extends IntervalXYDataSeries, XYDa
     /**
      * Gets the left-most point of the bar.
      *
-     * @param item index
+     * @param item rowSet
      * @return left-most point of the bar
      */
     double getStartX(final int item);
@@ -26,7 +26,7 @@ public interface IntervalXYDataSeriesInternal extends IntervalXYDataSeries, XYDa
     /**
      * Gets the right-most point of the bar.
      *
-     * @param item index
+     * @param item rowSet
      * @return right-most point of the bar
      */
     double getEndX(final int item);
@@ -34,7 +34,7 @@ public interface IntervalXYDataSeriesInternal extends IntervalXYDataSeries, XYDa
     /**
      * Gets the bottom-most point of the bar.
      *
-     * @param item index
+     * @param item rowSet
      * @return bottom-most point of the bar
      */
     double getStartY(final int item);
@@ -42,7 +42,7 @@ public interface IntervalXYDataSeriesInternal extends IntervalXYDataSeries, XYDa
     /**
      * Gets the top-most point of the bar.
      *
-     * @param item index
+     * @param item rowSet
      * @return top-most point of the bar
      */
     double getEndY(final int item);

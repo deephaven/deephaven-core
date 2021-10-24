@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedShiftAwareListenerAdapter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.TerminalNotification;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -79,7 +79,7 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter i
         this.valueProducer = valueProducer;
         this.prevValueProducer = prevValueProducer;
 
-        for (final Index.Iterator it = source.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = source.getIndex().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             baselineMap.put(keyProducer.apply(key), key);
         }

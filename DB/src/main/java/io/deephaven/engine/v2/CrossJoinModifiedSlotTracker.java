@@ -12,7 +12,9 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.structures.RowSequence;
 
@@ -35,9 +37,9 @@ class CrossJoinModifiedSlotTracker {
     IndexShiftData leftShifted;
     IndexShiftData rightShifted;
 
-    Index leftAdded;
-    Index leftRemoved;
-    Index leftModified;
+    TrackingMutableRowSet leftAdded;
+    TrackingMutableRowSet leftRemoved;
+    TrackingMutableRowSet leftModified;
 
     boolean hasLeftModifies = false;
     boolean hasRightModifies = false;
@@ -60,16 +62,16 @@ class CrossJoinModifiedSlotTracker {
         int chunkCapacity = START_SLOT_CHUNK_SIZE;
         final SizedLongChunk<Values> flagChunk = new SizedLongChunk<>();
         final SizedLongChunk<RowKeys> keyChunk = new SizedLongChunk<>();
-        Index.RandomBuilder indexBuilder = Index.FACTORY.getRandomBuilder();
+        RowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
-        long lastIndex = 0; // if added/removed/modified have been shifted then this is the left-index for the shift
-        Index rightAdded;
-        Index rightRemoved;
-        Index rightModified;
+        long lastIndex = 0; // if added/removed/modified have been shifted then this is the left-rowSet for the shift
+        TrackingMutableRowSet rightAdded;
+        TrackingMutableRowSet rightRemoved;
+        TrackingMutableRowSet rightModified;
         IndexShiftData innerShifted;
 
-        Index leftIndex; // reference, NOT a copy
-        Index rightIndex; // reference, NOT a copy
+        TrackingMutableRowSet leftRowSet; // reference, NOT a copy
+        TrackingMutableRowSet rightRowSet; // reference, NOT a copy
 
         private SlotState() {
             keyChunk.ensureCapacityPreserve(START_SLOT_CHUNK_SIZE);
@@ -97,7 +99,7 @@ class CrossJoinModifiedSlotTracker {
             }
 
             isLeftShifted = true;
-            leftShifted.apply(leftIndex);
+            leftShifted.apply(leftRowSet);
             return this;
         }
 
@@ -138,14 +140,14 @@ class CrossJoinModifiedSlotTracker {
 
             rightChanged = keyChunk.size() > 0;
 
-            // finalize right index; transform from right index to downstream offset
-            final Index.SequentialBuilder innerAdded = Index.FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder innerRemoved = Index.FACTORY.getSequentialBuilder();
+            // finalize right rowSet; transform from right rowSet to downstream offset
+            final SequentialRowSetBuilder innerAdded = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder innerRemoved = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
             // let's accumulate downstream offsets too
-            final Index.SequentialBuilder removedBuilder = Index.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder removedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
-            try (final RowSequence.Iterator iter = rightIndex.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator iter = rightRowSet.getRowSequenceIterator()) {
                 final long startRelativePos = iter.getRelativePosition();
 
                 // first we build and translate the removed
@@ -167,31 +169,31 @@ class CrossJoinModifiedSlotTracker {
                 }
             }
 
-            // make our right index be what it needs to be
-            final long oldRightSize = rightIndex.size();
-            try (final Index added = innerAdded.getIndex();
-                    final Index removed = innerRemoved.getIndex()) {
-                rightIndex.remove(removed);
+            // make our right rowSet be what it needs to be
+            final long oldRightSize = rightRowSet.size();
+            try (final TrackingMutableRowSet added = innerAdded.build();
+                 final TrackingMutableRowSet removed = innerRemoved.build()) {
+                rightRowSet.remove(removed);
 
                 // then we shift
                 if (needsRightShift) {
-                    rightShifted.apply(rightIndex);
+                    rightShifted.apply(rightRowSet);
                 }
 
                 if (added.nonempty()) {
-                    rightIndex.insert(added);
-                    jsm.onRightGroupInsertion(rightIndex, added, slotLocation);
+                    rightRowSet.insert(added);
+                    jsm.onRightGroupInsertion(rightRowSet, added, slotLocation);
                 }
 
                 Assert.eq(oldRightSize + added.size() - removed.size(), "oldRightSize + added.size() - removed.size()",
-                        rightIndex.size(), "rightIndex.size()");
+                        rightRowSet.size(), "rightRowSet.size()");
             }
 
             // now translate added && modified; accumulate them too
-            final Index.SequentialBuilder addedBuilder = Index.FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder modifiedBuilder = Index.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
-            try (final RowSequence.Iterator iter = rightIndex.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator iter = rightRowSet.getRowSequenceIterator()) {
                 final long startRelativePos = iter.getRelativePosition();
 
                 for (int ii = 0; ii < keyChunk.size(); ++ii) {
@@ -230,7 +232,7 @@ class CrossJoinModifiedSlotTracker {
                 ++postIdx;
             }
 
-            final long newRightSize = rightIndex.size();
+            final long newRightSize = rightRowSet.size();
             while (postOff < newRightSize && preOff < oldRightSize) {
                 final long preNextOff = (preIdx == keyChunk.size()) ? oldRightSize : keyChunk.get(preIdx);
                 final long postNextOff = (postIdx == keyChunk.size()) ? newRightSize : keyChunk.get(postIdx);
@@ -266,9 +268,9 @@ class CrossJoinModifiedSlotTracker {
                 }
             }
 
-            rightAdded = addedBuilder.getIndex();
-            rightRemoved = removedBuilder.getIndex();
-            rightModified = modifiedBuilder.getIndex();
+            rightAdded = addedBuilder.build();
+            rightRemoved = removedBuilder.build();
+            rightModified = modifiedBuilder.build();
             innerShifted = shiftBuilder.build();
             hasRightModifies |= rightModified.nonempty();
 
@@ -384,12 +386,12 @@ class CrossJoinModifiedSlotTracker {
             state.slotLocation = slot;
             state.cookie = getCookieFromPointer(pointer++);
 
-            state.leftIndex = jsm.getLeftIndex(slot);
-            state.rightIndex = jsm.getRightIndex(slot);
+            state.leftRowSet = jsm.getLeftIndex(slot);
+            state.rightRowSet = jsm.getRightIndex(slot);
 
             if (finishedRightProcessing) {
                 state.finalizedRight = true;
-                state.rightAdded = state.rightRemoved = state.rightModified = Index.FACTORY.getEmptyIndex();
+                state.rightAdded = state.rightRemoved = state.rightModified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                 state.innerShifted = IndexShiftData.EMPTY;
             }
         } else {
@@ -428,14 +430,14 @@ class CrossJoinModifiedSlotTracker {
         return getSlotState(cookie, slot).appendToBuilder(leftIndex).cookie;
     }
 
-    // Right shifts cannot be applied until after the removes are applied to the slot's right index. So, we ensure that
+    // Right shifts cannot be applied until after the removes are applied to the slot's right rowSet. So, we ensure that
     // a tracker-slot is allocated for each slot affected by a shift, and apply the shifts later.
     long needsRightShift(final long cookie, final long slot) {
         return getSlotState(cookie, slot).needsRightShift().cookie;
     }
 
     // Left shifts can actually be applied immediately (removes are already rm'd), but we need to be careful to only
-    // shift the leftIndex once.
+    // shift the leftRowSet once.
     long needsLeftShift(final long cookie, final long slot) {
         return getSlotState(cookie, slot).applyLeftShift().cookie;
     }
@@ -474,17 +476,17 @@ class CrossJoinModifiedSlotTracker {
     }
 
     void flushLeftRemoves() {
-        final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int jj = 0; jj < pointer; ++jj) {
             final SlotState slotState = modifiedSlots.get(jj);
             if (slotState == null) {
                 continue;
             }
 
-            final Index leftRemoved = slotState.indexBuilder.getIndex();
-            slotState.leftIndex.remove(leftRemoved);
-            slotState.indexBuilder = Index.FACTORY.getRandomBuilder();
-            long sizePrev = slotState.rightIndex.sizePrev();
+            final TrackingMutableRowSet leftRemoved = slotState.indexBuilder.build();
+            slotState.leftRowSet.remove(leftRemoved);
+            slotState.indexBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            long sizePrev = slotState.rightRowSet.sizePrev();
             if (sizePrev > 0) {
                 leftRemoved.forAllLongs(ii -> {
                     final long prevOffset = ii << jsm.getPrevNumShiftBits();
@@ -492,23 +494,23 @@ class CrossJoinModifiedSlotTracker {
                 });
             }
         }
-        leftRemoved = builder.getIndex();
+        leftRemoved = builder.build();
     }
 
     void flushLeftAdds() {
-        final Index.RandomBuilder downstreamAdds = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder downstreamAdds = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int jj = 0; jj < pointer; ++jj) {
             final SlotState slotState = modifiedSlots.get(jj);
             if (slotState == null) {
                 continue;
             }
 
-            final Index leftAdded = slotState.indexBuilder.getIndex();
-            slotState.leftIndex.insert(leftAdded);
+            final TrackingMutableRowSet leftAdded = slotState.indexBuilder.build();
+            slotState.leftRowSet.insert(leftAdded);
             jsm.updateLeftRedirectionIndex(leftAdded, slotState.slotLocation);
 
             slotState.indexBuilder = null;
-            long size = slotState.rightIndex.size();
+            long size = slotState.rightRowSet.size();
             if (size > 0) {
                 leftAdded.forAllLongs(ii -> {
                     final long currOffset = ii << jsm.getNumShiftBits();
@@ -516,7 +518,7 @@ class CrossJoinModifiedSlotTracker {
                 });
             }
 
-            final Index.RandomBuilder modifiedAdds = Index.FACTORY.getRandomBuilder();
+            final RowSetBuilder modifiedAdds = TrackingMutableRowSet.FACTORY.getRandomBuilder();
             for (int ii = 0; ii < slotState.keyChunk.get().size(); ++ii) {
                 final long key = slotState.keyChunk.get().get(ii);
                 if (slotState.flagChunk.get().get(ii) != FLAG_ADD) {
@@ -529,15 +531,15 @@ class CrossJoinModifiedSlotTracker {
                 }
                 modifiedAdds.addKey(key);
             }
-            try (final Index moreLeftAdded = modifiedAdds.getIndex()) {
-                slotState.leftIndex.insert(moreLeftAdded);
+            try (final TrackingMutableRowSet moreLeftAdded = modifiedAdds.build()) {
+                slotState.leftRowSet.insert(moreLeftAdded);
                 jsm.updateLeftRedirectionIndex(moreLeftAdded, slotState.slotLocation);
             }
         }
         if (leftAdded == null) {
-            leftAdded = downstreamAdds.getIndex();
+            leftAdded = downstreamAdds.build();
         } else {
-            try (final Index toInsert = downstreamAdds.getIndex()) {
+            try (final TrackingMutableRowSet toInsert = downstreamAdds.build()) {
                 leftAdded.insert(toInsert);
             }
         }
@@ -547,25 +549,25 @@ class CrossJoinModifiedSlotTracker {
         // Removes accumulate in the slot builder, modifies and adds accumulate in the chunks.
         // We leave the adds to process after left shifts are handled.
 
-        final Index.RandomBuilder rmBuilder = Index.FACTORY.getRandomBuilder();
-        final Index.RandomBuilder modBuilder = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder rmBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilder modBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int jj = 0; jj < pointer; ++jj) {
             final SlotState slotState = modifiedSlots.get(jj);
             if (slotState == null) {
                 continue;
             }
-            final Index leftRemoved = slotState.indexBuilder.getIndex();
-            slotState.leftIndex.remove(leftRemoved);
-            jsm.updateLeftRedirectionIndex(leftRemoved, Index.NULL_KEY);
-            slotState.indexBuilder = Index.FACTORY.getRandomBuilder();
-            final long sizePrev = slotState.rightIndex.sizePrev();
+            final TrackingMutableRowSet leftRemoved = slotState.indexBuilder.build();
+            slotState.leftRowSet.remove(leftRemoved);
+            jsm.updateLeftRedirectionIndex(leftRemoved, TrackingMutableRowSet.NULL_ROW_KEY);
+            slotState.indexBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final long sizePrev = slotState.rightRowSet.sizePrev();
             if (sizePrev > 0) {
                 leftRemoved.forAllLongs(ii -> {
                     final long prevOffset = ii << jsm.getPrevNumShiftBits();
                     rmBuilder.addRange(prevOffset, prevOffset + sizePrev - 1);
                 });
             }
-            final long size = slotState.rightIndex.size();
+            final long size = slotState.rightRowSet.size();
             if (sizePrev > 0 && size > 0) {
                 for (int ii = 0; ii < slotState.keyChunk.get().size(); ++ii) {
                     final long key = slotState.keyChunk.get().get(ii);
@@ -578,10 +580,10 @@ class CrossJoinModifiedSlotTracker {
                 }
             }
         }
-        try (final Index toRemove = rmBuilder.getIndex()) {
+        try (final TrackingMutableRowSet toRemove = rmBuilder.build()) {
             leftRemoved.insert(toRemove);
         }
-        leftModified = modBuilder.getIndex();
+        leftModified = modBuilder.build();
         hasLeftModifies = leftModified.nonempty();
     }
 }

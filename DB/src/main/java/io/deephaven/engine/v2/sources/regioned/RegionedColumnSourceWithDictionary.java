@@ -11,10 +11,8 @@ import io.deephaven.engine.v2.sources.Releasable;
 import io.deephaven.engine.v2.sources.RowIdSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -26,12 +24,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 
 /**
  * {@link RegionedColumnSourceObject} with support for dictionary access via {@link SymbolTableSource} methods. Note
  * that it may not be the case that all values are stored as dictionary offsets. See
- * {@link #hasSymbolTable(ReadOnlyIndex)}.
+ * {@link #hasSymbolTable(RowSet)}.
  */
 class RegionedColumnSourceWithDictionary<DATA_TYPE>
         extends RegionedColumnSourceObject.AsValues<DATA_TYPE>
@@ -76,7 +74,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public long getLong(final long elementIndex) {
-            return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
+            return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
         }
 
         @Override
@@ -165,7 +163,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public DATA_TYPE get(final long elementIndex) {
-            return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
+            return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
         }
 
         @Override
@@ -199,13 +197,13 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
     }
 
     @Override
-    public boolean hasSymbolTable(@NotNull final ReadOnlyIndex sourceIndex) {
+    public boolean hasSymbolTable(@NotNull final RowSet sourceIndex) {
         if (sourceIndex.empty()) {
             // Trivially true
             return true;
         }
         RegionVisitResult result;
-        try (final ReadOnlyIndex.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
+        try (final RowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
             keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
             do {
                 result = lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit);
@@ -215,31 +213,31 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
     }
 
     @Override
-    public QueryTable getStaticSymbolTable(@NotNull ReadOnlyIndex sourceIndex, boolean useLookupCaching) {
+    public QueryTable getStaticSymbolTable(@NotNull RowSet sourceIndex, boolean useLookupCaching) {
         // NB: We assume that hasSymbolTable has been tested by the caller
         final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                 new AsDictionary();
 
-        final Index symbolTableIndex;
+        final TrackingMutableRowSet symbolTableRowSet;
         if (sourceIndex.empty()) {
-            symbolTableIndex = Index.FACTORY.getEmptyIndex();
+            symbolTableRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         } else {
-            final Index.SequentialBuilder symbolTableIndexBuilder = Index.FACTORY.getSequentialBuilder();
-            try (final Index.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
+            final SequentialRowSetBuilder symbolTableIndexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            try (final TrackingMutableRowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
                             RowSequence.Iterator.EMPTY, symbolTableIndexBuilder);
                 } while (keysToVisit.hasNext());
             }
-            symbolTableIndex = symbolTableIndexBuilder.getIndex();
+            symbolTableRowSet = symbolTableIndexBuilder.build();
         }
 
         final Map<String, ColumnSource<?>> symbolTableColumnSources = new LinkedHashMap<>();
         symbolTableColumnSources.put(SymbolTableSource.ID_COLUMN_NAME, new RowIdSource());
         symbolTableColumnSources.put(SymbolTableSource.SYMBOL_COLUMN_NAME, dictionaryColumn);
 
-        return new QueryTable(symbolTableIndex, symbolTableColumnSources);
+        return new QueryTable(symbolTableRowSet, symbolTableColumnSources);
     }
 
     @Override
@@ -300,14 +298,14 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 return;
             }
 
-            final Index.SequentialBuilder symbolTableAddedBuilder = Index.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder symbolTableAddedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
             // noinspection unchecked
             final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
-            try (final Index.SearchIterator keysToVisit = upstream.added.searchIterator();
-                    final RowSequence.Iterator knownKeys = symbolTable.getIndex().getRowSequenceIterator()) {
+            try (final TrackingMutableRowSet.SearchIterator keysToVisit = upstream.added.searchIterator();
+                 final RowSequence.Iterator knownKeys = symbolTable.getIndex().getRowSequenceIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
@@ -315,11 +313,11 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 } while (keysToVisit.hasNext());
             }
 
-            final Index symbolTableAdded = symbolTableAddedBuilder.getIndex();
+            final TrackingMutableRowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.nonempty()) {
                 symbolTable.getIndex().insert(symbolTableAdded);
-                symbolTable.notifyListeners(new Update(symbolTableAdded, Index.FACTORY.getEmptyIndex(),
-                        Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, emptyModifiedColumns));
+                symbolTable.notifyListeners(new Update(symbolTableAdded, TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                        TrackingMutableRowSet.FACTORY.getEmptyRowSet(), IndexShiftData.EMPTY, emptyModifiedColumns));
             }
         }
     }

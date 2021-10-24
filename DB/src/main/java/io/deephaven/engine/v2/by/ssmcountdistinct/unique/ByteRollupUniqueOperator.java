@@ -23,8 +23,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.ssms.ByteSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.ByteCompactKernel;
 import org.jetbrains.annotations.NotNull;
@@ -51,7 +51,7 @@ public class ByteRollupUniqueOperator implements IterativeChunkedAggregationOper
     private final byte nonUniqueKey;
 
     private UpdateCommitter<ByteRollupUniqueOperator> prevFlusher = null;
-    private Index touchedStates;
+    private TrackingMutableRowSet touchedStates;
 
     public ByteRollupUniqueOperator(
                                     // region Constructor
@@ -495,7 +495,7 @@ public class ByteRollupUniqueOperator implements IterativeChunkedAggregationOper
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();
@@ -525,7 +525,7 @@ public class ByteRollupUniqueOperator implements IterativeChunkedAggregationOper
         }
 
         prevFlusher = new UpdateCommitter<>(this, ByteRollupUniqueOperator::flushPrevious);
-        touchedStates = Index.CURRENT_FACTORY.getEmptyIndex();
+        touchedStates = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         ssms.startTrackingPrevValues();
         internalResult.startTrackingPrevValues();
     }

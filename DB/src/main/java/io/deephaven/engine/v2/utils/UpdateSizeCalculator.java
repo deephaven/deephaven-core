@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.ShiftAwareListener;
  * Calculate the size of the chunks needed to process an update.
  *
  * The assumption is that the operation processes removed, modified, and added values sequentially (not concurrently);
- * so the largest add/modified/removed index is all that is needed at one time. The effective shifts size is also
+ * so the largest add/modified/removed rowSet is all that is needed at one time. The effective shifts size is also
  * included in the required update size.
  */
 public class UpdateSizeCalculator {

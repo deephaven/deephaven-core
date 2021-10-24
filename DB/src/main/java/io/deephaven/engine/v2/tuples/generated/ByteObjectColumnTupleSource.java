@@ -82,7 +82,7 @@ public class ByteObjectColumnTupleSource extends AbstractTupleSource<ByteObjectT
             writableSource.set(destinationIndexKey, (ELEMENT_TYPE) tuple.getSecondElement());
             return;
         }
-        throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
+        throw new IndexOutOfBoundsException("Invalid element rowSet " + elementIndex + " for export");
     }
 
     @Override

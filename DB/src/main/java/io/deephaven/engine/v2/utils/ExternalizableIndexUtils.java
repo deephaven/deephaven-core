@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.function.LongConsumer;
 
 /**
- * Utility methods used for writing/reading {@link Index}es.
+ * Utility methods used for writing/reading {@link TrackingMutableRowSet}es.
  */
 public class ExternalizableIndexUtils {
 
@@ -29,17 +29,17 @@ public class ExternalizableIndexUtils {
     private static final byte CMD_MASK = 0x78;
 
     /**
-     * Write an {@link Index} to {@code out}.
+     * Write an {@link TrackingMutableRowSet} to {@code out}.
      *
      * @param out The destination
-     * @param index The index
+     * @param rowSet The rowSet
      */
-    public static void writeExternalCompressedDeltas(@NotNull final DataOutput out, @NotNull final Index index)
+    public static void writeExternalCompressedDeltas(@NotNull final DataOutput out, @NotNull final RowSet rowSet)
             throws IOException {
         long offset = 0;
         final TShortArrayList shorts = new TShortArrayList();
 
-        for (final Index.RangeIterator it = index.rangeIterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.RangeIterator it = rowSet.rangeIterator(); it.hasNext();) {
             it.next();
             if (it.currentRangeEnd() == it.currentRangeStart()) {
                 offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeStart(), false);
@@ -145,9 +145,9 @@ public class ExternalizableIndexUtils {
         }
     }
 
-    public static Index readExternalCompressedDelta(@NotNull final DataInput in) throws IOException {
+    public static MutableRowSet readExternalCompressedDelta(@NotNull final DataInput in) throws IOException {
         long offset = 0;
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
         final MutableLong pending = new MutableLong(-1);
         final LongConsumer consume = v -> {
@@ -202,7 +202,7 @@ public class ExternalizableIndexUtils {
             builder.appendKey(pending.longValue());
         }
 
-        return builder.getIndex();
+        return builder.build();
     }
 
     private static long readValue(@NotNull final DataInput in, final int command) throws IOException {

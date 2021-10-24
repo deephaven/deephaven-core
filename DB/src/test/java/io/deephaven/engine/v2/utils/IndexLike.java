@@ -9,7 +9,7 @@ public interface IndexLike {
         IndexLike make();
     }
     interface ActualIndex extends IndexLike {
-        Index getIndex();
+        TrackingMutableRowSet getIndex();
     }
 
     String name();
@@ -29,7 +29,7 @@ public interface IndexLike {
         public IndexLike make() {
             return new IndexLike.ActualIndex() {
                 RangePriorityQueueBuilder b = new RangePriorityQueueBuilder(initialCapacity);
-                Index idx;
+                TrackingMutableRowSet idx;
 
                 @Override
                 public void addKey(final long key) {
@@ -43,7 +43,7 @@ public interface IndexLike {
 
                 @Override
                 public void doneAdding() {
-                    idx = new TreeIndex(b.getTreeIndexImpl());
+                    idx = new TrackingMutableRowSetImpl(b.getTreeIndexImpl());
                     b = null;
                 }
 
@@ -58,7 +58,7 @@ public interface IndexLike {
                 }
 
                 @Override
-                public Index getIndex() {
+                public TrackingMutableRowSet getIndex() {
                     return idx;
                 }
             };
@@ -74,8 +74,8 @@ public interface IndexLike {
         @Override
         public IndexLike make() {
             return new ActualIndex() {
-                Index.RandomBuilder b = new Index.AdaptiveIndexBuilder();
-                Index idx;
+                RowSetBuilder b = new TrackingMutableRowSet.AdaptiveRowSetBuilder();
+                TrackingMutableRowSet idx;
 
                 @Override
                 public void addKey(final long key) {
@@ -89,7 +89,7 @@ public interface IndexLike {
 
                 @Override
                 public void doneAdding() {
-                    idx = b.getIndex();
+                    idx = b.build();
                     b = null;
                 }
 
@@ -104,7 +104,7 @@ public interface IndexLike {
                 }
 
                 @Override
-                public Index getIndex() {
+                public TrackingMutableRowSet getIndex() {
                     return idx;
                 }
             };

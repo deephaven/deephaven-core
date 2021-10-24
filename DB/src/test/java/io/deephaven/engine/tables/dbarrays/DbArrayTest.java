@@ -7,7 +7,7 @@ package io.deephaven.engine.tables.dbarrays;
 import io.deephaven.engine.v2.dbarrays.DbArrayColumnWrapper;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import junit.framework.TestCase;
@@ -22,7 +22,7 @@ public class DbArrayTest extends TestCase {
         // noinspection unchecked
         DbArray dbArray = new DbArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new String[] {"a", "b", "c"}),
-                Index.FACTORY.getIndexByRange(0, 2));
+                TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 2));
         assertEquals(3, dbArray.size());
         assertEquals("a", dbArray.get(0));
         assertEquals("b", dbArray.get(1));
@@ -86,7 +86,7 @@ public class DbArrayTest extends TestCase {
         // noinspection unchecked
         DbArray dbArray = new DbArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new Object[] {10, 20, 30}),
-                Index.FACTORY.getIndexByRange(0, 2));
+                TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 2));
 
         for (int start = -4; start <= 4; start++) {
             for (int end = -1; end <= 7; end++) {
@@ -163,7 +163,7 @@ public class DbArrayTest extends TestCase {
             integerArraySource.set(ii, (ii + 1) * 10);
         }
         DbArray<Integer> dbColumnArray =
-                new DbArrayColumnWrapper<>(integerArraySource, Index.FACTORY.getIndexByRange(0, 5));
+                new DbArrayColumnWrapper<>(integerArraySource, TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 5));
         DbIntArray dbDirectArray = new DbIntArrayDirect(10, 20, 30, 40, 50, 60);
 
         Random random = new Random(42);
@@ -201,7 +201,7 @@ public class DbArrayTest extends TestCase {
         // noinspection unchecked
         DbArrayColumnWrapper dbArray = new DbArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new DbArrayBase[] {dbArrayDirect, null}),
-                Index.FACTORY.getIndexByRange(0, 1));
+                TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 1));
         DbArrayBase base = dbArray.getDirect();
         assertEquals(2, base.intSize());
         assertTrue(DbArrayDirect.class.isAssignableFrom(base.getClass()));

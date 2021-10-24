@@ -34,7 +34,7 @@ import static java.lang.Math.*;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
 @Category(OutOfBandTest.class)
-public abstract class SortedIndexTestBase extends TestCase {
+public abstract class GroupingRowSetHelperTestBase extends TestCase {
 
     private final long[][] KEYS = new long[][] {
             new long[0], {0L}, {1L},
@@ -56,19 +56,19 @@ public abstract class SortedIndexTestBase extends TestCase {
     }
 
     private void testFind(long... keys) {
-        final Index index = getSortedIndex(keys);
+        final TrackingMutableRowSet rowSet = getSortedIndex(keys);
         for (int i = 0; i < keys.length; i++) {
             try {
-                assertEquals(i, index.find(keys[i]));
+                assertEquals(i, rowSet.find(keys[i]));
             } catch (Throwable t) {
-                index.find(keys[i]);
+                rowSet.find(keys[i]);
             }
             if (i < keys.length - 1) {
                 for (long j = keys[i] + 1; j < keys[i + 1]; j++) {
                     try {
-                        assertEquals(-i - 2, index.find(j));
+                        assertEquals(-i - 2, rowSet.find(j));
                     } catch (Throwable t) {
-                        index.find(j);
+                        rowSet.find(j);
                     }
                 }
             }
@@ -76,25 +76,25 @@ public abstract class SortedIndexTestBase extends TestCase {
         if (keys.length > 0) {
             if (keys[0] > 0) {
                 try {
-                    assertEquals(-1, index.find(keys[0] - 1));
+                    assertEquals(-1, rowSet.find(keys[0] - 1));
                 } catch (Throwable t) {
-                    index.find(keys[0] - 1);
+                    rowSet.find(keys[0] - 1);
                 }
             }
             try {
-                assertEquals(-keys.length - 1, index.find(keys[keys.length - 1] + 1));
+                assertEquals(-keys.length - 1, rowSet.find(keys[keys.length - 1] + 1));
             } catch (Throwable t) {
-                index.find(keys[keys.length - 1] + 1);
+                rowSet.find(keys[keys.length - 1] + 1);
             }
         } else {
-            assertEquals(-1, index.find(10));
+            assertEquals(-1, rowSet.find(10));
         }
 
     }
 
     public void testInvert() {
-        final Index index = getSortedIndex(1, 4, 7, 9, 10);
-        final Index inverted = index.invert(getSortedIndex(4, 7, 10));
+        final TrackingMutableRowSet rowSet = getSortedIndex(1, 4, 7, 9, 10);
+        final TrackingMutableRowSet inverted = rowSet.invert(getSortedIndex(4, 7, 10));
         System.out.println("Inverted: " + inverted);
         compareIndexAndKeyValues(inverted, new long[] {1, 2, 4});
 
@@ -107,20 +107,20 @@ public abstract class SortedIndexTestBase extends TestCase {
             final Random generator = new Random(seed);
 
             final long[] fullKeys = generateFullKeys(maxSize, generator);
-            final Index fullIndex = getSortedIndex(fullKeys);
+            final TrackingMutableRowSet fullRowSet = getSortedIndex(fullKeys);
 
-            final Pair<Index, TLongList> pp = generateSubset(fullKeys, fullIndex, Integer.MAX_VALUE, generator);
-            final Index subsetIndex = pp.first;
+            final Pair<TrackingMutableRowSet, TLongList> pp = generateSubset(fullKeys, fullRowSet, Integer.MAX_VALUE, generator);
+            final TrackingMutableRowSet subsetRowSet = pp.first;
             final TLongList expected = pp.second;
-            TestCase.assertEquals(subsetIndex.size(), expected.size());
+            TestCase.assertEquals(subsetRowSet.size(), expected.size());
 
-            final Index invertedIndex = fullIndex.invert(subsetIndex);
-            TestCase.assertEquals(subsetIndex.size(), invertedIndex.size());
-            TestCase.assertEquals(expected.size(), invertedIndex.size());
+            final TrackingMutableRowSet invertedRowSet = fullRowSet.invert(subsetRowSet);
+            TestCase.assertEquals(subsetRowSet.size(), invertedRowSet.size());
+            TestCase.assertEquals(expected.size(), invertedRowSet.size());
 
-            for (int ii = 0; ii < invertedIndex.intSize(); ++ii) {
+            for (int ii = 0; ii < invertedRowSet.intSize(); ++ii) {
                 final long expectedPosition = expected.get(ii);
-                final long actualPosition = invertedIndex.get(ii);
+                final long actualPosition = invertedRowSet.get(ii);
                 TestCase.assertEquals(expectedPosition, actualPosition);
             }
         }
@@ -128,8 +128,8 @@ public abstract class SortedIndexTestBase extends TestCase {
 
 
     public void testInvertWithMax() {
-        final Index index = getSortedIndex(1, 4, 7, 9, 10);
-        final Index inverted = index.invert(getSortedIndex(4, 7, 10), 3);
+        final TrackingMutableRowSet rowSet = getSortedIndex(1, 4, 7, 9, 10);
+        final TrackingMutableRowSet inverted = rowSet.invert(getSortedIndex(4, 7, 10), 3);
         System.out.println("Inverted: " + inverted);
         compareIndexAndKeyValues(inverted, new long[] {1, 2});
 
@@ -141,19 +141,19 @@ public abstract class SortedIndexTestBase extends TestCase {
             final Random generator = new Random(seed);
 
             final long[] fullKeys = generateFullKeys(maxSize, generator);
-            final Index fullIndex = getSortedIndex(fullKeys);
-            final int maxPosition = generator.nextInt(fullIndex.intSize());
-            final Pair<Index, TLongList> pp = generateSubset(fullKeys, fullIndex, maxPosition, generator);
-            final Index subsetIndex = pp.first;
+            final TrackingMutableRowSet fullRowSet = getSortedIndex(fullKeys);
+            final int maxPosition = generator.nextInt(fullRowSet.intSize());
+            final Pair<TrackingMutableRowSet, TLongList> pp = generateSubset(fullKeys, fullRowSet, maxPosition, generator);
+            final TrackingMutableRowSet subsetRowSet = pp.first;
             final TLongList expected = pp.second;
 
-            final Index invertedIndex = fullIndex.invert(subsetIndex, maxPosition);
+            final TrackingMutableRowSet invertedRowSet = fullRowSet.invert(subsetRowSet, maxPosition);
 
-            TestCase.assertEquals("iteration=" + iteration, expected.size(), invertedIndex.size());
+            TestCase.assertEquals("iteration=" + iteration, expected.size(), invertedRowSet.size());
 
-            for (int ii = 0; ii < invertedIndex.intSize(); ++ii) {
+            for (int ii = 0; ii < invertedRowSet.intSize(); ++ii) {
                 final long expectedPosition = expected.get(ii);
-                final long actualPosition = invertedIndex.get(ii);
+                final long actualPosition = invertedRowSet.get(ii);
                 TestCase.assertEquals(expectedPosition, actualPosition);
             }
         }
@@ -216,14 +216,14 @@ public abstract class SortedIndexTestBase extends TestCase {
 
     /**
      * Generate a subset of the keys in fullKeys up to maxPosition positions in using generator. Returns a pair
-     * containing the subset of fullKeys as an Index and the expected positions as a TLongList.
+     * containing the subset of fullKeys as an TrackingMutableRowSet and the expected positions as a TLongList.
      */
-    private Pair<Index, TLongList> generateSubset(long[] fullKeys, Index fullIndex, int maxPosition, Random generator) {
+    private Pair<TrackingMutableRowSet, TLongList> generateSubset(long[] fullKeys, TrackingMutableRowSet fullRowSet, int maxPosition, Random generator) {
         switch (generator.nextInt(2)) {
             case 0:
-                return generateSubsetMethod1(fullKeys, fullIndex, maxPosition, generator);
+                return generateSubsetMethod1(fullKeys, fullRowSet, maxPosition, generator);
             case 1:
-                return generateSubsetMethod2(fullKeys, fullIndex, maxPosition, generator);
+                return generateSubsetMethod2(fullKeys, fullRowSet, maxPosition, generator);
             default:
                 throw new UnsupportedOperationException();
         }
@@ -232,9 +232,9 @@ public abstract class SortedIndexTestBase extends TestCase {
     /**
      * For each key, randomly flip a count as to whether it belongs in the output.
      */
-    private Pair<Index, TLongList> generateSubsetMethod1(long[] fullKeys, @SuppressWarnings("unused") Index fullIndex,
-            int maxPosition, Random generator) {
-        final boolean subset[] = new boolean[(int) fullIndex.lastRowKey() + 1];
+    private Pair<TrackingMutableRowSet, TLongList> generateSubsetMethod1(long[] fullKeys, @SuppressWarnings("unused") TrackingMutableRowSet fullRowSet,
+                                                                         int maxPosition, Random generator) {
+        final boolean subset[] = new boolean[(int) fullRowSet.lastRowKey() + 1];
 
         final double density = generator.nextDouble();
 
@@ -256,31 +256,31 @@ public abstract class SortedIndexTestBase extends TestCase {
         final long[] subsetKeys = booleanSetToKeys(subset);
         assertEquals(included2, subsetKeys.length);
 
-        final Index subsetIndex = getSortedIndex(subsetKeys);
+        final TrackingMutableRowSet subsetRowSet = getSortedIndex(subsetKeys);
 
-        assertEquals(subsetKeys.length, subsetIndex.size());
+        assertEquals(subsetKeys.length, subsetRowSet.size());
         assertEquals(included, expected.size());
-        if (maxPosition >= fullIndex.size()) {
+        if (maxPosition >= fullRowSet.size()) {
             assertEquals(included, included2);
-            assertEquals(subsetIndex.size(), expected.size());
+            assertEquals(subsetRowSet.size(), expected.size());
         }
 
-        return new Pair<>(subsetIndex, expected);
+        return new Pair<>(subsetRowSet, expected);
     }
 
     /**
-     * For each run of the index, flip a coin to determine if it is included; then randomly select a start and end
+     * For each run of the rowSet, flip a coin to determine if it is included; then randomly select a start and end
      * within each range.
      */
-    private Pair<Index, TLongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys, Index fullIndex,
-            int maxPosition, Random generator) {
+    private Pair<TrackingMutableRowSet, TLongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys, TrackingMutableRowSet fullRowSet,
+                                                                         int maxPosition, Random generator) {
         final boolean subset[] = new boolean[(int) fullKeys[fullKeys.length - 1] + 1];
 
         final TLongList expected = new TLongArrayList();
         long runningPosition = 0;
 
         final double inclusionThreshold = generator.nextDouble();
-        for (final Index.RangeIterator rit = fullIndex.rangeIterator(); rit.hasNext();) {
+        for (final TrackingMutableRowSet.RangeIterator rit = fullRowSet.rangeIterator(); rit.hasNext();) {
             rit.next();
 
             final long rangeSize = rit.currentRangeEnd() - rit.currentRangeStart() + 1;
@@ -307,11 +307,11 @@ public abstract class SortedIndexTestBase extends TestCase {
 
         final long[] subsetKeys = booleanSetToKeys(subset);
 
-        final Index subsetIndex = getSortedIndex(subsetKeys);
+        final TrackingMutableRowSet subsetRowSet = getSortedIndex(subsetKeys);
 
-        System.out.println(subsetIndex);
+        System.out.println(subsetRowSet);
 
-        return new Pair<>(subsetIndex, expected);
+        return new Pair<>(subsetRowSet, expected);
     }
 
     public void testIteration() {
@@ -328,14 +328,14 @@ public abstract class SortedIndexTestBase extends TestCase {
     }
 
     private void testInsertionAlreadyThere(long... keys) {
-        final Index index = getSortedIndex(keys);
+        final TrackingMutableRowSet rowSet = getSortedIndex(keys);
         for (int i = 0; i < keys.length; i++) {
-            final long preSize = index.size();
-            index.insert(keys[i]);
-            final long postSize = index.size();
+            final long preSize = rowSet.size();
+            rowSet.insert(keys[i]);
+            final long postSize = rowSet.size();
             assertEquals(preSize, postSize);
         }
-        compareIndexAndKeyValues(index, keys);
+        compareIndexAndKeyValues(rowSet, keys);
     }
 
     private void testInsertionNotThere(long... keys) {
@@ -359,28 +359,28 @@ public abstract class SortedIndexTestBase extends TestCase {
             notThere.add(10);
         }
         for (final TLongIterator iterator = notThere.iterator(); iterator.hasNext();) {
-            final Index index = getSortedIndex(keys);
+            final TrackingMutableRowSet rowSet = getSortedIndex(keys);
             final long key = iterator.next();
-            index.insert(key);
+            rowSet.insert(key);
             final TLongArrayList al = new TLongArrayList(keys);
             al.add(key);
             al.sort();
-            compareIndexAndKeyValues(index, al.toArray());
+            compareIndexAndKeyValues(rowSet, al.toArray());
         }
         for (int i = 1; i < notThere.size() + 1; i++) {
-            Index index = getSortedIndex(keys);
+            TrackingMutableRowSet rowSet = getSortedIndex(keys);
             int steps = 0;
             TLongArrayList al = new TLongArrayList(keys);
             for (final TLongIterator iterator = notThere.iterator(); iterator.hasNext();) {
                 if (steps % i == 0) {
                     al = new TLongArrayList(keys);
-                    index = getSortedIndex(keys);
+                    rowSet = getSortedIndex(keys);
                 }
                 final long key = iterator.next();
-                index.insert(key);
+                rowSet.insert(key);
                 al.add(key);
                 al.sort();
-                compareIndexAndKeyValues(index, al.toArray());
+                compareIndexAndKeyValues(rowSet, al.toArray());
                 steps++;
             }
         }
@@ -393,16 +393,16 @@ public abstract class SortedIndexTestBase extends TestCase {
     }
 
     private void testRangeByPos(long... keys) {
-        final Index index = getSortedIndex(keys);
+        final TrackingMutableRowSet rowSet = getSortedIndex(keys);
         for (int i = 0; i < keys.length + 2; i++) {
             for (int j = i; j < keys.length + 3; j++) {
                 final int start = min(i, keys.length);
                 final long[] range = Arrays.copyOfRange(keys, start, max(start, min(j, keys.length)));
-                final Index subIndex = index.subindexByPos(i, j);
+                final TrackingMutableRowSet subRowSet = rowSet.subSetByPositionRange(i, j);
                 try {
-                    compareIndexAndKeyValues(subIndex, range);
+                    compareIndexAndKeyValues(subRowSet, range);
                 } catch (AssertionError assertionError) {
-                    System.err.println("index=" + index + ", subIndex=" + subIndex + ", i=" + i + ", j=" + j);
+                    System.err.println("rowSet=" + rowSet + ", subRowSet=" + subRowSet + ", i=" + i + ", j=" + j);
                     throw assertionError;
                 }
             }
@@ -421,17 +421,17 @@ public abstract class SortedIndexTestBase extends TestCase {
     public void testMinusSimple() {
         final long[] keys = {1, 2, 3};
 
-        Index index = getSortedIndex(keys);
-        Index result = index.minus(getFactory().getEmptyIndex());
+        TrackingMutableRowSet rowSet = getSortedIndex(keys);
+        TrackingMutableRowSet result = rowSet.minus(getFactory().getEmptyRowSet());
         compareIndexAndKeyValues(result, keys);
 
-        result = index.minus(index);
+        result = rowSet.minus(rowSet);
         compareIndexAndKeyValues(result, new long[] {});
 
         long[] subKeys = {2, 5};
-        Index subIndex = getSortedIndex(subKeys);
+        TrackingMutableRowSet subRowSet = getSortedIndex(subKeys);
 
-        result = index.minus(subIndex);
+        result = rowSet.minus(subRowSet);
         compareIndexAndKeyValues(result, new long[] {1, 3});
 
 
@@ -439,54 +439,54 @@ public abstract class SortedIndexTestBase extends TestCase {
         for (int ii = 0; ii < 105339; ++ii) {
             allKeys[ii] = ii;
         }
-        index = getSortedIndex(allKeys);
-        System.out.println(index);
+        rowSet = getSortedIndex(allKeys);
+        System.out.println(rowSet);
 
-        result = index.minus(subIndex);
+        result = rowSet.minus(subRowSet);
         compareIndexAndKeyValues(result, doMinusSimple(allKeys, subKeys));
 
         subKeys = stringToKeys(
                 "0-12159,12162-12163,12166-12167,12172-12175,12178-12179,12182-12325,12368-33805,33918-33977,33980-34109,34168-34169,34192-34193,34309-34312,34314,34317-34323,34356-34491,34494-34495,34502-34503,34506-34509,34512-34515,34520-34521,34524-34525,34528-34529,34540-34541,34544-34545,34548-34549,34552-34553,34574-34589,34602-34675,34678-34679,34688-34689,34694-34695,34700-34705,34716-34717,34722-34723,34732-34733,34738-34739,34774,34785,34791-34794,34796-34799,34801-34803,34807-34808,34813,34816,34828-34829,34856-34857,34869,34875-34884,34892-34899,34902-34925,34930-34932,34934-34938,34958-34959,34966-34973,35038-35065,35068-35075,35212-35363,35496-35511,35542-44097,44104-54271,54291,54304,54308-54310,54373-54749,54751-54756,54758-55040,55112,55114-55115,55117,55120-55213,55321-55322,55325-55326,55627,55630-55631,55634-55635,55638,55640-55643,55646-55647,55650-55651,55654-55655,55658-55659,55661-55690,55692-55698,55702-55710,55712-55713,55716-55717,55719-55960,56059-56134,56185-56186,56255-56257,56259,56341-56628,56695-56866,56878-56880,56882-57082,57105-65108,64977-66622,66625-66658,66661-66662,66665-66668,66671-66834,66837-66840");
-        subIndex = getSortedIndex(subKeys);
-        result = index.minus(subIndex);
+        subRowSet = getSortedIndex(subKeys);
+        result = rowSet.minus(subRowSet);
         compareIndexAndKeyValues(result, doMinusSimple(allKeys, subKeys));
     }
 
     public void testUnionIntoFullLeaf() {
-        final IndexBuilder indexBuilder1 = getFactory().getBuilder();
+        final RowSetBuilder rowSetBuilder1 = getFactory().getBuilder();
         for (int ii = 0; ii < 4; ++ii) {
-            indexBuilder1.addRange(ii * 128, ii * 128 + 64);
+            rowSetBuilder1.addRange(ii * 128, ii * 128 + 64);
         }
 
         long start = 8192;
         // Leave some room, so that we can go back and fill in the right node
         for (int ii = 0; ii < 16; ++ii) {
-            indexBuilder1.addRange(start + ii * 3, start + ii * 3 + 1);
+            rowSetBuilder1.addRange(start + ii * 3, start + ii * 3 + 1);
         }
 
         // This, actually forces the split. We'll have short nodes (rather than ints) with the packing, because this
         // range is less than 2^15.
-        indexBuilder1.addRange(32000, 32001);
+        rowSetBuilder1.addRange(32000, 32001);
 
         // Now we fill in the ranges in the first node to make it full.
         for (int ii = 0; ii < 4 - 1; ++ii) {
-            indexBuilder1.addRange((16 + ii) * 128, (16 + ii) * 127 + 64);
+            rowSetBuilder1.addRange((16 + ii) * 128, (16 + ii) * 127 + 64);
         }
 
         start = 8192 + 64;
         // And lets fill in most of the ranges in the second node.
         for (int ii = 0; ii < 18; ++ii) {
-            indexBuilder1.addRange(start + ii * 3, start + ii * 3 + 1);
+            rowSetBuilder1.addRange(start + ii * 3, start + ii * 3 + 1);
         }
 
-        indexBuilder1.addRange(8260, 33000);
+        rowSetBuilder1.addRange(8260, 33000);
 
-        final Index idx = indexBuilder1.getIndex();
+        final TrackingMutableRowSet idx = rowSetBuilder1.build();
 
         // Now try to force an overflow.
-        final IndexBuilder indexBuilder2 = getFactory().getBuilder();
-        indexBuilder2.addRange(7900, 8265);
-        final Index idx2 = indexBuilder2.getIndex();
+        final RowSetBuilder rowSetBuilder2 = getFactory().getBuilder();
+        rowSetBuilder2.addRange(7900, 8265);
+        final TrackingMutableRowSet idx2 = rowSetBuilder2.build();
 
         System.out.println(idx);
         System.out.println(idx2);
@@ -505,7 +505,7 @@ public abstract class SortedIndexTestBase extends TestCase {
     }
 
     private void doTestFunnyOverlap(@SuppressWarnings("SameParameterValue") String input) {
-        final IndexBuilder indexBuilder1 = getFactory().getBuilder();
+        final RowSetBuilder rowSetBuilder1 = getFactory().getBuilder();
 
         final TLongArrayList keyList = new TLongArrayList();
 
@@ -518,17 +518,17 @@ public abstract class SortedIndexTestBase extends TestCase {
                 final long start = Long.parseLong(strStart);
                 final long end = Long.parseLong(strEnd);
 
-                indexBuilder1.addRange(start, end);
+                rowSetBuilder1.addRange(start, end);
 
             } else {
-                indexBuilder1.addKey(Long.parseLong(range));
+                rowSetBuilder1.addKey(Long.parseLong(range));
             }
         }
 
-        final Index index1 = indexBuilder1.getIndex();
-        index1.validate();
+        final TrackingMutableRowSet rowSet1 = rowSetBuilder1.build();
+        rowSet1.validate();
 
-        final IndexBuilder indexBuilder2 = getFactory().getBuilder();
+        final RowSetBuilder rowSetBuilder2 = getFactory().getBuilder();
 
         for (String range : splitInput) {
             final int dash = range.indexOf("-");
@@ -539,18 +539,18 @@ public abstract class SortedIndexTestBase extends TestCase {
                 final long end = Long.parseLong(strEnd);
 
                 for (long key = start; key <= end; ++key) {
-                    indexBuilder2.addKey(key);
+                    rowSetBuilder2.addKey(key);
                     keyList.add(key);
                 }
             } else {
                 final long key = Long.parseLong(range);
-                indexBuilder2.addKey(key);
+                rowSetBuilder2.addKey(key);
                 keyList.add(key);
             }
         }
 
-        final Index index2 = indexBuilder2.getIndex();
-        index2.validate();
+        final TrackingMutableRowSet rowSet2 = rowSetBuilder2.build();
+        rowSet2.validate();
 
         // Try inserting them in a random order
         for (int iterations = 0; iterations < 10; ++iterations) {
@@ -565,12 +565,12 @@ public abstract class SortedIndexTestBase extends TestCase {
                 keyList.set(jj, oldKey);
                 keyList.set(ii, newKey);
             }
-            final IndexBuilder indexBuilder3 = getFactory().getBuilder();
+            final RowSetBuilder rowSetBuilder3 = getFactory().getBuilder();
             for (int ii = 0; ii < keyList.size(); ++ii) {
-                indexBuilder3.addKey(keyList.get(ii));
+                rowSetBuilder3.addKey(keyList.get(ii));
             }
-            final Index index3 = indexBuilder3.getIndex();
-            index3.validate();
+            final TrackingMutableRowSet rowSet3 = rowSetBuilder3.build();
+            rowSet3.validate();
         }
     }
 
@@ -604,12 +604,12 @@ public abstract class SortedIndexTestBase extends TestCase {
             final long[] fullKeys = booleanSetToKeys(fullSet);
             final long[] subKeys = booleanSetToKeys(subSet);
 
-            final Index index = getSortedIndex(fullKeys);
-            compareIndexAndKeyValues(m, index, fullKeys);
-            final Index subIndex = getSortedIndex(subKeys);
-            compareIndexAndKeyValues(m, subIndex, subKeys);
+            final TrackingMutableRowSet rowSet = getSortedIndex(fullKeys);
+            compareIndexAndKeyValues(m, rowSet, fullKeys);
+            final TrackingMutableRowSet subRowSet = getSortedIndex(subKeys);
+            compareIndexAndKeyValues(m, subRowSet, subKeys);
 
-            final Index result = index.minus(subIndex);
+            final TrackingMutableRowSet result = rowSet.minus(subRowSet);
             compareIndexAndKeyValues(m, result, doMinusSimple(fullKeys, subKeys));
         }
     }
@@ -652,10 +652,10 @@ public abstract class SortedIndexTestBase extends TestCase {
             final long[] fullKeys = booleanSetToKeys(fullSet);
             final long[] subKeys = booleanSetToKeys(subSet);
 
-            final Index index = getSortedIndex(fullKeys);
-            final Index subIndex = getSortedIndex(subKeys);
+            final TrackingMutableRowSet rowSet = getSortedIndex(fullKeys);
+            final TrackingMutableRowSet subRowSet = getSortedIndex(subKeys);
 
-            final Index result = index.minus(subIndex);
+            final TrackingMutableRowSet result = rowSet.minus(subRowSet);
             compareIndexAndKeyValues(result, doMinusSimple(fullKeys, subKeys));
         }
     }
@@ -676,8 +676,8 @@ public abstract class SortedIndexTestBase extends TestCase {
             subSet[ii] = generator.nextBoolean();
         }
 
-        final Index fullIndex = getSortedIndex(booleanSetToKeys(fullSet));
-        final Index subIndex = getSortedIndex(booleanSetToKeys(subSet));
+        final TrackingMutableRowSet fullRowSet = getSortedIndex(booleanSetToKeys(fullSet));
+        final TrackingMutableRowSet subRowSet = getSortedIndex(booleanSetToKeys(subSet));
 
         for (int iteration = 0; iteration < 100; ++iteration) {
             final String m2 = m1 + " && iteration==" + iteration;
@@ -689,15 +689,15 @@ public abstract class SortedIndexTestBase extends TestCase {
                 final int rangeEnd = rangeStart + generator.nextInt(maxSize - rangeStart);
 
                 if (value) {
-                    fullIndex.insertRange(rangeStart, rangeEnd);
-                    assertTrue(m3, fullIndex.containsRange(rangeStart, rangeEnd));
+                    fullRowSet.insertRange(rangeStart, rangeEnd);
+                    assertTrue(m3, fullRowSet.containsRange(rangeStart, rangeEnd));
                     for (int jj = rangeStart; jj <= rangeEnd; ++jj) {
                         fullSet[jj] = true;
                     }
                 } else {
                     for (int jj = rangeStart; jj <= rangeEnd; ++jj) {
-                        fullIndex.remove(jj);
-                        assertFalse(m3 + " && jj==" + jj, fullIndex.find(jj) >= 0);
+                        fullRowSet.remove(jj);
+                        assertFalse(m3 + " && jj==" + jj, fullRowSet.find(jj) >= 0);
                         fullSet[jj] = false;
                     }
                 }
@@ -711,21 +711,21 @@ public abstract class SortedIndexTestBase extends TestCase {
                 final int rangeEnd = rangeStart + generator.nextInt(maxSize - rangeStart);
 
                 if (value) {
-                    subIndex.insertRange(rangeStart, rangeEnd);
-                    assertTrue(m3, subIndex.containsRange(rangeStart, rangeEnd));
+                    subRowSet.insertRange(rangeStart, rangeEnd);
+                    assertTrue(m3, subRowSet.containsRange(rangeStart, rangeEnd));
                     for (int jj = rangeStart; jj <= rangeEnd; ++jj) {
                         subSet[jj] = true;
                     }
                 } else {
                     for (int jj = rangeStart; jj <= rangeEnd; ++jj) {
                         subSet[jj] = false;
-                        subIndex.remove(jj);
-                        assertFalse(m3 + " && jj==" + jj, subIndex.find(jj) >= 0);
+                        subRowSet.remove(jj);
+                        assertFalse(m3 + " && jj==" + jj, subRowSet.find(jj) >= 0);
                     }
                 }
             }
 
-            final Index result = fullIndex.minus(subIndex);
+            final TrackingMutableRowSet result = fullRowSet.minus(subRowSet);
 
             compareIndexAndKeyValues(m2, result, doMinusSimple(booleanSetToKeys(fullSet), booleanSetToKeys(subSet)));
         }
@@ -774,7 +774,7 @@ public abstract class SortedIndexTestBase extends TestCase {
     }
 
     private void testRangeByKey(final String m, long... keys) {
-        final Index index = getSortedIndex(keys);
+        final TrackingMutableRowSet rowSet = getSortedIndex(keys);
         for (long i = (keys.length > 0 ? keys[0] - 2 : 1); i < (keys.length > 0 ? keys[keys.length - 1] : 0) + 3; i++) {
             for (long j = i; j < (keys.length > 0 ? keys[keys.length - 1] : 0) + 3; j++) {
                 final TLongArrayList data = new TLongArrayList();
@@ -785,11 +785,11 @@ public abstract class SortedIndexTestBase extends TestCase {
                     }
                 }
                 final long[] range = data.toArray();
-                final Index subIndex = index.subindexByKey(i, j);
+                final TrackingMutableRowSet subRowSet = rowSet.subSetByKeyRange(i, j);
                 try {
-                    compareIndexAndKeyValues(m, subIndex, range);
+                    compareIndexAndKeyValues(m, subRowSet, range);
                 } catch (AssertionError assertionError) {
-                    System.err.println("index=" + index + ", subIndex=" + subIndex + ", i=" + i + ", j=" + j);
+                    System.err.println("rowSet=" + rowSet + ", subRowSet=" + subRowSet + ", i=" + i + ", j=" + j);
                     throw assertionError;
                 }
             }
@@ -798,8 +798,8 @@ public abstract class SortedIndexTestBase extends TestCase {
 
 
     private void testIteration(long... keys) {
-        final Index index = getSortedIndex(keys);
-        compareIndexAndKeyValues(index, keys);
+        final TrackingMutableRowSet rowSet = getSortedIndex(keys);
+        compareIndexAndKeyValues(rowSet, keys);
     }
 
     private static final boolean debugDetail = false;
@@ -821,26 +821,26 @@ public abstract class SortedIndexTestBase extends TestCase {
         return sb.toString();
     }
 
-    private void compareIndexAndKeyValues(final Index index, final long[] keys) {
-        compareIndexAndKeyValues("", index, keys);
+    private void compareIndexAndKeyValues(final TrackingMutableRowSet rowSet, final long[] keys) {
+        compareIndexAndKeyValues("", rowSet, keys);
     }
 
-    private void compareIndexAndKeyValues(final String pfx, final Index index, final long[] keys) {
+    private void compareIndexAndKeyValues(final String pfx, final TrackingMutableRowSet rowSet, final long[] keys) {
         final String m =
-                ((pfx != null && pfx.length() > 0) ? pfx + " " : "") + "index=" + index + ", keys=" + a2s(keys);
-        final SortedIndex.SearchIterator iterator = index.searchIterator();
+                ((pfx != null && pfx.length() > 0) ? pfx + " " : "") + "rowSet=" + rowSet + ", keys=" + a2s(keys);
+        final GroupingRowSetHelper.SearchIterator iterator = rowSet.searchIterator();
         for (int i = 0; i < keys.length; i++) {
             assertTrue(m + " iterator shouldbn't be empty", iterator.hasNext());
             final long next = iterator.nextLong();
             final String msg = m + " key mismatch i=" + i;
             assertEquals(msg, keys[i], next);
             assertEquals(msg, keys[i], iterator.currentValue());
-            assertEquals(msg, keys[i], index.get(i));
+            assertEquals(msg, keys[i], rowSet.get(i));
         }
         assertFalse(m + " iterator should be empty", iterator.hasNext());
-        assertEquals(m + " length mismatch", keys.length, index.size());
+        assertEquals(m + " length mismatch", keys.length, rowSet.size());
 
-        final SortedIndex.SearchIterator reverse = index.reverseIterator();
+        final GroupingRowSetHelper.SearchIterator reverse = rowSet.reverseIterator();
         for (int i = 0; i < keys.length; i++) {
             assertTrue(m + ", i=" + i, reverse.hasNext());
             final long next = reverse.nextLong();
@@ -850,11 +850,11 @@ public abstract class SortedIndexTestBase extends TestCase {
         assertFalse(reverse.hasNext());
 
         int i = 0;
-        for (long checkKey : index) {
+        for (long checkKey : rowSet) {
             assertEquals(keys[i++], checkKey);
         }
 
-        index.iterator().forEachRemaining(new LongConsumer() {
+        rowSet.iterator().forEachRemaining(new LongConsumer() {
             int ai = 0;
 
             @Override
@@ -869,7 +869,7 @@ public abstract class SortedIndexTestBase extends TestCase {
         final int maxRange = 20;
         final int maxValue = 1 << 24;
 
-        final Index check = getFactory().getEmptyIndex();
+        final TrackingMutableRowSet check = getFactory().getEmptyRowSet();
 
         final Random random = new Random(1);
 
@@ -880,7 +880,7 @@ public abstract class SortedIndexTestBase extends TestCase {
                 System.out.println(ii + ": " + (System.currentTimeMillis() - startTime) + "ms: " + check);
             }
 
-            final IndexBuilder builder = getFactory().getRandomBuilder();
+            final RowSetBuilder builder = getFactory().getRandomBuilder();
             for (int jj = 0; jj < 128; ++jj) {
                 final int start = random.nextInt(maxValue);
                 final int end = start + random.nextInt(maxRange);
@@ -889,7 +889,7 @@ public abstract class SortedIndexTestBase extends TestCase {
 
             final String m = "ii=" + ii;
 
-            final Index operand = builder.getIndex();
+            final TrackingMutableRowSet operand = builder.build();
             operand.validate(m);
 
             final boolean insert = random.nextBoolean();
@@ -901,20 +901,20 @@ public abstract class SortedIndexTestBase extends TestCase {
                 check.validate(m);
             }
 
-            final Index.SequentialBuilder builder2 = getFactory().getSequentialBuilder();
-            for (final Index.Iterator it = check.iterator(); it.hasNext();) {
+            final SequentialRowSetBuilder builder2 = getFactory().getSequentialBuilder();
+            for (final TrackingMutableRowSet.Iterator it = check.iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 final boolean partA = random.nextBoolean();
                 if (partA) {
                     builder2.appendKey(next);
                 }
             }
-            final Index subsetA = builder2.getIndex();
+            final TrackingMutableRowSet subsetA = builder2.build();
             subsetA.validate(m);
 
-            final Index checkA = check.intersect(subsetA);
+            final TrackingMutableRowSet checkA = check.intersect(subsetA);
             checkA.validate(m);
-            final Index checkB = check.minus(subsetA);
+            final TrackingMutableRowSet checkB = check.minus(subsetA);
             checkB.validate(m);
             checkA.insert(checkB);
             checkA.validate(m);
@@ -984,20 +984,20 @@ public abstract class SortedIndexTestBase extends TestCase {
             for (final Supplier<TreeIndexImpl> rhs : suppliers) {
                 ++step;
                 final String m = "step=" + step;
-                final Index index = fromTreeIndexImpl(rhs.get());
-                final LongChunk<OrderedRowKeys> asKeyIndicesChunk = index.asRowKeyChunk();
+                final TrackingMutableRowSet rowSet = fromTreeIndexImpl(rhs.get());
+                final LongChunk<OrderedRowKeys> asKeyIndicesChunk = rowSet.asRowKeyChunk();
 
-                final Index expectedAfterInsert = fromTreeIndexImpl(lhs.get());
+                final TrackingMutableRowSet expectedAfterInsert = fromTreeIndexImpl(lhs.get());
                 expectedAfterInsert.validate(m);
-                expectedAfterInsert.insert(index);
+                expectedAfterInsert.insert(rowSet);
                 expectedAfterInsert.validate(m);
 
-                final Index actualAfterInsert1 = fromTreeIndexImpl(lhs.get());
+                final TrackingMutableRowSet actualAfterInsert1 = fromTreeIndexImpl(lhs.get());
                 actualAfterInsert1.insert(asKeyIndicesChunk, 0, asKeyIndicesChunk.size());
                 actualAfterInsert1.validate(m);
                 assertEquals(m, expectedAfterInsert, actualAfterInsert1);
 
-                final Index actualAfterInsert2 = fromTreeIndexImpl(lhs.get());
+                final TrackingMutableRowSet actualAfterInsert2 = fromTreeIndexImpl(lhs.get());
                 try (final WritableLongChunk<OrderedRowKeys> toBeSliced =
                         WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
@@ -1006,16 +1006,16 @@ public abstract class SortedIndexTestBase extends TestCase {
                 actualAfterInsert2.validate(m);
                 assertEquals(m, expectedAfterInsert, actualAfterInsert2);
 
-                final Index expectedAfterRemove = fromTreeIndexImpl(lhs.get());
+                final TrackingMutableRowSet expectedAfterRemove = fromTreeIndexImpl(lhs.get());
                 expectedAfterRemove.validate(m);
-                expectedAfterRemove.remove(index);
+                expectedAfterRemove.remove(rowSet);
 
-                final Index actualAfterRemove1 = fromTreeIndexImpl(lhs.get());
+                final TrackingMutableRowSet actualAfterRemove1 = fromTreeIndexImpl(lhs.get());
                 actualAfterRemove1.remove(asKeyIndicesChunk, 0, asKeyIndicesChunk.size());
                 actualAfterRemove1.validate(m);
                 assertEquals(m, expectedAfterRemove, actualAfterRemove1);
 
-                final Index actualAfterRemove2 = fromTreeIndexImpl(lhs.get());
+                final TrackingMutableRowSet actualAfterRemove2 = fromTreeIndexImpl(lhs.get());
                 try (final WritableLongChunk<Attributes.OrderedRowKeys> toBeSliced =
                         WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
@@ -1029,24 +1029,24 @@ public abstract class SortedIndexTestBase extends TestCase {
             for (final Supplier<TreeIndexImpl> rhs : suppliers) {
                 final TreeIndexImpl lhsTreeIndexImpl = lhs.get();
                 if (lhsTreeIndexImpl instanceof RspBitmap) {
-                    final Index lhsIndex = fromTreeIndexImpl(lhs.get());
-                    final Index rhsIndex = fromTreeIndexImpl(rhs.get());
+                    final TrackingMutableRowSet lhsRowSet = fromTreeIndexImpl(lhs.get());
+                    final TrackingMutableRowSet rhsRowSet = fromTreeIndexImpl(rhs.get());
 
-                    lhsIndex.insert(rhsIndex);
-                    lhsTreeIndexImpl.ixInsertSecondHalf(rhsIndex.asRowKeyChunk(), 0, rhsIndex.intSize());
+                    lhsRowSet.insert(rhsRowSet);
+                    lhsTreeIndexImpl.ixInsertSecondHalf(rhsRowSet.asRowKeyChunk(), 0, rhsRowSet.intSize());
 
-                    assertEquals(lhsIndex, fromTreeIndexImpl(lhsTreeIndexImpl));
+                    assertEquals(lhsRowSet, fromTreeIndexImpl(lhsTreeIndexImpl));
                 }
             }
         }
     }
 
     @NotNull
-    protected abstract Index fromTreeIndexImpl(@NotNull TreeIndexImpl treeIndexImpl);
+    protected abstract TrackingMutableRowSet fromTreeIndexImpl(@NotNull TreeIndexImpl treeIndexImpl);
 
     @NotNull
-    protected abstract Index.Factory getFactory();
+    protected abstract RowSetFactory getFactory();
 
     @NotNull
-    protected abstract Index getSortedIndex(long... keys);
+    protected abstract TrackingMutableRowSet getSortedIndex(long... keys);
 }

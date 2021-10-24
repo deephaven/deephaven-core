@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.locations.impl;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.locations.*;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,7 +55,7 @@ public abstract class AbstractTableLocation
     }
 
     @Override
-    public final ReadOnlyIndex getIndex() {
+    public final RowSet getIndex() {
         return state.getIndex();
     }
 
@@ -93,18 +93,18 @@ public abstract class AbstractTableLocation
     /**
      * See TableLocationState for documentation of values.
      *
-     * @param index The new index. Ownership passes to this location; callers should {@link ReadOnlyIndex#clone() clone}
+     * @param index The new rowSet. Ownership passes to this location; callers should {@link RowSet#clone() clone}
      *        it if necessary.
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
-    public final void handleUpdate(final ReadOnlyIndex index, final long lastModifiedTimeMillis) {
+    public final void handleUpdate(final RowSet index, final long lastModifiedTimeMillis) {
         if (state.setValues(index, lastModifiedTimeMillis) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
     }
 
     /**
-     * Update all state fields from source's values, as in {@link #handleUpdate(ReadOnlyIndex, long)}. See
+     * Update all state fields from source's values, as in {@link #handleUpdate(RowSet, long)}. See
      * {@link TableLocationState} for documentation of values.
      *
      * @param source The source to copy state values from

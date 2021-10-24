@@ -146,9 +146,9 @@ public class ObjectPrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index index of the value to return.
+     * @param index rowSet of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the index is outside of the array's index range.
+     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
     static public <T> T nth(int index, DbArray<T> values) {
         if (index < 0 || index >= values.size()) {
@@ -255,7 +255,7 @@ public class ObjectPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, the index of where the key would be inserted.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet of where the key would be inserted.
      */
     static public <T extends Comparable<? super T>> int binSearchIndex(DbArray<T> values, T key, BinSearch choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
@@ -276,7 +276,7 @@ public class ObjectPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     static public <T extends Comparable<? super T>> int rawBinSearchIndex(DbArray<T> values, T key, BinSearch choiceWhenEquals) {
         if (values == null || key == null) {
@@ -425,7 +425,7 @@ public class ObjectPrimitives {
                         }
                     }
                 } catch (final IllegalArgumentException cce) {
-                    throw new IllegalArgumentException("Can not compare element at index: " + i + ", type: " + t.getClass() + " with element at index:" + minIndex + ", type: " + min.getClass() + "\n"
+                    throw new IllegalArgumentException("Can not compare element at rowSet: " + i + ", type: " + t.getClass() + " with element at rowSet:" + minIndex + ", type: " + min.getClass() + "\n"
                             + cce.getMessage());
                 }
             }
@@ -491,7 +491,7 @@ public class ObjectPrimitives {
                         }
                     }
                 } catch (final IllegalArgumentException cce) {
-                    throw new IllegalArgumentException("Can not compare element at index: " + i + ", type: " + t.getClass() + " with element at index:" + maxIndex + ", type: " + max.getClass() + "\n"
+                    throw new IllegalArgumentException("Can not compare element at rowSet: " + i + ", type: " + t.getClass() + " with element at rowSet:" + maxIndex + ", type: " + max.getClass() + "\n"
                             + cce.getMessage());
                 }
             }

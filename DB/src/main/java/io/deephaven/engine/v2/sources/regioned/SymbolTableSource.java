@@ -3,8 +3,8 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -29,23 +29,23 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
     String SYMBOL_COLUMN_NAME = "Symbol";
 
     /**
-     * @param sourceIndex The {@link ReadOnlyIndex} whose keys must be mappable
+     * @param sourceIndex The {@link RowSet} whose keys must be mappable
      * @return Whether this SymbolTableSource can provide a symbol table that covers all keys in {@code sourceIndex}.
      */
-    boolean hasSymbolTable(@NotNull final ReadOnlyIndex sourceIndex);
+    boolean hasSymbolTable(@NotNull final RowSet sourceIndex);
 
     /**
      * <p>
      * Get a static {@link Table} view of this SymbolTableSource's symbol table, providing a many:1 or 1:1 mapping of
      * unique {@code long} identifiers to the symbol values in this source.
      *
-     * @param sourceIndex The {@link ReadOnlyIndex} whose keys must be mappable via the result {@link Table}'s
+     * @param sourceIndex The {@link RowSet} whose keys must be mappable via the result {@link Table}'s
      *        identifier column
      * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
      *        Implementations may ignore this hint.
      * @return The symbol table
      */
-    Table getStaticSymbolTable(@NotNull ReadOnlyIndex sourceIndex, boolean useLookupCaching);
+    Table getStaticSymbolTable(@NotNull RowSet sourceIndex, boolean useLookupCaching);
 
     /**
      * <p>
@@ -55,7 +55,7 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * <p>
      * The result will be refreshing if {@code table} is a refreshing {@link io.deephaven.engine.v2.DynamicTable}.
      *
-     * @param sourceTable The {@link QueryTable} whose {@link Index} keys must be mappable via the result
+     * @param sourceTable The {@link QueryTable} whose {@link TrackingMutableRowSet} keys must be mappable via the result
      *        {@link Table}'s identifier column
      * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
      *        Implementations may ignore this hint.

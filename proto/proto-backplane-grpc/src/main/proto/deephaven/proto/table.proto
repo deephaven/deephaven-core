@@ -167,7 +167,7 @@ service TableService {
   rpc Snapshot(SnapshotTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Returns a new table with a flattened index.
+   * Returns a new table with a flattened rowSet.
    */
   rpc Flatten(FlattenRequest) returns (ExportedTableCreationResponse) {}
 

@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 
 /**
  * Regioned column source implementation for columns of {@link DBDateTime}s.
@@ -38,7 +38,7 @@ final class RegionedColumnSourceDBDateTime
 
     @Override
     public DBDateTime get(long elementIndex) {
-        return elementIndex == NULL_KEY ? null
+        return elementIndex == NULL_ROW_KEY ? null
                 : DBTimeUtils.nanosToTime(lookupRegion(elementIndex).getReferencedRegion().getLong(elementIndex));
     }
 }

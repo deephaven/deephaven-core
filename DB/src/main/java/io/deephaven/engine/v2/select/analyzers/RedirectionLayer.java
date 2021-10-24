@@ -4,8 +4,9 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -13,20 +14,20 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.*;
 
 /**
- * A layer that maintains the redirection index for future SelectColumnLayers.
+ * A layer that maintains the redirection rowSet for future SelectColumnLayers.
  *
  * {@implNote This class is part of the Deephaven engine, and not intended for direct use.}
  */
 final public class RedirectionLayer extends SelectAndViewAnalyzer {
     private final SelectAndViewAnalyzer inner;
-    private final Index resultIndex;
+    private final TrackingMutableRowSet resultRowSet;
     private final RedirectionIndex redirectionIndex;
-    private final Index freeValues = Index.CURRENT_FACTORY.getEmptyIndex();
+    private final TrackingMutableRowSet freeValues = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
     private long maxInnerIndex;
 
-    RedirectionLayer(SelectAndViewAnalyzer inner, Index resultIndex, RedirectionIndex redirectionIndex) {
+    RedirectionLayer(SelectAndViewAnalyzer inner, TrackingMutableRowSet resultRowSet, RedirectionIndex redirectionIndex) {
         this.inner = inner;
-        this.resultIndex = resultIndex;
+        this.resultRowSet = resultRowSet;
         this.redirectionIndex = redirectionIndex;
         this.maxInnerIndex = -1;
     }
@@ -42,33 +43,33 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper) {
+    public void applyUpdate(ShiftAwareListener.Update upstream, RowSet toClear, UpdateHelper helper) {
         inner.applyUpdate(upstream, toClear, helper);
 
-        // we need to remove the removed values from our redirection index, and add them to our free index; so that
+        // we need to remove the removed values from our redirection rowSet, and add them to our free rowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
-        final Index.RandomBuilder innerToFreeBuilder = Index.CURRENT_FACTORY.getRandomBuilder();
+        final RowSetBuilder innerToFreeBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getRandomBuilder();
         upstream.removed.forAllLongs(key -> innerToFreeBuilder.addKey(redirectionIndex.remove(key)));
-        freeValues.insert(innerToFreeBuilder.getIndex());
+        freeValues.insert(innerToFreeBuilder.build());
 
         // we have to shift things that have not been removed, this handles the unmodified rows; but also the
         // modified rows need to have their redirections updated for subsequent modified columns
         if (upstream.shifted.nonempty()) {
-            try (final Index prevIndex = resultIndex.getPrevIndex();
-                    final Index prevNoRemovals = prevIndex.minus(upstream.removed)) {
-                final MutableObject<Index.SearchIterator> forwardIt = new MutableObject<>();
+            try (final TrackingMutableRowSet prevRowSet = resultRowSet.getPrevIndex();
+                 final TrackingMutableRowSet prevNoRemovals = prevRowSet.minus(upstream.removed)) {
+                final MutableObject<TrackingMutableRowSet.SearchIterator> forwardIt = new MutableObject<>();
 
                 upstream.shifted.intersect(prevNoRemovals).apply((begin, end, delta) -> {
                     if (delta < 0) {
                         if (forwardIt.getValue() == null) {
                             forwardIt.setValue(prevNoRemovals.searchIterator());
                         }
-                        final Index.SearchIterator localForwardIt = forwardIt.getValue();
+                        final TrackingMutableRowSet.SearchIterator localForwardIt = forwardIt.getValue();
                         if (localForwardIt.advance(begin)) {
                             for (long key = localForwardIt.currentValue(); localForwardIt.currentValue() <= end; key =
                                     localForwardIt.nextLong()) {
                                 final long inner = redirectionIndex.remove(key);
-                                if (inner != Index.NULL_KEY) {
+                                if (inner != TrackingMutableRowSet.NULL_ROW_KEY) {
                                     redirectionIndex.put(key + delta, inner);
                                 }
                                 if (!localForwardIt.hasNext()) {
@@ -77,12 +78,12 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                             }
                         }
                     } else {
-                        try (final Index.SearchIterator reverseIt = prevNoRemovals.reverseIterator()) {
+                        try (final TrackingMutableRowSet.SearchIterator reverseIt = prevNoRemovals.reverseIterator()) {
                             if (reverseIt.advance(end)) {
                                 for (long key = reverseIt.currentValue(); reverseIt.currentValue() >= begin; key =
                                         reverseIt.nextLong()) {
                                     final long inner = redirectionIndex.remove(key);
-                                    if (inner != Index.NULL_KEY) {
+                                    if (inner != TrackingMutableRowSet.NULL_ROW_KEY) {
                                         redirectionIndex.put(key + delta, inner);
                                     }
                                     if (!reverseIt.hasNext()) {
@@ -101,12 +102,12 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
         }
 
         if (upstream.added.nonempty()) {
-            // added is non-empty, so can always remove at least one value from the index (which must be >= 0);
-            // if there is no freeValue, this is safe because we'll just remove something from an empty index
+            // added is non-empty, so can always remove at least one value from the rowSet (which must be >= 0);
+            // if there is no freeValue, this is safe because we'll just remove something from an empty rowSet
             // if there is a freeValue, we'll remove up to that
             // if there are not enough free values, we'll remove all the free values then beyond
             final MutableLong lastAllocated = new MutableLong(0);
-            final Index.Iterator freeIt = freeValues.iterator();
+            final TrackingMutableRowSet.Iterator freeIt = freeValues.iterator();
             upstream.added.forAllLongs(outerKey -> {
                 final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
                 lastAllocated.setValue(innerKey);

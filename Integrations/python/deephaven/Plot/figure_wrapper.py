@@ -795,14 +795,14 @@ class FigureWrapper(object):
         Returns a chart from this Figure's grid.
         
         *Overload 1*  
-          :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+          :param index: (int) - rowSet from the Figure's grid to remove. The rowSet starts at 0 in the upper left hand corner of the
                   grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
                   [2, 3].
           :return: (io.deephaven.engine.plot.Figure) selected Chart
           
         *Overload 2*  
-          :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
-          :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
+          :param rowNum: (int) - row rowSet in this Figure's grid. The row rowSet starts at 0.
+          :param colNum: (int) - column rowSet in this Figure's grid. The column rowSet starts at 0.
           :return: (io.deephaven.engine.plot.Figure) selected Chart
         """
         
@@ -920,7 +920,7 @@ class FigureWrapper(object):
         Sets the error bar Paint for this dataset.
         
         *Overload 1*  
-          :param color: (int) - index of the color in the series color palette
+          :param color: (int) - rowSet of the color in the series color palette
           :return: (io.deephaven.engine.plot.Figure) this DataSeries
           
         *Overload 2*  
@@ -2446,7 +2446,7 @@ class FigureWrapper(object):
         Defines the default line color.
         
         *Overload 1*  
-          :param color: (int) - color palette index
+          :param color: (int) - color palette rowSet
           :return: (io.deephaven.engine.plot.Figure) this data series.
           
         *Overload 2*  
@@ -2631,14 +2631,14 @@ class FigureWrapper(object):
           * if not, a RuntimeException will be thrown.
           
         *Overload 2*  
-          :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+          :param index: (int) - rowSet from the Figure's grid to remove. The rowSet starts at 0 in the upper left hand corner of the
                   grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
                   [2, 3].
-          :return: (io.deephaven.engine.plot.Figure) the new Chart. The Chart is placed at the grid space indicated by the index.
+          :return: (io.deephaven.engine.plot.Figure) the new Chart. The Chart is placed at the grid space indicated by the rowSet.
           
         *Overload 3*  
-          :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
-          :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
+          :param rowNum: (int) - row rowSet in this Figure's grid. The row rowSet starts at 0.
+          :param colNum: (int) - column rowSet in this Figure's grid. The column rowSet starts at 0.
           :return: (io.deephaven.engine.plot.Figure) the new Chart. The Chart is placed at the grid space [rowNum, colNum.
         """
         
@@ -3663,7 +3663,7 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 3*  
-          :param colors: (int...) - color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
+          :param colors: (int...) - color palette indices. The color for data point i comes from rowSet i. A value of 3 corresponds to
                   the 3rd color from the color pallette.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
@@ -3732,7 +3732,7 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 15*  
-          :param colors: (io.deephaven.gui.color.Paint...) - colors. The color for data point i comes from index i.
+          :param colors: (io.deephaven.gui.color.Paint...) - colors. The color for data point i comes from rowSet i.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 16*  
@@ -3742,7 +3742,7 @@ class FigureWrapper(object):
           
         *Overload 17*  
           :param category: (java.lang.Comparable) - data point
-          :param color: (int) - index of the color in the series color palette
+          :param color: (int) - rowSet of the color in the series color palette
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 18*  
@@ -3774,7 +3774,7 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 23*  
-          :param colors: (java.lang.Integer...) - color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
+          :param colors: (java.lang.Integer...) - color palette indices. The color for data point i comes from rowSet i. A value of 3 corresponds to
                   the 3rd color from the color pallette.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
@@ -3793,7 +3793,7 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 27*  
-          :param colors: (java.lang.String...) - color names. The color for data point i comes from index i.
+          :param colors: (java.lang.String...) - color names. The color for data point i comes from rowSet i.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 28*  
@@ -3845,7 +3845,7 @@ class FigureWrapper(object):
         *Overload 35*  
           Note: Java generics information - <T extends io.deephaven.gui.color.Paint>
           
-          :param colors: (io.deephaven.engine.plot.datasets.data.IndexableData<T>) - colors. The color for data point i comes from index i.
+          :param colors: (io.deephaven.engine.plot.datasets.data.IndexableData<T>) - colors. The color for data point i comes from rowSet i.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 36*  
@@ -3911,7 +3911,7 @@ class FigureWrapper(object):
         Sets the point color. Unspecified points use the default color.
         
         *Overload 1*  
-          :param colors: (io.deephaven.engine.plot.datasets.data.IndexableData<java.lang.Integer>) - colors. The color for data point i comes from index i.
+          :param colors: (io.deephaven.engine.plot.datasets.data.IndexableData<java.lang.Integer>) - colors. The color for data point i comes from rowSet i.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 2*  
@@ -3920,7 +3920,7 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 3*  
-          :param colors: (java.util.Map<CATEGORY,COLOR>) - map from data points to the index of the color palette
+          :param colors: (java.util.Map<CATEGORY,COLOR>) - map from data points to the rowSet of the color palette
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 4*  
@@ -3931,7 +3931,7 @@ class FigureWrapper(object):
         *Overload 5*  
           Note: Java generics information - <COLOR extends java.lang.Integer>
           
-          :param colors: (groovy.lang.Closure<COLOR>) - closure from data points to the index of the color palette
+          :param colors: (groovy.lang.Closure<COLOR>) - closure from data points to the rowSet of the color palette
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 6*  
@@ -3944,7 +3944,7 @@ class FigureWrapper(object):
         *Overload 7*  
           Note: Java generics information - <COLOR extends java.lang.Integer>
           
-          :param colors: (java.util.function.Function<java.lang.Comparable,COLOR>) - function from data points to the index of the color palette
+          :param colors: (java.util.function.Function<java.lang.Comparable,COLOR>) - function from data points to the rowSet of the color palette
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 8*  
@@ -3960,7 +3960,7 @@ class FigureWrapper(object):
     @_convertArguments
     def pointLabel(self, *args):
         """
-        Sets the point label for data point i from index i of the input labels. Points outside of these indices are
+        Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
          unlabeled.
         
         *Overload 1*  
@@ -4116,7 +4116,7 @@ class FigureWrapper(object):
     @_convertArguments
     def pointShape(self, *args):
         """
-        Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+        Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
          default shapes.
         
         *Overload 1*  
@@ -4568,14 +4568,14 @@ class FigureWrapper(object):
         Removes a chart from the Figure's grid.
         
         *Overload 1*  
-          :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+          :param index: (int) - rowSet from the Figure's grid to remove. The rowSet starts at 0 in the upper left hand corner of the
                   grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
                   [2, 3].
           :return: (io.deephaven.engine.plot.Figure) this Figure with the chart removed.
           
         *Overload 2*  
-          :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
-          :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
+          :param rowNum: (int) - row rowSet in this Figure's grid. The row rowSet starts at 0.
+          :param colNum: (int) - column rowSet in this Figure's grid. The column rowSet starts at 0.
           :return: (io.deephaven.engine.plot.Figure) this Figure with the chart removed.
         """
         

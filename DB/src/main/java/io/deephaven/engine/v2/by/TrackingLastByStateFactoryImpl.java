@@ -27,7 +27,7 @@ public class TrackingLastByStateFactoryImpl extends IterativeIndexStateFactory {
     }
 
     /**
-     * Sort the results by the original index when aggregating on state.
+     * Sort the results by the original rowSet when aggregating on state.
      */
     @Override
     ReaggregatableStatefactory rollupFactory() {

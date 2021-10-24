@@ -15,7 +15,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -94,7 +94,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
                 @Override
                 public void onUpdate(Update upstream) {
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.getIndex().getPrevIndex().intSize())) {
-                        final Index relevantIndices = asInteger.getIndex().getPrevIndex();
+                        final TrackingMutableRowSet relevantIndices = asInteger.getIndex().getPrevIndex();
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asIntChunk(), relevantIndices.asRowKeyChunk(), desc);
                     }
 
@@ -102,7 +102,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(size)) {
                         ssa.validate();
 
-                        final Index takeout = upstream.removed.union(upstream.getModifiedPreShift());
+                        final TrackingMutableRowSet takeout = upstream.removed.union(upstream.getModifiedPreShift());
                         if (takeout.nonempty()) {
                             final IntChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, takeout).asIntChunk();
                             ssa.remove(valuesToRemove, takeout.asRowKeyChunk());
@@ -111,7 +111,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
                         ssa.validate();
 
                         try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.getIndex().getPrevIndex().intSize())) {
-                            final Index relevantIndices = asInteger.getIndex().getPrevIndex().minus(takeout);
+                            final TrackingMutableRowSet relevantIndices = asInteger.getIndex().getPrevIndex().minus(takeout);
                             checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asIntChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
@@ -119,27 +119,27 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
                             final IndexShiftData.Iterator sit = upstream.shifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                final Index indexToShift = table.getIndex().getPrevIndex().subindexByKey(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
-                                if (indexToShift.empty()) {
+                                final TrackingMutableRowSet rowSetToShift = table.getIndex().getPrevIndex().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
+                                if (rowSetToShift.empty()) {
                                     continue;
                                 }
 
-                                final IntChunk<? extends Values> shiftValues = valueSource.getPrevChunk(getContext, indexToShift).asIntChunk();
+                                final IntChunk<? extends Values> shiftValues = valueSource.getPrevChunk(getContext, rowSetToShift).asIntChunk();
 
                                 if (sit.polarityReversed()) {
-                                    ssa.applyShiftReverse(shiftValues, indexToShift.asRowKeyChunk(), sit.shiftDelta());
+                                    ssa.applyShiftReverse(shiftValues, rowSetToShift.asRowKeyChunk(), sit.shiftDelta());
                                 } else {
-                                    ssa.applyShift(shiftValues, indexToShift.asRowKeyChunk(), sit.shiftDelta());
+                                    ssa.applyShift(shiftValues, rowSetToShift.asRowKeyChunk(), sit.shiftDelta());
                                 }
                             }
                         }
 
                         ssa.validate();
 
-                        final Index putin = upstream.added.union(upstream.modified);
+                        final TrackingMutableRowSet putin = upstream.added.union(upstream.modified);
 
                         try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.intSize())) {
-                            final Index relevantIndices = asInteger.getIndex().minus(putin);
+                            final TrackingMutableRowSet relevantIndices = asInteger.getIndex().minus(putin);
                             checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asIntChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
@@ -184,7 +184,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final Listener asIntegerListener = new InstrumentedListenerAdapter((DynamicTable) asInteger, false) {
                 @Override
-                public void onUpdate(Index added, Index removed, Index modified) {
+                public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
                         if (removed.nonempty()) {
                             final IntChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, removed).asIntChunk();
@@ -200,7 +200,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    final Index[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    final TrackingMutableRowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].empty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);
                 });

@@ -112,7 +112,7 @@ public class IndexCreationSeqPerfTest {
             System.out.println(me + ": Running " + f.name() + " " + c.name + " " + stepName + " sz=" + sz);
             final PerfStats sStats = new PerfStats(runs);
             final String pfx = me + "    ";
-            final String b = pfx + f.name() + " " + c.name + " " + stepName + " index len=" + sz;
+            final String b = pfx + f.name() + " " + c.name + " " + stepName + " rowSet len=" + sz;
             final long lasts = runAndGetSamples(f, c, sz, runs, sStats, b, print);
             if (print) {
                 sStats.compute();

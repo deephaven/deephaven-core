@@ -6,20 +6,20 @@ package io.deephaven.engine.v2.replay;
 
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 import java.util.Map;
 
 public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
 
-    public ReplayLastByGroupedTable(Index index, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
-            Replayer replayer, String[] groupingColumns) {
-        super(index, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex(100),
+    public ReplayLastByGroupedTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
+                                    Replayer replayer, String[] groupingColumns) {
+        super(rowSet, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex(100),
                 groupingColumns);
         // noinspection unchecked
-        replayer.registerTimeSource(index, (ColumnSource<DBDateTime>) input.get(timeColumn));
+        replayer.registerTimeSource(rowSet, (ColumnSource<DBDateTime>) input.get(timeColumn));
     }
 
     @Override
@@ -27,8 +27,8 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         if (allIterators.isEmpty()) {
             return;
         }
-        IndexBuilder addedBuilder = Index.FACTORY.getBuilder();
-        IndexBuilder modifiedBuilder = Index.FACTORY.getBuilder();
+        RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getBuilder();
+        RowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getBuilder();
         // List<IteratorsAndNextTime> iteratorsToAddBack = new ArrayList<>(allIterators.size());
         while (!allIterators.isEmpty() && allIterators.peek().lastTime.getNanos() < replayer.currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
@@ -45,11 +45,11 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
                 allIterators.add(currentIt);
             }
         }
-        final Index added = addedBuilder.getIndex();
-        final Index modified = modifiedBuilder.getIndex();
+        final TrackingMutableRowSet added = addedBuilder.build();
+        final TrackingMutableRowSet modified = modifiedBuilder.build();
         if (added.size() > 0 || modified.size() > 0) {
             getIndex().insert(added);
-            notifyListeners(added, Index.FACTORY.getEmptyIndex(), modified);
+            notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), modified);
         }
     }
 }

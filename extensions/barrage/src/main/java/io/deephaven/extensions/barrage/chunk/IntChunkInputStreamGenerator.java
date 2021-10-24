@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -35,12 +35,12 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable Index subset) {
+    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable TrackingMutableRowSet subset) {
         return new IntChunkInputStream(options, subset);
     }
 
     private class IntChunkInputStream extends BaseChunkInputStream {
-        private IntChunkInputStream(final BarrageSubscriptionOptions options, final Index subset) {
+        private IntChunkInputStream(final BarrageSubscriptionOptions options, final TrackingMutableRowSet subset) {
             super(chunk, options, subset);
         }
 

@@ -30,7 +30,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
      * 
      * @param update The usptream update.
      */
-    public IndexShiftDataExpander(final ShiftAwareListener.Update update, final Index sourceIndex) {
+    public IndexShiftDataExpander(final ShiftAwareListener.Update update, final TrackingMutableRowSet sourceRowSet) {
         // do we even need changes?
         if (update.shifted.empty() && !update.added.overlaps(update.removed)) {
             this.update = update.acquire();
@@ -41,9 +41,9 @@ public class IndexShiftDataExpander implements SafeCloseable {
             this.update = new ShiftAwareListener.Update();
 
             // Compute added and removed using the old definitions explicitly.
-            try (final Index prevIndex = sourceIndex.getPrevIndex()) {
-                this.update.added = sourceIndex.minus(prevIndex);
-                this.update.removed = prevIndex.minus(sourceIndex);
+            try (final TrackingMutableRowSet prevRowSet = sourceRowSet.getPrevIndex()) {
+                this.update.added = sourceRowSet.minus(prevRowSet);
+                this.update.removed = prevRowSet.minus(sourceRowSet);
             }
 
             // Conceptually we can group modifies into two: a) modifies that were not part of any shift, and b) modifies
@@ -56,8 +56,8 @@ public class IndexShiftDataExpander implements SafeCloseable {
             this.update.modified = update.modified.clone();
 
             // Expand shift destinations to paint rows that might need to be considered modified.
-            final Index.SequentialBuilder addedByShiftB = Index.FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder removedByShiftB = Index.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder addedByShiftB = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final SequentialRowSetBuilder removedByShiftB = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
             for (int idx = 0; idx < update.shifted.size(); ++idx) {
                 final long start = update.shifted.getBeginRange(idx);
@@ -68,15 +68,15 @@ public class IndexShiftDataExpander implements SafeCloseable {
             }
 
             // consider all rows that are in a shift region as modified (if they still exist)
-            try (final Index addedByShift = addedByShiftB.getIndex();
-                    final Index rmByShift = removedByShiftB.getIndex()) {
+            try (final TrackingMutableRowSet addedByShift = addedByShiftB.build();
+                 final TrackingMutableRowSet rmByShift = removedByShiftB.build()) {
                 addedByShift.insert(rmByShift);
-                addedByShift.retain(sourceIndex);
+                addedByShift.retain(sourceRowSet);
                 this.update.modified.insert(addedByShift);
             }
 
-            // remove all rows we define as added (i.e. modified rows that were actually shifted into a new index)
-            try (final Index absoluteModified = update.removed.intersect(update.added)) {
+            // remove all rows we define as added (i.e. modified rows that were actually shifted into a new rowSet)
+            try (final TrackingMutableRowSet absoluteModified = update.removed.intersect(update.added)) {
                 this.update.modified.insert(absoluteModified);
             }
             this.update.modified.remove(this.update.added);
@@ -86,29 +86,29 @@ public class IndexShiftDataExpander implements SafeCloseable {
     }
 
     /**
-     * Fetch the resulting index of added values.
+     * Fetch the resulting rowSet of added values.
      * 
-     * @return added index
+     * @return added rowSet
      */
-    public Index getAdded() {
+    public TrackingMutableRowSet getAdded() {
         return update.added;
     }
 
     /**
-     * Fetch the resulting index of removed values.
+     * Fetch the resulting rowSet of removed values.
      * 
-     * @return removed index
+     * @return removed rowSet
      */
-    public Index getRemoved() {
+    public TrackingMutableRowSet getRemoved() {
         return update.removed;
     }
 
     /**
-     * Fetch the resulting index of modified values.
+     * Fetch the resulting rowSet of modified values.
      * 
-     * @return modified index
+     * @return modified rowSet
      */
-    public Index getModified() {
+    public TrackingMutableRowSet getModified() {
         return update.modified;
     }
 
@@ -123,34 +123,34 @@ public class IndexShiftDataExpander implements SafeCloseable {
      * Immutable, re-usable {@link IndexShiftDataExpander} for an empty set of changes.
      */
     public static IndexShiftDataExpander EMPTY = new IndexShiftDataExpander(new ShiftAwareListener.Update(
-            Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(),
+            TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
             IndexShiftData.EMPTY,
-            ModifiedColumnSet.ALL), Index.FACTORY.getEmptyIndex());
+            ModifiedColumnSet.ALL), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
 
     /**
      * Perform backwards compatible validation checks.
      * 
-     * @param sourceIndex the underlying index that apply to added/removed/modified
+     * @param sourceRowSet the underlying rowSet that apply to added/removed/modified
      */
-    public void validate(final Index sourceIndex) {
+    public void validate(final TrackingMutableRowSet sourceRowSet) {
         final boolean previousContainsAdds;
         final boolean previousMissingRemovals;
         final boolean previousMissingModifications;
-        try (final ReadOnlyIndex prevIndex = sourceIndex.getPrevIndex()) {
+        try (final RowSet prevIndex = sourceRowSet.getPrevIndex()) {
             previousContainsAdds = update.added.overlaps(prevIndex);
             previousMissingRemovals = !update.removed.subsetOf(prevIndex);
             previousMissingModifications = !update.modified.subsetOf(prevIndex);
         }
-        final boolean currentMissingAdds = !update.added.subsetOf(sourceIndex);
-        final boolean currentContainsRemovals = update.removed.overlaps(sourceIndex);
-        final boolean currentMissingModifications = !update.modified.subsetOf(sourceIndex);
+        final boolean currentMissingAdds = !update.added.subsetOf(sourceRowSet);
+        final boolean currentContainsRemovals = update.removed.overlaps(sourceRowSet);
+        final boolean currentMissingModifications = !update.modified.subsetOf(sourceRowSet);
 
         if (!previousContainsAdds && !previousMissingRemovals && !previousMissingModifications &&
                 !currentMissingAdds && !currentContainsRemovals && !currentMissingModifications) {
             return;
         }
 
-        // Excuse the sloppiness in Index closing after this point, we're planning to crash the process anyway...
+        // Excuse the sloppiness in TrackingMutableRowSet closing after this point, we're planning to crash the process anyway...
 
         String serializedIndices = null;
         if (BaseTable.PRINT_SERIALIZED_UPDATE_OVERLAPS) {
@@ -174,8 +174,8 @@ public class IndexShiftDataExpander implements SafeCloseable {
                     }
                 };
 
-                append.accept("getIndex().getPrevIndex=", sourceIndex.getPrevIndex());
-                append.accept("getIndex()=", sourceIndex.getPrevIndex());
+                append.accept("build().getPrevIndex=", sourceRowSet.getPrevIndex());
+                append.accept("build()=", sourceRowSet.getPrevIndex());
                 append.accept("added=", update.added);
                 append.accept("removed=", update.removed);
                 append.accept("modified=", update.modified);
@@ -186,17 +186,17 @@ public class IndexShiftDataExpander implements SafeCloseable {
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
-        final Index addedIntersectPrevious = update.added.intersect(sourceIndex.getPrevIndex());
-        final Index removalsMinusPrevious = update.removed.minus(sourceIndex.getPrevIndex());
-        final Index modifiedMinusPrevious = update.modified.minus(sourceIndex.getPrevIndex());
-        final Index addedMinusCurrent = update.added.minus(sourceIndex);
-        final Index removedIntersectCurrent = update.removed.intersect(sourceIndex);
-        final Index modifiedMinusCurrent = update.modified.minus(sourceIndex);
+        final TrackingMutableRowSet addedIntersectPrevious = update.added.intersect(sourceRowSet.getPrevIndex());
+        final TrackingMutableRowSet removalsMinusPrevious = update.removed.minus(sourceRowSet.getPrevIndex());
+        final TrackingMutableRowSet modifiedMinusPrevious = update.modified.minus(sourceRowSet.getPrevIndex());
+        final TrackingMutableRowSet addedMinusCurrent = update.added.minus(sourceRowSet);
+        final TrackingMutableRowSet removedIntersectCurrent = update.removed.intersect(sourceRowSet);
+        final TrackingMutableRowSet modifiedMinusCurrent = update.modified.minus(sourceRowSet);
 
         // Everything is messed up for this table, print out the indices in an easy to understand way
-        final String indexUpdateErrorMessage = new LogOutputStringImpl().append("Index update error detected: ")
-                .append(LogOutput::nl).append("\t          previousIndex=").append(sourceIndex.getPrevIndex())
-                .append(LogOutput::nl).append("\t           currentIndex=").append(sourceIndex)
+        final String indexUpdateErrorMessage = new LogOutputStringImpl().append("TrackingMutableRowSet update error detected: ")
+                .append(LogOutput::nl).append("\t          previousIndex=").append(sourceRowSet.getPrevIndex())
+                .append(LogOutput::nl).append("\t           currentIndex=").append(sourceRowSet)
                 .append(LogOutput::nl).append("\t         updateToExpand=").append(update)
                 .append(LogOutput::nl).append("\t                  added=").append(update.added)
                 .append(LogOutput::nl).append("\t                removed=").append(update.removed)
@@ -213,7 +213,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
         log.error().append(indexUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {
-            log.error().append("Index update error detected: serialized data=").append(serializedIndices).endl();
+            log.error().append("TrackingMutableRowSet update error detected: serialized data=").append(serializedIndices).endl();
         }
 
         Assert.assertion(false, "!(previousContainsAdds || previousMissingRemovals || " +

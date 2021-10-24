@@ -94,12 +94,12 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public boolean addIndex(final SingletonContext context,
-            @NotNull final Index index,
+            @NotNull final TrackingMutableRowSet rowSet,
             final long destination) {
-        if (index.isEmpty()) {
+        if (rowSet.isEmpty()) {
             return false;
         }
-        return maybeAssignFirst(destination, index.firstRowKey());
+        return maybeAssignFirst(destination, rowSet.firstRowKey());
     }
 
     private boolean maybeAssignFirst(final long destination, final long sourceIndexKey) {
@@ -127,7 +127,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-            @NotNull final ReadOnlyIndex newDestinations) {
+            @NotNull final RowSet newDestinations) {
         // NB: We cannot assert no modifies; other operators in the same aggregation might modify columns not in our
         // result set.
         Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
@@ -143,7 +143,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     /**
      * <p>
-     * For each destination slot, map to the (first) source index key and copy source values to destination slots for
+     * For each destination slot, map to the (first) source rowSet key and copy source values to destination slots for
      * all result columns.
      *
      * <p>

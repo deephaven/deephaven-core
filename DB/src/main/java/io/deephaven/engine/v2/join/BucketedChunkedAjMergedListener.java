@@ -65,8 +65,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
     private final ModifiedColumnSet resultModifiedColumnSet;
 
-    private final ObjectArraySource<Index.SequentialBuilder> sequentialBuilders =
-            new ObjectArraySource<>(Index.SequentialBuilder.class);
+    private final ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders =
+            new ObjectArraySource<>(SequentialRowSetBuilder.class);
     private final LongArraySource slots = new LongArraySource();
 
     public BucketedChunkedAjMergedListener(JoinListenerRecorder leftRecorder,
@@ -153,13 +153,13 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         final LongSortKernel<Values, RowKeys> sortKernel =
                 LongSortKernel.makeContext(stampChunkType, order, Math.max(leftChunkSize, rightChunkSize), true);
 
-        final Index.RandomBuilder modifiedBuilder = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
 
         // first we remove anything that is not of interest from the left hand side, because we don't want to
         // process the relevant right hand side changes
         if (leftTicked) {
-            final Index leftRestampRemovals;
+            final TrackingMutableRowSet leftRestampRemovals;
             if (leftStampModified || leftKeysModified) {
                 leftRestampRemovals = leftRecorder.getRemoved().union(leftRecorder.getModifiedPreShift());
             } else {
@@ -176,11 +176,11 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final int removedSlotCount = asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
                         slots, sequentialBuilders);
 
-                final MutableObject<Index> leftIndexOutput = new MutableObject<>();
+                final MutableObject<TrackingMutableRowSet> leftIndexOutput = new MutableObject<>();
 
                 for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
                     final long slot = slots.getLong(slotIndex);
-                    final Index leftRemoved = indexFromBuilder(slotIndex);
+                    final TrackingMutableRowSet leftRemoved = indexFromBuilder(slotIndex);
 
                     leftRemoved.forAllLongs(redirectionIndex::removeVoid);
 
@@ -218,9 +218,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             final IndexShiftData leftShifted = leftRecorder.getShifted();
             if (leftShifted.nonempty()) {
 
-                try (final Index fullPrevIndex = leftTable.getIndex().getPrevIndex();
-                        final Index previousToShift = fullPrevIndex.minus(leftRestampRemovals);
-                        final Index relevantShift = getRelevantShifts(leftShifted, previousToShift)) {
+                try (final TrackingMutableRowSet fullPrevRowSet = leftTable.getIndex().getPrevIndex();
+                     final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(leftRestampRemovals);
+                     final TrackingMutableRowSet relevantShift = getRelevantShifts(leftShifted, previousToShift)) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
                     redirectionIndex.applyShift(previousToShift, leftShifted);
 
@@ -240,19 +240,19 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     leftKeySources, slots, sequentialBuilders);
 
                             for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
-                                final Index shiftedIndex = indexFromBuilder(slotIndex);
+                                final TrackingMutableRowSet shiftedRowSet = indexFromBuilder(slotIndex);
                                 final long slot = slots.getLong(slotIndex);
                                 final byte state = asOfJoinStateManager.getState(slot);
 
-                                final IndexShiftData shiftDataForSlot = leftShifted.intersect(shiftedIndex);
+                                final IndexShiftData shiftDataForSlot = leftShifted.intersect(shiftedRowSet);
 
                                 if ((state & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
-                                    // if the left is empty, we should be an index entry rather than an SSA, and we can
+                                    // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
-                                    final Index leftIndex = asOfJoinStateManager.getLeftIndex(slot);
-                                    shiftDataForSlot.apply(leftIndex);
-                                    shiftedIndex.close();
-                                    leftIndex.compact();
+                                    final TrackingMutableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
+                                    shiftDataForSlot.apply(leftRowSet);
+                                    shiftedRowSet.close();
+                                    leftRowSet.compact();
                                     continue;
                                 }
 
@@ -262,12 +262,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                                 while (slotSit.hasNext()) {
                                     slotSit.next();
-                                    final Index indexToShift =
-                                            shiftedIndex.subindexByKey(slotSit.beginRange(), slotSit.endRange());
+                                    final TrackingMutableRowSet rowSetToShift =
+                                            shiftedRowSet.subSetByKeyRange(slotSit.beginRange(), slotSit.endRange());
                                     ChunkedAjUtilities.applyOneShift(leftSsa, leftChunkSize, leftStampSource,
                                             leftShiftFillContext, shiftSortContext, stampKeys, stampValues, slotSit,
-                                            indexToShift);
-                                    indexToShift.close();
+                                            rowSetToShift);
+                                    rowSetToShift.close();
                                 }
                             }
                         }
@@ -275,8 +275,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 }
             }
         } else {
-            downstream.added = Index.FACTORY.getEmptyIndex();
-            downstream.removed = Index.FACTORY.getEmptyIndex();
+            downstream.added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            downstream.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             downstream.shifted = IndexShiftData.EMPTY;
         }
 
@@ -286,8 +286,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             final boolean rightKeysModified = rightRecorder.getModifiedColumnSet().containsAny(rightKeyColumns);
             final boolean rightStampModified = rightRecorder.getModifiedColumnSet().containsAny(rightStampColumn);
 
-            final Index rightRestampRemovals;
-            final Index rightRestampAdditions;
+            final TrackingMutableRowSet rightRestampRemovals;
+            final TrackingMutableRowSet rightRestampAdditions;
             if (rightKeysModified || rightStampModified) {
                 rightRestampAdditions = rightRecorder.getAdded().union(rightRecorder.getModified());
                 rightRestampRemovals = rightRecorder.getRemoved().union(rightRecorder.getModifiedPreShift());
@@ -303,7 +303,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             final int removedSlotCount = asOfJoinStateManager.markForRemoval(rightRestampRemovals, rightKeySources,
                     slots, sequentialBuilders);
 
-            final MutableObject<Index> indexOutput = new MutableObject<>();
+            final MutableObject<TrackingMutableRowSet> indexOutput = new MutableObject<>();
             try (final WritableLongChunk<RowKeys> priorRedirections =
                     WritableLongChunk.makeWritableChunk(rightChunkSize);
                     final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(rightChunkSize);
@@ -313,7 +313,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
                     final long slot = slots.getLong(slotIndex);
 
-                    try (final Index rightRemoved = indexFromBuilder(slotIndex)) {
+                    try (final TrackingMutableRowSet rightRemoved = indexFromBuilder(slotIndex)) {
                         final SegmentedSortedArray rightSsa =
                                 asOfJoinStateManager.getRightSsaOrIndex(slot, indexOutput);
                         if (rightSsa == null) {
@@ -349,9 +349,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             final IndexShiftData rightShifted = rightRecorder.getShifted();
 
             if (rightShifted.nonempty()) {
-                try (final Index fullPrevIndex = rightTable.getIndex().getPrevIndex();
-                        final Index previousToShift = fullPrevIndex.minus(rightRestampRemovals);
-                        final Index relevantShift = getRelevantShifts(rightShifted, previousToShift)) {
+                try (final TrackingMutableRowSet fullPrevRowSet = rightTable.getIndex().getPrevIndex();
+                     final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
+                     final TrackingMutableRowSet relevantShift = getRelevantShifts(rightShifted, previousToShift)) {
 
                     if (relevantShift.nonempty()) {
                         try (final SizedSafeCloseable<ColumnSource.FillContext> rightShiftFillContext =
@@ -369,7 +369,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     rightKeySources, slots, sequentialBuilders);
 
                             for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
-                                final Index shiftedIndex = indexFromBuilder(slotIndex);
+                                final TrackingMutableRowSet shiftedRowSet = indexFromBuilder(slotIndex);
                                 final long slot = slots.getLong(slotIndex);
                                 final byte state = asOfJoinStateManager.getState(slot);
 
@@ -380,15 +380,15 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     leftSsa = asOfJoinStateManager.getLeftSsa(slot);
                                 }
 
-                                final IndexShiftData shiftDataForSlot = rightShifted.intersect(shiftedIndex);
+                                final IndexShiftData shiftDataForSlot = rightShifted.intersect(shiftedRowSet);
 
                                 if (leftSsa == null) {
-                                    // if the left is empty, we should be an index entry rather than an SSA, and we can
+                                    // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
-                                    final Index rightIndex = asOfJoinStateManager.getRightIndex(slot);
-                                    shiftDataForSlot.apply(rightIndex);
-                                    shiftedIndex.close();
-                                    rightIndex.compact();
+                                    final TrackingMutableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
+                                    shiftDataForSlot.apply(rightRowSet);
+                                    shiftedRowSet.close();
+                                    rightRowSet.compact();
                                     continue;
                                 }
                                 final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot);
@@ -398,14 +398,14 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 while (slotSit.hasNext()) {
                                     slotSit.next();
 
-                                    try (final Index indexToShift =
-                                            shiftedIndex.subindexByKey(slotSit.beginRange(), slotSit.endRange())) {
+                                    try (final TrackingMutableRowSet rowSetToShift =
+                                            shiftedRowSet.subSetByKeyRange(slotSit.beginRange(), slotSit.endRange())) {
                                         if (slotSit.polarityReversed()) {
-                                            final int shiftSize = indexToShift.intSize();
+                                            final int shiftSize = rowSetToShift.intSize();
                                             rightStampSource.fillPrevChunk(
                                                     rightShiftFillContext.ensureCapacity(shiftSize),
-                                                    rightStampValues.ensureCapacity(shiftSize), indexToShift);
-                                            indexToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
+                                                    rightStampValues.ensureCapacity(shiftSize), rowSetToShift);
+                                            rowSetToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
                                             shiftSortKernel.ensureCapacity(shiftSize).sort(rightStampKeys.get(),
                                                     rightStampValues.get());
 
@@ -416,7 +416,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                     slotSit.shiftDelta());
                                         } else {
                                             try (final RowSequence.Iterator shiftIt =
-                                                    indexToShift.getRowSequenceIterator()) {
+                                                    rowSetToShift.getRowSequenceIterator()) {
                                                 while (shiftIt.hasMore()) {
                                                     final RowSequence chunkOk =
                                                             shiftIt.getNextRowSequenceWithLength(rightChunkSize);
@@ -458,7 +458,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 for (int slotIndex = 0; slotIndex < addedSlotCount; ++slotIndex) {
                     final long slot = slots.getLong(slotIndex);
 
-                    final Index rightAdded = indexFromBuilder(slotIndex);
+                    final TrackingMutableRowSet rightAdded = indexFromBuilder(slotIndex);
 
                     final byte state = asOfJoinStateManager.getState(slot);
 
@@ -520,7 +520,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     final int chunks = (rightAdded.intSize() + rightChunkSize - 1) / rightChunkSize;
                     for (int ii = 0; ii < chunks; ++ii) {
                         final int startChunk = chunks - ii - 1;
-                        try (final Index chunkOk = rightAdded.subindexByPos(startChunk * rightChunkSize,
+                        try (final TrackingMutableRowSet chunkOk = rightAdded.subSetByPositionRange(startChunk * rightChunkSize,
                                 (startChunk + 1) * rightChunkSize)) {
                             rightStampSource.fillChunk(rightFillContext, stampChunk, chunkOk);
                             insertedIndices.setSize(chunkOk.intSize());
@@ -572,7 +572,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     for (int slotIndex = 0; slotIndex < modifiedSlotCount; ++slotIndex) {
                         final long slot = slots.getLong(slotIndex);
 
-                        final Index rightModified = indexFromBuilder(slotIndex);
+                        final TrackingMutableRowSet rightModified = indexFromBuilder(slotIndex);
 
                         final byte state = asOfJoinStateManager.getState(slot);
                         if ((state & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY) {
@@ -612,7 +612,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
         if (leftTicked) {
             // we add the left side values now
-            final Index leftRestampAdditions;
+            final TrackingMutableRowSet leftRestampAdditions;
             if (leftStampModified || leftKeysModified) {
                 leftRestampAdditions = leftRecorder.getAdded().union(leftRecorder.getModified());
             } else {
@@ -665,17 +665,17 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         break;
                 }
 
-                final Index leftAdded = indexFromBuilder(slotIndex);
+                final TrackingMutableRowSet leftAdded = indexFromBuilder(slotIndex);
 
                 if (makeLeftIndex) {
                     asOfJoinStateManager.setLeftIndex(slot, leftAdded);
                     continue;
                 }
                 if (updateLeftIndex) {
-                    final Index leftIndex = asOfJoinStateManager.getLeftIndex(slot);
-                    leftIndex.insert(leftAdded);
+                    final TrackingMutableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
+                    leftRowSet.insert(leftAdded);
                     leftAdded.close();
-                    leftIndex.compact();
+                    leftRowSet.compact();
                     continue;
                 }
 
@@ -710,7 +710,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
                             final long leftKey = leftStampKeys.get(ii);
                             final long rightKey = rightKeysForLeft.get(ii);
-                            if (rightKey == Index.NULL_KEY) {
+                            if (rightKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                                 redirectionIndex.removeVoid(leftKey);
                             } else {
                                 redirectionIndex.putVoid(leftKey, rightKey);
@@ -733,29 +733,29 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         SafeCloseable.closeArray(sortKernel, leftStampKeys, leftStampValues, leftFillContext, leftSsaFactory,
                 rightSsaFactory);
 
-        downstream.modified = leftRecorder.getModified().union(modifiedBuilder.getIndex());
+        downstream.modified = leftRecorder.getModified().union(modifiedBuilder.build());
 
         result.notifyListeners(downstream);
     }
 
-    private Index getRelevantShifts(IndexShiftData shifted, Index previousToShift) {
-        final Index.RandomBuilder relevantShiftKeys = Index.CURRENT_FACTORY.getRandomBuilder();
+    private TrackingMutableRowSet getRelevantShifts(IndexShiftData shifted, TrackingMutableRowSet previousToShift) {
+        final RowSetBuilder relevantShiftKeys = TrackingMutableRowSet.CURRENT_FACTORY.getRandomBuilder();
         final IndexShiftData.Iterator sit = shifted.applyIterator();
         while (sit.hasNext()) {
             sit.next();
-            final Index indexToShift = previousToShift.subindexByKey(sit.beginRange(), sit.endRange());
-            if (!indexToShift.empty()) {
-                relevantShiftKeys.addIndex(indexToShift);
+            final TrackingMutableRowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
+            if (!rowSetToShift.empty()) {
+                relevantShiftKeys.addRowSet(rowSetToShift);
             }
-            indexToShift.close();
+            rowSetToShift.close();
         }
-        return relevantShiftKeys.getIndex();
+        return relevantShiftKeys.build();
     }
 
-    private Index indexFromBuilder(int slotIndex) {
-        final Index index = sequentialBuilders.get(slotIndex).getIndex();
+    private TrackingMutableRowSet indexFromBuilder(int slotIndex) {
+        final TrackingMutableRowSet rowSet = sequentialBuilders.get(slotIndex).build();
         sequentialBuilders.set(slotIndex, null);
-        return index;
+        return rowSet;
     }
 
     @Override

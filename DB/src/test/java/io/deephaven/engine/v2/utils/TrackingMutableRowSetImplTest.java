@@ -39,40 +39,40 @@ import static io.deephaven.engine.v2.utils.rsp.RspArray.BLOCK_SIZE;
 import static io.deephaven.engine.v2.utils.rsp.RspArray.BLOCK_LAST;
 
 @Category(OutOfBandTest.class)
-public class TreeIndexTest extends SortedIndexTestBase {
+public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase {
     @NotNull
     @Override
-    protected SortedIndex getSortedIndex(long... keys) {
-        final Index.RandomBuilder treeIndexBuilder = TreeIndex.makeRandomBuilder();
+    protected GroupingRowSetHelper getSortedIndex(long... keys) {
+        final RowSetBuilder treeIndexBuilder = TrackingMutableRowSetImpl.makeRandomBuilder();
         for (long key : keys) {
             treeIndexBuilder.addKey(key);
         }
-        return (SortedIndex) treeIndexBuilder.getIndex();
+        return (GroupingRowSetHelper) treeIndexBuilder.build();
     }
 
 
     @NotNull
     @Override
-    protected final Index fromTreeIndexImpl(@NotNull final TreeIndexImpl treeIndexImpl) {
-        return new TreeIndex(treeIndexImpl);
+    protected final TrackingMutableRowSet fromTreeIndexImpl(@NotNull final TreeIndexImpl treeIndexImpl) {
+        return new TrackingMutableRowSetImpl(treeIndexImpl);
     }
 
     @NotNull
     @Override
-    protected Index.Factory getFactory() {
-        return Index.FACTORY;
+    protected RowSetFactory getFactory() {
+        return TrackingMutableRowSet.FACTORY;
     }
 
     public void testSimple() {
-        assertEquals(1, Index.FACTORY.getIndexByRange(2, 2).size());
-        final Index.Iterator it = Index.FACTORY.getIndexByRange(2, 2).iterator();
+        assertEquals(1, TrackingMutableRowSet.FACTORY.getRowSetByRange(2, 2).size());
+        final TrackingMutableRowSet.Iterator it = TrackingMutableRowSet.FACTORY.getRowSetByRange(2, 2).iterator();
         assertEquals(2, it.nextLong());
         assertFalse(it.hasNext());
     }
 
     public void testSimpleRangeIterator() {
-        final Index index = Index.FACTORY.getIndexByRange(3, 100);
-        final Index.RangeIterator rit = index.rangeIterator();
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(3, 100);
+        final TrackingMutableRowSet.RangeIterator rit = rowSet.rangeIterator();
         assertTrue(rit.hasNext());
         rit.next();
         assertEquals(3, rit.currentRangeStart());
@@ -81,88 +81,88 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testSerialize() throws IOException, ClassNotFoundException {
-        Index index = Index.FACTORY.getIndexByRange(0, 100);
-        Index copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
-        index.insert(1000000);
+        TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 100);
+        TrackingMutableRowSet copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
+        rowSet.insert(1000000);
 
-        index.insertRange(1000002, 1000005);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(1000002, 1000005);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insertRange(8_000_000_000L, 8_000_100_000L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(8_000_000_000L, 8_000_100_000L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insertRange(1030, 1030);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(1030, 1030);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insertRange(1035, 1036);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(1035, 1036);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insertRange(1038, 1039);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(1038, 1039);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insertRange(1041, 1042);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(1041, 1042);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insertRange(8_000_000_003L, 8_000_100_004L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(8_000_000_003L, 8_000_100_004L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insertRange(8_000_000_006L, 8_000_100_007L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(8_000_000_006L, 8_000_100_007L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insert(8_000_000_0010L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insert(8_000_000_0010L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insert(8_000_001_0010L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insert(8_000_001_0010L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insert(8_000_002_0010L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insert(8_000_002_0010L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
 
-        index.insert(8_000_002_0011L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
-        index.insert(8_000_002_0013L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insert(8_000_002_0011L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
+        rowSet.insert(8_000_002_0013L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insert(8_000_002_0015L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insert(8_000_002_0015L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index.insertRange(8_000_002_0017L, 8_000_002_0018L);
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        rowSet.insertRange(8_000_002_0017L, 8_000_002_0018L);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index = indexFromString(
+        rowSet = indexFromString(
                 "0,2,4-5,8-9,12-17,19-20,22,25-29,33-38,41-45,47,49-54,56,58-59,61-73,75-78,80,82-85,89,91-104,106-110,112-114,116-117,120-132,135-136,138-141,143-144,146,148-154,157-159,161,163-166,168,170,172-189,193-196,198-206,209-210,213,215-235,237-245,248-250,252-262,264-267,269-271,273-276,278-281,284-289,291,293-294,296-301,303,305-307,309-317,319-345,347-354,356-366,368-378,380-387,389-393,395-401,403-409,411-421,424-428,430-437,439-460,462-463,465-473,475-488,490-497,499-503,505-510,512-519,521,523-531,533-540,542-543,545-562,564-570,572-595,597-642,644,646-664,666-670,674-675,677-680,682-689,691-718,720-740,742-764,766-801,803-821,823-826,828-831,833-840,842-887,890-892,894-901,903-928,930-951,953-957,959-964,966-996,998-1010,1013-1016,1018-1022,1024-1064,1066-1072,1074-1094,1096-1107,1109-1181,1183-1193,1195-1199,1201-1253,1255-1288,1290-1291,1293-1311,1313-1328,1330-1345,1347-1349,1352-1446,1448-1473,1475-1511,1513-1567,1569-1572,1574-1580,1582-1615,1617-1643,1645,1647-1687,1689-1691,1693-1695,1697-1698,1700-1709,1711-1732,1734,1735-1751,1753-1792,1794-1831,1833-1849,1851-1857,1859-1866,1868-1880,1882-1885,1887-1920,1922-1926,1931-2566");
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
 
-        index = indexFromString(
+        rowSet = indexFromString(
                 "1-2,4,6,9-12,14-18,20-21,24-26,28-33,35,37-39,41-42,44,46-53,55-59,61-62,64,67,69,71-72,74-75,77-79,83-85,87-91,93-95,97,100-112,114,116,118,120-122,124-126,128-130,134-138,140-146,148-149,151,153-154,156,158-159,161-163,165-169,171-172,174-178,182-192,198-200,202,205,207-234,236-243,245,247-249,252-260,262-267,269,271-273,275-279,283-284,286-291,293-295,297-303,306-311,313,315-320,322,324-326,328-330,332-335,337-350,352-355,357,359-364,366,369-376,378-379,381-391,393,395-406,408-425,427-466,470-471,473-477,480-490,492-497,499-513,515-522,524-529,531-535,539-549,552-553,555-563,565-570,572-578,580-624,626-634,636-650,652-654,656-657,659,661-665,667-673,675-677,679,681,683-684,686,688-692,694-695,697-717,719-733,735-739,741-743,745-750,752-755,757-760,762-778,780,782-799,801-809,811-817,819-822,824-827,829-835,838-907,909-924,926-928,930-942,944-1049,1051,1053-1058,1060-1064,1066-1069,1071-1080,1082-1089,1091-1092,1094,1096-1098,1100-1102,1104-1109,1111-1121,1123-1142,1144-1156,1158-1162,1164-1169,1171-1175,1177-1190,1192-1195,1198-1199,1201-1211,1214,1216-1218,1220-1221,1223-1231,1233-1234,1236-1239,1241-1287,1289-1304,1306-1307,1309-1317,1319-1327,1329-1331,1333-1335,1337-1340,1342-1344,1346-1350,1352-1354,1356-1371,1373-1393,1395-1398,1400,1402-1479,1481-1486,1488-1490,1493,1495-1507,1509,1511-1543,1545-1550,1553-1556,1558-1564,1566-1582,1584,1586,1589-1590,1592-1615,1617-1626,1628-1634,1636-1643,1645,1647-1657,1659-1668,1670-1673,1675-1681,1683-1690,1693-1695,1697-1699,1701-1713,1715-1716,1718-1722,1724-1746,1748-1750,1753-1755,1757-1794,1796-1804,1806-1821,1823-1826,1828-1830,1832-1835,1837-1843,1846,1847-1856,1858-1894,1896-1908,1910-1916,1918-1924,1926,1928-1929,1936-2566");
-        copy = (Index) doSerDeser(index);
-        assertEquals(index, copy);
+        copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+        assertEquals(rowSet, copy);
     }
 
     public void testSerializeRandom() throws IOException, ClassNotFoundException {
         final Random random = new Random(42);
         for (int ii = 0; ii < 100; ++ii) {
-            final Index index = TstUtils.getRandomIndex(0, 100000, random);
-            final Index copy = (Index) doSerDeser(index);
-            assertEquals(index, copy);
+            final TrackingMutableRowSet rowSet = TstUtils.getRandomIndex(0, 100000, random);
+            final TrackingMutableRowSet copy = (TrackingMutableRowSet) doSerDeser(rowSet);
+            assertEquals(rowSet, copy);
         }
     }
 
@@ -182,72 +182,72 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final Random random = new Random(42);
 
         for (int ii = 0; ii < 10; ++ii) {
-            final Index index = TstUtils.getRandomIndex(0, 100000, random);
+            final TrackingMutableRowSet rowSet = TstUtils.getRandomIndex(0, 100000, random);
 
-            final DoSerDerWithSize doSerDerWithSize = new DoSerDerWithSize(index).invoke();
+            final DoSerDerWithSize doSerDerWithSize = new DoSerDerWithSize(rowSet).invoke();
             final Object desIndex = doSerDerWithSize.getDeserialized();
-            assertEquals("ii=" + ii, index, desIndex);
-            assertEquals(1, ((Index) desIndex).refCount());
+            assertEquals("ii=" + ii, rowSet, desIndex);
+            assertEquals(1, ((TrackingMutableRowSet) desIndex).refCount());
         }
     }
 
     public void testRange() {
-        final SortedIndex index = TreeIndex.getEmptyIndex();
+        final GroupingRowSetHelper index = TrackingMutableRowSetImpl.getEmptyIndex();
         assertEquals(1, index.refCount());
-        final Index range = index.subindexByPos(0, 10);
-        // The refCount of an empty Index is implementation dependant.
+        final TrackingMutableRowSet range = index.subSetByPositionRange(0, 10);
+        // The refCount of an empty TrackingMutableRowSet is implementation dependant.
         assertEquals(range.size(), 0);
-        // The refCount of an empty Index is implementation dependant.
+        // The refCount of an empty TrackingMutableRowSet is implementation dependant.
         index.insert(1L);
         assertEquals(1, index.refCount());
         index.insert(10L);
         assertEquals(1, index.refCount());
-        final Index range2 = index.subindexByPos(0, 3);
+        final TrackingMutableRowSet range2 = index.subSetByPositionRange(0, 3);
         assertEquals(2, index.refCount());
         assertEquals(2, range2.refCount());
         assertEquals(range2.size(), 2);
     }
 
     public void testsubindexByKey() {
-        final Index index = getSortedIndex(1, 2, 3);
-        final Index front = index.subindexByKey(1, 2);
+        final TrackingMutableRowSet rowSet = getSortedIndex(1, 2, 3);
+        final TrackingMutableRowSet front = rowSet.subSetByKeyRange(1, 2);
         assertEquals(front.size(), 2);
-        final Index back = index.subindexByKey(2, 3);
+        final TrackingMutableRowSet back = rowSet.subSetByKeyRange(2, 3);
         assertEquals(back.size(), 2);
 
         for (int ii = 1; ii <= 3; ++ii) {
-            final Index oneElement = index.subindexByKey(ii, ii);
+            final TrackingMutableRowSet oneElement = rowSet.subSetByKeyRange(ii, ii);
             assertEquals(oneElement.size(), 1);
         }
 
-        Index emptyFront = index.subindexByKey(0, 0);
+        TrackingMutableRowSet emptyFront = rowSet.subSetByKeyRange(0, 0);
         assertEquals(emptyFront.size(), 0);
         assertEquals(1, emptyFront.refCount());
 
-        final Index emptyBack = index.subindexByKey(4, 4);
+        final TrackingMutableRowSet emptyBack = rowSet.subSetByKeyRange(4, 4);
         assertEquals(emptyBack.size(), 0);
         assertEquals(1, emptyBack.refCount());
 
-        final Index index2 = getSortedIndex(2);
-        emptyFront = index2.subindexByKey(0, 1);
+        final TrackingMutableRowSet rowSet2 = getSortedIndex(2);
+        emptyFront = rowSet2.subSetByKeyRange(0, 1);
         assertEquals(emptyFront.size(), 0);
-        assertEquals(1, index2.refCount());
+        assertEquals(1, rowSet2.refCount());
     }
 
     public void testsubindexByKeyRegression0() {
-        final Index ix1 = getSortedIndex(1073741813L, 1073741814L);
-        final Index ix2 = ix1.subindexByKey(1073741814L, 1073741825L);
+        final TrackingMutableRowSet ix1 = getSortedIndex(1073741813L, 1073741814L);
+        final TrackingMutableRowSet ix2 = ix1.subSetByKeyRange(1073741814L, 1073741825L);
         assertEquals(1, ix2.size());
         assertEquals(1073741814L, ix2.get(0));
     }
 
     private class DoSerDerWithSize {
-        private final Index index;
+        private final TrackingMutableRowSet rowSet;
         private byte[] bytes;
         private Object deserialized;
 
-        DoSerDerWithSize(Index index) {
-            this.index = index;
+        DoSerDerWithSize(TrackingMutableRowSet rowSet) {
+            this.rowSet = rowSet;
         }
 
         public byte[] getBytes() {
@@ -261,7 +261,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         public DoSerDerWithSize invoke() throws IOException, ClassNotFoundException {
             final ByteArrayOutputStream bos = new ByteArrayOutputStream();
             final ObjectOutputStream out = new ObjectOutputStream(bos);
-            out.writeObject(index);
+            out.writeObject(rowSet);
             bytes = bos.toByteArray();
 
             final ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
@@ -273,67 +273,67 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testSplitRangeIterator() {
         // insert merging two adjacent nodes
-        final IndexBuilder builder = Index.FACTORY.getBuilder();
+        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getBuilder();
         for (int ii = 0; ii < 65; ++ii) {
             builder.addKey(ii * 2);
         }
-        final Index index = builder.getIndex();
-        index.validate();
-        index.insert(63);
-        index.validate();
+        final TrackingMutableRowSet rowSet = builder.build();
+        rowSet.validate();
+        rowSet.insert(63);
+        rowSet.validate();
 
         // insert range merging two adjacent nodes
-        final IndexBuilder builder2 = Index.FACTORY.getBuilder();
+        final RowSetBuilder builder2 = TrackingMutableRowSet.FACTORY.getBuilder();
         for (int ii = 0; ii < 65; ++ii) {
             builder2.addKey(ii * 4);
         }
-        final Index index2 = builder2.getIndex();
-        index2.validate();
-        index2.insertRange(125, 127);
-        index2.validate();
+        final TrackingMutableRowSet rowSet2 = builder2.build();
+        rowSet2.validate();
+        rowSet2.insertRange(125, 127);
+        rowSet2.validate();
 
         // force two nodes into existence
-        final IndexBuilder builder3 = Index.FACTORY.getBuilder();
+        final RowSetBuilder builder3 = TrackingMutableRowSet.FACTORY.getBuilder();
         for (int ii = 0; ii < 65; ++ii) {
             builder3.addKey(ii * 4);
         }
-        final Index index3 = builder3.getIndex();
-        index3.validate();
+        final TrackingMutableRowSet rowSet3 = builder3.build();
+        rowSet3.validate();
         for (int ii = 0; ii < 31; ++ii) {
-            index3.remove(ii * 4);
+            rowSet3.remove(ii * 4);
         }
         // we've got the mostly empty node, let's force a merger
-        index3.validate();
-        index3.insertRange(125, 127);
-        index3.validate();
+        rowSet3.validate();
+        rowSet3.insertRange(125, 127);
+        rowSet3.validate();
     }
 
     public void testSequentialSplitRange() {
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (int ii = 0; ii < 64; ++ii) {
             builder.appendKey(ii * 2);
         }
         builder.appendKey(127);
-        final Index checkIndex = builder.getIndex();
-        checkIndex.validate();
+        final TrackingMutableRowSet checkRowSet = builder.build();
+        checkRowSet.validate();
 
-        final Index.SequentialBuilder builder2 = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder2 = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (int ii = 0; ii < 63; ++ii) {
             builder2.appendKey(ii * 4);
         }
         builder2.appendRange(252, 253);
         builder2.appendKey(256);
-        final Index checkIndex2 = builder2.getIndex();
-        checkIndex2.validate();
+        final TrackingMutableRowSet checkRowSet = builder2.build();
+        checkRowSet.validate();
 
-        final Index.SequentialBuilder builder3 = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder3 = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (int ii = 0; ii < 63; ++ii) {
             builder3.appendKey(ii * 4);
         }
         builder3.appendRange(253, 254);
         builder2.appendKey(256);
-        final Index checkIndex3 = builder3.getIndex();
-        checkIndex3.validate();
+        final TrackingMutableRowSet checkRowSet = builder3.build();
+        checkRowSet.validate();
     }
 
     public void testAddIndex2() {
@@ -381,30 +381,30 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testAddIndex3() {
-        final IndexBuilder result = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder result = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int ii = 0; ii < 64; ++ii) {
             result.addKey(ii * 100);
         }
         for (int ii = 0; ii < 32; ++ii) {
             result.addKey(3101 + ii * 2);
         }
-        final Index indexToAdd = Index.FACTORY.getIndexByValues(3164, 3166);
-        result.addIndex(indexToAdd);
-        final Index checkIndex = result.getIndex();
-        checkIndex.validate();
+        final TrackingMutableRowSet rowSetToAdd = TrackingMutableRowSet.FACTORY.getRowSetByValues(3164, 3166);
+        result.addRowSet(rowSetToAdd);
+        final TrackingMutableRowSet checkRowSet = result.build();
+        checkRowSet.validate();
     }
 
     public void testAddIndex() {
-        final IndexBuilder result = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder result = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int ii = 0; ii < 64; ++ii) {
             result.addKey(ii * 100);
         }
         for (int ii = 0; ii < 32; ++ii) {
             result.addKey(3101 + ii * 2);
         }
-        final Index idx = result.getIndex();
+        final TrackingMutableRowSet idx = result.build();
 
-        // we've got an index which is split where we want it at this point
+        // we've got an rowSet which is split where we want it at this point
 
         // now let's nuke out the end of the second node
         for (int ii = 33; ii < 64; ++ii) {
@@ -420,18 +420,18 @@ public class TreeIndexTest extends SortedIndexTestBase {
         // we've got {3163,3200} now, each of them are in their own nodes
         System.out.println("Idx: " + idx);
 
-        final Index idx2 = idx.clone();
+        final TrackingMutableRowSet idx2 = idx.clone();
 
-        final Index indexToAdd = Index.FACTORY.getIndexByValues(3164);
-        idx.insert(indexToAdd);
+        final TrackingMutableRowSet rowSetToAdd = TrackingMutableRowSet.FACTORY.getRowSetByValues(3164);
+        idx.insert(rowSetToAdd);
         idx.validate();
 
-        final Index indexToAdd2 = Index.FACTORY.getIndexByRange(3164, 3199);
-        indexToAdd2.insert(idx2);
-        indexToAdd2.validate();
+        final TrackingMutableRowSet rowSetToAdd2 = TrackingMutableRowSet.FACTORY.getRowSetByRange(3164, 3199);
+        rowSetToAdd2.insert(idx2);
+        rowSetToAdd2.validate();
 
-        final Index indexToAdd3 = Index.FACTORY.getIndexByRange(3164, 3199);
-        idx2.insert(indexToAdd3);
+        final TrackingMutableRowSet rowSetToAdd3 = TrackingMutableRowSet.FACTORY.getRowSetByRange(3164, 3199);
+        idx2.insert(rowSetToAdd3);
         idx2.validate();
     }
 
@@ -540,8 +540,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
         // doCutDown(indexStrings);
     }
 
-    // This method will take one range out of one the index and run the test. If we find a range we can take out and
-    // still get a failure, recursively try again, so that we have a minimal set of index ranges that actually produce
+    // This method will take one range out of one the rowSet and run the test. If we find a range we can take out and
+    // still get a failure, recursively try again, so that we have a minimal set of rowSet ranges that actually produce
     // a failure for us. We don't need it during normal testing, so it is unused.
     @SuppressWarnings("unused")
     private void doCutDown(String[] indexStrings) {
@@ -593,21 +593,21 @@ public class TreeIndexTest extends SortedIndexTestBase {
         }
     }
 
-    private Index getUnionIndexStrings(final String[] indexStrings) {
-        final IndexBuilder result = Index.FACTORY.getRandomBuilder();
+    private TrackingMutableRowSet getUnionIndexStrings(final String[] indexStrings) {
+        final RowSetBuilder result = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (String indexString : indexStrings) {
-            final Index indexToAdd = indexFromString(indexString);
-            indexToAdd.validate();
-            result.addIndex(indexToAdd);
-            assertEquals(1, indexToAdd.refCount());
+            final TrackingMutableRowSet rowSetToAdd = indexFromString(indexString);
+            rowSetToAdd.validate();
+            result.addRowSet(rowSetToAdd);
+            assertEquals(1, rowSetToAdd.refCount());
         }
-        return result.getIndex();
+        return result.build();
     }
 
     private void unionIndexStrings(final String[] indexStrings) {
-        final Index checkIndex = getUnionIndexStrings(indexStrings);
-        checkIndex.validate();
-        assertEquals(1, checkIndex.refCount());
+        final TrackingMutableRowSet checkRowSet = getUnionIndexStrings(indexStrings);
+        checkRowSet.validate();
+        assertEquals(1, checkRowSet.refCount());
     }
 
     public void testRandomBuilder() {
@@ -619,7 +619,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
             final int size = random.nextInt(10);
 
             final RangePriorityQueueBuilder priorityQueueBuilder = new RangePriorityQueueBuilder(16);
-            final Index.RandomBuilder treeBuilder = TreeIndex.makeRandomBuilder();
+            final RowSetBuilder treeBuilder = TrackingMutableRowSetImpl.makeRandomBuilder();
 
             values.clear();
 
@@ -634,8 +634,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 // System.out.println(value + " -> " + (value + rangeSize - 1));
             }
 
-            final Index prioIndex = new TreeIndex(priorityQueueBuilder.getTreeIndexImpl());
-            final Index treeIndex = treeBuilder.getIndex();
+            final TrackingMutableRowSet prioRowSet = new TrackingMutableRowSetImpl(priorityQueueBuilder.getTreeIndexImpl());
+            final TrackingMutableRowSet treeRowSet = treeBuilder.build();
 
             values.sort();
             long lastValue = -1;
@@ -650,14 +650,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
             if (jj < ii) {
                 values.remove(jj, values.size() - jj);
             }
-            // System.out.println(prioIndex);
-            // System.out.println(treeIndex);
+            // System.out.println(prioRowSet);
+            // System.out.println(treeRowSet);
             // dumpValues(values);
 
-            assertEquals(treeIndex, prioIndex);
+            assertEquals(treeRowSet, prioRowSet);
 
             ii = 0;
-            for (final Index.Iterator it = prioIndex.iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = prioRowSet.iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 TestCase.assertEquals(values.get(ii++), next);
             }
@@ -665,7 +665,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
             if (values.size() < 2) {
                 continue;
             }
-            final Index.SearchIterator it = prioIndex.searchIterator();
+            final TrackingMutableRowSet.SearchIterator it = prioRowSet.searchIterator();
             final int j = values.size() / 2;
             final long v = values.get(j);
             final long prev = values.get(j - 1);
@@ -724,9 +724,9 @@ public class TreeIndexTest extends SortedIndexTestBase {
         priorityQueueBuilder.addRange(220, 260);
         assertEquals(7, priorityQueueBuilder.rangeCount());
 
-        final Index prioIndex = new TreeIndex(priorityQueueBuilder.getTreeIndexImpl());
+        final TrackingMutableRowSet prioRowSet = new TrackingMutableRowSetImpl(priorityQueueBuilder.getTreeIndexImpl());
 
-        final Index.RangeIterator rit = prioIndex.rangeIterator();
+        final TrackingMutableRowSet.RangeIterator rit = prioRowSet.rangeIterator();
         assertTrue(rit.hasNext());
         assertEquals(10, rit.next());
         assertEquals(110, rit.currentRangeEnd());
@@ -783,7 +783,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     // This test would be way too brittle to include, even if I wasn't reading the deserialized stuff from a file.
     // The following function will write something useful to read in.
-    // String dumpSerialized(TreeIndex obj) {
+    // String dumpSerialized(TrackingMutableRowSetImpl obj) {
     // try {
     // ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     // ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
@@ -813,10 +813,10 @@ public class TreeIndexTest extends SortedIndexTestBase {
     //
     // Assert.eq(3, "3", readImpls.size(), "readImpls.size()");
     //
-    // Index toInsertInto = new TreeIndex(readImpls.get(0));
+    // TrackingMutableRowSet toInsertInto = new TrackingMutableRowSetImpl(readImpls.get(0));
     // toInsertInto.validate();
     //
-    // Index indexToInsert = new TreeIndex(readImpls.get(1));
+    // TrackingMutableRowSet indexToInsert = new TrackingMutableRowSetImpl(readImpls.get(1));
     // indexToInsert.validate();
     //
     // System.out.println(toInsertInto);
@@ -828,7 +828,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     // }
 
     // public void testDeserializeIt() throws IOException, ClassNotFoundException {
-    // Map<String, TreeIndex> readIndices = new LinkedHashMap<>();
+    // Map<String, TrackingMutableRowSetImpl> readIndices = new LinkedHashMap<>();
     //
     // try (BufferedReader br = new BufferedReader(new FileReader("/home/cwright/tmp/t"))) {
     // String line;
@@ -844,18 +844,18 @@ public class TreeIndexTest extends SortedIndexTestBase {
     // ObjectInputStream ois = new ObjectInputStream(bis);
     // Object read = ois.readObject();
     // if (read instanceof TreeIndexImpl) {
-    // readIndices.put(name, new TreeIndex((TreeIndexImpl) read));
+    // readIndices.put(name, new TrackingMutableRowSetImpl((TreeIndexImpl) read));
     // }
     // }
     // }
-    // for (Map.Entry<String, TreeIndex> entry : readIndices.entrySet()) {
+    // for (Map.Entry<String, TrackingMutableRowSetImpl> entry : readIndices.entrySet()) {
     // System.out.println(entry.getKey() + " -> " + entry.getValue());
     // }
     //
-    // Index saveModified = readIndices.get("saveModified");
-    // Index saveModified2 = readIndices.get("saveModified2");
-    // Index minus = readIndices.get("minus");
-    // Index intersect = readIndices.get("intersect");
+    // TrackingMutableRowSet saveModified = readIndices.get("saveModified");
+    // TrackingMutableRowSet saveModified2 = readIndices.get("saveModified2");
+    // TrackingMutableRowSet minus = readIndices.get("minus");
+    // TrackingMutableRowSet intersect = readIndices.get("intersect");
     //
     // saveModified.validate();
     // saveModified2.validate();
@@ -868,14 +868,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
     //// saveModified.validate();
     ////
     //// saveModified2.insert(intersect);
-    //// for (Index.RangeIterator rit = saveModified2.rangeIterator(); rit.hasNext(); ) {
+    //// for (TrackingMutableRowSet.RangeIterator rit = saveModified2.rangeIterator(); rit.hasNext(); ) {
     //// rit.next();
     //// System.out.println(rit.currentRangeStart() + "-" + rit.currentRangeEnd());
     //// }
     ////
     //// saveModified2.validate();
     //
-    // Index modified = readIndices.get("modifiedIndices");
+    // TrackingMutableRowSet modified = readIndices.get("modifiedIndices");
     //
     //// Assert.eq(saveModified2, "saveModified2", modified, "modified");
     //
@@ -889,7 +889,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testRandomBuilderEmptyAdds() {
         // Make a perfect merge between two leaves, collapsing to a single range.
-        final Index.RandomBuilder b = TreeIndex.makeRandomBuilder();
+        final RowSetBuilder b = TrackingMutableRowSetImpl.makeRandomBuilder();
         for (int i = 1; i <= 32; ++i) {
             b.addKey(2 * i);
         }
@@ -900,12 +900,12 @@ public class TreeIndexTest extends SortedIndexTestBase {
         for (int i = 0; i < 10 * 32; ++i) {
             b.addKey(1000 + 2 * i);
         }
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         assertEquals(12 * 32, ix.size());
     }
 
-    private Index.TargetComparator makeCompFor(final long v) {
-        final Index.TargetComparator comp = (long k, int dir) -> {
+    private TrackingMutableRowSet.TargetComparator makeCompFor(final long v) {
+        final TrackingMutableRowSet.TargetComparator comp = (long k, int dir) -> {
             if (v < k) {
                 return -dir;
             }
@@ -918,7 +918,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testIteratorBinarySearch() {
-        final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         b.addRange(2, 3);
         b.addRange(5, 9);
         b.addRange(15, 19);
@@ -927,9 +927,9 @@ public class TreeIndexTest extends SortedIndexTestBase {
         b.addRange(46, 49);
         b.addKey(100);
         b.addRange(120, 140);
-        final Index ix = b.getIndex();
-        final Index.SearchIterator it = ix.searchIterator();
-        Index.TargetComparator comp = makeCompFor(1);
+        final TrackingMutableRowSet ix = b.build();
+        final TrackingMutableRowSet.SearchIterator it = ix.searchIterator();
+        TrackingMutableRowSet.TargetComparator comp = makeCompFor(1);
         long v = it.binarySearchValue(comp, 1);
         assertEquals(-1, v);
 
@@ -939,7 +939,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         assertEquals(9, it.currentValue());
         assertTrue(it.hasNext());
         assertEquals(15, it.nextLong());
-        Index.SearchIterator newIt = ix.searchIterator();
+        TrackingMutableRowSet.SearchIterator newIt = ix.searchIterator();
         v = newIt.binarySearchValue(comp, 1);
         assertEquals(9, v);
         assertEquals(9, newIt.currentValue());
@@ -1018,9 +1018,9 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testIteratorBinarySearchForSingleRangeIndex() {
-        final Index sr = Index.FACTORY.getIndexByRange(5, 9);
-        final Index.SearchIterator it = sr.searchIterator();
-        Index.TargetComparator comp = makeCompFor(4);
+        final TrackingMutableRowSet sr = TrackingMutableRowSet.FACTORY.getRowSetByRange(5, 9);
+        final TrackingMutableRowSet.SearchIterator it = sr.searchIterator();
+        TrackingMutableRowSet.TargetComparator comp = makeCompFor(4);
         long v = it.binarySearchValue(comp, 1);
         assertEquals(-1, v);
         comp = makeCompFor(5);
@@ -1041,7 +1041,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testRangeIteratorAdvance() {
-        final Index.RandomBuilder bl = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder bl = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         bl.addRange(2, 3);
         bl.addRange(5, 9);
         bl.addRange(15, 19);
@@ -1050,9 +1050,9 @@ public class TreeIndexTest extends SortedIndexTestBase {
         bl.addRange(46, 49);
         bl.addKey(100);
         bl.addRange(120, 140);
-        final Index ix = bl.getIndex();
-        final Index.RangeIterator it = ix.rangeIterator();
-        final Index.RangeIterator it2 = ix.rangeIterator();
+        final TrackingMutableRowSet ix = bl.build();
+        final TrackingMutableRowSet.RangeIterator it = ix.rangeIterator();
+        final TrackingMutableRowSet.RangeIterator it2 = ix.rangeIterator();
         long laste = -1;
         while (it.hasNext()) {
             it.next();
@@ -1062,7 +1062,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 boolean b = it2.advance(v);
                 assertTrue(m, b);
                 assertEquals(m, (laste == -1) ? 2 : s, it2.currentRangeStart());
-                final Index.RangeIterator it3 = ix.rangeIterator();
+                final TrackingMutableRowSet.RangeIterator it3 = ix.rangeIterator();
                 b = it3.advance(v);
                 assertTrue(m, b);
                 assertEquals(m, (laste == -1) ? 2 : s, it3.currentRangeStart());
@@ -1073,7 +1073,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 boolean b = it2.advance(v);
                 assertTrue(m, b);
                 assertEquals(m, v, it2.currentRangeStart());
-                final Index.RangeIterator it3 = ix.rangeIterator();
+                final TrackingMutableRowSet.RangeIterator it3 = ix.rangeIterator();
                 b = it3.advance(v);
                 assertTrue(m, b);
                 assertEquals(m, v, it3.currentRangeStart());
@@ -1086,25 +1086,25 @@ public class TreeIndexTest extends SortedIndexTestBase {
         b = it2.advance(laste + 1);
         assertFalse(b);
         assertFalse(it2.hasNext());
-        final Index.RangeIterator it3 = ix.rangeIterator();
+        final TrackingMutableRowSet.RangeIterator it3 = ix.rangeIterator();
         b = it3.advance(laste + 1);
         assertFalse(b);
         assertFalse(it3.hasNext());
     }
 
     public void testRangeIteratorAdvanceEmptyIndex() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
-        final Index.RangeIterator rit = ix.rangeIterator();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator();
         assertFalse(rit.advance(0));
         assertFalse(rit.hasNext());
     }
 
     public void testRangeIteratorAdvanceBack() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         final long s = 300;
         final long e = 600;
         ix.insertRange(s, e);
-        final Index.RangeIterator it = ix.rangeIterator();
+        final TrackingMutableRowSet.RangeIterator it = ix.rangeIterator();
         final long v = 500;
         assertTrue(it.advance(v));
         assertEquals(v, it.currentRangeStart());
@@ -1114,50 +1114,50 @@ public class TreeIndexTest extends SortedIndexTestBase {
         assertEquals(e, it.currentRangeEnd());
     }
 
-    private Index singleRangeIndex(final long start, final long end) {
-        final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
+    private TrackingMutableRowSet singleRangeIndex(final long start, final long end) {
+        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         b.addRange(start, end);
-        return b.getIndex();
+        return b.build();
     }
 
     public void testSimpleOpsRefCounts() {
-        final Index ix0 = singleRangeIndex(10, 1000);
+        final TrackingMutableRowSet ix0 = singleRangeIndex(10, 1000);
         assertEquals(1, ix0.refCount());
-        final Index ix1 = ix0.clone();
+        final TrackingMutableRowSet ix1 = ix0.clone();
         assertEquals(1, ix0.refCount());
         assertEquals(1, ix1.refCount());
-        final Index ix2 = singleRangeIndex(100, 900);
+        final TrackingMutableRowSet ix2 = singleRangeIndex(100, 900);
         assertEquals(1, ix2.refCount());
-        final Index ix3 = ix2.clone();
+        final TrackingMutableRowSet ix3 = ix2.clone();
         assertEquals(1, ix2.refCount());
         assertEquals(1, ix3.refCount());
         ix3.remove(101);
         assertEquals(1, ix2.refCount()); // one from ix3.prev
         assertEquals(1, ix3.refCount());
-        final Index ix4 = singleRangeIndex(1002, 1003);
+        final TrackingMutableRowSet ix4 = singleRangeIndex(1002, 1003);
         assertEquals(1, ix4.refCount());
         ix1.update(ix4, ix3);
         assertEquals(1, ix0.refCount());
         assertEquals(1, ix1.refCount());
         assertEquals(1, ix3.refCount());
         assertEquals(1, ix4.refCount());
-        final Index ix5 = ix2.intersect(ix0);
+        final TrackingMutableRowSet ix5 = ix2.intersect(ix0);
         assertEquals(1, ix5.refCount());
         assertEquals(1, ix2.refCount());
         assertEquals(1, ix0.refCount());
     }
 
     public void testSimpleIteratorForEach() {
-        final Index ix = getUnionIndexStrings(indexStrings4);
+        final TrackingMutableRowSet ix = getUnionIndexStrings(indexStrings4);
 
-        final Index.Iterator fit = ix.iterator();
-        final Index.RangeIterator rit = ix.rangeIterator();
+        final TrackingMutableRowSet.Iterator fit = ix.iterator();
+        final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator();
         final long[] buf = new long[7];
         final int[] count = new int[1];
         final int[] voffset = new int[1];
-        final Predicate<Index.Iterator> hasNextForIter =
+        final Predicate<TrackingMutableRowSet.Iterator> hasNextForIter =
                 (it) -> (count[0] > 0) || it.hasNext();
-        final Function<Index.Iterator, Long> nextForIter =
+        final Function<TrackingMutableRowSet.Iterator, Long> nextForIter =
                 (it) -> {
                     if (count[0] == 0) {
                         voffset[0] = 0;
@@ -1176,9 +1176,9 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
         final long[] end = new long[1];
         final long[] curr = new long[1];
-        final Predicate<Index.RangeIterator> hasNextForRanges =
+        final Predicate<TrackingMutableRowSet.RangeIterator> hasNextForRanges =
                 (it) -> (curr[0] < end[0] || it.hasNext());
-        final Function<Index.RangeIterator, Long> nextForRanges =
+        final Function<TrackingMutableRowSet.RangeIterator, Long> nextForRanges =
                 (it) -> {
                     if (curr[0] >= end[0]) {
                         it.next();
@@ -1200,11 +1200,11 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testGetAverageRunLengthEstimate() {
-        final Index e = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet e = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         assertEquals(1, e.getAverageRunLengthEstimate());
-        final Index r1 = singleRangeIndex(0, 65535);
+        final TrackingMutableRowSet r1 = singleRangeIndex(0, 65535);
         assertEquals(BLOCK_SIZE, r1.getAverageRunLengthEstimate());
-        final Index r2 = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet r2 = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         r2.insert(1);
         r2.insert(3);
         r2.insert(5);
@@ -1219,20 +1219,20 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testGetRowSequenceByKeyRange() {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
             b.appendKey(v);
         }
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         final long[] ends = new long[] {44, 45, 46, 58, 61, 62, 72, 65535, 65536, 65536 * 2, 65536 * 3 - 1, 65536 * 3,
                 65536 * 3 + 1};
         final long start = 8;
         for (long end : ends) {
             final String m = "end==" + end;
             final RowSequence rs = ix.getRowSequenceByKeyRange(start, end);
-            final Index ioks = rs.asIndex();
+            final TrackingMutableRowSet ioks = rs.asIndex();
             boolean firstTime = true;
             long n = 0;
             for (final long v : vs) {
@@ -1253,13 +1253,13 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testGetRowSequenceByPosition() {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
             b.appendKey(v);
         }
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         final long sz = ix.size();
 
         for (long startPos = 0; startPos < sz; ++startPos) {
@@ -1267,7 +1267,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
             for (long endPos = startPos; endPos <= sz; ++endPos) {
                 final String m2 = m + " && endPos==" + endPos;
                 final RowSequence rs = ix.getRowSequenceByPosition(startPos, endPos - startPos + 1);
-                final Index ioks = rs.asIndex();
+                final TrackingMutableRowSet ioks = rs.asIndex();
                 long n = 0;
                 boolean firstTime = true;
                 for (int p = 0; p < sz; ++p) {
@@ -1289,20 +1289,20 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testFillChunk() {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
             b.appendKey(v);
         }
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         final WritableLongChunk<Attributes.OrderedRowKeys> kixchunk = WritableLongChunk.makeWritableChunk(vs.length);
         ix.fillRowKeyChunk(kixchunk);
         assertEquals(vs.length, kixchunk.size());
     }
 
     public void testBuilderAddKeys() {
-        final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         b.addKey(27);
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
@@ -1319,7 +1319,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 return vi < vs.length;
             }
         });
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         assertEquals(vs.length + 1, ix.size());
         for (int i = 0; i < vs.length; ++i) {
             assertTrue(ix.find(vs[i]) >= 0);
@@ -1328,7 +1328,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testBuilderAppendKeys() {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         b.appendKey(1);
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
@@ -1345,7 +1345,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 return vi < vs.length;
             }
         });
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         assertEquals(vs.length + 1, ix.size());
         for (int i = 0; i < vs.length; ++i) {
             assertTrue(ix.find(vs[i]) >= 0);
@@ -1354,7 +1354,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testBuilderAddRanges() {
-        final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.addRanges(new LongRangeIterator() {
@@ -1380,18 +1380,18 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 return vs[vi + 1];
             }
         });
-        final Index ix = b.getIndex();
-        final Index.RandomBuilder b2 = Index.FACTORY.getRandomBuilder();
+        final TrackingMutableRowSet ix = b.build();
+        final RowSetBuilder b2 = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int i = 0; i < vs.length; i += 2) {
             b2.addRange(vs[i], vs[i + 1]);
         }
-        final Index ix2 = b2.getIndex();
+        final TrackingMutableRowSet ix2 = b2.build();
         assertEquals(ix2.size(), ix.size());
         assertTrue(ix2.subsetOf(ix));
     }
 
     public void testBuilderAppendRanges() {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.appendRanges(new LongRangeIterator() {
@@ -1417,24 +1417,24 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 return vs[vi + 1];
             }
         });
-        final Index ix = b.getIndex();
-        final Index.RandomBuilder b2 = Index.FACTORY.getRandomBuilder();
+        final TrackingMutableRowSet ix = b.build();
+        final RowSetBuilder b2 = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int i = 0; i < vs.length; i += 2) {
             b2.addRange(vs[i], vs[i + 1]);
         }
-        final Index ix2 = b2.getIndex();
+        final TrackingMutableRowSet ix2 = b2.build();
         assertEquals(ix2.size(), ix.size());
         assertTrue(ix2.subsetOf(ix));
     }
 
     public void testArrayOfSmallIndices() {
         final int sz = 10;
-        final Index[] ixs = new Index[sz];
+        final TrackingMutableRowSet[] ixs = new TrackingMutableRowSet[sz];
         for (int i = 0; i < sz; ++i) {
-            ixs[i] = Index.FACTORY.getEmptyIndex();
+            ixs[i] = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             ixs[i].insert(i);
         }
-        final Index r = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet r = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         for (int i = 0; i < sz; ++i) {
             r.insert(ixs[i]);
         }
@@ -1444,7 +1444,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testSubindexByPosRegreesion0() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(0, 95 * ((long) BLOCK_SIZE));
         final long s1 = 0x1000000 * ((long) BLOCK_SIZE);
         ix.insertRange(s1, s1 + 95 * 65536);
@@ -1454,26 +1454,26 @@ public class TreeIndexTest extends SortedIndexTestBase {
         ix.insertRange(s3, s3 + 95 * ((long) BLOCK_SIZE));
         final long s4 = s3 + 0x5F * ((long) BLOCK_SIZE);
         ix.insertRange(s4, s4 + 1);
-        final Index ix2 = ix.subindexByPos(0L, 9_999_999L);
+        final TrackingMutableRowSet ix2 = ix.subSetByPositionRange(0L, 9_999_999L);
         ix2.validate();
-        final Index ix3 = ix.subindexByPos(9_999_999L, ix.size());
+        final TrackingMutableRowSet ix3 = ix.subSetByPositionRange(9_999_999L, ix.size());
         ix3.validate();
         assertFalse(ix2.overlaps(ix3));
-        final Index ix4 = ix2.clone();
+        final TrackingMutableRowSet ix4 = ix2.clone();
         ix4.insert(ix3);
         assertEquals(ix.size(), ix4.size());
         assertTrue(ix.subsetOf(ix4));
     }
 
     public void testContainsRange() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(1, 3);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
         ix.insertRange(3 * BLOCK_SIZE - 2, 3 * BLOCK_SIZE - 1);
         ix.insertRange(6 * BLOCK_SIZE, 6 * BLOCK_SIZE + BLOCK_LAST);
         ix.insertRange(10 * BLOCK_SIZE, 20 * BLOCK_SIZE - 1);
-        final Index.RangeIterator rit = ix.rangeIterator();
+        final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator();
         while (rit.hasNext()) {
             rit.next();
             final long start = rit.currentRangeStart();
@@ -1502,14 +1502,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testOverlapsRange() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(3, 5);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
         ix.insertRange(3 * BLOCK_SIZE - 2, 3 * BLOCK_SIZE - 1);
         ix.insertRange(6 * BLOCK_SIZE, 6 * BLOCK_SIZE + BLOCK_LAST);
         ix.insertRange(10 * BLOCK_SIZE, 20 * BLOCK_SIZE - 1);
-        final Index.RangeIterator rit = ix.rangeIterator();
+        final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator();
         long prevEnd = -1;
         while (rit.hasNext()) {
             rit.next();
@@ -1551,16 +1551,16 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testOneRangeIndexMinus() {
-        final Index ix = Index.FACTORY.getIndexByRange(1000, 5000);
-        final Index r = ix.minus(Index.FACTORY.getIndexByRange(1001, 4999));
-        final Index c = ix.clone();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByRange(1000, 5000);
+        final TrackingMutableRowSet r = ix.minus(TrackingMutableRowSet.FACTORY.getRowSetByRange(1001, 4999));
+        final TrackingMutableRowSet c = ix.clone();
         c.removeRange(1001, 4999);
     }
 
-    private void releaseReleasedRegression0case0(final Index ix) {
+    private void releaseReleasedRegression0case0(final TrackingMutableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
-        final Index ix2 = ix.clone();
+        final TrackingMutableRowSet ix2 = ix.clone();
         assertEquals(2, ix.refCount());
         assertEquals(2, ix2.refCount());
         ix.removeRange(1, 6);
@@ -1569,17 +1569,17 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testReleaseReleasedRegression0case0Rsp() {
-        releaseReleasedRegression0case0(TreeIndex.makeEmptyRsp());
+        releaseReleasedRegression0case0(TrackingMutableRowSetImpl.makeEmptyRsp());
     }
 
     public void testReleaseReleasedRegression0case0SR() {
-        releaseReleasedRegression0case0(TreeIndex.makeEmptySr());
+        releaseReleasedRegression0case0(TrackingMutableRowSetImpl.makeEmptySr());
     }
 
-    private void releaseReleasedRegression0case1(final Index ix) {
+    private void releaseReleasedRegression0case1(final TrackingMutableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
-        final Index ix2 = ix.clone();
+        final TrackingMutableRowSet ix2 = ix.clone();
         assertEquals(2, ix.refCount());
         assertEquals(2, ix2.refCount());
         ix.remove(ix2);
@@ -1588,43 +1588,43 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testReleaseReleasedRegression0case1Rsp() {
-        releaseReleasedRegression0case1(TreeIndex.makeEmptyRsp());
+        releaseReleasedRegression0case1(TrackingMutableRowSetImpl.makeEmptyRsp());
     }
 
     public void testReleaseReleasedRegression0case1SR() {
-        releaseReleasedRegression0case1(TreeIndex.makeEmptySr());
+        releaseReleasedRegression0case1(TrackingMutableRowSetImpl.makeEmptySr());
     }
 
-    private void releaseReleasedRegression0case2(final Index ix) {
+    private void releaseReleasedRegression0case2(final TrackingMutableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
-        final Index ix2 = ix.clone();
+        final TrackingMutableRowSet ix2 = ix.clone();
         assertEquals(2, ix.refCount());
         assertEquals(2, ix2.refCount());
-        ix.update(Index.FACTORY.getEmptyIndex(), ix2);
+        ix.update(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), ix2);
         assertEquals(0, ix.size());
         assertEquals(1, ix2.refCount());
     }
 
     public void testReleaseReleasedRegression0case2Rsp() {
-        releaseReleasedRegression0case2(TreeIndex.makeEmptyRsp());
+        releaseReleasedRegression0case2(TrackingMutableRowSetImpl.makeEmptyRsp());
     }
 
     public void testReleaseReleasedRegression0case2SR() {
-        releaseReleasedRegression0case2(TreeIndex.makeEmptySr());
+        releaseReleasedRegression0case2(TrackingMutableRowSetImpl.makeEmptySr());
     }
 
     public void testSearchIteratorRegression0() {
-        final Index ix0 = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix0 = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         // force a bitmap container.
         for (int i = 0; i < 5000; ++i) {
             ix0.insert(2 * i);
         }
         ix0.insertRange(10069, 10070);
-        final Index.SearchIterator it = ix0.searchIterator();
+        final TrackingMutableRowSet.SearchIterator it = ix0.searchIterator();
         final long target0 = 10070;
         final MutableLong target = new MutableLong(target0);
-        final Index.TargetComparator comp = (long key, int dir) -> Long.compare(target.longValue(), key) * dir;
+        final TrackingMutableRowSet.TargetComparator comp = (long key, int dir) -> Long.compare(target.longValue(), key) * dir;
         final long r = it.binarySearchValue(comp, 1);
         assertEquals(target0, r);
         assertEquals(target0, it.currentValue());
@@ -1632,11 +1632,11 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testAsKeyRangesChunk() {
-        final Index index = Index.FACTORY.getEmptyIndex();
-        index.insertRange(130972, 131071);
-        index.insert(262144);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        rowSet.insertRange(130972, 131071);
+        rowSet.insert(262144);
 
-        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = index.asRowKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSet.asRowKeyRangesChunk();
         assertEquals(4, ranges.size());
         assertEquals(130972, ranges.get(0));
         assertEquals(131071, ranges.get(1));
@@ -1645,68 +1645,68 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testReverseIteratorAdvanceRegression0() {
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final int key = 1073741822;
         builder.appendKey(key);
         builder.appendKey(1073741824);
-        Index index = builder.getIndex();
-        final Index.SearchIterator reverseIter = index.reverseIterator();
+        TrackingMutableRowSet rowSet = builder.build();
+        final TrackingMutableRowSet.SearchIterator reverseIter = rowSet.reverseIterator();
         final boolean valid = reverseIter.advance(key);
         assertTrue(valid);
     }
 
     public void testReverseIteratorAdvanceRegression1() {
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         int key = 1073741822;
         builder.appendKey(1073741820);
         builder.appendKey(key);
         builder.appendKey(1073741824);
-        Index index = builder.getIndex();
-        Index.SearchIterator iter = index.reverseIterator();
+        TrackingMutableRowSet rowSet = builder.build();
+        TrackingMutableRowSet.SearchIterator iter = rowSet.reverseIterator();
         assertTrue(iter.advance(key));
         assertEquals(key, iter.currentValue());
     }
 
     public void testReverseIteratorAdvanceRegression2() {
         long key = 1073741824;
-        Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         builder.addKey(key);
         builder.addKey(key + 10);
-        Index index = builder.getIndex();
-        index.remove(key + 10);
-        Index.SearchIterator iter = index.reverseIterator();
+        TrackingMutableRowSet rowSet = builder.build();
+        rowSet.remove(key + 10);
+        TrackingMutableRowSet.SearchIterator iter = rowSet.reverseIterator();
         assertFalse(iter.advance(key - 1));
     }
 
     public void testReverseIteratorAdvanceRegression3() {
         long key = 1073741824;
-        Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         builder.addKey(key);
         builder.addKey(key + 10);
-        Index index = builder.getIndex();
-        index.remove(key + 10);
-        assertFalse(index.reverseIterator().advance(key - 1));
-        assertTrue(index.reverseIterator().advance(key));
-        assertTrue(index.reverseIterator().advance(key + 1));
+        TrackingMutableRowSet rowSet = builder.build();
+        rowSet.remove(key + 10);
+        assertFalse(rowSet.reverseIterator().advance(key - 1));
+        assertTrue(rowSet.reverseIterator().advance(key));
+        assertTrue(rowSet.reverseIterator().advance(key + 1));
     }
 
     public void testReverseIteratorAdvanceRegression4() {
         long key = 1073741822;
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         builder.appendKey(key);
-        Index index = builder.getIndex();
-        Index.SearchIterator iter = index.reverseIterator();
+        TrackingMutableRowSet rowSet = builder.build();
+        TrackingMutableRowSet.SearchIterator iter = rowSet.reverseIterator();
         assertTrue(iter.advance(key + 10));
         assertEquals(key, iter.currentValue());
     }
 
     public void testReverseIteratorAdvanceRegression5() {
         long key = 1073741823;
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         builder.appendKey(key - 1);
         builder.appendKey(key + 1);
-        Index index = builder.getIndex();
-        Index.SearchIterator iter = index.reverseIterator();
+        TrackingMutableRowSet rowSet = builder.build();
+        TrackingMutableRowSet.SearchIterator iter = rowSet.reverseIterator();
         assertTrue(iter.advance(key - 1));
         assertEquals(key - 1, iter.currentValue());
         assertTrue(iter.advance(key - 1));
@@ -1714,20 +1714,20 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testReverseIteratorAdvanceRegression6() {
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final int key = BLOCK_SIZE;
         builder.appendKey(key - 1);
         builder.appendKey(key + 1);
-        Index index = builder.getIndex();
-        final Index.SearchIterator reverseIter = index.reverseIterator();
+        TrackingMutableRowSet rowSet = builder.build();
+        final TrackingMutableRowSet.SearchIterator reverseIter = rowSet.reverseIterator();
         final boolean valid = reverseIter.advance(key);
         assertTrue(valid);
         assertEquals(key - 1, reverseIter.currentValue());
     }
 
     public void testIteratorAdvanceRegression1() {
-        final Index ix = Index.FACTORY.getIndexByValues(3, 5, 7, 9, 11, 21);
-        final Index.RangeIterator rit = ix.rangeIterator();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByValues(3, 5, 7, 9, 11, 21);
+        final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator();
         assertTrue(rit.advance(21));
         assertEquals(21, rit.currentRangeStart());
         assertEquals(21, rit.currentRangeEnd());
@@ -1735,13 +1735,13 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testSubsetOf() {
-        final Index ix1 = TreeIndex.makeEmptySr();
+        final TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptySr();
         ix1.insertRange(0, 1);
-        final Index ix2 = TreeIndex.makeSingleRange(0, 2);
+        final TrackingMutableRowSet ix2 = TrackingMutableRowSetImpl.makeSingleRange(0, 2);
         assertTrue(ix1.subsetOf(ix2));
     }
 
-    private static void rvs2ix(final Index ix, final long[] vs) {
+    private static void rvs2ix(final TrackingMutableRowSet ix, final long[] vs) {
         long pendingStart = -1;
         for (long v : vs) {
             if (v < 0) {
@@ -1760,16 +1760,16 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testMinusRegression0() {
-        final Index ix1 = new TreeIndex(RspBitmap.makeSingleRange(1073741843L, 1073741860L));
-        final Index ix2 = new TreeIndex(SortedRanges.makeSingleElement(1073741843L));
-        final Index ix3 = ix1.minus(ix2);
+        final TrackingMutableRowSet ix1 = new TrackingMutableRowSetImpl(RspBitmap.makeSingleRange(1073741843L, 1073741860L));
+        final TrackingMutableRowSet ix2 = new TrackingMutableRowSetImpl(SortedRanges.makeSingleElement(1073741843L));
+        final TrackingMutableRowSet ix3 = ix1.minus(ix2);
         assertEquals(ix1.lastRowKey() - ix1.firstRowKey(), ix3.size());
         assertTrue(ix3.containsRange(ix1.firstRowKey() + 1, ix1.lastRowKey()));
     }
 
     public void testSubsetOfRegression0() {
         SortedRanges sr0 = new SortedRangesShort(64, 10);
-        final Index ix0 = new TreeIndex(sr0);
+        final TrackingMutableRowSet ix0 = new TrackingMutableRowSetImpl(sr0);
         rvs2ix(ix0, new long[] {
                 85, 88, 103, 121, 201, 204, 220, 258, 275, 296, 366, 370, 386, 409, 411, 453, 584, 587, 602, 631, 661,
                 683, 714, -715,
@@ -1787,14 +1787,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 -2697, 2702, 2723,
                 2741, 2751, 2757, 2784, 2792, 2799, 2818, 2824, 2838, 2853, 2857, 2863
         });
-        final TreeIndex ix1 = TreeIndex.makeEmptyRsp();
+        final TrackingMutableRowSetImpl ix1 = TrackingMutableRowSetImpl.makeEmptyRsp();
         rvs2ix(ix1, new long[] {296, 366, 370, 386, 409, 411, 453});
         assertTrue(ix1.subsetOf(ix0));
     }
 
     public void testIntersectRegression0() {
-        Index ix0 = TreeIndex.makeEmptySr();
-        Index ix1 = TreeIndex.makeEmptyRsp();
+        TrackingMutableRowSet ix0 = TrackingMutableRowSetImpl.makeEmptySr();
+        TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptyRsp();
         ix0 = indexFromString(
                 "87,236,275,324,329,468,505,673,705,779,834,848,917,1017,1019,1062,1366,1405,1453,1575,1599,1757," +
                         "1834,1853,1856,1895,1960,2098,2167,2218,2411,2606,2686,2842,2958,3225,3451,3509,3587,3601," +
@@ -1807,22 +1807,22 @@ public class TreeIndexTest extends SortedIndexTestBase {
                         "7077-7091,7094-7117,7119-7125,7127-7129,7131-7142,7144,7146-7168,7170-7172,7174-7180," +
                         "7182-7187,7189-7211,7213-7224",
                 ix1);
-        final Index ix2 = ix0.intersect(ix1);
+        final TrackingMutableRowSet ix2 = ix0.intersect(ix1);
         ix2.validate();
     }
 
     public void testConversionRemovalRefCount0() {
-        Index ix0 = TreeIndex.makeEmptySr();
+        TrackingMutableRowSet ix0 = TrackingMutableRowSetImpl.makeEmptySr();
         final int n = 4;
         for (int i = 0; i < SortedRanges.MAX_CAPACITY - n; ++i) {
             ix0.insert(i * 6 + 2);
         }
-        final Index ix1 = TreeIndex.makeEmptySr();
+        final TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptySr();
         for (int i = 0; i < n + 1; ++i) {
             ix1.insert(i * 6 + 4);
         }
         final int initialRefCount = ix0.refCount();
-        final Index ix2 = ix0.clone();
+        final TrackingMutableRowSet ix2 = ix0.clone();
         assertEquals(initialRefCount + 1, ix2.refCount());
         assertEquals(initialRefCount + 1, ix0.refCount());
         ix0.insert(ix1);
@@ -1832,7 +1832,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testSubsetOfMixed() {
-        final Index ix0 = TreeIndex.makeEmptySr();
+        final TrackingMutableRowSet ix0 = TrackingMutableRowSetImpl.makeEmptySr();
         final long bkSz = BLOCK_SIZE;
         final long off0 = bkSz;
         ix0.insertRange(off0 + 7, off0 + 9);
@@ -1842,27 +1842,27 @@ public class TreeIndexTest extends SortedIndexTestBase {
         ix0.insert(off2 + 20);
         final long off3 = off2 + 3 * bkSz;
         ix0.insertRange(off2 + 33, off3 + 45);
-        final Index ix1 = TreeIndex.makeEmptyRsp();
+        final TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptyRsp();
         ix1.insertRange(off0 + 7, off0 + 9);
         ix1.insertRange(off1 + 13, off1 + 15);
         ix1.insert(off2 + 20);
         ix1.insertRange(off2 + 33, off3 + 45);
         assertTrue(ix1.subsetOf(ix0));
         long pendingStart = 0;
-        try (final Index.RangeIterator it1 = ix0.rangeIterator()) {
+        try (final TrackingMutableRowSet.RangeIterator it1 = ix0.rangeIterator()) {
             while (it1.hasNext()) {
                 it1.next();
                 final long start = it1.currentRangeStart();
                 final long end = it1.currentRangeEnd();
                 for (long v : new long[] {pendingStart, start - bkSz, start - 1}) {
-                    final Index ix2 = ix1.clone();
+                    final TrackingMutableRowSet ix2 = ix1.clone();
                     ix2.insert(v);
                     assertFalse("v==" + v, ix2.subsetOf(ix0));
                 }
                 pendingStart = end + 1;
             }
             for (long v : new long[] {pendingStart, pendingStart + 3}) {
-                final Index ix2 = ix1.clone();
+                final TrackingMutableRowSet ix2 = ix1.clone();
                 ix2.insert(v);
                 assertFalse("v==" + v, ix2.subsetOf(ix0));
             }
@@ -1895,11 +1895,11 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 "232459,232490,232494,232499,232516-232518,232525,232543,232558,232580,232591,232598,232603,232640," +
                 "232649,232660,232673,232677,232686,232709,232715,232721,232723,232739,232743,232757,232771,232773," +
                 "232776,232778,232783,232796,232810,232823";
-        Index ix0 = TreeIndex.makeEmptySr();
+        TrackingMutableRowSet ix0 = TrackingMutableRowSetImpl.makeEmptySr();
         ix0 = indexFromString(ix0Str, ix0);
-        Index ix1 = TreeIndex.makeEmptyRsp();
+        TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptyRsp();
         ix1 = indexFromString(ix1Str, ix1);
-        Index ix0Rsp = TreeIndex.makeEmptyRsp();
+        TrackingMutableRowSet ix0Rsp = TrackingMutableRowSetImpl.makeEmptyRsp();
         ix0Rsp = indexFromString(ix0Str, ix0Rsp);
         ix0.remove(ix1);
         ix0Rsp.remove(ix1);
@@ -1908,17 +1908,17 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testMinusRegression1() {
-        final Index ix0 = TreeIndex.makeEmptySr();
+        final TrackingMutableRowSet ix0 = TrackingMutableRowSetImpl.makeEmptySr();
         rvs2ix(ix0, new long[] {
                 10, -12, 14, 16, 18, 20, 22, 24, 26, 28, -29, 31, 33, -34, 36, 38, -39, 41, 43, 45, -47, 49, 51, 53, 55,
                 57, 59, 61, 63, -64,
                 66, -67, 69, 71, -76, 78, -80, 82, -83, 85, -88, 90, -91, 93, -94, 96, 98, 100, 102, -110, 112, -113
         });
-        final Index ix1 = TreeIndex.makeEmptySr();
+        final TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptySr();
         rvs2ix(ix1, new long[] {24, 28, 31, 38, 51, 57, 59, 61, 74, 90, 93, 107, -108, 110});
-        final Index ix3 = ix0.minus(ix1);
-        final Index intersect = ix0.intersect(ix1);
-        final Index ix4 = ix0.clone();
+        final TrackingMutableRowSet ix3 = ix0.minus(ix1);
+        final TrackingMutableRowSet intersect = ix0.intersect(ix1);
+        final TrackingMutableRowSet ix4 = ix0.clone();
         ix4.remove(intersect);
         assertEquals(ix4.size(), ix3.size());
         assertTrue(ix4.subsetOf(ix3));
@@ -1936,42 +1936,42 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 "1677-1678,1732,1761,1774,1804,1811,1813,1843,1856,1890,1903,1918,1927,1933,1942,2009,2068,2155,2184," +
                 "2189,2206,2210,2221,2223,2230,2303,2310,2316,2329,2347,2352,2354,2380,2458,2474,2482,2489,2494,2503," +
                 "2622,2625,2631,2635,2640,2643-2644,2684,2686,2688,2690,2704,2725,2811,2829,2839";
-        Index ix0 = TreeIndex.makeEmptySr();
+        TrackingMutableRowSet ix0 = TrackingMutableRowSetImpl.makeEmptySr();
         ix0 = indexFromString(ix0Str, ix0);
-        Index ix1 = TreeIndex.makeEmptyRsp();
+        TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptyRsp();
         ix1 = indexFromString(ix1Str, ix1);
-        Index ix0Rsp = TreeIndex.makeEmptyRsp();
+        TrackingMutableRowSet ix0Rsp = TrackingMutableRowSetImpl.makeEmptyRsp();
         ix0Rsp = indexFromString(ix0Str, ix0Rsp);
-        Index result = ix0.minus(ix1);
-        Index rspResult = ix0Rsp.minus(ix1);
+        TrackingMutableRowSet result = ix0.minus(ix1);
+        TrackingMutableRowSet rspResult = ix0Rsp.minus(ix1);
         assertEquals(rspResult.size(), result.size());
         assertTrue(rspResult.subsetOf(result));
     }
 
     public void testRemoveRegression1() {
-        Index ix0 = TreeIndex.makeEmptyRsp();
+        TrackingMutableRowSet ix0 = TrackingMutableRowSetImpl.makeEmptyRsp();
         ix0 = indexFromString("0-65536,131071-393215", ix0);
-        Index ix1 = TreeIndex.makeEmptySr();
+        TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptySr();
         ix1 = indexFromString("195608,196607", ix1);
         ix0.remove(ix1);
-        Index expected = TreeIndex.makeEmptySr();
+        TrackingMutableRowSet expected = TrackingMutableRowSetImpl.makeEmptySr();
         expected = indexFromString("0-65536,131071-195607,195609-196606,196608-393215", expected);
         assertEquals(expected.size(), ix0.size());
         assertTrue(expected.subsetOf(ix0));
     }
 
     public void testRemoveRegression2() {
-        Index ix0 = TreeIndex.makeEmptyRsp();
+        TrackingMutableRowSet ix0 = TrackingMutableRowSetImpl.makeEmptyRsp();
         ix0.insert(0);
         ix0.insert(65535);
         for (int i = 2; i <= 65534; i += 2) {
             ix0.insert(i);
         }
-        Index ix1 = TreeIndex.makeEmptySr();
+        TrackingMutableRowSet ix1 = TrackingMutableRowSetImpl.makeEmptySr();
         ix1.insert(0);
         ix1.insert(65535);
         ix0.remove(ix1);
-        Index expected = ix0.subindexByKey(1, 65534);
+        TrackingMutableRowSet expected = ix0.subSetByKeyRange(1, 65534);
         assertEquals(expected.size(), ix0.size());
         assertTrue(expected.subsetOf(ix0));
     }
@@ -2002,26 +2002,26 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testRetainMixed() {
-        final Index ix1 = new TreeIndex(new RspBitmap(3, 4));
+        final TrackingMutableRowSet ix1 = new TrackingMutableRowSetImpl(new RspBitmap(3, 4));
         SortedRanges sr = new SortedRangesLong();
         sr = sr.add(20);
-        final Index ix2 = new TreeIndex(sr);
+        final TrackingMutableRowSet ix2 = new TrackingMutableRowSetImpl(sr);
         ix1.retain(ix2);
         assertTrue(ix1.empty());
     }
 
     public void testRetainRefCountRegress() {
-        final Index ix1 = new TreeIndex(new RspBitmap(20, 24));
+        final TrackingMutableRowSet ix1 = new TrackingMutableRowSetImpl(new RspBitmap(20, 24));
         SortedRanges sr = new SortedRangesLong();
         sr = sr.add(18);
         sr = sr.add(20);
-        final Index ix2 = new CurrentOnlyIndex(sr);
-        final Index clone = ix2.clone();
+        final TrackingMutableRowSet ix2 = new MutableRowSetImpl(sr);
+        final TrackingMutableRowSet clone = ix2.clone();
         ix2.retain(ix1);
         assertEquals(1, ix2.refCount());
         assertEquals(1, clone.refCount());
-        assertEquals(Index.FACTORY.getIndexByValues(20), ix2);
-        assertEquals(Index.FACTORY.getIndexByValues(18, 20), clone);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(20), ix2);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(18, 20), clone);
     }
 
 
@@ -2029,23 +2029,23 @@ public class TreeIndexTest extends SortedIndexTestBase {
         SortedRanges sr = new SortedRangesLong();
         sr = sr.add(18);
         sr = sr.add(20);
-        final Index ix2 = new CurrentOnlyIndex(sr);
-        final Index clone = ix2.clone();
+        final TrackingMutableRowSet ix2 = new MutableRowSetImpl(sr);
+        final TrackingMutableRowSet clone = ix2.clone();
         ix2.retainRange(20, 24);
         assertEquals(1, ix2.refCount());
         assertEquals(1, clone.refCount());
-        assertEquals(Index.FACTORY.getIndexByValues(20), ix2);
-        assertEquals(Index.FACTORY.getIndexByValues(18, 20), clone);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(20), ix2);
+        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(18, 20), clone);
     }
 
     public void testRetainSrPrefix() {
         SortedRanges sr0 = new SortedRangesLong();
         sr0 = sr0.add(20);
-        final Index ix0 = new TreeIndex(sr0);
+        final TrackingMutableRowSet ix0 = new TrackingMutableRowSetImpl(sr0);
         SortedRanges sr1 = new SortedRangesLong();
         sr1 = sr1.addRange(5, 10);
         sr1 = sr1.addRange(25, 30);
-        final Index ix1 = new TreeIndex(sr1);
+        final TrackingMutableRowSet ix1 = new TrackingMutableRowSetImpl(sr1);
         ix0.insert(21); // force prev.
         ix0.retain(ix1);
         ix0.validate();
@@ -2056,20 +2056,20 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final long start0 = 2 * BLOCK_SIZE + BLOCK_SIZE / 2;
         final long end0 = 3 * BLOCK_SIZE + BLOCK_SIZE / 2;
         int i0 = 0;
-        for (Index ix0 : new Index[] {
-                TreeIndex.makeSingleRange(start0, end0),
-                new TreeIndex(new RspBitmap(start0, end0)),
-                new TreeIndex(SortedRanges.makeSingleRange(start0, end0))}) {
+        for (TrackingMutableRowSet ix0 : new TrackingMutableRowSet[] {
+                TrackingMutableRowSetImpl.makeSingleRange(start0, end0),
+                new TrackingMutableRowSetImpl(new RspBitmap(start0, end0)),
+                new TrackingMutableRowSetImpl(SortedRanges.makeSingleRange(start0, end0))}) {
             final long start1 = 4 * BLOCK_SIZE + BLOCK_SIZE / 2;
             final long end1 = 5 * BLOCK_SIZE + BLOCK_SIZE / 2;
             int i1 = 0;
-            for (Index ix1 : new Index[] {
-                    TreeIndex.makeSingleRange(start1, end1),
-                    new TreeIndex(new RspBitmap(start1, end1)),
-                    new TreeIndex(SortedRanges.makeSingleRange(start1, end1))}) {
+            for (TrackingMutableRowSet ix1 : new TrackingMutableRowSet[] {
+                    TrackingMutableRowSetImpl.makeSingleRange(start1, end1),
+                    new TrackingMutableRowSetImpl(new RspBitmap(start1, end1)),
+                    new TrackingMutableRowSetImpl(SortedRanges.makeSingleRange(start1, end1))}) {
                 int ia = 0;
                 for (long shiftAmount : new long[] {2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1}) {
-                    final Index ix2 = ix0.clone();
+                    final TrackingMutableRowSet ix2 = ix0.clone();
                     ix2.insertWithShift(shiftAmount, ix1);
                     final String m = "i0==" + i0 + " && i1==" + i1 + " && ia==" + ia;
                     assertEquals(m, end1 - start1 + 1 + end0 - start0 + 1, ix2.size());
@@ -2084,17 +2084,17 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testSearchIteratorBinarySearchFirstCallNotFoundNoNext() {
-        final Index[] ixs = new Index[] {
-                new TreeIndex(SingleRange.make(11, 11)),
-                new TreeIndex(SortedRanges.makeSingleRange(11, 11)),
-                new TreeIndex(RspBitmap.makeSingleRange(11, 11))
+        final TrackingMutableRowSet[] ixs = new TrackingMutableRowSet[] {
+                new TrackingMutableRowSetImpl(SingleRange.make(11, 11)),
+                new TrackingMutableRowSetImpl(SortedRanges.makeSingleRange(11, 11)),
+                new TrackingMutableRowSetImpl(RspBitmap.makeSingleRange(11, 11))
         };
         for (int i = 0; i < ixs.length; ++i) {
             final String m = "i==" + i;
-            final Index ix = ixs[i];
-            final Index.SearchIterator sit = ix.searchIterator();
+            final TrackingMutableRowSet ix = ixs[i];
+            final TrackingMutableRowSet.SearchIterator sit = ix.searchIterator();
             final MutableLong target = new MutableLong(10);
-            final Index.TargetComparator comp = new Index.TargetComparator() {
+            final TrackingMutableRowSet.TargetComparator comp = new TrackingMutableRowSet.TargetComparator() {
                 @Override
                 public int compareTargetTo(final long rKey, final int direction) {
                     final long d = (target.longValue() - rKey) * direction;
@@ -2145,8 +2145,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testRemoveTime() {
         final Random r = new Random();
-        final Index.SequentialBuilder outer = Index.FACTORY.getSequentialBuilder();
-        final Index.SequentialBuilder inner = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder outer = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder inner = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (long i = 0; i < 1500000; ++i) {
             long ii = i << 16;
             outer.appendRange(ii, ii + 5);
@@ -2154,8 +2154,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 inner.appendRange(ii, ((i + 1) << 16) - 1);
             }
         }
-        try (final Index result = outer.getIndex();
-                final Index toRemove = inner.getIndex()) {
+        try (final TrackingMutableRowSet result = outer.build();
+             final TrackingMutableRowSet toRemove = inner.build()) {
             final long t0 = System.currentTimeMillis();
             result.remove(toRemove);
             final long t1 = System.currentTimeMillis();

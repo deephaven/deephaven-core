@@ -46,7 +46,7 @@ public class ColorPaletteAlgo implements ColorPalette, Serializable {
     @Override
     public Color get(int index) {
         if (index < 0) {
-            throw new IllegalArgumentException("Negative index: " + index);
+            throw new IllegalArgumentException("Negative rowSet: " + index);
         }
 
         while (colorCache.size() <= index) {

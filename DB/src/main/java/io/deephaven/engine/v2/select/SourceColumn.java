@@ -14,7 +14,7 @@ import io.deephaven.engine.v2.NoSuchColumnException;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -49,7 +49,7 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+    public List<String> initInputs(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         this.sourceColumn = columnsOfInterest.get(sourceName);
         if (sourceColumn == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);

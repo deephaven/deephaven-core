@@ -16,7 +16,7 @@ import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.by.SortedFirstBy;
 import io.deephaven.engine.v2.select.MatchFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -64,7 +64,7 @@ public class TestByExternal extends QueryTableTestBase {
             // get all the keys from the original table
             final HashSet<Object> keys = new HashSet<>();
 
-            for (final Index.Iterator it = originalTable.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = originalTable.getIndex().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 if (groupByColumnSources.length == 1) {
                     keys.add(groupByColumnSources[0].get(next));

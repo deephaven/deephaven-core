@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
@@ -88,7 +88,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
         final WritableObjectChunk<DBDateTime, ? super Values> objectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
-            if (firstKey == Index.NULL_KEY) {
+            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                 objectChunk.set(ii++, null);
                 continue;
             }
@@ -123,7 +123,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<DBD
         final WritableObjectChunk<DBDateTime, ? super Values> objectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
-            if (firstKey == Index.NULL_KEY) {
+            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                 objectChunk.set(ii++, null);
                 continue;
             }

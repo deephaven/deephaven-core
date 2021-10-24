@@ -87,7 +87,7 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
     int getNodeSize();
 
     /**
-     * Call the longConsumer for each of the long index keys in this SegmentedSortedArray.
+     * Call the longConsumer for each of the long rowSet keys in this SegmentedSortedArray.
      *
      * @param longConsumer the long consumer to call
      */
@@ -98,12 +98,12 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
     boolean isReversed();
 
     /**
-     * @return the first index in this SSA, Index.NULL_KEY when empty.
+     * @return the first rowSet in this SSA, TrackingMutableRowSet.NULL_KEY when empty.
      */
     long getFirst();
 
     /**
-     * @return the last index in this SSA, Index.NULL_KEY when empty.
+     * @return the last rowSet in this SSA, TrackingMutableRowSet.NULL_KEY when empty.
      */
     long getLast();
 }

@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.v2.utils;
 
+import gnu.trove.procedure.TLongProcedure;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
@@ -12,8 +14,12 @@ import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
 
 import java.util.PrimitiveIterator;
 
-public interface IndexBuilder {
-    Index getIndex();
+/**
+ * Builder interface for {@link RowSet} construction in arbitrary order.
+ */
+public interface RowSetBuilder {
+
+    MutableRowSet build();
 
     void addKey(long key);
 
@@ -45,13 +51,19 @@ public interface IndexBuilder {
         addKeys(new LongChunkIterator(chunk));
     }
 
-    default void addIndex(final Index idx) {
-        Helper.add(this, idx);
+    default void addRowSet(final RowSet rowSet) {
+        Helper.add(this, rowSet);
+    }
+
+    /**
+     * {@link RowSetBuilder} suitable for inserting ranges in no particular order.
+     */
+    interface RandomBuilder extends RowSetBuilder {
     }
 
     class Helper {
-        public static void add(final IndexBuilder builder, final Index idx) {
-            final Index.RangeIterator it = idx.rangeIterator();
+        public static void add(final RowSetBuilder builder, final RowSet rowSet) {
+            final TrackingMutableRowSet.RangeIterator it = rowSet.rangeIterator();
             while (it.hasNext()) {
                 final long start = it.next();
                 final long end = it.currentRangeEnd();

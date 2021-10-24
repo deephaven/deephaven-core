@@ -15,7 +15,7 @@ import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.regioned.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -70,7 +70,7 @@ public class TestPartitioningColumns {
                         recordingLocationKeyFinder,
                         (tk, tlk, rs) -> {
                             final DummyTableLocation tl = new DummyTableLocation(tk, tlk);
-                            tl.handleUpdate(Index.CURRENT_FACTORY.getFlatIndex(1), 1L);
+                            tl.handleUpdate(TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(1), 1L);
                             return tl;
                         },
                         null),

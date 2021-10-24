@@ -10,15 +10,15 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * This class manages the constituent Tables for a UnionColumnSource, so that we can map from an outer (merged) index
+ * This class manages the constituent Tables for a UnionColumnSource, so that we can map from an outer (merged) rowSet
  * into the appropriate segment of a component table.
  */
 public class UnionRedirection implements Serializable {
     /**
-     * What do we tell users when they try to insert into a full Redirection index.
+     * What do we tell users when they try to insert into a full Redirection rowSet.
      */
     private static final String INDEX_OVERFLOW_MESSAGE =
-            "Failure to insert index into UnionRedirection, Index values exceed long.  If you have several recursive merges, consider rewriting your query to do a single merge of many tables.";
+            "Failure to insert rowSet into UnionRedirection, TrackingMutableRowSet values exceed long.  If you have several recursive merges, consider rewriting your query to do a single merge of many tables.";
 
     /**
      * This is the minimum size of an initial allocation of a region.
@@ -39,19 +39,19 @@ public class UnionRedirection implements Serializable {
     // how many tables have been added to this redirection
     private int size = 0;
 
-    // the start of our outer index for this entry, the end of the current entry (+ 1) is in the next table
+    // the start of our outer rowSet for this entry, the end of the current entry (+ 1) is in the next table
     long[] startOfIndices = new long[INITIAL_SIZE];
 
-    // the start of our outer prev index for this entry, the end of the current entry (+ 1) is in the next table
+    // the start of our outer prev rowSet for this entry, the end of the current entry (+ 1) is in the next table
     long[] prevStartOfIndices = new long[INITIAL_SIZE];
 
     // copy of prevStartOfIndices to be updated during the LTM cycle and swapped as a terminal notification
     long[] prevStartOfIndicesAlt = new long[INITIAL_SIZE];
 
     /**
-     * Fetch the table id for a given index.
+     * Fetch the table id for a given rowSet.
      * 
-     * @param index the index to lookup
+     * @param index the rowSet to lookup
      * @return table id of where to find content
      */
     int tidForIndex(long index) {
@@ -74,9 +74,9 @@ public class UnionRedirection implements Serializable {
     }
 
     /**
-     * Fetch the table id for a given index.
+     * Fetch the table id for a given rowSet.
      * 
-     * @param index the index to lookup
+     * @param index the rowSet to lookup
      * @return table id of where to find content
      */
     int tidForPrevIndex(long index) {

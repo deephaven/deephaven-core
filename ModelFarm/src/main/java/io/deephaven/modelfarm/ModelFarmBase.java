@@ -55,7 +55,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
         /**
          * Performs an operation using data from a query.
          *
-         * @param usePrev Whether to use the previous data at a given index when retrieving data (i.e. if {@code true},
+         * @param usePrev Whether to use the previous data at a given rowSet when retrieving data (i.e. if {@code true},
          *        use {@link io.deephaven.engine.v2.sources.ColumnSource#getPrev} instead of
          *        {@link io.deephaven.engine.v2.sources.ColumnSource#get}).
          */

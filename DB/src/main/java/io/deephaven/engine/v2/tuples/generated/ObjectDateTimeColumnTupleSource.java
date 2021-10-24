@@ -82,7 +82,7 @@ public class ObjectDateTimeColumnTupleSource extends AbstractTupleSource<ObjectL
             writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
-        throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
+        throw new IndexOutOfBoundsException("Invalid element rowSet " + elementIndex + " for export");
     }
 
     @Override

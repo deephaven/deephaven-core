@@ -7,7 +7,7 @@ import static org.junit.Assert.*;
 public class ComplementRangeIteratorTest {
     @Test
     public void testSimpleComplement() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(10, 20);
         ix.insertRange(22, 40);
         ix.insertRange(50, 100);
@@ -40,7 +40,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testEmptyComplement() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(0, Long.MAX_VALUE);
 
         try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
@@ -50,7 +50,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testFullComplement() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
 
             assertTrue(cit.hasNext());
@@ -68,7 +68,7 @@ public class ComplementRangeIteratorTest {
         for (int i = 0; i < points.length - 1; ++i) {
             final long start = points[i];
             final long end = points[i + 1];
-            final Index ix = Index.FACTORY.getIndexByRange(start, end);
+            final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByRange(start, end);
             try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(cit.hasNext());
                 final String m = "i=" + i;
@@ -96,7 +96,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testInputTwoRangesContainsZero() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(0, 20);
         ix.insertRange(22, 40);
 
@@ -117,7 +117,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testInputTwoRangesContainsMax() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(10, 20);
         ix.insertRange(22, Long.MAX_VALUE);
 
@@ -138,7 +138,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceSimple() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(10, 20);
         ix.insertRange(30, 40);
 
@@ -184,7 +184,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceInputContainsZero() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(0, 10);
         ix.insertRange(20, 40);
 
@@ -205,7 +205,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceInputContainsMax() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(5, 10);
         ix.insertRange(20, Long.MAX_VALUE);
 
@@ -222,7 +222,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceEmpty() {
-        final Index ix = Index.FACTORY.getIndexByRange(0, Long.MAX_VALUE);
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, Long.MAX_VALUE);
         for (long v : new long[] {0, 1, 20, Long.MAX_VALUE - 1, Long.MAX_VALUE}) {
             final String m = "v=" + v;
             try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
@@ -234,7 +234,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceCoverage1() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(0, 10);
         ix.insertRange(20, Long.MAX_VALUE);
         for (long v : new long[] {20, 21, 30, Long.MAX_VALUE}) {
@@ -250,7 +250,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceCoverage2() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         ix.insertRange(10, 20);
         ix.insertRange(30, 40);
         ix.insertRange(50, 60);

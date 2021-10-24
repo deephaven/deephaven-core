@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.IndexShiftDataExpander;
 
@@ -62,20 +62,20 @@ public class ListenerRecorder extends BaseTable.ShiftAwareListenerImpl {
         return notificationStep;
     }
 
-    public Index getAdded() {
-        return recordedVariablesAreValid() ? update.added : Index.FACTORY.getEmptyIndex();
+    public TrackingMutableRowSet getAdded() {
+        return recordedVariablesAreValid() ? update.added : TrackingMutableRowSet.FACTORY.getEmptyRowSet();
     }
 
-    public Index getRemoved() {
-        return recordedVariablesAreValid() ? update.removed : Index.FACTORY.getEmptyIndex();
+    public TrackingMutableRowSet getRemoved() {
+        return recordedVariablesAreValid() ? update.removed : TrackingMutableRowSet.FACTORY.getEmptyRowSet();
     }
 
-    public Index getModified() {
-        return recordedVariablesAreValid() ? update.modified : Index.FACTORY.getEmptyIndex();
+    public TrackingMutableRowSet getModified() {
+        return recordedVariablesAreValid() ? update.modified : TrackingMutableRowSet.FACTORY.getEmptyRowSet();
     }
 
-    public Index getModifiedPreShift() {
-        return recordedVariablesAreValid() ? update.getModifiedPreShift() : Index.FACTORY.getEmptyIndex();
+    public TrackingMutableRowSet getModifiedPreShift() {
+        return recordedVariablesAreValid() ? update.getModifiedPreShift() : TrackingMutableRowSet.FACTORY.getEmptyRowSet();
     }
 
     public IndexShiftData getShifted() {

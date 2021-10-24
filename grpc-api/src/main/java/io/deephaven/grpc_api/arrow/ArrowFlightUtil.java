@@ -9,6 +9,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -23,7 +24,6 @@ import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
@@ -152,7 +152,7 @@ public class ArrowFlightUtil {
                 }
                 final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
-                msg.rowsRemoved = Index.FACTORY.getEmptyIndex();
+                msg.rowsRemoved = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                 msg.shifted = IndexShiftData.EMPTY;
 
                 // include all columns as add-columns
@@ -179,7 +179,7 @@ public class ArrowFlightUtil {
                 }
 
                 msg.rowsAdded =
-                        Index.FACTORY.getIndexByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
+                        TrackingMutableRowSet.FACTORY.getRowSetByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
                 msg.rowsIncluded = msg.rowsAdded.clone();
                 msg.modColumnData = ZERO_MOD_COLUMNS;
 
@@ -409,7 +409,7 @@ public class ArrowFlightUtil {
                     hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
 
             isViewport = subscriptionRequest.viewportVector() != null;
-            final Index viewport =
+            final TrackingMutableRowSet viewport =
                     isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
             if (!bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport)) {
@@ -435,7 +435,7 @@ public class ArrowFlightUtil {
                     hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
 
             final boolean hasViewport = subscriptionRequest.viewportVector() != null;
-            final Index viewport =
+            final TrackingMutableRowSet viewport =
                     isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
             final boolean subscriptionFound;

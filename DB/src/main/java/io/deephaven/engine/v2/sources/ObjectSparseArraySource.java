@@ -15,7 +15,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.sparse.ObjectOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
@@ -86,11 +87,11 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region serialization
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final Index.SequentialBuilder sb = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder sb = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         blocks.enumerate(null, sb::appendKey);
-        final Index index = sb.getIndex();
+        final TrackingMutableRowSet rowSet = sb.build();
 
-        final int size = index.intSize();
+        final int size = rowSet.intSize();
         final T [] data = (T [])new Object[size];
         // noinspection unchecked
         final ColumnSource<T> reinterpreted = (ColumnSource<T>) reinterpretForSerialization();
@@ -98,22 +99,22 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
              final ResettableWritableObjectChunk<T, Values> destChunk = ResettableWritableObjectChunk.makeResettableChunk()) {
             destChunk.resetFromTypedArray(data, 0, size);
             // noinspection unchecked
-            reinterpreted.fillChunk(context, destChunk, index);
+            reinterpreted.fillChunk(context, destChunk, rowSet);
         }
-        out.writeObject(index);
+        out.writeObject(rowSet);
         out.writeObject(data);
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         blocks = new ObjectOneOrN.Block0<T>();
 
-        final Index index = (Index)in.readObject();
+        final TrackingMutableRowSet rowSet = (TrackingMutableRowSet)in.readObject();
         final T [] data = (T [])in.readObject();
         final ObjectChunk<T, Values> srcChunk = ObjectChunk.chunkWrap(data);
         // noinspection unchecked
         final WritableSource<Object> reinterpreted = (WritableSource<Object>) reinterpretForSerialization();
-        try (final FillFromContext context = reinterpreted.makeFillFromContext(index.intSize())) {
-            reinterpreted.fillFromChunk(context, srcChunk, index);
+        try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
+            reinterpreted.fillFromChunk(context, srcChunk, rowSet);
         }
     }
     // endregion serialization
@@ -143,8 +144,8 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     }
 
     @Override
-    public void shift(final Index keysToShift, final long shiftDelta) {
-        final Index.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
+    public void shift(final TrackingMutableRowSet keysToShift, final long shiftDelta) {
+        final TrackingMutableRowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, get(i));
             set(i, null);
@@ -153,7 +154,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     }
 
     @Override
-    public void remove(Index toRemove) {
+    public void remove(TrackingMutableRowSet toRemove) {
         toRemove.forEachLong((i) -> { set(i, null); return true; });
     }
 
@@ -390,7 +391,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     /**
     * Decides whether to record the previous value.
-    * @param key the index to record
+    * @param key the rowSet to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.
@@ -514,7 +515,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final WritableObjectChunk<T, ? super Values> ObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == Index.NULL_KEY) {
+            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                 ObjectChunk.set(ii++, null);
                 continue;
             }
@@ -548,7 +549,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final WritableObjectChunk<T, ? super Values> ObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == Index.NULL_KEY) {
+            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                 ObjectChunk.set(ii++, null);
                 continue;
             }

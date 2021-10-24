@@ -5,7 +5,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -19,10 +19,10 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     private final ChunkType chunkType;
     private final GetHandler getHandler;
 
-    public FormulaKernelAdapter(final Index index, final FormulaSourceDescriptor sourceDescriptor,
-            final Map<String, ? extends ColumnSource> columnSources,
-            final FormulaKernel kernel) {
-        super(index);
+    public FormulaKernelAdapter(final TrackingMutableRowSet rowSet, final FormulaSourceDescriptor sourceDescriptor,
+                                final Map<String, ? extends ColumnSource> columnSources,
+                                final FormulaKernel kernel) {
+        super(rowSet);
         this.sourceDescriptor = sourceDescriptor;
         this.columnSources = columnSources;
         this.kernel = kernel;
@@ -205,7 +205,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     }
 
     private void commonGetLogic(WritableChunk<Values> __dest, final long k, boolean usePrev) {
-        try (final Index rs = Index.FACTORY.getIndexByValues(k)) {
+        try (final TrackingMutableRowSet rs = TrackingMutableRowSet.FACTORY.getRowSetByValues(k)) {
             try (final AdapterContext context = makeFillContext(1)) {
                 fillChunkHelper(context, __dest, rs, usePrev, true);
             }
@@ -242,7 +242,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
         }
         final AdapterContext __typedContext = (AdapterContext) __context;
         final Chunk<? extends Attributes.Values>[] sourceChunks = new Chunk[sourceDescriptor.sources.length];
-        try (final RowSequence flat = Index.FACTORY.getFlatIndex(__rowSequence.size())) {
+        try (final RowSequence flat = TrackingMutableRowSet.FACTORY.getFlatIndex(__rowSequence.size())) {
             for (int ii = 0; ii < sourceDescriptor.sources.length; ++ii) {
                 final String name = sourceDescriptor.sources[ii];
                 switch (name) {
@@ -250,7 +250,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
                         if (lookupI) {
                             // Potentially repeated work w.r.t. "ii".
                             __typedContext.iChunk.setSize(0);
-                            __index.invert(__rowSequence.asIndex()).forAllLongs(longVal -> {
+                            __rowSet.invert(__rowSequence.asIndex()).forAllLongs(longVal -> {
                                 final int i = LongSizedDataStructure.intSize("FormulaNubbin i usage", longVal);
                                 __typedContext.iChunk.add(i);
                             });
@@ -266,7 +266,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
                     }
                     case "ii": {
                         if (lookupI) {
-                            __index.invert(__rowSequence.asIndex()).fillRowKeyChunk(__typedContext.iiChunk);
+                            __rowSet.invert(__rowSequence.asIndex()).fillRowKeyChunk(__typedContext.iiChunk);
                         } else {
                             // sequential ii
                             for (int pos = 0; pos < RowSequenceSize; ++pos) {

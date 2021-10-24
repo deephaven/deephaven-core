@@ -8,7 +8,9 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,18 +65,19 @@ public class UnsortedClockFilter extends ClockFilter {
     }
 
     @Override
-    protected @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection, @NotNull final Index fullSet,
-            @NotNull final Table table) {
+    protected @Nullable
+    TrackingMutableRowSet initializeAndGetInitialIndex(@NotNull final TrackingMutableRowSet selection, @NotNull final TrackingMutableRowSet fullSet,
+                                                       @NotNull final Table table) {
         rangesByNextTime = new PriorityQueue<>(INITIAL_RANGE_QUEUE_CAPACITY, new RangeComparator());
 
         if (selection.empty()) {
             return null;
         }
 
-        final Index.SequentialBuilder addedBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
         final long nowNanos = clock.currentTimeMicros() * 1000L;
-        final Index.Iterator selectionIterator = selection.iterator();
+        final TrackingMutableRowSet.Iterator selectionIterator = selection.iterator();
 
         // Initial current range begins and ends at the first key in the selection (which must exist because we've
         // already tested non-emptiness).
@@ -114,18 +117,18 @@ public class UnsortedClockFilter extends ClockFilter {
             addedBuilder.appendRange(activeRangeFirstKey, activeRangeLastKey);
         }
 
-        return addedBuilder.getIndex();
+        return addedBuilder.build();
     }
 
     @Override
-    protected Index updateAndGetAddedIndex() {
+    protected TrackingMutableRowSet updateAndGetAddedIndex() {
         if (rangesByNextTime.isEmpty()) {
             return null;
         }
         final long nowNanos = clock.currentTimeMicros() * 1000L;
-        Index.RandomBuilder addedBuilder = null;
+        RowSetBuilder addedBuilder = null;
         Range nextRange;
-        Index.RandomBuilder resultBuilder;
+        RowSetBuilder resultBuilder;
         while ((nextRange = rangesByNextTime.peek()) != null && (resultBuilder =
                 nextRange.consumeKeysAndAppendAdded(nanosColumnSource, nowNanos, addedBuilder)) != null) {
             addedBuilder = resultBuilder;
@@ -134,6 +137,6 @@ public class UnsortedClockFilter extends ClockFilter {
                 rangesByNextTime.add(nextRange);
             }
         }
-        return addedBuilder == null ? null : addedBuilder.getIndex();
+        return addedBuilder == null ? null : addedBuilder.build();
     }
 }

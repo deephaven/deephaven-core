@@ -384,12 +384,12 @@ public class TestSyncTableFilter extends LiveTableTestCase {
     }
 
     public void testTableMap() {
-        final QueryTable source1 = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10),
+        final QueryTable source1 = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
                 col("Partition", "A", "A", "B", "B", "C", "C", "C", "D", "D", "D"),
                 longCol("ID", 1, 2, /* B */ 1, 2, /* C */ 1, 2, 2, /* D */ 1, 2, 2),
                 intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110));
 
-        final QueryTable source2 = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(5),
+        final QueryTable source2 = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(5),
                 col("Division", "A", "A", "B", "C", "C"),
                 longCol("ID", 2, 3, 1, 2, 2),
                 intCol("Sentinel", 201, 202, 203, 204, 205));
@@ -587,7 +587,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         }
 
         @Override
-        public void onUpdate(Index added, Index removed, Index modified) {
+        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
             fail("Should not have gotten an update!");
         }
 

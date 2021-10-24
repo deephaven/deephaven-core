@@ -10,9 +10,9 @@ import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ArrayGenerator;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.BooleanChunk;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import org.junit.After;
 import org.junit.Before;
@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanDeltaAwareColumnSource {
@@ -168,35 +167,35 @@ public class TestBooleanDeltaAwareColumnSource {
 
     private static void checkUsingChunk(DeltaAwareColumnSource<Boolean> dacs, Map<Long, Byte> expectedCurrent,
                                         Map<Long, Byte> expectedPrev, long[] ranges) {
-        final Index index = rangesToIndex(ranges);
-        assertEquals(index.size() % 2, 0);
+        final TrackingMutableRowSet rowSet = rangesToIndex(ranges);
+        assertEquals(rowSet.size() % 2, 0);
 
         // We're going to get creative and pull down the data as two slices
-        final int chunkSize = (int) (index.size() / 2);
+        final int chunkSize = (int) (rowSet.size() / 2);
 
-        // So we'll also split the index in half
-        final Index index0 = index.subindexByPos(0, chunkSize);
-        final Index index1 = index.subindexByPos(chunkSize, index.size());
+        // So we'll also split the rowSet in half
+        final TrackingMutableRowSet rowSet0 = rowSet.subSetByPositionRange(0, chunkSize);
+        final TrackingMutableRowSet rowSet1 = rowSet.subSetByPositionRange(chunkSize, rowSet.size());
 
         // Current...
         try (ChunkSource.GetContext context = dacs.makeGetContext(chunkSize)) {
             ObjectChunk<Boolean, ? extends Values> chunk;
 
-            chunk = dacs.getChunk(context, index0).asObjectChunk();
-            checkChunk(chunk, expectedCurrent, index0);
-            chunk = dacs.getChunk(context, index1).asObjectChunk();
-            checkChunk(chunk, expectedCurrent, index1);
+            chunk = dacs.getChunk(context, rowSet0).asObjectChunk();
+            checkChunk(chunk, expectedCurrent, rowSet0);
+            chunk = dacs.getChunk(context, rowSet1).asObjectChunk();
+            checkChunk(chunk, expectedCurrent, rowSet1);
 
-            chunk = dacs.getPrevChunk(context, index0).asObjectChunk();
-            checkChunk(chunk, expectedPrev, index0);
-            chunk = dacs.getPrevChunk(context, index1).asObjectChunk();
-            checkChunk(chunk, expectedPrev, index1);
+            chunk = dacs.getPrevChunk(context, rowSet0).asObjectChunk();
+            checkChunk(chunk, expectedPrev, rowSet0);
+            chunk = dacs.getPrevChunk(context, rowSet1).asObjectChunk();
+            checkChunk(chunk, expectedPrev, rowSet1);
         }
     }
 
-    private static void checkChunk(ObjectChunk<Boolean, ? extends Values> values, Map<Long, Byte> expected, Index keys) {
+    private static void checkChunk(ObjectChunk<Boolean, ? extends Values> values, Map<Long, Byte> expected, TrackingMutableRowSet keys) {
         int sliceOffset = 0;
-        for (final Index.Iterator it = keys.iterator(); it.hasNext(); ) {
+        for (final TrackingMutableRowSet.Iterator it = keys.iterator(); it.hasNext(); ) {
             final long key = it.nextLong();
             final byte expectedValue = expected.get(key);
             final byte actualValue = io.deephaven.engine.util.BooleanUtils.booleanAsByte(values.get(sliceOffset++));
@@ -204,11 +203,11 @@ public class TestBooleanDeltaAwareColumnSource {
         }
     }
 
-    private static Index rangesToIndex(long[] ranges) {
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+    private static TrackingMutableRowSet rangesToIndex(long[] ranges) {
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (int ii = 0; ii < ranges.length; ii += 2) {
             builder.appendRange(ranges[ii], ranges[ii + 1] - 1);
         }
-        return builder.getIndex();
+        return builder.build();
     }
 }

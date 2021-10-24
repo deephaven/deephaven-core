@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssa.SsaTestHelpers;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.compact.FloatCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -144,7 +144,7 @@ public class TestFloatSegmentedSortedMultiset extends LiveTableTestCase {
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final Listener asFloatListener = new InstrumentedListenerAdapter((DynamicTable) asFloat, false) {
                 @Override
-                public void onUpdate(Index added, Index removed, Index modified) {
+                public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
                     final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
                     try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(maxSize);
                          final WritableFloatChunk<Values> chunk = WritableFloatChunk.makeWritableChunk(maxSize);
@@ -171,7 +171,7 @@ public class TestFloatSegmentedSortedMultiset extends LiveTableTestCase {
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    final Index[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    final TrackingMutableRowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].empty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);
                 });

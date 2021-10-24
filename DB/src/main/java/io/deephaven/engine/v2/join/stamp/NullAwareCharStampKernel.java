@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.chunk.CharChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 
 public class NullAwareCharStampKernel implements StampKernel {
@@ -27,7 +27,7 @@ public class NullAwareCharStampKernel implements StampKernel {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {
-            leftRedirections.fillWithValue(0, leftSize, Index.NULL_KEY);
+            leftRedirections.fillWithValue(0, leftSize, TrackingMutableRowSet.NULL_ROW_KEY);
             leftRedirections.setSize(leftSize);
             return;
         }
@@ -40,7 +40,7 @@ public class NullAwareCharStampKernel implements StampKernel {
         for (int li = 0; li < leftSize; ) {
             final char leftValue = leftStamps.get(li);
             if (lt(leftValue, rightLowValue)) {
-                leftRedirections.set(li++, Index.NULL_KEY);
+                leftRedirections.set(li++, TrackingMutableRowSet.NULL_ROW_KEY);
                 continue;
             }
             else if (eq(leftValue, rightLowValue)) {

@@ -47,7 +47,7 @@ public class HashSetBackedTableFactory {
     private final TLongLongMap indexToPreviousClock = new TLongLongHashMap();
     private long lastIndex = 0;
     private final TLongArrayList freeSet = new TLongArrayList();
-    Index index;
+    TrackingMutableRowSet rowSet;
 
     private HashSetBackedTableFactory(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs,
             String... colNames) {
@@ -74,25 +74,25 @@ public class HashSetBackedTableFactory {
             String... colNames) {
         HashSetBackedTableFactory factory = new HashSetBackedTableFactory(setGenerator, refreshIntervalMs, colNames);
 
-        IndexBuilder addedBuilder = Index.FACTORY.getRandomBuilder();
-        IndexBuilder removedBuilder = Index.FACTORY.getRandomBuilder();
+        RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilder removedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
         factory.updateValueSet(addedBuilder, removedBuilder);
 
-        Index added = addedBuilder.getIndex();
-        Index removed = removedBuilder.getIndex();
+        TrackingMutableRowSet added = addedBuilder.build();
+        TrackingMutableRowSet removed = removedBuilder.build();
 
-        factory.index = added;
+        factory.rowSet = added;
         Assert.assertion(removed.size() == 0, "removed.size() == 0");
 
         return factory.getTable();
     }
 
     private Table getTable() {
-        return new HashSetBackedTable(index, columns);
+        return new HashSetBackedTable(rowSet, columns);
     }
 
-    private void updateValueSet(IndexBuilder addedBuilder, IndexBuilder removedBuilder) {
+    private void updateValueSet(RowSetBuilder addedBuilder, RowSetBuilder removedBuilder) {
         HashSet<SmartKey> valueSet = setGenerator.call();
 
         synchronized (this) {
@@ -112,7 +112,7 @@ public class HashSetBackedTableFactory {
         }
     }
 
-    private void removeValue(TObjectLongIterator<SmartKey> vtiIt, IndexBuilder removedBuilder) {
+    private void removeValue(TObjectLongIterator<SmartKey> vtiIt, RowSetBuilder removedBuilder) {
         long index = vtiIt.value();
 
         // record the old value for get prev
@@ -126,7 +126,7 @@ public class HashSetBackedTableFactory {
         freeSet.add(index);
     }
 
-    private void addValue(SmartKey value, IndexBuilder addedBuilder) {
+    private void addValue(SmartKey value, RowSetBuilder addedBuilder) {
         long newIndex;
         if (freeSet.isEmpty()) {
             newIndex = lastIndex++;
@@ -145,8 +145,8 @@ public class HashSetBackedTableFactory {
     }
 
     private class HashSetBackedTable extends QueryTable implements LiveTable {
-        HashSetBackedTable(Index index, Map<String, ColumnSource<?>> columns) {
-            super(index, columns);
+        HashSetBackedTable(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> columns) {
+            super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
                 LiveTableMonitor.DEFAULT.addTable(this);
@@ -160,20 +160,20 @@ public class HashSetBackedTableFactory {
             }
             nextRefresh = System.currentTimeMillis() + refreshIntervalMs;
 
-            IndexBuilder addedBuilder = Index.FACTORY.getRandomBuilder();
-            IndexBuilder removedBuilder = Index.FACTORY.getRandomBuilder();
+            RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            RowSetBuilder removedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
             updateValueSet(addedBuilder, removedBuilder);
 
-            final Index added = addedBuilder.getIndex();
-            final Index removed = removedBuilder.getIndex();
+            final TrackingMutableRowSet added = addedBuilder.build();
+            final TrackingMutableRowSet removed = removedBuilder.build();
 
             if (added.size() > 0 || removed.size() > 0) {
-                final Index modified = added.intersect(removed);
+                final TrackingMutableRowSet modified = added.intersect(removed);
                 added.remove(modified);
                 removed.remove(modified);
 
-                index.update(added, removed);
+                rowSet.update(added, removed);
                 notifyListeners(added, removed, modified);
             }
         }

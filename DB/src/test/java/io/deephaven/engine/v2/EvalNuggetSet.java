@@ -8,7 +8,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.junit.Assert;
 
 import java.util.*;
@@ -31,7 +31,7 @@ public abstract class EvalNuggetSet extends EvalNugget {
         // TODO create a smart key for each row and go from there
         Map<SmartKey, Long> originalSet = new HashMap<>();
         Assert.assertEquals(expected.size(), originalValue.size());
-        for (Index.Iterator iterator = originalValue.getIndex().iterator(); iterator.hasNext();) {
+        for (TrackingMutableRowSet.Iterator iterator = originalValue.getIndex().iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             Object key[] = new Object[sources.size()];
             int i = 0;
@@ -43,7 +43,7 @@ public abstract class EvalNuggetSet extends EvalNugget {
             Assert.assertEquals(msg + " k = " + k, originalSet.put(k, next), null);
         }
         sources = expected.getColumnSources();
-        for (Index.Iterator iterator = expected.getIndex().iterator(); iterator.hasNext();) {
+        for (TrackingMutableRowSet.Iterator iterator = expected.getIndex().iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             Object key[] = new Object[sources.size()];
             int i = 0;

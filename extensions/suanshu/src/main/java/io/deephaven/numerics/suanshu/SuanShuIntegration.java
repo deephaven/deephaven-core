@@ -1563,16 +1563,16 @@ public class SuanShuIntegration {
         for (int ai = 0; ai < nCols; ai++) {
             final DbArrayBase<?> dbArrayBase = dbArray.get(ai);
             if (dbArrayBase == null) {
-                throw new IllegalArgumentException("Null array at index " + ai);
+                throw new IllegalArgumentException("Null array at rowSet " + ai);
             }
             if (ai > 0 && dbArrayBase.intSize() != nRows) {
-                throw new IllegalArgumentException("Size mismatch: first array has size " + nRows + ", array at index "
+                throw new IllegalArgumentException("Size mismatch: first array has size " + nRows + ", array at rowSet "
                         + ai + " has size " + dbArrayBase.intSize());
             }
             final int arrayIndex = ai;
             accessors[ai] = makeDoubleAccessor(dbArrayBase)
                     .orElseThrow(() -> new UnsupportedOperationException(
-                            "Invalid array at index " + arrayIndex + " with type " + dbArrayBase.getClass()
+                            "Invalid array at rowSet " + arrayIndex + " with type " + dbArrayBase.getClass()
                                     + " and component type " + dbArrayBase.getComponentType() + ": must be numeric"));
         }
 
@@ -1678,7 +1678,7 @@ public class SuanShuIntegration {
         /**
          * Gets the i<sup>th</sup> indexed (1-based) value from vector.
          *
-         * @param i 1-based index
+         * @param i 1-based rowSet
          * @return i<sup>th</sup> indexed (1-based) value
          */
         @Override
@@ -1912,7 +1912,7 @@ public class SuanShuIntegration {
         /**
          * Gets the row<sup>th</sup> indexed (1-based) row-vector from matrix.
          *
-         * @param row 1-based index
+         * @param row 1-based rowSet
          * @return vector at row<sup>th</sup> indexed (1-based)
          */
         @Override
@@ -1921,7 +1921,7 @@ public class SuanShuIntegration {
         /**
          * Gets the column<sup>th</sup> indexed (1-based) column-vector from matrix.
          *
-         * @param column 1-based index
+         * @param column 1-based rowSet
          * @return vector at column<sup>th</sup> indexed (1-based)
          */
         @Override
@@ -1931,8 +1931,8 @@ public class SuanShuIntegration {
          * Gets the value at row<sup>th</sup> indexed row (1-based) and column<sup>th</sup> indexed (1-based) column
          * from matrix.
          *
-         * @param row 1-based row-index
-         * @param column 1-based column-index
+         * @param row 1-based row-rowSet
+         * @param column 1-based column-rowSet
          * @return value at row<sup>th</sup> indexed row (1-based) and column<sup>th</sup> indexed (1-based) column
          */
         @Override

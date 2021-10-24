@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.TerminalNotification;
 import io.deephaven.engine.v2.utils.TimeProvider;
 import io.deephaven.internal.log.LoggerFactory;
@@ -283,13 +283,13 @@ public class Replayer implements ReplayerInterface, LiveTable {
     }
 
     /**
-     * Register the time column and index from a new table to replay. Most users will use <code>replay</code>,
+     * Register the time column and rowSet from a new table to replay. Most users will use <code>replay</code>,
      * <code>replayGrouped</code>, or <code>replayGroupedLastBy</code> instead of this function.
      *
-     * @param index table index
+     * @param rowSet table rowSet
      * @param timestampSource column source containing time information.
      */
-    public void registerTimeSource(Index index, ColumnSource<DBDateTime> timestampSource) {
+    public void registerTimeSource(TrackingMutableRowSet rowSet, ColumnSource<DBDateTime> timestampSource) {
         // Does nothing
     }
 

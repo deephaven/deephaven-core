@@ -22,8 +22,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.ObjectCompactKernel;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +44,7 @@ public class ObjectRollupDistinctOperator implements IterativeChunkedAggregation
     private final boolean countNull;
 
     private UpdateCommitter<ObjectRollupDistinctOperator> prevFlusher = null;
-    private Index touchedStates;
+    private TrackingMutableRowSet touchedStates;
 
     public ObjectRollupDistinctOperator(
                                       // region Constructor
@@ -471,7 +471,7 @@ public class ObjectRollupDistinctOperator implements IterativeChunkedAggregation
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();
@@ -500,7 +500,7 @@ public class ObjectRollupDistinctOperator implements IterativeChunkedAggregation
         }
 
         prevFlusher = new UpdateCommitter<>(this, ObjectRollupDistinctOperator::flushPrevious);
-        touchedStates = Index.CURRENT_FACTORY.getEmptyIndex();
+        touchedStates = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         internalResult.startTrackingPrevValues();
     }
 

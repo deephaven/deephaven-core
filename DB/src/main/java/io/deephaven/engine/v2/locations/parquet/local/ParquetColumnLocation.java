@@ -469,7 +469,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         return new LongBuildGrouping(numRows);
                     default:
                         throw new IllegalArgumentException(
-                                "Unknown type for an index: " + chunkType);
+                                "Unknown type for an rowSet: " + chunkType);
                 }
             }
 

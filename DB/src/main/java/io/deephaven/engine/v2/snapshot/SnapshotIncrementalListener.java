@@ -5,8 +5,9 @@ import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftDataExpander;
+import io.deephaven.engine.v2.utils.UpdateCoalescer;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,8 +22,8 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final QueryTable rightTable;
     private final Map<String, ? extends ColumnSource<?>> leftColumns;
 
-    private Index.IndexUpdateCoalescer rightUpdates;
-    private final Index lastRightIndex;
+    private UpdateCoalescer rightUpdates;
+    private final TrackingMutableRowSet lastRightRowSet;
     private boolean firstSnapshot = true;
 
     public SnapshotIncrementalListener(QueryTable triggerTable, QueryTable resultTable,
@@ -37,14 +38,14 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.leftListener = leftListener;
         this.rightTable = rightTable;
         this.leftColumns = leftColumns;
-        this.lastRightIndex = Index.FACTORY.getEmptyIndex();
+        this.lastRightRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
     }
 
     @Override
     protected void process() {
         if (!firstSnapshot && rightListener.recordedVariablesAreValid()) {
             if (rightUpdates == null) {
-                rightUpdates = new Index.IndexUpdateCoalescer(rightTable.getIndex(), rightListener.getUpdate());
+                rightUpdates = new UpdateCoalescer(rightTable.getIndex(), rightListener.getUpdate());
             } else {
                 rightUpdates.update(rightListener.getUpdate());
             }
@@ -64,21 +65,21 @@ public class SnapshotIncrementalListener extends MergedListener {
         doRowCopy(rightTable.getIndex());
         resultTable.getIndex().insert(rightTable.getIndex());
         if (!initial) {
-            resultTable.notifyListeners(resultTable.getIndex(), Index.FACTORY.getEmptyIndex(),
-                    Index.FACTORY.getEmptyIndex());
+            resultTable.notifyListeners(resultTable.getIndex(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                    TrackingMutableRowSet.FACTORY.getEmptyRowSet());
         }
         firstSnapshot = false;
     }
 
     public void doSnapshot() {
-        lastRightIndex.clear();
-        lastRightIndex.insert(rightTable.getIndex());
+        lastRightRowSet.clear();
+        lastRightRowSet.insert(rightTable.getIndex());
         try (final IndexShiftDataExpander expander =
-                new IndexShiftDataExpander(rightUpdates.coalesce(), lastRightIndex)) {
-            final Index rightAdded = expander.getAdded();
-            final Index rightModified = expander.getModified();
-            final Index rightRemoved = expander.getRemoved();
-            final Index rowsToCopy = rightAdded.union(rightModified);
+                new IndexShiftDataExpander(rightUpdates.coalesce(), lastRightRowSet)) {
+            final TrackingMutableRowSet rightAdded = expander.getAdded();
+            final TrackingMutableRowSet rightModified = expander.getModified();
+            final TrackingMutableRowSet rightRemoved = expander.getRemoved();
+            final TrackingMutableRowSet rowsToCopy = rightAdded.union(rightModified);
 
             doRowCopy(rowsToCopy);
 
@@ -87,15 +88,15 @@ public class SnapshotIncrementalListener extends MergedListener {
         }
     }
 
-    private void doRowCopy(Index index) {
-        copyRowsToResult(index, triggerTable, rightTable, leftColumns, resultColumns);
+    private void doRowCopy(TrackingMutableRowSet rowSet) {
+        copyRowsToResult(rowSet, triggerTable, rightTable, leftColumns, resultColumns);
     }
 
-    public static void copyRowsToResult(Index rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
-            Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
-        final Index qtIndex = triggerTable.getIndex();
-        if (!qtIndex.empty()) {
-            SnapshotUtils.copyStampColumns(leftColumns, qtIndex.lastRowKey(), resultColumns, rowsToCopy);
+    public static void copyRowsToResult(TrackingMutableRowSet rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
+                                        Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
+        final TrackingMutableRowSet qtRowSet = triggerTable.getIndex();
+        if (!qtRowSet.empty()) {
+            SnapshotUtils.copyStampColumns(leftColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);
         }
         SnapshotUtils.copyDataColumns(rightTable.getColumnSourceMap(), rowsToCopy, resultColumns, rowsToCopy, false);
     }

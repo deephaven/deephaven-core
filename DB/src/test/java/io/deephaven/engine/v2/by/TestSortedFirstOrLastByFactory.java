@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
@@ -87,7 +87,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
     public void testIds6445() {
         final QueryTable source =
-                TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(5), intCol("SFB", 2, 1, 2, 1, 2),
+                TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(5), intCol("SFB", 2, 1, 2, 1, 2),
                         intCol("Sentinel", 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A"));
         // final FuzzerPrintListener pl = new FuzzerPrintListener("source", source);
         // source.listenForUpdates(pl);
@@ -112,18 +112,18 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         TestCase.assertEquals(2, sfb.getColumn("Sentinel").get(0));
         TestCase.assertEquals(2, bucketed.getColumn("Sentinel").get(0));
 
-        // this part is the original bug, if we didn't change the actual value of the redirection index; because the
-        // shift modify combination left it at the same index; we would not notice the mdoification
+        // this part is the original bug, if we didn't change the actual value of the redirection rowSet; because the
+        // shift modify combination left it at the same rowSet; we would not notice the mdoification
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByValues(0);
-            update.removed = Index.FACTORY.getEmptyIndex();
-            update.modified = Index.FACTORY.getIndexByValues(2, 4);
+            update.added = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
+            update.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            update.modified = TrackingMutableRowSet.FACTORY.getRowSetByValues(2, 4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(6), intCol("SFB", 3, 2, 3, 2, 3, 2),
+            addToTable(source, TrackingMutableRowSet.FACTORY.getFlatIndex(6), intCol("SFB", 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A"));
 
             final IndexShiftData.Builder sb = new IndexShiftData.Builder();
@@ -141,14 +141,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // shifting without modifications
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByValues(0);
-            update.removed = Index.FACTORY.getEmptyIndex();
-            update.modified = Index.FACTORY.getIndexByValues();
+            update.added = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
+            update.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            update.modified = TrackingMutableRowSet.FACTORY.getRowSetByValues();
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2),
+            addToTable(source, TrackingMutableRowSet.FACTORY.getFlatIndex(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 7, 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A"));
 
             final IndexShiftData.Builder sb = new IndexShiftData.Builder();
@@ -167,14 +167,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByValues(0);
-            update.removed = Index.FACTORY.getEmptyIndex();
-            update.modified = Index.FACTORY.getIndexByValues(3);
+            update.added = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
+            update.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            update.modified = TrackingMutableRowSet.FACTORY.getRowSetByValues(3);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("Sentinel");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(8), intCol("SFB", 4, 4, 3, 2, 3, 2, 3, 2),
+            addToTable(source, TrackingMutableRowSet.FACTORY.getFlatIndex(8), intCol("SFB", 4, 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A"));
 
@@ -194,14 +194,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // we are shifting, and claiming to modify SFB but not actually doing it
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByValues(0);
-            update.removed = Index.FACTORY.getEmptyIndex();
-            update.modified = Index.FACTORY.getIndexByValues(4);
+            update.added = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
+            update.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            update.modified = TrackingMutableRowSet.FACTORY.getRowSetByValues(4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(9), intCol("SFB", 4, 4, 4, 3, 2, 3, 2, 3, 2),
+            addToTable(source, TrackingMutableRowSet.FACTORY.getFlatIndex(9), intCol("SFB", 4, 4, 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 10, 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
@@ -221,14 +221,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // here we are shifting, and modifying SFB but not actually doing it
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByValues(0);
-            update.removed = Index.FACTORY.getEmptyIndex();
-            update.modified = Index.FACTORY.getIndexByValues(4);
+            update.added = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
+            update.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            update.modified = TrackingMutableRowSet.FACTORY.getRowSetByValues(4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(10), intCol("SFB", 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
+            addToTable(source, TrackingMutableRowSet.FACTORY.getFlatIndex(10), intCol("SFB", 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 11, 10, 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
@@ -248,14 +248,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // claim to modify sfb, but don't really. Actually modify sentinel.
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByValues(0);
-            update.removed = Index.FACTORY.getEmptyIndex();
-            update.modified = Index.FACTORY.getIndexByValues(5);
+            update.added = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
+            update.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            update.modified = TrackingMutableRowSet.FACTORY.getRowSetByValues(5);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB", "Sentinel");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(11), intCol("SFB", 4, 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
+            addToTable(source, TrackingMutableRowSet.FACTORY.getFlatIndex(11), intCol("SFB", 4, 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 12, 11, 10, 8, 7, 13, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 

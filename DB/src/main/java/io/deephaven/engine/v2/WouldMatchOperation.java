@@ -13,10 +13,10 @@ import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * the table. It will re-evaluate cell values if any of the underlying filters are dynamic, and change.
  */
 public class WouldMatchOperation implements QueryTable.MemoizableOperation<QueryTable> {
-    private static final ReadOnlyIndex EMPTY_INDEX = Index.FACTORY.getEmptyIndex();
+    private static final RowSet EMPTY_INDEX = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
     private final List<ColumnHolder> matchColumns;
     private final QueryTable parent;
     private QueryTable resultTable;
@@ -89,15 +89,15 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
-            final Index fullIndex = usePrev ? closer.add(parent.getIndex().getPrevIndex()) : parent.getIndex();
-            final Index indexToUse = closer.add(fullIndex.clone());
+            final TrackingMutableRowSet fullRowSet = usePrev ? closer.add(parent.getIndex().getPrevIndex()) : parent.getIndex();
+            final TrackingMutableRowSet rowSetToUpdate = closer.add(fullRowSet.clone());
 
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
             final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
             matchColumns.forEach(holder -> {
                 final SelectFilter filter = holder.getFilter();
                 filter.init(parent.getDefinition());
-                final Index result = filter.filter(indexToUse, fullIndex, parent, usePrev);
+                final TrackingMutableRowSet result = filter.filter(rowSetToUpdate, fullRowSet, parent, usePrev);
                 holder.column = new IndexWrapperColumnSource(holder.getColumnName(), parent, result, filter);
 
                 if (newColumns.put(holder.getColumnName(), holder.column) != null) {
@@ -230,9 +230,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             for (final ColumnHolder holder : matchColumns) {
                 if (holder.column.recomputeRequested()) {
                     if (downstream == null) {
-                        downstream = new ShiftAwareListener.Update(Index.FACTORY.getEmptyIndex(),
-                                Index.FACTORY.getEmptyIndex(),
-                                Index.FACTORY.getEmptyIndex(),
+                        downstream = new ShiftAwareListener.Update(TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                                TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                                TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
                                 IndexShiftData.EMPTY,
                                 resultTable.modifiedColumnSet);
                     }
@@ -262,7 +262,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     private static class IndexWrapperColumnSource extends AbstractColumnSource<Boolean>
             implements MutableColumnSourceGetDefaults.ForBoolean, SelectFilter.RecomputeListener {
-        private final Index source;
+        private final TrackingMutableRowSet source;
         private final SelectFilter filter;
         private boolean doRecompute = false;
         private QueryTable resultTable;
@@ -270,9 +270,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         private final String name;
         private final ModifiedColumnSet possibleUpstreamModified;
 
-        IndexWrapperColumnSource(String name, QueryTable parent, Index sourceIndex, SelectFilter filter) {
+        IndexWrapperColumnSource(String name, QueryTable parent, TrackingMutableRowSet sourceRowSet, SelectFilter filter) {
             super(Boolean.class);
-            this.source = sourceIndex;
+            this.source = sourceRowSet;
             this.filter = filter;
             this.name = name;
             this.possibleUpstreamModified =
@@ -293,8 +293,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         public void fillChunk(@NotNull FillContext context,
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final Index keysToCheck = closer.add(rowSequence.asIndex());
-                final Index intersection = closer.add(keysToCheck.intersect(source));
+                final TrackingMutableRowSet keysToCheck = closer.add(rowSequence.asIndex());
+                final TrackingMutableRowSet intersection = closer.add(keysToCheck.intersect(source));
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }
@@ -303,8 +303,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         public void fillPrevChunk(@NotNull FillContext context,
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final Index keysToCheck = closer.add(rowSequence.asIndex());
-                final Index intersection = closer.add(keysToCheck.getPrevIndex().intersect(source.getPrevIndex()));
+                final TrackingMutableRowSet keysToCheck = closer.add(rowSequence.asIndex());
+                final TrackingMutableRowSet intersection = closer.add(keysToCheck.getPrevIndex().intersect(source.getPrevIndex()));
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }
@@ -317,8 +317,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @param RowSequenceSize the total number of keys requested
          * @param destination the destination chunk
          */
-        private void fillChunkInternal(Index keysToCheck, Index intersection, int RowSequenceSize,
-                @NotNull WritableChunk<? super Attributes.Values> destination) {
+        private void fillChunkInternal(TrackingMutableRowSet keysToCheck, TrackingMutableRowSet intersection, int RowSequenceSize,
+                                       @NotNull WritableChunk<? super Attributes.Values> destination) {
             final WritableObjectChunk<Boolean, ? super Attributes.Values> writeable =
                     destination.asWritableObjectChunk();
             writeable.setSize(RowSequenceSize);
@@ -330,8 +330,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 return;
             }
 
-            final Index.Iterator keysIterator = keysToCheck.iterator();
-            final Index.Iterator intersectionIterator = intersection.iterator();
+            final TrackingMutableRowSet.Iterator keysIterator = keysToCheck.iterator();
+            final TrackingMutableRowSet.Iterator intersectionIterator = intersection.iterator();
 
             long currentIntersectionKey = intersectionIterator.nextLong();
 
@@ -391,7 +391,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         /**
-         * Update the internal index with the upstream {@link io.deephaven.engine.v2.ShiftAwareListener.Update}. If the
+         * Update the internal rowSet with the upstream {@link io.deephaven.engine.v2.ShiftAwareListener.Update}. If the
          * column was recomputed, return an optional containing rows that were modified.
          *
          * @param added the set of added rows in the update
@@ -406,9 +406,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @return an Optional containing rows modified to add to the downstream update
          */
         @Nullable
-        private Index update(Index added, Index removed, Index modified, Index modPreShift, IndexShiftData shift,
-                ModifiedColumnSet upstreamModified, ModifiedColumnSet downstreamModified,
-                QueryTable table) {
+        private TrackingMutableRowSet update(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified, TrackingMutableRowSet modPreShift, IndexShiftData shift,
+                                             ModifiedColumnSet upstreamModified, ModifiedColumnSet downstreamModified,
+                                             QueryTable table) {
             final boolean affected = upstreamModified != null && upstreamModified.containsAny(possibleUpstreamModified);
 
             // Remove the removed keys, and pre-shift modifieds
@@ -420,7 +420,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 source.remove(modPreShift);
             }
 
-            // Shift the index
+            // Shift the rowSet
             shift.apply(source);
 
             if (doRecompute) {
@@ -429,13 +429,13 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             }
 
             // Filter and add addeds
-            final Index filteredAdded = filter.filter(added, source, table, false);
-            ReadOnlyIndex keysToRemove = EMPTY_INDEX;
+            final TrackingMutableRowSet filteredAdded = filter.filter(added, source, table, false);
+            RowSet keysToRemove = EMPTY_INDEX;
 
             // If we were affected, recompute mods and re-add the ones that pass.
             if (affected) {
                 downstreamModified.setAll(name);
-                final Index filteredModified = filter.filter(modified, source, table, false);
+                final TrackingMutableRowSet filteredModified = filter.filter(modified, source, table, false);
 
                 // Now apply the additions and remove any non-matching modifieds
                 filteredAdded.insert(filteredModified);
@@ -447,14 +447,14 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             return null;
         }
 
-        private Index recompute(QueryTable table, ReadOnlyIndex upstreamAdded) {
+        private TrackingMutableRowSet recompute(QueryTable table, RowSet upstreamAdded) {
             doRecompute = false;
-            final Index refiltered = filter.filter(table.getIndex().clone(), table.getIndex(), table, false);
+            final TrackingMutableRowSet refiltered = filter.filter(table.getIndex().clone(), table.getIndex(), table, false);
 
-            // This is just Xor, but there is no Index op for that
-            final Index newlySet = refiltered.minus(source);
-            final Index justCleared = source.minus(refiltered);
-            final Index rowsChanged = newlySet.union(justCleared)
+            // This is just Xor, but there is no TrackingMutableRowSet op for that
+            final TrackingMutableRowSet newlySet = refiltered.minus(source);
+            final TrackingMutableRowSet justCleared = source.minus(refiltered);
+            final TrackingMutableRowSet rowsChanged = newlySet.union(justCleared)
                     .minus(upstreamAdded);
 
             source.update(newlySet, justCleared);

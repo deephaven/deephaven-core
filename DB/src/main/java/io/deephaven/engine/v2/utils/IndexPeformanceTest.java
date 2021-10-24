@@ -11,16 +11,16 @@ public class IndexPeformanceTest {
     private static final int SIZE = (Integer.MAX_VALUE - 1);
 
     public static void main(String[] args) {
-        Index index = Index.FACTORY.getIndexByRange(0, SIZE);
+        TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, SIZE);
         long sum = 0;
         long start = System.currentTimeMillis();
-        for (Index.Iterator it = index.iterator(); it.hasNext();) {
+        for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             sum += it.nextLong();
         }
         System.out.println("Range iteration per item time = " + (System.currentTimeMillis() - start) / (SIZE / 1000000)
                 + "ns " + sum);
         Random random = new Random(0);
-        Index.RandomBuilder indexBuilder = Index.FACTORY.getRandomBuilder();
+        RowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         long runningValue = 0;// Math.abs(random.nextLong());
         start = System.currentTimeMillis();
         long lastRangeStart = runningValue;
@@ -43,10 +43,10 @@ public class IndexPeformanceTest {
         System.out.println(
                 "Random construction per item time = " + (System.currentTimeMillis() - start) / (SIZE / 1000000) +
                         "ns " + sum + " " + runningValue);
-        index = indexBuilder.getIndex();
+        rowSet = indexBuilder.build();
         sum = 0;
         start = System.currentTimeMillis();
-        for (Index.Iterator it = index.iterator(); it.hasNext();) {
+        for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             sum += it.nextLong();
         }
         System.out.println("Random iteration per item time = " + (System.currentTimeMillis() - start) / (SIZE / 1000000)

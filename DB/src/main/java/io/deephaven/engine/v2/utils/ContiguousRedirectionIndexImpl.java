@@ -29,7 +29,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     @SuppressWarnings("unused")
     public ContiguousRedirectionIndexImpl(int initialCapacity) {
         redirections = new long[initialCapacity];
-        Arrays.fill(redirections, Index.NULL_KEY);
+        Arrays.fill(redirections, TrackingMutableRowSet.NULL_ROW_KEY);
         size = 0;
         checkpoint = null;
         updateCommitter = null;
@@ -48,11 +48,11 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
         if (key >= redirections.length) {
             final long[] newRedirections = new long[Math.max((int) key + 100, redirections.length * 2)];
             System.arraycopy(redirections, 0, newRedirections, 0, redirections.length);
-            Arrays.fill(newRedirections, redirections.length, newRedirections.length, Index.NULL_KEY);
+            Arrays.fill(newRedirections, redirections.length, newRedirections.length, TrackingMutableRowSet.NULL_ROW_KEY);
             redirections = newRedirections;
         }
         final long previous = redirections[(int) key];
-        if (previous == Index.NULL_KEY) {
+        if (previous == TrackingMutableRowSet.NULL_ROW_KEY) {
             size++;
         }
         redirections[(int) key] = index;
@@ -74,7 +74,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     @Override
     public long get(long key) {
         if (key < 0 || key >= redirections.length) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
         return redirections[(int) key];
     }
@@ -132,8 +132,8 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     @Override
     public long remove(long leftIndex) {
         final long removed = redirections[(int) leftIndex];
-        redirections[(int) leftIndex] = Index.NULL_KEY;
-        if (removed != Index.NULL_KEY) {
+        redirections[(int) leftIndex] = TrackingMutableRowSet.NULL_ROW_KEY;
+        if (removed != TrackingMutableRowSet.NULL_ROW_KEY) {
             size--;
             onRemove(leftIndex, removed);
         }
@@ -157,7 +157,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
         builder.append("{ size = ").append(size);
         int printed = 0;
         for (int ii = 0; printed < size && ii < redirections.length; ii++) {
-            if (redirections[ii] == Index.NULL_KEY) {
+            if (redirections[ii] == TrackingMutableRowSet.NULL_ROW_KEY) {
                 builder.append(", nil");
             } else {
                 builder.append(", ").append(ii).append("=").append(redirections[ii]);

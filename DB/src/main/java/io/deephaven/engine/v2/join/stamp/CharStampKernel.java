@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.join.stamp;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 
 public class CharStampKernel implements StampKernel {
@@ -19,7 +19,7 @@ public class CharStampKernel implements StampKernel {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {
-            leftRedirections.fillWithValue(0, leftSize, Index.NULL_KEY);
+            leftRedirections.fillWithValue(0, leftSize, TrackingMutableRowSet.NULL_ROW_KEY);
             leftRedirections.setSize(leftSize);
             return;
         }
@@ -32,7 +32,7 @@ public class CharStampKernel implements StampKernel {
         for (int li = 0; li < leftSize; ) {
             final char leftValue = leftStamps.get(li);
             if (lt(leftValue, rightLowValue)) {
-                leftRedirections.set(li++, Index.NULL_KEY);
+                leftRedirections.set(li++, TrackingMutableRowSet.NULL_ROW_KEY);
                 continue;
             }
             else if (eq(leftValue, rightLowValue)) {

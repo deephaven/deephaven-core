@@ -41,7 +41,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      */
     public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final String... keyColumnNames) {
-        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(),
+        return make(new QueryTable(definition, TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
                 NullValueColumnSource.createColumnSourceMap(definition)), keyColumnNames);
     }
 
@@ -56,7 +56,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      */
     public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues, final String... keyColumnNames) {
-        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(),
+        return make(new QueryTable(definition, TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
                 NullValueColumnSource.createColumnSourceMap(definition)), enumValues, keyColumnNames);
     }
 
@@ -98,7 +98,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
     private KeyedArrayBackedMutableTable(@NotNull TableDefinition definition, final String[] keyColumnNames,
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
-        super(Index.FACTORY.getEmptyIndex(), makeColumnSourceMap(definition), enumValues, processPendingUpdater);
+        super(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), makeColumnSourceMap(definition), enumValues, processPendingUpdater);
         final List<String> missingKeyColumns = new ArrayList<>(Arrays.asList(keyColumnNames));
         missingKeyColumns.removeAll(definition.getColumnNames());
         if (!missingKeyColumns.isEmpty()) {
@@ -133,12 +133,12 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         long rowToInsert = nextRow;
         final StringBuilder errorBuilder = new StringBuilder();
 
-        try (final Index addIndex = table.getIndex().clone();
+        try (final TrackingMutableRowSet addRowSet = table.getIndex().clone();
                 final WritableLongChunk<Attributes.RowKeys> destinations =
                         WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
-                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, addIndex);
+                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, addRowSet);
                 final ObjectChunk<?, ? extends Attributes.Values> boxed = boxer.box(keys);
                 for (int ii = 0; ii < boxed.size(); ++ii) {
                     final Object key = boxed.get(ii);
@@ -186,7 +186,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                         final ChunkSource.GetContext getContext =
                                 sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
                     final Chunk<? extends Attributes.Values> valuesChunk =
-                            sourceColumnSource.getChunk(getContext, addIndex);
+                            sourceColumnSource.getChunk(getContext, addRowSet);
                     arrayBackedColumnSource.fillFromChunkUnordered(ffc, valuesChunk, destinations);
                 }
             });

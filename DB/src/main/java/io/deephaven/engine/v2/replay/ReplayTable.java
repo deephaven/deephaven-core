@@ -9,27 +9,28 @@ import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Map;
 
 public class ReplayTable extends QueryTable implements LiveTable {
 
 
-    private final Index.Iterator indexIterator;
+    private final TrackingMutableRowSet.Iterator indexIterator;
     private long curr;
     private final ColumnSource<DBDateTime> timeSource;
     private boolean done;
     private final Replayer replayer;
 
-    public ReplayTable(Index index, Map<String, ? extends ColumnSource<?>> result, String timeColumn,
-            Replayer replayer) {
-        super(Index.FACTORY.getIndexByValues(), result);
+    public ReplayTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result, String timeColumn,
+                       Replayer replayer) {
+        super(TrackingMutableRowSet.FACTORY.getRowSetByValues(), result);
         Require.requirement(replayer != null, "replayer != null");
         // noinspection unchecked
-        replayer.registerTimeSource(index, (ColumnSource<DBDateTime>) result.get(timeColumn));
+        replayer.registerTimeSource(rowSet, (ColumnSource<DBDateTime>) result.get(timeColumn));
         setRefreshing(true);
-        indexIterator = index.iterator();
+        indexIterator = rowSet.iterator();
         if (indexIterator.hasNext()) {
             curr = indexIterator.nextLong();
         } else {
@@ -53,7 +54,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         if (done || nextTime >= replayer.currentTimeNanos()) {
             return;
         }
-        Index.RandomBuilder indexBuilder = Index.FACTORY.getRandomBuilder();
+        RowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         while (!done && nextTime < replayer.currentTimeNanos()) {
             indexBuilder.addKey(curr);
             if (indexIterator.hasNext()) {
@@ -63,10 +64,10 @@ public class ReplayTable extends QueryTable implements LiveTable {
                 done = true;
             }
         }
-        final Index added = indexBuilder.getIndex();
+        final TrackingMutableRowSet added = indexBuilder.build();
         if (added.size() > 0) {
             getIndex().insert(added);
-            notifyListeners(added, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+            notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
         }
     }
 }

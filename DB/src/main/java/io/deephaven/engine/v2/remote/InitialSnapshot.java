@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.remote;
 
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.io.Serializable;
 
@@ -18,12 +18,12 @@ public class InitialSnapshot implements Serializable, Cloneable {
     static final long serialVersionUID = 4380513367437361741L;
 
     public Object type;
-    public Index index;
+    public TrackingMutableRowSet rowSet;
     public Object[] dataColumns;
     public long deltaSequence;
     public long step;
-    public Index rowsIncluded;
-    public Index viewport;
+    public TrackingMutableRowSet rowsIncluded;
+    public TrackingMutableRowSet viewport;
 
     public InitialSnapshot clone() {
         try {
@@ -38,7 +38,7 @@ public class InitialSnapshot implements Serializable, Cloneable {
         return this;
     }
 
-    public InitialSnapshot setViewport(Index viewport) {
+    public InitialSnapshot setViewport(TrackingMutableRowSet viewport) {
         this.viewport = viewport;
         return this;
     }
@@ -47,7 +47,7 @@ public class InitialSnapshot implements Serializable, Cloneable {
     public String toString() {
         return "InitialSnapshot{" +
                 "type=" + type +
-                ", rows=" + rowsIncluded + (index == null ? "" : "/" + index) +
+                ", rows=" + rowsIncluded + (rowSet == null ? "" : "/" + rowSet) +
                 ", columns=" + FormatBitSet.formatBitSetAsString(FormatBitSet.arrayToBitSet(dataColumns)) +
                 ", deltaSequence=" + deltaSequence +
                 ", step=" + step +

@@ -106,13 +106,13 @@ public interface TreeIndexImpl {
 
     long ixFind(long key);
 
-    Index.Iterator ixIterator();
+    TrackingMutableRowSet.Iterator ixIterator();
 
-    Index.SearchIterator ixSearchIterator();
+    TrackingMutableRowSet.SearchIterator ixSearchIterator();
 
-    Index.SearchIterator ixReverseIterator();
+    TrackingMutableRowSet.SearchIterator ixReverseIterator();
 
-    Index.RangeIterator ixRangeIterator();
+    TrackingMutableRowSet.RangeIterator ixRangeIterator();
 
     long ixCardinality();
 
@@ -157,12 +157,12 @@ public interface TreeIndexImpl {
     RspBitmap ixToRspOnNew();
 
     /**
-     * Invert the given index.
+     * Invert the given rowSet.
      *
-     * @param keys Index of keys to invert
+     * @param keys TrackingMutableRowSet of keys to invert
      * @param maximumPosition the largest position to add to indexBuilder, inclusive
      *
-     * @return the inverse of index
+     * @return the inverse of rowSet
      */
     TreeIndexImpl ixInvertOnNew(TreeIndexImpl keys, long maximumPosition);
 
@@ -282,40 +282,40 @@ public interface TreeIndexImpl {
 
         @Override
         public long ixGet(long pos) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
 
         @Override
         public long ixFind(long key) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
 
         @Override
         public void ixGetKeysForPositions(PrimitiveIterator.OfLong inputPositions, LongConsumer outputKeys) {
             while (inputPositions.hasNext()) {
                 inputPositions.nextLong();
-                outputKeys.accept(Index.NULL_KEY);
+                outputKeys.accept(TrackingMutableRowSet.NULL_ROW_KEY);
             }
         }
 
         @Override
-        public Index.Iterator ixIterator() {
-            return Index.EMPTY_ITERATOR;
+        public TrackingMutableRowSet.Iterator ixIterator() {
+            return TrackingMutableRowSet.EMPTY_ITERATOR;
         }
 
         @Override
-        public Index.SearchIterator ixSearchIterator() {
-            return Index.EMPTY_ITERATOR;
+        public TrackingMutableRowSet.SearchIterator ixSearchIterator() {
+            return TrackingMutableRowSet.EMPTY_ITERATOR;
         }
 
         @Override
-        public Index.SearchIterator ixReverseIterator() {
-            return Index.EMPTY_ITERATOR;
+        public TrackingMutableRowSet.SearchIterator ixReverseIterator() {
+            return TrackingMutableRowSet.EMPTY_ITERATOR;
         }
 
         @Override
-        public Index.RangeIterator ixRangeIterator() {
-            return Index.RangeIterator.empty;
+        public TrackingMutableRowSet.RangeIterator ixRangeIterator() {
+            return TrackingMutableRowSet.RangeIterator.empty;
         }
 
         @Override

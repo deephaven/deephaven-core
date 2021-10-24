@@ -20,7 +20,7 @@ import io.deephaven.engine.v2.select.DynamicWhereFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.gui.table.QuickFilterMode;
@@ -55,7 +55,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     private final ExecutorService dualPool = Executors.newFixedThreadPool(2);
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException {
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10),
+        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
         final Table treed =
@@ -733,7 +733,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     beforeUpdateFirstHalf.add(pool.submit(splitCallable.first).get());
                 }
 
-                final Index[] updates = GenerateTableUpdates.computeTableUpdates(size, random, table, columnInfos);
+                final TrackingMutableRowSet[] updates = GenerateTableUpdates.computeTableUpdates(size, random, table, columnInfos);
 
                 if (beforeNotify) {
                     // after we update the underlying data, but before we notify
@@ -1489,19 +1489,19 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                         final String[] result1 = new String[size];
                         result.setValue(result1);
                         // on the first pass, we want to have an AAIOBE for the result1, which will occur, because 100ms
-                        // into this sleep; the index size will increase by 1
+                        // into this sleep; the rowSet size will increase by 1
                         SleepUtil.sleep(1000);
 
                         // and make sure the terrible thing has happened
                         if (result1.length == 4) {
-                            Assert.eq(table.getIndex().size(), "table.getIndex().size()", 5);
+                            Assert.eq(table.getIndex().size(), "table.build().size()", 5);
                         }
 
                         // noinspection unchecked
                         final ColumnSource<String> cs = table.getColumnSource("y");
 
                         int ii = 0;
-                        for (final Index.Iterator it = table.getIndex().iterator(); it.hasNext();) {
+                        for (final TrackingMutableRowSet.Iterator it = table.getIndex().iterator(); it.hasNext();) {
                             final long key = it.nextLong();
                             result1[ii++] = cs.get(key);
                         }

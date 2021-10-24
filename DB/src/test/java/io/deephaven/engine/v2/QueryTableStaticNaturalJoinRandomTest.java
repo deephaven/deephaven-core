@@ -2,6 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.tables.Table;
@@ -10,7 +11,6 @@ import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
 import gnu.trove.map.TByteIntMap;
 import gnu.trove.map.TCharIntMap;
 import gnu.trove.map.TIntIntMap;
@@ -102,7 +102,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             final ColumnSource<Integer> rightKey = rightTable.getColumnSource("JoinKey");
             // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
-            for (final Index.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 rightMap.put(rightKey.getInt(next), rightSentinel.getInt(next));
             }
@@ -115,7 +115,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             final ColumnSource<Short> rightKey = rightTable.getColumnSource("JoinKey");
             // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
-            for (final Index.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 rightMap.put(rightKey.getShort(next), rightSentinel.getInt(next));
             }
@@ -128,7 +128,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             final ColumnSource<Byte> rightKey = rightTable.getColumnSource("JoinKey");
             // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
-            for (final Index.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 rightMap.put(rightKey.getByte(next), rightSentinel.getInt(next));
             }
@@ -141,7 +141,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             final ColumnSource<Character> rightKey = rightTable.getColumnSource("JoinKey");
             // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
-            for (final Index.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 rightMap.put(rightKey.getChar(next), rightSentinel.getInt(next));
             }
@@ -154,7 +154,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             final ColumnSource<String> rightKey = rightTable.getColumnSource("JoinKey");
             // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
-            for (final Index.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 rightMap.put(rightKey.get(next), rightSentinel.get(next));
             }
@@ -168,7 +168,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             final ColumnSource<SmartKey> rightKey = rightTable.getColumnSource("JoinKey");
             // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
-            for (final Index.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rightTable.getIndex().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 rightMap.put(rightKey.get(next), rightSentinel.get(next));
             }

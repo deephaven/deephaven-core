@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,7 +73,7 @@ public abstract class ValueTracker {
 
     // May contain any non-negative value, or NULL_LONG if there is no value. We track NULL_LONG in cases where we
     // aren't tracking which indexes are null, so we know that the entire bucket contains nulls and we should only
-    // include first/last index in the bucket's total index. This being null is not the same as the value being
+    // include first/last rowSet in the bucket's total rowSet. This being null is not the same as the value being
     // invalid.
     private final LongArraySource indexes = new LongArraySource();
 
@@ -97,24 +97,24 @@ public abstract class ValueTracker {
      * we have the largest or smallest value at that offset.
      *
      * Implementations must take care to check if the value is null. If so, if {@code nulls} is present, the current
-     * index should be added to it. If the
+     * rowSet should be added to it. If the
      *
      * @param offset the offset of the bucket state to use - use this with minValuePosition/maxValuePosition to compute
      *               the actual position in the underlying array sources
-     * @param rowIndex the index in the original table of the specified value. If the current given value is interesting
+     * @param rowIndex the rowSet in the original table of the specified value. If the current given value is interesting
      *                 in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled
-     *                 table index later
+     *                 table rowSet later
      * @param valuesChunk the chunk that we're currently examining
-     * @param indexInChunk the index in the chunk that we're currently examining
+     * @param indexInChunk the rowSet in the chunk that we're currently examining
      */
-    public abstract void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls);
+    public abstract void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls);
 
     /**
-     * Indicates that a row was removed from the original table being downsampled. If that index was previously
+     * Indicates that a row was removed from the original table being downsampled. If that rowSet was previously
      * considered to be interesting, mark this offset as invalid, so that we can rescan later to find the next
      * interesting value.
      * @param offset the offset of the bucket state to use
-     * @param rowIndex the index in the original table.
+     * @param rowIndex the rowSet in the original table.
      */
     public final void remove(final int offset, final long rowIndex) {
         if (rowIndex == maxIndex(offset)) {
@@ -144,13 +144,13 @@ public abstract class ValueTracker {
      *
      * @param offset the offset of the bucket state to use - use this with minValuePosition/maxValuePosition to compute
      *               the actual position in the underlying array sources
-     * @param rowIndex the index in the original table of the specified value. If the current given value is interesting
+     * @param rowIndex the rowSet in the original table of the specified value. If the current given value is interesting
      *                 in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled
-     *                 table index later
+     *                 table rowSet later
      * @param valuesChunk the chunk that we're currently examining
-     * @param chunkIndex the index in the chunk that we're currently examining
+     * @param chunkIndex the rowSet in the chunk that we're currently examining
      */
-    public abstract void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int chunkIndex, @Nullable Index nulls);
+    public abstract void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int chunkIndex, @Nullable TrackingMutableRowSet nulls);
 
     /**
      * Transforms the given BucketState.offset into the position in the array sources that represents the min value
@@ -205,7 +205,7 @@ public abstract class ValueTracker {
      * Scan the given chunk and confirm that whichever values are currently selected as max and min are correct, and
      * that the current data is now valid.
      */
-    public abstract void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls);
+    public abstract void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls);
 
     public final void shiftMaxIndex(final int offset, final IndexShiftData shiftData) {
         final long maxIndex = maxIndex(offset);

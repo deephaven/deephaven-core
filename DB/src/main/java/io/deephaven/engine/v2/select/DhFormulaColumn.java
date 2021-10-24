@@ -281,16 +281,16 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private CodeGenerator generateConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$(final Index index,", CodeGenerator.indent(
+                "public $CLASSNAME$(final TrackingMutableRowSet rowSet,", CodeGenerator.indent(
                         "final boolean __lazy,",
                         "final java.util.Map<String, ? extends [[COLUMN_SOURCE_CLASSNAME]]> __columnsToData,",
                         "final [[PARAM_CLASSNAME]]... __params)"),
                 CodeGenerator.block(
-                        "super(index);",
+                        "super(rowSet);",
                         CodeGenerator.repeated("initColumn",
                                 "[[COLUMN_NAME]] = __columnsToData.get(\"[[COLUMN_NAME]]\");"),
                         CodeGenerator.repeated("initNormalColumnArray",
-                                "[[COLUMN_ARRAY_NAME]] = new [[DB_ARRAY_TYPE_PREFIX]]ColumnWrapper(__columnsToData.get(\"[[COLUMN_NAME]]\"), __index);"),
+                                "[[COLUMN_ARRAY_NAME]] = new [[DB_ARRAY_TYPE_PREFIX]]ColumnWrapper(__columnsToData.get(\"[[COLUMN_NAME]]\"), __rowSet);"),
                         CodeGenerator.repeated("initParam",
                                 "[[PARAM_NAME]] = ([[PARAM_TYPE]]) __params[[[PARAM_INDEX]]].getValue();"),
                         "[[LAZY_RESULT_CACHE_NAME]] = __lazy ? new ConcurrentHashMap<>() : null;"));
@@ -355,10 +355,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         (usePrev
                                 ? CodeGenerator.optional("maybeCreateIorII",
                                         "final long findResult;",
-                                        "try (final Index prev = __index.getPrevIndex())", CodeGenerator.block(
+                                        "try (final TrackingMutableRowSet prev = __rowSet.getPrevIndex())", CodeGenerator.block(
                                                 "findResult = prev.find(k);"))
                                 : CodeGenerator.optional("maybeCreateIorII",
-                                        "final long findResult = __index.find(k);")),
+                                        "final long findResult = __rowSet.find(k);")),
                         CodeGenerator.optional("maybeCreateI",
                                 "final int i = __intSize(findResult);"),
                         CodeGenerator.optional("maybeCreateII",
@@ -540,9 +540,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.optional("maybeCreateIOrII",
-                                "try (final Index prev = __usePrev ? __index.getPrevIndex() : null;",
+                                "try (final TrackingMutableRowSet prev = __usePrev ? __rowSet.getPrevIndex() : null;",
                                 CodeGenerator.indent(
-                                        "final Index inverted = ((prev != null) ? prev : __index).invert(__RowSequence.asIndex()))"),
+                                        "final TrackingMutableRowSet inverted = ((prev != null) ? prev : __rowSet).invert(__RowSequence.asIndex()))"),
                                 CodeGenerator.block(
                                         CodeGenerator.optional("maybeCreateI",
                                                 "__context.__iChunk.setSize(0);",

@@ -18,8 +18,8 @@ import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.Index.SequentialBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.text.Indenter;
@@ -112,10 +112,10 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     public static class IndexLookup implements ChunkGetterWithContext {
 
-        protected final Index inverted;
+        protected final TrackingMutableRowSet inverted;
         private final RowSequence.Iterator invertedIterator;
 
-        IndexLookup(Index fullSet, Index selection) {
+        IndexLookup(TrackingMutableRowSet fullSet, TrackingMutableRowSet selection) {
             this.inverted = fullSet.invert(selection);
             this.invertedIterator = inverted.getRowSequenceIterator();
         }
@@ -148,7 +148,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     public static final class ColumnILookup extends IndexLookup {
-        ColumnILookup(Index fullSet, Index selection) {
+        ColumnILookup(TrackingMutableRowSet fullSet, TrackingMutableRowSet selection) {
             super(fullSet, selection);
         }
 
@@ -276,7 +276,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         private SharedContext populateChunkGettersAndContexts(
-                final Index selection, final Index fullSet, final Table table, final boolean usePrev,
+                final TrackingMutableRowSet selection, final TrackingMutableRowSet fullSet, final Table table, final boolean usePrev,
                 final ChunkGetter[] chunkGetters, final Context[] sourceContexts) {
             final SharedContext sharedContext = (columnNames.length > 1) ? SharedContext.makeSharedContext() : null;
             for (int i = 0; i < columnNames.length; i++) {
@@ -315,15 +315,15 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Index filter(final Index selection, final Index fullSet, final Table table, final boolean usePrev,
-                String formula, final Param... params) {
+        public TrackingMutableRowSet filter(final TrackingMutableRowSet selection, final TrackingMutableRowSet fullSet, final Table table, final boolean usePrev,
+                                            String formula, final Param... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];
                 final Context sourceContexts[] = new Context[columnNames.length];
                 final SharedContext sharedContext = populateChunkGettersAndContexts(selection, fullSet, table, usePrev,
                         chunkGetters, sourceContexts);
-                final SequentialBuilder resultBuilder = Index.FACTORY.getSequentialBuilder();
+                final SequentialRowSetBuilder resultBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
                 final Chunk inputChunks[] = new Chunk[columnNames.length];
                 while (rsIterator.hasMore()) {
                     final RowSequence currentChunkRowSequence = rsIterator.getNextRowSequenceWithLength(chunkSize);
@@ -337,7 +337,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                     try {
                         final LongChunk<OrderedRowKeys> matchedIndices =
                                 filterKernel.filter(context, currentChunkRowSequence.asRowKeyChunk(), inputChunks);
-                        resultBuilder.appendOrderedKeyIndicesChunk(matchedIndices);
+                        resultBuilder.appendOrderedRowKeysChunk(matchedIndices);
                     } catch (Exception e) {
                         throw new FormulaEvaluationException(e.getClass().getName() + " encountered in filter={ "
                                 + StringEscapeUtils.escapeJava(truncateLongFormula(formula)) + " }", e);
@@ -347,7 +347,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 if (sharedContext != null) {
                     sharedContext.close();
                 }
-                return resultBuilder.getIndex();
+                return resultBuilder.build();
             }
         }
 
@@ -452,7 +452,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         classBody.append("\n").append(indenter)
-                .append("public $CLASSNAME$(Table table, Index fullSet, Param... params) {\n");
+                .append("public $CLASSNAME$(Table table, TrackingMutableRowSet fullSet, Param... params) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < params.length; i++) {
             final Param param = params[i];
@@ -536,13 +536,13 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected Filter getFilter(Table table, Index fullSet)
+    protected Filter getFilter(Table table, TrackingMutableRowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter != null) {
             return filter;
         }
         final FilterKernel filterKernel = (FilterKernel) filterKernelClass
-                .getConstructor(Table.class, Index.class, Param[].class).newInstance(table, fullSet, (Object) params);
+                .getConstructor(Table.class, TrackingMutableRowSet.class, Param[].class).newInstance(table, fullSet, (Object) params);
         final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
         return new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
     }

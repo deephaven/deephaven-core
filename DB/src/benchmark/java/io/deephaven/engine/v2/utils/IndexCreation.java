@@ -74,11 +74,11 @@ public class IndexCreation {
 
     @Benchmark
     public void createRspIndexByValues(Blackhole bh) {
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (long indexPoint : indexPoints) {
             builder.appendKey(indexPoint);
         }
-        bh.consume(builder.getIndex());
+        bh.consume(builder.build());
     }
 
     @Benchmark
@@ -162,11 +162,11 @@ public class IndexCreation {
 
     @Benchmark
     public void createRspIndexByRanges(Blackhole bh) {
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (int i = 0; i < indexRanges.length; i += 2) {
             builder.appendRange(indexRanges[i], indexRanges[i + 1] - 1);
         }
-        bh.consume(builder.getIndex());
+        bh.consume(builder.build());
     }
 
     public static void main(String[] args) throws RunnerException {

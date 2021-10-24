@@ -83,7 +83,7 @@ import static io.deephaven.engine.v2.utils.IndexUtilities.Comparator;
  * The <code>long[] spanInfos</code> and <code>Object[] spans</code> data members of this class are used, combined, to
  * represent the offset (key) and span values in the set, against that offset. The two arrays are used, together, as
  * parallel arrays and the information for a given conceptual span is contained in both of them for the same
- * corresponding index i.
+ * corresponding rowSet i.
  * </p>
  *
  * <p>
@@ -227,7 +227,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     protected long[] spanInfos;
 
     /**
-     * Array of Spans parallel to the spanInfos array, mapping the same index to the corresponding span for the
+     * Array of Spans parallel to the spanInfos array, mapping the same rowSet to the corresponding span for the
      * spanInfo. Please see the documentation for this class for the different possible types allowed and their
      * meanings.
      */
@@ -450,7 +450,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     protected static final class SpanView extends ArrayContainer
             implements AutoCloseable {
         private final SpanViewRecycler recycler;
-        // The original array and index for which we loaded; we need to keep the reference
+        // The original array and rowSet for which we loaded; we need to keep the reference
         // for the cases where we need to update it (eg, setting a copy on write shared flag for an ArrayContainer
         // stored as short[]).
         private RspArray<?> arr;
@@ -548,7 +548,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     long[] acc;
 
     /**
-     * If acc != null, highest index in acc that is valid, -1 if none. if acc == null: * if cardinality fits in an int,
+     * If acc != null, highest rowSet in acc that is valid, -1 if none. if acc == null: * if cardinality fits in an int,
      * the actual cardinality. * if cardinality does not fit in an int, -1.
      */
     int cardData;
@@ -817,7 +817,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         int i = 0;
         long accSum = 0;
-        int isrc; // index in src from where to start copying spans.
+        int isrc; // rowSet in src from where to start copying spans.
         final WorkDataHolder wd = new WorkDataHolder();
         if (firstSpanIsFull) {
             long nextKey = keyForFirstBlock;
@@ -1415,7 +1415,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * @return if the key is included in some existing span, returns the index of that span. if the key is not included
+     * @return if the key is included in some existing span, returns the rowSet of that span. if the key is not included
      *         in any existing span, returns -(p - 1) where p is the position a span for the key would be inserted.
      *
      *         Note that, since a span's covered interval may include multiple blocks, a key contained by a span may be
@@ -1715,18 +1715,18 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     /**
      *
-     * @param newSpanIdx an index, as returned by getSpanAtIndex(k). Note this can be negative, in which case this is an
+     * @param newSpanIdx an rowSet, as returned by getSpanAtIndex(k). Note this can be negative, in which case this is an
      *        insertion (existing elements pushed to the right as necessary).
      * @param newSpanKey the key.
      * @param newSpanFlen the number of 2^16 intervals.
      *
-     * @return the (positive) index where the span was actually inserted.
+     * @return the (positive) rowSet where the span was actually inserted.
      */
     public int setOrInsertFullBlockSpanAtIndex(final int newSpanIdx, final long newSpanKey, final long newSpanFlen,
             final MutableObject<SortedRanges> madeNullSpansMu) {
         final int ii; // set or insert position.
         long newflen = newSpanFlen; // may grow if we merge to our right.
-        final int idxForFirstKeyBigger; // first index for a key bigger than newSpanKey.
+        final int idxForFirstKeyBigger; // first rowSet for a key bigger than newSpanKey.
         if (newSpanIdx < 0) {
             ii = -(newSpanIdx + 1);
             if (ii == size) {
@@ -1987,7 +1987,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * Replace the span at index i with the keys and spans from buf,
+     * Replace the span at rowSet i with the keys and spans from buf,
      */
     public void replaceSpanAtIndex(final int i, final ArraysBuf buf) {
         ensureSizeCanGrowBy(buf.size - 1);
@@ -2174,7 +2174,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, idx)) {
             if (view.isSingletonSpan()) {
                 if (offset != 0) {
-                    throw new IllegalArgumentException("Invalid offset=" + offset + " for index=" + idx);
+                    throw new IllegalArgumentException("Invalid offset=" + offset + " for rowSet=" + idx);
                 }
                 return view.getSingletonSpanValue();
             }
@@ -2186,7 +2186,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             // flen == 0
             final int sv = (int) offset;
             if (sv != offset) {
-                throw new IllegalArgumentException("Invalid offset=" + offset + " for index=" + idx);
+                throw new IllegalArgumentException("Invalid offset=" + offset + " for rowSet=" + idx);
             }
             final short lowBits = view.getContainer().select(sv);
             return paste(highBits, lowBits);
@@ -2708,9 +2708,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * @param shiftAmount an amount to shift the keys in the other container; shiftAmount should be a multiple of
      *        BLOCK_SIZE.
      * @param other the other RspArray to ask for container sharing
-     * @param otherIdx the index into other for the span to apply or to.
+     * @param otherIdx the rowSet into other for the span to apply or to.
      * @param startPos the first position to start looking for orKey in this container.
-     * @return the index in this container to continue searches for keys after (orKey, orSpan).
+     * @return the rowSet in this container to continue searches for keys after (orKey, orSpan).
      */
     private int orEqualsSpan(final long shiftAmount, final RspArray other, final int otherIdx,
             final int startPos, final MutableObject<SortedRanges> sortedRangesMu,
@@ -3046,7 +3046,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         // Do the actual merging of container to container.
         startPos = 0;
-        final Index.Iterator skipsIter = secondPassSkips.getIterator();
+        final TrackingMutableRowSet.Iterator skipsIter = secondPassSkips.getIterator();
         int nextSkip;
         if (!skipsIter.hasNext()) {
             nextSkip = -1;
@@ -3108,8 +3108,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      *
      * @param startPos the first position to start looking for orKey in this container.
      * @param other RspArray for the span to remove.
-     * @param otherIdx the index of the span to remove in the other RspArray.
-     * @return the index in our parallel arrays to continue searches for keys after (removeFirstKey, removeSpan).
+     * @param otherIdx the rowSet of the span to remove in the other RspArray.
+     * @return the rowSet in our parallel arrays to continue searches for keys after (removeFirstKey, removeSpan).
      */
     private int andNotEqualsSpan(final int startPos, final RspArray other, final int otherIdx,
             final MutableObject<SortedRanges> madeNullSpansMu,
@@ -3312,7 +3312,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             compactRemovedUnsafeNoWriteCheck();
             return;
         }
-        final Index.RangeIterator it = madeNullSpans.getRangeIterator();
+        final TrackingMutableRowSet.RangeIterator it = madeNullSpans.getRangeIterator();
         if (!it.hasNext()) {
             return;
         }
@@ -4097,16 +4097,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * requirement: (start, end) should intersect span at index i.
+     * requirement: (start, end) should intersect span at rowSet i.
      * 
-     * @param i span index.
+     * @param i span rowSet.
      * @param spanInfo spanInfo for span i
      * @param key block key for span i
      * @param start start of range to remove (may be outside of span)
      * @param end end of range to remove (may be outside of span)
      * @param madeNullSpansMu where to store the indices of spans that were made null because they ended up empty; these
      *        should be collected later by the caller.
-     * @return if >= 0, the index of the last span where the removal effectively happened. if < 0, ~index for the span
+     * @return if >= 0, the rowSet of the last span where the removal effectively happened. if < 0, ~rowSet for the span
      *         where to continue the removals, after a span was effectively eliminated.
      */
     private int removeRangeInSpan(final int i, final long spanInfo, final long key, final long start, final long end,
@@ -4229,7 +4229,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return last;
     }
 
-    public void removeRangesUnsafeNoWriteCheck(final Index.RangeIterator rit) {
+    public void removeRangesUnsafeNoWriteCheck(final TrackingMutableRowSet.RangeIterator rit) {
         try {
             final WorkData wd = workDataPerThread.get();
             final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(wd);

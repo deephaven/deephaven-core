@@ -2133,14 +2133,14 @@ def newChart(*args):
       * if not, a RuntimeException will be thrown.
       
     *Overload 2*  
-      :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+      :param index: (int) - rowSet from the Figure's grid to remove. The rowSet starts at 0 in the upper left hand corner of the
               grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
               [2, 3].
-      :return: (io.deephaven.engine.plot.Figure) the new Chart. The Chart is placed at the grid space indicated by the index.
+      :return: (io.deephaven.engine.plot.Figure) the new Chart. The Chart is placed at the grid space indicated by the rowSet.
       
     *Overload 3*  
-      :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
-      :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
+      :param rowNum: (int) - row rowSet in this Figure's grid. The row rowSet starts at 0.
+      :param colNum: (int) - column rowSet in this Figure's grid. The column rowSet starts at 0.
       :return: (io.deephaven.engine.plot.Figure) the new Chart. The Chart is placed at the grid space [rowNum, colNum.
     """
     

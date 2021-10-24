@@ -595,7 +595,7 @@ public class TestCharChunk {
 
     private static <ATTR extends Values> void verifyChunkEqualsArray(CharChunk<ATTR> chunk, char[] data, int offset, int size) {
         for (int ii = 0; ii < size; ++ii) {
-            TestCase.assertEquals(String.format("At index %d", ii), data[ii + offset], chunk.get(ii));
+            TestCase.assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));
         }
     }
 

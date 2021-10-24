@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.deltaaware;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.LongAbortableConsumer;
 import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
 import io.deephaven.engine.structures.RowSequence;
@@ -36,7 +36,7 @@ class SoleKey implements RowSequence {
         if (startPositionInclusive == 0 && length > 0) {
             return this;
         }
-        return Index.EMPTY;
+        return TrackingMutableRowSet.EMPTY;
     }
 
     @Override
@@ -44,12 +44,12 @@ class SoleKey implements RowSequence {
         if (startRowKeyInclusive <= key && endRowKeyInclusive >= key) {
             return this;
         }
-        return Index.EMPTY;
+        return TrackingMutableRowSet.EMPTY;
     }
 
     @Override
-    public Index asIndex() {
-        return Index.FACTORY.getIndexByValues(key);
+    public TrackingMutableRowSet asIndex() {
+        return TrackingMutableRowSet.FACTORY.getRowSetByValues(key);
     }
 
     @Override
@@ -128,7 +128,7 @@ class SoleKey implements RowSequence {
 
         @Override
         public long peekNextKey() {
-            return hasMore ? key : Index.NULL_KEY;
+            return hasMore ? key : TrackingMutableRowSet.NULL_ROW_KEY;
         }
 
         @Override

@@ -18,8 +18,8 @@ public interface ColumnRegionShort<ATTR extends Any> extends ColumnRegion<ATTR> 
     /**
      * Get a single short from this region.
      *
-     * @param elementIndex Element (short) index in the table's address space
-     * @return The short value at the specified element (short) index
+     * @param elementIndex Element (short) rowSet in the table's address space
+     * @return The short value at the specified element (short) rowSet
      */
     short getShort(long elementIndex);
 
@@ -27,9 +27,9 @@ public interface ColumnRegionShort<ATTR extends Any> extends ColumnRegion<ATTR> 
      * Get a single short from this region.
      *
      * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
-     *                     region index pointing to this region
-     * @param elementIndex Element (short) index in the table's address space
-     * @return The short value at the specified element (short) index
+     *                     region rowSet pointing to this region
+     * @param elementIndex Element (short) rowSet in the table's address space
+     * @return The short value at the specified element (short) rowSet
      */
     default short getShort(@NotNull final FillContext context, final long elementIndex) {
         return getShort(elementIndex);

@@ -6,7 +6,7 @@ public class PreviousPlaypen {
     public static void main(String[] args) {
         // LogicalClock.DEFAULT.startUpdateCycle();
 
-        // final Index i = Index.FACTORY.getFlatIndex(100);
+        // final TrackingMutableRowSet i = TrackingMutableRowSet.FACTORY.getFlatIndex(100);
         // System.out.println(i);
         // System.out.println(i.getPrevIndex());
         //
@@ -18,7 +18,7 @@ public class PreviousPlaypen {
 
         LogicalClock.DEFAULT.startUpdateCycle();
 
-        final Index i2 = Index.FACTORY.getFlatIndex(200);
+        final TrackingMutableRowSet i2 = TrackingMutableRowSet.FACTORY.getFlatIndex(200);
         System.out.println(i2);
         System.out.println(i2.getPrevIndex());
 

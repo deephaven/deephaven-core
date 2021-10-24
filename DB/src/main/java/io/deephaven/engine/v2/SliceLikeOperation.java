@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
@@ -85,11 +85,11 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
-        final Index parentIndex = parent.getIndex();
-        final Index resultIndex = computeSliceIndex(usePrev ? parentIndex.getPrevIndex() : parentIndex);
+        final TrackingMutableRowSet parentRowSet = parent.getIndex();
+        final TrackingMutableRowSet resultRowSet = computeSliceIndex(usePrev ? parentRowSet.getPrevIndex() : parentRowSet);
 
         // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
-        resultTable = parent.getSubTable(resultIndex);
+        resultTable = parent.getSubTable(resultRowSet);
         if (isFlat) {
             resultTable.setFlat();
         }
@@ -108,27 +108,27 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     }
 
     private void onUpdate(final ShiftAwareListener.Update upstream) {
-        final Index index = resultTable.getIndex();
-        final Index sliceIndex = computeSliceIndex(parent.getIndex());
+        final TrackingMutableRowSet rowSet = resultTable.getIndex();
+        final TrackingMutableRowSet sliceRowSet = computeSliceIndex(parent.getIndex());
 
         final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
-        downstream.removed = upstream.removed.intersect(index);
-        index.remove(downstream.removed);
+        downstream.removed = upstream.removed.intersect(rowSet);
+        rowSet.remove(downstream.removed);
 
-        downstream.shifted = upstream.shifted.intersect(index);
-        downstream.shifted.apply(index);
+        downstream.shifted = upstream.shifted.intersect(rowSet);
+        downstream.shifted.apply(rowSet);
 
         // Must calculate in post-shift space what indices were removed by the slice operation.
-        final Index opRemoved = index.minus(sliceIndex);
-        index.remove(opRemoved);
+        final TrackingMutableRowSet opRemoved = rowSet.minus(sliceRowSet);
+        rowSet.remove(opRemoved);
         downstream.shifted.unapply(opRemoved);
         downstream.removed.insert(opRemoved);
 
-        // Must intersect against modified set before adding the new rows to result index.
-        downstream.modified = upstream.modified.intersect(index);
+        // Must intersect against modified set before adding the new rows to result rowSet.
+        downstream.modified = upstream.modified.intersect(rowSet);
 
-        downstream.added = sliceIndex.minus(index);
-        index.insert(downstream.added);
+        downstream.added = sliceRowSet.minus(rowSet);
+        rowSet.insert(downstream.added);
 
         // propagate an empty MCS if modified is empty
         downstream.modifiedColumnSet = upstream.modifiedColumnSet;
@@ -140,7 +140,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         resultTable.notifyListeners(downstream);
     }
 
-    private Index computeSliceIndex(Index useIndex) {
+    private TrackingMutableRowSet computeSliceIndex(TrackingMutableRowSet useRowSet) {
         final long size = parent.size();
         long startSlice = getFirstPositionInclusive();
         long endSlice = getLastPositionExclusive();
@@ -157,6 +157,6 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         // allow [firstPos,-lastPos] by being tolerant of overlap
         endSlice = Math.max(startSlice, endSlice);
 
-        return useIndex.subindexByPos(startSlice, endSlice);
+        return useRowSet.subSetByPositionRange(startSlice, endSlice);
     }
 }

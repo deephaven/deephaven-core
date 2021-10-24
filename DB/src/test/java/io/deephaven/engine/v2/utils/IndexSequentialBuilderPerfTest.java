@@ -22,7 +22,7 @@ public class IndexSequentialBuilderPerfTest {
     }
 
     private static final int sz = 10 * 1000 * 1000;
-    private static final Index.SequentialBuilder[] sbs = new Index.SequentialBuilder[sz];
+    private static final SequentialRowSetBuilder[] sbs = new SequentialRowSetBuilder[sz];
 
     private static void clear() {
         for (int i = 0; i < sz; ++i) {
@@ -33,11 +33,11 @@ public class IndexSequentialBuilderPerfTest {
     private static long doRspRun() {
         long bh = 0;
         for (int j = 0; j < sz; ++j) {
-            sbs[j] = TreeIndex.makeSequentialBuilder();
+            sbs[j] = TrackingMutableRowSetImpl.makeSequentialBuilder();
         }
         for (int j = 0; j < sz; ++j) {
             sbs[j].appendKey(j);
-            bh ^= sbs[j].getIndex().firstRowKey();
+            bh ^= sbs[j].build().firstRowKey();
         }
         return bh;
     }

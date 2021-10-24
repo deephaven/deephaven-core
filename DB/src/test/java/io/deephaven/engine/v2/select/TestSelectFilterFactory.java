@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import junit.framework.TestCase;
 
 import java.util.ArrayList;
@@ -186,9 +186,9 @@ public class TestSelectFilterFactory extends TestCase {
         String expression = STRING_COLUMN + baseExpresion + wrapBackTicks(value);
         SelectFilter selectFilter = SelectFilterFactory.getExpression(expression);
         selectFilter.init(table.getDefinition());
-        Index index = selectFilter.filter(table.getIndex(), table.getIndex(), table, false);
+        TrackingMutableRowSet rowSet = selectFilter.filter(table.getIndex(), table.getIndex(), table, false);
         ColumnSource columnSource = table.getColumnSource(STRING_COLUMN);
-        return columnSource.get(index.firstRowKey()).toString();
+        return columnSource.get(rowSet.firstRowKey()).toString();
     }
 
     private static String wrapBackTicks(String input) {
@@ -211,10 +211,10 @@ public class TestSelectFilterFactory extends TestCase {
         String expression = columnName + " in " + values;
         SelectFilter selectFilter = SelectFilterFactory.getExpression(expression);
         selectFilter.init(table.getDefinition());
-        Index index = selectFilter.filter(table.getIndex(), table.getIndex(), table, false);
+        TrackingMutableRowSet rowSet = selectFilter.filter(table.getIndex(), table.getIndex(), table, false);
         ColumnSource columnSource = table.getColumnSource(columnName);
-        List<Object> result = new ArrayList<>(index.intSize());
-        for (Index.Iterator it = index.iterator(); it.hasNext();) {
+        List<Object> result = new ArrayList<>(rowSet.intSize());
+        for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             result.add(columnSource.get(it.nextLong()));
         }
         return result;

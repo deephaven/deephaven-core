@@ -34,7 +34,7 @@ trait ChunkerParseTestMixin {
         assert match.length() == 1 : "Only send a single char for the match variable (you sent $match)"
         new CompletionAssertion(index, node, type, textBefore, match.charAt(0), textAfter).isValid()
         for (Node child : node.children) {
-            assert !child.containsIndex(index) : "findNode should only find leaf-most nodes!; child: " + child + " contains index " + index
+            assert !child.containsIndex(index) : "findNode should only find leaf-most nodes!; child: " + child + " contains rowSet " + index
         }
     }
 
@@ -62,7 +62,7 @@ trait ChunkerParseTestMixin {
         Set<CompletionItem> results = completer.runCompletion(doc, completionPos)
         List<CompletionItem.Builder> result = results.toList()
         if (resultIndex >= results.size()) {
-            throw new IllegalArgumentException("Invalid result index " + resultIndex +"; only had " + results.size() + " results: " + results)
+            throw new IllegalArgumentException("Invalid result rowSet " + resultIndex +"; only had " + results.size() + " results: " + results)
         }
         return doCompletion(command, result.get(resultIndex))
     }

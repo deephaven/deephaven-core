@@ -3,12 +3,12 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
 
 public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChunkedOperator {
     StaticFirstOrLastChunkedOperator(boolean isFirst, MatchPair[] resultPairs, Table originalTable,
@@ -58,12 +58,12 @@ public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChun
     }
 
     @Override
-    public boolean addIndex(SingletonContext context, Index index, long destination) {
-        if (index.empty()) {
+    public boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
+        if (rowSet.empty()) {
             return false;
         }
 
-        redirections.set(destination, isFirst ? index.firstRowKey() : index.lastRowKey());
+        redirections.set(destination, isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey());
 
         return true;
     }

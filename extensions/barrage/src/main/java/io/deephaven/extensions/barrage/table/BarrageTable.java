@@ -29,10 +29,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
@@ -67,7 +64,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     /** we compact the parent table's key-space and instead redirect; ideal for viewport */
     private final RedirectionIndex redirectionIndex;
     /** represents which rows in writable source exist but are not mapped to any parent rows */
-    private Index freeset = Index.CURRENT_FACTORY.getEmptyIndex();
+    private TrackingMutableRowSet freeset = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
 
 
     /** unsubscribed must never be reset to false once it has been set to true */
@@ -89,7 +86,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
      * the server assumes that the client has maintained its state prior to these server-side viewport acks and will not
      * re-send data that the client should already have within the existing viewport.
      */
-    private Index serverViewport;
+    private TrackingMutableRowSet serverViewport;
     private BitSet serverColumns;
 
 
@@ -119,7 +116,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             final WritableSource<?>[] writableSources,
             final RedirectionIndex redirectionIndex,
             final boolean isViewPort) {
-        super(Index.FACTORY.getEmptyIndex(), columns);
+        super(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), columns);
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
 
@@ -128,7 +125,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 .getEntry("BarrageTable refresh " + System.identityHashCode(this));
 
         if (isViewPort) {
-            serverViewport = Index.CURRENT_FACTORY.getEmptyIndex();
+            serverViewport = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         } else {
             serverViewport = null;
         }
@@ -202,15 +199,15 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         enqueueError(t);
     }
 
-    private Index.IndexUpdateCoalescer processUpdate(final BarrageMessage update,
-            final Index.IndexUpdateCoalescer coalescer) {
+    private UpdateCoalescer processUpdate(final BarrageMessage update,
+                                          final UpdateCoalescer coalescer) {
         if (DEBUG_ENABLED) {
             saveForDebugging(update);
 
             modifiedColumnSet.clear();
-            final Index mods = Index.CURRENT_FACTORY.getEmptyIndex();
+            final TrackingMutableRowSet mods = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
             for (int ci = 0; ci < update.modColumnData.length; ++ci) {
-                final Index rowsModified = update.modColumnData[ci].rowsModified;
+                final TrackingMutableRowSet rowsModified = update.modColumnData[ci].rowsModified;
                 if (rowsModified.nonempty()) {
                     mods.insert(rowsModified);
                     modifiedColumnSet.setColumnWithIndex(ci);
@@ -226,36 +223,36 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         }
 
         if (update.isSnapshot) {
-            serverViewport = update.snapshotIndex == null ? null : update.snapshotIndex.clone();
+            serverViewport = update.snapshotRowSet == null ? null : update.snapshotRowSet.clone();
             serverColumns = update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone();
         }
 
-        // make sure that these index updates make some sense compared with each other, and our current view of the
+        // make sure that these rowSet updates make some sense compared with each other, and our current view of the
         // table
-        final Index currentIndex = getIndex();
-        final boolean mightBeInitialSnapshot = currentIndex.empty() && update.isSnapshot;
+        final TrackingMutableRowSet currentRowSet = getIndex();
+        final boolean mightBeInitialSnapshot = currentRowSet.empty() && update.isSnapshot;
 
-        try (final Index currRowsFromPrev = currentIndex.clone();
-                final Index populatedRows =
-                        (serverViewport != null ? currentIndex.subindexByPos(serverViewport) : null)) {
+        try (final TrackingMutableRowSet currRowsFromPrev = currentRowSet.clone();
+             final TrackingMutableRowSet populatedRows =
+                        (serverViewport != null ? currentRowSet.subSetForPositions(serverViewport) : null)) {
 
             // removes
-            currentIndex.remove(update.rowsRemoved);
-            try (final Index removed = serverViewport != null ? populatedRows.extract(update.rowsRemoved) : null) {
+            currentRowSet.remove(update.rowsRemoved);
+            try (final TrackingMutableRowSet removed = serverViewport != null ? populatedRows.extract(update.rowsRemoved) : null) {
                 freeRows(removed != null ? removed : update.rowsRemoved);
             }
 
             // shifts
             if (update.shifted.nonempty()) {
-                redirectionIndex.applyShift(currentIndex, update.shifted);
-                update.shifted.apply(currentIndex);
+                redirectionIndex.applyShift(currentRowSet, update.shifted);
+                update.shifted.apply(currentRowSet);
                 if (populatedRows != null) {
                     update.shifted.apply(populatedRows);
                 }
             }
-            currentIndex.insert(update.rowsAdded);
+            currentRowSet.insert(update.rowsAdded);
 
-            final Index totalMods = Index.FACTORY.getEmptyIndex();
+            final TrackingMutableRowSet totalMods = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             for (int i = 0; i < update.modColumnData.length; ++i) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[i];
                 totalMods.insert(column.rowsModified);
@@ -264,20 +261,20 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             if (update.rowsIncluded.nonempty()) {
                 try (final WritableChunkSink.FillFromContext redirContext =
                         redirectionIndex.makeFillFromContext(update.rowsIncluded.intSize());
-                        final Index destinationIndex = getFreeRows(update.rowsIncluded.size())) {
+                        final TrackingMutableRowSet destinationRowSet = getFreeRows(update.rowsIncluded.size())) {
                     // Update redirection mapping:
-                    redirectionIndex.fillFromChunk(redirContext, destinationIndex.asRowKeyChunk(),
+                    redirectionIndex.fillFromChunk(redirContext, destinationRowSet.asRowKeyChunk(),
                             update.rowsIncluded);
 
                     // Update data chunk-wise:
                     for (int ii = 0; ii < update.addColumnData.length; ++ii) {
                         if (isSubscribedColumn(ii)) {
                             final Chunk<? extends Attributes.Values> data = update.addColumnData[ii].data;
-                            Assert.eq(data.size(), "delta.includedAdditions.size()", destinationIndex.size(),
-                                    "destinationIndex.size()");
+                            Assert.eq(data.size(), "delta.includedAdditions.size()", destinationRowSet.size(),
+                                    "destinationRowSet.size()");
                             try (final WritableChunkSink.FillFromContext ctxt =
-                                    destSources[ii].makeFillFromContext(destinationIndex.intSize())) {
-                                destSources[ii].fillFromChunk(ctxt, data, destinationIndex);
+                                    destSources[ii].makeFillFromContext(destinationRowSet.intSize())) {
+                                destSources[ii].fillFromChunk(ctxt, data, destinationRowSet);
                             }
                         }
                     }
@@ -299,7 +296,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                                 WritableLongChunk.makeWritableChunk(column.rowsModified.intSize())) {
                     redirectionIndex.fillChunk(redirContext, keys, column.rowsModified);
                     for (int i = 0; i < keys.size(); ++i) {
-                        Assert.notEquals(keys.get(i), "keys[i]", Index.NULL_KEY, "Index.NULL_KEY");
+                        Assert.notEquals(keys.get(i), "keys[i]", TrackingMutableRowSet.NULL_ROW_KEY, "TrackingMutableRowSet.NULL_KEY");
                     }
 
                     try (final WritableChunkSink.FillFromContext ctxt =
@@ -311,7 +308,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
             // remove all data outside of our viewport
             if (serverViewport != null) {
-                try (final Index newPopulated = currentIndex.subindexByPos(serverViewport)) {
+                try (final TrackingMutableRowSet newPopulated = currentRowSet.subSetForPositions(serverViewport)) {
                     populatedRows.remove(newPopulated);
                     freeRows(populatedRows);
                 }
@@ -319,14 +316,14 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
             if (update.isSnapshot && !mightBeInitialSnapshot) {
                 // This applies to viewport or subscribed column changes; after the first snapshot later snapshots can't
-                // change the index. In this case, we apply the data from the snapshot to local column sources but
+                // change the rowSet. In this case, we apply the data from the snapshot to local column sources but
                 // otherwise cannot communicate this change to listeners.
                 return coalescer;
             }
 
             final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update(
                     update.rowsAdded.clone(), update.rowsRemoved.clone(), totalMods, update.shifted, modifiedColumnSet);
-            return (coalescer == null) ? new Index.IndexUpdateCoalescer(currRowsFromPrev, downstream)
+            return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
         }
     }
@@ -335,15 +332,15 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         return serverColumns == null || serverColumns.get(i);
     }
 
-    private Index getFreeRows(long size) {
+    private TrackingMutableRowSet getFreeRows(long size) {
         if (size <= 0) {
-            return Index.CURRENT_FACTORY.getEmptyIndex();
+            return TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         }
 
         boolean needsResizing = false;
         if (capacity == 0) {
             capacity = Integer.highestOneBit((int) Math.max(size * 2, 8));
-            freeset = Index.CURRENT_FACTORY.getFlatIndex(capacity);
+            freeset = TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(capacity);
             needsResizing = true;
         } else if (freeset.size() < size) {
             int usedSlots = (int) (capacity - freeset.size());
@@ -361,13 +358,13 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             }
         }
 
-        final Index result = freeset.subindexByPos(0, (int) size);
+        final TrackingMutableRowSet result = freeset.subSetByPositionRange(0, (int) size);
         Assert.assertion(result.size() == size, "result.size() == size");
         freeset.removeRange(0, result.lastRowKey());
         return result;
     }
 
-    private void freeRows(final Index rowsToFree) {
+    private void freeRows(final TrackingMutableRowSet rowsToFree) {
         if (rowsToFree.empty()) {
             return;
         }
@@ -411,9 +408,9 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         if (unsubscribed) {
             if (getIndex().nonempty()) {
                 // publish one last clear downstream; this data would be stale
-                final Index allRows = getIndex().clone();
+                final TrackingMutableRowSet allRows = getIndex().clone();
                 getIndex().remove(allRows);
-                notifyListeners(Index.FACTORY.getEmptyIndex(), allRows, Index.FACTORY.getEmptyIndex());
+                notifyListeners(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), allRows, TrackingMutableRowSet.FACTORY.getEmptyRowSet());
             }
             cleanup();
             return;
@@ -431,7 +428,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             Assert.eqZero(pendingUpdates.size(), "pendingUpdates.size()");
         }
 
-        Index.IndexUpdateCoalescer coalescer = null;
+        UpdateCoalescer coalescer = null;
         for (final BarrageMessage update : localPendingUpdates) {
             coalescer = processUpdate(update, coalescer);
             update.close();

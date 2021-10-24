@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.junit.After;
 
 import java.io.File;
@@ -74,13 +74,13 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             final ColumnHolder sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
 
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
-            final Index index = Index.FACTORY.getFlatIndex(6);
-            columns.put("Sym", TstUtils.getTreeMapColumnSource(index, symHolder));
-            columns.put("Sentinel", TstUtils.getTreeMapColumnSource(index, sentinelHolder));
+            final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(6);
+            columns.put("Sym", TstUtils.getTreeMapColumnSource(rowSet, symHolder));
+            columns.put("Sentinel", TstUtils.getTreeMapColumnSource(rowSet, sentinelHolder));
             final TableDefinition definition = TableDefinition.of(
                     ColumnDefinition.ofString("Sym").withGrouping(),
                     ColumnDefinition.ofInt("Sentinel"));
-            final Table x = new QueryTable(definition, index, columns);
+            final Table x = new QueryTable(definition, rowSet, columns);
 
             assertTrue(x.getDefinition().getColumn("Sym").isGrouping());
 

@@ -11,6 +11,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.exceptions.QueryCancellationException;
@@ -31,7 +32,6 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
@@ -433,19 +433,19 @@ public class ConstructSnapshot {
 
     /**
      * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested columns and keys. Note
-     * that this method uses an index that is in Key space, and that it is notification-oblivious, i.e. it makes no
+     * that this method uses an rowSet that is in Key space, and that it is notification-oblivious, i.e. it makes no
      * attempt to ensure that notifications are not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot An Index of keys within the table to include, null for all
+     * @param keysToSnapshot An TrackingMutableRowSet of keys within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final Index keysToSnapshot) {
+            @Nullable final TrackingMutableRowSet keysToSnapshot) {
         return constructInitialSnapshot(logIdentityObject, table, columnsToSerialize, keysToSnapshot,
                 makeSnapshotControl(false, table));
     }
@@ -453,7 +453,7 @@ public class ConstructSnapshot {
     static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final Index keysToSnapshot,
+            @Nullable final TrackingMutableRowSet keysToSnapshot,
             @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
 
@@ -467,19 +467,19 @@ public class ConstructSnapshot {
 
     /**
      * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an index that is in Position space, and that it is notification-oblivious, i.e. it
+     * Note that this method uses an rowSet that is in Position space, and that it is notification-oblivious, i.e. it
      * makes no attempt to ensure that notifications are not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An Index of positions within the table to include, null for all
+     * @param positionsToSnapshot An TrackingMutableRowSet of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final Index positionsToSnapshot) {
+            @Nullable final TrackingMutableRowSet positionsToSnapshot) {
         return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
                 positionsToSnapshot, makeSnapshotControl(false, table));
     }
@@ -487,20 +487,20 @@ public class ConstructSnapshot {
     static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final Index positionsToSnapshot,
+            @Nullable final TrackingMutableRowSet positionsToSnapshot,
             @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
-            final Index keysToSnapshot;
+            final TrackingMutableRowSet keysToSnapshot;
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final Index prevIndex = table.getIndex().getPrevIndex()) {
-                    keysToSnapshot = prevIndex.subindexByPos(positionsToSnapshot);
+                try (final TrackingMutableRowSet prevIndex = table.getIndex().getPrevIndex()) {
+                    keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
-                keysToSnapshot = table.getIndex().subindexByPos(positionsToSnapshot);
+                keysToSnapshot = table.getIndex().subSetForPositions(positionsToSnapshot);
             }
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
@@ -524,38 +524,38 @@ public class ConstructSnapshot {
 
     /**
      * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an index that is in Position space, and that it is notification-oblivious, i.e. it
+     * Note that this method uses an rowSet that is in Position space, and that it is notification-oblivious, i.e. it
      * makes no attempt to ensure that notifications are not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An Index of positions within the table to include, null for all
+     * @param positionsToSnapshot An TrackingMutableRowSet of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
             final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final Index positionsToSnapshot) {
+            @Nullable final TrackingMutableRowSet positionsToSnapshot) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
                 positionsToSnapshot, makeSnapshotControl(false, table));
     }
 
     /**
      * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an index that is in Position space.
+     * Note that this method uses an rowSet that is in Position space.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An Index of positions within the table to include, null for all
+     * @param positionsToSnapshot An TrackingMutableRowSet of positions within the table to include, null for all
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
      * @return a snapshot of the entire base table.
      */
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final Index positionsToSnapshot,
+            @Nullable final TrackingMutableRowSet positionsToSnapshot,
             @NotNull final SnapshotControl control) {
 
         final BarrageMessage snapshot = new BarrageMessage();
@@ -563,15 +563,15 @@ public class ConstructSnapshot {
         snapshot.shifted = IndexShiftData.EMPTY;
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
-            final Index keysToSnapshot;
+            final TrackingMutableRowSet keysToSnapshot;
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final Index prevIndex = table.getIndex().getPrevIndex()) {
-                    keysToSnapshot = prevIndex.subindexByPos(positionsToSnapshot);
+                try (final TrackingMutableRowSet prevIndex = table.getIndex().getPrevIndex()) {
+                    keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
-                keysToSnapshot = table.getIndex().subindexByPos(positionsToSnapshot);
+                keysToSnapshot = table.getIndex().subSetForPositions(positionsToSnapshot);
             }
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
@@ -1201,7 +1201,7 @@ public class ConstructSnapshot {
      * @param snapshot The snapshot to populate
      * @param logIdentityObject An object for use with log() messages
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot An Index of keys within the table to include, null for all
+     * @param keysToSnapshot An TrackingMutableRowSet of keys within the table to include, null for all
      *
      * @return Whether the snapshot succeeded
      */
@@ -1210,13 +1210,13 @@ public class ConstructSnapshot {
             BaseTable table,
             Object logIdentityObject,
             BitSet columnsToSerialize,
-            Index keysToSnapshot) {
-        snapshot.index = (usePrev ? table.getIndex().getPrevIndex() : table.getIndex()).clone();
+            TrackingMutableRowSet keysToSnapshot) {
+        snapshot.rowSet = (usePrev ? table.getIndex().getPrevIndex() : table.getIndex()).clone();
 
         if (keysToSnapshot != null) {
-            snapshot.rowsIncluded = snapshot.index.intersect(keysToSnapshot);
+            snapshot.rowsIncluded = snapshot.rowSet.intersect(keysToSnapshot);
         } else {
-            snapshot.rowsIncluded = snapshot.index;
+            snapshot.rowsIncluded = snapshot.rowSet;
         }
 
         LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
@@ -1269,7 +1269,7 @@ public class ConstructSnapshot {
      * @param snapshot The snapshot to populate
      * @param logIdentityObject an object for use with log() messages
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An Index of keys within the table to include, null for all
+     * @param positionsToSnapshot An TrackingMutableRowSet of keys within the table to include, null for all
      *
      * @return true if the snapshot was computed with an unchanged clock, false otherwise.
      */
@@ -1278,9 +1278,9 @@ public class ConstructSnapshot {
             final BaseTable table,
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
-            final Index positionsToSnapshot) {
+            final TrackingMutableRowSet positionsToSnapshot) {
         snapshot.rowsAdded = (usePrev ? table.getIndex().getPrevIndex() : table.getIndex()).clone();
-        snapshot.rowsRemoved = Index.CURRENT_FACTORY.getEmptyIndex();
+        snapshot.rowsRemoved = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 
         // TODO (core#412): when sending app metadata; this can be reduced to a zero-len array
@@ -1313,7 +1313,7 @@ public class ConstructSnapshot {
                 final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                 snapshot.addColumnData[ii] = acd;
                 final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(ii);
-                final Index rows = columnIsEmpty ? Index.FACTORY.getEmptyIndex() : snapshot.rowsIncluded;
+                final TrackingMutableRowSet rows = columnIsEmpty ? TrackingMutableRowSet.FACTORY.getEmptyRowSet() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
                 acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
@@ -1322,8 +1322,8 @@ public class ConstructSnapshot {
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
-                mcd.rowsModified = Index.CURRENT_FACTORY.getEmptyIndex();
-                mcd.data = getSnapshotDataAsChunk(columnSource, null, Index.FACTORY.getEmptyIndex(), usePrev);
+                mcd.rowsModified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                mcd.data = getSnapshotDataAsChunk(columnSource, null, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
             }
@@ -1361,18 +1361,18 @@ public class ConstructSnapshot {
     }
 
     private static <T> Object getSnapshotData(final ColumnSource<T> columnSource, final SharedContext sharedContext,
-            final Index index, final boolean usePrev) {
+                                              final TrackingMutableRowSet rowSet, final boolean usePrev) {
         final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
         final Class<?> type = sourceToUse.getType();
-        final int size = index.intSize();
+        final int size = rowSet.intSize();
         try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(size, sharedContext)) {
             final ChunkType chunkType = sourceToUse.getChunkType();
             final Object resultArray = chunkType.makeArray(size);
             final WritableChunk<Values> result = chunkType.writableChunkWrap(resultArray, 0, size);
             if (usePrev) {
-                sourceToUse.fillPrevChunk(context, result, index);
+                sourceToUse.fillPrevChunk(context, result, rowSet);
             } else {
-                sourceToUse.fillChunk(context, result, index);
+                sourceToUse.fillChunk(context, result, rowSet);
             }
             if (chunkType == ChunkType.Object) {
                 // noinspection unchecked
@@ -1389,18 +1389,18 @@ public class ConstructSnapshot {
     }
 
     private static <T> WritableChunk<Values> getSnapshotDataAsChunk(final ColumnSource<T> columnSource,
-            final SharedContext sharedContext, final Index index, final boolean usePrev) {
+                                                                    final SharedContext sharedContext, final TrackingMutableRowSet rowSet, final boolean usePrev) {
         final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
-        final int size = index.intSize();
+        final int size = rowSet.intSize();
         try (final ColumnSource.FillContext context = sharedContext != null
                 ? sourceToUse.makeFillContext(size, sharedContext)
                 : sourceToUse.makeFillContext(size)) {
             final ChunkType chunkType = sourceToUse.getChunkType();
             final WritableChunk<Values> result = chunkType.makeWritableChunk(size);
             if (usePrev) {
-                sourceToUse.fillPrevChunk(context, result, index);
+                sourceToUse.fillPrevChunk(context, result, rowSet);
             } else {
-                sourceToUse.fillChunk(context, result, index);
+                sourceToUse.fillChunk(context, result, rowSet);
             }
             return result;
         }

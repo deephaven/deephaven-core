@@ -40,7 +40,7 @@ public final class IterPerformanceTest {
         ValuesBuilder builder();
 
         // Since tests will run multiple times, and creation time is high (higher than individual operations),
-        // we create the base index one and clone it before every run of update.
+        // we create the base rowSet one and clone it before every run of update.
         long getBaseCrc32(long toBeOred);
 
         long size();
@@ -54,12 +54,12 @@ public final class IterPerformanceTest {
     }
 
     static abstract class IndexIterStrategy implements IterStrategy {
-        protected Index ix;
+        protected TrackingMutableRowSet ix;
 
         @Override
         public ValuesBuilder builder() {
             return new ValuesBuilder() {
-                private final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
+                private final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
                 @Override
                 public void add(long v) {
@@ -68,7 +68,7 @@ public final class IterPerformanceTest {
 
                 @Override
                 public void done() {
-                    ix = b.getIndex();
+                    ix = b.build();
                 }
             };
         }
@@ -83,7 +83,7 @@ public final class IterPerformanceTest {
         @Override
         public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
-            final Index.RangeIterator it = ix.rangeIterator();
+            final TrackingMutableRowSet.RangeIterator it = ix.rangeIterator();
             while (it.hasNext()) {
                 it.next();
                 for (long v = it.currentRangeStart(); v <= it.currentRangeEnd(); ++v) {
@@ -108,7 +108,7 @@ public final class IterPerformanceTest {
         @Override
         public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
-            final Index.Iterator it = ix.iterator();
+            final TrackingMutableRowSet.Iterator it = ix.iterator();
             while (it.hasNext()) {
                 final long v = it.nextLong();
                 updateCrc32(crc32, v | x);
@@ -345,7 +345,7 @@ public final class IterPerformanceTest {
             pm.reset();
         }
         final double factor = 1 / s2ns;
-        final String pos = " " + c.name + " " + stepName + " index len=" + nf(sz) + ", seconds:";
+        final String pos = " " + c.name + " " + stepName + " rowSet len=" + nf(sz) + ", seconds:";
         final long t0 = System.nanoTime();
         final PerfStats pStats = new PerfStats(runs);
         for (int si = 0; si < sn; ++si) {

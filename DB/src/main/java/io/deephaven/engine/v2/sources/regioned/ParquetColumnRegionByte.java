@@ -40,7 +40,7 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
         try {
             return page.asByteChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving byte at table byte index " + elementIndex
+            throw new TableDataException("Error retrieving byte at table byte rowSet " + elementIndex
                     + ", from a parquet table", e);
         }
     }

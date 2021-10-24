@@ -7,7 +7,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChunkedOperator {
     AddOnlyFirstOrLastChunkedOperator(boolean isFirst, MatchPair[] resultPairs, Table originalTable,
@@ -44,11 +44,11 @@ public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChu
     }
 
     @Override
-    public boolean addIndex(SingletonContext context, Index index, long destination) {
-        if (index.empty()) {
+    public boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
+        if (rowSet.empty()) {
             return false;
         }
-        final long candidate = isFirst ? index.firstRowKey() : index.lastRowKey();
+        final long candidate = isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey();
         return updateRedirections(destination, candidate);
     }
 

@@ -26,7 +26,7 @@ public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {
 
         columnSource.set(key, (int) index);
 
-        return previous == QueryConstants.NULL_INT ? Index.NULL_KEY : previous;
+        return previous == QueryConstants.NULL_INT ? TrackingMutableRowSet.NULL_ROW_KEY : previous;
     }
 
     @Override
@@ -38,7 +38,7 @@ public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {
     public final long get(long key) {
         final int innerIndex = columnSource.getInt(key);
         if (innerIndex == QueryConstants.NULL_INT) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
         return innerIndex;
     }
@@ -47,7 +47,7 @@ public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {
     public final long getPrev(long key) {
         final int innerIndex = columnSource.getPrevInt(key);
         if (innerIndex == QueryConstants.NULL_INT) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
         return innerIndex;
     }
@@ -84,7 +84,7 @@ public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {
         final int sz = keysToMap.intSize();
         for (int ii = 0; ii < sz; ++ii) {
             final int innerIndex = effectiveContext.intChunk.get(ii);
-            mappedKeysOut.set(ii, innerIndex == QueryConstants.NULL_INT ? Index.NULL_KEY : innerIndex);
+            mappedKeysOut.set(ii, innerIndex == QueryConstants.NULL_INT ? TrackingMutableRowSet.NULL_ROW_KEY : innerIndex);
         }
         mappedKeysOut.setSize(sz);
     }
@@ -99,7 +99,7 @@ public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {
         final int sz = keysToMap.intSize();
         for (int ii = 0; ii < sz; ++ii) {
             final int innerIndex = effectiveContext.intChunk.get(ii);
-            mappedKeysOut.set(ii, innerIndex == QueryConstants.NULL_INT ? Index.NULL_KEY : innerIndex);
+            mappedKeysOut.set(ii, innerIndex == QueryConstants.NULL_INT ? TrackingMutableRowSet.NULL_ROW_KEY : innerIndex);
         }
         mappedKeysOut.setSize(sz);
     }
@@ -108,7 +108,7 @@ public final class IntColumnSourceRedirectionIndex implements RedirectionIndex {
     public final long remove(long key) {
         final int previous = columnSource.getInt(key);
         if (previous == QueryConstants.NULL_INT) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
         columnSource.set(key, QueryConstants.NULL_INT);
         return previous;

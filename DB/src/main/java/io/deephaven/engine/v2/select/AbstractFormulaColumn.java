@@ -17,7 +17,7 @@ import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.v2.dbarrays.*;
 import io.deephaven.engine.v2.select.formula.*;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -50,13 +50,13 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     protected List<String> userParams;
     protected Param<?>[] params;
     protected Map<String, ? extends ColumnSource<?>> columnSources;
-    private Index index;
+    private TrackingMutableRowSet rowSet;
     protected Class<?> returnedType;
     public static final String COLUMN_SUFFIX = "_";
     protected List<String> usedColumnArrays;
     protected boolean usesI; // uses the "i" variable which is an integer position for the row
     protected boolean usesII; // uses the "ii" variable which is the long position for the row
-    protected boolean usesK; // uses the "k" variable which is the long index into a column source
+    protected boolean usesK; // uses the "k" variable which is the long rowSet into a column source
 
     /**
      * Create a formula column for the given formula string.
@@ -84,11 +84,11 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
-        if (this.index != null) {
-            Assert.eq(this.index, "this.index", index, "index");
+    public List<String> initInputs(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+        if (this.rowSet != null) {
+            Assert.eq(this.rowSet, "this.rowSet", rowSet, "rowSet");
         }
-        this.index = index;
+        this.rowSet = rowSet;
 
         this.columnSources = columnsOfInterest;
         if (usedColumns != null) {
@@ -230,7 +230,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         if (formulaFactory == null) {
             formulaFactory = useKernelFormulas ? createKernelFormulaFactory() : createFormulaFactory();
         }
-        formula = formulaFactory.createFormula(index, initLazyMap, columnsToData, params);
+        formula = formulaFactory.createFormula(rowSet, initLazyMap, columnsToData, params);
         return formula;
     }
 
@@ -239,33 +239,33 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @SuppressWarnings("unchecked")
-    private static DbArrayBase<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, Index index) {
+    private static DbArrayBase<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, TrackingMutableRowSet rowSet) {
         final Class<?> type = cs.getType();
         if (type == Boolean.class) {
-            return new DbArrayColumnWrapper<>((ColumnSource<Boolean>) cs, index);
+            return new DbArrayColumnWrapper<>((ColumnSource<Boolean>) cs, rowSet);
         }
         if (type == byte.class) {
-            return new DbByteArrayColumnWrapper((ColumnSource<Byte>) cs, index);
+            return new DbByteArrayColumnWrapper((ColumnSource<Byte>) cs, rowSet);
         }
         if (type == char.class) {
-            return new DbCharArrayColumnWrapper((ColumnSource<Character>) cs, index);
+            return new DbCharArrayColumnWrapper((ColumnSource<Character>) cs, rowSet);
         }
         if (type == double.class) {
-            return new DbDoubleArrayColumnWrapper((ColumnSource<Double>) cs, index);
+            return new DbDoubleArrayColumnWrapper((ColumnSource<Double>) cs, rowSet);
         }
         if (type == float.class) {
-            return new DbFloatArrayColumnWrapper((ColumnSource<Float>) cs, index);
+            return new DbFloatArrayColumnWrapper((ColumnSource<Float>) cs, rowSet);
         }
         if (type == int.class) {
-            return new DbIntArrayColumnWrapper((ColumnSource<Integer>) cs, index);
+            return new DbIntArrayColumnWrapper((ColumnSource<Integer>) cs, rowSet);
         }
         if (type == long.class) {
-            return new DbLongArrayColumnWrapper((ColumnSource<Long>) cs, index);
+            return new DbLongArrayColumnWrapper((ColumnSource<Long>) cs, rowSet);
         }
         if (type == short.class) {
-            return new DbShortArrayColumnWrapper((ColumnSource<Short>) cs, index);
+            return new DbShortArrayColumnWrapper((ColumnSource<Short>) cs, rowSet);
         }
-        return new DbArrayColumnWrapper<>((ColumnSource<Object>) cs, index);
+        return new DbArrayColumnWrapper<>((ColumnSource<Object>) cs, rowSet);
     }
 
     private FormulaFactory createKernelFormulaFactory() {
@@ -317,7 +317,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     public WritableSource<?> newDestInstance(long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(index.size(), returnedType);
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(rowSet.size(), returnedType);
     }
 
     @Override

@@ -25,8 +25,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +47,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
     private final boolean exposeInternal;
-    private Index touchedStates;
+    private TrackingMutableRowSet touchedStates;
     private UpdateCommitter<LongChunkedDistinctOperator> prevFlusher = null;
 
     public LongChunkedDistinctOperator(
@@ -241,7 +241,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();
@@ -285,7 +285,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
             }
 
             prevFlusher = new UpdateCommitter<>(this, LongChunkedDistinctOperator::flushPrevious);
-            touchedStates = Index.CURRENT_FACTORY.getEmptyIndex();
+            touchedStates = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
         }
     }
 

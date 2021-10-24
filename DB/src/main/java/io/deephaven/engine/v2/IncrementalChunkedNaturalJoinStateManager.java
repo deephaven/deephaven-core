@@ -121,7 +121,7 @@ class IncrementalChunkedNaturalJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right Index
+    // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from LongArraySource
     private final LongArraySource overflowRightIndexSource
@@ -144,18 +144,18 @@ class IncrementalChunkedNaturalJoinStateManager
     // endmixin rehash
 
     // region extra variables
-    // we assume that our right indices are going to be unique; in which case we do not actually want to store an index
-    // however, for inactive states, we must store the complete index value, so that we can remove values from it in
+    // we assume that our right indices are going to be unique; in which case we do not actually want to store an rowSet
+    // however, for inactive states, we must store the complete rowSet value, so that we can remove values from it in
     // case it does become active at some point.  If we have duplicate right hand side values, we store a reference
     // into this table
-    private final ObjectArraySource<Index> rightIndexStorage;
+    private final ObjectArraySource<TrackingMutableRowSet> rightIndexStorage;
     private int nextRightIndexLocation;
-    private final Index freeRightIndexLocations = Index.CURRENT_FACTORY.getEmptyIndex();
+    private final TrackingMutableRowSet freeRightRowSetLocations = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
 
-    // we always store left index values parallel to the keys; we may want to optimize for single left indices to avoid
+    // we always store left rowSet values parallel to the keys; we may want to optimize for single left indices to avoid
     // object allocation, but we do have fairly efficient single range indices at this point
-    private final ObjectArraySource<Index> leftIndexSource;
-    private final ObjectArraySource<Index> overflowLeftIndexSource;
+    private final ObjectArraySource<TrackingMutableRowSet> leftIndexSource;
+    private final ObjectArraySource<TrackingMutableRowSet> overflowLeftIndexSource;
 
     // we must maintain our cookie for modified state tracking
     private final LongArraySource modifiedTrackerCookieSource;
@@ -206,9 +206,9 @@ class IncrementalChunkedNaturalJoinStateManager
         // endmixin rehash
 
         // region constructor
-        rightIndexStorage = new ObjectArraySource<>(Index.class);
-        leftIndexSource = new ObjectArraySource<>(Index.class);
-        overflowLeftIndexSource = new ObjectArraySource<>(Index.class);
+        rightIndexStorage = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        leftIndexSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        overflowLeftIndexSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
         modifiedTrackerCookieSource = new LongArraySource();
         overflowModifiedTrackerCookieSource = new LongArraySource();
         // endregion constructor
@@ -265,13 +265,13 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     @Override
-    void decorateLeftSide(Index leftIndex, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
-        if (leftIndex.isEmpty()) {
+    void decorateLeftSide(TrackingMutableRowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
+        if (leftRowSet.isEmpty()) {
             return;
         }
-        try (final BuildContext bc = makeBuildContext(leftSources, leftIndex.size())) {
-            leftRedirections.ensureCapacity(leftIndex.size());
-            buildTable(bc, leftIndex, leftSources, leftRedirections, null);
+        try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
+            leftRedirections.ensureCapacity(leftRowSet.size());
+            buildTable(bc, leftRowSet, leftSources, leftRedirections, null);
         }
     }
 
@@ -285,16 +285,16 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private long allocateRightIndexSlot() {
-        if (freeRightIndexLocations.size() > 0) {
-            final long allocatedKey = freeRightIndexLocations.lastRowKey();
-            freeRightIndexLocations.remove(allocatedKey);
+        if (freeRightRowSetLocations.size() > 0) {
+            final long allocatedKey = freeRightRowSetLocations.lastRowKey();
+            freeRightRowSetLocations.remove(allocatedKey);
             return allocatedKey;
         }
         return nextRightIndexLocation++;
     }
 
     private void ensureRightIndexCapacity() {
-        final long freeSlots = freeRightIndexLocations.size();
+        final long freeSlots = freeRightRowSetLocations.size();
         if (freeSlots > CHUNK_SIZE) {
             return;
         }
@@ -302,18 +302,18 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void addLeftIndex(long tableLocation, long keyToAdd) {
-        final Index index = leftIndexSource.get(tableLocation);
-        if (index == null) {
-            leftIndexSource.set(tableLocation, Index.CURRENT_FACTORY.getIndexByValues(keyToAdd));
+        final TrackingMutableRowSet rowSet = leftIndexSource.get(tableLocation);
+        if (rowSet == null) {
+            leftIndexSource.set(tableLocation, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(keyToAdd));
         } else {
-            index.insert(keyToAdd);
+            rowSet.insert(keyToAdd);
         }
     }
 
     /**
      * Do we have multiple right indices for this value?
      *
-     * @param existingRightIndex the value in our rightIndex column source
+     * @param existingRightIndex the value in our rightRowSet column source
      * @return true if we should reference our rightIndexStorage column source
      */
     private boolean isDuplicateRightIndex(long existingRightIndex) {
@@ -348,12 +348,12 @@ class IncrementalChunkedNaturalJoinStateManager
         }
         else if (isDuplicateRightIndex(existingRightIndex)) {
             final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-            final Index indexToUpdate = rightIndexStorage.getUnsafe(rightIndexSlot);
-            indexToUpdate.insert(keyToAdd);
+            final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.getUnsafe(rightIndexSlot);
+            rowSetToUpdate.insert(keyToAdd);
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
             rightIndexSource.set(tableLocation, rightIndexSlotToStorage(rightIndexSlot));
-            rightIndexStorage.set(rightIndexSlot, Index.CURRENT_FACTORY.getIndexByValues(existingRightIndex, keyToAdd));
+            rightIndexStorage.set(rightIndexSlot, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(existingRightIndex, keyToAdd));
         }
     }
 
@@ -372,7 +372,7 @@ class IncrementalChunkedNaturalJoinStateManager
             rightIndexSource.set(tableLocation, shiftedKey);
         } else {
             if (!isDuplicateRightIndex(existingRightIndex)) {
-                throw Assert.statementNeverExecuted("Existing Right Index: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta + ", key=" + keyString(tableLocation));
+                throw Assert.statementNeverExecuted("Existing Right TrackingMutableRowSet: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta + ", key=" + keyString(tableLocation));
             }
 
             shiftDuplicateRightIndex(shiftedKey, shiftDelta, existingRightIndex);
@@ -380,19 +380,19 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void shiftLeftIndex(long tableLocation, long shiftedKey, long shiftDelta) {
-        final Index existingLeftIndex = leftIndexSource.get(tableLocation);
-        final long sizeBefore = existingLeftIndex.size();
-        existingLeftIndex.remove(shiftedKey - shiftDelta);
-        existingLeftIndex.insert(shiftedKey);
-        Assert.eq(existingLeftIndex.size(), "existingLeftIndex.size()", sizeBefore, "sizeBefore");
+        final TrackingMutableRowSet existingLeftRowSet = leftIndexSource.get(tableLocation);
+        final long sizeBefore = existingLeftRowSet.size();
+        existingLeftRowSet.remove(shiftedKey - shiftDelta);
+        existingLeftRowSet.insert(shiftedKey);
+        Assert.eq(existingLeftRowSet.size(), "existingLeftRowSet.size()", sizeBefore, "sizeBefore");
     }
 
     private void shiftLeftIndexOverflow(long overflowLocation, long shiftedKey, long shiftDelta) {
-        final Index existingLeftIndex = overflowLeftIndexSource.get(overflowLocation);
-        final long sizeBefore = existingLeftIndex.size();
-        existingLeftIndex.remove(shiftedKey - shiftDelta);
-        existingLeftIndex.insert(shiftedKey);
-        Assert.eq(existingLeftIndex.size(), "existingLeftIndex.size()", sizeBefore, "sizeBefore");
+        final TrackingMutableRowSet existingLeftRowSet = overflowLeftIndexSource.get(overflowLocation);
+        final long sizeBefore = existingLeftRowSet.size();
+        existingLeftRowSet.remove(shiftedKey - shiftDelta);
+        existingLeftRowSet.insert(shiftedKey);
+        Assert.eq(existingLeftRowSet.size(), "existingLeftRowSet.size()", sizeBefore, "sizeBefore");
     }
 
     private void removeRightIndexOverflow(long overflowLocation, long keyToRemove) {
@@ -415,38 +415,38 @@ class IncrementalChunkedNaturalJoinStateManager
 
     private void shiftDuplicateRightIndex(long shiftedKey, long shiftDelta, long existingRightIndex) {
         if (!isDuplicateRightIndex(existingRightIndex)) {
-            throw Assert.statementNeverExecuted("Existing Right Index: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta);
+            throw Assert.statementNeverExecuted("Existing Right TrackingMutableRowSet: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta);
         }
 
         final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-        final Index indexToUpdate = rightIndexStorage.get(rightIndexSlot);
-        indexToUpdate.remove(shiftedKey - shiftDelta);
-        indexToUpdate.insert(shiftedKey);
+        final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
+        rowSetToUpdate.remove(shiftedKey - shiftDelta);
+        rowSetToUpdate.insert(shiftedKey);
     }
 
     private void removeFromDuplicateIndex(LongArraySource indexSource, long location, long keyToRemove, long existingRightIndex) {
         if (!isDuplicateRightIndex(existingRightIndex)) {
-            throw Assert.statementNeverExecuted("Existing Right Index: " + existingRightIndex + ", keyToRemove=" + keyToRemove);
+            throw Assert.statementNeverExecuted("Existing Right TrackingMutableRowSet: " + existingRightIndex + ", keyToRemove=" + keyToRemove);
         }
 
         final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-        final Index indexToUpdate = rightIndexStorage.get(rightIndexSlot);
-        indexToUpdate.remove(keyToRemove);
-        if (indexToUpdate.empty()) {
+        final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
+        rowSetToUpdate.remove(keyToRemove);
+        if (rowSetToUpdate.empty()) {
             throw Assert.statementNeverExecuted();
-        } else if (indexToUpdate.size() == 1) {
-            indexSource.set(location, indexToUpdate.firstRowKey());
+        } else if (rowSetToUpdate.size() == 1) {
+            indexSource.set(location, rowSetToUpdate.firstRowKey());
             rightIndexStorage.set(rightIndexSlot, null);
-            freeRightIndexLocations.insert(rightIndexSlot);
+            freeRightRowSetLocations.insert(rightIndexSlot);
         }
     }
 
     private void addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
-        final Index index = overflowLeftIndexSource.get(overflowLocation);
-        if (index == null) {
-            overflowLeftIndexSource.set(overflowLocation, Index.CURRENT_FACTORY.getIndexByValues(keyToAdd));
+        final TrackingMutableRowSet rowSet = overflowLeftIndexSource.get(overflowLocation);
+        if (rowSet == null) {
+            overflowLeftIndexSource.set(overflowLocation, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(keyToAdd));
         } else {
-            index.insert(keyToAdd);
+            rowSet.insert(keyToAdd);
         }
     }
 
@@ -457,12 +457,12 @@ class IncrementalChunkedNaturalJoinStateManager
         }
         else if (isDuplicateRightIndex(existingRightIndex)) {
             final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-            final Index indexToUpdate = rightIndexStorage.get(rightIndexSlot);
-            indexToUpdate.insert(keyToAdd);
+            final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
+            rowSetToUpdate.insert(keyToAdd);
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
             overflowRightIndexSource.set(overflowLocation, rightIndexSlotToStorage(rightIndexSlot));
-            rightIndexStorage.set(rightIndexSlot, Index.CURRENT_FACTORY.getIndexByValues(existingRightIndex, keyToAdd));
+            rightIndexStorage.set(rightIndexSlot, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(existingRightIndex, keyToAdd));
         }
     }
 
@@ -500,15 +500,15 @@ class IncrementalChunkedNaturalJoinStateManager
 
     void compactAll() {
         for (int ii = 0; ii < tableSize; ++ii) {
-            final Index index = leftIndexSource.get(ii);
-            if (index != null) {
-                index.compact();
+            final TrackingMutableRowSet rowSet = leftIndexSource.get(ii);
+            if (rowSet != null) {
+                rowSet.compact();
             }
         }
         for (int ii = 0; ii < nextOverflowLocation; ++ii) {
-            final Index index = overflowLeftIndexSource.get(ii);
-            if (index != null) {
-                index.compact();
+            final TrackingMutableRowSet rowSet = overflowLeftIndexSource.get(ii);
+            if (rowSet != null) {
+                rowSet.compact();
             }
         }
     }
@@ -1021,7 +1021,7 @@ class IncrementalChunkedNaturalJoinStateManager
                             final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
                             if (isLeftSide) {
                                 workingLeftRedirections.set(chunkPosition, NO_RIGHT_ENTRY_VALUE);
-                                // we set the right index to indicate it is empty, but exists
+                                // we set the right rowSet to indicate it is empty, but exists
                                 rightValue = NO_RIGHT_ENTRY_VALUE;
                                 addLeftIndexOverflow(allocatedOverflowLocation, keyToAdd);
                             } else {
@@ -1193,8 +1193,8 @@ class IncrementalChunkedNaturalJoinStateManager
                     rightIndexSource.set(newHashLocation, stateValueToMove);
                     rightIndexSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
                     // region rehash move values
-                    final Index oldLeftIndexValue = leftIndexSource.get(oldHashLocation);
-                    leftIndexSource.set(newHashLocation, oldLeftIndexValue);
+                    final TrackingMutableRowSet oldLeftRowSetValue = leftIndexSource.get(oldHashLocation);
+                    leftIndexSource.set(newHashLocation, oldLeftRowSetValue);
                     leftIndexSource.set(oldHashLocation, null);
                     moveModifiedSlot(modifiedSlotTracker, oldHashLocation, newHashLocation);
                     // endregion rehash move values
@@ -1330,7 +1330,7 @@ class IncrementalChunkedNaturalJoinStateManager
              final WritableLongChunk stateChunk = WritableLongChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = rightIndexSource.makeFillContext(maxSize)) {
 
-            rightIndexSource.fillChunk(fillContext, stateChunk, Index.FACTORY.getFlatIndex(tableHashPivot));
+            rightIndexSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1554,25 +1554,25 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
 
-    void modifyByRight(final ProbeContext pc, Index modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    void modifyByRight(final ProbeContext pc, TrackingMutableRowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (modified.isEmpty()) {
             return;
         }
         decorationProbe(pc, modified, rightSources, false, true, false, false, false, false, 0, modifiedSlotTracker);
     }
 
-    void applyLeftShift(ProbeContext pc, ColumnSource<?>[] leftSources, Index shiftedIndex, long shiftDelta) {
-        if (shiftedIndex.isEmpty()) {
+    void applyLeftShift(ProbeContext pc, ColumnSource<?>[] leftSources, TrackingMutableRowSet shiftedRowSet, long shiftDelta) {
+        if (shiftedRowSet.isEmpty()) {
             return;
         }
-        decorationProbe(pc, shiftedIndex, leftSources, false, false, false, false, true, false, shiftDelta, null);
+        decorationProbe(pc, shiftedRowSet, leftSources, false, false, false, false, true, false, shiftDelta, null);
     }
 
-    void applyRightShift(ProbeContext pc, ColumnSource<?> [] rightSources, Index shiftedIndex, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        if (shiftedIndex.isEmpty()) {
+    void applyRightShift(ProbeContext pc, ColumnSource<?> [] rightSources, TrackingMutableRowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (shiftedRowSet.isEmpty()) {
             return;
         }
-        decorationProbe(pc, shiftedIndex, rightSources, false, false, false, false, false, true, shiftDelta, modifiedSlotTracker);
+        decorationProbe(pc, shiftedRowSet, rightSources, false, false, false, false, false, true, shiftDelta, modifiedSlotTracker);
     }
     // endregion probe wrappers
 
@@ -1594,7 +1594,7 @@ class IncrementalChunkedNaturalJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from WritableLongChunk<Values>
         final WritableLongChunk<Values> workingStateEntries;
@@ -2010,7 +2010,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     @Override
-    public Index getLeftIndex(long slot) {
+    public TrackingMutableRowSet getLeftIndex(long slot) {
         if (isOverflowLocation(slot)) {
             return overflowLeftIndexSource.get(hashLocationToOverflowLocation(slot));
         } else {
@@ -2163,8 +2163,8 @@ class IncrementalChunkedNaturalJoinStateManager
         final WritableIntChunk<HashCode> overflowHashChunk = WritableIntChunk.makeWritableChunk(nextOverflowLocation);
 
 
-        final RowSequence tableLocations = Index.FACTORY.getIndexByRange(0, tableSize - 1);
-        final RowSequence overflowLocations = nextOverflowLocation > 0 ? Index.FACTORY.getIndexByRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
+        final RowSequence tableLocations = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, tableSize - 1);
+        final RowSequence overflowLocations = nextOverflowLocation > 0 ? TrackingMutableRowSet.FACTORY.getRowSetByRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             dumpChunks[ii] = keyChunkTypes[ii].makeWritableChunk(tableSize);

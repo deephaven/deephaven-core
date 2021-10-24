@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Collections;
 import java.util.List;
@@ -50,7 +50,7 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     @Override
-    public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -61,13 +61,13 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
         }
 
         if (offset + workingSize <= fullSet.size()) {
-            final Index sub = fullSet.subindexByPos(offset, offset + workingSize);
+            final TrackingMutableRowSet sub = fullSet.subSetByPositionRange(offset, offset + workingSize);
             sub.retain(selection);
             selection.close();
             return sub;
         }
 
-        final Index sub = fullSet.clone();
+        final TrackingMutableRowSet sub = fullSet.clone();
         sub.removeRange(sub.get((offset + workingSize) % fullSet.size()), sub.get(offset) - 1);
         sub.retain(selection);
         selection.close();

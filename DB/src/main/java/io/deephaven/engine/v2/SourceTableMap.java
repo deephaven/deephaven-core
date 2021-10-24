@@ -47,7 +47,7 @@ public class SourceTableMap extends LocalTableMap {
      *
      * <p>
      * Note that refreshLocations and refreshSizes are distinct because there are use cases that supply an external
-     * index and hence don't require size refreshes. Others might care for size refreshes, but only the
+     * rowSet and hence don't require size refreshes. Others might care for size refreshes, but only the
      * initially-available set of locations.
      *
      * @param tableDefinition The table definition

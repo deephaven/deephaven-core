@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -65,18 +65,18 @@ public class StreamTableTools {
                         }
 
 
-                        final Index index;
+                        final TrackingMutableRowSet rowSet;
                         if (usePrev) {
-                            try (final Index useIndex = baseStreamTable.getIndex().getPrevIndex()) {
-                                index = Index.FACTORY.getFlatIndex(useIndex.size());
-                                ChunkUtils.copyData(sourceColumns, useIndex, destColumns, index, usePrev);
+                            try (final TrackingMutableRowSet useRowSet = baseStreamTable.getIndex().getPrevIndex()) {
+                                rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(useRowSet.size());
+                                ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
-                            index = Index.FACTORY.getFlatIndex(baseStreamTable.getIndex().size());
-                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, index, usePrev);
+                            rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(baseStreamTable.getIndex().size());
+                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, rowSet, usePrev);
                         }
 
-                        final QueryTable result = new QueryTable(index, columns);
+                        final QueryTable result = new QueryTable(rowSet, columns);
                         result.setRefreshing(true);
                         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
                         result.setFlat();
@@ -94,19 +94,19 @@ public class StreamTableTools {
                                 if (newRows == 0) {
                                     return;
                                 }
-                                final long currentSize = index.size();
+                                final long currentSize = rowSet.size();
                                 columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
 
-                                final Index newRange =
-                                        Index.CURRENT_FACTORY.getIndexByRange(currentSize, currentSize + newRows - 1);
+                                final TrackingMutableRowSet newRange =
+                                        TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(currentSize, currentSize + newRows - 1);
 
                                 ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
-                                index.insertRange(currentSize, currentSize + newRows - 1);
+                                rowSet.insertRange(currentSize, currentSize + newRows - 1);
 
                                 final Update downstream = new Update();
                                 downstream.added = newRange;
-                                downstream.modified = Index.CURRENT_FACTORY.getEmptyIndex();
-                                downstream.removed = Index.CURRENT_FACTORY.getEmptyIndex();
+                                downstream.modified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                                downstream.removed = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                 downstream.shifted = IndexShiftData.EMPTY;
                                 result.notifyListeners(downstream);

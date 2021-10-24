@@ -66,11 +66,11 @@ public class RandomIndexBuilderBench {
 
     @Benchmark
     public void b01_buildAndPopulateWithRandomBuilderKeyIndices(final Blackhole bh) {
-        final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int i = 0; i < sz; ++i) {
             b.addKey(values[i]);
         }
-        bh.consume(b.getIndex());
+        bh.consume(b.build());
     }
 
     @Benchmark
@@ -86,12 +86,12 @@ public class RandomIndexBuilderBench {
 
     @Benchmark
     public void c01_buildAndPopulateWithRandomBuilderKeyRanges(final Blackhole bh) {
-        final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int i = 0; i < sz; ++i) {
             final long v = values[i];
             b.addRange(v, v + rangeStep);
         }
-        bh.consume(b.getIndex());
+        bh.consume(b.build());
     }
 
     public static void main(String[] args) throws RunnerException {

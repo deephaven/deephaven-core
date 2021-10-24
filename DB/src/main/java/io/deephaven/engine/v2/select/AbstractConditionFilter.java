@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.ColumnDefinition;
@@ -13,7 +14,6 @@ import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
@@ -208,7 +208,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             DBLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
     @Override
-    public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
         if (usePrev && params.length > 0) {
             throw new PreviousFilteringNotSupported("Previous filter with parameters not supported.");
         }
@@ -222,7 +222,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
         return filter.filter(selection, fullSet, table, usePrev, formula, params);
     }
 
-    protected abstract Filter getFilter(Table table, Index fullSet)
+    protected abstract Filter getFilter(Table table, TrackingMutableRowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException;
 
     /**
@@ -253,9 +253,9 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
     public abstract AbstractConditionFilter renameFilter(Map<String, String> renames);
 
     public interface Filter {
-        Index filter(
-                Index selection,
-                Index fullSet,
+        TrackingMutableRowSet filter(
+                TrackingMutableRowSet selection,
+                TrackingMutableRowSet fullSet,
                 Table table,
                 boolean usePrev,
                 String formula,

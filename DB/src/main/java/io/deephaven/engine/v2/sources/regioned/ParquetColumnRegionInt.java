@@ -26,7 +26,7 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
         try {
             return page.asIntChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving int at table int index " + elementIndex
+            throw new TableDataException("Error retrieving int at table int rowSet " + elementIndex
                     + ", from a parquet table", e);
         }
     }

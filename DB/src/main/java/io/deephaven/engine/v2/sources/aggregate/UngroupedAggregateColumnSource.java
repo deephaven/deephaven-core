@@ -10,13 +10,13 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
-import io.deephaven.engine.v2.utils.CurrentOnlyIndex;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.MutableRowSetImpl;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.utils.Index.NULL_KEY;
+import static io.deephaven.engine.v2.utils.TrackingMutableRowSet.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -33,7 +33,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final DATA_TYPE get(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return null;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -44,7 +44,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final Boolean getBoolean(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -54,7 +54,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final byte getByte(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -64,7 +64,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final char getChar(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -74,7 +74,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final double getDouble(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -84,7 +84,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final float getFloat(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -94,7 +94,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final int getInt(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_INT;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -104,7 +104,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final long getLong(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_LONG;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -114,7 +114,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final short getShort(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         final long groupIndexKey = getGroupIndexKey(keyIndex, base);
@@ -124,7 +124,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final DATA_TYPE getPrev(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return null;
         }
         final long prevBase = getPrevBase();
@@ -136,7 +136,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final Boolean getPrevBoolean(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
         final long prevBase = getPrevBase();
@@ -147,7 +147,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final byte getPrevByte(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         final long prevBase = getPrevBase();
@@ -158,7 +158,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final char getPrevChar(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         final long prevBase = getPrevBase();
@@ -169,7 +169,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final double getPrevDouble(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         final long prevBase = getPrevBase();
@@ -180,7 +180,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final float getPrevFloat(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         final long prevBase = getPrevBase();
@@ -191,7 +191,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final int getPrevInt(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_INT;
         }
         final long prevBase = getPrevBase();
@@ -202,7 +202,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final long getPrevLong(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_LONG;
         }
         final long prevBase = getPrevBase();
@@ -213,7 +213,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public final short getPrevShort(final long keyIndex) {
-        if (keyIndex == NULL_KEY) {
+        if (keyIndex == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         final long prevBase = getPrevBase();
@@ -232,7 +232,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
         private UngroupedFillContext(@NotNull final BaseAggregateColumnSource<?, ?> aggregateColumnSource,
                 final int chunkCapacity,
                 final SharedContext sharedContext) {
-            final ColumnSource<Index> indexSource = aggregateColumnSource.indexSource;
+            final ColumnSource<TrackingMutableRowSet> indexSource = aggregateColumnSource.indexSource;
             final ColumnSource<?> aggregatedSource = aggregateColumnSource.aggregatedSource;
 
             shareable = sharedContext == null ? new Shareable(false, indexSource, chunkCapacity)
@@ -267,7 +267,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
             private int currentIndexPosition;
 
             private Shareable(final boolean shared,
-                    @NotNull final ColumnSource<Index> indexSource,
+                    @NotNull final ColumnSource<TrackingMutableRowSet> indexSource,
                     final int chunkCapacity) {
                 this.shared = shared;
 
@@ -278,7 +278,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                 componentKeyIndicesSlice = ResettableWritableLongChunk.makeResettableChunk();
             }
 
-            private void extractFillChunkInformation(@NotNull final ColumnSource<? extends Index> indexSource,
+            private void extractFillChunkInformation(@NotNull final ColumnSource<? extends TrackingMutableRowSet> indexSource,
                     final long base, final boolean usePrev, @NotNull final RowSequence rowSequence) {
                 if (stateReusable) {
                     return;
@@ -305,7 +305,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                 indexKeyIndices.setSize(currentIndexPosition + 1);
                 sameIndexRunLengths.setSize(currentIndexPosition + 1);
 
-                final ObjectChunk<Index, ? extends Values> indexes;
+                final ObjectChunk<TrackingMutableRowSet, ? extends Values> indexes;
                 try (final RowSequence indexRowSequence =
                         RowSequenceUtil.wrapRowKeysChunkAsRowSequence(indexKeyIndices)) {
                     if (usePrev) {
@@ -317,23 +317,23 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
                 int componentKeyIndicesPosition = 0;
                 for (int ii = 0; ii < indexes.size(); ++ii) {
-                    final Index currIndex = indexes.get(ii);
-                    Assert.neqNull(currIndex, "currIndex");
-                    final boolean usePrevIndex = usePrev && !(currIndex instanceof CurrentOnlyIndex);
-                    final Index index = usePrevIndex ? currIndex.getPrevIndex() : currIndex;
+                    final TrackingMutableRowSet currRowSet = indexes.get(ii);
+                    Assert.neqNull(currRowSet, "currRowSet");
+                    final boolean usePrevIndex = usePrev && !(currRowSet instanceof MutableRowSetImpl);
+                    final TrackingMutableRowSet rowSet = usePrevIndex ? currRowSet.getPrevIndex() : currRowSet;
                     try {
                         final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
 
                         final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
                                 componentKeyIndicesSlice.resetFromTypedChunk(componentKeyIndices,
                                         componentKeyIndicesPosition, lengthFromThisIndex);
-                        index.getKeysForPositions(new LongChunkIterator(componentKeyIndicesSlice),
+                        rowSet.getKeysForPositions(new LongChunkIterator(componentKeyIndicesSlice),
                                 new LongChunkAppender(remappedComponentKeys));
 
                         componentKeyIndicesPosition += lengthFromThisIndex;
                     } finally {
                         if (usePrevIndex) {
-                            index.close();
+                            rowSet.close();
                         }
                     }
                 }

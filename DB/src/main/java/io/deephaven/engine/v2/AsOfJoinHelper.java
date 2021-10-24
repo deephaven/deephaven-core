@@ -52,7 +52,7 @@ public class AsOfJoinHelper {
         checkColumnConflicts(leftTable, columnsToAdd);
 
         if (!leftTable.isLive() && leftTable.size() == 0) {
-            return makeResult(leftTable, rightTable, new StaticSingleValueRedirectionIndexImpl(Index.NULL_KEY),
+            return makeResult(leftTable, rightTable, new StaticSingleValueRedirectionIndexImpl(TrackingMutableRowSet.NULL_ROW_KEY),
                     columnsToAdd, false);
         }
 
@@ -127,8 +127,8 @@ public class AsOfJoinHelper {
         final boolean buildLeft;
         final int size;
 
-        final Map<?, Index> leftGrouping;
-        final Map<?, Index> rightGrouping;
+        final Map<?, TrackingMutableRowSet> leftGrouping;
+        final Map<?, TrackingMutableRowSet> rightGrouping;
 
         if (control.useGrouping(leftTable, leftSources)) {
             leftGrouping = leftSources[0].getGroupToRange(leftTable.getIndex());
@@ -160,7 +160,7 @@ public class AsOfJoinHelper {
         final StaticChunkedAsOfJoinStateManager asOfJoinStateManager =
                 new StaticChunkedAsOfJoinStateManager(leftSources, size, originalLeftSources);
 
-        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<Index>> leftGroupedSources;
+        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<TrackingMutableRowSet>> leftGroupedSources;
         final int leftGroupingSize;
         if (leftGrouping != null) {
             final MutableInt groupSize = new MutableInt();
@@ -173,7 +173,7 @@ public class AsOfJoinHelper {
             leftGroupingSize = 0;
         }
 
-        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<Index>> rightGroupedSources;
+        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<TrackingMutableRowSet>> rightGroupedSources;
         final int rightGroupingSize;
         if (rightGrouping != null) {
             final MutableInt groupSize = new MutableInt();
@@ -190,13 +190,13 @@ public class AsOfJoinHelper {
             if (leftGroupedSources == null) {
                 slotCount = asOfJoinStateManager.buildFromLeftSide(leftTable.getIndex(), leftSources, slots);
             } else {
-                slotCount = asOfJoinStateManager.buildFromLeftSide(Index.CURRENT_FACTORY.getFlatIndex(leftGroupingSize),
+                slotCount = asOfJoinStateManager.buildFromLeftSide(TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(leftGroupingSize),
                         new ColumnSource[] {leftGroupedSources.getFirst()}, slots);
             }
             if (rightGroupedSources == null) {
                 asOfJoinStateManager.probeRight(rightTable.getIndex(), rightSources);
             } else {
-                asOfJoinStateManager.probeRight(Index.CURRENT_FACTORY.getFlatIndex(rightGroupingSize),
+                asOfJoinStateManager.probeRight(TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(rightGroupingSize),
                         new ColumnSource[] {rightGroupedSources.getFirst()});
             }
         } else {
@@ -204,13 +204,13 @@ public class AsOfJoinHelper {
                 slotCount = asOfJoinStateManager.buildFromRightSide(rightTable.getIndex(), rightSources, slots);
             } else {
                 slotCount =
-                        asOfJoinStateManager.buildFromRightSide(Index.CURRENT_FACTORY.getFlatIndex(rightGroupingSize),
+                        asOfJoinStateManager.buildFromRightSide(TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(rightGroupingSize),
                                 new ColumnSource[] {rightGroupedSources.getFirst()}, slots);
             }
             if (leftGroupedSources == null) {
                 asOfJoinStateManager.probeLeft(leftTable.getIndex(), leftSources);
             } else {
-                asOfJoinStateManager.probeLeft(Index.CURRENT_FACTORY.getFlatIndex(leftGroupingSize),
+                asOfJoinStateManager.probeLeft(TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(leftGroupingSize),
                         new ColumnSource[] {leftGroupedSources.getFirst()});
             }
         }
@@ -239,28 +239,28 @@ public class AsOfJoinHelper {
                         rightStampSource.getChunkType().makeResettableWritableChunk()) {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final long slot = slots.getLong(slotIndex);
-                Index leftIndex = asOfJoinStateManager.getLeftIndex(slot);
-                if (leftIndex == null || leftIndex.empty()) {
+                TrackingMutableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
+                if (leftRowSet == null || leftRowSet.empty()) {
                     continue;
                 }
 
-                final Index rightIndex = asOfJoinStateManager.getRightIndex(slot);
-                if (rightIndex == null || rightIndex.empty()) {
+                final TrackingMutableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
+                if (rightRowSet == null || rightRowSet.empty()) {
                     continue;
                 }
 
                 if (leftGroupedSources != null) {
-                    if (leftIndex.size() != 1) {
-                        throw new IllegalStateException("Groupings should have exactly one index key!");
+                    if (leftRowSet.size() != 1) {
+                        throw new IllegalStateException("Groupings should have exactly one rowSet key!");
                     }
-                    leftIndex = leftGroupedSources.getSecond().get(leftIndex.get(0));
+                    leftRowSet = leftGroupedSources.getSecond().get(leftRowSet.get(0));
                 }
 
                 if (arrayValuesCache != null) {
-                    processLeftSlotWithRightCache(stampContext, leftIndex, rightIndex, redirectionIndex,
+                    processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, redirectionIndex,
                             rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
                 } else {
-                    stampContext.processEntry(leftIndex, rightIndex, redirectionIndex);
+                    stampContext.processEntry(leftRowSet, rightRowSet, redirectionIndex);
                 }
             }
         }
@@ -288,7 +288,7 @@ public class AsOfJoinHelper {
 
                 final boolean keysModified = upstream.modifiedColumnSet.containsAny(leftKeysOrStamps);
 
-                final Index restampKeys;
+                final TrackingMutableRowSet restampKeys;
                 if (keysModified) {
                     upstream.getModifiedPreShift().forAllLongs(redirectionIndex::removeVoid);
                     restampKeys = upstream.modified.union(upstream.added);
@@ -296,18 +296,18 @@ public class AsOfJoinHelper {
                     restampKeys = upstream.added;
                 }
 
-                try (final Index prevLeftIndex = leftTable.getIndex().getPrevIndex()) {
-                    redirectionIndex.applyShift(prevLeftIndex, upstream.shifted);
+                try (final TrackingMutableRowSet prevLeftRowSet = leftTable.getIndex().getPrevIndex()) {
+                    redirectionIndex.applyShift(prevLeftRowSet, upstream.shifted);
                 }
 
                 if (restampKeys.nonempty()) {
-                    final Index.RandomBuilder foundBuilder = Index.FACTORY.getRandomBuilder();
+                    final RowSetBuilder foundBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
                     updatedSlots.ensureCapacity(restampKeys.size());
                     final int slotCount =
                             asOfJoinStateManager.probeLeft(restampKeys, leftSources, updatedSlots, foundBuilder);
 
-                    try (final Index foundKeys = foundBuilder.getIndex();
-                            final Index notFound = restampKeys.minus(foundKeys)) {
+                    try (final TrackingMutableRowSet foundKeys = foundBuilder.build();
+                         final TrackingMutableRowSet notFound = restampKeys.minus(foundKeys)) {
                         notFound.forAllLongs(redirectionIndex::removeVoid);
                     }
 
@@ -320,10 +320,10 @@ public class AsOfJoinHelper {
                         for (int ii = 0; ii < slotCount; ++ii) {
                             final long slot = updatedSlots.getLong(ii);
 
-                            final Index leftIndex = asOfJoinStateManager.getLeftIndex(slot);
-                            final Index rightIndex = asOfJoinStateManager.getRightIndex(slot);
+                            final TrackingMutableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
+                            final TrackingMutableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
                             assert arrayValuesCache != null;
-                            processLeftSlotWithRightCache(stampContext, leftIndex, rightIndex, redirectionIndex,
+                            processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, redirectionIndex,
                                     rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
                         }
                     }
@@ -409,14 +409,14 @@ public class AsOfJoinHelper {
     }
 
     private static void processLeftSlotWithRightCache(AsOfStampContext stampContext,
-            Index leftIndex, Index rightIndex, RedirectionIndex redirectionIndex,
-            ColumnSource<?> rightStampSource,
-            ResettableWritableLongChunk<RowKeys> keyChunk, ResettableWritableChunk<Values> valuesChunk,
-            ArrayValuesCache arrayValuesCache,
-            long slot) {
+                                                      TrackingMutableRowSet leftRowSet, TrackingMutableRowSet rightRowSet, RedirectionIndex redirectionIndex,
+                                                      ColumnSource<?> rightStampSource,
+                                                      ResettableWritableLongChunk<RowKeys> keyChunk, ResettableWritableChunk<Values> valuesChunk,
+                                                      ArrayValuesCache arrayValuesCache,
+                                                      long slot) {
         final long[] rightStampKeys = arrayValuesCache.getKeys(slot);
         if (rightStampKeys == null) {
-            final int rightSize = rightIndex.intSize();
+            final int rightSize = rightRowSet.intSize();
             long[] keyIndices = new long[rightSize];
 
             Object rightStampArray = rightStampSource.getChunkType().makeArray(rightSize);
@@ -425,7 +425,7 @@ public class AsOfJoinHelper {
             valuesChunk.resetFromArray(rightStampArray, 0, rightSize);
 
             // noinspection unchecked
-            stampContext.getAndCompactStamps(rightIndex, keyChunk, valuesChunk);
+            stampContext.getAndCompactStamps(rightRowSet, keyChunk, valuesChunk);
 
             if (keyChunk.size() < rightSize) {
                 // we will hold onto these things "forever", so we would like to avoid making them too large
@@ -446,15 +446,15 @@ public class AsOfJoinHelper {
         }
 
         // noinspection unchecked
-        stampContext.processEntry(leftIndex, valuesChunk, keyChunk, redirectionIndex);
+        stampContext.processEntry(leftRowSet, valuesChunk, keyChunk, redirectionIndex);
     }
 
     /**
-     * If the asOfJoinStateManager is null, it means we are passing in the leftIndex. If the leftIndex is null; we are
-     * passing in the asOfJoinStateManager and should obtain the leftIndex from the state manager if necessary.
+     * If the asOfJoinStateManager is null, it means we are passing in the leftRowSet. If the leftRowSet is null; we are
+     * passing in the asOfJoinStateManager and should obtain the leftRowSet from the state manager if necessary.
      */
     private static void getCachedLeftStampsAndKeys(RightIncrementalChunkedAsOfJoinStateManager asOfJoinStateManager,
-            Index leftIndex,
+            TrackingMutableRowSet leftRowSet,
             ColumnSource<?> leftStampSource,
             SizedSafeCloseable<ChunkSource.FillContext> fillContext,
             SizedSafeCloseable<LongSortKernel<Values, RowKeys>> sortContext,
@@ -463,13 +463,13 @@ public class AsOfJoinHelper {
             long slot) {
         final long[] leftStampKeys = arrayValuesCache.getKeys(slot);
         if (leftStampKeys == null) {
-            if (leftIndex == null) {
-                leftIndex = asOfJoinStateManager.getAndClearLeftIndex(slot);
-                if (leftIndex == null) {
-                    leftIndex = Index.FACTORY.getEmptyIndex();
+            if (leftRowSet == null) {
+                leftRowSet = asOfJoinStateManager.getAndClearLeftIndex(slot);
+                if (leftRowSet == null) {
+                    leftRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                 }
             }
-            final int leftSize = leftIndex.intSize();
+            final int leftSize = leftRowSet.intSize();
             final long[] keyIndices = new long[leftSize];
 
             final Object leftStampArray = leftStampSource.getChunkType().makeArray(leftSize);
@@ -478,10 +478,10 @@ public class AsOfJoinHelper {
             valuesChunk.resetFromArray(leftStampArray, 0, leftSize);
 
             // noinspection unchecked
-            leftIndex.fillRowKeyChunk(keyChunk);
+            leftRowSet.fillRowKeyChunk(keyChunk);
 
             // noinspection unchecked
-            leftStampSource.fillChunk(fillContext.ensureCapacity(leftSize), valuesChunk, leftIndex);
+            leftStampSource.fillChunk(fillContext.ensureCapacity(leftSize), valuesChunk, leftRowSet);
 
             // noinspection unchecked
             sortContext.ensureCapacity(leftSize).sort(keyChunk, valuesChunk);
@@ -561,9 +561,9 @@ public class AsOfJoinHelper {
                         rightStampSource.getChunkType().makeResettableWritableChunk()) {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final long slot = slots.getLong(slotIndex);
-                final Index leftIndex = asOfJoinStateManager.getAndClearLeftIndex(slot);
-                assert leftIndex != null;
-                assert leftIndex.size() > 0;
+                final TrackingMutableRowSet leftRowSet = asOfJoinStateManager.getAndClearLeftIndex(slot);
+                assert leftRowSet != null;
+                assert leftRowSet.size() > 0;
 
                 final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot, (rightIndex) -> {
                     final SegmentedSortedArray ssa = ssaFactory.get();
@@ -578,7 +578,7 @@ public class AsOfJoinHelper {
                     return ssa;
                 });
 
-                getCachedLeftStampsAndKeys(null, leftIndex, leftStampSource, leftStampFillContext, sortContext,
+                getCachedLeftStampsAndKeys(null, leftRowSet, leftStampSource, leftStampFillContext, sortContext,
                         leftKeyChunk, leftValuesChunk, leftValuesCache, slot);
 
                 if (rightSsa.size() == 0) {
@@ -586,7 +586,7 @@ public class AsOfJoinHelper {
                 }
 
                 final WritableLongChunk<RowKeys> rightKeysForLeftChunk =
-                        rightKeysForLeft.ensureCapacity(leftIndex.intSize());
+                        rightKeysForLeft.ensureCapacity(leftRowSet.intSize());
 
                 // noinspection unchecked
                 chunkSsaStamp.processEntry(leftValuesChunk, leftKeyChunk, rightSsa, rightKeysForLeftChunk,
@@ -594,7 +594,7 @@ public class AsOfJoinHelper {
 
                 for (int ii = 0; ii < leftKeyChunk.size(); ++ii) {
                     final long index = rightKeysForLeftChunk.get(ii);
-                    if (index != Index.NULL_KEY) {
+                    if (index != TrackingMutableRowSet.NULL_ROW_KEY) {
                         redirectionIndex.put(leftKeyChunk.get(ii), index);
                     }
                 }
@@ -614,8 +614,8 @@ public class AsOfJoinHelper {
         final ModifiedColumnSet.Transformer rightTransformer =
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
 
-        final ObjectArraySource<Index.SequentialBuilder> sequentialBuilders =
-                new ObjectArraySource<>(Index.SequentialBuilder.class);
+        final ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders =
+                new ObjectArraySource<>(SequentialRowSetBuilder.class);
 
         rightTable.listenForUpdates(new BaseTable.ShiftAwareListenerImpl(
                 makeListenerDescription(columnsToMatch, stampPair, columnsToAdd, reverse, disallowExactMatch),
@@ -623,18 +623,18 @@ public class AsOfJoinHelper {
             @Override
             public void onUpdate(Update upstream) {
                 final Update downstream = new Update();
-                downstream.added = Index.FACTORY.getEmptyIndex();
-                downstream.removed = Index.FACTORY.getEmptyIndex();
+                downstream.added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                downstream.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                 downstream.shifted = IndexShiftData.EMPTY;
                 downstream.modifiedColumnSet = result.modifiedColumnSet;
 
                 final boolean keysModified = upstream.modifiedColumnSet.containsAny(rightMatchColumns);
                 final boolean stampModified = upstream.modifiedColumnSet.containsAny(rightStampColumn);
 
-                final Index.RandomBuilder modifiedBuilder = Index.FACTORY.getRandomBuilder();
+                final RowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
-                final Index restampRemovals;
-                final Index restampAdditions;
+                final TrackingMutableRowSet restampRemovals;
+                final TrackingMutableRowSet restampAdditions;
                 if (keysModified || stampModified) {
                     restampAdditions = upstream.added.union(upstream.modified);
                     restampRemovals = upstream.removed.union(upstream.getModifiedPreShift());
@@ -666,7 +666,7 @@ public class AsOfJoinHelper {
 
                         final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot);
 
-                        final Index rightRemoved = sequentialBuilders.get(slotIndex).getIndex();
+                        final TrackingMutableRowSet rightRemoved = sequentialBuilders.get(slotIndex).build();
                         sequentialBuilders.set(slotIndex, null);
                         final int slotSize = rightRemoved.intSize();
 
@@ -694,8 +694,8 @@ public class AsOfJoinHelper {
 
                 // After all the removals are done, we do the shifts
                 if (upstream.shifted.nonempty()) {
-                    try (final Index fullPrevIndex = rightTable.getIndex().getPrevIndex();
-                            final Index previousToShift = fullPrevIndex.minus(restampRemovals)) {
+                    try (final TrackingMutableRowSet fullPrevRowSet = rightTable.getIndex().getPrevIndex();
+                         final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
                         if (previousToShift.nonempty()) {
                             try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
@@ -704,24 +704,24 @@ public class AsOfJoinHelper {
                                 final IndexShiftData.Iterator sit = upstream.shifted.applyIterator();
                                 while (sit.hasNext()) {
                                     sit.next();
-                                    final Index indexToShift =
-                                            previousToShift.subindexByKey(sit.beginRange(), sit.endRange());
-                                    if (indexToShift.empty()) {
-                                        indexToShift.close();
+                                    final TrackingMutableRowSet rowSetToShift =
+                                            previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
+                                    if (rowSetToShift.empty()) {
+                                        rowSetToShift.close();
                                         continue;
                                     }
 
-                                    final int shiftedSlots = asOfJoinStateManager.gatherShiftIndex(indexToShift,
+                                    final int shiftedSlots = asOfJoinStateManager.gatherShiftIndex(rowSetToShift,
                                             rightSources, slots, sequentialBuilders);
-                                    indexToShift.close();
+                                    rowSetToShift.close();
 
                                     for (int slotIndex = 0; slotIndex < shiftedSlots; ++slotIndex) {
                                         final long slot = slots.getLong(slotIndex);
-                                        try (final Index slotShiftIndex =
-                                                sequentialBuilders.get(slotIndex).getIndex()) {
+                                        try (final TrackingMutableRowSet slotShiftRowSet =
+                                                sequentialBuilders.get(slotIndex).build()) {
                                             sequentialBuilders.set(slotIndex, null);
 
-                                            final int shiftSize = slotShiftIndex.intSize();
+                                            final int shiftSize = slotShiftRowSet.intSize();
 
                                             getCachedLeftStampsAndKeys(asOfJoinStateManager, null, leftStampSource,
                                                     leftStampFillContext, sortContext, leftKeyChunk, leftValuesChunk,
@@ -729,12 +729,12 @@ public class AsOfJoinHelper {
 
                                             rightStampSource.fillPrevChunk(
                                                     rightStampFillContext.ensureCapacity(shiftSize),
-                                                    rightValues.ensureCapacity(shiftSize), slotShiftIndex);
+                                                    rightValues.ensureCapacity(shiftSize), slotShiftRowSet);
 
                                             final SegmentedSortedArray rightSsa =
                                                     asOfJoinStateManager.getRightSsa(slot);
 
-                                            slotShiftIndex
+                                            slotShiftRowSet
                                                     .fillRowKeyChunk(rightKeyIndices.ensureCapacity(shiftSize));
                                             sortContext.ensureCapacity(shiftSize).sort(rightKeyIndices.get(),
                                                     rightValues.get());
@@ -790,7 +790,7 @@ public class AsOfJoinHelper {
 
                         final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot);
 
-                        final Index rightAdded = sequentialBuilders.get(slotIndex).getIndex();
+                        final TrackingMutableRowSet rightAdded = sequentialBuilders.get(slotIndex).build();
                         sequentialBuilders.set(slotIndex, null);
 
                         final int rightSize = rightAdded.intSize();
@@ -844,7 +844,7 @@ public class AsOfJoinHelper {
                         for (int slotIndex = 0; slotIndex < modifiedSlotCount; ++slotIndex) {
                             final long slot = slots.getLong(slotIndex);
 
-                            try (final Index rightModified = sequentialBuilders.get(slotIndex).getIndex()) {
+                            try (final TrackingMutableRowSet rightModified = sequentialBuilders.get(slotIndex).build()) {
                                 sequentialBuilders.set(slotIndex, null);
                                 final int rightSize = rightModified.intSize();
 
@@ -870,7 +870,7 @@ public class AsOfJoinHelper {
                 SafeCloseable.closeArray(sortContext, leftStampFillContext, rightStampFillContext, rightValues,
                         rightKeyIndices, rightKeysForLeft);
 
-                downstream.modified = modifiedBuilder.getIndex();
+                downstream.modified = modifiedBuilder.build();
 
                 final boolean processedAdditionsOrRemovals = removedSlotCount > 0 || addedSlotCount > 0;
                 if (keysModified || stampModified || processedAdditionsOrRemovals) {
@@ -889,7 +889,7 @@ public class AsOfJoinHelper {
         return result;
     }
 
-    public interface SsaFactory extends Function<Index, SegmentedSortedArray>, SafeCloseable {
+    public interface SsaFactory extends Function<TrackingMutableRowSet, SegmentedSortedArray>, SafeCloseable {
     }
 
     private static Table bothIncrementalAj(JoinControl control,
@@ -939,7 +939,7 @@ public class AsOfJoinHelper {
             }
 
             @Override
-            public SegmentedSortedArray apply(Index rightIndex) {
+            public SegmentedSortedArray apply(TrackingMutableRowSet rightIndex) {
                 final SegmentedSortedArray ssa = ssaFactory.get();
                 final int slotSize = rightIndex.intSize();
                 if (slotSize > 0) {
@@ -960,7 +960,7 @@ public class AsOfJoinHelper {
             }
 
             @Override
-            public SegmentedSortedArray apply(Index leftIndex) {
+            public SegmentedSortedArray apply(TrackingMutableRowSet leftIndex) {
                 final SegmentedSortedArray ssa = ssaFactory.get();
                 final int slotSize = leftIndex.intSize();
                 if (slotSize > 0) {
@@ -985,7 +985,7 @@ public class AsOfJoinHelper {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final long slot = slots.getLong(slotIndex);
 
-                // if either initial state is empty, we would prefer to leave things as an index rather than process
+                // if either initial state is empty, we would prefer to leave things as an rowSet rather than process
                 // them into an ssa
                 final byte state = asOfJoinStateManager.getState(slot);
                 if ((state
@@ -1147,7 +1147,7 @@ public class AsOfJoinHelper {
 
             for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
                 final long index = rightKeysForLeft.get(ii);
-                if (index != Index.NULL_KEY) {
+                if (index != TrackingMutableRowSet.NULL_ROW_KEY) {
                     redirectionIndex.put(leftStampKeys.get(ii), index);
                 }
             }
@@ -1167,22 +1167,22 @@ public class AsOfJoinHelper {
                     @Override
                     public void onUpdate(Update upstream) {
                         final Update downstream = new Update();
-                        downstream.added = Index.FACTORY.getEmptyIndex();
-                        downstream.removed = Index.FACTORY.getEmptyIndex();
+                        downstream.added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                        downstream.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                         downstream.shifted = IndexShiftData.EMPTY;
                         downstream.modifiedColumnSet = result.modifiedColumnSet;
 
                         final boolean stampModified = upstream.modifiedColumnSet.containsAny(rightStampColumn);
 
-                        final Index.RandomBuilder modifiedBuilder = Index.FACTORY.getRandomBuilder();
+                        final RowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
                         try (final ColumnSource.FillContext fillContext =
                                 rightStampSource.makeFillContext(rightChunkSize);
                                 final LongSortKernel<Values, RowKeys> sortKernel =
                                         LongSortKernel.makeContext(stampChunkType, order, rightChunkSize, true)) {
 
-                            final Index restampRemovals;
-                            final Index restampAdditions;
+                            final TrackingMutableRowSet restampRemovals;
+                            final TrackingMutableRowSet restampAdditions;
                             if (stampModified) {
                                 restampAdditions = upstream.added.union(upstream.modified);
                                 restampRemovals = upstream.removed.union(upstream.getModifiedPreShift());
@@ -1241,8 +1241,8 @@ public class AsOfJoinHelper {
                                         / control.rightChunkSize();
                                 for (int ii = 0; ii < chunks; ++ii) {
                                     final long startChunk = chunks - ii - 1;
-                                    try (final Index chunkOk =
-                                            restampAdditions.subindexByPos(startChunk * control.rightChunkSize(),
+                                    try (final TrackingMutableRowSet chunkOk =
+                                            restampAdditions.subSetByPositionRange(startChunk * control.rightChunkSize(),
                                                     (startChunk + 1) * control.rightChunkSize())) {
                                         rightStampSource.fillChunk(fillContext, stampChunk, chunkOk);
                                         insertedIndices.setSize(chunkOk.intSize());
@@ -1317,7 +1317,7 @@ public class AsOfJoinHelper {
                             rightTransformer.transform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
                         }
 
-                        downstream.modified = modifiedBuilder.getIndex();
+                        downstream.modified = modifiedBuilder.build();
 
                         result.notifyListeners(downstream);
                     }
@@ -1334,41 +1334,41 @@ public class AsOfJoinHelper {
     }
 
     private static void rightIncrementalApplySsaShift(IndexShiftData shiftData, SegmentedSortedArray ssa,
-            LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
-            Index restampRemovals, QueryTable table,
-            int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
-            WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
-            RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+                                                      LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
+                                                      TrackingMutableRowSet restampRemovals, QueryTable table,
+                                                      int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
+                                                      WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
+                                                      RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
 
-        try (final Index fullPrevIndex = table.getIndex().getPrevIndex();
-                final Index previousToShift = fullPrevIndex.minus(restampRemovals);
-                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+        try (final TrackingMutableRowSet fullPrevRowSet = table.getIndex().getPrevIndex();
+             final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
-                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
+             final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
                         new SizedSafeCloseable<>(sz -> LongSortKernel.makeContext(stampSource.getChunkType(),
                                 ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, sz, true));
-                final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
-                final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
+             final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
+             final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
 
             final IndexShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {
                 sit.next();
-                try (final Index indexToShift = previousToShift.subindexByKey(sit.beginRange(), sit.endRange())) {
-                    if (indexToShift.empty()) {
+                try (final TrackingMutableRowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
+                    if (rowSetToShift.empty()) {
                         continue;
                     }
 
                     if (sit.polarityReversed()) {
-                        final int shiftSize = indexToShift.intSize();
+                        final int shiftSize = rowSetToShift.intSize();
 
-                        indexToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
+                        rowSetToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
                         if (chunkSize >= shiftSize) {
                             stampSource.fillPrevChunk(fillContext, rightStampValues.ensureCapacity(shiftSize),
-                                    indexToShift);
+                                    rowSetToShift);
                             sortKernel.sort(rightStampKeys.get(), rightStampValues.get());
                         } else {
                             stampSource.fillPrevChunk(shiftFillContext.ensureCapacity(shiftSize),
-                                    rightStampValues.ensureCapacity(shiftSize), indexToShift);
+                                    rightStampValues.ensureCapacity(shiftSize), rowSetToShift);
                             shiftSortKernel.ensureCapacity(shiftSize).sort(rightStampKeys.get(),
                                     rightStampValues.get());
                         }
@@ -1377,8 +1377,8 @@ public class AsOfJoinHelper {
                                 rightStampKeys.get(), sit.shiftDelta(), redirectionIndex, disallowExactMatch);
                         ssa.applyShiftReverse(rightStampValues.get(), rightStampKeys.get(), sit.shiftDelta());
                     } else {
-                        if (indexToShift.size() > chunkSize) {
-                            try (final RowSequence.Iterator shiftIt = indexToShift.getRowSequenceIterator()) {
+                        if (rowSetToShift.size() > chunkSize) {
+                            try (final RowSequence.Iterator shiftIt = rowSetToShift.getRowSequenceIterator()) {
                                 while (shiftIt.hasMore()) {
                                     final RowSequence chunkOk = shiftIt.getNextRowSequenceWithLength(chunkSize);
                                     stampSource.fillPrevChunk(fillContext, rightStampValues.ensureCapacity(chunkSize),
@@ -1396,8 +1396,8 @@ public class AsOfJoinHelper {
                             }
                         } else {
                             stampSource.fillPrevChunk(fillContext,
-                                    rightStampValues.ensureCapacity(indexToShift.intSize()), indexToShift);
-                            indexToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(indexToShift.intSize()));
+                                    rightStampValues.ensureCapacity(rowSetToShift.intSize()), rowSetToShift);
+                            rowSetToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(rowSetToShift.intSize()));
 
                             sortKernel.sort(rightStampKeys.get(), rightStampValues.get());
 
@@ -1415,17 +1415,17 @@ public class AsOfJoinHelper {
             MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
             final RedirectionIndex redirectionIndex) {
-        final Index rightIndex = rightTable.getIndex();
+        final TrackingMutableRowSet rightRowSet = rightTable.getIndex();
 
-        final WritableLongChunk<RowKeys> rightStampKeys = WritableLongChunk.makeWritableChunk(rightIndex.intSize());
+        final WritableLongChunk<RowKeys> rightStampKeys = WritableLongChunk.makeWritableChunk(rightRowSet.intSize());
         final WritableChunk<Values> rightStampValues =
-                rightStampSource.getChunkType().makeWritableChunk(rightIndex.intSize());
+                rightStampSource.getChunkType().makeWritableChunk(rightRowSet.intSize());
 
         try (final SafeCloseableList chunksToClose = new SafeCloseableList(rightStampKeys, rightStampValues)) {
             final Supplier<String> keyStringSupplier = () -> "[] (zero key columns)";
             try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
                     rightStampSource, originalRightStampSource)) {
-                stampContext.getAndCompactStamps(rightIndex, rightStampKeys, rightStampValues);
+                stampContext.getAndCompactStamps(rightRowSet, rightStampKeys, rightStampValues);
                 stampContext.processEntry(leftTable.getIndex(), rightStampValues, rightStampKeys, redirectionIndex);
             }
             final QueryTable result =
@@ -1442,7 +1442,7 @@ public class AsOfJoinHelper {
 
             final WritableLongChunk<RowKeys> compactedRightStampKeys;
             final WritableChunk<Values> compactedRightStampValues;
-            if (rightStampKeys.size() < rightIndex.size()) {
+            if (rightStampKeys.size() < rightRowSet.size()) {
                 compactedRightStampKeys = WritableLongChunk.makeWritableChunk(rightStampKeys.size());
                 compactedRightStampValues = rightStampSource.getChunkType().makeWritableChunk(rightStampKeys.size());
 
@@ -1469,7 +1469,7 @@ public class AsOfJoinHelper {
                                     final boolean stampModified = upstream.modified.nonempty()
                                             && upstream.modifiedColumnSet.containsAny(leftStampColumn);
 
-                                    final Index restampKeys;
+                                    final TrackingMutableRowSet restampKeys;
                                     if (stampModified) {
                                         upstream.getModifiedPreShift().forAllLongs(redirectionIndex::removeVoid);
                                         restampKeys = upstream.modified.union(upstream.added);
@@ -1477,8 +1477,8 @@ public class AsOfJoinHelper {
                                         restampKeys = upstream.added;
                                     }
 
-                                    try (final Index prevLeftIndex = leftTable.getIndex().getPrevIndex()) {
-                                        redirectionIndex.applyShift(prevLeftIndex, upstream.shifted);
+                                    try (final TrackingMutableRowSet prevLeftRowSet = leftTable.getIndex().getPrevIndex()) {
+                                        redirectionIndex.applyShift(prevLeftRowSet, upstream.shifted);
                                     }
 
                                     try (final AsOfStampContext stampContext =

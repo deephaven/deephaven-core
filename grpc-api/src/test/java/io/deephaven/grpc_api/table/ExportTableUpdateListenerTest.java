@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.TstUtils;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
@@ -70,7 +70,7 @@ public class ExportTableUpdateListenerTest {
         expectNoMessage(); // the refresh is empty
 
         // create and export the table
-        final QueryTable src = TstUtils.testTable(Index.FACTORY.getFlatIndex(100));
+        final QueryTable src = TstUtils.testTable(TrackingMutableRowSet.FACTORY.getFlatIndex(100));
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // validate we receive an initial table size update
@@ -84,7 +84,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testRefreshStaticTable() {
         // create and export the table
-        final QueryTable src = TstUtils.testTable(Index.FACTORY.getFlatIndex(1024));
+        final QueryTable src = TstUtils.testTable(TrackingMutableRowSet.FACTORY.getFlatIndex(1024));
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
@@ -110,7 +110,7 @@ public class ExportTableUpdateListenerTest {
         expectNoMessage(); // the refresh is empty
 
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(42));
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -132,7 +132,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testRefreshTickingTable() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(42));
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -160,7 +160,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testSessionClose() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(42));
         // create t1 in global query scope
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
@@ -191,7 +191,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testPropagatesError() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(42));
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -224,7 +224,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testListenerClosed() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(42));
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -261,7 +261,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testTableSizeUsesPrev() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(42));
         final MutableObject<SessionState.ExportObject<QueryTable>> t1 = new MutableObject<>();
 
         // now add the listener
@@ -277,7 +277,7 @@ public class ExportTableUpdateListenerTest {
         liveTableMonitor.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.added =
-                    Index.FACTORY.getIndexByRange(src.getIndex().lastRowKey() + 1, src.getIndex().lastRowKey() + 42);
+                    TrackingMutableRowSet.FACTORY.getRowSetByRange(src.getIndex().lastRowKey() + 1, src.getIndex().lastRowKey() + 42);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = IndexShiftData.EMPTY;
@@ -307,7 +307,7 @@ public class ExportTableUpdateListenerTest {
         liveTableMonitor.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.added =
-                    Index.FACTORY.getIndexByRange(src.getIndex().lastRowKey() + 1, src.getIndex().lastRowKey() + nRows);
+                    TrackingMutableRowSet.FACTORY.getRowSetByRange(src.getIndex().lastRowKey() + 1, src.getIndex().lastRowKey() + nRows);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = IndexShiftData.EMPTY;

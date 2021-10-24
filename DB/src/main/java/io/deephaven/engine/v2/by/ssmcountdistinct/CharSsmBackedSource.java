@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.CharSegmentedSortedMultiset;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 /**
  * A {@link SsmBackedColumnSource} for Characters.
@@ -82,7 +82,7 @@ public class CharSsmBackedSource extends AbstractColumnSource<DbCharArray>
     }
 
     @Override
-    public void clearDeltas(Index indices) {
+    public void clearDeltas(TrackingMutableRowSet indices) {
         indices.iterator().forEachLong(key -> {
             final CharSegmentedSortedMultiset ssm = getCurrentSsm(key);
             if(ssm != null) {

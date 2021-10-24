@@ -9,7 +9,8 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.Shuffle;
 import junit.framework.TestCase;
@@ -54,28 +55,28 @@ public class TestObjectArraySource {
         LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
-    private void testGetChunkGeneric(Object[] values, Object[] newValues, int chunkSize, Index index) {
+    private void testGetChunkGeneric(Object[] values, Object[] newValues, int chunkSize, TrackingMutableRowSet rowSet) {
         final ObjectArraySource source;
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try {
             source = forArray(values);
-            validateValues(chunkSize, values, index, source);
+            validateValues(chunkSize, values, rowSet, source);
         } finally {
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
         }
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
-            validateValues(chunkSize, newValues, index, source);
-            validatePrevValues(chunkSize, values, index, source);
+            validateValues(chunkSize, newValues, rowSet, source);
+            validatePrevValues(chunkSize, values, rowSet, source);
         } finally {
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
         }
     }
 
-    private void validateValues(int chunkSize, Object[] values, Index index, ObjectArraySource source) {
-        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
-        final Index.Iterator it = index.iterator();
+    private void validateValues(int chunkSize, Object[] values, TrackingMutableRowSet rowSet, ObjectArraySource source) {
+        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
@@ -103,13 +104,13 @@ public class TestObjectArraySource {
             }
             // endregion samecheck
         }
-        assertEquals(pos, index.size());
+        assertEquals(pos, rowSet.size());
     }
 
 
-    private void validatePrevValues(int chunkSize, Object[] values, Index index, ObjectArraySource source) {
-        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
-        final Index.Iterator it = index.iterator();
+    private void validatePrevValues(int chunkSize, Object[] values, TrackingMutableRowSet rowSet, ObjectArraySource source) {
+        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
@@ -125,26 +126,26 @@ public class TestObjectArraySource {
             }
             assertTrue(DefaultGetContext.isMyWritableChunk(context, chunk));
         }
-        assertEquals(pos, index.size());
+        assertEquals(pos, rowSet.size());
     }
 
     @Test
     public void testGetChunk() {
         final Random random = new Random(0);
-        testGetChunkGeneric(new Object[0], new Object[0], 1, Index.FACTORY.getIndexByValues());
-        testGetChunkGeneric(new Object[0], new Object[0], 16, Index.FACTORY.getIndexByValues());
+        testGetChunkGeneric(new Object[0], new Object[0], 1, TrackingMutableRowSet.FACTORY.getRowSetByValues());
+        testGetChunkGeneric(new Object[0], new Object[0], 16, TrackingMutableRowSet.FACTORY.getRowSetByValues());
 
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(0));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(0, 1));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4, 5, 6));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4,  6));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4, 5, 6, 7, 8));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 3, Index.FACTORY.getIndexByValues(5, 6, 7));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 4, Index.FACTORY.getIndexByValues(4, 5, 6, 7));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 5, Index.FACTORY.getIndexByValues(4, 5, 6, 7, 8));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 512), ArrayGenerator.randomObjects(random, 512), 4, Index.FACTORY.getIndexByValues(254, 255, 256, 257));
-        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 512), ArrayGenerator.randomObjects(random, 512), 5, Index.FACTORY.getIndexByValues(254, 255, 256, 257, 258));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4,  6));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 3, TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 6, 7));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 512), ArrayGenerator.randomObjects(random, 512), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257));
+        testGetChunkGeneric(ArrayGenerator.randomObjects(random, 512), ArrayGenerator.randomObjects(random, 512), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257, 258));
 
         for (int sourceSize = 32; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -4; v < 5; v++) {
@@ -156,20 +157,20 @@ public class TestObjectArraySource {
     }
 
     // region lazy
-    private void testGetChunkGenericLazy(Object[] values, int chunkSize, Index index) {
+    private void testGetChunkGenericLazy(Object[] values, int chunkSize, TrackingMutableRowSet rowSet) {
         final ObjectArraySource sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
-        final Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
-        final Index fullRange = sequentialBuilder.getIndex();
+        final TrackingMutableRowSet fullRange = sequentialBuilder.build();
         final Map<String, ObjectArraySource<?>> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource<?> source = formulaColumn.getDataView();
-        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
-        final Index.Iterator it = index.iterator();
+        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
@@ -182,27 +183,27 @@ public class TestObjectArraySource {
                 pos++;
             }
         }
-        assertEquals(pos, index.size());
+        assertEquals(pos, rowSet.size());
     }
     // endregion lazy
 
     @Test
     public void testGetChunkLazy() {
         final Random random = new Random(0);
-        testGetChunkGenericLazy(new Object[0], 1, Index.FACTORY.getIndexByValues());
-        testGetChunkGenericLazy(new Object[0], 16, Index.FACTORY.getIndexByValues());
+        testGetChunkGenericLazy(new Object[0], 1, TrackingMutableRowSet.FACTORY.getRowSetByValues());
+        testGetChunkGenericLazy(new Object[0], 16, TrackingMutableRowSet.FACTORY.getRowSetByValues());
 
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(0));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(0, 1));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4, 5, 6));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4,  6));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4, 5, 6, 7, 8));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 3, Index.FACTORY.getIndexByValues(5, 6, 7));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 4, Index.FACTORY.getIndexByValues(4, 5, 6, 7));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 5, Index.FACTORY.getIndexByValues(4, 5, 6, 7, 8));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 512), 4, Index.FACTORY.getIndexByValues(254, 255, 256, 257));
-        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 512), 5, Index.FACTORY.getIndexByValues(254, 255, 256, 257, 258));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4,  6));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 3, TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 6, 7));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 16), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 512), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257));
+        testGetChunkGenericLazy(ArrayGenerator.randomObjects(random, 512), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257, 258));
 
         for (int sourceSize = 512; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -2; v < 3; v += 2) {
@@ -226,11 +227,11 @@ public class TestObjectArraySource {
     }
 
     private void testParameterChunkAndIndexLazy(Random random, int sourceSize, Object[] values, int indexSize) {
-        final Index index = Index.FACTORY.getIndexByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 4) {
-            testGetChunkGenericLazy(values, chunkSize, index);
-            testGetChunkGenericLazy(values, chunkSize + 1, index);
-            testGetChunkGenericLazy(values, chunkSize - 1, index);
+            testGetChunkGenericLazy(values, chunkSize, rowSet);
+            testGetChunkGenericLazy(values, chunkSize + 1, rowSet);
+            testGetChunkGenericLazy(values, chunkSize - 1, rowSet);
         }
     }
 
@@ -250,36 +251,36 @@ public class TestObjectArraySource {
     }
 
     private void testParameterChunkAndIndex(Random random, int sourceSize, Object[] values, Object[] newvalues, int indexSize) {
-        final Index index = Index.FACTORY.getIndexByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 2) {
-            testGetChunkGeneric(values, newvalues, chunkSize, index);
-            testGetChunkGeneric(values, newvalues, chunkSize + 1, index);
-            testGetChunkGeneric(values, newvalues, chunkSize - 1, index);
+            testGetChunkGeneric(values, newvalues, chunkSize, rowSet);
+            testGetChunkGeneric(values, newvalues, chunkSize + 1, rowSet);
+            testGetChunkGeneric(values, newvalues, chunkSize - 1, rowSet);
         }
     }
 
-    private void testFillChunkGeneric(Object[] values, Object[] newValues, int chunkSize, Index index) {
+    private void testFillChunkGeneric(Object[] values, Object[] newValues, int chunkSize, TrackingMutableRowSet rowSet) {
         final ObjectArraySource source;
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try {
             source = forArray(values);
-            validateValuesWithFill(chunkSize, values, index, source);
+            validateValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
         }
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
-            validateValuesWithFill(chunkSize, newValues, index, source);
-            validatePrevValuesWithFill(chunkSize, values, index, source);
+            validateValuesWithFill(chunkSize, newValues, rowSet, source);
+            validatePrevValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
         }
     }
 
-    private void validateValuesWithFill(int chunkSize, Object[] values, Index index, ObjectArraySource source) {
-        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
-        final Index.Iterator it = index.iterator();
+    private void validateValuesWithFill(int chunkSize, Object[] values, TrackingMutableRowSet rowSet, ObjectArraySource source) {
+        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
@@ -295,12 +296,12 @@ public class TestObjectArraySource {
                 pos++;
             }
         }
-        assertEquals(pos, index.size());
+        assertEquals(pos, rowSet.size());
     }
 
-    private void validatePrevValuesWithFill(int chunkSize, Object[] values, Index index, ObjectArraySource source) {
-        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
-        final Index.Iterator it = index.iterator();
+    private void validatePrevValuesWithFill(int chunkSize, Object[] values, TrackingMutableRowSet rowSet, ObjectArraySource source) {
+        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
@@ -316,26 +317,26 @@ public class TestObjectArraySource {
                 pos++;
             }
         }
-        assertEquals(pos, index.size());
+        assertEquals(pos, rowSet.size());
     }
 
     @Test
     public void testFillChunk() {
         final Random random = new Random(0);
-        testFillChunkGeneric(new Object[0], new Object[0], 1, Index.FACTORY.getIndexByValues());
-        testFillChunkGeneric(new Object[0], new Object[0], 16, Index.FACTORY.getIndexByValues());
+        testFillChunkGeneric(new Object[0], new Object[0], 1, TrackingMutableRowSet.FACTORY.getRowSetByValues());
+        testFillChunkGeneric(new Object[0], new Object[0], 16, TrackingMutableRowSet.FACTORY.getRowSetByValues());
 
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(0));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(0, 1));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4, 5, 6));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4,  6));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4, 5, 6, 7, 8));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 3, Index.FACTORY.getIndexByValues(5, 6, 7));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 4, Index.FACTORY.getIndexByValues(4, 5, 6, 7));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 5, Index.FACTORY.getIndexByValues(4, 5, 6, 7, 8));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 512), ArrayGenerator.randomObjects(random, 512), 4, Index.FACTORY.getIndexByValues(254, 255, 256, 257));
-        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 512), ArrayGenerator.randomObjects(random, 512), 5, Index.FACTORY.getIndexByValues(254, 255, 256, 257, 258));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4,  6));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 3, TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 6, 7));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 16), ArrayGenerator.randomObjects(random, 16), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 512), ArrayGenerator.randomObjects(random, 512), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257));
+        testFillChunkGeneric(ArrayGenerator.randomObjects(random, 512), ArrayGenerator.randomObjects(random, 512), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257, 258));
 
         for (int sourceSize = 32; sourceSize < 8192; sourceSize *= 4) {
             for (int v = -4; v < 5; v += 2) {
@@ -359,29 +360,29 @@ public class TestObjectArraySource {
     }
 
     private void testParameterFillChunkAndIndex(Random random, int sourceSize, Object[] values, Object[] newValues, int indexSize) {
-        final Index index = Index.FACTORY.getIndexByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 2) {
-            testFillChunkGeneric(values, newValues, chunkSize, index);
-            testFillChunkGeneric(values, newValues, chunkSize + 1, index);
-            testFillChunkGeneric(values, newValues, chunkSize - 1, index);
+            testFillChunkGeneric(values, newValues, chunkSize, rowSet);
+            testFillChunkGeneric(values, newValues, chunkSize + 1, rowSet);
+            testFillChunkGeneric(values, newValues, chunkSize - 1, rowSet);
         }
     }
 
     // region lazygeneric
-    private void testFillChunkLazyGeneric(Object[] values, int chunkSize, Index index) {
+    private void testFillChunkLazyGeneric(Object[] values, int chunkSize, TrackingMutableRowSet rowSet) {
         final ObjectArraySource sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
-        final Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
-        final Index fullRange = sequentialBuilder.getIndex();
+        final TrackingMutableRowSet fullRange = sequentialBuilder.build();
         final Map<String, ObjectArraySource<?>> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource source = formulaColumn.getDataView();
-        final RowSequence.Iterator rsIterator = index.getRowSequenceIterator();
-        final Index.Iterator it = index.iterator();
+        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
         long pos = 0;
@@ -396,7 +397,7 @@ public class TestObjectArraySource {
                 pos++;
             }
         }
-        assertEquals(pos, index.size());
+        assertEquals(pos, rowSet.size());
     }
     // endregion lazygeneric
 
@@ -404,20 +405,20 @@ public class TestObjectArraySource {
     @Test
     public void testFillChunkLazy() {
         final Random random = new Random(0);
-        testFillChunkLazyGeneric(new Object[0], 1, Index.FACTORY.getIndexByValues());
-        testFillChunkLazyGeneric(new Object[0], 16, Index.FACTORY.getIndexByValues());
+        testFillChunkLazyGeneric(new Object[0], 1, TrackingMutableRowSet.FACTORY.getRowSetByValues());
+        testFillChunkLazyGeneric(new Object[0], 16, TrackingMutableRowSet.FACTORY.getRowSetByValues());
 
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(0));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(0, 1));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4, 5, 6));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4,  6));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, Index.FACTORY.getIndexByValues(4, 5, 6, 7, 8));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 3, Index.FACTORY.getIndexByValues(5, 6, 7));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 4, Index.FACTORY.getIndexByValues(4, 5, 6, 7));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 5, Index.FACTORY.getIndexByValues(4, 5, 6, 7, 8));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 512), 4, Index.FACTORY.getIndexByValues(254, 255, 256, 257));
-        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 512), 5, Index.FACTORY.getIndexByValues(254, 255, 256, 257, 258));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4,  6));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 3, TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 6, 7));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 16), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 512), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257));
+        testFillChunkLazyGeneric(ArrayGenerator.randomObjects(random, 512), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257, 258));
 
         for (int sourceSize = 512; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -2; v < 3; v++) {
@@ -440,11 +441,11 @@ public class TestObjectArraySource {
     }
 
     private void testParameterFillChunkAndIndexLazy(Random random, int sourceSize, Object[] values, int indexSize) {
-        final Index index = Index.FACTORY.getIndexByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 4) {
-            testFillChunkLazyGeneric(values, chunkSize, index);
-            testFillChunkLazyGeneric(values, chunkSize + 1, index);
-            testFillChunkLazyGeneric(values, chunkSize - 1, index);
+            testFillChunkLazyGeneric(values, chunkSize, rowSet);
+            testFillChunkLazyGeneric(values, chunkSize + 1, rowSet);
+            testFillChunkLazyGeneric(values, chunkSize - 1, rowSet);
         }
     }
 
@@ -494,8 +495,8 @@ public class TestObjectArraySource {
         // super hack
         final Object[] peekedBlock = (Object[])source.getBlock(0);
 
-        try (Index srcKeys = Index.FACTORY.getIndexByRange(rangeStart, rangeEnd)) {
-            try (Index destKeys = Index.FACTORY.getIndexByRange(rangeStart + 1, rangeEnd + 1)) {
+        try (TrackingMutableRowSet srcKeys = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart, rangeEnd)) {
+            try (TrackingMutableRowSet destKeys = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -523,7 +524,7 @@ public class TestObjectArraySource {
         final ObjectArraySource src = new ObjectArraySource<>(String.class);
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final Index keys = Index.FACTORY.getEmptyIndex();
+        try (final TrackingMutableRowSet keys = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
              final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
@@ -545,7 +546,7 @@ public class TestObjectArraySource {
             source.set(ii, data[ii]);
         }
 
-        final long [] keys = LongStream.concat(LongStream.of(Index.NULL_KEY), LongStream.range(0, data.length - 1)).toArray();
+        final long [] keys = LongStream.concat(LongStream.of(TrackingMutableRowSet.NULL_ROW_KEY), LongStream.range(0, data.length - 1)).toArray();
         Shuffle.shuffleArray(rng, keys);
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
@@ -555,7 +556,7 @@ public class TestObjectArraySource {
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());
             for (int ii = 0; ii < keys.length; ++ii) {
-                if (keys[ii] == Index.NULL_KEY) {
+                if (keys[ii] == TrackingMutableRowSet.NULL_ROW_KEY) {
                     assertEquals(null, dest.get(ii));
                 } else {
                     checkFromValues(data[(int)keys[ii]], dest.get(ii));

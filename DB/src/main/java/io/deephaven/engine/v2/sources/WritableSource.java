@@ -54,10 +54,10 @@ public interface WritableSource<T> extends ColumnSource<T>, WritableChunkSink<At
     }
 
     /**
-     * Ensure that this WritableSource can accept index keys in range {@code [0, capacity)}.
+     * Ensure that this WritableSource can accept rowSet keys in range {@code [0, capacity)}.
      *
      * @param capacity The new minimum capacity
-     * @param nullFilled Whether data should be "null-filled". If true, get operations at index keys that have not been
+     * @param nullFilled Whether data should be "null-filled". If true, get operations at rowSet keys that have not been
      *        set will return the appropriate null value; otherwise such gets produce undefined results.
      */
     void ensureCapacity(long capacity, boolean nullFilled);

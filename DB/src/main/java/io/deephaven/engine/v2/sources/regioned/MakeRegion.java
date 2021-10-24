@@ -14,7 +14,7 @@ public interface MakeRegion<ATTR extends Attributes.Values, REGION_TYPE extends 
      *
      * @param columnDefinition The {@link ColumnDefinition}
      * @param columnLocation The {@link ColumnLocation}
-     * @param regionIndex The index of the region to add.
+     * @param regionIndex The rowSet of the region to add.
      *
      * @return A new or re-usable column region appropriate for this source and the supplied parameters. A null value
      *         may be returned, which should be interpreted to mean use a special null column, which has size() 0 and is

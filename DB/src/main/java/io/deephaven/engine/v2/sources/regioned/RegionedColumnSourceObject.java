@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 
 abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
         extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
@@ -24,7 +24,7 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
 
     @Override
     public final DATA_TYPE get(final long elementIndex) {
-        return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
+        return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
     }
 
     public static class AsValues<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {

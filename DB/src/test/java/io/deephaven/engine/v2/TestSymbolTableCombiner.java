@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.IntegerSparseArraySource;
 import io.deephaven.engine.v2.sources.regioned.SymbolTableSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
@@ -50,7 +50,7 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
         final IntegerSparseArraySource symbolMapper2 = new IntegerSparseArraySource();
         combiner.lookupSymbols(symbolTable, symbolMapper2, -2);
 
-        for (final Index.Iterator it = symbolTable.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = symbolTable.getIndex().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             final String symbol = symbolSource.get(key);
             final long id = idSource.getLong(key);
@@ -86,7 +86,7 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
                 System.out.println("Step = " + step + ", size=" + symbolTable.size());
             }
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final Index[] updates = GenerateTableUpdates.computeTableUpdates(size / 10, random, symbolTable,
+                final TrackingMutableRowSet[] updates = GenerateTableUpdates.computeTableUpdates(size / 10, random, symbolTable,
                         columnInfo, true, false, false);
                 symbolTable.notifyListeners(updates[0], updates[1], updates[2]);
             });
@@ -95,7 +95,7 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
 
     private static void checkAdditions(QueryTable symbolTable, ColumnSource<String> symbolSource,
             ColumnSource<Long> idSource, IntegerSparseArraySource symbolMapper, Map<String, Integer> uniqueIdMap) {
-        for (final Index.Iterator it = symbolTable.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = symbolTable.getIndex().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             final String symbol = symbolSource.get(key);
             final long id = idSource.getLong(key);

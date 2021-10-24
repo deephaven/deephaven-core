@@ -60,7 +60,7 @@ public class SyncTableFilter {
             Configuration.getInstance().getIntegerWithDefault("SyncTableFilter.chunkSize", 1 << 16);
     private final List<SyncTableDescription> tables;
     private final QueryTable[] results;
-    private final Index[] resultIndex;
+    private final TrackingMutableRowSet[] resultRowSet;
 
     private final TupleSource[] keySources;
     private final List<ColumnSource<Long>> idSources;
@@ -70,10 +70,10 @@ public class SyncTableFilter {
     private final List<ListenerRecorder> recorders;
 
     private static class KeyState {
-        Index pendingRows = Index.FACTORY.getEmptyIndex();
-        Index matchedRows = Index.FACTORY.getEmptyIndex();
-        Index.SequentialBuilder unprocessedBuilder = null;
-        Index.SequentialBuilder currentIdBuilder = null;
+        TrackingMutableRowSet pendingRows = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        TrackingMutableRowSet matchedRows = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        SequentialRowSetBuilder unprocessedBuilder = null;
+        SequentialRowSetBuilder currentIdBuilder = null;
         final TLongArrayList unprocessedIds = new TLongArrayList();
         int sortStart = -1;
     }
@@ -137,7 +137,7 @@ public class SyncTableFilter {
         this.keySources = new TupleSource[tableCount];
         this.idSources = new ArrayList<>(tableCount);
         this.results = new QueryTable[tableCount];
-        this.resultIndex = new Index[tableCount];
+        this.resultRowSet = new TrackingMutableRowSet[tableCount];
         this.minimumid = new TObjectLongHashMap<>(0, 0.5f, QueryConstants.NULL_LONG);
         this.recorders = new ArrayList<>(tableCount);
 
@@ -167,8 +167,8 @@ public class SyncTableFilter {
             objectToState.add(new HashMap<>());
             keySources[ii] = TupleSourceFactory.makeTupleSource(sources);
             idSources.add(std.table.getColumnSource(std.idColumn, long.class));
-            resultIndex[ii] = Index.FACTORY.getEmptyIndex();
-            results[ii] = (QueryTable) ((QueryTable) std.table).getSubTable(resultIndex[ii], null, mergedListener);
+            resultRowSet[ii] = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            results[ii] = (QueryTable) ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
 
             final ListenerRecorder listenerRecorder =
                     new ListenerRecorder("SyncTableFilter(" + std.name + ")", (DynamicTable) std.table, results[ii]);
@@ -184,13 +184,13 @@ public class SyncTableFilter {
         final HashSet<Object> keysToRefilter = hashSetPair.first;
         Assert.eqZero(hashSetPair.second.size(), "hashSetPair.second.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final Index.RandomBuilder addedBuilder = Index.FACTORY.getRandomBuilder();
+            final RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
             for (Object key : keysToRefilter) {
                 final KeyState state = objectToState.get(tt).get(key);
                 doMatch(tt, state, minimumid.get(key));
-                addedBuilder.addIndex(state.matchedRows);
+                addedBuilder.addRowSet(state.matchedRows);
             }
-            resultIndex[tt].insert(addedBuilder.getIndex());
+            resultRowSet[tt].insert(addedBuilder.build());
         }
         keysToRefilter.clear();
     }
@@ -214,7 +214,7 @@ public class SyncTableFilter {
                     if (recorder.getShifted().nonempty()) {
                         throw new IllegalStateException("Can not process shifted rows in SyncTableFilter!");
                     }
-                    final Index addedAndModified = recorder.getAdded().union(recorder.getModified());
+                    final TrackingMutableRowSet addedAndModified = recorder.getAdded().union(recorder.getModified());
                     consumeRows(rr, addedAndModified);
                 }
             }
@@ -223,13 +223,13 @@ public class SyncTableFilter {
             final HashSet<Object> keysToRefilter = hashSetPair.first;
             final HashSet<Object> keysWithNewCurrentRows = hashSetPair.second;
             for (int tt = 0; tt < objectToState.size(); tt++) {
-                final Index.RandomBuilder removedBuilder = Index.FACTORY.getRandomBuilder();
-                final Index.RandomBuilder addedBuilder = Index.FACTORY.getRandomBuilder();
+                final RowSetBuilder removedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+                final RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
                 for (Object key : keysToRefilter) {
                     final KeyState state = objectToState.get(tt).get(key);
-                    removedBuilder.addIndex(state.matchedRows);
+                    removedBuilder.addRowSet(state.matchedRows);
                     doMatch(tt, state, minimumid.get(key));
-                    addedBuilder.addIndex(state.matchedRows);
+                    addedBuilder.addRowSet(state.matchedRows);
                 }
 
                 for (Object key : keysWithNewCurrentRows) {
@@ -240,24 +240,24 @@ public class SyncTableFilter {
                     if (!keysToRefilter.contains(key)) {
                         // if we did not refilter this key; then we should add the currently matched values,
                         // otherwise we ignore them because they have already been superseded
-                        final Index newlyMatchedRows = state.currentIdBuilder.getIndex();
+                        final TrackingMutableRowSet newlyMatchedRows = state.currentIdBuilder.build();
                         state.matchedRows.insert(newlyMatchedRows);
-                        newlyMatchedRows.remove(resultIndex[tt]);
-                        addedBuilder.addIndex(newlyMatchedRows);
+                        newlyMatchedRows.remove(resultRowSet[tt]);
+                        addedBuilder.addRowSet(newlyMatchedRows);
                     }
                     state.currentIdBuilder = null;
                 }
 
-                final Index removed = removedBuilder.getIndex();
-                final Index added = addedBuilder.getIndex();
-                resultIndex[tt].remove(removed);
-                resultIndex[tt].insert(added);
+                final TrackingMutableRowSet removed = removedBuilder.build();
+                final TrackingMutableRowSet added = addedBuilder.build();
+                resultRowSet[tt].remove(removed);
+                resultRowSet[tt].insert(added);
 
-                final Index addedAndRemoved = added.intersect(removed);
+                final TrackingMutableRowSet addedAndRemoved = added.intersect(removed);
 
-                final Index modified;
+                final TrackingMutableRowSet modified;
                 if (recorders.get(tt).getNotificationStep() == currentStep) {
-                    modified = recorders.get(tt).getModified().intersect(resultIndex[tt]);
+                    modified = recorders.get(tt).getModified().intersect(resultRowSet[tt]);
                     modified.remove(added);
                     modified.insert(addedAndRemoved);
                 } else {
@@ -285,8 +285,8 @@ public class SyncTableFilter {
     }
 
     private void doMatch(final int tableIndex, final KeyState state, final long matchValue) {
-        final Index.SequentialBuilder matchedBuilder = Index.FACTORY.getSequentialBuilder();
-        final Index.SequentialBuilder pendingBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder matchedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder pendingBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices =
                 WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
 
@@ -308,8 +308,8 @@ public class SyncTableFilter {
             }
         }
 
-        state.pendingRows = pendingBuilder.getIndex();
-        state.matchedRows = matchedBuilder.getIndex();
+        state.pendingRows = pendingBuilder.build();
+        state.matchedRows = matchedBuilder.build();
     }
 
     @NotNull
@@ -327,7 +327,7 @@ public class SyncTableFilter {
                     continue;
                 }
                 if (keyState.unprocessedBuilder != null) {
-                    keyState.pendingRows.insert(keyState.unprocessedBuilder.getIndex());
+                    keyState.pendingRows.insert(keyState.unprocessedBuilder.build());
                     keyState.unprocessedBuilder = null;
                 }
                 if (keyState.currentIdBuilder != null) {
@@ -392,15 +392,15 @@ public class SyncTableFilter {
         return new Pair<>(keysToRefilter, keysWithNewCurrent);
     }
 
-    private void consumeRows(final int tableIndex, final Index index) {
+    private void consumeRows(final int tableIndex, final TrackingMutableRowSet rowSet) {
         // in Treasure the TupleSource will handle chunks better
         final WritableObjectChunk valuesChunk = WritableObjectChunk.makeWritableChunk(CHUNK_SIZE);
         final WritableLongChunk<Attributes.Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
         final WritableLongChunk<Attributes.OrderedRowKeys> keyIndicesChunk =
                 WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
         final ColumnSource<Long> idSource = idSources.get(tableIndex);
-        try (final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
-                final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
+        try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
+             final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 chunkOk.fillRowKeyChunk(keyIndicesChunk);
@@ -414,14 +414,14 @@ public class SyncTableFilter {
                 idSource.fillChunk(fillContext, idChunk, chunkOk);
 
                 // TODO: when we are in Treasure, we should sort this so we do not need to repeatedly look things up
-                // TODO: In Treasure we can also use current factories for our index
+                // TODO: In Treasure we can also use current factories for our rowSet
                 for (int ii = 0; ii < idChunk.size(); ++ii) {
                     final Object key = valuesChunk.get(ii);
                     pendingKeys.add(key);
                     final KeyState currentState =
                             objectToState.get(tableIndex).computeIfAbsent(key, (k) -> new KeyState());
                     if (currentState.unprocessedBuilder == null) {
-                        currentState.unprocessedBuilder = Index.FACTORY.getSequentialBuilder();
+                        currentState.unprocessedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
                     }
                     final long minid = minimumid.get(key);
 
@@ -431,7 +431,7 @@ public class SyncTableFilter {
                     }
                     if (id == minid) {
                         if (currentState.currentIdBuilder == null) {
-                            currentState.currentIdBuilder = Index.FACTORY.getSequentialBuilder();
+                            currentState.currentIdBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
                         }
                         currentState.currentIdBuilder.appendKey(keyIndicesChunk.get(ii));
                         continue;

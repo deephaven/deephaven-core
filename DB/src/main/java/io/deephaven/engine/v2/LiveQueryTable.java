@@ -7,28 +7,29 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Map;
 
 public class LiveQueryTable extends QueryTable implements LiveTable {
-    private Index.RandomBuilder additionsBuilder = Index.FACTORY.getRandomBuilder();
+    private RowSetBuilder additionsBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
-    public LiveQueryTable(Index index, Map<String, ? extends ColumnSource<?>> result) {
-        super(index, result);
+    public LiveQueryTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result) {
+        super(rowSet, result);
     }
 
     @Override
     public void refresh() {
-        final Index.RandomBuilder builder;
+        final RowSetBuilder builder;
         synchronized (this) {
             builder = additionsBuilder;
-            additionsBuilder = Index.FACTORY.getRandomBuilder();
+            additionsBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         }
-        final Index added = builder.getIndex();
+        final TrackingMutableRowSet added = builder.build();
         getIndex().insert(added);
         if (added.size() > 0) {
-            notifyListeners(added, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+            notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
         }
     }
 

@@ -161,7 +161,7 @@ public class StringSetImpl implements StringSet, Serializable {
                 final String value = reversibleLookup.get(bi);
                 final int keyBitIndex = toOffset.applyAsInt(value);
                 if (keyBitIndex >= Long.SIZE) {
-                    throw new RuntimeException("Symbol manager returned an index " + keyBitIndex
+                    throw new RuntimeException("Symbol manager returned an rowSet " + keyBitIndex
                             + " greater than the maximum, for symbol " + value);
                 }
                 encoding |= (1L << keyBitIndex);
@@ -195,9 +195,9 @@ public class StringSetImpl implements StringSet, Serializable {
     public interface ReversibleLookup<DATA_TYPE> {
 
         /**
-         * Forward lookup from the integral index.
+         * Forward lookup from the integral rowSet.
          * 
-         * @return the DATA_TYPE associated with the index.
+         * @return the DATA_TYPE associated with the rowSet.
          */
 
         DATA_TYPE get(long index);
@@ -205,7 +205,7 @@ public class StringSetImpl implements StringSet, Serializable {
         /**
          * Reverse lookup of the DATA_TYPE.
          * 
-         * @return the integral index associated with the DATA_TYPE.
+         * @return the integral rowSet associated with the DATA_TYPE.
          */
 
         int rget(int highestIndex, DATA_TYPE value);

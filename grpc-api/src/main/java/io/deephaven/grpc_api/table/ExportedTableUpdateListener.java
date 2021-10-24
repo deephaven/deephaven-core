@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
 import io.deephaven.engine.v2.NotificationStepReceiver;
 import io.deephaven.engine.v2.ShiftAwareSwapListener;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
@@ -139,8 +139,8 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         final MutableLong initSize = new MutableLong();
         table.initializeWithSnapshot(logPrefix, swapListener, (usePrev, beforeClockValue) -> {
             swapListener.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
-            final Index index = table.getIndex();
-            initSize.setValue(usePrev ? index.sizePrev() : index.size());
+            final TrackingMutableRowSet rowSet = table.getIndex();
+            initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
             return true;
         });
         sendUpdateMessage(ticket, initSize.longValue(), null);

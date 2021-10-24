@@ -28,11 +28,8 @@ import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -158,8 +155,8 @@ public class QueryTableTest extends QueryTableTestBase {
     /**
      * Confirm that the system behaves correctly with select validation and the new "flatten" code QueryTable#select().
      * Prior to the change that fixed this, "validateSelect" would cause the SelectColumn to get associated with one
-     * index, but then select() would want to flatten that index, so a later initDef would try to associate it with a
-     * different index, and then the assertion would fail at AbstractFormulaColumn.java:86. The simple fix is that
+     * rowSet, but then select() would want to flatten that rowSet, so a later initDef would try to associate it with a
+     * different rowSet, and then the assertion would fail at AbstractFormulaColumn.java:86. The simple fix is that
      * validateSelect() should copy its select columns before using them and then throw away the copies.
      */
     public void testIds6760() {
@@ -1130,10 +1127,10 @@ public class QueryTableTest extends QueryTableTestBase {
             builder.shiftRange(1 << 29, 1 << 30, 1024);
             downstream.shifted = builder.build();
 
-            try (final Index indexCopy = table.getIndex().clone()) {
-                downstream.shifted.apply(indexCopy);
+            try (final TrackingMutableRowSet rowSetCopy = table.getIndex().clone()) {
+                downstream.shifted.apply(rowSetCopy);
                 TstUtils.removeRows(table, table.getIndex());
-                TstUtils.addToTable(table, indexCopy, c("Sentinel", 1));
+                TstUtils.addToTable(table, rowSetCopy, c("Sentinel", 1));
             }
 
             table.notifyListeners(downstream);
@@ -1273,7 +1270,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Index rowsToRemove = right.getIndex().clone();
+            final TrackingMutableRowSet rowsToRemove = right.getIndex().clone();
             removeRows(right, rowsToRemove);
             right.notifyListeners(i(), rowsToRemove, i());
         });
@@ -1929,7 +1926,7 @@ public class QueryTableTest extends QueryTableTestBase {
         rightTable.listenForUpdates(coalescingListener, true);
 
         Table lastSnapshot = snapshot.silent().select();
-        Index lastIndex = Index.FACTORY.getEmptyIndex();
+        TrackingMutableRowSet lastRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
 
         try {
             for (int step = 0; step < 200; step++) {
@@ -1950,16 +1947,16 @@ public class QueryTableTest extends QueryTableTestBase {
                     if (modStamp) {
                         final long lastStamp = stampTable.getIndex().lastRowKey();
                         final int numAdditions = 1 + random.nextInt(stampSize);
-                        final Index stampsToAdd =
-                                Index.FACTORY.getIndexByRange(lastStamp + 1, lastStamp + numAdditions);
+                        final TrackingMutableRowSet stampsToAdd =
+                                TrackingMutableRowSet.FACTORY.getRowSetByRange(lastStamp + 1, lastStamp + numAdditions);
 
                         final ColumnHolder[] columnAdditions = new ColumnHolder[stampInfo.length];
                         for (int ii = 0; ii < columnAdditions.length; ii++) {
                             columnAdditions[ii] = stampInfo[ii].populateMapAndC(stampsToAdd, random);
                         }
                         TstUtils.addToTable(stampTable, stampsToAdd, columnAdditions);
-                        stampTable.notifyListeners(stampsToAdd, Index.FACTORY.getEmptyIndex(),
-                                Index.FACTORY.getEmptyIndex());
+                        stampTable.notifyListeners(stampsToAdd, TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                                TrackingMutableRowSet.FACTORY.getEmptyRowSet());
                     }
                     if (!modifyRightFirst && modRight) {
                         GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable, rightInfo);
@@ -1975,15 +1972,15 @@ public class QueryTableTest extends QueryTableTestBase {
                         System.out.println("Snapshot Added: " + simpleListener.added);
                         System.out.println("Snapshot Removed: " + simpleListener.removed);
                         System.out.println("Snapshot Modified: " + simpleListener.modified);
-                        final Index coalAdded = coalescingListener.indexUpdateCoalescer.takeAdded();
+                        final TrackingMutableRowSet coalAdded = coalescingListener.indexUpdateCoalescer.takeAdded();
                         System.out.println("Right Coalesced Added: " + coalAdded);
-                        final Index coalRemoved = coalescingListener.indexUpdateCoalescer.takeRemoved();
+                        final TrackingMutableRowSet coalRemoved = coalescingListener.indexUpdateCoalescer.takeRemoved();
                         System.out.println("Right Coalesced Removed: " + coalRemoved);
-                        final Index coalModified = coalescingListener.indexUpdateCoalescer.takeModified();
+                        final TrackingMutableRowSet coalModified = coalescingListener.indexUpdateCoalescer.takeModified();
                         System.out.println("Right Coalesced Modified: " + coalModified);
 
-                        final Index modified = simpleListener.added.union(simpleListener.modified);
-                        final Index unmodified = snapshot.getIndex().minus(modified);
+                        final TrackingMutableRowSet modified = simpleListener.added.union(simpleListener.modified);
+                        final TrackingMutableRowSet unmodified = snapshot.getIndex().minus(modified);
                         System.out.println("Modified: " + modified);
                         System.out.println("Unmodified: " + unmodified);
 
@@ -1992,7 +1989,7 @@ public class QueryTableTest extends QueryTableTestBase {
                                 stampTable.getColumnSource("Stamp").getInt(stampTable.getIndex().lastRowKey());
                         @SuppressWarnings("unchecked")
                         final ColumnSource<Integer> stamps = snapshot.getColumnSource("Stamp");
-                        for (final Index.Iterator it = modified.iterator(); it.hasNext();) {
+                        for (final TrackingMutableRowSet.Iterator it = modified.iterator(); it.hasNext();) {
                             final long next = it.nextLong();
                             final int stamp = stamps.getInt(next);
                             assertEquals(lastStamp, stamp);
@@ -2001,9 +1998,9 @@ public class QueryTableTest extends QueryTableTestBase {
                         // and anything unmodified should be the same as last time
                         @SuppressWarnings("unchecked")
                         final DataColumn<Integer> lastStamps = lastSnapshot.getColumn("Stamp");
-                        for (final Index.Iterator it = unmodified.iterator(); it.hasNext();) {
+                        for (final TrackingMutableRowSet.Iterator it = unmodified.iterator(); it.hasNext();) {
                             final long next = it.nextLong();
-                            final long lastPos = lastIndex.find(next);
+                            final long lastPos = lastRowSet.find(next);
                             assertTrue(lastPos >= 0);
                             final int priorStamp = lastStamps.getInt((int) lastPos);
                             final int stamp = stamps.getInt(next);
@@ -2021,7 +2018,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
                     // make sure everything from the right table matches the snapshot
                     lastSnapshot = new QueryTable(snapshot.getIndex().clone(), snapshot.getColumnSourceMap());
-                    lastIndex = rightTable.getIndex().clone();
+                    lastRowSet = rightTable.getIndex().clone();
                     // the coalescing listener can be reset
                     coalescingListener.reset();
                     simpleListener.reset();
@@ -2884,7 +2881,7 @@ public class QueryTableTest extends QueryTableTestBase {
             // noinspection unchecked
             final ColumnSource<String> symbol = t.getColumnSource("Symbol");
             // noinspection unchecked
-            final Map<String, Index> gtr = (Map) t.getIndex().getGrouping(symbol);
+            final Map<String, TrackingMutableRowSet> gtr = (Map) t.getIndex().getGrouping(symbol);
             ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
             final Table result =
                     t.whereIn(Table.GroupStrategy.CREATE_GROUPS, t.where("Truthiness=true"), "Symbol", "Timestamp");
@@ -2928,14 +2925,14 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testIds7153() {
         final QueryTable lTable =
-                testRefreshingTable(Index.FACTORY.getIndexByValues(10, 12, 14, 16), c("X", "a", "b", "c", "d"));
+                testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByValues(10, 12, 14, 16), c("X", "a", "b", "c", "d"));
         final QueryTable rTable = testRefreshingTable(c("X", "a", "b", "c", "d"), c("R", 0, 1, 2, 3));
 
         final MutableObject<QueryTable> nj = new MutableObject<>();
         final MutableObject<QueryTable> ft = new MutableObject<>();
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Index newRows = i(2, 4, 18, 20);
+            final TrackingMutableRowSet newRows = i(2, 4, 18, 20);
             addToTable(lTable, newRows, c("X", "e", "f", "g", "h"));
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.added = newRows;
@@ -2955,7 +2952,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 // undefined, B) it must have been created AFTER any of its dependencies may have ticked this cycle and
                 // C) the table is not allowed to tick this cycle.
 
-                // The specific scenario we are trying to catch is when the parent re-uses data structures (i.e. index)
+                // The specific scenario we are trying to catch is when the parent re-uses data structures (i.e. rowSet)
                 // from its parent, which have valid prev values, but the prev values must not be used during the first
                 // cycle.
                 final Thread offltm = new Thread(() -> ft.setValue((QueryTable) nj.getValue().flatten()));
@@ -2974,7 +2971,7 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testNoCoalesceOnNotification() {
         // SourceTable is an uncoalesced table that also has an idempotent "start" despite whether or not the coalesced
         // table continues to be live and managed. When the source table ticks and it is currently uncoalesced, there
-        // was a regression inside of BaseTable#notifyListeners that would invoke getIndex() and cause this table to be
+        // was a regression inside of BaseTable#notifyListeners that would invoke build() and cause this table to be
         // coalesced and for the new result table to receive and propagate that update. IDS-7153 made it explicitly
         // illegal
         // to publish an update on a table's very first cycle if it was initiated under the LTM lock. It's also not
@@ -2985,8 +2982,8 @@ public class QueryTableTest extends QueryTableTestBase {
         // LogicalClock.DEFAULT.currentStep()
         // assertion error when notifying from an uncoalesced table.
 
-        final Index parentIndex = Index.FACTORY.getEmptyIndex();
-        final Supplier<QueryTable> supplier = () -> TstUtils.testRefreshingTable(parentIndex);
+        final TrackingMutableRowSet parentRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final Supplier<QueryTable> supplier = () -> TstUtils.testRefreshingTable(parentRowSet);
 
         final UncoalescedTable table = new UncoalescedTable(
                 supplier.get().getDefinition(),
@@ -3004,21 +3001,21 @@ public class QueryTableTest extends QueryTableTestBase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
 
-            update.added = Index.FACTORY.getIndexByValues(parentIndex.size());
-            update.removed = Index.FACTORY.getEmptyIndex();
-            update.modified = Index.FACTORY.getEmptyIndex();
+            update.added = TrackingMutableRowSet.FACTORY.getRowSetByValues(parentRowSet.size());
+            update.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            update.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = IndexShiftData.EMPTY;
 
-            parentIndex.insert(update.added);
+            parentRowSet.insert(update.added);
             table.notifyListeners(update);
             Assert.assertEquals(LogicalClock.DEFAULT.currentStep(), table.getLastNotificationStep());
         });
     }
 
     public void testNotifyListenersReleasesUpdateEmptyUpdate() {
-        final Index index = Index.FACTORY.getFlatIndex(100);
-        final QueryTable src = TstUtils.testRefreshingTable(index);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(100);
+        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
         final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
         update.added = update.removed = update.modified = i();
         update.shifted = IndexShiftData.EMPTY;
@@ -3036,10 +3033,10 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateNoListeners() {
-        final Index index = Index.FACTORY.getFlatIndex(100);
-        final QueryTable src = TstUtils.testRefreshingTable(index);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(100);
+        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
         final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-        update.added = Index.FACTORY.getIndexByRange(200, 220); // must be a non-empty update
+        update.added = TrackingMutableRowSet.FACTORY.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
         update.shifted = IndexShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -3052,10 +3049,10 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateDirectListener() {
-        final Index index = Index.FACTORY.getFlatIndex(100);
-        final QueryTable src = TstUtils.testRefreshingTable(index);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(100);
+        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
         final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-        update.added = Index.FACTORY.getIndexByRange(200, 220); // must be a non-empty update
+        update.added = TrackingMutableRowSet.FACTORY.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
         update.shifted = IndexShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -3072,10 +3069,10 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateChildListener() {
-        final Index index = Index.FACTORY.getFlatIndex(100);
-        final QueryTable src = TstUtils.testRefreshingTable(index);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(100);
+        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
         final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-        update.added = Index.FACTORY.getIndexByRange(200, 220); // must be a non-empty update
+        update.added = TrackingMutableRowSet.FACTORY.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
         update.shifted = IndexShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -3092,10 +3089,10 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateShiftAwareChildListener() {
-        final Index index = Index.FACTORY.getFlatIndex(100);
-        final QueryTable src = TstUtils.testRefreshingTable(index);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(100);
+        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
         final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-        update.added = Index.FACTORY.getIndexByRange(200, 220); // must be a non-empty update
+        update.added = TrackingMutableRowSet.FACTORY.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
         update.shifted = IndexShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -3121,7 +3118,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // .sumBy()
         //
         // The exception we were getting was: java.lang.IllegalArgumentException: keys argument has elements not in the
-        // index
+        // rowSet
         //
         final Table t0 = newTable(byteCol("Q", (byte) 0));
         final QueryTable t1 = TstUtils.testRefreshingTable(i(), intCol("T"));
@@ -3131,9 +3128,9 @@ public class QueryTableTest extends QueryTableTestBase {
         for (int step = 0; step < 2; ++step) {
             final int key = i++;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final Index addIndex = i(key);
-                addToTable(t1, addIndex, intCol("T", key));
-                t1.notifyListeners(addIndex, i(), i());
+                final TrackingMutableRowSet addRowSet = i(key);
+                addToTable(t1, addRowSet, intCol("T", key));
+                t1.notifyListeners(addRowSet, i(), i());
                 TableTools.show(result);
             });
         }

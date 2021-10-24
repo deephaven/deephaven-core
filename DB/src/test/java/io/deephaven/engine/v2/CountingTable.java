@@ -30,7 +30,7 @@ class CountingTable {
 
     private static <T> ColumnSource<T> getCountingColumnSource(final ColumnSource<T> inputColumnSource) {
         // noinspection unchecked
-        return (ColumnSource<T>) Proxy.newProxyInstance(IndexGroupingTest.class.getClassLoader(),
+        return (ColumnSource<T>) Proxy.newProxyInstance(TrackingRowSetGroupingTest.class.getClassLoader(),
                 new Class[] {MethodCounter.class, ColumnSource.class},
                 new CountingColumnSourceInvocationHandler(inputColumnSource));
     }

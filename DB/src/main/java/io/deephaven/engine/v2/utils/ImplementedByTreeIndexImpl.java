@@ -4,7 +4,7 @@ interface ImplementedByTreeIndexImpl {
     /**
      * DO NOT USE!
      *
-     * This method exists for use by internal index implementations when it is known that the Index type must own a
+     * This method exists for use by internal rowSet implementations when it is known that the TrackingMutableRowSet type must own a
      * {@link TreeIndexImpl}.
      *
      * @return the backing TreeIndexImpl
@@ -12,7 +12,7 @@ interface ImplementedByTreeIndexImpl {
     TreeIndexImpl getImpl();
 
     /**
-     * Override to improve index debug-tracing messages.
+     * Override to improve rowSet debug-tracing messages.
      */
     default String strid() {
         return "";

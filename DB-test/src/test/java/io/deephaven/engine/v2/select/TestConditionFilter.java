@@ -2,6 +2,8 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -14,7 +16,6 @@ import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.jpy.PythonTest;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jpy.PyInputMode;
@@ -337,13 +338,13 @@ public class TestConditionFilter extends PythonTest {
 
     private void check(String expression, Predicate<Map<String, Object>> testPredicate, boolean testPython,
             boolean testNative) {
-        final Index.SequentialBuilder keepBuilder = Index.FACTORY.getSequentialBuilder();
-        final Index.SequentialBuilder dropBuilder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder keepBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder dropBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
         final Map<String, ? extends ColumnSource> sourcesMap =
                 testDataTable.updateView("actualI = i", "actualII = ii", "actualK = k").getColumnSourceMap();
 
-        for (final Index.Iterator it = testDataTable.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = testDataTable.getIndex().iterator(); it.hasNext();) {
             final long idx = it.nextLong();
             final Map<String, Object> rowMap = new HashMap<>(sourcesMap.size());
             for (Map.Entry<String, ? extends ColumnSource> entry : sourcesMap.entrySet()) {
@@ -358,11 +359,11 @@ public class TestConditionFilter extends PythonTest {
             }
         }
 
-        final Index keepIndex = keepBuilder.getIndex();
-        final Index dropIndex = dropBuilder.getIndex();
+        final TrackingMutableRowSet keepRowSet = keepBuilder.build();
+        final TrackingMutableRowSet dropRowSet = dropBuilder.build();
 
         if (testNative) {
-            validate(expression, keepIndex, dropIndex, FormulaParserConfiguration.Deephaven);
+            validate(expression, keepRowSet, dropRowSet, FormulaParserConfiguration.Deephaven);
         }
         if (testPython) {
             QueryScope currentScope = QueryScope.getScope();
@@ -376,7 +377,7 @@ public class TestConditionFilter extends PythonTest {
                     pythonScope.putParam(param.getName(), param.getValue());
                 }
                 expression = expression.replaceAll("true", "True").replaceAll("false", "False");
-                validate(expression, keepIndex, dropIndex, FormulaParserConfiguration.Numba);
+                validate(expression, keepRowSet, dropRowSet, FormulaParserConfiguration.Numba);
             } finally {
                 QueryScope.setScope(currentScope);
             }
@@ -384,13 +385,13 @@ public class TestConditionFilter extends PythonTest {
 
     }
 
-    private void validate(String expression, Index keepIndex, Index dropIndex, FormulaParserConfiguration parser) {
-        final Index filteredIndex = initCheck(expression, parser);
+    private void validate(String expression, TrackingMutableRowSet keepRowSet, TrackingMutableRowSet dropRowSet, FormulaParserConfiguration parser) {
+        final TrackingMutableRowSet filteredRowSet = initCheck(expression, parser);
 
-        Require.eq(keepIndex.size(), "keepIndex.size()", filteredIndex.size(), "filteredIndex.size()");
-        Require.eq(keepIndex.intersect(filteredIndex).size(), "keepIndex.intersect(filteredIndex).size()",
-                filteredIndex.size(), "filteredIndex.size()");
-        Require.eqZero(dropIndex.intersect(filteredIndex).size(), "dropIndex.intersect(filteredIndex).size()");
+        Require.eq(keepRowSet.size(), "keepRowSet.size()", filteredRowSet.size(), "filteredRowSet.size()");
+        Require.eq(keepRowSet.intersect(filteredRowSet).size(), "keepRowSet.intersect(filteredRowSet).size()",
+                filteredRowSet.size(), "filteredRowSet.size()");
+        Require.eqZero(dropRowSet.intersect(filteredRowSet).size(), "dropRowSet.intersect(filteredRowSet).size()");
     }
 
 
@@ -426,7 +427,7 @@ public class TestConditionFilter extends PythonTest {
     }
 
 
-    private Index initCheck(String expression, FormulaParserConfiguration parser) {
+    private TrackingMutableRowSet initCheck(String expression, FormulaParserConfiguration parser) {
         final SelectFilter conditionFilter = ConditionFilter.createConditionFilter(expression, parser);
         conditionFilter.init(testDataTable.getDefinition());
         return conditionFilter.filter(testDataTable.getIndex().clone(), testDataTable.getIndex(), testDataTable, false);

@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sort.partition;
 
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.hash.TLongHashSet;
 
@@ -14,11 +14,11 @@ class PartitionUtilities {
      * http://www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html
      */
     static void sampleIndexKeys(
-            final long seed, final Index index, final int sampleSize,
+            final long seed, final TrackingMutableRowSet rowSet, final int sampleSize,
             final WritableLongChunk<Attributes.RowKeys> sampledKeys) {
         final Random random = new Random(seed);
         final TLongHashSet sample = new TLongHashSet(sampleSize);
-        final long maxValue = index.size();
+        final long maxValue = rowSet.size();
         final long initialValue = (maxValue - sampleSize) + 1;
 
         for (long jj = initialValue; jj <= maxValue; ++jj) {
@@ -39,7 +39,7 @@ class PartitionUtilities {
         // using the java array sort or our own timsort would be nice, though it is only suitable for parallel arrays
         final TLongArrayList array = new TLongArrayList(sampleSize);
         sample.forEach(key -> {
-            array.add(index.get(key - 1));
+            array.add(rowSet.get(key - 1));
             return true;
         });
         array.sort();

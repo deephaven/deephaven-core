@@ -3685,7 +3685,7 @@ public class RspBitmapTest {
         rb = rb.add(2 * BLOCK_SIZE + BLOCK_LAST);
         rb = rb.addRange(3 * BLOCK_SIZE, 3 * BLOCK_SIZE + BLOCK_LAST);
         final TreeIndexImpl.SequentialBuilder b = new TreeIndexImplSequentialBuilder();
-        rb.invert(b, new TreeIndex(rb).rangeIterator(), rb.getCardinality());
+        rb.invert(b, new TrackingMutableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
         final TreeIndexImpl timpl = b.getTreeIndexImpl();
         assertEquals(rb.getCardinality(), timpl.ixCardinality());
         assertTrue(timpl.ixContainsRange(0, rb.getCardinality() - 1));

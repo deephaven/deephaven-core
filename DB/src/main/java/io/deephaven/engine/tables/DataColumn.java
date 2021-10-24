@@ -129,10 +129,10 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     /**
-     * Returns the value in the column at the row designated by the index
+     * Returns the value in the column at the row designated by the rowSet
      * 
-     * @param index - the index of the row for which the data is being retrieved
-     * @return the value in the column at the row designated by the index
+     * @param index - the rowSet of the row for which the data is being retrieved
+     * @return the value in the column at the row designated by the rowSet
      */
     TYPE get(long index);
 

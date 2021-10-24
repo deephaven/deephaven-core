@@ -11,17 +11,17 @@ import java.util.Arrays;
 
 /**
  * The GroupedRedirectionIndex is intended for situations where you have several Indices that represent contiguous rows
- * of your output table and a flat output index.
+ * of your output table and a flat output rowSet.
  *
  * When sorting a table by it's grouping column, instead of using a large contiguous RedirectionIndex, we simply store
  * the indices for each group and the accumulated cardinality. We then binary search in the accumulated cardinality for
- * a given key; and fetch the corresponding offset from that group's Index.
+ * a given key; and fetch the corresponding offset from that group's TrackingMutableRowSet.
  *
  * This RedirectionIndex does not support mutation.
  */
 public class GroupedRedirectionIndex implements RedirectionIndex {
     /**
-     * The total size of the redirection Index.
+     * The total size of the redirection TrackingMutableRowSet.
      */
     private final long size;
     /**
@@ -30,9 +30,9 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
      */
     private final long[] groupSizes;
     /**
-     * The actual Index for each group; parallel with groupSizes.
+     * The actual TrackingMutableRowSet for each group; parallel with groupSizes.
      */
-    private final Index[] groups;
+    private final TrackingMutableRowSet[] groups;
 
     /**
      * If you are doing repeated get calls, then we must redo the binary search from scratch each time. To avoid this
@@ -41,7 +41,7 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
      */
     private final ThreadLocal<SavedContext> threadContext = ThreadLocal.withInitial(SavedContext::new);
 
-    public GroupedRedirectionIndex(long size, long[] groupSizes, Index[] groups) {
+    public GroupedRedirectionIndex(long size, long[] groupSizes, TrackingMutableRowSet[] groups) {
         this.size = size;
         this.groupSizes = groupSizes;
         this.groups = groups;
@@ -50,7 +50,7 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
     @Override
     public long get(long key) {
         if (key < 0 || key >= size) {
-            return Index.NULL_KEY;
+            return TrackingMutableRowSet.NULL_ROW_KEY;
         }
 
         int slot;

@@ -38,9 +38,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     long nextRow = 0;
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
 
-    public BaseArrayBackedMutableTable(Index index, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
-            Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
-        super(index, nameToColumnSource, processPendingUpdater);
+    public BaseArrayBackedMutableTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
+                                       Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
+        super(rowSet, nameToColumnSource, processPendingUpdater);
         this.enumValues = enumValues;
         MutableInputTable mutableInputTable = makeHandler();
         setAttribute(Table.INPUT_TABLE_ATTRIBUTE, mutableInputTable);
@@ -58,7 +58,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     }
 
     static void processInitial(Table initialTable, BaseArrayBackedMutableTable result) {
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         result.processPendingTable(initialTable, true, new IndexChangeRecorder() {
             @Override
             public void addIndex(long key) {
@@ -76,7 +76,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
         }, (e) -> {
         });
-        result.getIndex().insert(builder.getIndex());
+        result.getIndex().insert(builder.build());
         result.getIndex().initializePreviousValue();
         LiveTableMonitor.DEFAULT.addTable(result);
     }
@@ -209,8 +209,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             return pendingChange;
         }
 
-        private Table doSnap(Table newData, Index index) {
-            return doSnap(newData.getSubTable(index));
+        private Table doSnap(Table newData, TrackingMutableRowSet rowSet) {
+            return doSnap(newData.getSubTable(rowSet));
         }
 
         private Table doSnap(Table newData) {
@@ -224,9 +224,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void delete(Table table, Index index) throws IOException {
+        public void delete(Table table, TrackingMutableRowSet rowSet) throws IOException {
             validateDelete(table);
-            final PendingChange pendingChange = new PendingChange(doSnap(table, index), true, false);
+            final PendingChange pendingChange = new PendingChange(doSnap(table, rowSet), true, false);
             pendingChanges.add(pendingChange);
             onPendingChange.run();
             waitForSequence(pendingChange.sequence);
@@ -293,9 +293,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 final ArrayBackedColumnSource<Object> dest =
                         Require.neqNull(sources.get(colName), "destination column source: " + colName);
 
-                final Index defaultValuesIndex = defaultValues.getIndex();
+                final TrackingMutableRowSet defaultValuesRowSet = defaultValues.getIndex();
                 for (int rr = 0; rr < rowArray.length; ++rr) {
-                    final long key = defaultValuesIndex.get(rowArray[rr]);
+                    final long key = defaultValuesRowSet.get(rowArray[rr]);
                     dest.set(rr, cs.get(key));
                 }
 
@@ -316,7 +316,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
 
             final QueryTable newData =
-                    new QueryTable(getTableDefinition(), Index.FACTORY.getFlatIndex(valueArray.length), sources);
+                    new QueryTable(getTableDefinition(), TrackingMutableRowSet.FACTORY.getFlatIndex(valueArray.length), sources);
             add(newData, true, listener);
         }
 
@@ -335,7 +335,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
 
             final QueryTable newData =
-                    new QueryTable(getTableDefinition(), Index.FACTORY.getFlatIndex(valueArray.length), sources);
+                    new QueryTable(getTableDefinition(), TrackingMutableRowSet.FACTORY.getFlatIndex(valueArray.length), sources);
 
             add(newData, allowEdits, listener);
         }

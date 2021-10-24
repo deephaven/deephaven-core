@@ -10,8 +10,8 @@ import io.deephaven.engine.v2.parquet.metadata.TableInfo;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.v2.sources.regioned.RegionedPageStore;
-import io.deephaven.engine.v2.utils.CurrentOnlyIndex;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.MutableRowSetImpl;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.RowGroupReader;
@@ -147,8 +147,8 @@ class ParquetTableLocation extends AbstractTableLocation {
                 exists && groupingColumns.containsKey(parquetColumnName));
     }
 
-    private CurrentOnlyIndex computeIndex() {
-        final CurrentOnlyIndex.SequentialBuilder sequentialBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
+    private MutableRowSetImpl computeIndex() {
+        final MutableRowSetImpl.SequentialBuilder sequentialBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
 
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
             final long subRegionSize = rowGroups[rgi].getNum_rows();
@@ -156,6 +156,6 @@ class ParquetTableLocation extends AbstractTableLocation {
             final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
             sequentialBuilder.appendRange(subRegionFirstKey, subRegionLastKey);
         }
-        return (CurrentOnlyIndex) sequentialBuilder.getIndex();
+        return (MutableRowSetImpl) sequentialBuilder.getIndex();
     }
 }

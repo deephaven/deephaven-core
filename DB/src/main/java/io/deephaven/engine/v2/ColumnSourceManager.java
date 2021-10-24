@@ -6,7 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -40,9 +40,9 @@ public interface ColumnSourceManager {
     /**
      * Observe size changes in the previously added table locations, and update the managed column sources accordingly.
      * 
-     * @return The index of added keys
+     * @return The rowSet of added keys
      */
-    Index refresh();
+    TrackingMutableRowSet refresh();
 
     /**
      * Get the added locations, first the ones that have been "included" (found to exist with non-zero size) in order of

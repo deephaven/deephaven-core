@@ -4,7 +4,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -30,16 +30,16 @@ public class SnapshotUtils {
     /**
      * For each name in stampColumns: - identify a stamp source (namely 'stampColumns.get(name)') - a row in that stamp
      * source (namely 'stampKey') - a stamp dest (namely the column identified by 'destColumns.get(name)') - a bunch of
-     * destination rows (namely all the rows defined in 'destIndex') Then "spray" that single source value over those
+     * destination rows (namely all the rows defined in 'destRowSet') Then "spray" that single source value over those
      * destination values.
      *
      * @param stampColumns The stamp columns that serve as the source data
      * @param stampKey The source key
      * @param destColumns The destination columns we are "spraying" to
-     * @param destIndex The keys in destColumns we want to write to
+     * @param destRowSet The keys in destColumns we want to write to
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
-            @NotNull Map<String, ? extends WritableSource<?>> destColumns, @NotNull Index destIndex) {
+            @NotNull Map<String, ? extends WritableSource<?>> destColumns, @NotNull TrackingMutableRowSet destRowSet) {
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> src = entry.getValue();
@@ -47,7 +47,7 @@ public class SnapshotUtils {
             // Fill the corresponding destination column
             final WritableSource<?> dest = destColumns.get(name);
             final ChunkFiller destFiller = ChunkFiller.fromChunkType(src.getChunkType());
-            destFiller.fillFromSingleValue(src, stampKey, dest, destIndex);
+            destFiller.fillFromSingleValue(src, stampKey, dest, destRowSet);
         }
     }
 
@@ -76,20 +76,20 @@ public class SnapshotUtils {
     }
 
     /**
-     * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by srcIndex)
-     * to a column indicated by destColumns.get(name) (with a range of rows defined by destIndex).
+     * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by srcRowSet)
+     * to a column indicated by destColumns.get(name) (with a range of rows defined by destRowSet).
      *
      * @param srcColumns The stamp columns that serve as the source data
-     * @param srcIndex The keys in the srcColumns we are reading from
+     * @param srcRowSet The keys in the srcColumns we are reading from
      * @param destColumns The destination columns we are writing to
-     * @param destIndex The keys in destColumns we want to write to
+     * @param destRowSet The keys in destColumns we want to write to
      */
     public static void copyDataColumns(@NotNull Map<String, ? extends ColumnSource<?>> srcColumns,
-            @NotNull Index srcIndex, @NotNull Map<String, ? extends WritableSource<?>> destColumns,
-            @NotNull Index destIndex,
-            boolean usePrev) {
-        assert srcIndex.size() == destIndex.size();
-        if (srcIndex.empty()) {
+                                       @NotNull TrackingMutableRowSet srcRowSet, @NotNull Map<String, ? extends WritableSource<?>> destColumns,
+                                       @NotNull TrackingMutableRowSet destRowSet,
+                                       boolean usePrev) {
+        assert srcRowSet.size() == destRowSet.size();
+        if (srcRowSet.empty()) {
             return;
         }
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : srcColumns.entrySet()) {
@@ -97,8 +97,8 @@ public class SnapshotUtils {
             final ColumnSource<?> srcCs = entry.getValue();
 
             final WritableSource<?> destCs = destColumns.get(name);
-            destCs.ensureCapacity(destIndex.lastRowKey() + 1);
-            ChunkUtils.copyData(srcCs, srcIndex, destCs, destIndex, usePrev);
+            destCs.ensureCapacity(destRowSet.lastRowKey() + 1);
+            ChunkUtils.copyData(srcCs, srcRowSet, destCs, destRowSet, usePrev);
         }
     }
 }

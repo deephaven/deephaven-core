@@ -26,13 +26,13 @@ public class TstIndexUtil {
     }
 
     public static class BuilderToRangeConsumer implements LongRangeAbortableConsumer {
-        private IndexBuilder builder;
+        private RowSetBuilder builder;
 
-        private BuilderToRangeConsumer(final IndexBuilder builder) {
+        private BuilderToRangeConsumer(final RowSetBuilder builder) {
             this.builder = builder;
         }
 
-        public static BuilderToRangeConsumer adapt(final IndexBuilder builder) {
+        public static BuilderToRangeConsumer adapt(final RowSetBuilder builder) {
             return new BuilderToRangeConsumer(builder);
         }
 
@@ -43,26 +43,26 @@ public class TstIndexUtil {
         }
     }
 
-    public static Index indexFromString(final String str, final IndexBuilder builder) {
+    public static TrackingMutableRowSet indexFromString(final String str, final RowSetBuilder builder) {
         final BuilderToRangeConsumer adaptor = BuilderToRangeConsumer.adapt(builder);
         stringToRanges(str, adaptor);
-        return builder.getIndex();
+        return builder.build();
     }
 
-    public static Index indexFromString(String string) {
-        final IndexBuilder builder = Index.FACTORY.getBuilder();
+    public static TrackingMutableRowSet indexFromString(String string) {
+        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getBuilder();
         return indexFromString(string, builder);
     }
 
-    public static final class IndexToBuilderAdaptor implements IndexBuilder {
-        private final Index ix;
+    public static final class RowSetToBuilderAdaptor implements RowSetBuilder {
+        private final TrackingMutableRowSet ix;
 
-        public IndexToBuilderAdaptor(final Index ix) {
+        public RowSetToBuilderAdaptor(final TrackingMutableRowSet ix) {
             this.ix = ix;
         }
 
         @Override
-        public Index getIndex() {
+        public MutableRowSet build() {
             return ix;
         }
 
@@ -76,13 +76,13 @@ public class TstIndexUtil {
             ix.insertRange(firstKey, lastKey);
         }
 
-        public static IndexToBuilderAdaptor adapt(final Index ix) {
-            return new IndexToBuilderAdaptor(ix);
+        public static RowSetToBuilderAdaptor adapt(final TrackingMutableRowSet ix) {
+            return new RowSetToBuilderAdaptor(ix);
         }
     }
 
-    public static Index indexFromString(String string, final Index ix) {
-        return indexFromString(string, IndexToBuilderAdaptor.adapt(ix));
+    public static TrackingMutableRowSet indexFromString(String string, final TrackingMutableRowSet ix) {
+        return indexFromString(string, RowSetToBuilderAdaptor.adapt(ix));
     }
 
     public static SortedRanges sortedRangesFromString(final String str) {

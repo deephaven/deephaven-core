@@ -90,11 +90,11 @@ public class PlotUtils {
     }
 
     /**
-     * Gets the color of the {@code chart}'s color palette at the specified index {@code color}.
+     * Gets the color of the {@code chart}'s color palette at the specified rowSet {@code color}.
      *
      * @param chart chart
-     * @param color index
-     * @return color of the {@code chart} at the index {@code color}
+     * @param color rowSet
+     * @return color of the {@code chart} at the rowSet {@code color}
      */
     @Deprecated
     public static Paint intToColor(final ChartImpl chart, final Integer color) {

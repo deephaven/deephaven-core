@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
@@ -13,7 +14,6 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.v2.utils.TimeProvider;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 
@@ -44,7 +44,7 @@ public class TimeTable extends QueryTable implements LiveTable {
     }
 
     public TimeTable(TimeProvider timeProvider, DBDateTime firstTime, long dbPeriod) {
-        super(Index.FACTORY.getIndexByValues(), initColumn());
+        super(TrackingMutableRowSet.FACTORY.getRowSetByValues(), initColumn());
         if (dbPeriod <= 0) {
             throw new IllegalArgumentException("Invalid time period: " + dbPeriod + " nanoseconds");
         }
@@ -97,10 +97,10 @@ public class TimeTable extends QueryTable implements LiveTable {
                 if (dbPeriod >= 5_000_000_000L) {
                     log.info().append("TimeTable updated to ").append(lastTime.toString()).endl();
                 }
-                final Index range = Index.FACTORY.getIndexByRange(rangeStart, lastIndex);
+                final TrackingMutableRowSet range = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart, lastIndex);
                 getIndex().insert(range);
                 if (notifyListeners) {
-                    notifyListeners(range, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+                    notifyListeners(range, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
                 }
             }
         } finally {

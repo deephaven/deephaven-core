@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -27,10 +27,10 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         super(type);
     }
 
-    public TreeMapSource(Class<T> type, Index index, T[] data) {
+    public TreeMapSource(Class<T> type, TrackingMutableRowSet rowSet, T[] data) {
         // noinspection unchecked
         super(convertType(type));
-        add(index, data);
+        add(rowSet, data);
         prevData = this.data;
     }
 
@@ -45,7 +45,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    public synchronized void add(final Index index, T[] vs) {
+    public synchronized void add(final TrackingMutableRowSet rowSet, T[] vs) {
         if (groupToRange != null) {
             setGroupToRange(null);
         }
@@ -55,11 +55,11 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             prevData = new TreeMap<>(this.data);
             lastAdditionTime = currentStep;
         }
-        if (index.size() != vs.length) {
-            throw new IllegalArgumentException("Index=" + index + ", data(" + vs.length + ")=" + Arrays.toString(vs));
+        if (rowSet.size() != vs.length) {
+            throw new IllegalArgumentException("TrackingMutableRowSet=" + rowSet + ", data(" + vs.length + ")=" + Arrays.toString(vs));
         }
 
-        index.forAllLongs(new LongConsumer() {
+        rowSet.forAllLongs(new LongConsumer() {
             private final MutableInt ii = new MutableInt(0);
 
             @Override
@@ -70,7 +70,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         });
     }
 
-    public synchronized void remove(Index index) {
+    public synchronized void remove(TrackingMutableRowSet rowSet) {
         if (groupToRange != null) {
             setGroupToRange(null);
         }
@@ -80,7 +80,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             prevData = new TreeMap<>(this.data);
             lastAdditionTime = currentStep;
         }
-        for (final Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             this.data.remove(iterator.nextLong());
         }
     }
@@ -100,9 +100,9 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public synchronized T get(long index) {
-        // If a test asks for a non-existent positive index something is wrong.
+        // If a test asks for a non-existent positive rowSet something is wrong.
         // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
-        // has an empty redirection index entry that just gets passed through to the inner column source as -1.
+        // has an empty redirection rowSet entry that just gets passed through to the inner column source as -1.
         if (index >= 0 && !data.containsKey(index))
             throw new IllegalStateException("Asking for a non-existent key: " + index);
         return data.get(index);

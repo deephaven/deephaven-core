@@ -40,9 +40,9 @@ public class SortHelpers {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.sortBySymbolTable", true);
 
     /**
-     * If we have more than this many entries per group, instead of creating a large flat redirection Index, we create a
-     * redirection index that is composed of the group indices and an accumulated cardinality cache. This can save a
-     * significant amount of memory when the groups are large and storing them using our Index structure is more
+     * If we have more than this many entries per group, instead of creating a large flat redirection TrackingMutableRowSet, we create a
+     * redirection rowSet that is composed of the group indices and an accumulated cardinality cache. This can save a
+     * significant amount of memory when the groups are large and storing them using our TrackingMutableRowSet structure is more
      * efficient.
      */
     public static int groupedRedirectionThreshold =
@@ -163,9 +163,9 @@ public class SortHelpers {
     final static class GroupedSortMapping implements SortMapping {
         private final long size;
         private final long[] groupSize;
-        private final Index[] groups;
+        private final TrackingMutableRowSet[] groups;
 
-        private GroupedSortMapping(long size, long[] groupSize, Index[] groups) {
+        private GroupedSortMapping(long size, long[] groupSize, TrackingMutableRowSet[] groups) {
             this.size = size;
             this.groupSize = groupSize;
             this.groups = groups;
@@ -210,20 +210,20 @@ public class SortHelpers {
     static private final SortMapping EMPTY_SORT_MAPPING = new ArraySortMapping(CollectionUtil.ZERO_LENGTH_LONG_ARRAY);
 
     /**
-     * Note that if usePrev is true, then indexToSort is the previous index; not the current index, and we should not
+     * Note that if usePrev is true, then indexToSort is the previous rowSet; not the current rowSet, and we should not
      * need to call getPrevIndex.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-            ReadOnlyIndex indexToSort, boolean usePrev) {
+                                     RowSet indexToSort, boolean usePrev) {
         return getSortedKeys(order, columnsToSortBy, indexToSort, usePrev, sortBySymbolTable);
     }
 
     /**
-     * Note that if usePrev is true, then indexToSort is the previous index; not the current index, and we should not
+     * Note that if usePrev is true, then indexToSort is the previous rowSet; not the current rowSet, and we should not
      * need to call getPrevIndex.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-            ReadOnlyIndex indexToSort, boolean usePrev, boolean allowSymbolTable) {
+                                     RowSet indexToSort, boolean usePrev, boolean allowSymbolTable) {
         if (indexToSort.size() == 0) {
             return EMPTY_SORT_MAPPING;
         }
@@ -329,11 +329,11 @@ public class SortHelpers {
         }
     }
 
-    private static final String SORTED_INDEX_COLUMN_NAME = "SortedIndex";
+    private static final String SORTED_INDEX_COLUMN_NAME = "GroupingRowSetHelper";
     private static final String SORTED_INDEX_COLUMN_UPDATE = SORTED_INDEX_COLUMN_NAME + "=i";
 
     private static SortMapping doSymbolTableMapping(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            ReadOnlyIndex index, boolean usePrev) {
+                                                    RowSet index, boolean usePrev) {
         final int sortSize = index.intSize();
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
@@ -415,9 +415,9 @@ public class SortHelpers {
                 mappedValuesGeneric = mappedValues;
             }
 
-            // Fill a chunk that is Writable, and does not have an ordered tag with the index keys that we are sorting,
+            // Fill a chunk that is Writable, and does not have an ordered tag with the rowSet keys that we are sorting,
             // the
-            // index would does something very similar inside of
+            // rowSet would does something very similar inside of
             // io.deephaven.engine.v2.utils.RowSequence.asRowKeyChunk;
             // but provides a LongChunk<OrderedRowKeys> as its return.
             final long[] indexKeysArray = new long[sortSize];
@@ -432,7 +432,7 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            ReadOnlyIndex index, boolean usePrev) {
+                                                 RowSet index, boolean usePrev) {
         final long sortSize = index.size();
 
         if (sortSize >= megaSortSize) {
@@ -444,7 +444,7 @@ public class SortHelpers {
 
     @NotNull
     private static SortMapping doMegaSortOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            ReadOnlyIndex index, boolean usePrev, long sortSize) {
+                                             RowSet index, boolean usePrev, long sortSize) {
         final LongArraySource resultIndices = new LongArraySource();
         resultIndices.ensureCapacity(sortSize, false);
         final ArrayBackedColumnSource<?> valuesToMerge =
@@ -497,8 +497,8 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingGrouped(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            ReadOnlyIndex index) {
-        final Map<Object, Index> groupToRange = index.getGrouping(columnSource);
+            RowSet index) {
+        final Map<Object, TrackingMutableRowSet> groupToRange = index.getGrouping(columnSource);
         final Object[] keys = groupToRange.keySet().toArray((Object[]) Array.newInstance(
                 io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
 
@@ -511,7 +511,7 @@ public class SortHelpers {
             final long[] indexKeysArray = new long[index.intSize()];
             final MutableInt outputIdx = new MutableInt(0);
             for (final Object key : keys) {
-                final Index group = groupToRange.get(key).intersect(index);
+                final TrackingMutableRowSet group = groupToRange.get(key).intersect(index);
                 group.forAllLongs(indexKey -> {
                     indexKeysArray[outputIdx.intValue()] = indexKey;
                     outputIdx.increment();
@@ -520,25 +520,25 @@ public class SortHelpers {
 
             return new ArraySortMapping(indexKeysArray);
         } else {
-            // create a grouped redirection index
+            // create a grouped redirection rowSet
             final long[] groupSize = new long[groupToRange.size()];
-            final Index[] groupIndex = new Index[groupToRange.size()];
+            final TrackingMutableRowSet[] groupRowSet = new TrackingMutableRowSet[groupToRange.size()];
 
             long outputSize = 0;
             int ii = 0;
             for (final Object key : keys) {
-                final Index group = groupToRange.get(key).intersect(index);
+                final TrackingMutableRowSet group = groupToRange.get(key).intersect(index);
                 outputSize += group.size();
                 groupSize[ii] = outputSize;
-                groupIndex[ii++] = group;
+                groupRowSet[ii++] = group;
             }
 
-            return new GroupedSortMapping(outputSize, groupSize, groupIndex);
+            return new GroupedSortMapping(outputSize, groupSize, groupRowSet);
         }
     }
 
     private static SortMapping getSortMappingMulti(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnSources,
-            ReadOnlyIndex index, boolean usePrev) {
+                                                   RowSet index, boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
         final int sortSize = index.intSize();
 
@@ -551,7 +551,7 @@ public class SortHelpers {
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
         if (index.hasGrouping(columnSources[0])) {
-            final Map<Comparable<?>, Index> groupToRange = columnSource.getGroupToRange();
+            final Map<Comparable<?>, TrackingMutableRowSet> groupToRange = columnSource.getGroupToRange();
             final Object[] keys = groupToRange.keySet().toArray(
                     (Object[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
 
@@ -563,7 +563,7 @@ public class SortHelpers {
             final MutableInt outputIdx = new MutableInt(0);
             for (final Object key : keys) {
                 // noinspection SuspiciousMethodCalls
-                final Index group = groupToRange.get(key).intersect(index);
+                final TrackingMutableRowSet group = groupToRange.get(key).intersect(index);
                 if (group.size() > 1) {
                     offsetsOut.add(outputIdx.intValue());
                     lengthsOut.add(group.intSize());

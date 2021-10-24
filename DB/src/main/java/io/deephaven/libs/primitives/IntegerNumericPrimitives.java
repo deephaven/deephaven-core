@@ -2144,11 +2144,11 @@ public class IntegerNumericPrimitives {
     }
 
     /**
-     * Returns the first index containing the value.
+     * Returns the first rowSet containing the value.
      *
      * @param values values.
      * @param val value to search for.
-     * @return first index containing the value or null, if the value is not present.
+     * @return first rowSet containing the value or null, if the value is not present.
      */
     public static int firstIndexOf(int[] values, int val) {
         if (values == null) {
@@ -2159,11 +2159,11 @@ public class IntegerNumericPrimitives {
     }
 
     /**
-     * Returns the first index containing the value.
+     * Returns the first rowSet containing the value.
      *
      * @param values values.
      * @param val value to search for.
-     * @return first index containing the value or null, if the value is not present.
+     * @return first rowSet containing the value or null, if the value is not present.
      */
     public static int firstIndexOf(DbIntArray values, int val) {
         if (values == null) {
@@ -2182,10 +2182,10 @@ public class IntegerNumericPrimitives {
     }
 
     /**
-     * Returns the index of the maximum value.
+     * Returns the rowSet of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+     * @return rowSet of the maximum value.
      */
     public static int indexOfMax(Integer... values) {
         if (values == null) {
@@ -2208,10 +2208,10 @@ public class IntegerNumericPrimitives {
     }
 
     /**
-     * Returns the index of the maximum value.
+     * Returns the rowSet of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+     * @return rowSet of the maximum value.
      */
     public static int indexOfMax(int[] values) {
         if (values == null) {
@@ -2222,10 +2222,10 @@ public class IntegerNumericPrimitives {
     }
 
     /**
-     * Returns the index of the maximum value.
+     * Returns the rowSet of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+     * @return rowSet of the maximum value.
      */
     public static int indexOfMax(DbIntArray values) {
         if (values == null) {
@@ -2248,10 +2248,10 @@ public class IntegerNumericPrimitives {
     }
 
     /**
-     * Returns the index of the minimum value.
+     * Returns the rowSet of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+     * @return rowSet of the minimum value.
      */
     public static int indexOfMin(Integer... values) {
         if (values == null) {
@@ -2274,10 +2274,10 @@ public class IntegerNumericPrimitives {
     }
 
     /**
-     * Returns the index of the minimum value.
+     * Returns the rowSet of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+     * @return rowSet of the minimum value.
      */
     public static int indexOfMin(int[] values) {
         if (values == null) {
@@ -2288,10 +2288,10 @@ public class IntegerNumericPrimitives {
     }
 
     /**
-     * Returns the index of the minimum value.
+     * Returns the rowSet of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+     * @return rowSet of the minimum value.
      */
     public static int indexOfMin(DbIntArray values) {
         if (values == null) {
@@ -2319,7 +2319,7 @@ public class IntegerNumericPrimitives {
      * @param values           sorted values to search.
      * @param key              key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, the index immediately before where the key would be inserted.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet immediately before where the key would be inserted.
      */
     public static int binSearchIndex(int[] values, int key, BinSearch choiceWhenEquals) {
         if (values == null) {
@@ -2335,7 +2335,7 @@ public class IntegerNumericPrimitives {
      * @param values           sorted values to search.
      * @param key              key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, the index immediately before where the key would be inserted.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet immediately before where the key would be inserted.
      */
     public static int binSearchIndex(DbIntArray values, int key, BinSearch choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
@@ -2356,7 +2356,7 @@ public class IntegerNumericPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     public static int rawBinSearchIndex(int[] values, int key, BinSearch choiceWhenEquals) {
         if (values == null) {
@@ -2372,7 +2372,7 @@ public class IntegerNumericPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     public static int rawBinSearchIndex(DbIntArray values, int key, BinSearch choiceWhenEquals) {
         if (values == null || key == NULL_INT) {

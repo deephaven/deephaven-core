@@ -14,9 +14,10 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -33,7 +34,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
      * <p>Any destination at or after this one has an undefined value in {@link #sortColumnValues}.
      */
     private long nextDestination;
-    private Index.RandomBuilder changedDestinationsBuilder;
+    private RowSetBuilder changedDestinationsBuilder;
 
     ByteStreamSortedFirstOrLastChunkedOperator(
             final boolean isFirst,
@@ -58,7 +59,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
         super.resetForStep(upstream);
         if (isCombo) {
-            changedDestinationsBuilder = Index.CURRENT_FACTORY.getRandomBuilder();
+            changedDestinationsBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getRandomBuilder();
         }
     }
 
@@ -114,7 +115,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
             final byte value = values.get(chunkPos);
             final int comparison = DhByteComparisons.compare(value, bestValue);
             // @formatter:off
-            // No need to compare relative indices. A stream's logical index is always monotonically increasing.
+            // No need to compare relative indices. A stream's logical rowSet is always monotonically increasing.
             final boolean better =
                     ( isFirst && comparison <  0) ||
                     (!isFirst && comparison >= 0)  ;
@@ -142,12 +143,12 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     }
 
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
         Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
         // In a combo-agg, we may get modifications from other other operators that we didn't record as modifications in
         // our redirections, so we separately track updated destinations.
-        try (final RowSequence changedDestinations = isCombo ? changedDestinationsBuilder.getIndex() : downstream.modified.union(downstream.added)) {
+        try (final RowSequence changedDestinations = isCombo ? changedDestinationsBuilder.build() : downstream.modified.union(downstream.added)) {
             copyStreamToResult(changedDestinations);
         }
         redirections = null;

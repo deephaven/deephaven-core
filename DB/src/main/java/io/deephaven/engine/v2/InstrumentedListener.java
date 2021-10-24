@@ -5,14 +5,14 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class InstrumentedListener extends InstrumentedListenerBase implements Listener {
 
-    private Index initialImage;
-    private Index initialImageClone;
+    private TrackingMutableRowSet initialImage;
+    private TrackingMutableRowSet initialImageClone;
 
     public InstrumentedListener(@Nullable final String description) {
         super(description, false);
@@ -23,8 +23,8 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
     }
 
     @Override
-    public AbstractIndexUpdateNotification getNotification(final Index added, final Index removed,
-            final Index modified) {
+    public AbstractIndexUpdateNotification getNotification(final TrackingMutableRowSet added, final TrackingMutableRowSet removed,
+                                                           final TrackingMutableRowSet modified) {
         return new Notification(added, removed, modified);
     }
 
@@ -33,7 +33,7 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
      */
     public class Notification extends NotificationBase {
 
-        Notification(final Index added, final Index removed, final Index modified) {
+        Notification(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
             super(new ShiftAwareListener.Update(added.clone(), removed.clone(), modified.clone(),
                     IndexShiftData.EMPTY, ModifiedColumnSet.ALL));
             update.release(); // NotificationBase assumes it does not own the provided update.
@@ -54,7 +54,7 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
     }
 
     @Override
-    public void setInitialImage(final Index initialImage) {
+    public void setInitialImage(final TrackingMutableRowSet initialImage) {
         this.initialImage = initialImage;
         this.initialImageClone = initialImage.clone();
     }

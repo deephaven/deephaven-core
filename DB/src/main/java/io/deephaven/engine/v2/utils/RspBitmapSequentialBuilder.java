@@ -27,8 +27,8 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
     }
 
     @Override
-    public void setDomain(final long firstKeyUnused, final long maxKey) {
-        maxKeyHint = (maxKey == Index.NULL_KEY) ? -1 : maxKey;
+    public void setDomain(final long minRowKey, final long maxRowKey) {
+        maxKeyHint = (maxRowKey == TrackingMutableRowSet.NULL_ROW_KEY) ? -1 : maxRowKey;
     }
 
     @Override
@@ -50,41 +50,41 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
     }
 
     @Override
-    public void appendKey(final long v) {
+    public void appendKey(final long rowKey) {
         if (pendingStart != -1) {
-            if (check && v <= pendingEnd) {
+            if (check && rowKey <= pendingEnd) {
                 throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
-                        "last=" + pendingEnd + " while appending value=" + v);
+                        "last=" + pendingEnd + " while appending value=" + rowKey);
             }
-            if (pendingEnd + 1 == v) {
-                pendingEnd = v;
+            if (pendingEnd + 1 == rowKey) {
+                pendingEnd = rowKey;
                 return;
             }
             flushPendingRange();
         }
-        pendingStart = pendingEnd = v;
+        pendingStart = pendingEnd = rowKey;
     }
 
     @Override
-    public void appendRange(final long start, final long end) {
+    public void appendRange(final long rangeFirstRowKey, final long rangeLastRowKey) {
         if (RspArray.debug) {
-            if (start > end) {
-                throw new IllegalArgumentException("start (= " + start + ") > end (= " + end + ")");
+            if (rangeFirstRowKey > rangeLastRowKey) {
+                throw new IllegalArgumentException("start (= " + rangeFirstRowKey + ") > end (= " + rangeLastRowKey + ")");
             }
         }
         if (pendingStart != -1) {
-            if (check && start <= pendingEnd) {
+            if (check && rangeFirstRowKey <= pendingEnd) {
                 throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
-                        "last=" + pendingEnd + " while appending range start=" + start + ", end=" + end);
+                        "last=" + pendingEnd + " while appending range start=" + rangeFirstRowKey + ", end=" + rangeLastRowKey);
             }
-            if (pendingEnd + 1 == start) {
-                pendingEnd = end;
+            if (pendingEnd + 1 == rangeFirstRowKey) {
+                pendingEnd = rangeLastRowKey;
                 return;
             }
             flushPendingRange();
         }
-        pendingStart = start;
-        pendingEnd = end;
+        pendingStart = rangeFirstRowKey;
+        pendingEnd = rangeLastRowKey;
     }
 
     @Override

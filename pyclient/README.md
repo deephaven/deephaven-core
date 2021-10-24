@@ -64,7 +64,7 @@ $ pip3 install dist/pydeephaven-0.7.0-py3-none-any.whl
 
 ## Related documentation
 * https://deephaven.io/
-* https://arrow.apache.org/docs/python/index.html
+* https://arrow.apache.org/docs/python/rowSet.html
 
 ## API Reference
 [start here] https://deephaven.io/core/client-api/python/

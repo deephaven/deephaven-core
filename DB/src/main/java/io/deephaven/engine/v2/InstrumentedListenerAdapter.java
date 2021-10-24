@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.util.liveness.Liveness;
 import io.deephaven.engine.v2.utils.AsyncErrorLogger;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -67,7 +67,7 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
     }
 
     @Override
-    public abstract void onUpdate(Index added, Index removed, Index modified);
+    public abstract void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified);
 
     /**
      * Called when the source table produces an error

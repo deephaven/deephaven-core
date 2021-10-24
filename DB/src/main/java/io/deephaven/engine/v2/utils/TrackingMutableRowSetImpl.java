@@ -27,7 +27,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
-public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl, Externalizable {
+public class TrackingMutableRowSetImpl extends GroupingRowSetHelper implements ImplementedByTreeIndexImpl, Externalizable {
     private static final long serialVersionUID = 3177210716109500229L;
 
     private TreeIndexImpl impl;
@@ -44,7 +44,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     private final static boolean trace = false;
-    private static final Logger log = LoggerFactory.getLogger(TreeIndex.class);
+    private static final Logger log = LoggerFactory.getLogger(TrackingMutableRowSetImpl.class);
 
     private void checkPrevForWrite() {
         checkAndGetPrev();
@@ -72,16 +72,16 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         changeTimeStep = -1;
     }
 
-    public static TreeIndex makeEmptyRsp() {
-        return new TreeIndex(RspBitmap.makeEmpty());
+    public static TrackingMutableRowSetImpl makeEmptyRsp() {
+        return new TrackingMutableRowSetImpl(RspBitmap.makeEmpty());
     }
 
-    public static TreeIndex makeEmptySr() {
-        return new TreeIndex(SortedRanges.makeEmpty());
+    public static TrackingMutableRowSetImpl makeEmptySr() {
+        return new TrackingMutableRowSetImpl(SortedRanges.makeEmpty());
     }
 
-    public static TreeIndex makeSingleRange(final long start, final long end) {
-        return new TreeIndex(SingleRange.make(start, end));
+    public static TrackingMutableRowSetImpl makeSingleRange(final long start, final long end) {
+        return new TrackingMutableRowSetImpl(SingleRange.make(start, end));
     }
 
     @SuppressWarnings("unused")
@@ -95,14 +95,19 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     @SuppressWarnings("unused")
     public static void trace(String msg) {}
 
-    public TreeIndex() {
+    public TrackingMutableRowSetImpl() {
         this(TreeIndexImpl.EMPTY);
     }
 
-    public TreeIndex(final TreeIndexImpl impl) {
+    public TrackingMutableRowSetImpl(final TreeIndexImpl impl) {
         this.impl = impl;
         this.prevImpl = TreeIndexImpl.EMPTY;
         changeTimeStep = -1;
+    }
+
+    @Override
+    public TrackingMutableRowSet tracking() {
+        return this;
     }
 
     @Override
@@ -161,7 +166,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void insert(final ReadOnlyIndex added) {
+    public void insert(final RowSet added) {
         if (trace)
             pre("insert(added_" + (added == null ? "id=-1" : ((ImplementedByTreeIndexImpl) added).strid()) + ")");
         if (added != null) {
@@ -208,7 +213,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void remove(final ReadOnlyIndex removed) {
+    public void remove(final RowSet removed) {
         if (trace)
             pre("remove(removed_" + ((ImplementedByTreeIndexImpl) removed).strid() + ")");
         checkPrevForWrite();
@@ -272,20 +277,20 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
 
     // endPos is exclusive.
     @Override
-    public Index subindexByPos(final long startPos, final long endPos) {
+    public TrackingMutableRowSet subSetByPositionRange(final long startPos, final long endPos) {
         if (trace)
-            pre("subindexByPos(" + startPos + "," + endPos + ")");
-        final TreeIndex ans = new TreeIndex(impl.ixSubindexByPosOnNew(startPos, endPos));
+            pre("subSetByPositionRange(" + startPos + "," + endPos + ")");
+        final TrackingMutableRowSetImpl ans = new TrackingMutableRowSetImpl(impl.ixSubindexByPosOnNew(startPos, endPos));
         if (trace)
             pos();
         return ans;
     }
 
     @Override
-    public Index subindexByKey(final long startKey, final long endKey) {
+    public TrackingMutableRowSet subSetByKeyRange(final long startKey, final long endKey) {
         if (trace)
-            pre("subindexByKey(" + startKey + "," + endKey + ")");
-        final TreeIndex ans = new TreeIndex(impl.ixSubindexByKeyOnNew(startKey, endKey));
+            pre("subSetByKeyRange(" + startKey + "," + endKey + ")");
+        final TrackingMutableRowSetImpl ans = new TrackingMutableRowSetImpl(impl.ixSubindexByKeyOnNew(startKey, endKey));
         if (trace)
             pos();
         return ans;
@@ -334,12 +339,12 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public Index getPrevIndex() {
+    public TrackingMutableRowSet getPrevIndex() {
         if (trace)
             pre("getPrevIndex");
         final TreeIndexImpl r = checkAndGetPrev().ixCowRef();
-        final Index ans;
-        ans = new TreeIndex(r);
+        final TrackingMutableRowSet ans;
+        ans = new TrackingMutableRowSetImpl(r);
         if (trace)
             pos();
         return ans;
@@ -365,11 +370,11 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public Index invert(ReadOnlyIndex keys, long maximumPosition) {
+    public TrackingMutableRowSet invert(RowSet keys, long maximumPosition) {
         if (trace)
             pre("invert(" + keys + ")");
         final TreeIndexImpl result = impl.ixInvertOnNew(getImpl(keys), maximumPosition);
-        final TreeIndex ans = new TreeIndex(result);
+        final TrackingMutableRowSetImpl ans = new TrackingMutableRowSetImpl(result);
         if (trace)
             pos(ans);
         return ans;
@@ -417,10 +422,10 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
 
     @NotNull
     @Override
-    public Index.Iterator iterator() {
+    public TrackingMutableRowSet.Iterator iterator() {
         if (trace)
             pre("iterator");
-        final Index.Iterator ans = impl.ixIterator();
+        final TrackingMutableRowSet.Iterator ans = impl.ixIterator();
         if (trace)
             pos();
         return ans;
@@ -476,7 +481,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         return ans;
     }
 
-    private static TreeIndexImpl getImpl(final ReadOnlyIndex index) {
+    private static TreeIndexImpl getImpl(final RowSet index) {
         if (index instanceof ImplementedByTreeIndexImpl) {
             return ((ImplementedByTreeIndexImpl) index).getImpl();
         }
@@ -493,7 +498,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void update(final ReadOnlyIndex added, final ReadOnlyIndex removed) {
+    public void update(final RowSet added, final RowSet removed) {
         if (trace)
             pre("update(added_" + ((ImplementedByTreeIndexImpl) added).strid() + ", removed_"
                     + ((ImplementedByTreeIndexImpl) removed).strid() + ")");
@@ -505,40 +510,40 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void retain(@NotNull final ReadOnlyIndex toIntersect) {
+    public void retain(@NotNull final RowSet rowSetToIntersect) {
         if (trace)
-            pre("retain(toIntersect_" + ((ImplementedByTreeIndexImpl) toIntersect).strid() + ")");
+            pre("retain(toIntersect_" + ((ImplementedByTreeIndexImpl) rowSetToIntersect).strid() + ")");
         checkPrevForWrite();
-        assign(impl.ixRetain(getImpl(toIntersect)));
-        super.onRetain(toIntersect);
+        assign(impl.ixRetain(getImpl(rowSetToIntersect)));
+        super.onRetain(rowSetToIntersect);
         if (trace)
             pos();
     }
 
     @Override
-    public void retainRange(final long startKey, final long endKey) {
+    public void retainRange(final long startRowKey, final long endRowKey) {
         if (trace)
             pre("retainRange");
         checkPrevForWrite();
-        assign(impl.ixRetainRange(startKey, endKey));
-        updateGroupingOnRetainRange(startKey, endKey);
+        assign(impl.ixRetainRange(startRowKey, endRowKey));
+        updateGroupingOnRetainRange(startRowKey, endRowKey);
         if (trace)
             pos();
     }
 
     @NotNull
     @Override
-    public Index intersect(@NotNull final ReadOnlyIndex range) {
+    public TrackingMutableRowSet intersect(@NotNull final RowSet range) {
         if (trace)
             pre("intersect(range_" + ((ImplementedByTreeIndexImpl) range).strid());
-        final SortedIndex ans = new TreeIndex(impl.ixIntersectOnNew(getImpl(range)));
+        final GroupingRowSetHelper ans = new TrackingMutableRowSetImpl(impl.ixIntersectOnNew(getImpl(range)));
         if (trace)
             pos();
         return ans;
     }
 
     @Override
-    public boolean overlaps(@NotNull final ReadOnlyIndex range) {
+    public boolean overlaps(@NotNull final RowSet range) {
         if (trace)
             pre("overlaps");
         final boolean ans = impl.ixOverlaps(getImpl(range));
@@ -558,7 +563,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public boolean subsetOf(@NotNull final ReadOnlyIndex range) {
+    public boolean subsetOf(@NotNull final RowSet range) {
         if (trace)
             pre("subsetOf");
         final boolean ans = impl.ixSubsetOf(getImpl(range));
@@ -568,51 +573,51 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public Index minus(final ReadOnlyIndex set) {
+    public TrackingMutableRowSet minus(final RowSet set) {
         if (trace)
             pre("minus(set_" + ((ImplementedByTreeIndexImpl) set).strid());
         if (set == this) {
-            return FACTORY.getIndexByValues();
+            return FACTORY.getRowSetByValues();
         }
-        final SortedIndex ans = new TreeIndex(impl.ixMinusOnNew(getImpl(set)));
+        final GroupingRowSetHelper ans = new TrackingMutableRowSetImpl(impl.ixMinusOnNew(getImpl(set)));
         if (trace)
             pos();
         return ans;
     }
 
     @Override
-    public Index union(final ReadOnlyIndex set) {
+    public TrackingMutableRowSet union(final RowSet set) {
         if (trace)
             pre("union(set_" + ((ImplementedByTreeIndexImpl) set).strid());
         if (set == this) {
-            return FACTORY.getIndexByValues();
+            return FACTORY.getRowSetByValues();
         }
-        final SortedIndex ans = new TreeIndex(impl.ixUnionOnNew(getImpl(set)));
+        final GroupingRowSetHelper ans = new TrackingMutableRowSetImpl(impl.ixUnionOnNew(getImpl(set)));
         if (trace)
             pos();
         return ans;
     }
 
-    private static class IndexRandomBuilder extends TreeIndexImplRandomBuilder implements Index.RandomBuilder {
+    private static class RowSetRandomBuilder extends TreeIndexImplRandomBuilder implements RowSetBuilder.RandomBuilder {
         @Override
-        public Index getIndex() {
-            return new TreeIndex(getTreeIndexImpl());
+        public MutableRowSet build() {
+            return new TrackingMutableRowSetImpl(getTreeIndexImpl());
         }
     }
 
-    public static Index.RandomBuilder makeRandomBuilder() {
-        return new IndexRandomBuilder();
+    public static RowSetBuilder makeRandomBuilder() {
+        return new RowSetRandomBuilder();
     }
 
     private abstract static class IndexSequentialBuilderBase extends TreeIndexImplSequentialBuilder
-            implements Index.SequentialBuilder {
+            implements SequentialRowSetBuilder {
         @Override
-        public void appendIndex(final ReadOnlyIndex ix) {
-            appendIndexWithOffset(ix, 0);
+        public void appendRowSet(final RowSet rowSet) {
+            appendRowSetWithOffset(rowSet, 0);
         }
 
         @Override
-        public void appendIndexWithOffset(final ReadOnlyIndex ix, final long shiftAmount) {
+        public void appendRowSetWithOffset(final RowSet ix, final long shiftAmount) {
             if (ix instanceof ImplementedByTreeIndexImpl) {
                 appendTreeIndexImpl(shiftAmount, ((ImplementedByTreeIndexImpl) ix).getImpl(), false);
                 return;
@@ -625,40 +630,40 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
 
     private static class IndexSequentialBuilder extends IndexSequentialBuilderBase {
         @Override
-        public Index getIndex() {
-            return new TreeIndex(getTreeIndexImpl());
+        public TrackingMutableRowSet build() {
+            return new TrackingMutableRowSetImpl(getTreeIndexImpl());
         }
     }
 
-    public static Index.SequentialBuilder makeSequentialBuilder() {
+    public static SequentialRowSetBuilder makeSequentialBuilder() {
         return new IndexSequentialBuilder();
     }
 
-    private static class CurrentOnlyIndexRandomBuilder extends TreeIndexImplRandomBuilder
-            implements Index.RandomBuilder {
+    private static class CurrentOnlyRowSetRandomBuilder extends TreeIndexImplRandomBuilder
+            implements RowSetBuilder.RandomBuilder {
         @Override
-        public Index getIndex() {
-            return new CurrentOnlyIndex(getTreeIndexImpl());
+        public MutableRowSet build() {
+            return new MutableRowSetImpl(getTreeIndexImpl());
         }
     }
 
-    public static Index.RandomBuilder makeCurrentRandomBuilder() {
-        return new CurrentOnlyIndexRandomBuilder();
+    public static RowSetBuilder makeCurrentRandomBuilder() {
+        return new CurrentOnlyRowSetRandomBuilder();
     }
 
     private static class CurrentOnlyIndexSequentialBuilder extends IndexSequentialBuilderBase {
         @Override
-        public Index getIndex() {
-            return new CurrentOnlyIndex(getTreeIndexImpl());
+        public TrackingMutableRowSet build() {
+            return new MutableRowSetImpl(getTreeIndexImpl());
         }
     }
 
-    public static Index.SequentialBuilder makeCurrentSequentialBuilder() {
+    public static SequentialRowSetBuilder makeCurrentSequentialBuilder() {
         return new CurrentOnlyIndexSequentialBuilder();
     }
 
-    public static SortedIndex getEmptyIndex() {
-        return new TreeIndex(TreeIndexImpl.EMPTY);
+    public static GroupingRowSetHelper getEmptyIndex() {
+        return new TrackingMutableRowSetImpl(TreeIndexImpl.EMPTY);
     }
 
     @Override
@@ -671,10 +676,10 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public Index shift(final long shiftAmount) {
+    public TrackingMutableRowSet shift(final long shiftAmount) {
         if (trace)
             pre("shift(" + shiftAmount + ")");
-        final TreeIndex ans = new TreeIndex(impl.ixShiftOnNew(shiftAmount));
+        final TrackingMutableRowSetImpl ans = new TrackingMutableRowSetImpl(impl.ixShiftOnNew(shiftAmount));
         if (trace)
             pos();
         return ans;
@@ -690,7 +695,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void insertWithShift(final long shiftAmount, final ReadOnlyIndex other) {
+    public void insertWithShift(final long shiftAmount, final RowSet other) {
         if (trace)
             pre("insertWithShift(" + shiftAmount + "," + other + ")");
         assign(impl.ixInsertWithShift(shiftAmount, getImpl(other)));
@@ -709,11 +714,11 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
             it.next();
             final long start = it.currentRangeStart();
             final long end = it.currentRangeEnd();
-            Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "index");
-            Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "index");
-            Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this, "index");
+            Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
+            Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
+            Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this, "rowSet");
             Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd", this,
-                    "index");
+                    "rowSet");
             lastEnd = end;
 
             totalSize += ((end - start) + 1);
@@ -724,16 +729,16 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
 
     @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override
-    public Index clone() {
+    public TrackingMutableRowSet clone() {
         if (trace)
             pre("clone");
-        final TreeIndex ans = new TreeIndex(impl.ixCowRef());
+        final TrackingMutableRowSetImpl ans = new TrackingMutableRowSetImpl(impl.ixCowRef());
         if (trace)
             pos();
         return ans;
     }
 
-    public static void add(final TreeIndexImpl.RandomBuilder builder, final TreeIndex idx) {
+    public static void add(final TreeIndexImpl.RandomBuilder builder, final TrackingMutableRowSetImpl idx) {
         if (idx.impl instanceof SingleRange) {
             builder.add((SingleRange) idx.impl);
             return;
@@ -757,7 +762,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     // If we've got a nasty bug, it can be useful to write the serialized version of indices when we detect the bug;
-    // because the creation of these things is so darn path dependent. We can't actually serialize the Index; because
+    // because the creation of these things is so darn path dependent. We can't actually serialize the TrackingMutableRowSet; because
     // the representation that we'll write will be completely different (and likely saner) than what we have in-memory
     // at any given point in time.
     public void writeImpl(ObjectOutput out) throws IOException {
@@ -766,8 +771,8 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
 
     @Override
     public void readExternal(@NotNull final ObjectInput in) throws IOException, ClassNotFoundException {
-        try (final Index readIndex = ExternalizableIndexUtils.readExternalCompressedDelta(in)) {
-            insert(readIndex);
+        try (final TrackingMutableRowSet readRowSet = ExternalizableIndexUtils.readExternalCompressedDelta(in)) {
+            insert(readRowSet);
         }
     }
 
@@ -797,7 +802,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public Index asIndex() {
+    public TrackingMutableRowSet asIndex() {
         return this;
     }
 

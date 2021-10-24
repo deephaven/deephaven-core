@@ -16,7 +16,8 @@ import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.util.pools.PoolableChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -71,7 +72,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
     @Override
     public DrainableColumn getInputStream(final BarrageSubscriptionOptions options,
-                                          final @Nullable Index subset) throws IOException {
+                                          final @Nullable TrackingMutableRowSet subset) throws IOException {
         computePayload();
         return new VarListInputStream(options, subset);
     }
@@ -82,12 +83,12 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         private final DrainableColumn innerStream;
 
         private VarListInputStream(
-                final BarrageSubscriptionOptions options, final Index subsetIn) throws IOException {
+                final BarrageSubscriptionOptions options, final TrackingMutableRowSet subsetIn) throws IOException {
             super(chunk, options, subsetIn);
             if (subset.size() != offsets.size() - 1) {
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize(DEBUG_NAME) + 1);
                 myOffsets.set(0, 0);
-                final Index.SequentialBuilder myOffsetBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
+                final SequentialRowSetBuilder myOffsetBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
                 final MutableInt off = new MutableInt();
                 subset.forAllLongs(key -> {
                     final int startOffset = offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key));
@@ -98,7 +99,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
                         myOffsetBuilder.appendRange(startOffset, endOffset - 1);
                     }
                 });
-                try (final Index mySubset = myOffsetBuilder.getIndex()) {
+                try (final TrackingMutableRowSet mySubset = myOffsetBuilder.build()) {
                     innerStream = innerGenerator.getInputStream(options, mySubset);
                 }
             } else {

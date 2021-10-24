@@ -6,7 +6,7 @@ package io.deephaven.engine.tables;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import junit.framework.TestCase;
 
@@ -39,10 +39,10 @@ public class TestAppendableColumn extends TestCase {
             assertEquals(80000, tableR.getColumnSource("v").getGroupToRange().size());
             assertEquals(80000, tableR.getColumnSource("v").getValuesMapping(tableR.getIndex()).size());
             assertEquals(80000, tableR.getColumnSource("v")
-                    .getValuesMapping(tableR.getIndex().subindexByPos(0, tableR.size())).size());
+                    .getValuesMapping(tableR.getIndex().subSetByPositionRange(0, tableR.size())).size());
             final Map mapper = tableR.getColumnSource("v").getGroupToRange();
             for (int i = 0; i < data.length / 4; i++) {
-                assertEquals(mapper.get(i), Index.FACTORY.getIndexByRange(i * 4, i * 4 + 3));
+                assertEquals(mapper.get(i), TrackingMutableRowSet.FACTORY.getRowSetByRange(i * 4, i * 4 + 3));
             }
         } finally {
             FileUtils.deleteRecursively(directory);

@@ -12,7 +12,7 @@ import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.util.pools.PoolableChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -62,7 +62,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
         protected final RowSequence subset;
         protected boolean read = false;
 
-        BaseChunkInputStream(final T chunk, final BarrageSubscriptionOptions options, final Index subset) {
+        BaseChunkInputStream(final T chunk, final BarrageSubscriptionOptions options, final TrackingMutableRowSet subset) {
             this.options = options;
             this.subset = chunk.size() == 0 ? RowSequence.EMPTY : subset != null ? subset.clone() : RowSequenceUtil.forRange(0, chunk.size() - 1);
             REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);

@@ -63,14 +63,14 @@ public class BuildSmallIndicesBench {
         }
     }
 
-    private final Index.SequentialBuilder[] sbs = new Index.SequentialBuilder[sz];
+    private final SequentialRowSetBuilder[] sbs = new SequentialRowSetBuilder[sz];
 
     @Benchmark
     public void b03_buildAndPopulateWithIndexBuilder(final Blackhole bh) {
         for (int i = 0; i < sz; ++i) {
-            sbs[i] = Index.FACTORY.getSequentialBuilder();
+            sbs[i] = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
             sbs[i].appendKey(values[i]);
-            bh.consume(sbs[i].getIndex());
+            bh.consume(sbs[i].build());
         }
     }
 

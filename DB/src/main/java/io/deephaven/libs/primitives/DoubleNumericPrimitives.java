@@ -2030,11 +2030,11 @@ public class DoubleNumericPrimitives {
     }
 
     /**
-     * Returns the first index containing the value.
+     * Returns the first rowSet containing the value.
      *
      * @param values values.
      * @param val value to search for.
-     * @return first index containing the value or null, if the value is not present.
+     * @return first rowSet containing the value or null, if the value is not present.
      */
     public static int firstIndexOf(double[] values, double val) {
         if( values == null) {
@@ -2045,11 +2045,11 @@ public class DoubleNumericPrimitives {
     }
 
     /**
-     * Returns the first index containing the value.
+     * Returns the first rowSet containing the value.
      *
      * @param values values.
      * @param val    value to search for.
-     * @return first index containing the value or null, if the value is not present.
+     * @return first rowSet containing the value or null, if the value is not present.
      */
     public static int firstIndexOf(DbDoubleArray values, double val) {
         if (values == null) {
@@ -2068,20 +2068,20 @@ public class DoubleNumericPrimitives {
     }
 
     /**
-     * Returns the index of the maximum value.
+     * Returns the rowSet of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+     * @return rowSet of the maximum value.
      */
     public static int indexOfMax(Double... values) {
         return indexOfMax(unbox(values));
     }
 
     /**
-     * Returns the index of the maximum value.
+     * Returns the rowSet of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+     * @return rowSet of the maximum value.
      */
     public static int indexOfMax(double[] values) {
         if( values == null) {
@@ -2092,10 +2092,10 @@ public class DoubleNumericPrimitives {
     }
 
     /**
-     * Returns the index of the maximum value.
+     * Returns the rowSet of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+     * @return rowSet of the maximum value.
      */
     public static int indexOfMax(DbDoubleArray values) {
         if (values == null) {
@@ -2118,20 +2118,20 @@ public class DoubleNumericPrimitives {
     }
 
     /**
-     * Returns the index of the minimum value.
+     * Returns the rowSet of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+     * @return rowSet of the minimum value.
      */
     public static int indexOfMin(Double... values) {
         return indexOfMin(unbox(values));
     }
 
     /**
-     * Returns the index of the minimum value.
+     * Returns the rowSet of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+     * @return rowSet of the minimum value.
      */
     public static int indexOfMin(double[] values) {
         if( values == null) {
@@ -2142,10 +2142,10 @@ public class DoubleNumericPrimitives {
     }
 
     /**
-     * Returns the index of the minimum value.
+     * Returns the rowSet of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+     * @return rowSet of the minimum value.
      */
     public static int indexOfMin(DbDoubleArray values) {
         if (values == null) {
@@ -2173,7 +2173,7 @@ public class DoubleNumericPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, the index of where the key would be inserted.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet of where the key would be inserted.
      */
     public static int binSearchIndex(double[] values, double key, BinSearch choiceWhenEquals) {
         if( values == null) {
@@ -2189,7 +2189,7 @@ public class DoubleNumericPrimitives {
      * @param values           sorted values to search.
      * @param key              key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, the index of where the key would be inserted.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet of where the key would be inserted.
      */
     public static int binSearchIndex(DbDoubleArray values, double key, BinSearch choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
@@ -2210,7 +2210,7 @@ public class DoubleNumericPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     public static int rawBinSearchIndex(double[] values, double key, BinSearch choiceWhenEquals) {
         if( values == null) {
@@ -2226,7 +2226,7 @@ public class DoubleNumericPrimitives {
      * @param values           sorted values to search.
      * @param key              key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     public static int rawBinSearchIndex(DbDoubleArray values, double key, BinSearch choiceWhenEquals) {
         if (values == null || key == NULL_DOUBLE) {

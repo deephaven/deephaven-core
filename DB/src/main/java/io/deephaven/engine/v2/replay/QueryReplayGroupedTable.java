@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 import java.util.Arrays;
@@ -40,13 +40,13 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
 
     static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
 
-        private final Index.Iterator iterator;
+        private final TrackingMutableRowSet.Iterator iterator;
         private final ColumnSource<DBDateTime> columnSource;
         DBDateTime lastTime;
         long lastIndex;
         public final long pos;
 
-        private IteratorsAndNextTime(Index.Iterator iterator, ColumnSource<DBDateTime> columnSource, long pos) {
+        private IteratorsAndNextTime(TrackingMutableRowSet.Iterator iterator, ColumnSource<DBDateTime> columnSource, long pos) {
             this.iterator = iterator;
             this.columnSource = columnSource;
             this.pos = pos;
@@ -73,23 +73,23 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
         }
     }
 
-    protected QueryReplayGroupedTable(Index index, Map<String, ? extends ColumnSource<?>> input,
-            String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
+    protected QueryReplayGroupedTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
+                                      String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
 
-        super(Index.FACTORY.getIndexByValues(), getResultSources(input, redirectionIndex));
+        super(TrackingMutableRowSet.FACTORY.getRowSetByValues(), getResultSources(input, redirectionIndex));
         this.redirectionIndex = redirectionIndex;
-        Map<Object, Index> grouping;
+        Map<Object, TrackingMutableRowSet> grouping;
 
         final ColumnSource<?>[] columnSources =
                 Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
         final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(columnSources);
-        grouping = index.getGrouping(tupleSource);
+        grouping = rowSet.getGrouping(tupleSource);
 
         // noinspection unchecked
         ColumnSource<DBDateTime> timeSource = (ColumnSource<DBDateTime>) input.get(timeColumn);
         int pos = 0;
-        for (Index groupIndex : grouping.values()) {
-            Index.Iterator iterator = groupIndex.iterator();
+        for (TrackingMutableRowSet groupRowSet : grouping.values()) {
+            TrackingMutableRowSet.Iterator iterator = groupRowSet.iterator();
             if (iterator.hasNext()) {
                 allIterators.add(new IteratorsAndNextTime(iterator, timeSource, pos++));
             }

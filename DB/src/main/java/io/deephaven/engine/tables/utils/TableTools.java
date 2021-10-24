@@ -122,7 +122,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the index and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -165,7 +165,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the index and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -213,7 +213,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the index and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -228,7 +228,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the index and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -249,7 +249,7 @@ public class TableTools {
      * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
      * @param delimiter a String value to use between printed values
      * @param out a PrintStream destination to which to print the data
-     * @param showIndex a boolean indicating whether to also print index details
+     * @param showIndex a boolean indicating whether to also print rowSet details
      * @param columns varargs of column names to display
      */
     public static void show(final Table source, final long maxRowCount, final DBTimeZone timeZone,
@@ -258,7 +258,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the index and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -493,7 +493,7 @@ public class TableTools {
     @Deprecated
     public static Table readHeaderlessCsv(String filePath, Collection<String> header) throws IOException {
         final List<Selectable> views = new ArrayList<>();
-        // CsvSpecs.headerless() column names are 1-based index
+        // CsvSpecs.headerless() column names are 1-based rowSet
         int index = 1;
         for (String h : header) {
             views.add(Selectable.of(ColumnName.of(h), ColumnName.of(String.format("Column%d", index))));
@@ -1055,7 +1055,7 @@ public class TableTools {
      * @return a Deephaven Table with no columns.
      */
     public static Table emptyTable(long size) {
-        return new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
+        return new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(size), Collections.emptyMap());
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -1084,7 +1084,7 @@ public class TableTools {
      */
     public static DynamicTable newTable(long size, List<String> names, List<ColumnSource<?>> columnSources) {
         // noinspection unchecked
-        return new QueryTable(Index.FACTORY.getFlatIndex(size),
+        return new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(size),
                 newMapFromLists(LinkedHashMap.class, names, columnSources));
     }
 
@@ -1096,7 +1096,7 @@ public class TableTools {
      * @return a Deephaven DynamicTable
      */
     public static DynamicTable newTable(long size, Map<String, ColumnSource<?>> columns) {
-        return new QueryTable(Index.FACTORY.getFlatIndex(size), columns);
+        return new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(size), columns);
     }
 
     /**
@@ -1111,7 +1111,7 @@ public class TableTools {
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
                     columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
-        return new QueryTable(definition, Index.FACTORY.getEmptyIndex(), columns);
+        return new QueryTable(definition, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), columns);
     }
 
     /**
@@ -1122,16 +1122,16 @@ public class TableTools {
      */
     public static DynamicTable newTable(ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
-        Index index = getIndex(columnHolders);
+        TrackingMutableRowSet rowSet = getIndex(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(index, columns);
+        return new QueryTable(rowSet, columns);
     }
 
     public static DynamicTable newTable(TableDefinition definition, ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
-        Index index = getIndex(columnHolders);
+        TrackingMutableRowSet rowSet = getIndex(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(definition, index, columns);
+        return new QueryTable(definition, rowSet, columns);
     }
 
     private static void checkSizes(ColumnHolder[] columnHolders) {
@@ -1144,9 +1144,9 @@ public class TableTools {
         }
     }
 
-    private static Index getIndex(ColumnHolder[] columnHolders) {
-        return columnHolders.length == 0 ? Index.FACTORY.getEmptyIndex()
-                : Index.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));
+    private static TrackingMutableRowSet getIndex(ColumnHolder[] columnHolders) {
+        return columnHolders.length == 0 ? TrackingMutableRowSet.FACTORY.getEmptyRowSet()
+                : TrackingMutableRowSet.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));
     }
 
     // region Time tables

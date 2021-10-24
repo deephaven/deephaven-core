@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
@@ -37,13 +37,13 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
         try {
             return page.<DATA_TYPE>asObjectChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving object at table object index " + elementIndex
+            throw new TableDataException("Error retrieving object at table object rowSet " + elementIndex
                     + ", from a parquet table", e);
         }
     }
 
     @Override
-    public RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+    public RegionVisitResult supportsDictionaryFormat(@NotNull final RowSet.SearchIterator keysToVisit) {
         if (!columnChunkPageStore.usesDictionaryOnEveryPage()) {
             return RegionVisitResult.FAILED;
         }

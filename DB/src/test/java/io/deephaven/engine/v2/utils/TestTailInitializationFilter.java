@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 
 public class TestTailInitializationFilter extends LiveTableTestCase {
     public void testSimple() {
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         builder.appendRange(0, 99);
         builder.appendRange(1000, 1099);
         final long[] data = new long[200];
@@ -25,7 +25,7 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
         final DBDateTime threshold1 = new DBDateTime(data[99] - DBTimeUtils.secondsToNanos(600));
         final DBDateTime threshold2 = new DBDateTime(data[199] - DBTimeUtils.secondsToNanos(600));
 
-        final QueryTable input = TstUtils.testRefreshingTable(builder.getIndex(),
+        final QueryTable input = TstUtils.testRefreshingTable(builder.build(),
                 ColumnHolder.getDateTimeColumnHolder("Timestamp", false, data));
         final Table filtered = TailInitializationFilter.mostRecent(input, "Timestamp", "00:10:00");
         TableTools.showWithIndex(filtered);
@@ -43,10 +43,10 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T06:30:00 NY");
             data2[0] = DBTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
-            final Index newIndex = Index.FACTORY.getIndexByValues(100, 101, 1100, 1101);
-            input.getIndex().insert(newIndex);
-            ((DateTimeTreeMapSource) input.<DBDateTime>getColumnSource("Timestamp")).add(newIndex, data2);
-            input.notifyListeners(newIndex, TstUtils.i(), TstUtils.i());
+            final TrackingMutableRowSet newRowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(100, 101, 1100, 1101);
+            input.getIndex().insert(newRowSet);
+            ((DateTimeTreeMapSource) input.<DBDateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
+            input.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
         });
 
         final Table slice100_102 = input.slice(100, 102);

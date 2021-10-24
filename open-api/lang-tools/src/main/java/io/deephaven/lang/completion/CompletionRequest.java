@@ -19,7 +19,7 @@ import java.util.*;
  * A stateful object to represent a document search at a given position.
  *
  * When we search left or right from an intermediate node like whitespace, dot, comma or EOF, we will create a new
- * CompletionRequest at the new index.
+ * CompletionRequest at the new rowSet.
  *
  * This currently uses absolute cursor positions, but we want this to be a line/column position instead, so we can
  * completely remove consideration of absolute cursors.

@@ -234,7 +234,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.ByExternal,
                 CopyAttributeOperation.WouldMatch));
 
-        // for a merged table, we'll allow operations that keep our Index + column sources the same to break us down
+        // for a merged table, we'll allow operations that keep our TrackingMutableRowSet + column sources the same to break us down
         // into constituent tables
         tempMap.put(MERGED_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
@@ -574,7 +574,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
         if (replayInitialImage && getIndex().nonempty()) {
             listener.setInitialImage(getIndex());
-            listener.onUpdate(getIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+            listener.onUpdate(getIndex(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
         }
     }
 
@@ -680,7 +680,7 @@ public abstract class BaseTable extends LivenessArtifact
         Assert.neqNull(update.shifted, "shifted");
 
         if (isFlat()) {
-            Assert.assertion(getIndex().isFlat(), "getIndex().isFlat()", getIndex(), "getIndex()");
+            Assert.assertion(getIndex().isFlat(), "build().isFlat()", getIndex(), "build()");
         }
         if (isAddOnly()) {
             Assert.assertion(update.removed.empty(), "update.removed.empty()");
@@ -688,7 +688,7 @@ public abstract class BaseTable extends LivenessArtifact
             Assert.assertion(update.shifted.empty(), "update.shifted.empty()");
         }
 
-        // First validate that each index is in a sane state.
+        // First validate that each rowSet is in a sane state.
         if (VALIDATE_UPDATE_INDICES) {
             update.added.validate();
             update.removed.validate();
@@ -754,11 +754,11 @@ public abstract class BaseTable extends LivenessArtifact
         final boolean currentMissingAdds = !update.added.subsetOf(getIndex());
         final boolean currentMissingModifications = !update.modified.subsetOf(getIndex());
         final boolean previousMissingRemovals;
-        try (final ReadOnlyIndex prevIndex = getIndex().getPrevIndex()) {
+        try (final RowSet prevIndex = getIndex().getPrevIndex()) {
             previousMissingRemovals = !update.removed.subsetOf(prevIndex);
         }
         final boolean currentContainsRemovals;
-        try (final ReadOnlyIndex removedMinusAdded = update.removed.minus(update.added)) {
+        try (final RowSet removedMinusAdded = update.removed.minus(update.added)) {
             currentContainsRemovals = removedMinusAdded.overlaps(getIndex());
         }
 
@@ -767,7 +767,7 @@ public abstract class BaseTable extends LivenessArtifact
             return;
         }
 
-        // Excuse the sloppiness in Index closing after this point, we're planning to crash the process anyway...
+        // Excuse the sloppiness in TrackingMutableRowSet closing after this point, we're planning to crash the process anyway...
 
         String serializedIndices = null;
         if (PRINT_SERIALIZED_UPDATE_OVERLAPS) {
@@ -791,8 +791,8 @@ public abstract class BaseTable extends LivenessArtifact
                     }
                 };
 
-                append.accept("getIndex().getPrevIndex=", getIndex().getPrevIndex());
-                append.accept("getIndex()=", getIndex().getPrevIndex());
+                append.accept("build().getPrevIndex=", getIndex().getPrevIndex());
+                append.accept("build()=", getIndex().getPrevIndex());
                 append.accept("added=", update.added);
                 append.accept("removed=", update.removed);
                 append.accept("modified=", update.modified);
@@ -804,14 +804,14 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
-        final Index removalsMinusPrevious = update.removed.minus(getIndex().getPrevIndex());
-        final Index addedMinusCurrent = update.added.minus(getIndex());
-        final Index removedIntersectCurrent = update.removed.intersect(getIndex());
-        final Index modifiedMinusCurrent = update.modified.minus(getIndex());
+        final TrackingMutableRowSet removalsMinusPrevious = update.removed.minus(getIndex().getPrevIndex());
+        final TrackingMutableRowSet addedMinusCurrent = update.added.minus(getIndex());
+        final TrackingMutableRowSet removedIntersectCurrent = update.removed.intersect(getIndex());
+        final TrackingMutableRowSet modifiedMinusCurrent = update.modified.minus(getIndex());
 
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final LogOutput logOutput = new LogOutputStringImpl()
-                .append("Index update error detected: ")
+                .append("TrackingMutableRowSet update error detected: ")
                 .append(LogOutput::nl).append("\t          previousIndex=").append(getIndex().getPrevIndex())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(getIndex())
                 .append(LogOutput::nl).append("\t                  added=").append(update.added)
@@ -831,7 +831,7 @@ public abstract class BaseTable extends LivenessArtifact
         log.error().append(indexUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {
-            log.error().append("Index update error detected: serialized data=").append(serializedIndices).endl();
+            log.error().append("TrackingMutableRowSet update error detected: serialized data=").append(serializedIndices).endl();
         }
 
         Assert.assertion(false, "!(previousMissingRemovals || currentMissingAdds || " +
@@ -841,7 +841,7 @@ public abstract class BaseTable extends LivenessArtifact
 
     /**
      * Get the notification queue to insert notifications into as they are generated by listeners during
-     * {@link #notifyListeners(Index, Index, Index)}. This method may be overridden to provide a different notification
+     * {@link #notifyListeners(TrackingMutableRowSet, TrackingMutableRowSet, TrackingMutableRowSet)}. This method may be overridden to provide a different notification
      * queue than the {@link LiveTableMonitor#DEFAULT} instance for more complex behavior.
      *
      * @return The {@link NotificationQueue} to add to.
@@ -872,7 +872,7 @@ public abstract class BaseTable extends LivenessArtifact
 
     /**
      * Simplest appropriate legacy InstrumentedListener implementation for BaseTable and descendants. It's expected that
-     * most use-cases will require overriding onUpdate() - the default implementation simply passes index updates
+     * most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet updates
      * through to the dependent's listeners.
      *
      * It is preferred to use {@link ShiftAwareListenerImpl} over {@link ListenerImpl}
@@ -894,7 +894,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         @Override
-        public void onUpdate(Index added, Index removed, Index modified) {
+        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
             dependent.notifyListeners(new ShiftAwareListener.Update(added.clone(), removed.clone(), modified.clone(),
                     IndexShiftData.EMPTY, ModifiedColumnSet.ALL));
         }
@@ -919,7 +919,7 @@ public abstract class BaseTable extends LivenessArtifact
 
     /**
      * Simplest appropriate InstrumentedShiftAwareListener implementation for BaseTable and descendants. It's expected
-     * that most use-cases will require overriding onUpdate() - the default implementation simply passes index updates
+     * that most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet updates
      * through to the dependent's listeners.
      */
     public static class ShiftAwareListenerImpl extends InstrumentedShiftAwareListener {
@@ -1404,7 +1404,7 @@ public abstract class BaseTable extends LivenessArtifact
      * </p>
      *
      * <p>
-     * This function is for use when the result table shares an Index; such that if this table is flat, the result table
+     * This function is for use when the result table shares an TrackingMutableRowSet; such that if this table is flat, the result table
      * must also be flat.
      * </p>
      *

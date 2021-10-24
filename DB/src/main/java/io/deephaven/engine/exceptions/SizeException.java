@@ -1,12 +1,12 @@
 package io.deephaven.engine.exceptions;
 
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.UncheckedDeephavenException;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * <p>
- * Unchecked exception thrown when {@link Index}, {@link io.deephaven.engine.tables.Table} or
+ * Unchecked exception thrown when {@link TrackingMutableRowSet}, {@link io.deephaven.engine.tables.Table} or
  * {@link io.deephaven.engine.tables.DataColumn} operations are invoked (directly, or indirectly as data updates) that
  * cannot be completed correctly due to size constraints on the underlying data structures.
  * <p>

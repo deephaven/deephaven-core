@@ -48,11 +48,11 @@ public class ChartArray implements Serializable {
     }
 
     /**
-     * Gets the index of the {@link Chart} at the specified location in this array.
+     * Gets the rowSet of the {@link Chart} at the specified location in this array.
      *
      * @param row row of the {@link Chart}
      * @param col column of the {@link Chart}
-     * @return index of the {@link Chart} at the specified location in this array.
+     * @return rowSet of the {@link Chart} at the specified location in this array.
      */
     public int getIndex(final int row, final int col) {
         checkBounds(row, col);
@@ -61,10 +61,10 @@ public class ChartArray implements Serializable {
     }
 
     /**
-     * Whether the index indicates that there is no {@link Chart} in that location.
+     * Whether the rowSet indicates that there is no {@link Chart} in that location.
      *
-     * @param index index of the {@link Chart}
-     * @return Whether the index indicates that there is no {@link Chart} in that location
+     * @param index rowSet of the {@link Chart}
+     * @return Whether the rowSet indicates that there is no {@link Chart} in that location
      */
     public static boolean isEmpty(int index) {
         return index == EMPTY_INDEX;

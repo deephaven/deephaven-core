@@ -210,9 +210,9 @@ public class CharacterPrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index index of the value to return.
+     * @param index rowSet of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the index is outside of the array's index range.
+     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
     static public char nth(int index, DbCharArray values){
         if(index < 0 || index >= values.size()){
@@ -225,9 +225,9 @@ public class CharacterPrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index index of the value to return.
+     * @param index rowSet of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the index is outside of the array's index range.
+     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
     static public char nth(int index, char[] values){
         return nth(index, array(values));

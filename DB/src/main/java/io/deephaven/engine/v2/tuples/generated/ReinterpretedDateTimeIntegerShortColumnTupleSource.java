@@ -97,7 +97,7 @@ public class ReinterpretedDateTimeIntegerShortColumnTupleSource extends Abstract
             writableSource.set(destinationIndexKey, tuple.getThirdElement());
             return;
         }
-        throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
+        throw new IndexOutOfBoundsException("Invalid element rowSet " + elementIndex + " for export");
     }
 
     @Override

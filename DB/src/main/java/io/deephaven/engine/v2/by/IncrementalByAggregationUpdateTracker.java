@@ -10,9 +10,7 @@ import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -27,14 +25,14 @@ import org.jetbrains.annotations.NotNull;
  * <em>step 5</em>):
  * <ol>
  * <li>Probe and accumulate removes (including modified-pre-shift when key columns are modified) in sequential builders
- * per state, then build the removed {@link Index} for each state and remove it from the state's {@link Index}</li>
- * <li>Probe shifts and apply them as they are found to impact a given state's {@link Index}, writing down the total
+ * per state, then build the removed {@link TrackingMutableRowSet} for each state and remove it from the state's {@link TrackingMutableRowSet}</li>
+ * <li>Probe shifts and apply them as they are found to impact a given state's {@link TrackingMutableRowSet}, writing down the total
  * number of states with shifts as the chunk size for accumulating shifts in <em>step 5</em></li>
  * <li>Probe non-key modifies and flag impacted states</li>
  * <li>Build and accumulate adds (including modified-post-shift when key columns are modified) in sequential builders
- * per state, then build the added {@link Index} for each state and add it to the state's {@link Index}</li>
- * <li>Update redirections from the previous {@link Index} first key to the current {@link Index} first key, and from
- * old slot to new slot where a state was moved or promoted in rehash, accumulating index keys in 3 random builders (for
+ * per state, then build the added {@link TrackingMutableRowSet} for each state and add it to the state's {@link TrackingMutableRowSet}</li>
+ * <li>Update redirections from the previous {@link TrackingMutableRowSet} first key to the current {@link TrackingMutableRowSet} first key, and from
+ * old slot to new slot where a state was moved or promoted in rehash, accumulating rowSet keys in 3 random builders (for
  * added, removed, and modified) and shifts in a pair of parallel {@link WritableLongChunk}s for previous and current,
  * using the following logic:
  * <ol>
@@ -56,7 +54,7 @@ import org.jetbrains.annotations.NotNull;
  * To process results after steps 1, 4, and 5, the caller uses
  * {@link #applyRemovesToStates(ObjectArraySource, ObjectArraySource)},
  * {@link #applyAddsToStates(ObjectArraySource, ObjectArraySource)}, and
- * {@link #makeUpdateFromStates(ObjectArraySource, ObjectArraySource, Index, RedirectionIndex, ModifiedColumnSetProducer)},
+ * {@link #makeUpdateFromStates(ObjectArraySource, ObjectArraySource, TrackingMutableRowSet, RedirectionIndex, ModifiedColumnSetProducer)},
  * respectively.
  */
 class IncrementalByAggregationUpdateTracker {
@@ -77,8 +75,8 @@ class IncrementalByAggregationUpdateTracker {
     /**
      * Builders (used in remove processing and add processing), parallel to {@code updatedStateSlotAndFlags}.
      */
-    private final ObjectArraySource<Index.SequentialBuilder> builders =
-            new ObjectArraySource<>(Index.SequentialBuilder.class);
+    private final ObjectArraySource<SequentialRowSetBuilder> builders =
+            new ObjectArraySource<>(SequentialRowSetBuilder.class);
 
     /**
      * Each time we clear, we add an offset to our cookies, this prevents us from reading old values.
@@ -186,12 +184,12 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an index key has been added to a state on initial build, to be applied in
+     * Record that an rowSet key has been added to a state on initial build, to be applied in
      * {@link #applyAddsAndMakeInitialIndex(ObjectArraySource, ObjectArraySource, RedirectionIndex)}.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param addedIndex The index key that was added
+     * @param addedIndex The rowSet key that was added
      * @return The new cookie for the state if it has changed
      */
     final long processInitialAdd(final long cookie, final int stateSlot, final long addedIndex) {
@@ -199,12 +197,12 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an index key has been removed from a state, to be applied in
+     * Record that an rowSet key has been removed from a state, to be applied in
      * {@link #applyRemovesToStates(ObjectArraySource, ObjectArraySource)}.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param removedIndex The index key that was removed
+     * @param removedIndex The rowSet key that was removed
      * @return The new cookie for the state if it has changed
      */
     final long processRemove(final long cookie, final int stateSlot, final long removedIndex) {
@@ -212,12 +210,12 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an index key has been shifted in a state, to be applied in
+     * Record that an rowSet key has been shifted in a state, to be applied in
      * {@link #applyShiftToStates(ObjectArraySource, ObjectArraySource, long, long, long)}.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param unusedShiftedIndex Unused shifted index argument, so we can use a method reference with the right
+     * @param unusedShiftedIndex Unused shifted rowSet argument, so we can use a method reference with the right
      *        signature
      * @return The new cookie for the state if it has changed
      */
@@ -227,7 +225,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an index key has been shifted in a state, already applied.
+     * Record that an rowSet key has been shifted in a state, already applied.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
@@ -238,11 +236,11 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an index key has been modified in a state.
+     * Record that an rowSet key has been modified in a state.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param unusedModifiedIndex Unused modified index argument, so we can use a method reference with the right
+     * @param unusedModifiedIndex Unused modified rowSet argument, so we can use a method reference with the right
      *        signature
      * @return The new cookie for the state if it has changed
      */
@@ -252,12 +250,12 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an index key has been added to a state, to be applied in
+     * Record that an rowSet key has been added to a state, to be applied in
      * {@link #applyAddsToStates(ObjectArraySource, ObjectArraySource)}.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param addedIndex The index key that was added
+     * @param addedIndex The rowSet key that was added
      * @return The new cookie for the state if it has changed
      */
     final long processAdd(final long cookie, final int stateSlot, final long addedIndex) {
@@ -294,7 +292,7 @@ class IncrementalByAggregationUpdateTracker {
             resultCookie = positionToCookie(position);
             currentSlotAndFlags = 0L;
         }
-        final Index.SequentialBuilder builder;
+        final SequentialRowSetBuilder builder;
         final long resultSlotAndFlags = ((long) stateSlot << FLAG_SHIFT) | (currentSlotAndFlags & FLAG_MASK | flags);
         if (currentSlotAndFlags != resultSlotAndFlags) {
             updatedStateSlotAndFlags.set(position, resultSlotAndFlags);
@@ -302,7 +300,7 @@ class IncrementalByAggregationUpdateTracker {
                 checkCurrentPassCapacity();
                 currentPassPositions.set(currentPassSize++, position);
             }
-            builders.set(position, builder = Index.FACTORY.getSequentialBuilder());
+            builders.set(position, builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder());
         } else {
             builder = builders.get(position);
         }
@@ -353,57 +351,57 @@ class IncrementalByAggregationUpdateTracker {
 
     /**
      * Apply accumulated adds to their states, populate the result {@link RedirectionIndex}, and build the initial
-     * result {@link Index}.
+     * result {@link TrackingMutableRowSet}.
      *
-     * @param indexSource The {@link Index} column source for the main table
-     * @param overflowIndexSource The {@link Index} column source for the overflow table
+     * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
+     * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
      * @param redirectionIndex The result {@link RedirectionIndex} (from state first keys to state slots) to populate
-     * @return The result {@link Index}
+     * @return The result {@link TrackingMutableRowSet}
      */
-    final Index applyAddsAndMakeInitialIndex(@NotNull final ObjectArraySource<Index> indexSource,
-            @NotNull final ObjectArraySource<Index> overflowIndexSource,
-            @NotNull final RedirectionIndex redirectionIndex) {
-        final Index.RandomBuilder resultBuilder = Index.FACTORY.getRandomBuilder();
+    final TrackingMutableRowSet applyAddsAndMakeInitialIndex(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
+                                                             @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
+                                                             @NotNull final RedirectionIndex redirectionIndex) {
+        final RowSetBuilder resultBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
-            final Index.SequentialBuilder stateBuilder = builders.get(trackerIndex);
+            final SequentialRowSetBuilder stateBuilder = builders.get(trackerIndex);
             builders.set(trackerIndex, null);
 
             final long stateFirstKey;
             // noinspection ConstantConditions
-            try (final Index stateAddedIndex = stateBuilder.getIndex()) {
-                final Index stateIndex = slotToIndex(indexSource, overflowIndexSource, slot);
-                stateIndex.insert(stateAddedIndex);
-                stateIndex.initializePreviousValue();
-                stateFirstKey = stateAddedIndex.firstRowKey();
+            try (final TrackingMutableRowSet stateAddedRowSet = stateBuilder.build()) {
+                final TrackingMutableRowSet stateRowSet = slotToIndex(indexSource, overflowIndexSource, slot);
+                stateRowSet.insert(stateAddedRowSet);
+                stateRowSet.initializePreviousValue();
+                stateFirstKey = stateAddedRowSet.firstRowKey();
             }
 
             redirectionIndex.putVoid(stateFirstKey, slot);
             resultBuilder.addKey(stateFirstKey);
         }
-        // NB: We should not need to initialize previous value here, as the result index was computed with no mutations.
-        return resultBuilder.getIndex();
+        // NB: We should not need to initialize previous value here, as the result rowSet was computed with no mutations.
+        return resultBuilder.build();
     }
 
     /**
      * Apply all accumulated removes to this tracker's updated states.
      *
-     * @param indexSource The {@link Index} column source for the main table
-     * @param overflowIndexSource The {@link Index} column source for the overflow table
+     * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
+     * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
      */
-    final void applyRemovesToStates(@NotNull final ObjectArraySource<Index> indexSource,
-            @NotNull final ObjectArraySource<Index> overflowIndexSource) {
+    final void applyRemovesToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
+            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource) {
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
             // Since removes are always done first, we need not check the flags here.
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
-            final Index.SequentialBuilder builder = builders.get(trackerIndex);
+            final SequentialRowSetBuilder builder = builders.get(trackerIndex);
             builders.set(trackerIndex, null);
 
             // noinspection ConstantConditions
-            try (final Index stateRemovedIndex = builder.getIndex()) {
-                slotToIndex(indexSource, overflowIndexSource, slot).remove(stateRemovedIndex);
+            try (final TrackingMutableRowSet stateRemovedRowSet = builder.build()) {
+                slotToIndex(indexSource, overflowIndexSource, slot).remove(stateRemovedRowSet);
             }
         }
     }
@@ -411,14 +409,14 @@ class IncrementalByAggregationUpdateTracker {
     /**
      * Apply a shift to all "current pass" states.
      *
-     * @param indexSource The {@link Index} column source for the main table
-     * @param overflowIndexSource The {@link Index} column source for the overflow table
-     * @param beginRange See {@link IndexShiftData#applyShift(Index, long, long, long)}
-     * @param endRange See {@link IndexShiftData#applyShift(Index, long, long, long)}
-     * @param shiftDelta See {@link IndexShiftData#applyShift(Index, long, long, long)}
+     * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
+     * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
+     * @param beginRange See {@link IndexShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
+     * @param endRange See {@link IndexShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
+     * @param shiftDelta See {@link IndexShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
      */
-    final void applyShiftToStates(@NotNull final ObjectArraySource<Index> indexSource,
-            @NotNull final ObjectArraySource<Index> overflowIndexSource,
+    final void applyShiftToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
+            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
             final long beginRange,
             final long endRange,
             final long shiftDelta) {
@@ -439,23 +437,23 @@ class IncrementalByAggregationUpdateTracker {
     /**
      * Apply all accumulated adds to this tracker's updated states.
      *
-     * @param indexSource The {@link Index} column source for the main table
-     * @param overflowIndexSource The {@link Index} column source for the overflow table
+     * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
+     * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
      */
-    final void applyAddsToStates(@NotNull final ObjectArraySource<Index> indexSource,
-            @NotNull final ObjectArraySource<Index> overflowIndexSource) {
+    final void applyAddsToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
+            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource) {
         for (int currentPositionIndex = 0; currentPositionIndex < currentPassSize; ++currentPositionIndex) {
             final int trackerIndex = currentPassPositions.getInt(currentPositionIndex);
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
             // Since the current pass is only states with adds, we need not check the flags here.
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
 
-            final Index.SequentialBuilder builder = builders.get(trackerIndex);
+            final SequentialRowSetBuilder builder = builders.get(trackerIndex);
             builders.set(trackerIndex, null);
 
             // noinspection ConstantConditions
-            try (final Index stateAddedIndex = builder.getIndex()) {
-                slotToIndex(indexSource, overflowIndexSource, slot).insert(stateAddedIndex);
+            try (final TrackingMutableRowSet stateAddedRowSet = builder.build()) {
+                slotToIndex(indexSource, overflowIndexSource, slot).insert(stateAddedRowSet);
             }
 
             updatedStateSlotAndFlags.set(trackerIndex, slotAndFlags ^ FLAG_STATE_IN_CURRENT_PASS);
@@ -470,32 +468,32 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Build an {@link ShiftAwareListener.Update} for this tracker's updated states, and update the result {@link Index}
+     * Build an {@link ShiftAwareListener.Update} for this tracker's updated states, and update the result {@link TrackingMutableRowSet}
      * and {@link RedirectionIndex}.
      *
-     * @param indexSource The {@link Index} column source for the main table
-     * @param overflowIndexSource The {@link Index} column source for the overflow table
-     * @param index The result {@link Index} of visible keys to update
+     * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
+     * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
+     * @param rowSet The result {@link TrackingMutableRowSet} of visible keys to update
      * @param redirectionIndex The result {@link RedirectionIndex} (from state first keys to state slots) to update
      * @param modifiedColumnSetProducer The {@link ModifiedColumnSetProducer} to use for computing the downstream
      *        {@link ModifiedColumnSet}
      * @return The result {@link ShiftAwareListener.Update}
      */
-    final ShiftAwareListener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<Index> indexSource,
-            @NotNull final ObjectArraySource<Index> overflowIndexSource,
-            @NotNull final Index index,
+    final ShiftAwareListener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
+            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
+            @NotNull final TrackingMutableRowSet rowSet,
             @NotNull final RedirectionIndex redirectionIndex,
             @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
-        final Index.RandomBuilder removedBuilder = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder removedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         int numStatesWithShifts = 0;
         for (long ti = 0; ti < size; ++ti) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(ti);
             final byte flags = (byte) (slotAndFlags & FLAG_MASK);
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
-            final Index current = slotToIndex(indexSource, overflowIndexSource, slot);
+            final TrackingMutableRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
             final long previousFirstKey = current.firstKeyPrev();
-            if (previousFirstKey == Index.NULL_KEY) {
+            if (previousFirstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                 // Nothing to remove
                 continue;
             }
@@ -519,8 +517,8 @@ class IncrementalByAggregationUpdateTracker {
         }
 
         // Second pass: Everything else
-        final Index.RandomBuilder addedBuilder = Index.FACTORY.getRandomBuilder();
-        final Index.RandomBuilder modifiedBuilder = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         boolean someKeyHasAddsOrRemoves = false;
         boolean someKeyHasModifies = false;
         final IndexShiftData shiftData;
@@ -533,14 +531,14 @@ class IncrementalByAggregationUpdateTracker {
                 final long slotAndFlags = updatedStateSlotAndFlags.getLong(ti);
                 final byte flags = (byte) (slotAndFlags & FLAG_MASK);
                 final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
-                final Index current = slotToIndex(indexSource, overflowIndexSource, slot);
+                final TrackingMutableRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
                 if (current.empty()) {
                     // Removes are already handled
                     continue;
                 }
                 final long previousFirstKey = current.firstKeyPrev();
                 final long currentFirstKey = current.firstRowKey();
-                if (previousFirstKey == Index.NULL_KEY) {
+                if (previousFirstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                     // We must have added something
                     redirectionIndex.putVoid(currentFirstKey, slot);
                     addedBuilder.addKey(currentFirstKey);
@@ -588,23 +586,23 @@ class IncrementalByAggregationUpdateTracker {
         }
 
         // Build the notification indexes
-        final Index added = addedBuilder.getIndex();
-        final Index removed = removedBuilder.getIndex();
-        final Index modified = modifiedBuilder.getIndex();
+        final TrackingMutableRowSet added = addedBuilder.build();
+        final TrackingMutableRowSet removed = removedBuilder.build();
+        final TrackingMutableRowSet modified = modifiedBuilder.build();
 
-        // Update the result Index
-        index.remove(removed);
-        shiftData.apply(index);
-        index.insert(added);
+        // Update the result TrackingMutableRowSet
+        rowSet.remove(removed);
+        shiftData.apply(rowSet);
+        rowSet.insert(added);
 
         // Build and return the update
         return new ShiftAwareListener.Update(added, removed, modified, shiftData,
                 modifiedColumnSetProducer.produce(someKeyHasAddsOrRemoves, someKeyHasModifies));
     }
 
-    private static Index slotToIndex(@NotNull final ObjectArraySource<Index> indexSource,
-            @NotNull final ObjectArraySource<Index> overflowIndexSource,
-            final int slot) {
+    private static TrackingMutableRowSet slotToIndex(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
+                                                     @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
+                                                     final int slot) {
         return IncrementalChunkedByAggregationStateManager.isOverflowLocation(slot)
                 ? overflowIndexSource
                         .get(IncrementalChunkedByAggregationStateManager.hashLocationToOverflowLocation(slot))

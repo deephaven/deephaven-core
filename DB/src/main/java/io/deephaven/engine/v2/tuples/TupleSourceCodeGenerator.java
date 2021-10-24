@@ -368,7 +368,7 @@ public class TupleSourceCodeGenerator {
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
         code.append(indenter).append(
-                "throw new IndexOutOfBoundsException(\"Invalid element index \" + elementIndex + \" for export\");")
+                "throw new IndexOutOfBoundsException(\"Invalid element rowSet \" + elementIndex + \" for export\");")
                 .append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
@@ -664,7 +664,7 @@ public class TupleSourceCodeGenerator {
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
         code.append(indenter).append(
-                "throw new IndexOutOfBoundsException(\"Invalid element index \" + elementIndex + \" for export\");")
+                "throw new IndexOutOfBoundsException(\"Invalid element rowSet \" + elementIndex + \" for export\");")
                 .append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);

@@ -6,7 +6,9 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.v2.ColumnToCodecMappings;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Assert;
@@ -15,7 +17,6 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.ColumnSourceManager;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Manage column sources made up of regions in their own index address space.
+ * Manage column sources made up of regions in their own rowSet address space.
  */
 public class RegionedColumnSourceManager implements ColumnSourceManager {
 
@@ -124,8 +125,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
-    public synchronized Index refresh() {
-        final Index.SequentialBuilder addedIndexBuilder = Index.FACTORY.getSequentialBuilder();
+    public synchronized TrackingMutableRowSet refresh() {
+        final SequentialRowSetBuilder addedIndexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
                                                                                        // using a sequential builder.
             entry.pollUpdates(addedIndexBuilder);
@@ -134,7 +135,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext();) {
             final EmptyTableLocationEntry nonexistentEntry = iterator.next();
             nonexistentEntry.refresh();
-            final ReadOnlyIndex locationIndex = nonexistentEntry.location.getIndex();
+            final RowSet locationIndex = nonexistentEntry.location.getIndex();
             if (locationIndex != null) {
                 if (locationIndex.empty()) {
                     locationIndex.close();
@@ -157,7 +158,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         if (!isRefreshing) {
             emptyTableLocations.clear();
         }
-        return addedIndexBuilder.getIndex();
+        return addedIndexBuilder.build();
     }
 
     @Override
@@ -208,7 +209,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         private final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
-        private ReadOnlyIndex initialIndex;
+        private RowSet initialIndex;
 
         private EmptyTableLocationEntry(@NotNull final TableLocation location) {
             this.location = location;
@@ -260,16 +261,16 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         private final List<ColumnLocationState> columnLocationStates = new ArrayList<>();
 
         /**
-         * Index in the region's space, not the table's space.
+         * TrackingMutableRowSet in the region's space, not the table's space.
          */
-        private ReadOnlyIndex indexAtLastUpdate;
+        private RowSet indexAtLastUpdate;
 
         private IncludedTableLocationEntry(final EmptyTableLocationEntry nonexistentEntry) {
             this.location = nonexistentEntry.location;
             this.subscriptionBuffer = nonexistentEntry.subscriptionBuffer;
         }
 
-        private void processInitial(final Index.SequentialBuilder addedIndexBuilder, final ReadOnlyIndex initialIndex) {
+        private void processInitial(final SequentialRowSetBuilder addedIndexBuilder, final RowSet initialIndex) {
             Assert.neqNull(initialIndex, "initialIndex");
             Assert.eqTrue(initialIndex.nonempty(), "initialIndex.nonempty()");
             Assert.eqNull(indexAtLastUpdate, "indexAtLastUpdate");
@@ -283,7 +284,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             final long regionFirstKey = RegionedColumnSource.getFirstElementIndex(regionIndex);
             initialIndex.forAllLongRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
-            ReadOnlyIndex addIndexInTable = null;
+            RowSet addIndexInTable = null;
             try {
                 for (final ColumnDefinition columnDefinition : columnDefinitions) {
                     // noinspection unchecked
@@ -307,12 +308,12 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             indexAtLastUpdate = initialIndex;
         }
 
-        private void pollUpdates(final Index.SequentialBuilder addedIndexBuilder) {
+        private void pollUpdates(final SequentialRowSetBuilder addedIndexBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
             if (!subscriptionBuffer.processPending()) {
                 return;
             }
-            final ReadOnlyIndex updateIndex = location.getIndex();
+            final RowSet updateIndex = location.getIndex();
             try {
                 if (updateIndex == null) {
                     // This should be impossible - the subscription buffer transforms a transition to null into a
@@ -323,7 +324,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 if (!indexAtLastUpdate.subsetOf(updateIndex)) { // Bad change
                     // noinspection ThrowableNotThrown
                     Assert.statementNeverExecuted(
-                            "Index keys removed at location " + location + ": " + indexAtLastUpdate.minus(updateIndex));
+                            "TrackingMutableRowSet keys removed at location " + location + ": " + indexAtLastUpdate.minus(updateIndex));
                 }
                 if (indexAtLastUpdate.size() == updateIndex.size()) {
                     // Nothing to do
@@ -341,11 +342,11 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                             .append(",FROM:").append(indexAtLastUpdate.size())
                             .append(",TO:").append(updateIndex.size()).endl();
                 }
-                try (final ReadOnlyIndex addedIndex = updateIndex.minus(indexAtLastUpdate)) {
+                try (final RowSet addedIndex = updateIndex.minus(indexAtLastUpdate)) {
                     final long regionFirstKey = RegionedColumnSource.getFirstElementIndex(regionIndex);
                     addedIndex.forAllLongRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
                             .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
-                    ReadOnlyIndex addIndexInTable = null;
+                    RowSet addIndexInTable = null;
                     try {
                         for (final ColumnLocationState state : columnLocationStates) {
                             if (state.needToUpdateGrouping()) {
@@ -416,9 +417,9 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         /**
          * Update column groupings, if appropriate.
          *
-         * @param locationAddedIndexInTable The added index, in the table's address space
+         * @param locationAddedIndexInTable The added rowSet, in the table's address space
          */
-        private void updateGrouping(@NotNull final ReadOnlyIndex locationAddedIndexInTable) {
+        private void updateGrouping(@NotNull final RowSet locationAddedIndexInTable) {
             if (definition.isGrouping()) {
                 Assert.eqTrue(isGroupingEnabled, "isGroupingEnabled");
                 GroupingProvider groupingProvider = source.getGroupingProvider();
@@ -432,14 +433,14 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 }
             } else if (definition.isPartitioning()) {
                 final DeferredGroupingColumnSource<T> partitioningColumnSource = source;
-                Map<T, Index> columnPartitionToIndex = partitioningColumnSource.getGroupToRange();
+                Map<T, TrackingMutableRowSet> columnPartitionToIndex = partitioningColumnSource.getGroupToRange();
                 if (columnPartitionToIndex == null) {
                     columnPartitionToIndex = new LinkedHashMap<>();
                     partitioningColumnSource.setGroupToRange(columnPartitionToIndex);
                 }
                 final T columnPartitionValue =
                         location.getTableLocation().getKey().getPartitionValue(definition.getName());
-                final Index current = columnPartitionToIndex.get(columnPartitionValue);
+                final TrackingMutableRowSet current = columnPartitionToIndex.get(columnPartitionValue);
                 if (current == null) {
                     columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.clone());
                 } else {

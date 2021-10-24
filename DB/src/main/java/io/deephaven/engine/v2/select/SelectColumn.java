@@ -15,7 +15,7 @@ import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -51,14 +51,14 @@ public interface SelectColumn {
     List<String> initInputs(Table table);
 
     /**
-     * Initialize the column from the provided set of underlying columns and index.
+     * Initialize the column from the provided set of underlying columns and rowSet.
      *
-     * @param index the base index
+     * @param rowSet the base rowSet
      * @param columnsOfInterest the input columns
      *
      * @return a list of columns on which the result of this is dependent
      */
-    List<String> initInputs(Index index, Map<String, ? extends ColumnSource<?>> columnsOfInterest);
+    List<String> initInputs(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest);
 
     /**
      * Initialize any internal column definitions from the provided initial.
@@ -123,7 +123,7 @@ public interface SelectColumn {
     MatchPair getMatchPair();
 
     /**
-     * Create a new {@link WritableSource} with sufficient capacity for the rows in the index.
+     * Create a new {@link WritableSource} with sufficient capacity for the rows in the rowSet.
      *
      * @param size The number of rows to allocate
      *

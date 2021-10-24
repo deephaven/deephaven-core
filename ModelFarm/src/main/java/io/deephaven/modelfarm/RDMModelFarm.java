@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.NotificationStepSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.FunctionalInterfaces;
@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Abstract class for ModelFarm implementations that will take data from a {@link RowDataManager}. This class tracks the
- * mappings between each key and the corresponding index in the {@code RowDataManager}'s {@link RowDataManager#table()
+ * mappings between each key and the corresponding rowSet in the {@code RowDataManager}'s {@link RowDataManager#table()
  * table}. Each row of this table should contain all of the data necessary to populate an instance of {@code DATATYPE},
  * which will then be passed to the {@link ModelFarmBase#model model}.
  *
@@ -69,7 +69,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
             private static final long serialVersionUID = -2137065147841887955L;
 
             @Override
-            public void onUpdate(Index added, Index removed, Index modified) {
+            public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
                 keyIndexCurrentLock.writeLock().lock();
                 keyIndexPrevLock.writeLock().lock();
 
@@ -98,15 +98,15 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
         dataManager.table().listenForUpdates(listener, true);
     }
 
-    private void removeKeyIndex(final Index index) {
-        index.forAllLongs((final long i) -> {
+    private void removeKeyIndex(final TrackingMutableRowSet rowSet) {
+        rowSet.forAllLongs((final long i) -> {
             final KEYTYPE key = dataManager.uniqueIdPrev(i);
             keyIndexDelta.put(key, REMOVED_ENTRY_VALUE);
         });
     }
 
-    private void addKeyIndex(final Index index) {
-        index.forAllLongs((final long i) -> {
+    private void addKeyIndex(final TrackingMutableRowSet rowSet) {
+        rowSet.forAllLongs((final long i) -> {
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             keyIndexDelta.put(key, i);
         });
@@ -119,7 +119,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
      * @param removed indexes removed from the data table
      * @param modified indexes modified in the data table.
      */
-    protected abstract void onDataUpdate(Index added, Index removed, Index modified);
+    protected abstract void onDataUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified);
 
     /**
      * Populates a data object with data from the most recent row with the provided unique identifier.
@@ -157,7 +157,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
         }
 
         if (i == NO_ENTRY_VALUE) {
-            log.warn().append("Attempting to get row data for a key with no index.  key=").append(key.toString())
+            log.warn().append("Attempting to get row data for a key with no rowSet.  key=").append(key.toString())
                     .endl();
             return false;
         }

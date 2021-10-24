@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -146,7 +146,7 @@ public class TreeSnapshotResult {
                 ArrayBackedColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
         sources.put(TreeTableConstants.CHILD_PRESENCE_COLUMN, new BitSetColumnSource(childPresenceColumn));
 
-        return new QueryTable(Index.FACTORY.getFlatIndex((snapshotEnd - snapshotStart) + 1), sources);
+        return new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex((snapshotEnd - snapshotStart) + 1), sources);
     }
 
     public Table getUpdatedSource() {

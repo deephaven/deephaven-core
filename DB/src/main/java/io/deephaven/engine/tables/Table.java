@@ -32,7 +32,7 @@ import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -124,13 +124,13 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * <p>
      * A stream table is a sequence of additions that represent rows newly received from a stream; on the cycle after
      * the stream table is refreshed the rows are removed. Note that this means any particular row of data (not to be
-     * confused with an index key) never exists for more than one cycle.
+     * confused with an rowSet key) never exists for more than one cycle.
      * <p>
      * Most operations are supported as normal on stream tables, but aggregation operations are treated specially,
      * producing aggregate results that are valid over the entire observed stream from the time the operation is
      * initiated. These semantics necessitate a few exclusions, i.e. unsupported operations:
      * <ol>
-     * <li>{@link #by(SelectColumn...) by()} as an index-aggregation is unsupported. This means any of the overloads for
+     * <li>{@link #by(SelectColumn...) by()} as an rowSet-aggregation is unsupported. This means any of the overloads for
      * {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
      * {@link AggregationIndexStateFactory}, {@link AggregationFormulaStateFactory}, or {@link Array}.
      * {@link io.deephaven.engine.v2.by.ComboAggregateFactory#AggArray(java.lang.String...)}, and
@@ -270,7 +270,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return this;
     }
 
-    Index getIndex();
+    TrackingMutableRowSet getIndex();
 
     default long sizeForInstrumentation() {
         return size();
@@ -286,7 +286,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Column Sources - for fetching data by index key
+    // Column Sources - for fetching data by rowSet key
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
@@ -563,7 +563,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
     }
 
-    Table getSubTable(Index index);
+    Table getSubTable(TrackingMutableRowSet rowSet);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Column Selection Operations
@@ -778,11 +778,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     /**
-     * Produce a new table with the specified columns moved to the specified {@code index}. Column indices begin at 0.
+     * Produce a new table with the specified columns moved to the specified {@code rowSet}. Column indices begin at 0.
      * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
      *
-     * @param index The index to which the specified columns should be moved
-     * @param columnsToMove The columns to move to the specified index (and, optionally, to rename)
+     * @param index The rowSet to which the specified columns should be moved
+     * @param columnsToMove The columns to move to the specified rowSet (and, optionally, to rename)
      * @return The new table, with the columns rearranged as explained above
      */
     @AsyncMethod
@@ -2473,13 +2473,13 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     /**
-     * Return true if this table is guaranteed to be flat. The index of a flat table will be from 0...numRows-1.
+     * Return true if this table is guaranteed to be flat. The rowSet of a flat table will be from 0...numRows-1.
      */
     @AsyncMethod
     boolean isFlat();
 
     /**
-     * Creates a version of this table with a flat index (V2 only).
+     * Creates a version of this table with a flat rowSet (V2 only).
      */
     @AsyncMethod
     Table flatten();

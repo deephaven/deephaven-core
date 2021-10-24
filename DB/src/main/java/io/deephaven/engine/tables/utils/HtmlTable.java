@@ -6,7 +6,7 @@ package io.deephaven.engine.tables.utils;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,7 +28,7 @@ public class HtmlTable {
         out.append("</tr>\n");
 
         final Collection<? extends ColumnSource> columnSources = source.getColumnSources();
-        for (final Index.Iterator ii = source.getIndex().iterator(); ii.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator ii = source.getIndex().iterator(); ii.hasNext();) {
             out.append("<tr>");
             final long key = ii.nextLong();
             for (ColumnSource columnSource : columnSources) {

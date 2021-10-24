@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 
 /**
  * Regioned column source implementation for columns of Booleans.
@@ -38,7 +38,7 @@ final class RegionedColumnSourceBoolean
 
     @Override
     public Boolean get(long elementIndex) {
-        return elementIndex == NULL_KEY ? null :
+        return elementIndex == NULL_ROW_KEY ? null :
                 BooleanUtils.byteAsBoolean(lookupRegion(elementIndex).getReferencedRegion().getByte(elementIndex));
     }
 

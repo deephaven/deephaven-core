@@ -3,14 +3,14 @@ package io.deephaven.engine.v2.utils;
 /**
  * An iterator for the complement set over an universe of [0, Long.MAX_VALUE].
  */
-public class ComplementRangeIterator implements ReadOnlyIndex.RangeIterator {
-    private final ReadOnlyIndex.RangeIterator it;
+public class ComplementRangeIterator implements RowSet.RangeIterator {
+    private final RowSet.RangeIterator it;
     private long currStart;
     private long currEnd;
     private long nextStart;
     private long nextEnd;
 
-    public ComplementRangeIterator(ReadOnlyIndex.RangeIterator it) {
+    public ComplementRangeIterator(RowSet.RangeIterator it) {
         this.it = it;
         currStart = -1;
         currEnd = -1;

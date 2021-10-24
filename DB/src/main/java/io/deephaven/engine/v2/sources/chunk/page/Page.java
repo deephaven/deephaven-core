@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.DefaultChunkSource;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -115,7 +115,7 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code RowSequenceIterator} is position at its first index key on this page, consume all keys on this
+     * Assuming {@code RowSequenceIterator} is position at its first rowSet key on this page, consume all keys on this
      * page.
      *
      * @param RowSequenceIterator The iterator to advance
@@ -126,7 +126,7 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code RowSequenceIterator} is position at its first index key on this page, consume all keys on this
+     * Assuming {@code RowSequenceIterator} is position at its first rowSet key on this page, consume all keys on this
      * page and return the number of keys consumed.
      *
      * @param RowSequenceIterator The iterator to advance
@@ -137,13 +137,13 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code searchIterator} is position at its first index key on this page, consume all keys on this page.
+     * Assuming {@code searchIterator} is position at its first rowSet key on this page, consume all keys on this page.
      *
      * @param searchIterator The iterator to advance
-     * @return The result of {@link io.deephaven.engine.v2.utils.ReadOnlyIndex.SearchIterator#advance(long)}
+     * @return The result of {@link RowSet.SearchIterator#advance(long)}
      */
     @FinalDefault
-    default boolean advanceToNextPage(@NotNull final ReadOnlyIndex.SearchIterator searchIterator) {
+    default boolean advanceToNextPage(@NotNull final RowSet.SearchIterator searchIterator) {
         return searchIterator.advance(maxRow(searchIterator.currentValue()) + 1);
     }
 }

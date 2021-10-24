@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 
@@ -40,7 +40,7 @@ public class KeyedTableListener {
 
     // TODO: create an even more generic internals to handle multiple matches
     // TODO: Refactor with some sort of internal assistant object (unique versus generic)
-    // TODO: private HashMap<SmartKey, Index> keyToIndexObjectHashMap; // for storing multiple matches
+    // TODO: private HashMap<SmartKey, TrackingMutableRowSet> keyToIndexObjectHashMap; // for storing multiple matches
 
     public KeyedTableListener(QueryTable table, String... keyColumnNames) {
         this.table = table;
@@ -51,7 +51,7 @@ public class KeyedTableListener {
         this.keyColumnNames = keyColumnNames;
         this.tableListener = new InstrumentedListenerAdapter(null, table, false) {
             @Override
-            public void onUpdate(final Index added, final Index removed, final Index modified) {
+            public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
                 handleUpdateFromTable(added, removed, modified);
             }
         };
@@ -69,9 +69,9 @@ public class KeyedTableListener {
         this.table.removeUpdateListener(tableListener);
     }
 
-    private void handleUpdateFromTable(final Index added, final Index removed, final Index modified) {
+    private void handleUpdateFromTable(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
         // Add all the new rows to the hashmap
-        for (Index.Iterator iterator = added.iterator(); iterator.hasNext();) {
+        for (TrackingMutableRowSet.Iterator iterator = added.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey key = constructSmartKey(next);
             keyToIndexHashMap.put(key, next);
@@ -80,7 +80,7 @@ public class KeyedTableListener {
         }
 
         // Remove all the removed rows from the hashmap
-        for (Index.Iterator iterator = removed.iterator(); iterator.hasNext();) {
+        for (TrackingMutableRowSet.Iterator iterator = removed.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey oldKey = indexToKeyHashMap.remove(next);
             Assert.assertion(oldKey != null, "oldKey != null");
@@ -90,21 +90,21 @@ public class KeyedTableListener {
         }
 
         // Modifies are a special case -- need to look for keys being removed / added
-        for (Index.Iterator iterator = modified.iterator(); iterator.hasNext();) {
+        for (TrackingMutableRowSet.Iterator iterator = modified.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey currentKey = constructSmartKey(next);
             SmartKey prevKey = indexToKeyHashMap.get(next);
 
             // Check if the key values have changed
             if (!currentKey.equals(prevKey)) {
-                // only want to remove the old key if it was pointing to this index
+                // only want to remove the old key if it was pointing to this rowSet
                 if (keyToIndexHashMap.get(prevKey) == next) {
                     keyToIndexHashMap.remove(prevKey);
                     indexToKeyHashMap.remove(next);
                     handleListeners(prevKey, next, KeyEvent.REMOVED);
                 }
 
-                // Check if this current key was used elsewhere and remove the index->key mapping
+                // Check if this current key was used elsewhere and remove the rowSet->key mapping
                 long otherIndex = keyToIndexHashMap.get(currentKey);
                 if (otherIndex != NO_ENTRY) {
                     indexToKeyHashMap.remove(otherIndex);

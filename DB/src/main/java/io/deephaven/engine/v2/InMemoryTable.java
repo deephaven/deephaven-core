@@ -8,7 +8,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.NewTable;
 
@@ -34,24 +34,24 @@ public class InMemoryTable extends QueryTable {
         }
         return new InMemoryTable(
                 TableDefinition.from(table.header()),
-                Index.FACTORY.getFlatIndex(table.size()),
+                TrackingMutableRowSet.FACTORY.getFlatIndex(table.size()),
                 columns);
     }
 
     public InMemoryTable(String[] columnNames, Object[] arrayValues) {
-        super(Index.FACTORY.getFlatIndex(Array.getLength(arrayValues[0])), createColumnsMap(columnNames, arrayValues));
+        super(TrackingMutableRowSet.FACTORY.getFlatIndex(Array.getLength(arrayValues[0])), createColumnsMap(columnNames, arrayValues));
     }
 
     public InMemoryTable(TableDefinition definition, final int size) {
-        super(Index.FACTORY.getFlatIndex(size),
+        super(TrackingMutableRowSet.FACTORY.getFlatIndex(size),
                 createColumnsMap(
                         definition.getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                         Arrays.stream(definition.getColumns()).map(
                                 x -> Array.newInstance(x.getDataType(), size)).toArray(Object[]::new)));
     }
 
-    private InMemoryTable(TableDefinition definition, Index index, Map<String, ? extends ColumnSource<?>> columns) {
-        super(definition, index, columns);
+    private InMemoryTable(TableDefinition definition, TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
+        super(definition, rowSet, columns);
     }
 
     private static Map<String, ColumnSource<?>> createColumnsMap(String[] columnNames, Object[] arrayValues) {

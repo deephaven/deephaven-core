@@ -3,8 +3,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import gnu.trove.impl.Constants;
 import gnu.trove.set.TLongSet;
@@ -22,7 +22,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class UpdatableTable extends QueryTable implements LiveTable {
 
     /**
-     * Interface provided to updater functions that allows index changes to be recorded for propagation.
+     * Interface provided to updater functions that allows rowSet changes to be recorded for propagation.
      */
     public interface IndexChangeRecorder {
 
@@ -67,10 +67,10 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     private final TLongSet modifiedSet =
             new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
 
-    public UpdatableTable(@NotNull final Index index,
+    public UpdatableTable(@NotNull final TrackingMutableRowSet rowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> nameToColumnSource,
             @NotNull final Updater updater) {
-        super(index, nameToColumnSource);
+        super(rowSet, nameToColumnSource);
         this.updater = updater;
     }
 
@@ -105,23 +105,23 @@ public class UpdatableTable extends QueryTable implements LiveTable {
         }
     }
 
-    private static Index setToIndex(@NotNull final TLongSet set) {
-        final IndexBuilder builder = Index.FACTORY.getRandomBuilder();
+    private static TrackingMutableRowSet setToIndex(@NotNull final TLongSet set) {
+        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         set.forEach(key -> {
             builder.addKey(key);
             return true;
         });
         set.clear();
-        return builder.getIndex();
+        return builder.build();
     }
 
     @Override
     public void refresh() {
         updater.accept(indexChangeRecorder);
 
-        final Index added = setToIndex(addedSet);
-        final Index removed = setToIndex(removedSet);
-        final Index modified = setToIndex(modifiedSet);
+        final TrackingMutableRowSet added = setToIndex(addedSet);
+        final TrackingMutableRowSet removed = setToIndex(removedSet);
+        final TrackingMutableRowSet modified = setToIndex(modifiedSet);
         getIndex().update(added, removed);
         if (added.nonempty() || removed.nonempty() || modified.nonempty()) {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();

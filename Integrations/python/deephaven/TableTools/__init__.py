@@ -902,7 +902,7 @@ def show(*args):
       :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
       :param delimiter: (java.lang.String) - a String value to use between printed values
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
-      :param showIndex: (boolean) - a boolean indicating whether to also print index details
+      :param showIndex: (boolean) - a boolean indicating whether to also print rowSet details
       :param columns: (java.lang.String...) - varargs of column names to display
     """
     
@@ -930,7 +930,7 @@ def showCommaDelimited(*args):
 @_passThrough
 def showWithIndex(*args):
     """
-    Prints the first few rows of a table to standard output, and also prints the details of the index and record
+    Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
      positions that provided the values.
     
     *Overload 1*  

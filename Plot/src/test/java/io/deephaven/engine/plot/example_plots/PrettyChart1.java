@@ -168,7 +168,7 @@ public class PrettyChart1 {
         Figure cht = fig.newChart(0)
                 .chartTitle("Chart Title");
         Figure axs = cht.newAxes().plotStyle("LINE")
-                .yLabel("Predicted Index")
+                .yLabel("Predicted TrackingMutableRowSet")
                 .plot("Test2", date3, y3).pointsVisible(false)
                 .plot("Test1", date1, y1).pointsVisible(false);
 

@@ -8,7 +8,7 @@ import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 
 /**
@@ -65,7 +65,7 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
     }
 
     @Override
-    public void onUpdate(final Index added, final Index removed, final Index modified) {
+    public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
         pyCallable.call("__call__", added, removed, modified);
     }
 }

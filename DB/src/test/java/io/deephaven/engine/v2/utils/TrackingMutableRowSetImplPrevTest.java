@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class TreeIndexPrevTest {
+public class TrackingMutableRowSetImplPrevTest {
     @Before
     public void setUp() throws Exception {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
@@ -22,14 +22,14 @@ public class TreeIndexPrevTest {
 
     @Test
     public void testPrevWithEmptyConstruction() {
-        final Index ix = Index.FACTORY.getEmptyIndex();
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         assertTrue(ix.empty());
         assertTrue(ix.getPrevIndex().empty());
     }
 
     @Test
     public void testPrevWithSingleRangeIxOnly() {
-        final Index ix = Index.FACTORY.getIndexByValues(1L);
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByValues(1L);
         assertEquals(1L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(1L, ix.getPrevIndex().size());
@@ -64,7 +64,7 @@ public class TreeIndexPrevTest {
 
     @Test
     public void testPrevWithRspOnly() {
-        final Index ix = Index.FACTORY.getIndexByValues(1, 3);
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByValues(1, 3);
         assertEquals(2L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(3L, ix.lastRowKey());
@@ -111,7 +111,7 @@ public class TreeIndexPrevTest {
     @Test
     public void testPrevWithSingleThenRspThenEmptyThenSingle() {
         LogicalClock.DEFAULT.resetForUnitTests();
-        final Index ix = Index.FACTORY.getIndexByValues(1L);
+        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByValues(1L);
         assertEquals(1L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(1L, ix.getPrevIndex().size());

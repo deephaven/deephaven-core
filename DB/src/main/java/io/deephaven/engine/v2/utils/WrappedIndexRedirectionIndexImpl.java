@@ -14,12 +14,12 @@ import org.jetbrains.annotations.NotNull;
 public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
 
     /**
-     * {@link Index} used to map from outer key (position in the index) to inner key.
+     * {@link TrackingMutableRowSet} used to map from outer key (position in the rowSet) to inner key.
      */
-    private final Index wrappedIndex;
+    private final TrackingMutableRowSet wrappedRowSet;
 
-    public WrappedIndexRedirectionIndexImpl(final Index wrappedIndex) {
-        this.wrappedIndex = wrappedIndex;
+    public WrappedIndexRedirectionIndexImpl(final TrackingMutableRowSet wrappedRowSet) {
+        this.wrappedRowSet = wrappedRowSet;
     }
 
     @Override
@@ -29,12 +29,12 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
 
     @Override
     public synchronized long get(long key) {
-        return wrappedIndex.get(key);
+        return wrappedRowSet.get(key);
     }
 
     @Override
     public synchronized long getPrev(long key) {
-        return wrappedIndex.getPrev(key);
+        return wrappedRowSet.getPrev(key);
     }
 
     private static final class FillContext implements RedirectionIndex.FillContext {
@@ -87,7 +87,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
             @NotNull final RowSequence keysToMap) {
         final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
         keysToMap.fillRowKeyChunk(indexPositions);
-        wrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(mappedKeysOut));
+        wrappedRowSet.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(mappedKeysOut));
         mappedKeysOut.setSize(keysToMap.intSize());
     }
 
@@ -97,7 +97,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
             @NotNull final RowSequence keysToMap) {
         final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
         keysToMap.fillRowKeyChunk(indexPositions);
-        try (final ReadOnlyIndex prevWrappedIndex = wrappedIndex.getPrevIndex()) {
+        try (final RowSet prevWrappedIndex = wrappedRowSet.getPrevIndex()) {
             prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions),
                     new LongChunkAppender(mappedKeysOut));
         }
@@ -122,7 +122,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
      * outputChunkPositions.setSize(chunkSize); ChunkUtils.fillInOrder(outputChunkPositions);
      * LongIntTimsortKernel.sort(sortKernelContext, outputChunkPositions, indexPositions);
      * 
-     * wrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions), new
+     * wrappedRowSet.getKeysForPositions(new LongChunkIterator(indexPositions), new
      * LongChunkAppender(orderedMappedKeys)); orderedMappedKeys.setSize(chunkSize);
      * 
      * mappedKeysOut.setSize(chunkSize); LongPermuteKernel.permute(orderedMappedKeys, outputChunkPositions,
@@ -146,7 +146,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
 
         long positionStart = 0;
 
-        for (final Index.RangeIterator rangeIterator = wrappedIndex.rangeIterator(); rangeIterator.hasNext();) {
+        for (final TrackingMutableRowSet.RangeIterator rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext();) {
             if (positionStart > 0) {
                 builder.append(", ");
             }

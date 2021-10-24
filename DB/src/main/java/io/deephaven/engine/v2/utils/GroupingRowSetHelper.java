@@ -20,27 +20,27 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
-public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Index {
+public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implements TrackingMutableRowSet {
 
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})
     @Override
-    public Index clone() {
+    public TrackingMutableRowSet clone() {
         throw new UnsupportedOperationException();
     }
 
     /**
      * These mappings last forever, and only include column sources that are immutable.
      *
-     * Whenever this index is changed, we must clear the mappings.
+     * Whenever this rowSet is changed, we must clear the mappings.
      */
     private transient WeakHashMap<List<ColumnSource>, MappingInfo> mappings = null;
 
     private static class MappingInfo {
         private final TupleSource tupleSource;
-        private final Map<Object, Index> mapping;
+        private final Map<Object, TrackingMutableRowSet> mapping;
         private final long creationTick;
 
-        private MappingInfo(Map<Object, Index> mapping, long creationTick, TupleSource tupleSource) {
+        private MappingInfo(Map<Object, TrackingMutableRowSet> mapping, long creationTick, TupleSource tupleSource) {
             this.mapping = mapping;
             this.creationTick = creationTick;
             this.tupleSource = tupleSource;
@@ -48,24 +48,24 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
     }
 
     /**
-     * These mappings do not survive past a single LogicalClock tick or any index changes.
+     * These mappings do not survive past a single LogicalClock tick or any rowSet changes.
      */
     private transient WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings = null;
     private transient WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings = null;
 
-    protected final void onUpdate(final ReadOnlyIndex added, final ReadOnlyIndex removed) {
+    protected final void onUpdate(final RowSet added, final RowSet removed) {
         clearMappings();
     }
 
-    protected final void onRemove(final ReadOnlyIndex removed) {
+    protected final void onRemove(final RowSet removed) {
         clearMappings();
     }
 
-    protected final void onRetain(final ReadOnlyIndex intersected) {
+    protected final void onRetain(final RowSet intersected) {
         clearMappings();
     }
 
-    protected final void onInsert(final ReadOnlyIndex added) {
+    protected final void onInsert(final RowSet added) {
         clearMappings();
     }
 
@@ -73,41 +73,36 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
         clearMappings();
     }
 
-    @Override
-    public final boolean isSorted() {
-        return true;
-    }
-
     /**
-     * @return Whether this index is flat (that is, contiguous from 0 to size - 1)
+     * @return Whether this rowSet is flat (that is, contiguous from 0 to size - 1)
      */
     public final boolean isFlat() {
         return empty() || (lastRowKey() == size() - 1);
     }
 
     @Override
-    public void insert(final ReadOnlyIndex added) {
-        for (final Index.RangeIterator iterator = added.rangeIterator(); iterator.hasNext();) {
+    public void insert(final RowSet added) {
+        for (final TrackingMutableRowSet.RangeIterator iterator = added.rangeIterator(); iterator.hasNext();) {
             iterator.next();
             insertRange(iterator.currentRangeStart(), iterator.currentRangeEnd());
         }
     }
 
     @Override
-    public void remove(ReadOnlyIndex removed) {
-        for (final Index.Iterator iterator = removed.iterator(); iterator.hasNext();) {
+    public void remove(RowSet removed) {
+        for (final TrackingMutableRowSet.Iterator iterator = removed.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             remove(next);
         }
     }
 
     @Override
-    public Index invert(ReadOnlyIndex keys) {
+    public TrackingMutableRowSet invert(RowSet keys) {
         return invert(keys, Long.MAX_VALUE);
     }
 
     /**
-     * The only used implementation of invert is in the TreeIndex, really the guts of it are in BspNodeIndex.
+     * The only used implementation of invert is in the TrackingMutableRowSetImpl, really the guts of it are in BspNodeIndex.
      *
      * This version is inefficient as it simply performs O(keys) find operations; which is O(keys * lg size), because
      * there is no memory about what you've already found.
@@ -117,9 +112,9 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
      * Note maximumPosition is inclusive.
      */
     @Override
-    public Index invert(final ReadOnlyIndex keys, final long maximumPosition) {
-        final Index.SequentialBuilder indexBuilder = Index.FACTORY.getSequentialBuilder();
-        for (final Index.Iterator iterator = keys.iterator(); iterator.hasNext();) {
+    public TrackingMutableRowSet invert(final RowSet keys, final long maximumPosition) {
+        final SequentialRowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        for (final TrackingMutableRowSet.Iterator iterator = keys.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             final long position = find(next);
             if (position > maximumPosition) {
@@ -128,43 +123,43 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
             Assert.geqZero(position, "position");
             indexBuilder.appendKey(position);
         }
-        return indexBuilder.getIndex();
+        return indexBuilder.build();
     }
 
     @Override
-    public TLongArrayList[] findMissing(ReadOnlyIndex keys) {
+    public TLongArrayList[] findMissing(RowSet keys) {
         return IndexUtilities.findMissing(this, keys);
     }
 
-    private Map<Object, Index> lookupMapping(List<ColumnSource> columnSourceKey) {
+    private Map<Object, TrackingMutableRowSet> lookupMapping(List<ColumnSource> columnSourceKey) {
         return lookupMapping(mappings, ephemeralMappings, columnSourceKey);
     }
 
-    private static Map<Object, Index> lookupMapping(
+    private static Map<Object, TrackingMutableRowSet> lookupMapping(
             WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
             WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
             List<ColumnSource> columnSourceKey) {
-        final Map<Object, Index> immutableMapping = lookupImmutableMapping(mappings, columnSourceKey);
+        final Map<Object, TrackingMutableRowSet> immutableMapping = lookupImmutableMapping(mappings, columnSourceKey);
         if (immutableMapping != null)
             return immutableMapping;
         return lookupEphemeralMapping(columnSourceKey, ephemeralMappings);
     }
 
-    private static Map<Object, Index> lookupPrevMapping(
+    private static Map<Object, TrackingMutableRowSet> lookupPrevMapping(
             WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
             WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings,
             List<ColumnSource> columnSourceKey) {
-        final Map<Object, Index> immutableMapping = lookupImmutableMapping(mappings, columnSourceKey);
+        final Map<Object, TrackingMutableRowSet> immutableMapping = lookupImmutableMapping(mappings, columnSourceKey);
         if (immutableMapping != null)
             return immutableMapping;
         return lookupEphemeralMapping(columnSourceKey, ephemeralPrevMappings);
     }
 
-    private Map<Object, Index> lookupPrevMapping(List<ColumnSource> columnSourceKey) {
+    private Map<Object, TrackingMutableRowSet> lookupPrevMapping(List<ColumnSource> columnSourceKey) {
         return lookupPrevMapping(mappings, ephemeralPrevMappings, columnSourceKey);
     }
 
-    private static Map<Object, Index> lookupImmutableMapping(
+    private static Map<Object, TrackingMutableRowSet> lookupImmutableMapping(
             WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
             List<ColumnSource> columnSourceKey) {
         if (mappings == null) {
@@ -177,8 +172,8 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
         return mappingInfo.mapping;
     }
 
-    private static Map<Object, Index> lookupEphemeralMapping(List<ColumnSource> columnSourceKey,
-            WeakHashMap<List<ColumnSource>, MappingInfo> groupingMap) {
+    private static Map<Object, TrackingMutableRowSet> lookupEphemeralMapping(List<ColumnSource> columnSourceKey,
+                                                                             WeakHashMap<List<ColumnSource>, MappingInfo> groupingMap) {
         if (groupingMap == null) {
             return null;
         }
@@ -200,7 +195,7 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
     public String toString() {
         String result = "{";
         boolean isFirst = true;
-        for (Index.Iterator it = this.iterator(); it.hasNext();) {
+        for (TrackingMutableRowSet.Iterator it = this.iterator(); it.hasNext();) {
             long next = it.nextLong();
             result += (isFirst ? "" : ",") + next;
             isFirst = false;
@@ -260,44 +255,44 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
         clearMappings();
     }
 
-    protected void updateGroupingOnRetain(final Index intersected) {
+    protected void updateGroupingOnRetain(final TrackingMutableRowSet intersected) {
         clearMappings();
     }
 
-    public static Map<Object, Index> getGrouping(
-            final Index thisIndex,
-            UnaryOperator<Index> indexOp,
+    public static Map<Object, TrackingMutableRowSet> getGrouping(
+            final TrackingMutableRowSet thisRowSet,
+            UnaryOperator<TrackingMutableRowSet> indexOp,
             WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
             WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
             TupleSource tupleSource) {
         // noinspection unchecked
         final List<ColumnSource> sourcesKey = tupleSource.getColumnSources();
-        final Map<Object, Index> lookupResult = lookupMapping(mappings, ephemeralMappings, sourcesKey);
+        final Map<Object, TrackingMutableRowSet> lookupResult = lookupMapping(mappings, ephemeralMappings, sourcesKey);
         if (lookupResult != null) {
             return lookupResult;
         }
 
-        final Map<Object, Index> result = new LinkedHashMap<>();
+        final Map<Object, TrackingMutableRowSet> result = new LinkedHashMap<>();
 
-        BiConsumer<Object, Index> resultCollector = result::put;
+        BiConsumer<Object, TrackingMutableRowSet> resultCollector = result::put;
 
-        collectGrouping(thisIndex, indexOp, mappings, ephemeralMappings, resultCollector, tupleSource, sourcesKey);
+        collectGrouping(thisRowSet, indexOp, mappings, ephemeralMappings, resultCollector, tupleSource, sourcesKey);
 
         return result;
     }
 
     @Override
-    public Map<Object, Index> getGrouping(TupleSource tupleSource) {
+    public Map<Object, TrackingMutableRowSet> getGrouping(TupleSource tupleSource) {
         // noinspection unchecked
         final List<ColumnSource> sourcesKey = tupleSource.getColumnSources();
-        final Map<Object, Index> lookupResult = lookupMapping(sourcesKey);
+        final Map<Object, TrackingMutableRowSet> lookupResult = lookupMapping(sourcesKey);
         if (lookupResult != null) {
             return lookupResult;
         }
 
-        final Map<Object, Index> result = new LinkedHashMap<>();
+        final Map<Object, TrackingMutableRowSet> result = new LinkedHashMap<>();
 
-        final BiConsumer<Object, Index> resultCollector = result::put;
+        final BiConsumer<Object, TrackingMutableRowSet> resultCollector = result::put;
 
         collectGrouping(this, this::intersect, mappings, ephemeralMappings, resultCollector, tupleSource, sourcesKey);
 
@@ -335,22 +330,22 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
     }
 
     private static void collectGrouping(
-            final Index thisIndex,
-            final UnaryOperator<Index> indexOp,
+            final TrackingMutableRowSet thisRowSet,
+            final UnaryOperator<TrackingMutableRowSet> indexOp,
             WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
             WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-            final BiConsumer<Object, Index> resultCollector,
+            final BiConsumer<Object, TrackingMutableRowSet> resultCollector,
             final TupleSource tupleSource,
             final List<ColumnSource> keyColumns) {
         if (keyColumns.isEmpty()) {
-            resultCollector.accept(EmptyTuple.INSTANCE, thisIndex.clone());
+            resultCollector.accept(EmptyTuple.INSTANCE, thisRowSet.clone());
         } else if (keyColumns.size() == 1 && keyColumns.get(0).getGroupToRange() != null) {
             @SuppressWarnings("unchecked")
-            final Map<Object, Index> sourceGrouping = keyColumns.get(0).getGroupToRange();
-            for (Map.Entry<Object, Index> objectIndexEntry : sourceGrouping.entrySet()) {
-                final Index resultIndex = indexOp.apply(objectIndexEntry.getValue());
-                if (resultIndex.size() > 0) {
-                    resultCollector.accept(objectIndexEntry.getKey(), resultIndex);
+            final Map<Object, TrackingMutableRowSet> sourceGrouping = keyColumns.get(0).getGroupToRange();
+            for (Map.Entry<Object, TrackingMutableRowSet> objectIndexEntry : sourceGrouping.entrySet()) {
+                final TrackingMutableRowSet resultRowSet = indexOp.apply(objectIndexEntry.getValue());
+                if (resultRowSet.size() > 0) {
+                    resultCollector.accept(objectIndexEntry.getKey(), resultRowSet);
                 }
             }
         } else {
@@ -363,26 +358,26 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
                 generateGrouping(indexOp, resultCollector, tupleSource, keyColumns, 0, new Object[keyColumns.size()],
                         null);
             } else if (canUseAnyConstituents) {
-                generatePartialGrouping(thisIndex, indexOp, mappings, ephemeralMappings, resultCollector, tupleSource,
+                generatePartialGrouping(thisRowSet, indexOp, mappings, ephemeralMappings, resultCollector, tupleSource,
                         keyColumns);
             } else {
-                final Map<Object, SequentialBuilder> resultBuilder = new LinkedHashMap<>();
-                for (final Index.Iterator iterator = thisIndex.iterator(); iterator.hasNext();) {
+                final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
+                for (final TrackingMutableRowSet.Iterator iterator = thisRowSet.iterator(); iterator.hasNext();) {
                     final long next = iterator.nextLong();
                     final Object key = tupleSource.createTuple(next);
-                    resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
+                    resultBuilder.computeIfAbsent(key, k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendKey(next);
                 }
-                resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.getIndex()));
+                resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.build()));
             }
         }
     }
 
     private static void generatePartialGrouping(
-            final Index thisIndex,
-            final UnaryOperator<Index> indexOp,
+            final TrackingMutableRowSet thisRowSet,
+            final UnaryOperator<TrackingMutableRowSet> indexOp,
             final WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
             final WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-            final BiConsumer<Object, Index> resultCollector, TupleSource tupleSource, List<ColumnSource> keyColumns) {
+            final BiConsumer<Object, TrackingMutableRowSet> resultCollector, TupleSource tupleSource, List<ColumnSource> keyColumns) {
         // we can generate the grouping partially from our constituents
         final ColumnSource[] groupedKeyColumns =
                 keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
@@ -390,15 +385,15 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
                 keyColumns.stream().filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
 
         final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
-        final Map<Object, Index> groupedColumnsGrouping =
-                getGrouping(thisIndex, indexOp, mappings, ephemeralMappings, groupedTupleSource);
+        final Map<Object, TrackingMutableRowSet> groupedColumnsGrouping =
+                getGrouping(thisRowSet, indexOp, mappings, ephemeralMappings, groupedTupleSource);
         generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns, groupedTupleSource,
                 groupedColumnsGrouping,
                 resultCollector, tupleSource, keyColumns);
     }
 
-    private void generatePartialGrouping(BiConsumer<Object, Index> resultCollector, TupleSource tupleSource,
-            List<ColumnSource> keyColumns) {
+    private void generatePartialGrouping(BiConsumer<Object, TrackingMutableRowSet> resultCollector, TupleSource tupleSource,
+                                         List<ColumnSource> keyColumns) {
         // we can generate the grouping partially from our constituents
         final ColumnSource[] groupedKeyColumns =
                 keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
@@ -406,7 +401,7 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
                 keyColumns.stream().filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
 
         final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
-        final Map<Object, Index> groupedColumnsGrouping = getGrouping(groupedTupleSource);
+        final Map<Object, TrackingMutableRowSet> groupedColumnsGrouping = getGrouping(groupedTupleSource);
         generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns, groupedTupleSource,
                 groupedColumnsGrouping,
                 resultCollector, tupleSource, keyColumns);
@@ -414,10 +409,10 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
 
     private static void generatePartialGroupingSecondHalf(
             final ColumnSource[] groupedKeyColumns, final ColumnSource[] notGroupedKeyColumns,
-            final TupleSource groupedTupleSource, final Map<Object, Index> groupedColumnsGrouping,
-            final BiConsumer<Object, Index> resultCollector, final TupleSource tupleSource,
+            final TupleSource groupedTupleSource, final Map<Object, TrackingMutableRowSet> groupedColumnsGrouping,
+            final BiConsumer<Object, TrackingMutableRowSet> resultCollector, final TupleSource tupleSource,
             final List<ColumnSource> keyColumns) {
-        final Map<Object, SequentialBuilder> resultBuilder = new LinkedHashMap<>();
+        final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
 
         final int[] groupedKeysIndices = new int[groupedKeyColumns.length];
         final int[] notGroupedKeysIndices = new int[notGroupedKeyColumns.length];
@@ -430,7 +425,7 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
             }
         }
 
-        for (Map.Entry<Object, Index> entry : groupedColumnsGrouping.entrySet()) {
+        for (Map.Entry<Object, TrackingMutableRowSet> entry : groupedColumnsGrouping.entrySet()) {
             final Object[] partialKeyValues = new Object[keyColumns.size()];
             if (groupedKeyColumns.length == 1) {
                 partialKeyValues[groupedKeysIndices[0]] = entry.getKey();
@@ -443,8 +438,8 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
                 }
             }
 
-            final Index resultIndex = entry.getValue();
-            for (final Index.Iterator iterator = resultIndex.iterator(); iterator.hasNext();) {
+            final TrackingMutableRowSet resultRowSet = entry.getValue();
+            for (final TrackingMutableRowSet.Iterator iterator = resultRowSet.iterator(); iterator.hasNext();) {
                 final long next = iterator.nextLong();
 
                 for (int ii = 0; ii < notGroupedKeysIndices.length; ++ii) {
@@ -452,15 +447,15 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
                 }
 
                 resultBuilder.computeIfAbsent(tupleSource.createTupleFromReinterpretedValues(partialKeyValues),
-                        k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
+                        k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendKey(next);
             }
         }
 
-        resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.getIndex()));
+        resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.build()));
     }
 
-    private void generatePartialGroupingForKeySet(BiConsumer<Object, Index> resultCollector, TupleSource tupleSource,
-            List<ColumnSource> keyColumns, Set<Object> keys) {
+    private void generatePartialGroupingForKeySet(BiConsumer<Object, TrackingMutableRowSet> resultCollector, TupleSource tupleSource,
+                                                  List<ColumnSource> keyColumns, Set<Object> keys) {
         // we can generate the grouping partially from our constituents
         final ColumnSource[] groupedKeyColumns =
                 keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
@@ -472,7 +467,7 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
 
         final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
 
-        final Map<Object, SequentialBuilder> resultBuilder = new LinkedHashMap<>();
+        final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
 
         final int[] groupedKeysIndices = new int[groupedKeyColumns.length];
         final int[] notGroupedKeysIndices = new int[notGroupedKeyColumns.length];
@@ -500,13 +495,13 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
             });
         }
 
-        final Map<Object, Index> groupedColumnsGrouping = getGroupingForKeySet(groupPruningSet, groupedTupleSource);
+        final Map<Object, TrackingMutableRowSet> groupedColumnsGrouping = getGroupingForKeySet(groupPruningSet, groupedTupleSource);
 
         final Object[] lookupKeyValues = new Object[keyColumns.size()];
 
-        for (Map.Entry<Object, Index> entry : groupedColumnsGrouping.entrySet()) {
-            final Index resultIndex = entry.getValue().intersect(this);
-            if (resultIndex.empty()) {
+        for (Map.Entry<Object, TrackingMutableRowSet> entry : groupedColumnsGrouping.entrySet()) {
+            final TrackingMutableRowSet resultRowSet = entry.getValue().intersect(this);
+            if (resultRowSet.empty()) {
                 continue;
             }
 
@@ -520,7 +515,7 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
                 }
             }
 
-            for (final Index.Iterator iterator = resultIndex.iterator(); iterator.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator iterator = resultRowSet.iterator(); iterator.hasNext();) {
                 final long next = iterator.nextLong();
 
                 for (int ii = 0; ii < notGroupedKeysIndices.length; ++ii) {
@@ -532,18 +527,18 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
                     continue;
                 }
 
-                final SequentialBuilder indexForKey =
-                        resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder());
+                final SequentialRowSetBuilder indexForKey =
+                        resultBuilder.computeIfAbsent(key, k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder());
                 indexForKey.appendKey(next);
             }
         }
 
-        resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.getIndex()));
+        resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.build()));
     }
 
     @Override
-    public Map<Object, Index> getGroupingForKeySet(Set<Object> keys, TupleSource tupleSource) {
-        final Map<Object, Index> result = new LinkedHashMap<>();
+    public Map<Object, TrackingMutableRowSet> getGroupingForKeySet(Set<Object> keys, TupleSource tupleSource) {
+        final Map<Object, TrackingMutableRowSet> result = new LinkedHashMap<>();
 
         collectGroupingForKeySet(keys, tupleSource, result::put);
 
@@ -551,29 +546,29 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
     }
 
     @Override
-    public Index getSubIndexForKeySet(Set<Object> keys, TupleSource tupleSource) {
-        final IndexBuilder indexBuilder = Index.FACTORY.getBuilder();
-        final BiConsumer<Object, Index> resultCollector = (key, index) -> indexBuilder.addIndex(index);
+    public TrackingMutableRowSet getSubIndexForKeySet(Set<Object> keys, TupleSource tupleSource) {
+        final RowSetBuilder rowSetBuilder = TrackingMutableRowSet.FACTORY.getBuilder();
+        final BiConsumer<Object, TrackingMutableRowSet> resultCollector = (key, index) -> rowSetBuilder.addRowSet(index);
 
         collectGroupingForKeySet(keys, tupleSource, resultCollector);
 
-        return indexBuilder.getIndex();
+        return rowSetBuilder.build();
     }
 
     private void collectGroupingForKeySet(Set<Object> keys, TupleSource tupleSource,
-            BiConsumer<Object, Index> resultCollector) {
+            BiConsumer<Object, TrackingMutableRowSet> resultCollector) {
         // noinspection unchecked
         final List<ColumnSource> keyColumns = tupleSource.getColumnSources();
         if (keyColumns.isEmpty()) {
             resultCollector.accept(EmptyTuple.INSTANCE, this.clone());
         } else if (keyColumns.size() == 1 && keyColumns.get(0).getGroupToRange() != null) {
             @SuppressWarnings("unchecked")
-            final Map<Object, Index> sourceGrouping = keyColumns.get(0).getGroupToRange();
+            final Map<Object, TrackingMutableRowSet> sourceGrouping = keyColumns.get(0).getGroupToRange();
             sourceGrouping.entrySet().stream().filter(objectIndexEntry -> keys.contains(objectIndexEntry.getKey()))
                     .forEach(objectIndexEntry -> {
-                        final Index resultIndex = objectIndexEntry.getValue().intersect(this);
-                        if (resultIndex.size() > 0) {
-                            resultCollector.accept(objectIndexEntry.getKey(), resultIndex);
+                        final TrackingMutableRowSet resultRowSet = objectIndexEntry.getValue().intersect(this);
+                        if (resultRowSet.size() > 0) {
+                            resultCollector.accept(objectIndexEntry.getKey(), resultRowSet);
                         }
                     });
         } else {
@@ -587,55 +582,55 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
             } else if (canUseAnyConstituents) {
                 generatePartialGroupingForKeySet(resultCollector, tupleSource, keyColumns, keys);
             } else {
-                final Map<Object, SequentialBuilder> resultBuilder = new LinkedHashMap<>();
-                for (final Index.Iterator iterator = this.iterator(); iterator.hasNext();) {
+                final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
+                for (final TrackingMutableRowSet.Iterator iterator = this.iterator(); iterator.hasNext();) {
                     final long next = iterator.nextLong();
                     final Object key = tupleSource.createTuple(next);
                     if (keys.contains(key)) {
-                        resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
+                        resultBuilder.computeIfAbsent(key, k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendKey(next);
                     }
                 }
-                for (Map.Entry<Object, SequentialBuilder> objectIndexBuilderEntry : resultBuilder.entrySet()) {
+                for (Map.Entry<Object, SequentialRowSetBuilder> objectIndexBuilderEntry : resultBuilder.entrySet()) {
                     resultCollector.accept(objectIndexBuilderEntry.getKey(),
-                            objectIndexBuilderEntry.getValue().getIndex());
+                            objectIndexBuilderEntry.getValue().build());
                 }
             }
         }
     }
 
     private static void generateGrouping(
-            UnaryOperator<Index> indexOp,
-            BiConsumer<Object, Index> resultCollector,
+            UnaryOperator<TrackingMutableRowSet> indexOp,
+            BiConsumer<Object, TrackingMutableRowSet> resultCollector,
             TupleSource tupleSource,
             List<ColumnSource> keyColumns,
             int position,
             Object[] partialValues,
-            Index partiallyIntersectedIndex) {
+            TrackingMutableRowSet partiallyIntersectedRowSet) {
         for (Object objectEntry : keyColumns.get(position).getGroupToRange().entrySet()) {
             // noinspection unchecked
-            final Map.Entry<Object, Index> entry = (Map.Entry<Object, Index>) objectEntry;
+            final Map.Entry<Object, TrackingMutableRowSet> entry = (Map.Entry<Object, TrackingMutableRowSet>) objectEntry;
             partialValues[position] = entry.getKey();
-            final Index subIndex;
+            final TrackingMutableRowSet subRowSet;
             if (position == 0) {
-                subIndex = indexOp.apply(entry.getValue());
+                subRowSet = indexOp.apply(entry.getValue());
             } else {
-                subIndex = partiallyIntersectedIndex.intersect(entry.getValue());
+                subRowSet = partiallyIntersectedRowSet.intersect(entry.getValue());
             }
-            if (subIndex.nonempty()) {
+            if (subRowSet.nonempty()) {
                 if (position == keyColumns.size() - 1) {
                     // we're at the very last bit, so we should start shoving our tuples into the result map
-                    resultCollector.accept(tupleSource.createTupleFromReinterpretedValues(partialValues), subIndex);
+                    resultCollector.accept(tupleSource.createTupleFromReinterpretedValues(partialValues), subRowSet);
                 } else {
                     generateGrouping(indexOp, resultCollector, tupleSource, keyColumns, position + 1, partialValues,
-                            subIndex);
+                            subRowSet);
                 }
             }
         }
     }
 
-    private void generateGrouping(BiConsumer<Object, Index> resultCollector, TupleSource tupleSource,
-            List<ColumnSource> keyColumns, int position, Object[] partialValues, Index partiallyIntersectedIndex,
-            Set<Object> keyRestriction) {
+    private void generateGrouping(BiConsumer<Object, TrackingMutableRowSet> resultCollector, TupleSource tupleSource,
+                                  List<ColumnSource> keyColumns, int position, Object[] partialValues, TrackingMutableRowSet partiallyIntersectedRowSet,
+                                  Set<Object> keyRestriction) {
         final boolean finalPosition = position == keyColumns.size() - 1;
 
         final List<ColumnSource> subSources = keyColumns.subList(0, position + 1);
@@ -662,9 +657,9 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
         }
 
         // noinspection unchecked
-        final Map<Object, Index> groupToRange = (Map<Object, Index>) keyColumns.get(position).getGroupToRange();
+        final Map<Object, TrackingMutableRowSet> groupToRange = (Map<Object, TrackingMutableRowSet>) keyColumns.get(position).getGroupToRange();
         final Object[] pruningKey = Arrays.copyOf(partialValues, position + 1);
-        for (Map.Entry<Object, Index> entry : groupToRange.entrySet()) {
+        for (Map.Entry<Object, TrackingMutableRowSet> entry : groupToRange.entrySet()) {
             pruningKey[position] = partialValues[position] = entry.getKey();
 
             final Object tuple;
@@ -687,19 +682,19 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
                 tuple = null;
             }
 
-            final Index subIndex;
+            final TrackingMutableRowSet subRowSet;
             if (position == 0) {
-                subIndex = intersect(entry.getValue());
+                subRowSet = intersect(entry.getValue());
             } else {
-                subIndex = partiallyIntersectedIndex.intersect(entry.getValue());
+                subRowSet = partiallyIntersectedRowSet.intersect(entry.getValue());
             }
 
-            if (subIndex.nonempty()) {
+            if (subRowSet.nonempty()) {
                 if (finalPosition) {
                     // we're at the very last bit, so we should start shoving our smart keys into the result map
-                    resultCollector.accept(tuple, subIndex);
+                    resultCollector.accept(tuple, subRowSet);
                 } else {
-                    generateGrouping(resultCollector, tupleSource, keyColumns, position + 1, partialValues, subIndex,
+                    generateGrouping(resultCollector, tupleSource, keyColumns, position + 1, partialValues, subRowSet,
                             keyRestriction);
                 }
             }
@@ -707,10 +702,10 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
     }
 
     @Override
-    public Map<Object, Index> getPrevGrouping(TupleSource tupleSource) {
+    public Map<Object, TrackingMutableRowSet> getPrevGrouping(TupleSource tupleSource) {
         final List<ColumnSource> sourcesKey = tupleSource.getColumnSources();
 
-        Map<Object, Index> result = lookupPrevMapping(sourcesKey);
+        Map<Object, TrackingMutableRowSet> result = lookupPrevMapping(sourcesKey);
         if (result != null) {
             return result;
         }
@@ -718,15 +713,15 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
         if (sourcesKey.isEmpty()) {
             result.put(EmptyTuple.INSTANCE, this.clone());
         } else {
-            final Map<Object, SequentialBuilder> resultBuilder = new LinkedHashMap<>();
-            for (final Index.Iterator iterator = this.iterator(); iterator.hasNext();) {
+            final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
+            for (final TrackingMutableRowSet.Iterator iterator = this.iterator(); iterator.hasNext();) {
                 final long next = iterator.nextLong();
                 final Object key = tupleSource.createPreviousTuple(next);
-                resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
+                resultBuilder.computeIfAbsent(key, k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendKey(next);
             }
             result = new LinkedHashMap<>();
-            for (Map.Entry<Object, SequentialBuilder> objectIndexBuilderEntry : resultBuilder.entrySet()) {
-                result.put(objectIndexBuilderEntry.getKey(), objectIndexBuilderEntry.getValue().getIndex());
+            for (Map.Entry<Object, SequentialRowSetBuilder> objectIndexBuilderEntry : resultBuilder.entrySet()) {
+                result.put(objectIndexBuilderEntry.getKey(), objectIndexBuilderEntry.getValue().build());
             }
         }
         if (areColumnsImmutable(sourcesKey)) {
@@ -750,7 +745,7 @@ public abstract class SortedIndex extends RowSequenceAsChunkImpl implements Inde
             return true;
         }
         final List<ColumnSource> sourcesKey = Arrays.asList(keyColumns);
-        final Map<Object, Index> groupingCandidate = lookupMapping(sourcesKey);
+        final Map<Object, TrackingMutableRowSet> groupingCandidate = lookupMapping(sourcesKey);
         return groupingCandidate != null || keyColumns.length == 1 && keyColumns[0].getGroupToRange() != null;
     }
 

@@ -9,8 +9,8 @@ import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
@@ -24,13 +24,13 @@ public abstract class SelectAndViewAnalyzer {
     }
 
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
-            Index index, ModifiedColumnSet parentMcs, boolean publishTheseSources, SelectColumn... selectColumns) {
+                                               TrackingMutableRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final RedirectionIndex redirectionIndex;
-        if (mode == Mode.SELECT_REDIRECTED_REFRESHING && index.size() < Integer.MAX_VALUE) {
-            redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(index.intSize());
-            analyzer = analyzer.createRedirectionLayer(index, redirectionIndex);
+        if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
+            redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(rowSet.intSize());
+            analyzer = analyzer.createRedirectionLayer(rowSet, redirectionIndex);
         } else {
             redirectionIndex = null;
         }
@@ -39,7 +39,7 @@ public abstract class SelectAndViewAnalyzer {
             final Map<String, ColumnSource<?>> columnsOfInterest = analyzer.getAllColumnSources();
             analyzer.updateColumnDefinitionsFromTopLayer(columnDefinitions);
             sc.initDef(columnDefinitions);
-            sc.initInputs(index, columnsOfInterest);
+            sc.initInputs(rowSet, columnsOfInterest);
             final Stream<String> allDependencies =
                     Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
@@ -56,7 +56,7 @@ public abstract class SelectAndViewAnalyzer {
                 }
             }
 
-            final long targetSize = index.empty() ? 0 : index.lastRowKey() + 1;
+            final long targetSize = rowSet.empty() ? 0 : rowSet.lastRowKey() + 1;
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
@@ -85,7 +85,7 @@ public abstract class SelectAndViewAnalyzer {
                     WritableSource<?> underlyingSource = null;
                     if (redirectionIndex != null) {
                         underlyingSource = scs;
-                        scs = new RedirectedColumnSource<>(redirectionIndex, underlyingSource, index.intSize());
+                        scs = new RedirectedColumnSource<>(redirectionIndex, underlyingSource, rowSet.intSize());
                     }
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps,
                             mcsBuilder, redirectionIndex != null);
@@ -103,8 +103,8 @@ public abstract class SelectAndViewAnalyzer {
         return new BaseLayer(sources, publishTheseSources);
     }
 
-    private RedirectionLayer createRedirectionLayer(Index resultIndex, RedirectionIndex redirectionIndex) {
-        return new RedirectionLayer(this, resultIndex, redirectionIndex);
+    private RedirectionLayer createRedirectionLayer(TrackingMutableRowSet resultRowSet, RedirectionIndex redirectionIndex) {
+        return new RedirectionLayer(this, resultRowSet, redirectionIndex);
     }
 
     private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
@@ -145,21 +145,21 @@ public abstract class SelectAndViewAnalyzer {
     abstract Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode);
 
     public static class UpdateHelper implements SafeCloseable {
-        private Index existingRows;
-        private SafeCloseablePair<ReadOnlyIndex, ReadOnlyIndex> shiftedWithModifies;
-        private SafeCloseablePair<ReadOnlyIndex, ReadOnlyIndex> shiftedWithoutModifies;
+        private TrackingMutableRowSet existingRows;
+        private SafeCloseablePair<RowSet, RowSet> shiftedWithModifies;
+        private SafeCloseablePair<RowSet, RowSet> shiftedWithoutModifies;
 
-        private final Index parentIndex;
+        private final TrackingMutableRowSet parentRowSet;
         private final ShiftAwareListener.Update upstream;
 
-        public UpdateHelper(Index parentIndex, ShiftAwareListener.Update upstream) {
-            this.parentIndex = parentIndex;
+        public UpdateHelper(TrackingMutableRowSet parentRowSet, ShiftAwareListener.Update upstream) {
+            this.parentRowSet = parentRowSet;
             this.upstream = upstream;
         }
 
-        private Index getExisting() {
+        private TrackingMutableRowSet getExisting() {
             if (existingRows == null) {
-                existingRows = parentIndex.minus(upstream.added);
+                existingRows = parentRowSet.minus(upstream.added);
             }
             return existingRows;
         }
@@ -169,14 +169,14 @@ public abstract class SelectAndViewAnalyzer {
                 shiftedWithModifies = SafeCloseablePair
                         .downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(getExisting()));
             } else if (!withModifies && shiftedWithoutModifies == null) {
-                try (final Index candidates = getExisting().minus(upstream.modified)) {
+                try (final TrackingMutableRowSet candidates = getExisting().minus(upstream.modified)) {
                     shiftedWithoutModifies = SafeCloseablePair
                             .downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(candidates));
                 }
             }
         }
 
-        ReadOnlyIndex getPreShifted(boolean withModifies) {
+        RowSet getPreShifted(boolean withModifies) {
             if (!withModifies && upstream.modified.empty()) {
                 return getPreShifted(true);
             }
@@ -184,7 +184,7 @@ public abstract class SelectAndViewAnalyzer {
             return withModifies ? shiftedWithModifies.first : shiftedWithoutModifies.first;
         }
 
-        ReadOnlyIndex getPostShifted(boolean withModifies) {
+        RowSet getPostShifted(boolean withModifies) {
             if (!withModifies && upstream.modified.empty()) {
                 return getPostShifted(true);
             }
@@ -216,7 +216,7 @@ public abstract class SelectAndViewAnalyzer {
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
      */
-    public abstract void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper);
+    public abstract void applyUpdate(ShiftAwareListener.Update upstream, RowSet toClear, UpdateHelper helper);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do

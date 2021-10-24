@@ -9,17 +9,17 @@ package io.deephaven.libs.primitives;
  */
 public enum BinSearch {
     /**
-     * Binary search algorithm returns any matching index.
+     * Binary search algorithm returns any matching rowSet.
      */
     BS_ANY,
 
     /**
-     * Binary search algorithm returns the highest matching index.
+     * Binary search algorithm returns the highest matching rowSet.
      */
     BS_HIGHEST,
 
     /**
-     * Binary search algorithm returns the lowest matching index.
+     * Binary search algorithm returns the lowest matching rowSet.
      */
     BS_LOWEST
 }

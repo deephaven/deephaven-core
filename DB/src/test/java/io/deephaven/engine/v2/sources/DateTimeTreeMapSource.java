@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -28,27 +28,27 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
     }
 
     /**
-     * Create a new DateTimeTreeMapSource with the given index and data.
+     * Create a new DateTimeTreeMapSource with the given rowSet and data.
      *
-     * @param index The row indexes for the initial data
+     * @param rowSet The row indexes for the initial data
      * @param data The initial data
      */
-    public DateTimeTreeMapSource(Index index, DBDateTime[] data) {
+    public DateTimeTreeMapSource(TrackingMutableRowSet rowSet, DBDateTime[] data) {
         super(DBDateTime.class);
-        this.treeMapSource = new TreeMapSource<>(Long.class, index, mapData(data));
+        this.treeMapSource = new TreeMapSource<>(Long.class, rowSet, mapData(data));
         this.alternateColumnSource = new UnboxedDateTimeTreeMapSource(this, treeMapSource);
     }
 
     /**
-     * Create a new DateTimeTreeMapSource with the given index and data.
+     * Create a new DateTimeTreeMapSource with the given rowSet and data.
      *
-     * @param index The row indexes for the initial data
+     * @param rowSet The row indexes for the initial data
      * @param data The initial data
      */
-    public DateTimeTreeMapSource(Index index, long[] data) {
+    public DateTimeTreeMapSource(TrackingMutableRowSet rowSet, long[] data) {
         super(DBDateTime.class);
         final Long[] boxedData = ArrayUtils.getBoxedArray(data);
-        this.treeMapSource = new TreeMapSource<>(Long.class, index, boxedData);
+        this.treeMapSource = new TreeMapSource<>(Long.class, rowSet, boxedData);
         this.alternateColumnSource = new UnboxedDateTimeTreeMapSource(this, treeMapSource);
     }
 
@@ -61,16 +61,16 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
         }).toArray(Long[]::new);
     }
 
-    public void add(Index index, DBDateTime[] data) {
-        treeMapSource.add(index, mapData(data));
+    public void add(TrackingMutableRowSet rowSet, DBDateTime[] data) {
+        treeMapSource.add(rowSet, mapData(data));
     }
 
-    public void add(Index index, Long[] data) {
-        treeMapSource.add(index, data);
+    public void add(TrackingMutableRowSet rowSet, Long[] data) {
+        treeMapSource.add(rowSet, data);
     }
 
-    public void remove(Index index) {
-        treeMapSource.remove(index);
+    public void remove(TrackingMutableRowSet rowSet) {
+        treeMapSource.remove(rowSet);
     }
 
     public void shift(long startKeyInclusive, long endKeyInclusive, long shiftDelta) {

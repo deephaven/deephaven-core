@@ -13,8 +13,8 @@ public class IndexShiftDataExpanderTest {
 
     /**
      * These tests names have a few qualities worth defining: - Major Shift: shift with no overlap in keyspace before
-     * and after (i.e. modified index from shift alone is empty) - Minor Shift: shift with overlap in keyspace before
-     * and after (i.e. modified index from shift alone is non-empty) - Inner Shift: shift occurs with valid elements
+     * and after (i.e. modified rowSet from shift alone is empty) - Minor Shift: shift with overlap in keyspace before
+     * and after (i.e. modified rowSet from shift alone is non-empty) - Inner Shift: shift occurs with valid elements
      * below and above keyspace both before and after - NoAdd / NoRm: Other than the shift, either the added or removed
      * (respectively) indexes will be empty. - WithGaps: There will be a gap on the leading edges of the shift. (need to
      * carefully categorize items near gap) - Modified Inner/Outer: Rows inside/outside of a shift were modified. -
@@ -39,7 +39,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRInnerShift() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.added.insertRange(200, 400);
         c.removed.insertRange(401, 800); // not allowed to reorder -- so pretend things inbetween are gone
         c.shifted.shiftRange(200, 400, 400);
@@ -50,7 +50,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLInnerShift() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.added.insertRange(600, 800);
         c.removed.insertRange(200, 599); // not allowed to reorder -- so pretend things inbetween are gone
         c.shifted.shiftRange(600, 800, -400);
@@ -61,7 +61,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRInnerShift() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.added.insertRange(200, 299);
         c.removed.insertRange(401, 500);
         c.shifted.shiftRange(200, 400, 100);
@@ -70,7 +70,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLInnerShift() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.added.insertRange(401, 500);
         c.removed.insertRange(200, 299);
         c.shifted.shiftRange(300, 500, -100);
@@ -79,7 +79,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRShiftNoAdd() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.removed.insertRange(401, 800);
         c.shifted.shiftRange(200, 400, 400);
         c.expectRemoved.insertRange(200, 599);
@@ -88,7 +88,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLShiftNoAdd() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.removed.insertRange(200, 599);
         c.shifted.shiftRange(600, 800, -400);
         c.expectRemoved.insertRange(401, 800);
@@ -97,7 +97,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRShiftNoAdd() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.removed.insertRange(401, 500);
         c.shifted.shiftRange(200, 400, 100);
         c.expectRemoved.insertRange(200, 299);
@@ -106,7 +106,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLShiftNoAdd() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.removed.insertRange(200, 299);
         c.shifted.shiftRange(300, 500, -100);
         c.expectRemoved.insertRange(401, 500);
@@ -115,7 +115,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRShiftNoRm() {
-        c.sourceIndex.insertRange(1, 400);
+        c.sourceRowSet.insertRange(1, 400);
         c.added.insertRange(200, 299);
         c.shifted.shiftRange(200, 400, 400);
         c.expectAdded.insertRange(600, 800);
@@ -125,7 +125,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLShiftNoRm() {
-        c.sourceIndex.insertRange(600, 1000);
+        c.sourceRowSet.insertRange(600, 1000);
         c.added.insertRange(701, 800);
         c.shifted.shiftRange(600, 800, -400);
         c.expectAdded.insertRange(200, 400);
@@ -135,7 +135,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRShiftNoRm() {
-        c.sourceIndex.insertRange(1, 1000);
+        c.sourceRowSet.insertRange(1, 1000);
         c.added.insertRange(200, 299);
         c.shifted.shiftRange(200, 1000, 100);
         c.expectAdded.insertRange(1001, 1100);
@@ -144,7 +144,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLShiftNoRm() {
-        c.sourceIndex.insertRange(600, 1000);
+        c.sourceRowSet.insertRange(600, 1000);
         c.added.insertRange(701, 800);
         c.shifted.shiftRange(600, 800, -100);
         c.expectAdded.insertRange(500, 599);
@@ -153,7 +153,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRShiftNoAddNoRm() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.shifted.shiftRange(500, 600, 400);
         c.expectAdded.insertRange(900, 1000);
         c.expectRemoved.insertRange(500, 600);
@@ -161,7 +161,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLShiftNoAddNoRm() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.shifted.shiftRange(400, 500, -400);
         c.expectAdded.insertRange(0, 100);
         c.expectRemoved.insertRange(400, 500);
@@ -169,7 +169,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRShiftNoAddNoRm() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.shifted.shiftRange(500, 600, 50);
         c.expectAdded.insertRange(601, 650);
         c.expectRemoved.insertRange(500, 549);
@@ -178,7 +178,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLShiftNoAddNoRm() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.shifted.shiftRange(400, 500, -50);
         c.expectAdded.insertRange(350, 399);
         c.expectRemoved.insertRange(451, 500);
@@ -187,11 +187,11 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRShiftWithGaps() {
-        c.sourceIndex.insertRange(0, 100); // bookend
-        c.sourceIndex.insertRange(200, 300); // shifting range
-        c.sourceIndex.insertRange(675, 725); // left destination
-        c.sourceIndex.insertRange(775, 825); // right destination
-        c.sourceIndex.insertRange(900, 1000); // bookend
+        c.sourceRowSet.insertRange(0, 100); // bookend
+        c.sourceRowSet.insertRange(200, 300); // shifting range
+        c.sourceRowSet.insertRange(675, 725); // left destination
+        c.sourceRowSet.insertRange(775, 825); // right destination
+        c.sourceRowSet.insertRange(900, 1000); // bookend
         c.added.insertRange(175, 225);
         c.added.insertRange(275, 325);
         c.removed.insertRange(675, 725);
@@ -211,11 +211,11 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLShiftWithGaps() {
-        c.sourceIndex.insertRange(0, 100); // bookend
-        c.sourceIndex.insertRange(175, 225); // left destination
-        c.sourceIndex.insertRange(275, 325); // right destination
-        c.sourceIndex.insertRange(700, 800); // shifting range
-        c.sourceIndex.insertRange(900, 1000); // bookend
+        c.sourceRowSet.insertRange(0, 100); // bookend
+        c.sourceRowSet.insertRange(175, 225); // left destination
+        c.sourceRowSet.insertRange(275, 325); // right destination
+        c.sourceRowSet.insertRange(700, 800); // shifting range
+        c.sourceRowSet.insertRange(900, 1000); // bookend
         c.added.insertRange(675, 725);
         c.added.insertRange(775, 825);
         c.removed.insertRange(175, 225);
@@ -235,11 +235,11 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRShiftWithGaps() {
-        c.sourceIndex.insertRange(0, 100); // bookend
-        c.sourceIndex.insertRange(200, 400); // shifting range
-        c.sourceIndex.insertRange(405, 425); // right disappearing
-        c.sourceIndex.insertRange(475, 525); // right dest
-        c.sourceIndex.insertRange(900, 1000); // bookend
+        c.sourceRowSet.insertRange(0, 100); // bookend
+        c.sourceRowSet.insertRange(200, 400); // shifting range
+        c.sourceRowSet.insertRange(405, 425); // right disappearing
+        c.sourceRowSet.insertRange(475, 525); // right dest
+        c.sourceRowSet.insertRange(900, 1000); // bookend
         c.added.insertRange(175, 225);
         c.added.insertRange(275, 299);
         c.removed.insertRange(405, 425);
@@ -258,11 +258,11 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLShiftWithGaps() {
-        c.sourceIndex.insertRange(0, 100); // bookend
-        c.sourceIndex.insertRange(600, 800); // shifting range
-        c.sourceIndex.insertRange(575, 595); // left disappearing
-        c.sourceIndex.insertRange(475, 525); // left dest
-        c.sourceIndex.insertRange(900, 1000); // bookend
+        c.sourceRowSet.insertRange(0, 100); // bookend
+        c.sourceRowSet.insertRange(600, 800); // shifting range
+        c.sourceRowSet.insertRange(575, 595); // left disappearing
+        c.sourceRowSet.insertRange(475, 525); // left dest
+        c.sourceRowSet.insertRange(900, 1000); // bookend
         c.added.insertRange(775, 825);
         c.added.insertRange(701, 725);
         c.removed.insertRange(575, 595);
@@ -285,7 +285,7 @@ public class IndexShiftDataExpanderTest {
         final long s = 25;
         final long e = 49;
         final long dt = 100;
-        c.sourceIndex.insertRange(s, e);
+        c.sourceRowSet.insertRange(s, e);
         c.shifted.shiftRange(0, 99, dt);
         c.expectAdded.insertRange(s + dt, e + dt);
         c.expectRemoved.insertRange(s, e);
@@ -297,7 +297,7 @@ public class IndexShiftDataExpanderTest {
         final long s = 125;
         final long e = 149;
         final long dt = -100;
-        c.sourceIndex.insertRange(s, e);
+        c.sourceRowSet.insertRange(s, e);
         c.shifted.shiftRange(100, 199, dt);
         c.expectAdded.insertRange(s + dt, e + dt);
         c.expectRemoved.insertRange(s, e);
@@ -305,7 +305,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRShiftModifiedInner() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.modified.insertRange(750, 850);
         c.shifted.shiftRange(400, 600, 300);
         c.expectAdded.insertRange(700, 900);
@@ -314,7 +314,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLShiftModifiedInner() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.modified.insertRange(150, 250);
         c.shifted.shiftRange(400, 600, -300);
         c.expectAdded.insertRange(100, 300);
@@ -323,7 +323,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRShiftModifiedInner() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.modified.insertRange(550, 650);
         c.shifted.shiftRange(400, 600, 100);
         c.expectAdded.insertRange(601, 700);
@@ -333,7 +333,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLShiftModifiedInner() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.modified.insertRange(350, 450);
         c.shifted.shiftRange(400, 600, -100);
         c.expectAdded.insertRange(300, 399);
@@ -344,9 +344,9 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRShiftModifiedOuter() {
-        c.sourceIndex.insertRange(0, 75); // bookend
-        c.sourceIndex.insertRange(400, 600); // shifting
-        c.sourceIndex.insertRange(925, 1000); // bookend
+        c.sourceRowSet.insertRange(0, 75); // bookend
+        c.sourceRowSet.insertRange(400, 600); // shifting
+        c.sourceRowSet.insertRange(925, 1000); // bookend
         c.modified.insertRange(25, 75);
         c.modified.insertRange(925, 975);
         c.shifted.shiftRange(400, 600, 300);
@@ -357,9 +357,9 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLShiftModifiedOuter() {
-        c.sourceIndex.insertRange(0, 75); // bookend
-        c.sourceIndex.insertRange(400, 600); // shifting
-        c.sourceIndex.insertRange(925, 1000); // bookend
+        c.sourceRowSet.insertRange(0, 75); // bookend
+        c.sourceRowSet.insertRange(400, 600); // shifting
+        c.sourceRowSet.insertRange(925, 1000); // bookend
         c.modified.insertRange(25, 75);
         c.modified.insertRange(925, 975);
         c.shifted.shiftRange(400, 600, -300);
@@ -370,9 +370,9 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRShiftModifiedOuter() {
-        c.sourceIndex.insertRange(0, 75); // bookend
-        c.sourceIndex.insertRange(400, 600); // shifting
-        c.sourceIndex.insertRange(925, 1000); // bookend
+        c.sourceRowSet.insertRange(0, 75); // bookend
+        c.sourceRowSet.insertRange(400, 600); // shifting
+        c.sourceRowSet.insertRange(925, 1000); // bookend
         c.modified.insertRange(25, 75);
         c.modified.insertRange(925, 975);
         c.shifted.shiftRange(400, 600, 100);
@@ -384,9 +384,9 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLShiftModifiedOuter() {
-        c.sourceIndex.insertRange(0, 75); // bookend
-        c.sourceIndex.insertRange(400, 600); // shifting
-        c.sourceIndex.insertRange(925, 1000); // bookend
+        c.sourceRowSet.insertRange(0, 75); // bookend
+        c.sourceRowSet.insertRange(400, 600); // shifting
+        c.sourceRowSet.insertRange(925, 1000); // bookend
         c.modified.insertRange(25, 75);
         c.modified.insertRange(925, 975);
         c.shifted.shiftRange(400, 600, -100);
@@ -399,7 +399,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRShiftRemovedInner() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.removed.insertRange(450, 550);
         c.shifted.shiftRange(400, 600, 300);
         c.expectAdded.insertRange(700, 749);
@@ -409,7 +409,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLShiftRemovedInner() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.removed.insertRange(450, 550);
         c.shifted.shiftRange(400, 600, -300);
         c.expectAdded.insertRange(100, 149);
@@ -419,7 +419,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRShiftRemovedInner() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.removed.insertRange(450, 550);
         c.shifted.shiftRange(400, 600, 100);
         c.expectAdded.insertRange(651, 700);
@@ -430,7 +430,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLShiftRemovedInner() {
-        c.sourceIndex.insertRange(400, 600);
+        c.sourceRowSet.insertRange(400, 600);
         c.removed.insertRange(450, 550);
         c.shifted.shiftRange(400, 600, -100);
         c.expectAdded.insertRange(300, 349);
@@ -441,7 +441,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorRShiftRemovedOverlap() {
-        c.sourceIndex.insertRange(0, 400);
+        c.sourceRowSet.insertRange(0, 400);
         c.removed.insertRange(150, 249);
         c.removed.insertRange(301, 400);
         c.shifted.shiftRange(200, 350, 300); // only really moving 250-300
@@ -451,7 +451,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMajorLShiftRemovedOverlap() {
-        c.sourceIndex.insertRange(400, 800);
+        c.sourceRowSet.insertRange(400, 800);
         c.removed.insertRange(400, 499);
         c.removed.insertRange(551, 649);
         c.shifted.shiftRange(450, 600, -300); // only really moving 500-550
@@ -461,7 +461,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorRShiftRemovedOverlap() {
-        c.sourceIndex.insertRange(0, 350);
+        c.sourceRowSet.insertRange(0, 350);
         c.removed.insertRange(50, 149);
         c.removed.insertRange(251, 350);
         c.shifted.shiftRange(100, 400, 100); // only really moving 150-250
@@ -471,7 +471,7 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testMinorLShiftRemovedOverlap() {
-        c.sourceIndex.insertRange(100, 450);
+        c.sourceRowSet.insertRange(100, 450);
         c.removed.insertRange(100, 199);
         c.removed.insertRange(351, 400);
         c.shifted.shiftRange(100, 400, -100); // only really moving 200-350
@@ -481,27 +481,27 @@ public class IndexShiftDataExpanderTest {
 
     @Test
     public void testInplaceAddRemove() {
-        c.sourceIndex.insertRange(0, 10);
+        c.sourceRowSet.insertRange(0, 10);
         c.added.insertRange(0, 10);
         c.removed.insertRange(0, 10);
         c.expectModified.insertRange(0, 10);
     }
 
     /**
-     * 1. Add initial index state to {@code sourceIndex}. 2. Setup added/removed/modified/shifted as inputs to
+     * 1. Add initial rowSet state to {@code sourceRowSet}. 2. Setup added/removed/modified/shifted as inputs to
      * IndexShiftDataExpander. 3. Modify expected output ranges to expectAdded / expectRemoved / expectModified. 4.
      * Profit by letting @Before / @After clear context and run validate automagically.
      */
     private static class Context {
-        public final Index sourceIndex = Index.FACTORY.getEmptyIndex();
-        public final Index added = Index.FACTORY.getEmptyIndex();
-        public final Index removed = Index.FACTORY.getEmptyIndex();
-        public final Index modified = Index.FACTORY.getEmptyIndex();
+        public final TrackingMutableRowSet sourceRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        public final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        public final TrackingMutableRowSet removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        public final TrackingMutableRowSet modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         public final IndexShiftData.Builder shifted = new IndexShiftData.Builder();
 
-        public final Index expectAdded = Index.FACTORY.getEmptyIndex();
-        public final Index expectRemoved = Index.FACTORY.getEmptyIndex();
-        public final Index expectModified = Index.FACTORY.getEmptyIndex();
+        public final TrackingMutableRowSet expectAdded = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        public final TrackingMutableRowSet expectRemoved = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        public final TrackingMutableRowSet expectModified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
 
         public Context() {
             LogicalClock.DEFAULT.resetForUnitTests();
@@ -509,14 +509,14 @@ public class IndexShiftDataExpanderTest {
 
         public void validate() {
             LogicalClock.DEFAULT.startUpdateCycle();
-            sourceIndex.update(expectAdded, expectRemoved);
+            sourceRowSet.update(expectAdded, expectRemoved);
             LogicalClock.DEFAULT.completeUpdateCycle();
 
             final IndexShiftData shiftData = shifted.build();
             shiftData.validate();
             final IndexShiftDataExpander expander = new IndexShiftDataExpander(new ShiftAwareListener.Update(
-                    added, removed, modified, shiftData, ModifiedColumnSet.ALL), sourceIndex);
-            expander.validate(sourceIndex);
+                    added, removed, modified, shiftData, ModifiedColumnSet.ALL), sourceRowSet);
+            expander.validate(sourceRowSet);
 
             assertEquals(expectAdded, expander.getAdded());
             assertEquals(expectRemoved, expander.getRemoved());

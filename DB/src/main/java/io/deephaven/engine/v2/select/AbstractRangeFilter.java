@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.SortedColumnsAttribute;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -74,7 +74,7 @@ public abstract class AbstractRangeFilter extends SelectFilterImpl {
     }
 
     @Override
-    public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
         final ColumnSource columnSource = table.getColumnSource(columnName);
         final Optional<SortingOrder> orderForColumn = SortedColumnsAttribute.getOrderForColumn(table, columnName);
         if (orderForColumn.isPresent()) {
@@ -87,7 +87,7 @@ public abstract class AbstractRangeFilter extends SelectFilterImpl {
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilter);
     }
 
-    abstract Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev, boolean reverse);
+    abstract TrackingMutableRowSet binarySearch(TrackingMutableRowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse);
 
     @Override
     public boolean isSimpleFilter() {

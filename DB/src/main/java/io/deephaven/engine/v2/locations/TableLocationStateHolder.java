@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.locations;
 
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,10 +10,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TableLocationStateHolder implements TableLocationState {
 
-    private ReadOnlyIndex index;
+    private RowSet index;
     private volatile long lastModifiedTimeMillis;
 
-    private TableLocationStateHolder(@Nullable final ReadOnlyIndex index, final long lastModifiedTimeMillis) {
+    private TableLocationStateHolder(@Nullable final RowSet index, final long lastModifiedTimeMillis) {
         this.index = index;
         this.lastModifiedTimeMillis = lastModifiedTimeMillis;
     }
@@ -33,7 +33,7 @@ public class TableLocationStateHolder implements TableLocationState {
     }
 
     @Override
-    public final synchronized ReadOnlyIndex getIndex() {
+    public final synchronized RowSet getIndex() {
         return index.clone();
     }
 
@@ -61,12 +61,12 @@ public class TableLocationStateHolder implements TableLocationState {
     /**
      * Set all state values.
      *
-     * @param index The new index. Ownership passes to this holder; callers should {@link ReadOnlyIndex#clone() clone}
+     * @param index The new rowSet. Ownership passes to this holder; callers should {@link RowSet#clone() clone}
      *        it if necessary.
      * @param lastModifiedTimeMillis The new modification time
      * @return Whether any of the values changed
      */
-    public final synchronized boolean setValues(@Nullable final ReadOnlyIndex index,
+    public final synchronized boolean setValues(@Nullable final RowSet index,
             final long lastModifiedTimeMillis) {
         boolean changed = false;
 

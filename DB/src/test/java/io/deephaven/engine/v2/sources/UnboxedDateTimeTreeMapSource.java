@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 /**
  * Wrap a regular {@code TreeMapSource<Long>} to make it reinterpretable as a DBDateTime column source.
@@ -17,11 +17,11 @@ public class UnboxedDateTimeTreeMapSource extends UnboxedDateTimeColumnSource im
         this.treeMapSource = treeMapSource;
     }
 
-    public void add(Index index, Long[] data) {
-        treeMapSource.add(index, data);
+    public void add(TrackingMutableRowSet rowSet, Long[] data) {
+        treeMapSource.add(rowSet, data);
     }
 
-    public void remove(Index index) {
-        treeMapSource.remove(index);
+    public void remove(TrackingMutableRowSet rowSet) {
+        treeMapSource.remove(rowSet);
     }
 }

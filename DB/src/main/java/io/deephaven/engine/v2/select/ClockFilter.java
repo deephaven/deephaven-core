@@ -15,7 +15,8 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,8 +56,8 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     @Override
-    public final Index filter(@NotNull final Index selection, @NotNull final Index fullSet, @NotNull final Table table,
-            boolean usePrev) {
+    public final TrackingMutableRowSet filter(@NotNull final TrackingMutableRowSet selection, @NotNull final TrackingMutableRowSet fullSet, @NotNull final Table table,
+                                              boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -77,12 +78,13 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                 : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()")
                         .getColumnSource(columnName);
 
-        final Index initial = initializeAndGetInitialIndex(selection, fullSet, table);
-        return initial == null ? Index.FACTORY.getEmptyIndex() : initial;
+        final TrackingMutableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
+        return initial == null ? TrackingMutableRowSet.FACTORY.getEmptyRowSet() : initial;
     }
 
-    protected abstract @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection,
-            @NotNull final Index fullSet, @NotNull final Table table);
+    protected abstract @Nullable
+    TrackingMutableRowSet initializeAndGetInitialIndex(@NotNull final TrackingMutableRowSet selection,
+                                                       @NotNull final TrackingMutableRowSet fullSet, @NotNull final Table table);
 
     @Override
     public final boolean isSimpleFilter() {
@@ -113,14 +115,15 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
 
     @Override
     public final void refresh() {
-        final Index added = updateAndGetAddedIndex();
+        final TrackingMutableRowSet added = updateAndGetAddedIndex();
         if (added != null && !added.empty()) {
             resultTable.getIndex().insert(added);
-            resultTable.notifyListeners(added, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+            resultTable.notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
         }
     }
 
-    protected abstract @Nullable Index updateAndGetAddedIndex();
+    protected abstract @Nullable
+    TrackingMutableRowSet updateAndGetAddedIndex();
 
     boolean isLive() {
         return live;
@@ -144,9 +147,9 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         }
 
         @Nullable
-        Index.RandomBuilder consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
-                final long nowNanos,
-                @Nullable Index.RandomBuilder addedBuilder) {
+        RowSetBuilder consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
+                                                final long nowNanos,
+                                                @Nullable RowSetBuilder addedBuilder) {
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
             while (nextKey <= lastKey
@@ -157,7 +160,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                 return null;
             }
             if (addedBuilder == null) {
-                addedBuilder = Index.FACTORY.getRandomBuilder();
+                addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
             }
             addedBuilder.addRange(firstKeyAdded, lastKeyAdded);
             return addedBuilder;

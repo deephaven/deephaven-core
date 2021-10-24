@@ -12,10 +12,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.OrderedChunkUtils;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.LongAbortableConsumer;
-import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
+import io.deephaven.engine.v2.utils.*;
 
 public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
@@ -64,7 +61,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
         @Override
         public long peekNextKey() {
-            return hasMore() ? backingChunk.get(iteratorOffset) : Index.NULL_KEY;
+            return hasMore() ? backingChunk.get(iteratorOffset) : TrackingMutableRowSet.NULL_ROW_KEY;
         }
 
         @Override
@@ -132,15 +129,15 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
     }
 
     @Override
-    public final Index asIndex() {
+    public final TrackingMutableRowSet asIndex() {
         final int size = backingChunk.size();
         if (size == 0) {
-            return Index.FACTORY.getEmptyIndex();
+            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         }
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         builder.setDomain(backingChunk.get(0), backingChunk.get(size - 1));
-        builder.appendOrderedKeyIndicesChunk(backingChunk);
-        return builder.getIndex();
+        builder.appendOrderedRowKeysChunk(backingChunk);
+        return builder.build();
     }
 
     @Override
@@ -179,13 +176,13 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
     @Override
     public long firstRowKey() {
-        return backingChunk.size() > 0 ? backingChunk.get(0) : Index.NULL_KEY;
+        return backingChunk.size() > 0 ? backingChunk.get(0) : TrackingMutableRowSet.NULL_ROW_KEY;
     }
 
     @Override
     public long lastRowKey() {
         final int sz = backingChunk.size();
-        return sz > 0 ? backingChunk.get(sz - 1) : Index.NULL_KEY;
+        return sz > 0 ? backingChunk.get(sz - 1) : TrackingMutableRowSet.NULL_ROW_KEY;
     }
 
     @Override

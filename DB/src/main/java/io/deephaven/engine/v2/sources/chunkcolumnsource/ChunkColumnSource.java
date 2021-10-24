@@ -123,7 +123,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
     void clear();
 
     /**
-     * Get the size of this column source (one more than the last valid index).
+     * Get the size of this column source (one more than the last valid rowSet).
      *
      * @return the size of this column source
      */

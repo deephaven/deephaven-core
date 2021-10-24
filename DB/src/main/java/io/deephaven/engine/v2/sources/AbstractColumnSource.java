@@ -6,6 +6,9 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.GroupingRowSetHelper;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
@@ -17,9 +20,7 @@ import io.deephaven.engine.v2.select.chunkfilters.ChunkMatchFilterFactory;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.IndexBuilder;
-import io.deephaven.engine.v2.utils.SortedIndex;
+import io.deephaven.engine.v2.utils.RowSetBuilder;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -45,7 +46,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     protected final Class<T> type;
     protected final Class<?> componentType;
 
-    protected volatile Map<T, Index> groupToRange;
+    protected volatile Map<T, TrackingMutableRowSet> groupToRange;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
         this(type, Object.class);
@@ -102,49 +103,49 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     @Override
-    public Map<T, Index> getGroupToRange() {
+    public Map<T, TrackingMutableRowSet> getGroupToRange() {
         return groupToRange;
     }
 
     @Override
-    public Map<T, Index> getGroupToRange(Index index) {
+    public Map<T, TrackingMutableRowSet> getGroupToRange(TrackingMutableRowSet rowSet) {
         return groupToRange;
     }
 
-    public final void setGroupToRange(@Nullable Map<T, Index> groupToRange) {
+    public final void setGroupToRange(@Nullable Map<T, TrackingMutableRowSet> groupToRange) {
         this.groupToRange = groupToRange;
     }
 
     @Override
-    public Index match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, Index mapper,
-            final Object... keys) {
-        final Map<T, Index> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
+    public TrackingMutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, TrackingMutableRowSet mapper,
+                                       final Object... keys) {
+        final Map<T, TrackingMutableRowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {
-            IndexBuilder allInMatchingGroups = Index.FACTORY.getRandomBuilder();
+            RowSetBuilder allInMatchingGroups = TrackingMutableRowSet.FACTORY.getRandomBuilder();
 
             if (caseInsensitive && (type == String.class)) {
                 KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
                 Collections.addAll(keySet, keys);
 
-                for (Map.Entry<T, Index> ent : groupToRange.entrySet()) {
+                for (Map.Entry<T, TrackingMutableRowSet> ent : groupToRange.entrySet()) {
                     if (keySet.containsKey(ent.getKey())) {
-                        allInMatchingGroups.addIndex(ent.getValue());
+                        allInMatchingGroups.addRowSet(ent.getValue());
                     }
                 }
             } else {
                 for (Object key : keys) {
-                    Index range = groupToRange.get(key);
+                    TrackingMutableRowSet range = groupToRange.get(key);
                     if (range != null) {
-                        allInMatchingGroups.addIndex(range);
+                        allInMatchingGroups.addRowSet(range);
                     }
                 }
             }
 
-            final Index matchingValues;
+            final TrackingMutableRowSet matchingValues;
             if (invertMatch) {
-                matchingValues = mapper.minus(allInMatchingGroups.getIndex());
+                matchingValues = mapper.minus(allInMatchingGroups.build());
             } else {
-                matchingValues = mapper.intersect(allInMatchingGroups.getIndex());
+                matchingValues = mapper.intersect(allInMatchingGroups.build());
             }
             return matchingValues;
         } else {
@@ -171,38 +172,38 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     @Override
-    public Map<T, Index> getValuesMapping(Index subRange) {
-        Map<T, Index> result = new LinkedHashMap<>();
-        final Map<T, Index> groupToRange = getGroupToRange();
+    public Map<T, TrackingMutableRowSet> getValuesMapping(TrackingMutableRowSet subRange) {
+        Map<T, TrackingMutableRowSet> result = new LinkedHashMap<>();
+        final Map<T, TrackingMutableRowSet> groupToRange = getGroupToRange();
 
         // if we have a grouping we can use it to avoid iterating the entire subRange. The issue is that our grouping
-        // could be bigger than the index we care about, by a very large margin. In this case we could be spinning
-        // on Index intersect operations that are actually useless. This check says that if our subRange is smaller
+        // could be bigger than the rowSet we care about, by a very large margin. In this case we could be spinning
+        // on TrackingMutableRowSet intersect operations that are actually useless. This check says that if our subRange is smaller
         // than the number of keys in our grouping, we should just fetch the keys instead and generate the grouping
         // from scratch.
         boolean useGroupToRange = (groupToRange != null) && (groupToRange.size() < subRange.size());
         if (useGroupToRange) {
-            for (Map.Entry<T, Index> typeEntry : groupToRange.entrySet()) {
-                Index mapping = subRange.intersect(typeEntry.getValue());
+            for (Map.Entry<T, TrackingMutableRowSet> typeEntry : groupToRange.entrySet()) {
+                TrackingMutableRowSet mapping = subRange.intersect(typeEntry.getValue());
                 if (mapping.size() > 0) {
                     result.put(typeEntry.getKey(), mapping);
                 }
             }
         } else {
-            Map<T, Index.SequentialBuilder> valueToIndexSet = new LinkedHashMap<>();
+            Map<T, SequentialRowSetBuilder> valueToIndexSet = new LinkedHashMap<>();
 
-            for (Index.Iterator it = subRange.iterator(); it.hasNext();) {
+            for (TrackingMutableRowSet.Iterator it = subRange.iterator(); it.hasNext();) {
                 long key = it.nextLong();
                 T value = get(key);
-                Index.SequentialBuilder indexes = valueToIndexSet.get(value);
+                SequentialRowSetBuilder indexes = valueToIndexSet.get(value);
                 if (indexes == null) {
-                    indexes = Index.FACTORY.getSequentialBuilder();
+                    indexes = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
                 }
                 indexes.appendKey(key);
                 valueToIndexSet.put(value, indexes);
             }
-            for (Map.Entry<T, Index.SequentialBuilder> entry : valueToIndexSet.entrySet()) {
-                result.put(entry.getKey(), entry.getValue().getIndex());
+            for (Map.Entry<T, SequentialRowSetBuilder> entry : valueToIndexSet.entrySet()) {
+                result.put(entry.getKey(), entry.getValue().build());
             }
         }
         return result;
@@ -243,31 +244,31 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     /**
      * Get a map from unique, boxed values in this column to a long[2] range of keys.
      *
-     * @param index The index that defines the column along with the column source
-     * @param columnSource The column source that defines the column along with the index
+     * @param rowSet The rowSet that defines the column along with the column source
+     * @param columnSource The column source that defines the column along with the rowSet
      * @return A new value to range map (i.e. grouping metadata)
      */
-    public static <TYPE> Map<TYPE, long[]> getValueToRangeMap(@NotNull final Index index,
+    public static <TYPE> Map<TYPE, long[]> getValueToRangeMap(@NotNull final TrackingMutableRowSet rowSet,
             @Nullable final ColumnSource<TYPE> columnSource) {
-        final long size = index.size();
+        final long size = rowSet.size();
         if (columnSource == null) {
             return Collections.singletonMap(null, new long[] {0, size});
         }
         // noinspection unchecked
-        return ((Map<TYPE, Index>) index.getGrouping(columnSource)).entrySet().stream()
+        return ((Map<TYPE, TrackingMutableRowSet>) rowSet.getGrouping(columnSource)).entrySet().stream()
                 .sorted(java.util.Comparator.comparingLong(e -> e.getValue().firstRowKey())).collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        new Function<Map.Entry<TYPE, Index>, long[]>() {
+                        new Function<Map.Entry<TYPE, TrackingMutableRowSet>, long[]>() {
                             private long prevLastKey = -1L;
                             private long currentSize = 0;
 
                             @Override
-                            public long[] apply(@NotNull final Map.Entry<TYPE, Index> entry) {
-                                final Index index = entry.getValue();
-                                Assert.instanceOf(index, "index", SortedIndex.class);
-                                Assert.gt(index.firstRowKey(), "index.firstRowKey()", prevLastKey, "prevLastKey");
-                                prevLastKey = index.lastRowKey();
-                                return new long[] {currentSize, currentSize += index.size()};
+                            public long[] apply(@NotNull final Map.Entry<TYPE, TrackingMutableRowSet> entry) {
+                                final TrackingMutableRowSet rowSet = entry.getValue();
+                                Assert.instanceOf(rowSet, "rowSet", GroupingRowSetHelper.class);
+                                Assert.gt(rowSet.firstRowKey(), "rowSet.firstRowKey()", prevLastKey, "prevLastKey");
+                                prevLastKey = rowSet.lastRowKey();
+                                return new long[] {currentSize, currentSize += rowSet.size()};
                             }
                         },
                         Assert::neverInvoked,
@@ -275,13 +276,13 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     /**
-     * Consume all groups in a group-to-index map.
+     * Consume all groups in a group-to-rowSet map.
      *
-     * @param groupToIndex The group-to-index map to consume
+     * @param groupToIndex The group-to-rowSet map to consume
      * @param groupConsumer Consumer for responsive groups
      */
-    public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, Index> groupToIndex,
-            @NotNull final BiConsumer<TYPE, Index> groupConsumer) {
+    public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex,
+            @NotNull final BiConsumer<TYPE, TrackingMutableRowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .filter(kie -> kie.getValue().nonempty())
                 .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstRowKey()))
@@ -289,28 +290,28 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     /**
-     * Convert a group-to-index map to a pair of flat in-memory column sources, one for the keys and one for the
+     * Convert a group-to-rowSet map to a pair of flat in-memory column sources, one for the keys and one for the
      * indexes.
      *
-     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-index map (used
+     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-rowSet map (used
      *        for typing, only)
-     * @param groupToIndex The group-to-index map to convert
-     * @return A pair of a flat key column source and a flat index column source
+     * @param groupToIndex The group-to-rowSet map to convert
+     * @return A pair of a flat key column source and a flat rowSet column source
      */
     @SuppressWarnings("unused")
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<Index>> groupingToFlatSources(
-            @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, Index> groupToIndex) {
+    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingMutableRowSet>> groupingToFlatSources(
+            @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex) {
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<Index> resultIndexColumnSource = new ObjectArraySource<>(Index.class);
+        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         final MutableInt processedGroupCount = new MutableInt(0);
-        forEachGroup(groupToIndex, (final TYPE key, final Index index) -> {
+        forEachGroup(groupToIndex, (final TYPE key, final TrackingMutableRowSet rowSet) -> {
             final long groupIndex = processedGroupCount.longValue();
             resultKeyColumnSource.set(groupIndex, key);
-            resultIndexColumnSource.set(groupIndex, index);
+            resultIndexColumnSource.set(groupIndex, rowSet);
             processedGroupCount.increment();
         });
         Assert.eq(processedGroupCount.intValue(), "processedGroupCount.intValue()", numGroups, "numGroups");
@@ -318,15 +319,15 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     /**
-     * Consume all responsive groups in a group-to-index map.
+     * Consume all responsive groups in a group-to-rowSet map.
      *
-     * @param groupToIndex The group-to-index map to consume
+     * @param groupToIndex The group-to-rowSet map to consume
      * @param intersect Limit indices to values contained within intersect, eliminating empty result groups
      * @param groupConsumer Consumer for responsive groups
      */
-    public static <TYPE> void forEachResponsiveGroup(@NotNull final Map<TYPE, Index> groupToIndex,
-            @NotNull final Index intersect,
-            @NotNull final BiConsumer<TYPE, Index> groupConsumer) {
+    public static <TYPE> void forEachResponsiveGroup(@NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex,
+            @NotNull final TrackingMutableRowSet intersect,
+            @NotNull final BiConsumer<TYPE, TrackingMutableRowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .map(kie -> new Pair<>(kie.getKey(), kie.getValue().intersect(intersect)))
                 .filter(kip -> kip.getSecond().nonempty())
@@ -335,32 +336,32 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     /**
-     * Convert a group-to-index map to a pair of flat in-memory column sources, one for the keys and one for the
+     * Convert a group-to-rowSet map to a pair of flat in-memory column sources, one for the keys and one for the
      * indexes.
      *
-     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-index map (used
+     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-rowSet map (used
      *        for typing, only)
-     * @param groupToIndex The group-to-index map to convert
+     * @param groupToIndex The group-to-rowSet map to convert
      * @param intersect Limit returned indices to values contained within intersect
      * @param responsiveGroups Set to the number of responsive groups on exit
-     * @return A pair of a flat key column source and a flat index column source
+     * @return A pair of a flat key column source and a flat rowSet column source
      */
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<Index>> groupingToFlatSources(
+    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingMutableRowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource,
-            @NotNull final Map<TYPE, Index> groupToIndex,
-            @NotNull final Index intersect,
+            @NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex,
+            @NotNull final TrackingMutableRowSet intersect,
             @NotNull final MutableInt responsiveGroups) {
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<Index> resultIndexColumnSource = new ObjectArraySource<>(Index.class);
+        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         responsiveGroups.setValue(0);
-        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final Index index) -> {
+        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final TrackingMutableRowSet rowSet) -> {
             final long groupIndex = responsiveGroups.longValue();
             resultKeyColumnSource.set(groupIndex, key);
-            resultIndexColumnSource.set(groupIndex, index);
+            resultIndexColumnSource.set(groupIndex, rowSet);
             responsiveGroups.increment();
         });
 

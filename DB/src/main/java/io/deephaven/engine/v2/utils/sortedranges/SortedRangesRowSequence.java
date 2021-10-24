@@ -12,8 +12,8 @@ import java.util.function.BiConsumer;
 public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     private static final boolean DEBUG = SortedRanges.DEBUG;
     private SortedRanges sar;
-    private int startIdx; // end-of-range position index to the first key of this OK.
-    private int endIdx; // end-of-range position index to the last key of this OK.
+    private int startIdx; // end-of-range position rowSet to the first key of this OK.
+    private int endIdx; // end-of-range position rowSet to the last key of this OK.
     private long startPos; // position offset of our start in the parent sorted array.
     private long startOffset; // offset into range pointed by startIdx; note this is <= 0.
     private long endOffset; // offset into range pointed by endIdx; note this is <= 0.
@@ -133,12 +133,12 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public Index asIndex() {
+    public TrackingMutableRowSet asIndex() {
         if (size == sar.getCardinality()) {
-            return new TreeIndex(sar.deepCopy());
+            return new TrackingMutableRowSetImpl(sar.deepCopy());
         }
         if (size <= 0) {
-            return Index.FACTORY.getEmptyIndex();
+            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
         }
         SortedRanges ans = sar.makeMyTypeAndOffset(Math.min(endIdx - startIdx + 2, sar.count));
         ans.cardinality = size;
@@ -170,7 +170,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
             }
             ans.count = iAns;
         }
-        return new TreeIndex(ans);
+        return new TrackingMutableRowSetImpl(ans);
     }
 
     @Override

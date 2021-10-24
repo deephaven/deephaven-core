@@ -14,7 +14,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.cast.ToDoubleCast;
 import com.tdunning.math.stats.TDigest;
 import org.jetbrains.annotations.NotNull;
@@ -145,7 +145,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream,
-            @NotNull ReadOnlyIndex newDestinations) {
+            @NotNull RowSet newDestinations) {
         downstream.added.forAllLongs(this::updateDestination);
         downstream.modified.forAllLongs(this::updateDestination);
     }

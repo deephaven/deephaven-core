@@ -36,7 +36,7 @@ public class IndexIteration {
 
     long indexPoints[];
     long indexRanges[];
-    Index index;
+    TrackingMutableRowSet rowSet;
 
     double sets[][];
     WritableDoubleChunk chunks[];
@@ -74,7 +74,7 @@ public class IndexIteration {
             indexPoints[j] = indexPoints[j - 1] + 1;
             j++;
         }
-        index = Index.FACTORY.getIndexByValues(indexPoints);
+        rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexPoints);
 
         sets = new double[setsCount][];
 
@@ -178,15 +178,15 @@ public class IndexIteration {
         }
     }
 
-    private void fillChunkByIndexIterator(Index.Iterator it, int size, WritableDoubleChunk doubleChunk, int sourceId) {
+    private void fillChunkByIndexIterator(TrackingMutableRowSet.Iterator it, int size, WritableDoubleChunk doubleChunk, int sourceId) {
         doubleChunk.setSize(0);
         for (int i = 0; i < size; i++) {
             doubleChunk.add(sets[sourceId][(int) it.nextLong()]);
         }
     }
 
-    private int fillChunkByIndexRangeIterator(Index.RangeIterator it, int rangeStart, int size,
-            WritableDoubleChunk doubleChunk, int sourceId) {
+    private int fillChunkByIndexRangeIterator(TrackingMutableRowSet.RangeIterator it, int rangeStart, int size,
+                                              WritableDoubleChunk doubleChunk, int sourceId) {
         int pos = 0;
         int rangeEnd = (int) it.currentRangeEnd() + 1;
         int length = rangeEnd - rangeStart;
@@ -241,7 +241,7 @@ public class IndexIteration {
     public void RowSequenceByRange(Blackhole bh) {
         double sum = 0;
         final int stepCount = indexCount / chunkSize;
-        final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
+        final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
 
         for (int step = 0; step < stepCount; step++) {
             final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
@@ -275,7 +275,7 @@ public class IndexIteration {
     public void RowSequenceByItems(Blackhole bh) {
         double sum = 0;
         final int stepCount = indexCount / chunkSize;
-        final RowSequence.Iterator rsIt = index.getRowSequenceIterator();
+        final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
         for (int step = 0; step < stepCount; step++) {
             final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSize);
             for (int i = 0; i < chunks.length; i++) {
@@ -351,9 +351,9 @@ public class IndexIteration {
     public void indexByIndexIterator(Blackhole bh) {
         double sum = 0;
         int stepCount = indexCount / chunkSize;
-        Index.Iterator its[] = new Index.Iterator[sets.length];
+        TrackingMutableRowSet.Iterator its[] = new TrackingMutableRowSet.Iterator[sets.length];
         for (int i = 0; i < its.length; i++) {
-            its[i] = index.iterator();
+            its[i] = rowSet.iterator();
 
         }
         for (int step = 0; step < stepCount; step++) {
@@ -377,10 +377,10 @@ public class IndexIteration {
     public void indexByIndexRangeIterator(Blackhole bh) {
         double sum = 0;
         int stepCount = indexCount / chunkSize;
-        Index.RangeIterator its[] = new Index.RangeIterator[sets.length];
+        TrackingMutableRowSet.RangeIterator its[] = new TrackingMutableRowSet.RangeIterator[sets.length];
 
         for (int i = 0; i < its.length; i++) {
-            its[i] = index.rangeIterator();
+            its[i] = rowSet.rangeIterator();
             its[i].next();
         }
         int rangeStart = (int) its[0].currentRangeStart();
@@ -403,8 +403,8 @@ public class IndexIteration {
         bh.consume(result);
         print(sum);
     }
-    // private void fillChunkByIndexIterator(Index.Iterator it, int size, DoubleChunk doubleChunk, int sourceId) {
-    // private int fillChunkByIndexRangeIterator(Index.RangeIterator it, int rangeStart, int size, DoubleChunk
+    // private void fillChunkByIndexIterator(TrackingMutableRowSet.Iterator it, int size, DoubleChunk doubleChunk, int sourceId) {
+    // private int fillChunkByIndexRangeIterator(TrackingMutableRowSet.RangeIterator it, int rangeStart, int size, DoubleChunk
     // doubleChunk, int sourceId) {
 
     public static void main(String[] args) throws RunnerException {

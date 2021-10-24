@@ -7,7 +7,8 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.remote.WrappedDelegatingTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
@@ -244,8 +245,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 addChildren(source.getIndex());
                             }
 
-                            private void addChildren(Index index) {
-                                for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+                            private void addChildren(TrackingMutableRowSet index) {
+                                for (final TrackingMutableRowSet.Iterator it = index.iterator(); it.hasNext();) {
                                     final long key = it.nextLong();
                                     final Object parent = parentSource.get(key);
                                     if (parent != null) {
@@ -254,8 +255,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 }
                             }
 
-                            private void removeChildren(Index index) {
-                                for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+                            private void removeChildren(TrackingMutableRowSet index) {
+                                for (final TrackingMutableRowSet.Iterator it = index.iterator(); it.hasNext();) {
                                     final long key = it.nextLong();
                                     final Object oldParent = parentSource.getPrev(key);
                                     if (oldParent != null) {
@@ -327,7 +328,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                     removeChildren(upstream.getModifiedPreShift());
                                 }
 
-                                try (final Index prevIndex = source.getIndex().getPrevIndex()) {
+                                try (final TrackingMutableRowSet prevIndex = source.getIndex().getPrevIndex()) {
                                     prevIndex.remove(upstream.removed);
                                     if (modifiedInputColumns) {
                                         prevIndex.remove(upstream.getModifiedPreShift());
@@ -365,17 +366,17 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                         }));
                                 modifiedKeys.sort();
 
-                                final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+                                final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
                                 // TODO: Modify this such that we don't actually ever add the keys to the builder if
                                 // they exist
-                                // within added; this would be made easier/more efficient if Index.Iterator exposed the
+                                // within added; this would be made easier/more efficient if TrackingMutableRowSet.Iterator exposed the
                                 // advance() operation.
                                 modifiedKeys.forEach(x -> {
                                     builder.appendKey(x);
                                     return true;
                                 });
 
-                                downstream.modified.insert(builder.getIndex());
+                                downstream.modified.insert(builder.build());
                                 downstream.modified.remove(upstream.added);
 
                                 if (downstream.modified.nonempty()) {

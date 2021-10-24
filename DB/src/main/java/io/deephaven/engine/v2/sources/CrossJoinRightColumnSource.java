@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -364,16 +364,16 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
     private long redirect(long outerKey) {
         final long leftKey = crossJoinManager.getShifted(outerKey);
-        final Index index = crossJoinManager.getRightIndexFromLeftIndex(leftKey);
+        final TrackingMutableRowSet rowSet = crossJoinManager.getRightIndexFromLeftIndex(leftKey);
         final long rightKey = crossJoinManager.getMasked(outerKey);
-        return index.get(rightKey);
+        return rowSet.get(rightKey);
     }
 
     private long redirectPrev(long outerKey) {
         final long leftKey = crossJoinManager.getPrevShifted(outerKey);
-        final Index index = crossJoinManager.getRightIndexFromPrevLeftIndex(leftKey);
+        final TrackingMutableRowSet rowSet = crossJoinManager.getRightIndexFromPrevLeftIndex(leftKey);
         final long rightKey = crossJoinManager.getPrevMasked(outerKey);
-        return rightIsLive ? index.getPrev(rightKey) : index.get(rightKey);
+        return rightIsLive ? rowSet.getPrev(rightKey) : rowSet.get(rightKey);
     }
 
     private void doFillChunk(@NotNull final ColumnSource.FillContext context,
@@ -504,14 +504,14 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
                 final MutableInt preMapOffset = new MutableInt();
                 final MutableInt postMapOffset = new MutableInt();
-                final MutableLong lastLeftIndex = new MutableLong(Index.NULL_KEY);
+                final MutableLong lastLeftIndex = new MutableLong(TrackingMutableRowSet.NULL_ROW_KEY);
 
                 final Runnable flush = () -> {
-                    if (lastLeftIndex.longValue() == Index.NULL_KEY) {
+                    if (lastLeftIndex.longValue() == TrackingMutableRowSet.NULL_ROW_KEY) {
                         return;
                     }
 
-                    Index rightGroup;
+                    TrackingMutableRowSet rightGroup;
                     if (usePrev) {
                         rightGroup = crossJoinManager.getRightIndexFromPrevLeftIndex(lastLeftIndex.getValue());
                         if (rightIsLive) {
@@ -588,7 +588,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 compactedMappedKeys.setSize(uniqueKeyCount);
                 runLengths.setSize(uniqueKeyCount);
 
-                hasNulls = compactedMappedKeys.get(0) == Index.NULL_KEY;
+                hasNulls = compactedMappedKeys.get(0) == TrackingMutableRowSet.NULL_ROW_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
                 innerRowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(
                         LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys,

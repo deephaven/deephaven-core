@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
@@ -267,7 +267,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ii++) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == Index.NULL_KEY) {
+            if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
                 dest.set(ii, NULL_LONG);
                 continue;
             }
@@ -292,7 +292,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ii++) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == Index.NULL_KEY) {
+            if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
                 dest.set(ii, NULL_LONG);
                 continue;
             }
@@ -365,7 +365,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         final R nullValue = mapper.apply(NULL_LONG);
         for (int ii = 0; ii < sz; ii++) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == Index.NULL_KEY) {
+            if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
                 dest.set(ii, nullValue);
                 continue;
             }
@@ -386,7 +386,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         final R nullValue = mapper.apply(NULL_LONG);
         for (int ii = 0; ii < sz; ii++) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == Index.NULL_KEY) {
+            if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
                 dest.set(ii, nullValue);
                 continue;
             }

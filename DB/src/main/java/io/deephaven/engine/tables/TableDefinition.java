@@ -200,7 +200,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
 
     /**
      * @param column the ColumnDefinition to search for
-     * @return The index of the column for the supplied name, or -1 if no such column exists in this table definition.
+     * @return The rowSet of the column for the supplied name, or -1 if no such column exists in this table definition.
      *         <b>Note:</b> This is an O(columns.length) lookup.
      */
     public int getColumnIndex(@NotNull final ColumnDefinition<?> column) {

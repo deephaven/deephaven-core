@@ -895,7 +895,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeWithNestedShift() {
-        // Test that an outer shift properly shifts index when inner shifts are also propagated to the index.
+        // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         // must be uncollapsable s.t. inner table shifts at the same time as outer table
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
@@ -918,7 +918,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeWithShiftBoundary() {
-        // Test that an outer shift properly shifts index when inner shifts are also propagated to the index.
+        // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
         final int ONE_MILLION = 1024 * 1024;
         final QueryTable table = testRefreshingTable(i(ONE_MILLION - 1), c("Sentinel", 1));
         final QueryTable table2 = testRefreshingTable(i(0), c("Sentinel", 2));
@@ -945,7 +945,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeShiftsEmptyTable() {
-        // Test that an outer shift properly shifts index when inner shifts are also propagated to the index.
+        // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final QueryTable emptyTable = testRefreshingTable(i(), TstUtils.<Integer>c("Sentinel"));
         final Table m2 = TableTools.merge(table, emptyTable, emptyTable).updateView("Sentinel=Sentinel+1");
@@ -1018,7 +1018,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeDeepShifts() {
-        // Test that an outer shift properly shifts index when inner shifts are also propagated to the index.
+        // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final QueryTable emptyTable = testRefreshingTable(i(), TstUtils.<Integer>c("Sentinel"));
         final Table m2 = TableTools.merge(table, emptyTable, emptyTable, emptyTable, emptyTable, emptyTable)
@@ -1062,11 +1062,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     private void addRows(Random random, QueryTable table1) {
         int size;
         size = random.nextInt(10);
-        final Index newIndex = TstUtils.getRandomIndex(table1.getIndex().lastRowKey(), size, random);
-        TstUtils.addToTable(table1, newIndex, TstUtils.getRandomStringCol("Sym", size, random),
+        final TrackingMutableRowSet newRowSet = TstUtils.getRandomIndex(table1.getIndex().lastRowKey(), size, random);
+        TstUtils.addToTable(table1, newRowSet, TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
-        table1.notifyListeners(newIndex, TstUtils.i(), TstUtils.i());
+        table1.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
     }
 
     static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {
@@ -1134,23 +1134,23 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Assert.assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
 
         final Consumer<Boolean> validate = (usePrev) -> {
-            final Index origIndex = usePrev ? table.getIndex().getPrevIndex() : table.getIndex();
-            final Index resIndex = usePrev ? result.getIndex().getPrevIndex() : result.getIndex();
-            final int numElements = origIndex.intSize();
+            final TrackingMutableRowSet origRowSet = usePrev ? table.getIndex().getPrevIndex() : table.getIndex();
+            final TrackingMutableRowSet resRowSet = usePrev ? result.getIndex().getPrevIndex() : result.getIndex();
+            final int numElements = origRowSet.intSize();
 
             // noinspection unchecked
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
             final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
             final IntChunk<? extends Attributes.Values> origContent = usePrev
-                    ? origCol.getPrevChunk(origContext, origIndex).asIntChunk()
-                    : origCol.getChunk(origContext, origIndex).asIntChunk();
+                    ? origCol.getPrevChunk(origContext, origRowSet).asIntChunk()
+                    : origCol.getChunk(origContext, origRowSet).asIntChunk();
 
             // noinspection unchecked
             final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
             final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
             final IntChunk<? extends Attributes.Values> resContent = usePrev
-                    ? resCol.getPrevChunk(resContext, resIndex).asIntChunk()
-                    : resCol.getChunk(resContext, resIndex).asIntChunk();
+                    ? resCol.getPrevChunk(resContext, resRowSet).asIntChunk()
+                    : resCol.getChunk(resContext, resRowSet).asIntChunk();
 
             Assert.assertEquals(numElements, origContent.size());
             Assert.assertEquals(3 * numElements, resContent.size());
@@ -1190,22 +1190,22 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
         final Consumer<Boolean> validate = (usePrev) -> {
-            final Index index = Index.FACTORY.getEmptyIndex();
+            final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
             final int numElements = 1024;
 
             // noinspection unchecked
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
             final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
             final IntChunk<? extends Attributes.Values> origContent = usePrev
-                    ? origCol.getPrevChunk(origContext, index).asIntChunk()
-                    : origCol.getChunk(origContext, index).asIntChunk();
+                    ? origCol.getPrevChunk(origContext, rowSet).asIntChunk()
+                    : origCol.getChunk(origContext, rowSet).asIntChunk();
 
             // noinspection unchecked
             final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
             final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
             final IntChunk<? extends Attributes.Values> resContent = usePrev
-                    ? resCol.getPrevChunk(resContext, index).asIntChunk()
-                    : resCol.getChunk(resContext, index).asIntChunk();
+                    ? resCol.getPrevChunk(resContext, rowSet).asIntChunk()
+                    : resCol.getChunk(resContext, rowSet).asIntChunk();
 
             Assert.assertEquals(0, origContent.size());
             Assert.assertEquals(0, resContent.size());
@@ -1256,7 +1256,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int firstNextIdx = (step * stepSize) + 1;
             final int lastNextIdx = ((step + 1) * stepSize);
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final Index addIndex = Index.FACTORY.getIndexByRange(firstNextIdx, lastNextIdx);
+                final TrackingMutableRowSet addRowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(firstNextIdx, lastNextIdx);
 
                 final int[] addInts = new int[stepSize];
                 final char[] addChars = new char[stepSize];
@@ -1266,8 +1266,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                     addChars[ii] = (char) ('a' + ((firstNextIdx + ii) % 26));
                 }
 
-                addToTable(testRefreshingTable, addIndex, intCol("IntCol", addInts), charCol("CharCol", addChars));
-                testRefreshingTable.notifyListeners(addIndex, i(), i());
+                addToTable(testRefreshingTable, addRowSet, intCol("IntCol", addInts), charCol("CharCol", addChars));
+                testRefreshingTable.notifyListeners(addRowSet, i(), i());
             });
 
             final long end = System.currentTimeMillis();

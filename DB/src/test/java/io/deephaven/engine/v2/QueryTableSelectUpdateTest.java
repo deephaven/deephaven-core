@@ -18,10 +18,7 @@ import io.deephaven.engine.v2.select.FormulaCompilationException;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongSparseArraySource;
-import io.deephaven.engine.v2.utils.Index;
-import io.deephaven.engine.v2.utils.RuntimeMemory;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -265,11 +262,11 @@ public class QueryTableSelectUpdateTest {
                 super("Update RefreshProcedure");
             }
 
-            Index added, removed, modified;
+            TrackingMutableRowSet added, removed, modified;
             Throwable exception = null;
 
             @Override
-            public void onUpdate(Index added, Index removed, Index modified) {
+            public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
                 this.added = added.clone();
                 this.removed = removed.clone();
                 this.modified = modified.clone();
@@ -347,13 +344,13 @@ public class QueryTableSelectUpdateTest {
                             + resultSizeChange);
                 }
             } else {
-                Index sourceAddedPositions = sourceTable.getIndex().invert(listener1.added);
-                Index sourceRemovedPositions = sourceTable.getIndex().getPrevIndex().invert(listener1.removed);
-                Index sourceModifiedPositions = sourceTable.getIndex().invert(listener1.modified);
+                TrackingMutableRowSet sourceAddedPositions = sourceTable.getIndex().invert(listener1.added);
+                TrackingMutableRowSet sourceRemovedPositions = sourceTable.getIndex().getPrevIndex().invert(listener1.removed);
+                TrackingMutableRowSet sourceModifiedPositions = sourceTable.getIndex().invert(listener1.modified);
 
-                Index resultAddedPositions = originalValue.getIndex().invert(listener2.added);
-                Index resultRemovedPositions = originalValue.getIndex().getPrevIndex().invert(listener2.removed);
-                Index resultModifiedPositions = originalValue.getIndex().invert(listener2.modified);
+                TrackingMutableRowSet resultAddedPositions = originalValue.getIndex().invert(listener2.added);
+                TrackingMutableRowSet resultRemovedPositions = originalValue.getIndex().getPrevIndex().invert(listener2.removed);
+                TrackingMutableRowSet resultModifiedPositions = originalValue.getIndex().invert(listener2.modified);
 
                 if (!sourceAddedPositions.equals(resultAddedPositions)) {
                     issues.add("Source Positions Added, " + sourceAddedPositions
@@ -369,22 +366,22 @@ public class QueryTableSelectUpdateTest {
                 }
             }
 
-            Index indexToCheck = listener1.added.clone();
-            indexToCheck.insert(listener1.modified);
-            Index checkInvert = sourceTable.getIndex().invert(indexToCheck);
+            TrackingMutableRowSet rowSetToCheck = listener1.added.clone();
+            rowSetToCheck.insert(listener1.modified);
+            TrackingMutableRowSet checkInvert = sourceTable.getIndex().invert(rowSetToCheck);
 
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Positions to validate: " + checkInvert);
 
-                final Index.SequentialBuilder originalBuilder = Index.FACTORY.getSequentialBuilder();
-                final Index.SequentialBuilder recomputedBuilder = Index.FACTORY.getSequentialBuilder();
+                final SequentialRowSetBuilder originalBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                final SequentialRowSetBuilder recomputedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
                 checkInvert.forEach(x -> originalBuilder.appendKey(originalValue.getIndex().get(x)));
                 checkInvert.forEach(x -> recomputedBuilder.appendKey(recomputedValue.getIndex().get(x)));
 
                 System.out.println("Original Sub Table: " + checkInvert);
-                TableTools.showWithIndex(originalValue.getSubTable(originalBuilder.getIndex()));
+                TableTools.showWithIndex(originalValue.getSubTable(originalBuilder.build()));
                 System.out.println("Recomputed Sub Table: " + checkInvert);
-                TableTools.showWithIndex(recomputedValue.getSubTable(recomputedBuilder.getIndex()));
+                TableTools.showWithIndex(recomputedValue.getSubTable(recomputedBuilder.build()));
             }
 
             Map<String, ? extends ColumnSource<?>> originalColumns = originalValue.getColumnSourceMap();
@@ -395,7 +392,7 @@ public class QueryTableSelectUpdateTest {
                 ColumnSource<?> originalColumnSource = originalColumns.get(columnName);
                 ColumnSource<?> recomputedColumn = stringColumnSourceEntry.getValue();
 
-                for (Index.Iterator iterator = checkInvert.iterator(); iterator.hasNext();) {
+                for (TrackingMutableRowSet.Iterator iterator = checkInvert.iterator(); iterator.hasNext();) {
                     int position = (int) iterator.nextLong();
                     long originalKey = originalValue.getIndex().get(position);
                     long recomputedKey = recomputedValue.getIndex().get(position);
@@ -450,9 +447,9 @@ public class QueryTableSelectUpdateTest {
     private void doTestSparseRedirectedUpdate() {
         System.gc();
 
-        final QueryTable leftTable = new QueryTable(Index.FACTORY.getFlatIndex(99), Collections.emptyMap());
+        final QueryTable leftTable = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(99), Collections.emptyMap());
         leftTable.setRefreshing(true);
-        final QueryTable rightTable = new QueryTable(Index.FACTORY.getFlatIndex(1), Collections.emptyMap());
+        final QueryTable rightTable = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(1), Collections.emptyMap());
         rightTable.setRefreshing(true);
 
         final Table leftWithKey = leftTable.updateView("Key=`a`", "LI=ii");
@@ -474,11 +471,11 @@ public class QueryTableSelectUpdateTest {
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long keyToAdd = fstep + 1;
-                final Index addedIndex = i(keyToAdd);
-                final Index removedIndex = (fstep % 2 == 0) ? i(fstep) : i();
-                addToTable(rightTable, addedIndex);
-                removeRows(rightTable, removedIndex);
-                rightTable.notifyListeners(addedIndex, removedIndex, i());
+                final TrackingMutableRowSet addedRowSet = i(keyToAdd);
+                final TrackingMutableRowSet removedRowSet = (fstep % 2 == 0) ? i(fstep) : i();
+                addToTable(rightTable, addedRowSet);
+                removeRows(rightTable, removedRowSet);
+                rightTable.notifyListeners(addedRowSet, removedRowSet, i());
 
                 if (fstep % 100 == 99) {
                     addToTable(leftTable, i(fstep));
@@ -787,10 +784,10 @@ public class QueryTableSelectUpdateTest {
         final Table x2s = x2.select();
         assertTableEquals(x2, x2s);
         TableTools.showWithIndex(x2s);
-        // overhead is only 5%, so we expect a pass-through index
+        // overhead is only 5%, so we expect a pass-through rowSet
         TestCase.assertSame(x2s.getIndex(), x2.getIndex());
 
-        // simulation of two partitions, we want to keep the index
+        // simulation of two partitions, we want to keep the rowSet
         final Table x3 = source.where("A < 250000 || A > 750000");
         final Table x3s = x3.select();
         assertTableEquals(x3, x3s);
@@ -955,13 +952,13 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testSparseSelectWideIndex() {
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         final int[] intVals = new int[63];
         for (int ii = 0; ii < 63; ii++) {
             builder.appendKey(1L << ii);
             intVals[ii] = ii;
         }
-        final QueryTable table = TstUtils.testRefreshingTable(builder.getIndex(), intCol("Value", intVals));
+        final QueryTable table = TstUtils.testRefreshingTable(builder.build(), intCol("Value", intVals));
         final Table selected = SparseSelect.sparseSelect(table);
         final String diff = TableTools.diff(selected, table, 10);
         TestCase.assertEquals("", diff);
@@ -970,7 +967,7 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testSparseSelectSkipMemoryColumns() {
         final int[] intVals = {1, 2, 3, 4, 5};
-        final Table table = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(5), intCol("Value", intVals))
+        final Table table = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(5), intCol("Value", intVals))
                 .update("V2=Value*2");
         final Table selected = SparseSelect.sparseSelect(table);
         assertTableEquals(table, selected);

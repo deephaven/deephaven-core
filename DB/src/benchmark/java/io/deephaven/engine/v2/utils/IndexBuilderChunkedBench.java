@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 10, time = 1)
 @Fork(value = 1)
 public class IndexBuilderChunkedBench {
-    private Index ix = null;
+    private TrackingMutableRowSet ix = null;
     private static final int chunkSz = 1024;
     private WritableLongChunk<Attributes.OrderedRowKeys> indicesChunk = null;
     private WritableLongChunk<Attributes.OrderedRowKeyRanges> rangesChunk = null;
@@ -32,37 +32,37 @@ public class IndexBuilderChunkedBench {
 
     @Benchmark
     public void buildOddIndexViaIndividualValues(final Blackhole bh) {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (long v = 1; v <= maxOddValue; v += 2) {
             b.appendKey(v);
         }
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         bh.consume(ix);
     }
 
     @Benchmark
     public void buildOddIndexViaChunks(final Blackhole bh) {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         int ci = 0;
         indicesChunk.setSize(chunkSz);
         for (long v = 1; v <= maxOddValue; v += 2) {
             indicesChunk.set(ci++, v);
             if (ci == chunkSz) {
-                b.appendOrderedKeyIndicesChunk(indicesChunk);
+                b.appendOrderedRowKeysChunk(indicesChunk);
                 ci = 0;
             }
         }
         if (ci > 0) {
             indicesChunk.setSize(ci);
-            b.appendOrderedKeyIndicesChunk(indicesChunk);
+            b.appendOrderedRowKeysChunk(indicesChunk);
         }
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         bh.consume(ix);
     }
 
     @Benchmark
     public void buildOddIndexViaIterator(final Blackhole bh) {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         b.appendKeys(new PrimitiveIterator.OfLong() {
             long v = 1;
 
@@ -78,44 +78,44 @@ public class IndexBuilderChunkedBench {
                 return r;
             }
         });
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         bh.consume(ix);
     }
 
     @Benchmark
     public void buildOddIndexViaRanges(final Blackhole bh) {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (long v = 1; v < maxOddValue; v += 4) {
             b.appendRange(v, v + 2);
         }
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         bh.consume(ix);
     }
 
     @Benchmark
     public void buildOddIndexViaRangeChunks(final Blackhole bh) {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         int ci = 0;
         rangesChunk.setSize(chunkSz);
         for (long v = 1; v < maxOddValue; v += 4) {
             rangesChunk.set(ci++, v);
             rangesChunk.set(ci++, v + 2);
             if (ci == chunkSz) {
-                b.appendOrderedKeyRangesChunk(rangesChunk);
+                b.appendOrderedRowKeyRangesChunk(rangesChunk);
                 ci = 0;
             }
         }
         if (ci > 0) {
             rangesChunk.setSize(ci);
-            b.appendOrderedKeyRangesChunk(rangesChunk);
+            b.appendOrderedRowKeyRangesChunk(rangesChunk);
         }
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         bh.consume(ix);
     }
 
     @Benchmark
     public void buildOddIndexViaRangeIterator(final Blackhole bh) {
-        final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
+        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         b.appendRanges(new LongRangeIterator() {
             long v = -3;
 
@@ -139,7 +139,7 @@ public class IndexBuilderChunkedBench {
                 return v + 2;
             }
         });
-        final Index ix = b.getIndex();
+        final TrackingMutableRowSet ix = b.build();
         bh.consume(ix);
     }
 

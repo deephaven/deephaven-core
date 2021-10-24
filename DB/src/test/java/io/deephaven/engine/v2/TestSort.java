@@ -18,7 +18,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -618,7 +618,7 @@ public class TestSort extends BaseArrayTestCase {
         }
         columns.put("Sentinel", ArrayBackedColumnSource.getMemoryColumnSourceUntyped(sentinels));
 
-        return new QueryTable(Index.FACTORY.getIndexByRange(0, size - 1), columns);
+        return new QueryTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, size - 1), columns);
     }
 
     private Comparable[][] createBoxedData(Table source, int ncols, int size) {

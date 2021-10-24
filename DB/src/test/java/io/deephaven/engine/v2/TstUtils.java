@@ -42,15 +42,15 @@ public class TstUtils {
         return TableTools.col(name, data);
     }
 
-    public static Index i(long... keys) {
-        return Index.FACTORY.getIndexByValues(keys);
+    public static TrackingMutableRowSet i(long... keys) {
+        return TrackingMutableRowSet.FACTORY.getRowSetByValues(keys);
     }
 
-    public static Index ir(final long firstKey, final long lastKey) {
-        return Index.FACTORY.getIndexByRange(firstKey, lastKey);
+    public static TrackingMutableRowSet ir(final long firstKey, final long lastKey) {
+        return TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey);
     }
 
-    public static void addToTable(final Table table, final Index index, final ColumnHolder... columnHolders) {
+    public static void addToTable(final Table table, final TrackingMutableRowSet rowSet, final ColumnHolder... columnHolders) {
         Require.requirement(table.isLive(), "table.isLive()");
         if (table instanceof DynamicTable) {
             Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
@@ -62,19 +62,19 @@ public class TstUtils {
             }
             final ColumnSource columnSource = table.getColumnSource(columnHolder.name);
             final Object[] boxedArray = ArrayUtils.getBoxedArray(columnHolder.data);
-            final Index colIndex = (boxedArray.length == 0) ? TstUtils.i() : index;
-            if (colIndex.size() != boxedArray.length) {
-                throw new IllegalArgumentException(columnHolder.name + ": Invalid data addition: index="
-                        + colIndex.size() + ", boxedArray=" + boxedArray.length);
+            final TrackingMutableRowSet colRowSet = (boxedArray.length == 0) ? TstUtils.i() : rowSet;
+            if (colRowSet.size() != boxedArray.length) {
+                throw new IllegalArgumentException(columnHolder.name + ": Invalid data addition: rowSet="
+                        + colRowSet.size() + ", boxedArray=" + boxedArray.length);
             }
 
-            if (colIndex.size() == 0) {
+            if (colRowSet.size() == 0) {
                 continue;
             }
 
             if (columnSource instanceof DateTimeTreeMapSource && columnHolder.dataType == long.class) {
                 final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource) columnSource;
-                treeMapSource.add(colIndex, (Long[]) boxedArray);
+                treeMapSource.add(colRowSet, (Long[]) boxedArray);
             } else if (columnSource.getType() != columnHolder.dataType) {
                 throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()="
                         + columnSource.getType() + ", columnHolder=" + columnHolder.dataType);
@@ -83,10 +83,10 @@ public class TstUtils {
             if (columnSource instanceof TreeMapSource) {
                 // noinspection unchecked
                 final TreeMapSource<Object> treeMapSource = (TreeMapSource<Object>) columnSource;
-                treeMapSource.add(colIndex, boxedArray);
+                treeMapSource.add(colRowSet, boxedArray);
             } else if (columnSource instanceof DateTimeTreeMapSource) {
                 final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource) columnSource;
-                treeMapSource.add(colIndex, (Long[]) boxedArray);
+                treeMapSource.add(colRowSet, (Long[]) boxedArray);
             }
         }
 
@@ -96,27 +96,27 @@ public class TstUtils {
             throw new IllegalStateException("Not all columns were populated, missing " + expected);
         }
 
-        table.getIndex().insert(index);
+        table.getIndex().insert(rowSet);
         if (table.isFlat()) {
-            Assert.assertion(table.getIndex().isFlat(), "table.getIndex().isFlat()", table.getIndex(),
-                    "table.getIndex()", index, "index");
+            Assert.assertion(table.getIndex().isFlat(), "table.build().isFlat()", table.getIndex(),
+                    "table.build()", rowSet, "rowSet");
         }
     }
 
-    public static void removeRows(Table table, Index index) {
+    public static void removeRows(Table table, TrackingMutableRowSet rowSet) {
         Require.requirement(table.isLive(), "table.isLive()");
         if (table instanceof DynamicTable) {
             Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
         }
-        table.getIndex().remove(index);
+        table.getIndex().remove(rowSet);
         if (table.isFlat()) {
-            Assert.assertion(table.getIndex().isFlat(), "table.getIndex().isFlat()", table.getIndex(),
-                    "table.getIndex()", index, "index");
+            Assert.assertion(table.getIndex().isFlat(), "table.build().isFlat()", table.getIndex(),
+                    "table.build()", rowSet, "rowSet");
         }
         for (ColumnSource columnSource : table.getColumnSources()) {
             if (columnSource instanceof TreeMapSource) {
                 final TreeMapSource treeMapSource = (TreeMapSource) columnSource;
-                treeMapSource.remove(index);
+                treeMapSource.remove(rowSet);
             }
         }
     }
@@ -158,14 +158,14 @@ public class TstUtils {
         return c(colName, data);
     }
 
-    public static Index getRandomIndex(long minValue, int size, Random random) {
-        final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+    public static TrackingMutableRowSet getRandomIndex(long minValue, int size, Random random) {
+        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         long previous = minValue;
         for (int i = 0; i < size; i++) {
             previous += (1 + random.nextInt(100));
             builder.addKey(previous);
         }
-        return builder.getIndex();
+        return builder.build();
     }
 
     public static ColumnHolder getRandomIntCol(String colName, int size, Random random) {
@@ -369,44 +369,44 @@ public class TstUtils {
         }
     }
 
-    static Index getInitialIndex(int size, Random random) {
-        final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+    static TrackingMutableRowSet getInitialIndex(int size, Random random) {
+        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         long firstKey = 10;
         for (int i = 0; i < size; i++) {
             builder.addKey(firstKey = firstKey + random.nextInt(3));
         }
-        return builder.getIndex();
+        return builder.build();
     }
 
-    public static Index selectSubIndexSet(int size, Index sourceIndex, Random random) {
-        Assert.assertion(size <= sourceIndex.size(), "size <= sourceIndex.size()", size, "size", sourceIndex,
-                "sourceIndex.size()");
+    public static TrackingMutableRowSet selectSubIndexSet(int size, TrackingMutableRowSet sourceRowSet, Random random) {
+        Assert.assertion(size <= sourceRowSet.size(), "size <= sourceRowSet.size()", size, "size", sourceRowSet,
+                "sourceRowSet.size()");
 
-        // generate an array that is the size of our index, then shuffle it, and those are the positions we'll pick
-        final Integer[] positions = new Integer[(int) sourceIndex.size()];
+        // generate an array that is the size of our rowSet, then shuffle it, and those are the positions we'll pick
+        final Integer[] positions = new Integer[(int) sourceRowSet.size()];
         for (int ii = 0; ii < positions.length; ++ii) {
             positions[ii] = ii;
         }
         Collections.shuffle(Arrays.asList(positions), random);
 
-        // now create an index with each of our selected positions
-        final IndexBuilder resultBuilder = Index.FACTORY.getRandomBuilder();
+        // now create an rowSet with each of our selected positions
+        final RowSetBuilder resultBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
         for (int ii = 0; ii < size; ++ii) {
-            resultBuilder.addKey(sourceIndex.get(positions[ii]));
+            resultBuilder.addKey(sourceRowSet.get(positions[ii]));
         }
 
-        return resultBuilder.getIndex();
+        return resultBuilder.build();
     }
 
-    public static Index newIndex(int targetSize, Index sourceIndex, Random random) {
-        final long maxKey = (sourceIndex.size() == 0 ? 0 : sourceIndex.lastRowKey());
-        final long emptySlots = maxKey - sourceIndex.size();
+    public static TrackingMutableRowSet newIndex(int targetSize, TrackingMutableRowSet sourceRowSet, Random random) {
+        final long maxKey = (sourceRowSet.size() == 0 ? 0 : sourceRowSet.lastRowKey());
+        final long emptySlots = maxKey - sourceRowSet.size();
         final int slotsToFill = Math.min(
                 Math.min((int) (Math.max(0.0, ((random.nextGaussian() / 0.1) + 0.9)) * emptySlots), targetSize),
                 (int) emptySlots);
 
-        final Index fillIn =
-                selectSubIndexSet(slotsToFill, Index.FACTORY.getIndexByRange(0, maxKey).minus(sourceIndex), random);
+        final TrackingMutableRowSet fillIn =
+                selectSubIndexSet(slotsToFill, TrackingMutableRowSet.FACTORY.getRowSetByRange(0, maxKey).minus(sourceRowSet), random);
 
         final int endSlots = targetSize - (int) fillIn.size();
 
@@ -414,8 +414,8 @@ public class TstUtils {
         density = Math.max(density, 0.1);
         density = Math.min(density, 1);
         final long rangeSize = (long) ((1.0 / density) * endSlots);
-        final Index expansion =
-                selectSubIndexSet(endSlots, Index.FACTORY.getIndexByRange(maxKey + 1, maxKey + rangeSize + 1), random);
+        final TrackingMutableRowSet expansion =
+                selectSubIndexSet(endSlots, TrackingMutableRowSet.FACTORY.getRowSetByRange(maxKey + 1, maxKey + rangeSize + 1), random);
 
         fillIn.insert(expansion);
 
@@ -475,9 +475,9 @@ public class TstUtils {
     }
 
     public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo[] columnInfos) {
-        final Index index = getInitialIndex(size, random);
+        final TrackingMutableRowSet rowSet = getInitialIndex(size, random);
         for (ColumnInfo columnInfo : columnInfos) {
-            columnInfo.populateMap(index, random);
+            columnInfo.populateMap(rowSet, random);
         }
         final ColumnHolder[] sources = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnInfos.length; i++) {
@@ -485,84 +485,84 @@ public class TstUtils {
 
         }
         if (refreshing) {
-            return testRefreshingTable(index, sources);
+            return testRefreshingTable(rowSet, sources);
         } else {
-            return testTable(index, sources);
+            return testTable(rowSet, sources);
         }
     }
 
     public static QueryTable testTable(ColumnHolder... columnHolders) {
         final Object[] boxedData = ArrayUtils.getBoxedArray(columnHolders[0].data);
-        final Index index = Index.FACTORY.getFlatIndex(boxedData.length);
-        return testTable(index, columnHolders);
+        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(boxedData.length);
+        return testTable(rowSet, columnHolders);
     }
 
-    public static QueryTable testTable(Index index, ColumnHolder... columnHolders) {
+    public static QueryTable testTable(TrackingMutableRowSet rowSet, ColumnHolder... columnHolders) {
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
-            columns.put(columnHolder.name, getTreeMapColumnSource(index, columnHolder));
+            columns.put(columnHolder.name, getTreeMapColumnSource(rowSet, columnHolder));
         }
-        return new QueryTable(index, columns);
+        return new QueryTable(rowSet, columns);
     }
 
-    public static QueryTable testRefreshingTable(Index index, ColumnHolder... columnHolders) {
-        final QueryTable queryTable = testTable(index, columnHolders);
+    public static QueryTable testRefreshingTable(TrackingMutableRowSet rowSet, ColumnHolder... columnHolders) {
+        final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
         return queryTable;
     }
 
-    public static QueryTable testFlatRefreshingTable(Index index, ColumnHolder... columnHolders) {
-        Assert.assertion(index.isFlat(), "index.isFlat()", index, "index");
-        final QueryTable queryTable = testTable(index, columnHolders);
+    public static QueryTable testFlatRefreshingTable(TrackingMutableRowSet rowSet, ColumnHolder... columnHolders) {
+        Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
+        final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
         queryTable.setFlat();
         return queryTable;
     }
 
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
-        final Index index = columnHolders.length == 0 ? Index.FACTORY.getEmptyIndex()
-                : Index.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));
+        final TrackingMutableRowSet rowSet = columnHolders.length == 0 ? TrackingMutableRowSet.FACTORY.getEmptyRowSet()
+                : TrackingMutableRowSet.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
-            columns.put(columnHolder.name, getTreeMapColumnSource(index, columnHolder));
+            columns.put(columnHolder.name, getTreeMapColumnSource(rowSet, columnHolder));
         }
-        final QueryTable queryTable = new QueryTable(index, columns);
+        final QueryTable queryTable = new QueryTable(rowSet, columns);
         queryTable.setRefreshing(true);
         return queryTable;
     }
 
-    public static ColumnSource getTreeMapColumnSource(Index index, ColumnHolder columnHolder) {
+    public static ColumnSource getTreeMapColumnSource(TrackingMutableRowSet rowSet, ColumnHolder columnHolder) {
         final Object[] boxedData = ArrayUtils.getBoxedArray(columnHolder.data);
 
         final AbstractColumnSource result;
         if (columnHolder instanceof ImmutableColumnHolder) {
             // noinspection unchecked,rawtypes
-            result = new ImmutableTreeMapSource<>(columnHolder.dataType, index, boxedData);
+            result = new ImmutableTreeMapSource<>(columnHolder.dataType, rowSet, boxedData);
         } else if (columnHolder.dataType.equals(DBDateTime.class) && columnHolder.data instanceof long[]) {
-            result = new DateTimeTreeMapSource(index, (long[]) columnHolder.data);
+            result = new DateTimeTreeMapSource(rowSet, (long[]) columnHolder.data);
         } else {
             // noinspection unchecked,rawtypes
-            result = new TreeMapSource<>(columnHolder.dataType, index, boxedData);
+            result = new TreeMapSource<>(columnHolder.dataType, rowSet, boxedData);
         }
 
         if (columnHolder.grouped) {
             // noinspection unchecked
-            result.setGroupToRange(result.getValuesMapping(index));
+            result.setGroupToRange(result.getValuesMapping(rowSet));
         }
         return result;
     }
 
     public static Table prevTableColumnSources(Table table) {
-        final Index index = table.getIndex().getPrevIndex();
+        final TrackingMutableRowSet rowSet = table.getIndex().getPrevIndex();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
             columnSourceMap.put(k, new PrevColumnSource<>(cs));
         });
-        return new QueryTable(index, columnSourceMap);
+        return new QueryTable(rowSet, columnSourceMap);
     }
 
     public static Table prevTable(Table table) {
-        final Index index = table.getIndex().getPrevIndex();
+        final TrackingMutableRowSet rowSet = table.getIndex().getPrevIndex();
 
         final List<ColumnHolder<?>> cols = new ArrayList<>();
         for (Map.Entry<String, ? extends ColumnSource<?>> mapEntry : table.getColumnSourceMap().entrySet()) {
@@ -570,7 +570,7 @@ public class TstUtils {
             final ColumnSource<?> columnSource = mapEntry.getValue();
             final List<Object> data = new ArrayList<>();
 
-            for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
                 final long key = it.nextLong();
                 final Object item = columnSource.getPrev(key);
                 data.add(item);
@@ -631,12 +631,12 @@ public class TstUtils {
     }
 
     public interface Generator<T, U> {
-        TreeMap<Long, U> populateMap(TreeMap<Long, U> values, Index toAdd, Random random);
+        TreeMap<Long, U> populateMap(TreeMap<Long, U> values, TrackingMutableRowSet toAdd, Random random);
 
         /**
          * Called after a key has been removed from the map.
          *
-         * @param key the index key that was removed
+         * @param key the rowSet key that was removed
          * @param removed the value that was removed
          */
         default void onRemove(long key, U removed) {}
@@ -650,7 +650,7 @@ public class TstUtils {
 
     public static abstract class AbstractReinterpretedGenerator<T, U> implements Generator<T, U> {
         @Override
-        public TreeMap<Long, U> populateMap(final TreeMap<Long, U> values, final Index toAdd, final Random random) {
+        public TreeMap<Long, U> populateMap(final TreeMap<Long, U> values, final TrackingMutableRowSet toAdd, final Random random) {
             final TreeMap<Long, U> result = new TreeMap<>();
             toAdd.forAllLongs((final long nextKey) -> {
                 final U value = nextValue(values, nextKey, random);
@@ -1508,16 +1508,16 @@ public class TstUtils {
     }
 
     static abstract class AbstractSortedGenerator<T extends Comparable<? super T>> implements Generator<T, T> {
-        public TreeMap<Long, T> populateMap(TreeMap<Long, T> values, Index toAdd, Random random) {
+        public TreeMap<Long, T> populateMap(TreeMap<Long, T> values, TrackingMutableRowSet toAdd, Random random) {
             final TreeMap<Long, T> result = new TreeMap<>();
             if (toAdd.size() == 0)
                 return result;
 
-            for (final Index.Iterator it = toAdd.iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = toAdd.iterator(); it.hasNext();) {
                 values.remove(it.nextLong());
             }
 
-            final Index.Iterator iterator = toAdd.iterator();
+            final TrackingMutableRowSet.Iterator iterator = toAdd.iterator();
             long firstKey = iterator.nextLong();
             long lastKey = firstKey;
             final Map.Entry<Long, T> firstFloorEntry = values.floorEntry(firstKey);
@@ -1536,7 +1536,7 @@ public class TstUtils {
 
                 if (!ceiling.equals(currentCeiling) || !floor.equals(currentFloor)) {
                     // we're past the end of the last run so we need to generate the values for the map
-                    generateValues(toAdd.intersect(Index.FACTORY.getIndexByRange(firstKey, lastKey)), currentFloor,
+                    generateValues(toAdd.intersect(TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey)), currentFloor,
                             currentCeiling, result, random);
                     firstKey = nextKey;
                     currentFloor = floor;
@@ -1545,7 +1545,7 @@ public class TstUtils {
                 lastKey = nextKey;
             }
 
-            generateValues(toAdd.intersect(Index.FACTORY.getIndexByRange(firstKey, lastKey)), currentFloor,
+            generateValues(toAdd.intersect(TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey)), currentFloor,
                     currentCeiling, result, random);
 
             values.putAll(result);
@@ -1569,7 +1569,7 @@ public class TstUtils {
             }
         }
 
-        private void generateValues(Index toadd, T floor, T ceiling, TreeMap<Long, T> result, Random random) {
+        private void generateValues(TrackingMutableRowSet toadd, T floor, T ceiling, TreeMap<Long, T> result, Random random) {
             final int count = (int) toadd.size();
             // noinspection unchecked
             final T[] values = (T[]) Array.newInstance(getType(), count);
@@ -1578,7 +1578,7 @@ public class TstUtils {
             }
             Arrays.sort(values);
             int ii = 0;
-            for (final Index.Iterator it = toadd.iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = toadd.iterator(); it.hasNext();) {
                 result.put(it.nextLong(), values[ii++]);
             }
         }
@@ -1593,18 +1593,18 @@ public class TstUtils {
     static abstract class AbstractUniqueGenerator<T> implements Generator<T, T> {
         final Set<T> generatedValues = new HashSet<>();
 
-        public TreeMap<Long, T> populateMap(TreeMap<Long, T> values, Index toAdd, Random random) {
+        public TreeMap<Long, T> populateMap(TreeMap<Long, T> values, TrackingMutableRowSet toAdd, Random random) {
             final TreeMap<Long, T> result = new TreeMap<>();
             if (toAdd.size() == 0)
                 return result;
 
-            for (final Index.Iterator it = toAdd.iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = toAdd.iterator(); it.hasNext();) {
                 values.remove(it.nextLong());
             }
 
             final HashSet<T> usedValues = new HashSet<>(values.values());
 
-            for (final Index.Iterator iterator = toAdd.iterator(); iterator.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator iterator = toAdd.iterator(); iterator.hasNext();) {
                 final long nextKey = iterator.nextLong();
                 final T value = getNextUniqueValue(usedValues, values, nextKey, random);
                 usedValues.add(value);
@@ -1909,20 +1909,20 @@ public class TstUtils {
         }
 
         @Override
-        public TreeMap<Long, T> populateMap(TreeMap<Long, T> values, Index toAdd, Random random) {
+        public TreeMap<Long, T> populateMap(TreeMap<Long, T> values, TrackingMutableRowSet toAdd, Random random) {
             final TreeMap<Long, T> result = new TreeMap<>();
             if (toAdd.empty()) {
                 return result;
             }
 
-            final Index.SequentialBuilder[] builders = new Index.SequentialBuilder[generators.size()];
+            final SequentialRowSetBuilder[] builders = new SequentialRowSetBuilder[generators.size()];
             for (int ii = 0; ii < builders.length; ++ii) {
-                builders[ii] = Index.FACTORY.getSequentialBuilder();
+                builders[ii] = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
             }
             toAdd.forAllLongs((long ll) -> builders[pickGenerator(random)].appendKey(ll));
 
             for (int ii = 0; ii < builders.length; ++ii) {
-                final Index toAddWithGenerator = builders[ii].getIndex();
+                final TrackingMutableRowSet toAddWithGenerator = builders[ii].build();
                 result.putAll(generators.get(ii).populateMap(values, toAddWithGenerator, random));
             }
 
@@ -2029,8 +2029,8 @@ public class TstUtils {
             this.grouped = grouped;
         }
 
-        TreeMap<Long, U> populateMap(Index index, Random random) {
-            return generator.populateMap(data, index, random);
+        TreeMap<Long, U> populateMap(TrackingMutableRowSet rowSet, Random random) {
+            return generator.populateMap(data, rowSet, random);
         }
 
         @SuppressWarnings("unchecked")
@@ -2062,7 +2062,7 @@ public class TstUtils {
             data.put(to, movedValue);
         }
 
-        ColumnHolder populateMapAndC(Index keysToModify, Random random) {
+        ColumnHolder populateMapAndC(TrackingMutableRowSet keysToModify, Random random) {
             final Collection<U> newValues = populateMap(keysToModify, random).values();
             // noinspection unchecked
             final U[] valueArray = newValues.toArray((U[]) Array.newInstance(dataType, newValues.size()));
@@ -2138,11 +2138,11 @@ public class TstUtils {
         }
     }
 
-    public static void assertIndexEquals(@NotNull final Index expected, @NotNull final Index actual) {
+    public static void assertIndexEquals(@NotNull final TrackingMutableRowSet expected, @NotNull final TrackingMutableRowSet actual) {
         try {
             TestCase.assertEquals(expected, actual);
         } catch (AssertionFailedError error) {
-            System.err.println("Index equality check failed:"
+            System.err.println("TrackingMutableRowSet equality check failed:"
                     + "\n\texpected: " + expected.toString()
                     + "\n]tactual: " + actual.toString()
                     + "\n]terror: " + error);

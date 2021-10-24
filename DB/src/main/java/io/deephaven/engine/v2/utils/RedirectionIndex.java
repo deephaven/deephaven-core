@@ -51,7 +51,7 @@ public interface RedirectionIndex {
      *
      * @param fillContext the RedirectionIndex FillContext
      * @param mappedKeysOut the result chunk
-     * @param keysToMap the keys to lookup in this redirection index
+     * @param keysToMap the keys to lookup in this redirection rowSet
      */
     default void fillChunk(
             @NotNull final FillContext fillContext,
@@ -98,7 +98,7 @@ public interface RedirectionIndex {
      * Like put, but we do not care about a return value.
      *
      * @param key the key to put
-     * @param index the inner value to insert into the redirection index
+     * @param index the inner value to insert into the redirection rowSet
      */
     default void putVoid(long key, long index) {
         put(key, index);
@@ -137,7 +137,7 @@ public interface RedirectionIndex {
         final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
         rowSequence.forAllLongs(key -> {
             final long index = valuesLongChunk.get(offset.intValue());
-            if (index == Index.NULL_KEY) {
+            if (index == TrackingMutableRowSet.NULL_ROW_KEY) {
                 removeVoid(key);
             } else {
                 putVoid(key, index);
@@ -149,10 +149,10 @@ public interface RedirectionIndex {
     /**
      * Update this RedirectionIndex according to the IndexShiftData.
      *
-     * @param tableIndex an Index to filter which rows should be shifted
+     * @param tableIndex an TrackingMutableRowSet to filter which rows should be shifted
      * @param shiftData the IndexShiftData for this update
      */
-    default void applyShift(final ReadOnlyIndex tableIndex, final IndexShiftData shiftData) {
+    default void applyShift(final RowSet tableIndex, final IndexShiftData shiftData) {
         RedirectionIndexUtilities.applyRedirectionShift(this, tableIndex, shiftData);
     }
 

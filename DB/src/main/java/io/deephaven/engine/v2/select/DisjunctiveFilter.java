@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.*;
 
@@ -34,15 +34,15 @@ public class DisjunctiveFilter extends ComposedFilter {
     }
 
     @Override
-    public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
-        Index matched = null;
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
+        TrackingMutableRowSet matched = null;
 
         for (SelectFilter filter : componentFilters) {
             if (Thread.interrupted()) {
                 throw new QueryCancellationException("interrupted while filtering");
             }
 
-            Index currentMapping = selection.clone();
+            TrackingMutableRowSet currentMapping = selection.clone();
 
             // If a previous clause has already matched a row, we do not need to re-evaluate it
             if (matched != null) {
@@ -64,7 +64,7 @@ public class DisjunctiveFilter extends ComposedFilter {
             }
         }
 
-        final Index result = matched == null ? selection.clone() : matched.clone();
+        final TrackingMutableRowSet result = matched == null ? selection.clone() : matched.clone();
         Assert.eq(result.size(), "result.size()", result.getPrevIndex().size(), "result.getPrevIndex.size()");
         return result;
     }

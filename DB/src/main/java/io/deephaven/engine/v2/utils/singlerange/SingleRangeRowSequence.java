@@ -63,8 +63,8 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
     }
 
     @Override
-    public Index asIndex() {
-        return new TreeIndex(SingleRange.make(rangeStart(), rangeEnd()));
+    public TrackingMutableRowSet asIndex() {
+        return new TrackingMutableRowSetImpl(SingleRange.make(rangeStart(), rangeEnd()));
     }
 
     @Override
@@ -109,7 +109,7 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
         @Override
         public long peekNextKey() {
             if (sizeLeft <= 0) {
-                return Index.NULL_KEY;
+                return TrackingMutableRowSet.NULL_ROW_KEY;
             }
             if (currEnd == -1) {
                 return currStart;

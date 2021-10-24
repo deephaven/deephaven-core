@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.locations.GroupingProvider;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -20,7 +20,7 @@ public interface DeferredGroupingColumnSource<DATA_TYPE> extends ColumnSource<DA
      * 
      * @param groupToRange The map
      */
-    void setGroupToRange(@Nullable Map<DATA_TYPE, Index> groupToRange);
+    void setGroupToRange(@Nullable Map<DATA_TYPE, TrackingMutableRowSet> groupToRange);
 
     /**
      * @return A provider previously set by

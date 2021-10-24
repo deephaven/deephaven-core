@@ -15,22 +15,22 @@ class CompletionAssertion {
     Node node
 
     /**
-     * The expected node type found for the given index.
+     * The expected node type found for the given rowSet.
      */
     Class<? extends Node> expectedType
 
     /**
-     * Text of rendered node expected before this index
+     * Text of rendered node expected before this rowSet
      */
     String expectedPrefix
 
     /**
-     * Text of rendered node expected after this index
+     * Text of rendered node expected after this rowSet
      */
     String expectedSuffix
 
     /**
-     * The cursor index that this assertion is testing
+     * The cursor rowSet that this assertion is testing
      */
     int index
 

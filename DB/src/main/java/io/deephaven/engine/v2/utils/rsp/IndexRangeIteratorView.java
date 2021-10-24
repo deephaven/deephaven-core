@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.rsp.container.SearchRangeIterator;
 import io.deephaven.engine.v2.utils.rsp.container.ContainerUtil;
 
 public class IndexRangeIteratorView implements SearchRangeIterator {
-    private Index.RangeIterator it;
+    private TrackingMutableRowSet.RangeIterator it;
     private final long offset;
     private final long rangesEnd;
     private long itStart;
@@ -18,7 +18,7 @@ public class IndexRangeIteratorView implements SearchRangeIterator {
     private boolean noMore;
     private boolean itFinished;
 
-    public IndexRangeIteratorView(final Index.RangeIterator it, final long offset, final long rangesEnd) {
+    public IndexRangeIteratorView(final TrackingMutableRowSet.RangeIterator it, final long offset, final long rangesEnd) {
         this.it = it;
         this.offset = offset;
         this.rangesEnd = rangesEnd;

@@ -213,9 +213,9 @@ public class IntegerPrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index index of the value to return.
+     * @param index rowSet of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the index is outside of the array's index range.
+     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
     static public int nth(int index, DbIntArray values){
         if(index < 0 || index >= values.size()){
@@ -228,9 +228,9 @@ public class IntegerPrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index index of the value to return.
+     * @param index rowSet of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the index is outside of the array's index range.
+     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
     static public int nth(int index, int[] values){
         return nth(index, array(values));

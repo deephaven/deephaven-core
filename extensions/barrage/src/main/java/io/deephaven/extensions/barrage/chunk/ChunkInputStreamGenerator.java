@@ -12,7 +12,7 @@ import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
@@ -124,13 +124,13 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     /**
-     * Get an input stream optionally position-space filtered using the provided index.
+     * Get an input stream optionally position-space filtered using the provided rowSet.
      *
      * @param options the serializable options for this subscription
      * @param subset if provided, is a position-space filter of source data
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
-    DrainableColumn getInputStream(final BarrageSubscriptionOptions options, @Nullable final Index subset) throws IOException;
+    DrainableColumn getInputStream(final BarrageSubscriptionOptions options, @Nullable final TrackingMutableRowSet subset) throws IOException;
 
     final class FieldNodeInfo {
         public final int numElements;

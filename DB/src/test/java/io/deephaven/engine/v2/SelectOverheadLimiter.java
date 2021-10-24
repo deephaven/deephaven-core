@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The table {@link Table#select} or {@link Table#update} and operations produce sparse sources as of Treasure. If you
- * have a sparse index, that means that you can have many blocks which only actually contain one or very few elements.
+ * have a sparse rowSet, that means that you can have many blocks which only actually contain one or very few elements.
  * The {@link #clampSelectOverhead(Table, double)} method is intended to precede a select or update operation, to limit
  * the amount of memory overhead allowed. For tables that are relatively dense, the original indices are preserved. If
  * the overhead exceeds the allowable factor, then the table is flattened before passing updates to select. Once a table
@@ -33,17 +33,17 @@ public class SelectOverheadLimiter {
         TLongIntHashMap blockReferences = new TLongIntHashMap();
         long size;
 
-        void addIndex(Index index) {
-            size += index.size();
-            index.forAllLongs(key -> {
+        void addIndex(TrackingMutableRowSet rowSet) {
+            size += rowSet.size();
+            rowSet.forAllLongs(key -> {
                 final long block = key >> SparseConstants.LOG_BLOCK_SIZE;
                 blockReferences.adjustOrPutValue(block, 1, 1);
             });
         }
 
-        void removeIndex(Index index) {
-            size -= index.size();
-            index.forAllLongs(key -> {
+        void removeIndex(TrackingMutableRowSet rowSet) {
+            size -= rowSet.size();
+            rowSet.forAllLongs(key -> {
                 final long block = key >> SparseConstants.LOG_BLOCK_SIZE;
                 final long newReferences = blockReferences.adjustOrPutValue(block, -1, -1);
                 Assert.geqZero(newReferences, "newReferences");
@@ -101,10 +101,10 @@ public class SelectOverheadLimiter {
 
         // we are refreshing, and within the permitted overhead
 
-        final Index index = input.getIndex().clone();
+        final TrackingMutableRowSet rowSet = input.getIndex().clone();
         final Map<String, SwitchColumnSource<?>> resultColumns = new LinkedHashMap<>();
         input.getColumnSourceMap().forEach((name, cs) -> resultColumns.put(name, new SwitchColumnSource<>(cs)));
-        final QueryTable result = new QueryTable(index, resultColumns);
+        final QueryTable result = new QueryTable(rowSet, resultColumns);
 
 
 
@@ -131,9 +131,9 @@ public class SelectOverheadLimiter {
             protected void process() {
                 if (flatResult != null) {
                     final ShiftAwareListener.Update upstream = flatRecorder.getUpdate();
-                    index.remove(upstream.removed);
-                    upstream.shifted.apply(index);
-                    index.insert(upstream.added);
+                    rowSet.remove(upstream.removed);
+                    upstream.shifted.apply(rowSet);
+                    rowSet.insert(upstream.added);
                     final ShiftAwareListener.Update copy = upstream.copy();
                     copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                     flatTransformer.clearAndTransform(upstream.modifiedColumnSet, copy.modifiedColumnSet);
@@ -143,11 +143,11 @@ public class SelectOverheadLimiter {
 
                 final ShiftAwareListener.Update upstream = inputRecorder.getValue().getUpdate();
                 overheadTracker.removeIndex(upstream.removed);
-                index.remove(upstream.removed);
-                upstream.shifted.forAllInIndex(index, overheadTracker);
-                upstream.shifted.apply(index);
+                rowSet.remove(upstream.removed);
+                upstream.shifted.forAllInIndex(rowSet, overheadTracker);
+                upstream.shifted.apply(rowSet);
                 overheadTracker.addIndex(upstream.added);
-                index.insert(upstream.added);
+                rowSet.insert(upstream.added);
 
                 if (overheadTracker.overhead() <= permittedOverhead) {
                     final ShiftAwareListener.Update copy = upstream.copy();
@@ -179,13 +179,13 @@ public class SelectOverheadLimiter {
 
                 resultColumns.forEach((name, scs) -> scs.setNewCurrent(flatResult.getColumnSource(name)));
 
-                index.clear();
-                index.insert(flatResult.getIndex());
+                rowSet.clear();
+                rowSet.insert(flatResult.getIndex());
 
                 final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
-                downstream.removed = index.getPrevIndex();
-                downstream.added = index.clone();
-                downstream.modified = Index.FACTORY.getEmptyIndex();
+                downstream.removed = rowSet.getPrevIndex();
+                downstream.added = rowSet.clone();
+                downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 downstream.shifted = IndexShiftData.EMPTY;
 

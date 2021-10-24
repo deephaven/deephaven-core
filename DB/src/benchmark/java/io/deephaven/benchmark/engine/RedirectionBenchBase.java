@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
@@ -107,7 +107,7 @@ public abstract class RedirectionBenchBase {
     }
 
     private Table doFill(final Table t, final Blackhole bh) {
-        final Index ix = t.getIndex();
+        final TrackingMutableRowSet ix = t.getIndex();
         try (final RowSequence.Iterator it = ix.getRowSequenceIterator()) {
             while (it.hasMore()) {
                 if (sharedContext != null) {

@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
@@ -32,14 +32,14 @@ public class DeferredColumnRegionObject<DATA_TYPE, ATTR extends Any>
     }
 
     @Override
-    public RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+    public RegionVisitResult supportsDictionaryFormat(@NotNull final RowSet.SearchIterator keysToVisit) {
         return getResultRegion().supportsDictionaryFormat(keysToVisit);
     }
 
     @Override
-    public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+    public boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                @NotNull final RowSequence.Iterator knownKeys,
-                                               @NotNull final Index.SequentialBuilder sequentialBuilder) {
+                                               @NotNull final SequentialRowSetBuilder sequentialBuilder) {
         return getResultRegion().gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
     }
 

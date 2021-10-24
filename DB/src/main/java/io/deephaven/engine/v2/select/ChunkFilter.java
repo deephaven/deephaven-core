@@ -6,7 +6,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 
 public interface ChunkFilter {
@@ -131,18 +132,18 @@ public interface ChunkFilter {
             Configuration.getInstance().getLongWithDefault("ChunkFilter.interruptionGoalMillis", 100);
 
     /**
-     * Apply a chunk filter to an Index and column source, producing a new Index that is responsive to the filter.
+     * Apply a chunk filter to an TrackingMutableRowSet and column source, producing a new TrackingMutableRowSet that is responsive to the filter.
      *
-     * @param selection the Index to filter
+     * @param selection the TrackingMutableRowSet to filter
      * @param columnSource the column source to filter
      * @param usePrev should we use previous values from the column source?
      * @param chunkFilter the chunk filter to apply
      *
-     * @return a new Index representing the filtered values
+     * @return a new TrackingMutableRowSet representing the filtered values
      */
-    static Index applyChunkFilter(Index selection, ColumnSource<?> columnSource, boolean usePrev,
-            ChunkFilter chunkFilter) {
-        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+    static TrackingMutableRowSet applyChunkFilter(TrackingMutableRowSet selection, ColumnSource<?> columnSource, boolean usePrev,
+                                                  ChunkFilter chunkFilter) {
+        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
 
         final int contextSize = (int) Math.min(FILTER_CHUNK_SIZE, selection.size());
         long chunksBetweenChecks = INITIAL_INTERRUPTION_SIZE / FILTER_CHUNK_SIZE;
@@ -178,9 +179,9 @@ public interface ChunkFilter {
                 }
                 chunkFilter.filter(dataChunk, keyChunk, longChunk);
 
-                builder.appendOrderedKeyIndicesChunk(longChunk);
+                builder.appendOrderedRowKeysChunk(longChunk);
             }
         }
-        return builder.getIndex();
+        return builder.build();
     }
 }

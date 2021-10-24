@@ -84,13 +84,13 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     }
 
     /**
-     * Return the highest index in valuesToSearch leq searchValue.
+     * Return the highest rowSet in valuesToSearch leq searchValue.
      *
      * @param valuesToSearch the values to search for searchValue in
-     * @param lo the first index to search for
-     * @param hi one past the last index to search in
+     * @param lo the first rowSet to search for
+     * @param hi one past the last rowSet to search in
      * @param searchValue the value to find
-     * @return the highest index that is less than or equal to valuesToSearch
+     * @return the highest rowSet that is less than or equal to valuesToSearch
      */
     private static int upperBound(CharChunk<? extends Attributes.Values> valuesToSearch, int lo, int hi, char searchValue) {
         while (lo < hi) {

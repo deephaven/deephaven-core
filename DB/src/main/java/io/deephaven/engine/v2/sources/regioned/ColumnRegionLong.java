@@ -18,8 +18,8 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single long from this region.
      *
-     * @param elementIndex Element (long) index in the table's address space
-     * @return The long value at the specified element (long) index
+     * @param elementIndex Element (long) rowSet in the table's address space
+     * @return The long value at the specified element (long) rowSet
      */
     long getLong(long elementIndex);
 
@@ -27,9 +27,9 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
      * Get a single long from this region.
      *
      * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
-     *                     region index pointing to this region
-     * @param elementIndex Element (long) index in the table's address space
-     * @return The long value at the specified element (long) index
+     *                     region rowSet pointing to this region
+     * @param elementIndex Element (long) rowSet in the table's address space
+     * @return The long value at the specified element (long) rowSet
      */
     default long getLong(@NotNull final FillContext context, final long elementIndex) {
         return getLong(elementIndex);

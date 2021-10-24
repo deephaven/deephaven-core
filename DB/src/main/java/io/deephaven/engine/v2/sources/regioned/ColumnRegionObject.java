@@ -6,9 +6,9 @@ import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
-import io.deephaven.engine.v2.utils.Index;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.ReadOnlyIndex;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,8 +24,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
     /**
      * Get a single object from this region.
      *
-     * @param elementIndex Element (object) index in the table's address space
-     * @return The object value at the specified element (object) index
+     * @param elementIndex Element (object) rowSet in the table's address space
+     * @return The object value at the specified element (object) rowSet
      */
     DATA_TYPE getObject(long elementIndex);
 
@@ -33,9 +33,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * Get a single object from this region.
      *
      * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
-     *                     region index pointing to this region
-     * @param elementIndex Element (object) index in the table's address space
-     * @return The object value at the specified element (object) index
+     *                     region rowSet pointing to this region
+     * @param elementIndex Element (object) rowSet in the table's address space
+     * @return The object value at the specified element (object) rowSet
      */
     default DATA_TYPE getObject(@NotNull final FillContext context, final long elementIndex) {
         return getObject(elementIndex);
@@ -43,23 +43,23 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
     /**
      * Check if this region can expose an alternate form as paired regions of {@code long} keys and {@code DATA_TYPE}
-     * values covering all of its index keys in {@code keysToVisit}.
+     * values covering all of its rowSet keys in {@code keysToVisit}.
      *
-     * <p>Both alternate regions must use the same or smaller index key space as this one. Indices fetched from the
+     * <p>Both alternate regions must use the same or smaller rowSet key space as this one. Indices fetched from the
      * keys region must represent valid element indices in the values region. Values regions must support
-     * {@link #gatherDictionaryValuesIndex(ReadOnlyIndex.SearchIterator, RowSequence.Iterator, Index.SequentialBuilder)}.
+     * {@link #gatherDictionaryValuesIndex(RowSet.SearchIterator, RowSequence.Iterator, SequentialRowSetBuilder)}.
      *
      * <p>Use {@link #getDictionaryKeysRegion()} to access the region of keys and {@link #getDictionaryValuesRegion()}
      * to access the region of values.
      *
-     * @param keysToVisit Iterator positioned at the first relevant index key belonging to this region.
+     * @param keysToVisit Iterator positioned at the first relevant rowSet key belonging to this region.
      *                    Will be advanced to <em>after</em> this region if {@code true} is returned.
      *                    No guarantee is made if {@code false} is returned.
      * @return A {@link RegionVisitResult} specifying {@code FAILED} if this region cannot supply a dictionary,
      * {@code CONTINUE} if it can and {@code keysToVisit} is <em>not</em> exhausted, and {@code COMPLETE} if it can and
      * {@code keysToVisit} is exhausted
      */
-    default RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+    default RegionVisitResult supportsDictionaryFormat(@NotNull final RowSet.SearchIterator keysToVisit) {
         return RegionVisitResult.FAILED;
     }
 
@@ -68,24 +68,24 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * Gathers
      *
      * @param keysToVisit       A search iterator over the enclosing table address space (which must have the same
-     *                          regions at the same masks), positioned at an index key in this region. Used to
+     *                          regions at the same masks), positioned at an rowSet key in this region. Used to
      *                          identify regions to visit. Should be advanced to after this region as a side-effect.
-     * @param knownKeys         An iterator over the previously-known index keys, positioned at the first known key in
+     * @param knownKeys         An iterator over the previously-known rowSet keys, positioned at the first known key in
      *                          this region, or after the region's maximum key if no keys are known. Should be advanced
      *                          to after this region as a side effect.
-     * @param sequentialBuilder Output builder; implementations should append ranges for index keys not found in
+     * @param sequentialBuilder Output builder; implementations should append ranges for rowSet keys not found in
      *                          {@code knownKeys}
-     * @throws UnsupportedOperationException If this region is incapable of gathering its dictionary values index
+     * @throws UnsupportedOperationException If this region is incapable of gathering its dictionary values rowSet
      * @return Whether {@code keysToVisit} has been exhausted
      */
-    default boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+    default boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                 @NotNull final RowSequence.Iterator knownKeys,
-                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
+                                                @NotNull final SequentialRowSetBuilder sequentialBuilder) {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * @return A dictionary keys region as specified by {@link #supportsDictionaryFormat(ReadOnlyIndex.SearchIterator)}
+     * @return A dictionary keys region as specified by {@link #supportsDictionaryFormat(RowSet.SearchIterator)}
      * @throws UnsupportedOperationException If this region does not support dictionary format
      * @implNote Implementations should cache the result
      */
@@ -94,7 +94,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
     }
 
     /**
-     * @return A dictionary values region as specified by {@link #supportsDictionaryFormat(ReadOnlyIndex.SearchIterator)}
+     * @return A dictionary values region as specified by {@link #supportsDictionaryFormat(RowSet.SearchIterator)}
      * @throws UnsupportedOperationException If this region does not support dictionary format
      * @implNote Implementations should cache the result
      */
@@ -112,7 +112,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         @Override
         @FinalDefault
-        default RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+        default RegionVisitResult supportsDictionaryFormat(@NotNull final RowSet.SearchIterator keysToVisit) {
             return advanceToNextPage(keysToVisit) ? RegionVisitResult.CONTINUE : RegionVisitResult.COMPLETE;
         }
 
@@ -145,9 +145,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+        public boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                    @NotNull final RowSequence.Iterator knownKeys,
-                                                   @NotNull final Index.SequentialBuilder sequentialBuilder) {
+                                                   @NotNull final SequentialRowSetBuilder sequentialBuilder) {
             // Nothing to be gathered, we don't include null regions in dictionary values.
             advanceToNextPage(knownKeys);
             return advanceToNextPage(keysToVisit);
@@ -193,9 +193,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+        public boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                    @NotNull final RowSequence.Iterator knownKeys,
-                                                   @NotNull final Index.SequentialBuilder sequentialBuilder) {
+                                                   @NotNull final SequentialRowSetBuilder sequentialBuilder) {
             final long pageOnlyKey = firstRow(keysToVisit.currentValue());
             if (knownKeys.peekNextKey() != pageOnlyKey) {
                 sequentialBuilder.appendKey(pageOnlyKey);
@@ -232,7 +232,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+        public RegionVisitResult supportsDictionaryFormat(@NotNull final RowSet.SearchIterator keysToVisit) {
             final long pageMaxKey = maxRow(keysToVisit.currentValue());
             RegionVisitResult result;
             do {
@@ -242,9 +242,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+        public boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                    @NotNull final RowSequence.Iterator knownKeys,
-                                                   @NotNull final Index.SequentialBuilder sequentialBuilder) {
+                                                   @NotNull final SequentialRowSetBuilder sequentialBuilder) {
             final long pageMaxKey = maxRow(keysToVisit.currentValue());
             boolean moreKeysToVisit;
             do {

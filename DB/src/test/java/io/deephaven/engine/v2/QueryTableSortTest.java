@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.test.types.OutOfBandTest;
@@ -190,7 +190,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testGroupedSortRefreshing() {
-        final Table table = testRefreshingTable(Index.FACTORY.getFlatIndex(9),
+        final Table table = testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(9),
                 cG("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
                         "Canteloupe"),
                 c("Secondary", "C", "A", "B", "C", "A", "B", "C", "A", "B")).update("Sentinel=i");
@@ -225,9 +225,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
 
         final Table grouped =
-                testTable(Index.FACTORY.getFlatIndex(values.length), cG("Captain", values)).update("Sentinel=i");
+                testTable(TrackingMutableRowSet.FACTORY.getFlatIndex(values.length), cG("Captain", values)).update("Sentinel=i");
         final Table nogroups =
-                testTable(Index.FACTORY.getFlatIndex(values.length), c("Captain", values)).update("Sentinel=i");
+                testTable(TrackingMutableRowSet.FACTORY.getFlatIndex(values.length), c("Captain", values)).update("Sentinel=i");
 
         final Table sortedGrouped = grouped.sortDescending("Captain");
         final Table sortedNoGroups = nogroups.sortDescending("Captain");
@@ -703,16 +703,16 @@ public class QueryTableSortTest extends QueryTableTestBase {
         setExpectError(false);
         assertEquals(10, table.size());
 
-        final Index index = table.getIndex().subindexByPos(0, 4);
-        final QueryTable refreshing = new QueryTable(index, table.getColumnSourceMap());
+        final TrackingMutableRowSet rowSet = table.getIndex().subSetByPositionRange(0, 4);
+        final QueryTable refreshing = new QueryTable(rowSet, table.getColumnSourceMap());
         refreshing.setRefreshing(true);
 
         final Table symbolSorted = refreshing.sort("Symbol");
         TableTools.showWithIndex(symbolSorted);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Index added = table.getIndex().subindexByPos(4, 10);
-            index.insert(added);
+            final TrackingMutableRowSet added = table.getIndex().subSetByPositionRange(4, 10);
+            rowSet.insert(added);
             refreshing.notifyListeners(added, i(), i());
         });
 

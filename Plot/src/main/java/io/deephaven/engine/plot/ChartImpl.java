@@ -603,7 +603,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         final int size = axes.size();
         if (id < 0 || id >= size) {
             throw new PlotIllegalArgumentException(
-                    "Axes not in chart: index=" + id + ", required in range = [0," + (size - 1) + "]", this);
+                    "Axes not in chart: rowSet=" + id + ", required in range = [0," + (size - 1) + "]", this);
         }
         return axes.get(id);
     }

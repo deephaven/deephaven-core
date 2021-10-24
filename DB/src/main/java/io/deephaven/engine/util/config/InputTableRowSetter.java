@@ -15,7 +15,7 @@ public interface InputTableRowSetter {
      * {@link #setRows(Table, int[], Map[], InputTableStatusListener)} to be notified of asynchronous results.
      *
      * @param table The table to use as the previous value source
-     * @param row The row index to set
+     * @param row The row rowSet to set
      * @param values A map of column name to value to set.
      */
     default void setRow(Table table, int row, Map<String, Object> values) {

@@ -5,7 +5,8 @@ import io.deephaven.engine.v2.sources.ArrayGenerator;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.CharChunk;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.Index;
+import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import org.junit.After;
 import org.junit.Before;
@@ -161,35 +162,35 @@ public class TestCharacterDeltaAwareColumnSource {
 
     private static void checkUsingChunk(DeltaAwareColumnSource<Character> dacs, Map<Long, Character> expectedCurrent,
                                         Map<Long, Character> expectedPrev, long[] ranges) {
-        final Index index = rangesToIndex(ranges);
-        assertEquals(index.size() % 2, 0);
+        final TrackingMutableRowSet rowSet = rangesToIndex(ranges);
+        assertEquals(rowSet.size() % 2, 0);
 
         // We're going to get creative and pull down the data as two slices
-        final int chunkSize = (int) (index.size() / 2);
+        final int chunkSize = (int) (rowSet.size() / 2);
 
-        // So we'll also split the index in half
-        final Index index0 = index.subindexByPos(0, chunkSize);
-        final Index index1 = index.subindexByPos(chunkSize, index.size());
+        // So we'll also split the rowSet in half
+        final TrackingMutableRowSet rowSet0 = rowSet.subSetByPositionRange(0, chunkSize);
+        final TrackingMutableRowSet rowSet1 = rowSet.subSetByPositionRange(chunkSize, rowSet.size());
 
         // Current...
         try (ChunkSource.GetContext context = dacs.makeGetContext(chunkSize)) {
             CharChunk<? extends Values> chunk;
 
-            chunk = dacs.getChunk(context, index0).asCharChunk();
-            checkChunk(chunk, expectedCurrent, index0);
-            chunk = dacs.getChunk(context, index1).asCharChunk();
-            checkChunk(chunk, expectedCurrent, index1);
+            chunk = dacs.getChunk(context, rowSet0).asCharChunk();
+            checkChunk(chunk, expectedCurrent, rowSet0);
+            chunk = dacs.getChunk(context, rowSet1).asCharChunk();
+            checkChunk(chunk, expectedCurrent, rowSet1);
 
-            chunk = dacs.getPrevChunk(context, index0).asCharChunk();
-            checkChunk(chunk, expectedPrev, index0);
-            chunk = dacs.getPrevChunk(context, index1).asCharChunk();
-            checkChunk(chunk, expectedPrev, index1);
+            chunk = dacs.getPrevChunk(context, rowSet0).asCharChunk();
+            checkChunk(chunk, expectedPrev, rowSet0);
+            chunk = dacs.getPrevChunk(context, rowSet1).asCharChunk();
+            checkChunk(chunk, expectedPrev, rowSet1);
         }
     }
 
-    private static void checkChunk(CharChunk<? extends Values> values, Map<Long, Character> expected, Index keys) {
+    private static void checkChunk(CharChunk<? extends Values> values, Map<Long, Character> expected, TrackingMutableRowSet keys) {
         int sliceOffset = 0;
-        for (final Index.Iterator it = keys.iterator(); it.hasNext(); ) {
+        for (final TrackingMutableRowSet.Iterator it = keys.iterator(); it.hasNext(); ) {
             final long key = it.nextLong();
             final char expectedValue = expected.get(key);
             final char actualValue = values.get(sliceOffset++);
@@ -197,11 +198,11 @@ public class TestCharacterDeltaAwareColumnSource {
         }
     }
 
-    private static Index rangesToIndex(long[] ranges) {
-        Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+    private static TrackingMutableRowSet rangesToIndex(long[] ranges) {
+        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
         for (int ii = 0; ii < ranges.length; ii += 2) {
             builder.appendRange(ranges[ii], ranges[ii + 1] - 1);
         }
-        return builder.getIndex();
+        return builder.build();
     }
 }
