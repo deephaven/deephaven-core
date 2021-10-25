@@ -1,7 +1,8 @@
-package io.deephaven.db.tables.utils;
+package io.deephaven.grpc_api.uri;
 
 import io.deephaven.db.tables.Table;
-import io.deephaven.uri.AdHocTableResolverBase;
+import io.deephaven.db.tables.utils.ParquetTools;
+import io.deephaven.uri.TableResolver;
 
 import javax.inject.Inject;
 import java.net.URI;
@@ -17,7 +18,7 @@ import java.util.Set;
  * <p>
  * For more advanced use cases, see {@link ParquetTools}.
  */
-public final class ParquetTableResolver extends AdHocTableResolverBase {
+public final class ParquetTableResolver implements TableResolver {
 
     /**
      * The parquet scheme, {@code parquet}.

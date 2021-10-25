@@ -1,7 +1,8 @@
-package io.deephaven.db.tables.utils;
+package io.deephaven.grpc_api.uri;
 
 import io.deephaven.db.tables.Table;
-import io.deephaven.uri.AdHocTableResolverBase;
+import io.deephaven.db.tables.utils.CsvHelpers;
+import io.deephaven.uri.TableResolver;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -23,7 +24,7 @@ import java.util.Set;
  * <p>
  * For more advanced use cases, see {@link CsvHelpers}.
  */
-public final class CsvTableResolver extends AdHocTableResolverBase {
+public final class CsvTableResolver implements TableResolver {
 
     private static final Set<String> SCHEMES = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList("csv+http", "http+csv", "csv+https", "https+csv", "csv+file", "file+csv", "csv")));

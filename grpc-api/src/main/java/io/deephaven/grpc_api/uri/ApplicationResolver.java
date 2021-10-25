@@ -7,7 +7,6 @@ import io.deephaven.grpc_api.appmode.ApplicationStates;
 import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenUri;
 import io.deephaven.uri.TableResolver;
-import io.deephaven.uri.TableResolversInstance;
 
 import javax.inject.Inject;
 import java.net.URI;

@@ -4,7 +4,6 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.uri.QueryScopeUri;
 import io.deephaven.uri.TableResolver;
-import io.deephaven.uri.TableResolversInstance;
 
 import javax.inject.Inject;
 import java.net.URI;

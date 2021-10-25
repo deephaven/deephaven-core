@@ -1,5 +1,9 @@
-package io.deephaven.client.impl;
+package io.deephaven.grpc_api.uri;
 
+import io.deephaven.client.impl.BarrageSession;
+import io.deephaven.client.impl.BarrageSessionFactoryBuilder;
+import io.deephaven.client.impl.BarrageSubscription;
+import io.deephaven.client.impl.ChannelHelper;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.db.tables.Table;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -9,11 +13,10 @@ import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenTarget;
 import io.deephaven.uri.DeephavenUri;
 import io.deephaven.uri.FieldUri;
-import io.deephaven.uri.StructuredUri;
 import io.deephaven.uri.QueryScopeUri;
 import io.deephaven.uri.RemoteUri;
+import io.deephaven.uri.StructuredUri.Visitor;
 import io.deephaven.uri.TableResolver;
-import io.deephaven.uri.TableResolversInstance;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 
@@ -155,7 +158,7 @@ public final class BarrageTableResolver implements TableResolver {
                 .newBarrageSession();
     }
 
-    static class RemoteResolver implements StructuredUri.Visitor {
+    static class RemoteResolver implements Visitor {
 
         public static TableSpec of(RemoteUri remoteUri) {
             return remoteUri.uri().walk(new RemoteResolver(remoteUri.target())).out();

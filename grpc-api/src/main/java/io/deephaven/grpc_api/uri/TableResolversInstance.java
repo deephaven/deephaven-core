@@ -1,4 +1,4 @@
-package io.deephaven.uri;
+package io.deephaven.grpc_api.uri;
 
 import java.util.Objects;
 

@@ -1,6 +1,7 @@
-package io.deephaven.uri;
+package io.deephaven.grpc_api.uri;
 
 import io.deephaven.db.tables.Table;
+import io.deephaven.uri.TableResolver;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
