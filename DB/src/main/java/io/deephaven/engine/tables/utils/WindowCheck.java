@@ -76,7 +76,7 @@ public class WindowCheck {
         inWindowColumnSource.init();
         resultColumns.put(inWindowColumn, inWindowColumnSource);
 
-        final QueryTable result = new QueryTable(table.getIndex(), resultColumns);
+        final QueryTable result = new QueryTable(table.getRowSet(), resultColumns);
 
         if (table instanceof DynamicTable) {
             final DynamicTable dynamicSource = (DynamicTable) table;
@@ -85,7 +85,7 @@ public class WindowCheck {
                     new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, dynamicSource, result);
             recorder.setMergedListener(timeWindowListener);
             dynamicSource.listenForUpdates(recorder);
-            table.getIndex().forAllLongs(timeWindowListener::addIndex);
+            table.getRowSet().forAllLongs(timeWindowListener::addIndex);
             result.addParentReference(timeWindowListener);
             result.manage(table);
             if (addToMonitor) {
@@ -184,13 +184,13 @@ public class WindowCheck {
         @Override
         protected void process() {
             if (recorder.recordedVariablesAreValid()) {
-                final ShiftAwareListener.Update upstream = recorder.getUpdate();
+                final Listener.Update upstream = recorder.getUpdate();
 
                 // remove the removed indices from the priority queue
                 removeIndex(upstream.removed);
 
                 // anything that was shifted needs to be placed in the proper slots
-                final TrackingMutableRowSet preShiftRowSet = source.getIndex().getPrevRowSet();
+                final TrackingMutableRowSet preShiftRowSet = source.getRowSet().getPrevRowSet();
                 upstream.shifted.apply((start, end, delta) -> {
                     final TrackingMutableRowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
 
@@ -220,7 +220,7 @@ public class WindowCheck {
                 // now add the new timestamps
                 upstream.added.forAllLongs(this::addIndex);
 
-                final ShiftAwareListener.Update downstream = upstream.copy();
+                final Listener.Update downstream = upstream.copy();
 
                 try (final TrackingMutableRowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
@@ -240,11 +240,11 @@ public class WindowCheck {
             } else {
                 final TrackingMutableRowSet modifiedByTime = recomputeModified();
                 if (modifiedByTime.isNonempty()) {
-                    final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+                    final Listener.Update downstream = new Listener.Update();
                     downstream.modified = modifiedByTime;
                     downstream.added = EMPTY_ROW_SET;
                     downstream.removed = EMPTY_ROW_SET;
-                    downstream.shifted = IndexShiftData.EMPTY;
+                    downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = reusableModifiedColumnSet;
                     downstream.modifiedColumnSet.clear();
                     downstream.modifiedColumnSet.setAll(mcsNewColumns);
@@ -345,7 +345,7 @@ public class WindowCheck {
         }
 
         void validateQueue() {
-            final TrackingMutableRowSet resultRowSet = result.getIndex();
+            final TrackingMutableRowSet resultRowSet = result.getRowSet();
             final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
             final Entry[] entries = new Entry[priorityQueue.size()];

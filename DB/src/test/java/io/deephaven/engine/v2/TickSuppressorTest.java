@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.TickSuppressor;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
@@ -123,7 +123,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
 
         final DynamicTable suppressed = (DynamicTable) TickSuppressor.removeSpuriousModifications(input);
 
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(suppressed);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(suppressed);
         suppressed.listenForUpdates(listener);
 
         assertEquals(0, listener.getCount());
@@ -141,7 +141,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         assertEquals(i(2), listener.update.added);
         assertEquals(i(5), listener.update.modified);
         assertEquals(i(), listener.update.removed);
-        assertEquals(IndexShiftData.EMPTY, listener.update.shifted);
+        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted);
         assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelA")));
         assertTrue(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelB")));
 
@@ -155,7 +155,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         assertEquals(i(), listener.update.added);
         assertEquals(i(10), listener.update.modified);
         assertEquals(i(5), listener.update.removed);
-        assertEquals(IndexShiftData.EMPTY, listener.update.shifted);
+        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted);
         assertTrue(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelA")));
         assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelB")));
 
@@ -168,7 +168,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         assertEquals(i(20), listener.update.added);
         assertEquals(i(), listener.update.modified);
         assertEquals(i(), listener.update.removed);
-        assertEquals(IndexShiftData.EMPTY, listener.update.shifted);
+        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted);
         assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelA")));
         assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelB")));
     }

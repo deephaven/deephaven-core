@@ -31,8 +31,8 @@ class CrossJoinModifiedSlotTracker {
 
     private int maxSlotChunkCapacity = START_SLOT_CHUNK_SIZE;
 
-    IndexShiftData leftShifted;
-    IndexShiftData rightShifted;
+    RowSetShiftData leftShifted;
+    RowSetShiftData rightShifted;
 
     TrackingMutableRowSet leftAdded;
     TrackingMutableRowSet leftRemoved;
@@ -65,7 +65,7 @@ class CrossJoinModifiedSlotTracker {
         TrackingMutableRowSet rightAdded;
         TrackingMutableRowSet rightRemoved;
         TrackingMutableRowSet rightModified;
-        IndexShiftData innerShifted;
+        RowSetShiftData innerShifted;
 
         TrackingMutableRowSet leftRowSet; // reference, NOT a copy
         TrackingMutableRowSet rightRowSet; // reference, NOT a copy
@@ -220,7 +220,7 @@ class CrossJoinModifiedSlotTracker {
             long shiftDelta = 0;
             int preIdx = 0, postIdx = 0;
             long preOff = 0, postOff = 0;
-            final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
 
             while (preIdx < keyChunk.size() && flagChunk.get(preIdx) != FLAG_RM) {
                 ++preIdx;
@@ -389,7 +389,7 @@ class CrossJoinModifiedSlotTracker {
             if (finishedRightProcessing) {
                 state.finalizedRight = true;
                 state.rightAdded = state.rightRemoved = state.rightModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                state.innerShifted = IndexShiftData.EMPTY;
+                state.innerShifted = RowSetShiftData.EMPTY;
             }
         } else {
             state = modifiedSlots.get(getPointerFromCookie(cookie));

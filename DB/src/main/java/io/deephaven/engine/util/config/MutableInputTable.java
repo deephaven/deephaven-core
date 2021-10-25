@@ -106,7 +106,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      * @throws UnsupportedOperationException if this table does not support deletes
      */
     default void delete(Table table) throws IOException {
-        delete(table, table.getIndex());
+        delete(table, table.getRowSet());
     }
 
     /**

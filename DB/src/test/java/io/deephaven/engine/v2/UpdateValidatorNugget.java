@@ -33,7 +33,7 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
     private Throwable exception = null;
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    private final ShiftAwareListener failureListener = new InstrumentedShiftAwareListener("Failure Listener") {
+    private final Listener failureListener = new InstrumentedListener("Failure ShiftObliviousListener") {
         @Override
         public void onUpdate(Update update) {}
 

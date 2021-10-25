@@ -295,7 +295,7 @@ public interface IterativeChunkedAggregationOperator {
      *
      * @param upstream The upstream ShiftAwareListener.Update
      */
-    default void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {}
+    default void resetForStep(@NotNull final Listener.Update upstream) {}
 
     /**
      * Perform any internal state keeping needed for destinations that were added (went from 0 keys to &gt 0), removed
@@ -306,7 +306,7 @@ public interface IterativeChunkedAggregationOperator {
      *        {@link ModifiedColumnSet} finalized yet)
      * @param newDestinations New destinations added on this update
      */
-    default void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
+    default void propagateUpdates(@NotNull final Listener.Update downstream,
             @NotNull final RowSet newDestinations) {}
 
     /**

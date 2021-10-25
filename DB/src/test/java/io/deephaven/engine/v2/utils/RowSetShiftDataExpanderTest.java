@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import org.junit.After;
 import org.junit.Before;
@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class IndexShiftDataExpanderTest {
+public class RowSetShiftDataExpanderTest {
 
     /**
      * These tests names have a few qualities worth defining: - Major Shift: shift with no overlap in keyspace before
@@ -489,7 +489,7 @@ public class IndexShiftDataExpanderTest {
 
     /**
      * 1. Add initial rowSet state to {@code sourceRowSet}. 2. Setup added/removed/modified/shifted as inputs to
-     * IndexShiftDataExpander. 3. Modify expected output ranges to expectAdded / expectRemoved / expectModified. 4.
+     * RowSetShiftDataExpander. 3. Modify expected output ranges to expectAdded / expectRemoved / expectModified. 4.
      * Profit by letting @Before / @After clear context and run validate automagically.
      */
     private static class Context {
@@ -497,7 +497,7 @@ public class IndexShiftDataExpanderTest {
         public final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         public final TrackingMutableRowSet removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         public final TrackingMutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        public final IndexShiftData.Builder shifted = new IndexShiftData.Builder();
+        public final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
 
         public final TrackingMutableRowSet expectAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         public final TrackingMutableRowSet expectRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
@@ -512,9 +512,9 @@ public class IndexShiftDataExpanderTest {
             sourceRowSet.update(expectAdded, expectRemoved);
             LogicalClock.DEFAULT.completeUpdateCycle();
 
-            final IndexShiftData shiftData = shifted.build();
+            final RowSetShiftData shiftData = shifted.build();
             shiftData.validate();
-            final IndexShiftDataExpander expander = new IndexShiftDataExpander(new ShiftAwareListener.Update(
+            final RowSetShiftDataExpander expander = new RowSetShiftDataExpander(new Listener.Update(
                     added, removed, modified, shiftData, ModifiedColumnSet.ALL), sourceRowSet);
             expander.validate(sourceRowSet);
 

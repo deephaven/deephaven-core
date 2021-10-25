@@ -2,13 +2,13 @@ package io.deephaven.engine.v2;
 
 import junit.framework.TestCase;
 
-public class FailureListener extends InstrumentedShiftAwareListener {
+public class FailureListener extends InstrumentedListener {
     public FailureListener() {
-        super("Fuzzer Failure Listener");
+        super("Fuzzer Failure ShiftObliviousListener");
     }
 
     @Override
-    public void onUpdate(final io.deephaven.engine.v2.ShiftAwareListener.Update upstream) {}
+    public void onUpdate(final Listener.Update upstream) {}
 
     @Override
     public void onFailureInternal(Throwable originalException,

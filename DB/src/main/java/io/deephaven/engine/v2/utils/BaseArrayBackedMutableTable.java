@@ -76,8 +76,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
         }, (e) -> {
         });
-        result.getIndex().insert(builder.build());
-        result.getIndex().initializePreviousValue();
+        result.getRowSet().insert(builder.build());
+        result.getRowSet().initializePreviousValue();
         LiveTableMonitor.DEFAULT.addTable(result);
     }
 
@@ -293,7 +293,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 final ArrayBackedColumnSource<Object> dest =
                         Require.neqNull(sources.get(colName), "destination column source: " + colName);
 
-                final TrackingMutableRowSet defaultValuesRowSet = defaultValues.getIndex();
+                final TrackingMutableRowSet defaultValuesRowSet = defaultValues.getRowSet();
                 for (int rr = 0; rr < rowArray.length; ++rr) {
                     final long key = defaultValuesRowSet.get(rowArray[rr]);
                     dest.set(rr, cs.get(key));

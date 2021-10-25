@@ -51,7 +51,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     private final Table setTable;
     @SuppressWarnings("FieldCanBeLocal")
     // this reference must be maintained for reachability
-    private final InstrumentedShiftAwareListener setUpdateListener;
+    private final InstrumentedListener setUpdateListener;
 
     private final Table.GroupStrategy groupStrategy;
 
@@ -77,12 +77,12 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
                 Arrays.stream(matchPairs).map(mp -> setTable.getColumnSource(mp.right())).toArray(ColumnSource[]::new);
         setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
 
-        setTable.getIndex().forAllLongs((final long v) -> addKey(makeKey(v)));
+        setTable.getRowSet().forAllLongs((final long v) -> addKey(makeKey(v)));
 
         if (DynamicNode.isDynamicAndIsRefreshing(setTable)) {
             final String[] columnNames = Arrays.stream(matchPairs).map(MatchPair::right).toArray(String[]::new);
             final ModifiedColumnSet modTokenSet = ((DynamicTable) setTable).newModifiedColumnSet(columnNames);
-            setUpdateListener = new InstrumentedShiftAwareListenerAdapter(
+            setUpdateListener = new InstrumentedListenerAdapter(
                     "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")", (DynamicTable) setTable, false) {
 
                 @Override

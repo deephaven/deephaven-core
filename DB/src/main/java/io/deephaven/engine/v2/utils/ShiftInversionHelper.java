@@ -9,11 +9,11 @@ import java.util.function.LongUnaryOperator;
  */
 public class ShiftInversionHelper {
 
-    final IndexShiftData shifted;
+    final RowSetShiftData shifted;
 
     private int destShiftIdx = 0;
 
-    public ShiftInversionHelper(final IndexShiftData shifted) {
+    public ShiftInversionHelper(final RowSetShiftData shifted) {
         this.shifted = shifted;
     }
 

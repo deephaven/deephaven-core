@@ -60,9 +60,9 @@ public class TableAssertions {
                 "assertAppendOnly(" + (description == null ? "" : description) + ')',
                 () -> {
 
-                    final DynamicTable result = new QueryTable(dynamicTable.getDefinition(), dynamicTable.getIndex(),
+                    final DynamicTable result = new QueryTable(dynamicTable.getDefinition(), dynamicTable.getRowSet(),
                             dynamicTable.getColumnSourceMap());
-                    final ShiftAwareListener listener =
+                    final Listener listener =
                             new AppendOnlyAssertionInstrumentedListenerAdapter(description, dynamicTable, result);
                     dynamicTable.listenForUpdates(listener);
 
@@ -105,7 +105,7 @@ public class TableAssertions {
 
         // do the initial check
         final ColumnSource<?> columnSource = table.getColumnSource(column);
-        SortedAssertionInstrumentedListenerAdapter.doCheckStatic(table.getIndex(), columnSource,
+        SortedAssertionInstrumentedListenerAdapter.doCheckStatic(table.getRowSet(), columnSource,
                 SortCheck.make(columnSource.getChunkType(), order.isDescending()), description, column, order);
 
 
@@ -123,8 +123,8 @@ public class TableAssertions {
                 "assertSorted(" + (description == null ? "" : description) + ", " + column + ", " + order + ')',
                 () -> {
                     final DynamicTable result =
-                            new QueryTable(dynamicTable.getIndex(), dynamicTable.getColumnSourceMap());
-                    final ShiftAwareListener listener = new SortedAssertionInstrumentedListenerAdapter(description,
+                            new QueryTable(dynamicTable.getRowSet(), dynamicTable.getColumnSourceMap());
+                    final Listener listener = new SortedAssertionInstrumentedListenerAdapter(description,
                             dynamicTable, result, column, order);
                     dynamicTable.listenForUpdates(listener);
                     ((BaseTable) dynamicTable).copyAttributes(result, s -> true);

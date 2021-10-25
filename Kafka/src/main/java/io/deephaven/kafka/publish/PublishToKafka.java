@@ -96,7 +96,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
         // Publish the initial table state
         try (final PublicationGuard guard = new PublicationGuard()) {
-            publishMessages(table.getIndex(), false, true, guard);
+            publishMessages(table.getRowSet(), false, true, guard);
         }
 
         // Install a listener to publish subsequent updates
@@ -213,7 +213,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         }
     }
 
-    private class PublishListener extends InstrumentedShiftAwareListenerAdapter {
+    private class PublishListener extends InstrumentedListenerAdapter {
 
         private final ModifiedColumnSet keysModified;
         private final ModifiedColumnSet valuesModified;

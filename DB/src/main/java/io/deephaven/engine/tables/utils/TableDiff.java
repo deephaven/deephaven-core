@@ -119,8 +119,8 @@ public class TableDiff {
                             expectedSharedContext, actualNameToColumnSource.get(name), actualSharedContext)))
                     .toArray(ColumnDiffContext[]::new);
 
-            try (final RowSequence.Iterator expectedIterator = expectedResult.getIndex().getRowSequenceIterator();
-                    final RowSequence.Iterator actualIterator = actualResult.getIndex().getRowSequenceIterator()) {
+            try (final RowSequence.Iterator expectedIterator = expectedResult.getRowSet().getRowSequenceIterator();
+                 final RowSequence.Iterator actualIterator = actualResult.getRowSet().getRowSequenceIterator()) {
 
                 int columnsRemaining = columnContexts.length;
                 long position = 0;

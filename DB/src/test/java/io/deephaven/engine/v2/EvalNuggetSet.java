@@ -31,7 +31,7 @@ public abstract class EvalNuggetSet extends EvalNugget {
         // TODO create a smart key for each row and go from there
         Map<SmartKey, Long> originalSet = new HashMap<>();
         Assert.assertEquals(expected.size(), originalValue.size());
-        for (TrackingMutableRowSet.Iterator iterator = originalValue.getIndex().iterator(); iterator.hasNext();) {
+        for (TrackingMutableRowSet.Iterator iterator = originalValue.getRowSet().iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             Object key[] = new Object[sources.size()];
             int i = 0;
@@ -43,7 +43,7 @@ public abstract class EvalNuggetSet extends EvalNugget {
             Assert.assertEquals(msg + " k = " + k, originalSet.put(k, next), null);
         }
         sources = expected.getColumnSources();
-        for (TrackingMutableRowSet.Iterator iterator = expected.getIndex().iterator(); iterator.hasNext();) {
+        for (TrackingMutableRowSet.Iterator iterator = expected.getRowSet().iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             Object key[] = new Object[sources.size()];
             int i = 0;

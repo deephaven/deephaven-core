@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 
 import static io.deephaven.engine.v2.TstUtils.prevTable;
 
-public class FuzzerPrintListener extends InstrumentedShiftAwareListener {
+public class FuzzerPrintListener extends InstrumentedListener {
     private final String description;
     private final Table table;
     private final int rowCount;
@@ -15,7 +15,7 @@ public class FuzzerPrintListener extends InstrumentedShiftAwareListener {
     }
 
     FuzzerPrintListener(final String description, final Table table, final int rowCount) {
-        super("Fuzzer Failure Listener");
+        super("Fuzzer Failure ShiftObliviousListener");
         this.description = description;
         this.table = table;
         this.rowCount = rowCount;
@@ -27,7 +27,7 @@ public class FuzzerPrintListener extends InstrumentedShiftAwareListener {
         System.out.println(upstream);
         if (rowCount > 0) {
             TableTools.showWithIndex(table, rowCount);
-            System.out.println("Previous: " + table.getIndex().getPrevRowSet().size());
+            System.out.println("Previous: " + table.getRowSet().getPrevRowSet().size());
             TableTools.showWithIndex(prevTable(table), rowCount);
         }
     }

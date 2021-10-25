@@ -168,9 +168,9 @@ public class SparseSelect {
                     final SparseArrayColumnSource<?>[] outputSources = outputSourcesList
                             .toArray(SparseArrayColumnSource.ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY);
 
-                    doCopy(source.getIndex(), inputSources, outputSources, null);
+                    doCopy(source.getRowSet(), inputSources, outputSources, null);
 
-                    final QueryTable resultTable = new QueryTable(source.getIndex(), resultColumns);
+                    final QueryTable resultTable = new QueryTable(source.getRowSet(), resultColumns);
 
                     if (source.isLive()) {
                         outputSourcesList.forEach(ColumnSource::startTrackingPrevValues);
@@ -178,7 +178,7 @@ public class SparseSelect {
                                 outputSourcesList.stream().filter(x -> x instanceof ObjectSparseArraySource)
                                         .map(x -> (ObjectSparseArraySource<?>) x)
                                         .toArray(ObjectSparseArraySource[]::new);
-                        ((DynamicTable) source).listenForUpdates(new BaseTable.ShiftAwareListenerImpl(
+                        ((DynamicTable) source).listenForUpdates(new BaseTable.ListenerImpl(
                                 "sparseSelect(" + Arrays.toString(columnNames) + ")", (DynamicTable) source,
                                 resultTable) {
                             private final ModifiedColumnSet modifiedColumnSetForUpdates =
@@ -216,8 +216,8 @@ public class SparseSelect {
                                     try (final TrackingMutableRowSet addedAndModified = upstream.added.union(upstream.modified)) {
                                         if (upstream.shifted.nonempty()) {
                                             try (final TrackingMutableRowSet currentWithoutAddsOrModifies =
-                                                    source.getIndex().minus(addedAndModified);
-                                                    final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts = upstream.shifted
+                                                    source.getRowSet().minus(addedAndModified);
+                                                 final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts = upstream.shifted
                                                             .extractParallelShiftedRowsFromPostShiftIndex(
                                                                     currentWithoutAddsOrModifies)) {
                                                 doShift(shifts, outputSources, modifiedColumns);
@@ -232,7 +232,7 @@ public class SparseSelect {
                                     invert(modifiedColumns);
 
                                     if (upstream.shifted.nonempty()) {
-                                        try (final TrackingMutableRowSet currentWithoutAdds = source.getIndex().minus(upstream.added);
+                                        try (final TrackingMutableRowSet currentWithoutAdds = source.getRowSet().minus(upstream.added);
                                              final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts =
                                                         upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(
                                                                 currentWithoutAdds)) {

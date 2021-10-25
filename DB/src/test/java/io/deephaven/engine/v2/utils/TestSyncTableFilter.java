@@ -310,7 +310,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         allowingError(() -> {
-            a.getIndex().remove(1);
+            a.getRowSet().remove(1);
             a.notifyListeners(i(), i(1), i());
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
         }, throwables -> {
@@ -578,7 +578,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         }
     }
 
-    private static class ErrorListener extends InstrumentedListenerAdapter {
+    private static class ErrorListener extends ShiftObliviousInstrumentedListenerAdapter {
         Throwable originalException;
 
         ErrorListener(String description, DynamicTable table) {
@@ -587,7 +587,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         }
 
         @Override
-        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+        public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
             fail("Should not have gotten an update!");
         }
 

@@ -224,7 +224,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
 
             nameToColumns.put(parentColumn, parentView);
 
-            final QueryTable result = new QueryTable(source.getIndex(), nameToColumns);
+            final QueryTable result = new QueryTable(source.getRowSet(), nameToColumns);
 
 
             if (source.isRefreshing()) {
@@ -238,12 +238,12 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                         source.newModifiedColumnSetTransformer(result, columnNames);
                 final ModifiedColumnSet mcsParentColumn = result.newModifiedColumnSet(parentColumn);
 
-                final ShiftAwareListener listener =
-                        new BaseTable.ShiftAwareListenerImpl("Orphan Promoter", source, result) {
+                final Listener listener =
+                        new BaseTable.ListenerImpl("Orphan Promoter", source, result) {
                             final Map<Object, TLongSet> parentToChildMap = new HashMap<>();
 
                             {
-                                addChildren(source.getIndex());
+                                addChildren(source.getRowSet());
                             }
 
                             private void addChildren(TrackingMutableRowSet index) {
@@ -329,7 +329,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                     removeChildren(upstream.getModifiedPreShift());
                                 }
 
-                                try (final TrackingMutableRowSet prevIndex = source.getIndex().getPrevRowSet()) {
+                                try (final TrackingMutableRowSet prevIndex = source.getRowSet().getPrevRowSet()) {
                                     prevIndex.remove(upstream.removed);
                                     if (modifiedInputColumns) {
                                         prevIndex.remove(upstream.getModifiedPreShift());

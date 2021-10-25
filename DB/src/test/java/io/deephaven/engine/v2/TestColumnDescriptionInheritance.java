@@ -26,7 +26,7 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
 
         System.out.println("Running basic \"maybeCopyColumnDescriptions\" tests...");
         final Table destTable =
-                new QueryTable(sourceTable.getDefinition(), sourceTable.getIndex(), sourceTable.getColumnSourceMap());
+                new QueryTable(sourceTable.getDefinition(), sourceTable.getRowSet(), sourceTable.getColumnSourceMap());
         final Map<String, String> descriptionMap =
                 (Map<String, String>) withDescriptions.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         assertNotNull(descriptionMap);

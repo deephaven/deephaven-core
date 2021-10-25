@@ -16,6 +16,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssa.SsaTestHelpers;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.compact.ObjectCompactKernel;
 import io.deephaven.test.types.ParallelTest;
@@ -129,9 +130,9 @@ public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
         checkSsmInitial(asObject, ssm, valueSource, countNull, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asObjectListener = new InstrumentedListenerAdapter((DynamicTable) asObject, false) {
+            final ShiftObliviousListener asObjectListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asObject, false) {
                 @Override
-                public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+                public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
                     try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(maxSize);
                          final WritableObjectChunk<Object, Values> chunk = WritableObjectChunk.makeWritableChunk(maxSize);
@@ -164,7 +165,7 @@ public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asObject.intSize())) {
-                    checkSsm(ssm, valueSource.getChunk(getContext, asObject.getIndex()).asObjectChunk(), countNull, desc);
+                    checkSsm(ssm, valueSource.getChunk(getContext, asObject.getRowSet()).asObjectChunk(), countNull, desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -211,7 +212,7 @@ public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
 
             try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asObject.intSize());
                  final WritableObjectChunk<Object, Attributes.Values> valueChunk = WritableObjectChunk.makeWritableChunk(asObject.intSize())) {
-                valueSource.fillChunk(fillContext, valueChunk, asObject.getIndex());
+                valueSource.fillChunk(fillContext, valueChunk, asObject.getRowSet());
                 valueChunk.sort();
                 final ObjectChunk<Object, ? extends Values> loValues = valueChunk.slice(0, LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()));
                 final ObjectChunk<Object, ? extends Values> hiValues = valueChunk.slice(LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()), LongSizedDataStructure.intSize("ssmHi", ssmHi.totalSize()));
@@ -250,14 +251,14 @@ public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asObject.intSize());
              final WritableObjectChunk<Object, Attributes.Values> valueChunk = WritableObjectChunk.makeWritableChunk(asObject.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asObject.intSize())) {
-            valueSource.fillChunk(fillContext, valueChunk, asObject.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asObject.getRowSet());
             valueChunk.sort();
 
             ObjectCompactKernel.compactAndCount(valueChunk, counts, countNull);
 
             ssm.insert(valueChunk, counts);
 
-            valueSource.fillChunk(fillContext, valueChunk, asObject.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asObject.getRowSet());
             checkSsm(ssm, valueChunk, countNull, desc);
         }
     }
@@ -265,7 +266,7 @@ public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
     private void checkSsm(Table asObject, ObjectSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asObject.intSize());
              final WritableObjectChunk<Object, Attributes.Values> valueChunk = WritableObjectChunk.makeWritableChunk(asObject.intSize())) {
-            valueSource.fillChunk(fillContext, valueChunk, asObject.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asObject.getRowSet());
             checkSsm(ssm, valueChunk, countNull, desc);
         }
     }

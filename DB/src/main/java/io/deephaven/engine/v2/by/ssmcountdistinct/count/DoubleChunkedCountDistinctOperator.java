@@ -9,7 +9,7 @@ package io.deephaven.engine.v2.by.ssmcountdistinct.count;
 
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctContext;
@@ -230,7 +230,7 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
+    public void propagateUpdates(@NotNull Listener.Update downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();

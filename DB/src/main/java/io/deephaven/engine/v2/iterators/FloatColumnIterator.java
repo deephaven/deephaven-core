@@ -23,7 +23,7 @@ public class FloatColumnIterator extends ColumnIterator<Float> implements Primit
 
     public FloatColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
         //noinspection unchecked
-        this(table.getIndex(), table.getColumnSource(columnName));
+        this(table.getRowSet(), table.getColumnSource(columnName));
     }
 
     @SuppressWarnings("WeakerAccess")

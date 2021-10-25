@@ -174,7 +174,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         if (coalesce) {
             final TrackingMutableRowSet rowSet;
             try {
-                rowSet = SUT.getIndex();
+                rowSet = SUT.getRowSet();
                 if (throwException) {
                     fail("Expected exception");
                 }

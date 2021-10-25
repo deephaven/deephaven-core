@@ -6,8 +6,9 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.InstrumentedListenerAdapter;
+import io.deephaven.engine.v2.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.v2.NotificationStepSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -47,7 +48,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
 
     // keep the listener so that it doesn't get garbage collected
     @SuppressWarnings("FieldCanBeLocal")
-    private InstrumentedListenerAdapter listener = null;
+    private ShiftObliviousInstrumentedListenerAdapter listener = null;
 
     /**
      * Create a multithreaded resource to execute data driven models.
@@ -65,11 +66,11 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
     @Override
     protected void modelFarmStarted() {
         Assert.eqNull(listener, "listener");
-        listener = new InstrumentedListenerAdapter(dataManager.table(), false) {
+        listener = new ShiftObliviousInstrumentedListenerAdapter(dataManager.table(), false) {
             private static final long serialVersionUID = -2137065147841887955L;
 
             @Override
-            public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+            public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                 keyIndexCurrentLock.writeLock().lock();
                 keyIndexPrevLock.writeLock().lock();
 

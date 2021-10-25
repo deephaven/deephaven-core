@@ -46,7 +46,7 @@ abstract class StaticNaturalJoinStateManager {
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
                 for (int ii = 0; ii < innerIndex.length; ++ii) {
                     final long rightSide = rightSideFromSlot.applyAsLong(ii);
-                    checkExactMatch(exactMatch, leftTable.getIndex().get(ii), rightSide);
+                    checkExactMatch(exactMatch, leftTable.getRowSet().get(ii), rightSide);
                     innerIndex[ii] = rightSide;
                 }
                 return new ContiguousRedirectionIndexImpl(innerIndex);
@@ -55,10 +55,10 @@ abstract class StaticNaturalJoinStateManager {
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
 
                 long leftPosition = 0;
-                for (final TrackingMutableRowSet.Iterator it = leftTable.getIndex().iterator(); it.hasNext(); ) {
+                for (final TrackingMutableRowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext(); ) {
                     final long next = it.nextLong();
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
-                    checkExactMatch(exactMatch, leftTable.getIndex().get(next), rightSide);
+                    checkExactMatch(exactMatch, leftTable.getRowSet().get(next), rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         sparseRedirections.set(next, rightSide);
                     }
@@ -69,10 +69,10 @@ abstract class StaticNaturalJoinStateManager {
                 final RedirectionIndex redirectionIndex = RedirectionIndexLockFreeImpl.FACTORY.createRedirectionIndex(leftTable.intSize());
 
                 long leftPosition = 0;
-                for (final TrackingMutableRowSet.Iterator it = leftTable.getIndex().iterator(); it.hasNext(); ) {
+                for (final TrackingMutableRowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext(); ) {
                     final long next = it.nextLong();
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
-                    checkExactMatch(exactMatch, leftTable.getIndex().get(next), rightSide);
+                    checkExactMatch(exactMatch, leftTable.getRowSet().get(next), rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         redirectionIndex.put(next, rightSide);
                     }

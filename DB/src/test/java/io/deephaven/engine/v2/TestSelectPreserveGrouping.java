@@ -54,17 +54,17 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     public void testPreserveGrouping() {
         final Table x = TstUtils.testTable(TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
-        assertTrue(x.getIndex().hasGrouping(x.getColumnSource("Sym")));
-        assertFalse(x.getIndex().hasGrouping(x.getColumnSource("Sentinel")));
+        assertTrue(x.getRowSet().hasGrouping(x.getColumnSource("Sym")));
+        assertFalse(x.getRowSet().hasGrouping(x.getColumnSource("Sentinel")));
 
         QueryScope.addParam("switchColumnValue", 1);
         final Table xs = x.select("Sym", "SentinelDoubled=Sentinel*2", "Foo=switchColumnValue", "Sentinel");
         assertTableEquals(x, xs.view("Sym", "Sentinel"));
 
-        assertTrue(xs.getIndex().hasGrouping(xs.getColumnSource("Sym")));
-        assertFalse(xs.getIndex().hasGrouping(xs.getColumnSource("SentinelDoubled")));
-        assertFalse(xs.getIndex().hasGrouping(xs.getColumnSource("Foo")));
-        assertFalse(xs.getIndex().hasGrouping(xs.getColumnSource("Sentinel")));
+        assertTrue(xs.getRowSet().hasGrouping(xs.getColumnSource("Sym")));
+        assertFalse(xs.getRowSet().hasGrouping(xs.getColumnSource("SentinelDoubled")));
+        assertFalse(xs.getRowSet().hasGrouping(xs.getColumnSource("Foo")));
+        assertFalse(xs.getRowSet().hasGrouping(xs.getColumnSource("Sentinel")));
     }
 
     public void testPreserveDeferredGrouping() throws IOException {
@@ -91,23 +91,23 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             final Table readBack = ParquetTools.readTable(dest);
             TableTools.showWithIndex(readBack);
 
-            assertTrue(readBack.getIndex().hasGrouping(readBack.getColumnSource("Sym")));
+            assertTrue(readBack.getRowSet().hasGrouping(readBack.getColumnSource("Sym")));
 
             final Table xs = x.select("Sym", "Sentinel=Sentinel*2", "Foo=Sym", "Sent2=Sentinel");
 
-            assertTrue(xs.getIndex().hasGrouping(xs.getColumnSource("Sym")));
-            assertTrue(xs.getIndex().hasGrouping(xs.getColumnSource("Foo")));
+            assertTrue(xs.getRowSet().hasGrouping(xs.getColumnSource("Sym")));
+            assertTrue(xs.getRowSet().hasGrouping(xs.getColumnSource("Foo")));
             assertSame(xs.getColumnSource("Sym"), xs.getColumnSource("Foo"));
-            assertFalse(xs.getIndex().hasGrouping(xs.getColumnSource("Sentinel")));
-            assertFalse(xs.getIndex().hasGrouping(xs.getColumnSource("Sent2")));
+            assertFalse(xs.getRowSet().hasGrouping(xs.getColumnSource("Sentinel")));
+            assertFalse(xs.getRowSet().hasGrouping(xs.getColumnSource("Sent2")));
 
             final Table xs2 = x.select("Foo=Sym", "Sentinel=Sentinel*2", "Foo2=Foo", "Foo3=Sym");
 
-            assertTrue(xs2.getIndex().hasGrouping(xs2.getColumnSource("Foo")));
-            assertFalse(xs2.getIndex().hasGrouping(xs2.getColumnSource("Sentinel")));
-            assertTrue(xs2.getIndex().hasGrouping(xs2.getColumnSource("Foo2")));
+            assertTrue(xs2.getRowSet().hasGrouping(xs2.getColumnSource("Foo")));
+            assertFalse(xs2.getRowSet().hasGrouping(xs2.getColumnSource("Sentinel")));
+            assertTrue(xs2.getRowSet().hasGrouping(xs2.getColumnSource("Foo2")));
             assertSame(xs2.getColumnSource("Foo2"), xs2.getColumnSource("Foo"));
-            assertTrue(xs2.getIndex().hasGrouping(xs2.getColumnSource("Foo3")));
+            assertTrue(xs2.getRowSet().hasGrouping(xs2.getColumnSource("Foo3")));
         } finally {
             FileUtils.deleteRecursively(testDirectory);
         }

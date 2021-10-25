@@ -250,7 +250,7 @@ class StaticChunkedCrossJoinStateManager
         final boolean ignoreMissing = false;
         if (!rightTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(rightKeys, rightTable.size())) {
-                buildTable(bc, rightTable.getIndex(), rightKeys, (slot, index) -> {
+                buildTable(bc, rightTable.getRowSet(), rightKeys, (slot, index) -> {
                     if (isOverflowLocation(slot)) {
                         addToIndex(overflowRightIndexSource, hashLocationToOverflowLocation(slot), index, ignoreMissing);
                     } else {
@@ -267,7 +267,7 @@ class StaticChunkedCrossJoinStateManager
         final RowSetBuilderRandom resultIndex = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         if (!leftTable.isEmpty()) {
             try (final ProbeContext pc = makeProbeContext(leftKeys, leftTable.size())) {
-                decorationProbe(pc, leftTable.getIndex(), leftKeys, (slot, index) -> {
+                decorationProbe(pc, leftTable.getRowSet(), leftKeys, (slot, index) -> {
                     final long regionStart = index << getNumShiftBits();
                     final TrackingMutableRowSet rightRowSet = getRightIndex(slot);
                     if (rightRowSet.isNonempty()) {
@@ -288,7 +288,7 @@ class StaticChunkedCrossJoinStateManager
                                         @NotNull final ColumnSource<?>[] rightKeys) {
         if (!leftTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(leftKeys, leftTable.size())) {
-                buildTable(bc, leftTable.getIndex(), leftKeys, (slot, index) -> {
+                buildTable(bc, leftTable.getRowSet(), leftKeys, (slot, index) -> {
                     leftIndexToSlot.put(index, slot);
                     final ObjectArraySource<TrackingMutableRowSet> source;
                     if (isOverflowLocation(slot)) {
@@ -308,7 +308,7 @@ class StaticChunkedCrossJoinStateManager
         final boolean ignoreMissing = true;
         if (!rightTable.isEmpty()) {
             try (final ProbeContext pc = makeProbeContext(rightKeys, rightTable.size())) {
-                decorationProbe(pc, rightTable.getIndex(), rightKeys, (slot, index) -> {
+                decorationProbe(pc, rightTable.getRowSet(), rightKeys, (slot, index) -> {
                     if (isOverflowLocation(slot)) {
                         addToIndex(overflowRightIndexSource, hashLocationToOverflowLocation(slot), index, ignoreMissing);
                     } else {
@@ -323,7 +323,7 @@ class StaticChunkedCrossJoinStateManager
         validateKeySpaceSize(leftTable);
 
         final RowSetBuilderSequential resultIndex = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        leftTable.getIndex().forAllLongs(ii -> {
+        leftTable.getRowSet().forAllLongs(ii -> {
             final long regionStart = ii << getNumShiftBits();
             final TrackingMutableRowSet rightRowSet = getRightIndexFromLeftIndex(ii);
             if (rightRowSet.isNonempty()) {
@@ -1650,13 +1650,13 @@ class StaticChunkedCrossJoinStateManager
     }
 
     private void validateKeySpaceSize(final QueryTable leftTable) {
-        final long leftLastKey = leftTable.getIndex().lastRowKey();
+        final long leftLastKey = leftTable.getRowSet().lastRowKey();
         final long rightLastKey = maxRightGroupSize - 1;
         final int minLeftBits = CrossJoinShiftState.getMinBits(leftLastKey);
         final int minRightBits = getNumShiftBits();
         if (minLeftBits + minRightBits > 63) {
             throw new OutOfKeySpaceException("join out of rowSet space (left reqBits + right reqBits > 63): "
-                    + "(left table: {size: " + leftTable.getIndex().size() + " maxIndex: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
+                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxIndex: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
                     + "(right table: {maxIndexUsed: " + rightLastKey + " reqBits: " + minRightBits + "})"
                     + " exceeds Long.MAX_VALUE. Consider flattening left table if possible.");
         }

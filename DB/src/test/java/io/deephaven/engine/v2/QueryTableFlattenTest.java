@@ -7,8 +7,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 import org.junit.Assert;
@@ -83,7 +83,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[9] = 104;
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(data), longCol("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), QueryTableTestBase.SimpleListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(70, 71, 78, 81), longCol("intCol", 70, 71, 78, 81));
@@ -104,7 +104,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(0), c("intCol", 1));
@@ -121,7 +121,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), QueryTableTestBase.SimpleListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(0), c("intCol", 1));
@@ -138,7 +138,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(8), c("intCol", 1));
@@ -156,7 +156,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), QueryTableTestBase.SimpleListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(8), c("intCol", 1));
@@ -180,7 +180,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[9] = 104;
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(data), longCol("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(70, 71, 78, 81), longCol("intCol", 70, 71, 78, 81));
@@ -194,7 +194,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
                 c("intCol", 10, 20, 40, 60));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
@@ -227,18 +227,18 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         TestHelper(final Table sourceTable, final ListenerFactory<T> factory) {
             this.sourceTable = (QueryTable) sourceTable;
             listener = factory.newListener(this.sourceTable);
-            if (listener instanceof Listener) {
+            if (listener instanceof ShiftObliviousListener) {
+                this.sourceTable.listenForUpdates((ShiftObliviousListener) listener);
+            } else if (listener instanceof Listener) {
                 this.sourceTable.listenForUpdates((Listener) listener);
-            } else if (listener instanceof ShiftAwareListener) {
-                this.sourceTable.listenForUpdates((ShiftAwareListener) listener);
             } else {
-                throw new IllegalArgumentException("Listener type unsupported: " + listener.getClass().getName());
+                throw new IllegalArgumentException("ShiftObliviousListener type unsupported: " + listener.getClass().getName());
             }
 
             validator = TableUpdateValidator.make(this.sourceTable);
             final QueryTable validatorTable = validator.getResultTable();
-            final ShiftAwareListener validatorTableListener =
-                    new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
+            final Listener validatorTableListener =
+                    new InstrumentedListenerAdapter(validatorTable, false) {
                         @Override
                         public void onUpdate(Update upstream) {}
 
@@ -254,11 +254,11 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
 
         void modAndValidate(final Runnable modTable, final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
-            modAndValidate(modTable, added, removed, modified, IndexShiftData.EMPTY);
+            modAndValidate(modTable, added, removed, modified, RowSetShiftData.EMPTY);
         }
 
         void modAndValidate(final Runnable modTable, final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified,
-                            final IndexShiftData shifted) {
+                            final RowSetShiftData shifted) {
             ++updateCount;
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(modTable::run);
@@ -267,8 +267,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             if (listener instanceof SimpleListener) {
                 Assert.assertEquals(0, shifted.size());
                 validate((SimpleListener) listener, updateCount, added, removed, modified);
-            } else if (listener instanceof SimpleShiftAwareListener) {
-                validate((SimpleShiftAwareListener) listener, updateCount, added, removed, modified, shifted);
+            } else if (listener instanceof io.deephaven.engine.v2.SimpleListener) {
+                validate((io.deephaven.engine.v2.SimpleListener) listener, updateCount, added, removed, modified, shifted);
             }
         }
     }
@@ -277,11 +277,11 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         return RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
     }
 
-    private static IndexShiftData shiftDataByValues(long... values) {
+    private static RowSetShiftData shiftDataByValues(long... values) {
         if (values.length % 3 != 0) {
             throw new IllegalArgumentException("shift data is defined by triplets {start, end, shift}");
         }
-        IndexShiftData.Builder builder = new IndexShiftData.Builder();
+        RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
         for (int idx = 0; idx < values.length; idx += 3) {
             builder.shiftRange(values[idx], values[idx + 1], values[idx + 2]);
         }
@@ -296,8 +296,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         Assert.assertEquals("simpleListener.modified", modified, listener.modified);
     }
 
-    private static void validate(final SimpleShiftAwareListener listener, final long count, final TrackingMutableRowSet added,
-                                 final TrackingMutableRowSet removed, final TrackingMutableRowSet modified, final IndexShiftData shifted) {
+    private static void validate(final io.deephaven.engine.v2.SimpleListener listener, final long count, final TrackingMutableRowSet added,
+                                 final TrackingMutableRowSet removed, final TrackingMutableRowSet modified, final RowSetShiftData shifted) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.update.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.update.removed);
@@ -317,8 +317,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
         @Override
         public void validate(String msg) {
-            if (t1.getIndex().size() > 0) {
-                Assert.assertEquals(msg, t1.getIndex().size() - 1, t1.getIndex().lastRowKey());
+            if (t1.getRowSet().size() > 0) {
+                Assert.assertEquals(msg, t1.getRowSet().size() - 1, t1.getRowSet().lastRowKey());
             }
         }
 

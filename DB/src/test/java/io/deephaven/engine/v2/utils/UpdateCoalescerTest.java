@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ShortSingleValueSource;
 import org.junit.Test;
@@ -14,22 +14,22 @@ import static io.deephaven.engine.v2.TstUtils.*;
 
 public class UpdateCoalescerTest {
 
-    private ShiftAwareListener.Update[] newEmptyUpdates(int numUpdates) {
-        final ShiftAwareListener.Update[] ret = new ShiftAwareListener.Update[numUpdates];
+    private Listener.Update[] newEmptyUpdates(int numUpdates) {
+        final Listener.Update[] ret = new Listener.Update[numUpdates];
         for (int i = 0; i < numUpdates; ++i) {
-            ret[i] = new ShiftAwareListener.Update();
+            ret[i] = new Listener.Update();
             ret[i].added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             ret[i].removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             ret[i].modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             ret[i].modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            ret[i].shifted = IndexShiftData.EMPTY;
+            ret[i].shifted = RowSetShiftData.EMPTY;
         }
         return ret;
     }
 
     @Test
     public void testTrivialMerge() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(2, 4, 6);
         up[1].added = i(3, 5, 7);
         up[0].modified = i(12, 14, 16);
@@ -51,7 +51,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testMergeMCSFirstALL() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].modified = i(4, 5);
         up[0].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].modified = i(6, 7);
@@ -59,14 +59,14 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet.setAll("A");
 
         final TrackingMutableRowSet origRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 29);
-        final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
+        final Listener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.modifiedColumnSet, "agg.modifiedColumnSet", ModifiedColumnSet.ALL, "ModifiedColumnSet.ALL");
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6, 7));
     }
 
     @Test
     public void testMergeMCSSecondALL() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].modified = i(4, 5);
         up[0].modifiedColumnSet = newMCSForColumns("A", "B", "C");
         up[0].modifiedColumnSet.setAll("A");
@@ -74,14 +74,14 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
 
         final TrackingMutableRowSet origRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 29);
-        final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
+        final Listener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.modifiedColumnSet, "agg.modifiedColumnSet", ModifiedColumnSet.ALL, "ModifiedColumnSet.ALL");
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6, 7));
     }
 
     @Test
     public void testMergeMCSUnion() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].modified = i(4, 5);
         up[0].modifiedColumnSet = newMCSForColumns("A", "B", "C");
         up[0].modifiedColumnSet.setAll("C");
@@ -91,7 +91,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet.setAll("B");
 
         final TrackingMutableRowSet origRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 29);
-        final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
+        final Listener.Update agg = validateFinalIndex(origRowSet, up);
         final ModifiedColumnSet expected = new ModifiedColumnSet(up[0].modifiedColumnSet);
         expected.setAll("B", "C");
         Assert.eqTrue(agg.modifiedColumnSet.containsAll(expected), "agg.modifiedColumnSet.containsAll(expected)");
@@ -100,12 +100,12 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testSuppressModifiedAdds() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(10);
         up[1].modified = i(10);
 
         final TrackingMutableRowSet origRowSet = i();
-        final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
+        final Listener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.getRowSetByValues(10),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(10)");
         Assert.equals(agg.modified, "agg.modified", RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
@@ -114,7 +114,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testRemovedAddedRemoved() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
 
         up[0].added = i(2);
         up[0].removed = i(2);
@@ -126,14 +126,14 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testRemovedThenAdded() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(3);
+        final Listener.Update[] up = newEmptyUpdates(3);
 
         up[0].modified = i(2);
         up[1].removed = i(2);
         up[2].added = i(2);
 
         final TrackingMutableRowSet origRowSet = i(2);
-        final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
+        final Listener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.getRowSetByValues(2),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(2)");
         Assert.equals(agg.removed, "agg.removed", RowSetFactoryImpl.INSTANCE.getRowSetByValues(2),
@@ -144,14 +144,14 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testAddedThenRemoved() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(3);
+        final Listener.Update[] up = newEmptyUpdates(3);
 
         up[0].added = i(2);
         up[1].modified = i(2);
         up[2].removed = i(2);
 
         final TrackingMutableRowSet origRowSet = i();
-        final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
+        final Listener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()");
         Assert.equals(agg.removed, "agg.removed", RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
@@ -162,7 +162,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testShiftRegress1() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].shifted = newShiftDataByTriplets(4, 5, -2);
         up[1].shifted = newShiftDataByTriplets(8, 10, +3, 11, 11, +4);
 
@@ -172,7 +172,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testShiftOverlapWithEntireEmptyShift() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         // original rowSet does not include this value, so it is unambiguous
         up[0].shifted = newShiftDataByTriplets(0, 0, +1); // write 0 to 1
         up[1].shifted = newShiftDataByTriplets(2, 2, -1); // write 2 to 1
@@ -186,7 +186,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testShiftPartialOverlap() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
 
         up[0].shifted = newShiftDataByTriplets(0, 1, +1);
         up[1].shifted = newShiftDataByTriplets(3, 4, -1);
@@ -199,7 +199,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testShiftOverlapViaRecursiveShift() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].shifted = newShiftDataByTriplets(0, 0, +1, 4, 4, -2);
         up[1].shifted = newShiftDataByTriplets(2, 2, -1);
 
@@ -212,7 +212,7 @@ public class UpdateCoalescerTest {
     @Test
     public void testMergeWithDifferentMCS() {
         final ModifiedColumnSet mcsTemplate = newMCSForColumns("A", "B", "C");
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].modified = i(1, 2, 3);
         up[0].modifiedColumnSet = mcsTemplate.copy();
         up[0].modifiedColumnSet.setAll("A", "B");
@@ -225,7 +225,7 @@ public class UpdateCoalescerTest {
         for (int i = 1; i < up.length; ++i) {
             coalescer.update(up[i]);
         }
-        final ShiftAwareListener.Update agg = coalescer.coalesce();
+        final Listener.Update agg = coalescer.coalesce();
 
         Assert.equals(agg.modified, "agg.modified", i(1, 2, 3, 4));
         mcsTemplate.setAllDirty();
@@ -236,7 +236,7 @@ public class UpdateCoalescerTest {
     @Test
     public void testRemoveAfterModify() {
         final ModifiedColumnSet mcsTemplate = newMCSForColumns("A", "B", "C");
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(4);
+        final Listener.Update[] up = newEmptyUpdates(4);
         up[0].modified = i(1, 2, 3);
         up[0].modifiedColumnSet = mcsTemplate.copy();
         up[0].modifiedColumnSet.setAll("A", "B");
@@ -254,7 +254,7 @@ public class UpdateCoalescerTest {
         for (int i = 1; i < up.length; ++i) {
             coalescer.update(up[i]);
         }
-        final ShiftAwareListener.Update agg = coalescer.coalesce();
+        final Listener.Update agg = coalescer.coalesce();
 
         Assert.equals(agg.modified, "agg.modified", i(1, 4));
         mcsTemplate.setAllDirty();
@@ -265,7 +265,7 @@ public class UpdateCoalescerTest {
     @Test
     public void testShiftAfterModifyDirtyPerColumn() {
         final ModifiedColumnSet mcsTemplate = newMCSForColumns("A", "B", "C");
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(3);
+        final Listener.Update[] up = newEmptyUpdates(3);
         up[0].modified = i(1, 2, 3);
         up[0].modifiedColumnSet = mcsTemplate.copy();
         up[0].modifiedColumnSet.setAll("A");
@@ -283,7 +283,7 @@ public class UpdateCoalescerTest {
         for (int i = 1; i < up.length; ++i) {
             coalescer.update(up[i]);
         }
-        final ShiftAwareListener.Update agg = coalescer.coalesce();
+        final Listener.Update agg = coalescer.coalesce();
 
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6));
         mcsTemplate.setAllDirty();
@@ -293,7 +293,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].removed = i(0, 4, 5);
         up[0].modified = i(0, 1, 2, 3);
         up[0].shifted = newShiftDataByTriplets(1, 3, -1, 6, 6, -3);
@@ -310,7 +310,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress2() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].removed = i(0, 3);
         up[0].modified = i(0, 1);
         up[0].modifiedColumnSet = ModifiedColumnSet.ALL;
@@ -328,7 +328,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress3() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(0, 1, 2);
         up[0].removed = i(0, 2);
         up[0].modified = i(3);
@@ -346,7 +346,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress4() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(1, 2);
         up[0].shifted = newShiftDataByTriplets(1, 1, +2);
         up[1].added = i(1, 2);
@@ -361,7 +361,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress5() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(0, 3);
         up[0].modified = i(1, 2);
         up[0].modifiedColumnSet = ModifiedColumnSet.ALL;
@@ -376,7 +376,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress6() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(0, 3);
         up[0].removed = i(1);
         up[0].modified = i(1, 2, 4);
@@ -389,7 +389,7 @@ public class UpdateCoalescerTest {
         up[1].shifted = newShiftDataByTriplets(2, 2, -1);
 
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 3);
-        final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
+        final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
         rowSet.insert(agg.added);
@@ -398,7 +398,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress7() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(0, 1, 2);
         up[0].removed = i(1, 2, 4);
         up[0].modified = i(3, 4);
@@ -411,7 +411,7 @@ public class UpdateCoalescerTest {
         up[1].shifted = newShiftDataByTriplets(1, 1, -1, 3, 4, -2);
 
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 4);
-        final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
+        final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
         rowSet.insert(agg.added);
@@ -420,7 +420,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress8() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(2, 3, 4);
         up[0].removed = i(0, 1, 3);
         up[0].modified = i(0, 1);
@@ -432,7 +432,7 @@ public class UpdateCoalescerTest {
         up[1].shifted = newShiftDataByTriplets(0, 2, +1, 3, 4, +2);
 
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 4);
-        final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
+        final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
         rowSet.insert(agg.added);
@@ -441,7 +441,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress9() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(0, 2, 4);
         up[0].removed = i(0);
         up[0].modified = i(1, 3);
@@ -453,7 +453,7 @@ public class UpdateCoalescerTest {
         up[1].shifted = newShiftDataByTriplets(3, 4, -2);
 
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2);
-        final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
+        final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
         rowSet.insert(agg.added);
@@ -462,7 +462,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress10() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(1, 3, 4);
         up[0].removed = i(2);
         up[0].shifted = newShiftDataByTriplets(1, 1, +1);
@@ -471,7 +471,7 @@ public class UpdateCoalescerTest {
         up[1].shifted = newShiftDataByTriplets(1, 4, -1);
 
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2);
-        final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
+        final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
         rowSet.insert(agg.added);
@@ -480,7 +480,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress11() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(1, 2);
         up[0].removed = i(1, 5);
         up[0].shifted = newShiftDataByTriplets(2, 4, +1);
@@ -489,7 +489,7 @@ public class UpdateCoalescerTest {
         up[1].shifted = newShiftDataByTriplets(5, 6, -2);
 
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 6);
-        final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
+        final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
         rowSet.insert(agg.added);
@@ -498,7 +498,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress12() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
+        final Listener.Update[] up = newEmptyUpdates(2);
         up[0].added = i(2, 3);
         up[0].removed = i(0);
         up[0].shifted = newShiftDataByTriplets(1, 2, -1);
@@ -507,7 +507,7 @@ public class UpdateCoalescerTest {
         up[1].shifted = newShiftDataByTriplets(0, 0, +1);
 
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 6);
-        final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
+        final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
         rowSet.insert(agg.added);
@@ -518,7 +518,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testFlattenRegress13() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(4);
+        final Listener.Update[] up = newEmptyUpdates(4);
         up[0].added = i(2, 4, 5);
         up[0].removed = i(0, 3, 5);
         up[0].shifted = newShiftDataByTriplets(1, 4, -1);
@@ -531,7 +531,7 @@ public class UpdateCoalescerTest {
         up[3].shifted = newShiftDataByTriplets(7, 10, +1);
 
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 5);
-        final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
+        final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
         rowSet.insert(agg.added);
@@ -540,7 +540,7 @@ public class UpdateCoalescerTest {
 
     @Test
     public void testSortRegress1() {
-        final ShiftAwareListener.Update[] up = newEmptyUpdates(4);
+        final Listener.Update[] up = newEmptyUpdates(4);
         // {added={1073741825,1073741827-1073741828,1073741832-1073741833}, removed={1073741825-1073741827},
         // modified={1073741829,1073741831}, shifted={[1073741828,1073741828]-2},
         // modifiedColumnSet={Sym,doubleCol,Indices}}
@@ -570,10 +570,10 @@ public class UpdateCoalescerTest {
         validateFinalIndex(rowSet, up);
     }
 
-    private IndexShiftData newShiftDataByTriplets(long... values) {
+    private RowSetShiftData newShiftDataByTriplets(long... values) {
         Assert.eqTrue(values.length % 3 == 0, "values.length % 3 == 0");
 
-        final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
         for (int i = 0; i < values.length; i += 3) {
             builder.shiftRange(values[i], values[i + 1], values[i + 2]);
         }
@@ -581,19 +581,19 @@ public class UpdateCoalescerTest {
         return builder.build();
     }
 
-    private ShiftAwareListener.Update validateFinalIndex(final TrackingMutableRowSet rowSet, final ShiftAwareListener.Update[] updates) {
+    private Listener.Update validateFinalIndex(final TrackingMutableRowSet rowSet, final Listener.Update[] updates) {
         final UpdateCoalescer coalescer = new UpdateCoalescer(rowSet, updates[0]);
         for (int i = 1; i < updates.length; ++i) {
             coalescer.update(updates[i]);
         }
-        final ShiftAwareListener.Update agg = coalescer.coalesce();
+        final Listener.Update agg = coalescer.coalesce();
 
         try (final TrackingMutableRowSet perUpdate = rowSet.clone();
              final TrackingMutableRowSet aggUpdate = rowSet.clone();
              final TrackingMutableRowSet perModify = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
              final TrackingMutableRowSet perAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet()) {
 
-            for (ShiftAwareListener.Update up : updates) {
+            for (Listener.Update up : updates) {
                 perAdded.remove(up.removed);
                 up.shifted.apply(perAdded);
                 perAdded.insert(up.added);

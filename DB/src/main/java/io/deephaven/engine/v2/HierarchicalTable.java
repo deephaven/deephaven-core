@@ -25,7 +25,7 @@ public class HierarchicalTable extends QueryTable {
     private final HierarchicalTableInfo info;
 
     private HierarchicalTable(@NotNull QueryTable rootTable, @NotNull HierarchicalTableInfo info) {
-        super(rootTable.getDefinition(), rootTable.getIndex(), rootTable.getColumnSourceMap());
+        super(rootTable.getDefinition(), rootTable.getRowSet(), rootTable.getColumnSourceMap());
         this.rootTable = rootTable;
         this.info = info;
         setAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE, info);
@@ -368,15 +368,15 @@ public class HierarchicalTable extends QueryTable {
         final Mutable<HierarchicalTable> resultHolder = new MutableObject<>();
 
         // Create a copy of the root byExternal table as a HierarchicalTable, and wire it up for listeners.
-        final ShiftAwareSwapListener swapListener =
-                rootTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+        final SwapListener swapListener =
+                rootTable.createSwapListenerIfRefreshing(SwapListener::new);
         rootTable.initializeWithSnapshot("-hierarchicalTable", swapListener, (usePrev, beforeClockValue) -> {
             final HierarchicalTable table = new HierarchicalTable(rootTable, info);
             rootTable.copyAttributes(table, a -> true);
 
             if (swapListener != null) {
-                final ShiftAwareListenerImpl listener =
-                        new ShiftAwareListenerImpl("hierarchicalTable()", rootTable, table);
+                final ListenerImpl listener =
+                        new ListenerImpl("hierarchicalTable()", rootTable, table);
                 swapListener.setListenerAndResult(listener, table);
                 table.addParentReference(swapListener);
             }

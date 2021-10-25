@@ -5,13 +5,13 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.SortHelpers;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.RollingReleaseFilter;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -188,21 +188,21 @@ public class SortBenchmark {
         long rmMarker = ((currStep + numSteps - workingSizeInSteps) % numSteps) * sizePerStep;
         currStep = (currStep + 1) % numSteps;
 
-        ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-        update.added = inputTable.getIndex().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
-        update.modified = inputTable.getIndex().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
-        update.removed = inputTable.getIndex().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
+        Listener.Update update = new Listener.Update();
+        update.added = inputTable.getRowSet().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
+        update.modified = inputTable.getRowSet().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
+        update.removed = inputTable.getRowSet().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
         update.modified.retain(rollingInputRowSet);
         update.removed.retain(rollingInputRowSet);
         update.modifiedColumnSet = mcsWithoutSortColumn;
-        update.shifted = IndexShiftData.EMPTY;
+        update.shifted = RowSetShiftData.EMPTY;
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             rollingInputRowSet.update(update.added, update.removed);
             rollingInputTable.notifyListeners(update);
         });
 
-        Assert.eq(rollingOutputTable.getIndex().size(), "rollingOutputTable.build().size()",
+        Assert.eq(rollingOutputTable.getRowSet().size(), "rollingOutputTable.build().size()",
                 rollingInputRowSet.size(), "rollingInputRowSet.size()");
         return rollingOutputTable;
     }
@@ -214,21 +214,21 @@ public class SortBenchmark {
         long rmMarker = ((currStep + numSteps - workingSizeInSteps) % numSteps) * sizePerStep;
         currStep = (currStep + 1) % numSteps;
 
-        ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-        update.added = inputTable.getIndex().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
-        update.modified = inputTable.getIndex().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
-        update.removed = inputTable.getIndex().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
+        Listener.Update update = new Listener.Update();
+        update.added = inputTable.getRowSet().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
+        update.modified = inputTable.getRowSet().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
+        update.removed = inputTable.getRowSet().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
         update.modified.retain(rollingInputRowSet);
         update.removed.retain(rollingInputRowSet);
         update.modifiedColumnSet = mcsWithSortColumn;
-        update.shifted = IndexShiftData.EMPTY;
+        update.shifted = RowSetShiftData.EMPTY;
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             rollingInputRowSet.update(update.added, update.removed);
             rollingInputTable.notifyListeners(update);
         });
 
-        Assert.eq(rollingOutputTable.getIndex().size(), "rollingOutputTable.build().size()",
+        Assert.eq(rollingOutputTable.getRowSet().size(), "rollingOutputTable.build().size()",
                 rollingInputRowSet.size(), "rollingInputRowSet.size()");
         return rollingOutputTable;
     }

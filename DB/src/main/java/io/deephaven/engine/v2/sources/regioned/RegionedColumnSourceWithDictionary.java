@@ -247,17 +247,17 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         return sourceTable.memoizeResult(MemoizedOperationKey.symbolTable(this, useLookupCaching), () -> {
             final String description = "getSymbolTable(" + sourceTable.getDescription() + ", " + useLookupCaching + ')';
             return QueryPerformanceRecorder.withNugget(description, sourceTable.size(), () -> {
-                final ShiftAwareSwapListener swapListener =
-                        sourceTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+                final SwapListener swapListener =
+                        sourceTable.createSwapListenerIfRefreshing(SwapListener::new);
                 final Mutable<Table> result = new MutableObject<>();
                 sourceTable.initializeWithSnapshot(description, swapListener,
                         (final boolean usePrev, final long beforeClockValue) -> {
                             final QueryTable symbolTable;
                             if (swapListener == null) {
-                                symbolTable = getStaticSymbolTable(sourceTable.getIndex(), useLookupCaching);
+                                symbolTable = getStaticSymbolTable(sourceTable.getRowSet(), useLookupCaching);
                             } else {
                                 symbolTable = getStaticSymbolTable(
-                                        usePrev ? sourceTable.getIndex().getPrevRowSet() : sourceTable.getIndex(),
+                                        usePrev ? sourceTable.getRowSet().getPrevRowSet() : sourceTable.getRowSet(),
                                         useLookupCaching);
                                 swapListener.setListenerAndResult(
                                         new SymbolTableUpdateListener(description, sourceTable, symbolTable),
@@ -272,7 +272,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         });
     }
 
-    private final class SymbolTableUpdateListener extends BaseTable.ShiftAwareListenerImpl {
+    private final class SymbolTableUpdateListener extends BaseTable.ListenerImpl {
 
         private final BaseTable symbolTable;
         private final ModifiedColumnSet emptyModifiedColumns;
@@ -305,7 +305,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
             try (final TrackingMutableRowSet.SearchIterator keysToVisit = upstream.added.searchIterator();
-                 final RowSequence.Iterator knownKeys = symbolTable.getIndex().getRowSequenceIterator()) {
+                 final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
@@ -315,9 +315,9 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
             final TrackingMutableRowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.isNonempty()) {
-                symbolTable.getIndex().insert(symbolTableAdded);
+                symbolTable.getRowSet().insert(symbolTableAdded);
                 symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, emptyModifiedColumns));
+                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, emptyModifiedColumns));
             }
         }
     }

@@ -46,9 +46,9 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     private Throwable exception = null;
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    class FailureListener extends InstrumentedShiftAwareListener {
+    class FailureListener extends InstrumentedListener {
         FailureListener() {
-            super("Failure Listener");
+            super("Failure ShiftObliviousListener");
         }
 
         @Override
@@ -73,7 +73,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         }
     }
 
-    private final ShiftAwareListener failureListener = new FailureListener();
+    private final Listener failureListener = new FailureListener();
     {
         // subscribe before the validator in case we are printing table updates
         if (originalValue instanceof QueryTable) {

@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
 
-public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftAwareListenerImpl {
+public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ListenerImpl {
     private static final int CHUNK_SIZE = 1 << 16;
     private final String description;
     private final String column;
@@ -34,7 +34,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
         this.description = description;
         this.column = columnName;
         this.order = order;
-        parentRowSet = parent.getIndex();
+        parentRowSet = parent.getRowSet();
         parentColumnSource = parent.getColumnSource(columnName);
         parentColumnSet = parent.newModifiedColumnSet(columnName);
         sortCheck = SortCheck.make(parentColumnSource.getChunkType(), order == SortingOrder.Descending);

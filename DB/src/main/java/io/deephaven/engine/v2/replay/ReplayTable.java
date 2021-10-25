@@ -67,7 +67,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         }
         final TrackingMutableRowSet added = indexBuilder.build();
         if (added.size() > 0) {
-            getIndex().insert(added);
+            getRowSet().insert(added);
             notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
     }

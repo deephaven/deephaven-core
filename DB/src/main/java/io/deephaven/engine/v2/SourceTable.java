@@ -248,8 +248,8 @@ public abstract class SourceTable extends RedefinableTable {
     protected final QueryTable doCoalesce() {
         initialize();
 
-        final ShiftAwareSwapListener swapListener =
-                createSwapListenerIfRefreshing((final BaseTable parent) -> new ShiftAwareSwapListener(parent) {
+        final SwapListener swapListener =
+                createSwapListenerIfRefreshing((final BaseTable parent) -> new SwapListener(parent) {
 
                     @Override
                     public void destroy() {
@@ -271,8 +271,8 @@ public abstract class SourceTable extends RedefinableTable {
             copyAttributes(resultTable, CopyAttributeOperation.Coalesce);
 
             if (swapListener != null) {
-                final ShiftAwareListenerImpl listener =
-                        new ShiftAwareListenerImpl("SourceTable.coalesce", this, resultTable) {
+                final ListenerImpl listener =
+                        new ListenerImpl("SourceTable.coalesce", this, resultTable) {
 
                             @Override
                             protected void destroy() {

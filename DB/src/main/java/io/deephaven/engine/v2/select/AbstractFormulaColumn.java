@@ -75,7 +75,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public List<String> initInputs(Table table) {
-        return initInputs(table.getIndex(), table.getColumnSourceMap());
+        return initInputs(table.getRowSet(), table.getColumnSourceMap());
     }
 
     @Override

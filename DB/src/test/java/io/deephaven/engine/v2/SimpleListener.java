@@ -3,8 +3,8 @@ package io.deephaven.engine.v2;
 /**
  * A listener for use in unit tests that writes down the update it receives and counts how many it received.
  */
-public class SimpleShiftAwareListener extends InstrumentedShiftAwareListenerAdapter {
-    public SimpleShiftAwareListener(DynamicTable source) {
+public class SimpleListener extends InstrumentedListenerAdapter {
+    public SimpleListener(DynamicTable source) {
         super(source, false);
         reset();
     }
@@ -35,7 +35,7 @@ public class SimpleShiftAwareListener extends InstrumentedShiftAwareListenerAdap
 
     @Override
     public String toString() {
-        return "SimpleShiftAwareListener{" +
+        return "SimpleListener{" +
                 "count=" + count +
                 (update == null ? ""
                         : (", added=" + update.added +

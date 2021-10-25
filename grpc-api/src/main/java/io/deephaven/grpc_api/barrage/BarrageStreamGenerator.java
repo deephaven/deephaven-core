@@ -633,9 +633,9 @@ public class BarrageStreamGenerator implements
     }
 
     public static class IndexShiftDataGenerator extends ByteArrayGenerator {
-        public final IndexShiftData original;
+        public final RowSetShiftData original;
 
-        public IndexShiftDataGenerator(final IndexShiftData shifted) throws IOException {
+        public IndexShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
             this.original = shifted;
 
             final RowSetBuilderSequential sRangeBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();

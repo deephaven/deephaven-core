@@ -682,7 +682,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final List<Table> results = new ArrayList<>();
         // noinspection MismatchedQueryAndUpdateOfCollection
-        final List<ShiftAwareListener> listeners = new ArrayList<>();
+        final List<Listener> listeners = new ArrayList<>();
         int lastResultSize = 0;
 
         try {
@@ -833,8 +833,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                 for (int newResult = lastResultSize; newResult < results.size(); ++newResult) {
                     final DynamicTable dynamicTable = (DynamicTable) results.get(newResult);
-                    final InstrumentedShiftAwareListenerAdapter listener =
-                            new InstrumentedShiftAwareListenerAdapter("errorListener", dynamicTable, false) {
+                    final InstrumentedListenerAdapter listener =
+                            new InstrumentedListenerAdapter("errorListener", dynamicTable, false) {
                                 @Override
                                 public void onUpdate(final Update upstream) {}
 
@@ -1491,14 +1491,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                         // and make sure the terrible thing has happened
                         if (result1.length == 4) {
-                            Assert.eq(table.getIndex().size(), "table.build().size()", 5);
+                            Assert.eq(table.getRowSet().size(), "table.build().size()", 5);
                         }
 
                         // noinspection unchecked
                         final ColumnSource<String> cs = table.getColumnSource("y");
 
                         int ii = 0;
-                        for (final TrackingMutableRowSet.Iterator it = table.getIndex().iterator(); it.hasNext();) {
+                        for (final TrackingMutableRowSet.Iterator it = table.getRowSet().iterator(); it.hasNext();) {
                             final long key = it.nextLong();
                             result1[ii++] = cs.get(key);
                         }
@@ -1578,16 +1578,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(snap, right);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update(i(1), i(), i(),
-                    IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+            final Listener.Update downstream = new Listener.Update(i(1), i(), i(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
             TstUtils.addToTable(right, downstream.added, c("x", 2));
             right.notifyListeners(downstream);
         });
         TstUtils.assertTableEquals(snap, prevTable(right));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update(i(1), i(), i(),
-                    IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+            final Listener.Update downstream = new Listener.Update(i(1), i(), i(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
             TstUtils.addToTable(left, downstream.added);
             left.notifyListeners(downstream);
         });

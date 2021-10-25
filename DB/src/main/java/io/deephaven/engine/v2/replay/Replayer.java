@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.DynamicTable;
-import io.deephaven.engine.v2.InstrumentedListener;
+import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.TerminalNotification;
@@ -33,7 +33,7 @@ import static io.deephaven.engine.tables.utils.DBTimeUtils.nanosToTime;
  * Replay historical data as simulated real-time data.
  */
 public class Replayer implements ReplayerInterface, LiveTable {
-    private static final Logger log = LoggerFactory.getLogger(InstrumentedListener.class);
+    private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
     protected DBDateTime startTime;
     protected DBDateTime endTime;
@@ -235,7 +235,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
     @Override
     public DynamicTable replay(Table dataSource, String timeColumn) {
         final ReplayTable result =
-                new ReplayTable(dataSource.getIndex(), dataSource.getColumnSourceMap(), timeColumn, this);
+                new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
             LiveTableMonitor.DEFAULT.addTable(result);
@@ -254,7 +254,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
      */
     @Override
     public DynamicTable replayGrouped(Table dataSource, String timeColumn, String groupingColumn) {
-        final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getIndex(),
+        final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getRowSet(),
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
@@ -273,7 +273,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
      */
     @Override
     public DynamicTable replayGroupedLastBy(Table dataSource, String timeColumn, String... groupingColumns) {
-        final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getIndex(),
+        final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getRowSet(),
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {

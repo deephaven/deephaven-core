@@ -14,8 +14,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SafeCloseableList;
@@ -90,7 +90,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
-            final TrackingMutableRowSet fullRowSet = usePrev ? closer.add(parent.getIndex().getPrevRowSet()) : parent.getIndex();
+            final TrackingMutableRowSet fullRowSet = usePrev ? closer.add(parent.getRowSet().getPrevRowSet()) : parent.getRowSet();
             final TrackingMutableRowSet rowSetToUpdate = closer.add(fullRowSet.clone());
 
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
@@ -119,7 +119,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 }
             });
 
-            this.resultTable = new QueryTable(parent.getIndex(), newColumns);
+            this.resultTable = new QueryTable(parent.getRowSet(), newColumns);
 
             transformer =
                     parent.newModifiedColumnSetTransformer(resultTable, parent.getDefinition().getColumnNamesArray());
@@ -133,7 +133,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 mc.getFilter().setRecomputeListener(mc.column);
             });
 
-            ShiftAwareListener eventualListener = null;
+            io.deephaven.engine.v2.Listener eventualListener = null;
             MergedListener eventualMergedListener = null;
             if (parent.isRefreshing()) {
                 // If we're refreshing, our final listener needs to handle upstream updates from a recorder.
@@ -184,7 +184,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         protected void process() {
-            final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update(
+            final io.deephaven.engine.v2.Listener.Update downstream = new io.deephaven.engine.v2.Listener.Update(
                     recorder.getAdded().clone(),
                     recorder.getRemoved().clone(),
                     recorder.getModified().clone(),
@@ -227,14 +227,14 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         protected void process() {
-            ShiftAwareListener.Update downstream = null;
+            io.deephaven.engine.v2.Listener.Update downstream = null;
             for (final ColumnHolder holder : matchColumns) {
                 if (holder.column.recomputeRequested()) {
                     if (downstream == null) {
-                        downstream = new ShiftAwareListener.Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                        downstream = new io.deephaven.engine.v2.Listener.Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                IndexShiftData.EMPTY,
+                                RowSetShiftData.EMPTY,
                                 resultTable.modifiedColumnSet);
                     }
 
@@ -392,7 +392,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         /**
-         * Update the internal rowSet with the upstream {@link io.deephaven.engine.v2.ShiftAwareListener.Update}. If the
+         * Update the internal rowSet with the upstream {@link io.deephaven.engine.v2.Listener.Update}. If the
          * column was recomputed, return an optional containing rows that were modified.
          *
          * @param added the set of added rows in the update
@@ -407,7 +407,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @return an Optional containing rows modified to add to the downstream update
          */
         @Nullable
-        private TrackingMutableRowSet update(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified, TrackingMutableRowSet modPreShift, IndexShiftData shift,
+        private TrackingMutableRowSet update(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified, TrackingMutableRowSet modPreShift, RowSetShiftData shift,
                                              ModifiedColumnSet upstreamModified, ModifiedColumnSet downstreamModified,
                                              QueryTable table) {
             final boolean affected = upstreamModified != null && upstreamModified.containsAny(possibleUpstreamModified);
@@ -450,7 +450,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         private TrackingMutableRowSet recompute(QueryTable table, RowSet upstreamAdded) {
             doRecompute = false;
-            final TrackingMutableRowSet refiltered = filter.filter(table.getIndex().clone(), table.getIndex(), table, false);
+            final TrackingMutableRowSet refiltered = filter.filter(table.getRowSet().clone(), table.getRowSet(), table, false);
 
             // This is just Xor, but there is no TrackingMutableRowSet op for that
             final TrackingMutableRowSet newlySet = refiltered.minus(source);

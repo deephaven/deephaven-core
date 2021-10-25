@@ -2,9 +2,10 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.v2.ShiftObliviousListener;
 
 /**
- * Helper utility for coalescing multiple {@link io.deephaven.engine.v2.Listener updates}.
+ * Helper utility for coalescing multiple {@link ShiftObliviousListener updates}.
  */
 public class ShiftObliviousUpdateCoalescer {
 

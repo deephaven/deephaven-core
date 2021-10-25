@@ -2,9 +2,9 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftDataExpander;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.IndexShiftDataExpander;
 
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.utils.IndexShiftDataExpander;
  * {@link MergedListener} should be used when a table has multiple sources, such that each table can process all of it's
  * dependencies at once and fire a single notification to its children.
  */
-public class ListenerRecorder extends BaseTable.ShiftAwareListenerImpl {
+public class ListenerRecorder extends BaseTable.ListenerImpl {
     protected final String logPrefix;
     protected final boolean isRefreshing;
 
@@ -23,7 +23,7 @@ public class ListenerRecorder extends BaseTable.ShiftAwareListenerImpl {
 
     public ListenerRecorder(String description, DynamicTable parent, DynamicTable dependent) {
         super(description, parent, dependent);
-        this.logPrefix = System.identityHashCode(this) + ": " + description + "Listener Recorder: ";
+        this.logPrefix = System.identityHashCode(this) + ": " + description + "ShiftObliviousListener Recorder: ";
         this.isRefreshing = parent.isRefreshing();
     }
 
@@ -79,8 +79,8 @@ public class ListenerRecorder extends BaseTable.ShiftAwareListenerImpl {
         return recordedVariablesAreValid() ? update.getModifiedPreShift() : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 
-    public IndexShiftData getShifted() {
-        return recordedVariablesAreValid() ? update.shifted : IndexShiftData.EMPTY;
+    public RowSetShiftData getShifted() {
+        return recordedVariablesAreValid() ? update.shifted : RowSetShiftData.EMPTY;
     }
 
     public ModifiedColumnSet getModifiedColumnSet() {
@@ -92,12 +92,12 @@ public class ListenerRecorder extends BaseTable.ShiftAwareListenerImpl {
     }
 
     /**
-     * The caller is responsible for closing the {@link IndexShiftDataExpander}.
+     * The caller is responsible for closing the {@link RowSetShiftDataExpander}.
      * 
      * @return a backwards compatible version of added / removed / modified that account for shifting
      */
-    public IndexShiftDataExpander getExpandedARM() {
-        return recordedVariablesAreValid() ? new IndexShiftDataExpander(update, getParent().getIndex())
-                : IndexShiftDataExpander.EMPTY;
+    public RowSetShiftDataExpander getExpandedARM() {
+        return recordedVariablesAreValid() ? new RowSetShiftDataExpander(update, getParent().getRowSet())
+                : RowSetShiftDataExpander.EMPTY;
     }
 }

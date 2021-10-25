@@ -278,13 +278,13 @@ class IncrementalChunkedByAggregationStateManager
             return;
         }
         try (final BuildContext bc = makeBuildContext(keySources, sourceTable.size())) {
-            buildTable(bc, sourceTable.getIndex(), keySources, aggregationUpdateTracker::processInitialAdd, aggregationUpdateTracker::processStateMove);
+            buildTable(bc, sourceTable.getRowSet(), keySources, aggregationUpdateTracker::processInitialAdd, aggregationUpdateTracker::processStateMove);
         }
     }
 
     void buildInitialTableFromPrevious(@NotNull final Table sourceTable, @NotNull final ColumnSource<?>[] keySources, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
         final ColumnSource<?>[] prevKeySources;
-        try (final TrackingMutableRowSet prevRowSet = sourceTable.getIndex().getPrevRowSet()) {
+        try (final TrackingMutableRowSet prevRowSet = sourceTable.getRowSet().getPrevRowSet()) {
             if (prevRowSet.isEmpty()) {
                 return;
             }
@@ -1615,12 +1615,12 @@ class IncrementalChunkedByAggregationStateManager
         if (isOverflowLocation(stateSlot)) {
             final int overflowSlot = hashLocationToOverflowLocation(stateSlot);
             final TrackingMutableRowSet overflowStateRowSet = overflowIndexSource.get(overflowSlot);
-            if (IndexShiftData.applyShift(overflowStateRowSet, beginRange, endRange, shiftDelta)) {
+            if (RowSetShiftData.applyShift(overflowStateRowSet, beginRange, endRange, shiftDelta)) {
                 overflowCookieSource.set(overflowSlot, shiftAppliedCallback.invoke(overflowCookieSource.getLong(overflowSlot), stateSlot));
             }
         } else {
             final TrackingMutableRowSet stateRowSet = indexSource.get(stateSlot);
-            if (IndexShiftData.applyShift(stateRowSet, beginRange, endRange, shiftDelta)) {
+            if (RowSetShiftData.applyShift(stateRowSet, beginRange, endRange, shiftDelta)) {
                 cookieSource.set(stateSlot, shiftAppliedCallback.invoke(cookieSource.getLong(stateSlot), stateSlot));
             }
         }

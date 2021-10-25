@@ -9,7 +9,7 @@ import io.deephaven.engine.util.liveness.LivenessNode;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 
 /**
- * Listener for table changes.
+ * ShiftObliviousListener for table changes.
  */
 public interface ListenerBase extends LivenessNode {
     /**

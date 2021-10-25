@@ -14,8 +14,9 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -89,11 +90,11 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asObject, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftAwareListener asObjectListener = new InstrumentedShiftAwareListenerAdapter((DynamicTable) asObject, false) {
+            final Listener asObjectListener = new InstrumentedListenerAdapter((DynamicTable) asObject, false) {
                 @Override
                 public void onUpdate(Update upstream) {
-                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getIndex().getPrevRowSet().intSize())) {
-                        final TrackingMutableRowSet relevantIndices = asObject.getIndex().getPrevRowSet();
+                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getRowSet().getPrevRowSet().intSize())) {
+                        final TrackingMutableRowSet relevantIndices = asObject.getRowSet().getPrevRowSet();
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asObjectChunk(), relevantIndices.asRowKeyChunk(), desc);
                     }
 
@@ -109,16 +110,16 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
 
                         ssa.validate();
 
-                        try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getIndex().getPrevRowSet().intSize())) {
-                            final TrackingMutableRowSet relevantIndices = asObject.getIndex().getPrevRowSet().minus(takeout);
+                        try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getRowSet().getPrevRowSet().intSize())) {
+                            final TrackingMutableRowSet relevantIndices = asObject.getRowSet().getPrevRowSet().minus(takeout);
                             checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asObjectChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
                         if (upstream.shifted.nonempty()) {
-                            final IndexShiftData.Iterator sit = upstream.shifted.applyIterator();
+                            final RowSetShiftData.Iterator sit = upstream.shifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                final TrackingMutableRowSet rowSetToShift = table.getIndex().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
+                                final TrackingMutableRowSet rowSetToShift = table.getRowSet().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
                                 if (rowSetToShift.isEmpty()) {
                                     continue;
                                 }
@@ -138,7 +139,7 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
                         final TrackingMutableRowSet putin = upstream.added.union(upstream.modified);
 
                         try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.intSize())) {
-                            final TrackingMutableRowSet relevantIndices = asObject.getIndex().minus(putin);
+                            final TrackingMutableRowSet relevantIndices = asObject.getRowSet().minus(putin);
                             checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asObjectChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
@@ -159,7 +160,7 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asObject.intSize())) {
-                    checkSsa(ssa, valueSource.getChunk(getContext, asObject.getIndex()).asObjectChunk(), asObject.getIndex().asRowKeyChunk(), desc);
+                    checkSsa(ssa, valueSource.getChunk(getContext, asObject.getRowSet()).asObjectChunk(), asObject.getRowSet().asRowKeyChunk(), desc);
                 }
             }
         }
@@ -181,9 +182,9 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asObject, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asObjectListener = new InstrumentedListenerAdapter((DynamicTable) asObject, false) {
+            final ShiftObliviousListener asObjectListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asObject, false) {
                 @Override
-                public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+                public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
                         if (removed.isNonempty()) {
                             final ObjectChunk<Object, ? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, removed).asObjectChunk();
@@ -205,7 +206,7 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asObject.intSize())) {
-                    checkSsa(ssa, valueSource.getChunk(getContext, asObject.getIndex()).asObjectChunk(), asObject.getIndex().asRowKeyChunk(), desc);
+                    checkSsa(ssa, valueSource.getChunk(getContext, asObject.getRowSet()).asObjectChunk(), asObject.getRowSet().asRowKeyChunk(), desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -217,8 +218,8 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
 
     private void checkSsaInitial(Table asObject, ObjectSegmentedSortedArray ssa, ColumnSource<?> valueSource, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asObject.intSize())) {
-            final ObjectChunk<Object, ? extends Values> valueChunk = valueSource.getChunk(getContext, asObject.getIndex()).asObjectChunk();
-            final LongChunk<Attributes.OrderedRowKeys> tableIndexChunk = asObject.getIndex().asRowKeyChunk();
+            final ObjectChunk<Object, ? extends Values> valueChunk = valueSource.getChunk(getContext, asObject.getRowSet()).asObjectChunk();
+            final LongChunk<Attributes.OrderedRowKeys> tableIndexChunk = asObject.getRowSet().asRowKeyChunk();
 
             ssa.insert(valueChunk, tableIndexChunk);
 

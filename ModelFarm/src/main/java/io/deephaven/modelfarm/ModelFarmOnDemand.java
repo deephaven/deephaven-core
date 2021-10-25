@@ -103,7 +103,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
         final Queue<DATATYPE> dataToEval = new ArrayDeque<>(keys != null ? keys.size() : dataManagerTable.intSize());
         // get data for all keys under the same lock
         DO_LOCKED_FUNCTION.accept((usePrev) -> {
-            final TrackingMutableRowSet rowSet = dataManagerTable.getIndex();
+            final TrackingMutableRowSet rowSet = dataManagerTable.getRowSet();
 
             if (rowSet.isEmpty()) {
                 log.warn().append(ModelFarmOnDemand.class.getSimpleName() + ": ")

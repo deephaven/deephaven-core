@@ -79,7 +79,7 @@ public class TestReadOnlyRedirectedColumnSource {
             final WritableObjectChunk<String, Values> chunk,
             final int sz) {
         final ColumnSource cs = t.getColumnSource(col);
-        final TrackingMutableRowSet ix = t.getIndex();
+        final TrackingMutableRowSet ix = t.getRowSet();
         try (final ColumnSource.FillContext fc = cs.makeFillContext(sz);
                 final RowSequence.Iterator it = ix.getRowSequenceIterator()) {
             long offset = 0;
@@ -139,7 +139,7 @@ public class TestReadOnlyRedirectedColumnSource {
 
         final TByteList byteList = new TByteArrayList(6);
         final ColumnSource reinterpretedB = b.getColumnSource("BoolVal2").reinterpret(byte.class);
-        b.getIndex().forAllLongs(x -> {
+        b.getRowSet().forAllLongs(x -> {
             final byte value = reinterpretedB.getByte(x);
             System.out.println(value);
             byteList.add(value);
@@ -153,7 +153,7 @@ public class TestReadOnlyRedirectedColumnSource {
         assertArrayEquals(expecteds, byteList.toArray());
 
         try (final ChunkSource.GetContext context = reinterpretedB.makeGetContext(6)) {
-            final ByteChunk<? extends Values> result = reinterpretedB.getChunk(context, b.getIndex()).asByteChunk();
+            final ByteChunk<? extends Values> result = reinterpretedB.getChunk(context, b.getRowSet()).asByteChunk();
             final byte[] chunkResult = new byte[6];
             result.copyToTypedArray(0, chunkResult, 0, 6);
             assertArrayEquals(expecteds, chunkResult);
@@ -164,14 +164,14 @@ public class TestReadOnlyRedirectedColumnSource {
         TableTools.showWithIndex(c);
         final ColumnSource reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
         byteList.clear();
-        b.getIndex().forAllLongs(x -> {
+        b.getRowSet().forAllLongs(x -> {
             final byte value = reinterpretedC.getByte(x);
             System.out.println(value);
             byteList.add(value);
         });
 
         byteList.clear();
-        b.getIndex().forAllLongs(x -> {
+        b.getRowSet().forAllLongs(x -> {
             final byte value = reinterpretedC.getPrevByte(x);
             System.out.println(value);
             byteList.add(value);
@@ -182,14 +182,14 @@ public class TestReadOnlyRedirectedColumnSource {
         assertArrayEquals(nullBytes, byteList.toArray());
 
         try (final ChunkSource.GetContext context = reinterpretedC.makeGetContext(6)) {
-            final ByteChunk<? extends Values> result = reinterpretedC.getChunk(context, b.getIndex()).asByteChunk();
+            final ByteChunk<? extends Values> result = reinterpretedC.getChunk(context, b.getRowSet()).asByteChunk();
             final byte[] chunkResult = new byte[6];
             result.copyToTypedArray(0, chunkResult, 0, 6);
             assertArrayEquals(nullBytes, chunkResult);
         }
 
         try (final ChunkSource.GetContext context = reinterpretedC.makeGetContext(6)) {
-            final ByteChunk<? extends Values> result = reinterpretedC.getPrevChunk(context, b.getIndex()).asByteChunk();
+            final ByteChunk<? extends Values> result = reinterpretedC.getPrevChunk(context, b.getRowSet()).asByteChunk();
             final byte[] chunkResult = new byte[6];
             result.copyToTypedArray(0, chunkResult, 0, 6);
             assertArrayEquals(nullBytes, chunkResult);
@@ -218,7 +218,7 @@ public class TestReadOnlyRedirectedColumnSource {
 
         // checks unchunked
         byteList.clear();
-        b.getIndex().forAllLongs(x -> {
+        b.getRowSet().forAllLongs(x -> {
             final byte value = reinterpretedB.getPrevByte(x);
             System.out.println(value);
             byteList.add(value);

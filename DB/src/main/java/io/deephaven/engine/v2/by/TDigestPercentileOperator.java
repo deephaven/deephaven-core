@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
@@ -133,7 +133,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public void propagateInitialState(@NotNull QueryTable resultTable) {
-        resultTable.getIndex().forAllLongs(this::updateDestination);
+        resultTable.getRowSet().forAllLongs(this::updateDestination);
     }
 
     private void updateDestination(long destination) {
@@ -144,7 +144,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream,
+    public void propagateUpdates(@NotNull Listener.Update downstream,
             @NotNull RowSet newDestinations) {
         downstream.added.forAllLongs(this::updateDestination);
         downstream.modified.forAllLongs(this::updateDestination);

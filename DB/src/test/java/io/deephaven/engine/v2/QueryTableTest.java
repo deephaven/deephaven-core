@@ -356,7 +356,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table2 = (QueryTable) table1.updateView("z = x", "x = z + 1", "t = x - 3");
-        final Listener table2Listener = newListenerWithGlobals(table2);
+        final ShiftObliviousListener table2Listener = newListenerWithGlobals(table2);
         table2.listenForUpdates(table2Listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -412,7 +412,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final QueryTable table3 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table4 = (QueryTable) table3.view("z = x", "x = z + 1", "t = x - 3");
-        final Listener table4Listener = newListenerWithGlobals(table4);
+        final ShiftObliviousListener table4Listener = newListenerWithGlobals(table4);
         table4.listenForUpdates(table4Listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -991,13 +991,13 @@ public class QueryTableTest extends QueryTableTestBase {
 
         checkReverse(table, reversed, "Ticker");
 
-        assertEquals("TSLA", reversed.getColumnSource("Ticker").getPrev(reversed.getIndex().getPrevRowSet().get(0)));
+        assertEquals("TSLA", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().getPrevRowSet().get(0)));
 
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
         });
 
-        assertEquals("VXX", reversed.getColumnSource("Ticker").getPrev(reversed.getIndex().getPrevRowSet().get(0)));
+        assertEquals("VXX", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().getPrevRowSet().get(0)));
 
 
         final ColumnSource<Long> longIdentityColumnSource =
@@ -1027,7 +1027,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(0, (long) licsr.get(2));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            bigTable.getIndex().insert(Long.MAX_VALUE);
+            bigTable.getRowSet().insert(Long.MAX_VALUE);
             bigTable.notifyListeners(i(Long.MAX_VALUE), i(), i());
         });
 
@@ -1090,16 +1090,16 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
 
         final QueryTable reverseTable = (QueryTable) table.reverse();
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(reverseTable);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(reverseTable);
         reverseTable.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+            Listener.Update downstream = new Listener.Update();
             downstream.added = downstream.removed = i();
             downstream.modified = i(1);
             downstream.modifiedColumnSet = ModifiedColumnSet.ALL;
 
-            final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(1 << 29, 1 << 30, 1024);
             downstream.shifted = builder.build();
             table.notifyListeners(downstream);
@@ -1114,22 +1114,22 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final QueryTable reversedTable = (QueryTable) table.reverse();
 
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(reversedTable);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(reversedTable);
         reversedTable.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+            Listener.Update downstream = new Listener.Update();
             downstream.added = downstream.removed = downstream.modified = i();
             downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-            final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(0, 1024, 1 << 20);
             builder.shiftRange(1 << 29, 1 << 30, 1024);
             downstream.shifted = builder.build();
 
-            try (final TrackingMutableRowSet rowSetCopy = table.getIndex().clone()) {
+            try (final TrackingMutableRowSet rowSetCopy = table.getRowSet().clone()) {
                 downstream.shifted.apply(rowSetCopy);
-                TstUtils.removeRows(table, table.getIndex());
+                TstUtils.removeRows(table, table.getRowSet());
                 TstUtils.addToTable(table, rowSetCopy, c("Sentinel", 1));
             }
 
@@ -1139,7 +1139,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertNotNull(listener.update);
         assertNotNull(listener.update.shifted);
         assertEquals(1, listener.update.shifted.size());
-        assertEquals(table.reverse().getIndex(), reversedTable.getIndex());
+        assertEquals(table.reverse().getRowSet(), reversedTable.getRowSet());
     }
 
     public void testReverseIncremental() throws ParseException {
@@ -1270,7 +1270,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet rowsToRemove = right.getIndex().clone();
+            final TrackingMutableRowSet rowsToRemove = right.getRowSet().clone();
             removeRows(right, rowsToRemove);
             right.notifyListeners(i(), rowsToRemove, i());
         });
@@ -1660,7 +1660,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final DynamicTable setTable = TstUtils.testRefreshingTable(TableTools.stringCol("Key"));
 
         // Owned by setScope, rc == 1
-        // It will also manage setTable whose rc == 3 after (1 SwapListener, one ListenerImpl from by)
+        // It will also manage setTable whose rc == 3 after (1 ShiftObliviousSwapListener, one ShiftObliviousListenerImpl from by)
         final Table whereIn = toBeFiltered.whereIn(setTable, "Key");
 
         // Manage it rcs == (2,3)
@@ -1738,7 +1738,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 testRefreshingTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"), c("T", 5, 5, 5, 5, 5)),
                 10));
         assertEquals(listener.getCount(), 1);
-        assertEquals(right.getIndex(), added);
+        assertEquals(right.getRowSet(), added);
         assertEquals(i(), modified);
         assertEquals(i(), removed);
         listener.reset();
@@ -1797,8 +1797,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable snapshot = (QueryTable) left.snapshotIncremental(right, true);
         final TableUpdateValidator validator = TableUpdateValidator.make(snapshot);
         final QueryTable validatorTable = validator.getResultTable();
-        final ShiftAwareListener validatorTableListener =
-                new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
+        final Listener validatorTableListener =
+                new InstrumentedListenerAdapter(validatorTable, false) {
                     @Override
                     public void onUpdate(Update upstream) {}
 
@@ -1818,8 +1818,8 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals("", diff(snapshot, firstResult, 10));
         assertEquals("", diff(prevTable(snapshot), firstResult, 10));
 
-        final SimpleShiftAwareListener listener;
-        snapshot.listenForUpdates(listener = new SimpleShiftAwareListener(snapshot));
+        final io.deephaven.engine.v2.SimpleListener listener;
+        snapshot.listenForUpdates(listener = new io.deephaven.engine.v2.SimpleListener(snapshot));
         listener.reset();
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1945,7 +1945,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable, rightInfo);
                     }
                     if (modStamp) {
-                        final long lastStamp = stampTable.getIndex().lastRowKey();
+                        final long lastStamp = stampTable.getRowSet().lastRowKey();
                         final int numAdditions = 1 + random.nextInt(stampSize);
                         final TrackingMutableRowSet stampsToAdd =
                                 RowSetFactoryImpl.INSTANCE.getRowSetByRange(lastStamp + 1, lastStamp + numAdditions);
@@ -1980,13 +1980,13 @@ public class QueryTableTest extends QueryTableTestBase {
                         System.out.println("Right Coalesced Modified: " + coalModified);
 
                         final TrackingMutableRowSet modified = simpleListener.added.union(simpleListener.modified);
-                        final TrackingMutableRowSet unmodified = snapshot.getIndex().minus(modified);
+                        final TrackingMutableRowSet unmodified = snapshot.getRowSet().minus(modified);
                         System.out.println("Modified: " + modified);
                         System.out.println("Unmodified: " + unmodified);
 
                         // verify the modified stamps
                         final int lastStamp =
-                                stampTable.getColumnSource("Stamp").getInt(stampTable.getIndex().lastRowKey());
+                                stampTable.getColumnSource("Stamp").getInt(stampTable.getRowSet().lastRowKey());
                         @SuppressWarnings("unchecked")
                         final ColumnSource<Integer> stamps = snapshot.getColumnSource("Stamp");
                         for (final TrackingMutableRowSet.Iterator it = modified.iterator(); it.hasNext();) {
@@ -2017,8 +2017,8 @@ public class QueryTableTest extends QueryTableTestBase {
                     }
 
                     // make sure everything from the right table matches the snapshot
-                    lastSnapshot = new QueryTable(snapshot.getIndex().clone(), snapshot.getColumnSourceMap());
-                    lastRowSet = rightTable.getIndex().clone();
+                    lastSnapshot = new QueryTable(snapshot.getRowSet().clone(), snapshot.getColumnSourceMap());
+                    lastRowSet = rightTable.getRowSet().clone();
                     // the coalescing listener can be reset
                     coalescingListener.reset();
                     simpleListener.reset();
@@ -2044,16 +2044,16 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.call(queryTable);
-        final SimpleShiftAwareListener simpleListener = new SimpleShiftAwareListener(selected);
+        final io.deephaven.engine.v2.SimpleListener simpleListener = new io.deephaven.engine.v2.SimpleListener(selected);
         selected.listenForUpdates(simpleListener);
 
-        final Supplier<ShiftAwareListener.Update> newUpdate =
-                () -> new ShiftAwareListener.Update(i(), i(), i(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+        final Supplier<Listener.Update> newUpdate =
+                () -> new Listener.Update(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
             TstUtils.removeRows(queryTable, i(2));
-            final ShiftAwareListener.Update update = newUpdate.get();
+            final Listener.Update update = newUpdate.get();
             update.added = i(3);
             update.removed = i(2);
             queryTable.notifyListeners(update);
@@ -2069,7 +2069,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
-            final ShiftAwareListener.Update update = newUpdate.get();
+            final Listener.Update update = newUpdate.get();
             update.modified = i(3);
             update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
             queryTable.notifyListeners(update);
@@ -2084,7 +2084,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 5), c("intCol", 30, 50));
-            final ShiftAwareListener.Update update = newUpdate.get();
+            final Listener.Update update = newUpdate.get();
             update.added = i(5);
             update.modified = i(3);
             update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
@@ -2107,7 +2107,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(queryTable, i(4));
-            final ShiftAwareListener.Update update = newUpdate.get();
+            final Listener.Update update = newUpdate.get();
             update.removed = i(4);
             queryTable.notifyListeners(update);
         });
@@ -2133,16 +2133,16 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.call(queryTable);
-        final SimpleShiftAwareListener simpleListener = new SimpleShiftAwareListener(selected);
+        final io.deephaven.engine.v2.SimpleListener simpleListener = new io.deephaven.engine.v2.SimpleListener(selected);
         selected.listenForUpdates(simpleListener);
 
-        final Supplier<ShiftAwareListener.Update> newUpdate =
-                () -> new ShiftAwareListener.Update(i(), i(), i(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+        final Supplier<Listener.Update> newUpdate =
+                () -> new Listener.Update(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
             TstUtils.removeRows(queryTable, i(2));
-            final ShiftAwareListener.Update update = newUpdate.get();
+            final Listener.Update update = newUpdate.get();
             update.added = i(3);
             update.removed = i(2);
             queryTable.notifyListeners(update);
@@ -2158,7 +2158,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
-            final ShiftAwareListener.Update update = newUpdate.get();
+            final Listener.Update update = newUpdate.get();
             update.modified = i(3);
             update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
             queryTable.notifyListeners(update);
@@ -2173,7 +2173,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 5), c("intCol", 30, 50));
-            final ShiftAwareListener.Update update = newUpdate.get();
+            final Listener.Update update = newUpdate.get();
             update.added = i(5);
             update.modified = i(3);
             update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
@@ -2196,7 +2196,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(queryTable, i(4));
-            final ShiftAwareListener.Update update = newUpdate.get();
+            final Listener.Update update = newUpdate.get();
             update.removed = i(4);
             queryTable.notifyListeners(update);
         });
@@ -2359,7 +2359,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         int[] intPrevDirect =
-                (int[]) IndexedDataColumn.makePreviousColumn(t2.getIndex(), t2.getColumnSource("Int")).getDirect();
+                (int[]) IndexedDataColumn.makePreviousColumn(t2.getRowSet(), t2.getColumnSource("Int")).getDirect();
         if (!Arrays.equals(expected, intPrevDirect)) {
             System.out.println("Expected: " + Arrays.toString(expected));
             System.out.println("Prev: " + Arrays.toString(intPrevDirect));
@@ -2370,7 +2370,7 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         intPrevDirect =
-                (int[]) IndexedDataColumn.makePreviousColumn(t2.getIndex(), t2.getColumnSource("Int")).getDirect();
+                (int[]) IndexedDataColumn.makePreviousColumn(t2.getRowSet(), t2.getColumnSource("Int")).getDirect();
         if (!Arrays.equals(expected, intPrevDirect)) {
             System.out.println("Expected: " + Arrays.toString(expected));
             System.out.println("Prev: " + Arrays.toString(intPrevDirect));
@@ -2427,8 +2427,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
             final TableUpdateValidator validator = TableUpdateValidator.make(t1);
             final QueryTable validatorTable = validator.getResultTable();
-            final ShiftAwareListener validatorTableListener =
-                    new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
+            final Listener validatorTableListener =
+                    new InstrumentedListenerAdapter(validatorTable, false) {
                         @Override
                         public void onUpdate(Update upstream) {}
 
@@ -2455,9 +2455,9 @@ public class QueryTableTest extends QueryTableTestBase {
                     Arrays.asList((String[]) t1.getColumn("Y").getDirect()));
 
             assertEquals(Arrays.asList(1, 1, 1, 2, 2), Ints.asList(
-                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getIndex(), t1.getColumnSource("X")).getDirect()));
+                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getRowSet(), t1.getColumnSource("X")).getDirect()));
             assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList((String[]) IndexedDataColumn
-                    .makePreviousColumn(t1.getIndex(), t1.getColumnSource("Y")).getDirect()));
+                    .makePreviousColumn(t1.getRowSet(), t1.getColumnSource("Y")).getDirect()));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             });
@@ -2468,10 +2468,10 @@ public class QueryTableTest extends QueryTableTestBase {
             assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
                     Arrays.asList((String[]) t1.getColumn("Y").getDirect()));
             assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3), Ints.asList(
-                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getIndex(), t1.getColumnSource("X")).getDirect()));
+                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getRowSet(), t1.getColumnSource("X")).getDirect()));
             assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
                     Arrays.asList((String[]) IndexedDataColumn
-                            .makePreviousColumn(t1.getIndex(), t1.getColumnSource("Y")).getDirect()));
+                            .makePreviousColumn(t1.getRowSet(), t1.getColumnSource("Y")).getDirect()));
         } finally {
             QueryTable.setMinimumUngroupBase(minimumUngroupBase);
         }
@@ -2632,8 +2632,8 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(expected, ungrouped);
 
         // assertTableEquals only calls get(), we need to make sure the specialized get()s also work too.
-        final long firstKey = ungrouped.getIndex().firstRowKey();
-        final long secondKey = ungrouped.getIndex().get(1);
+        final long firstKey = ungrouped.getRowSet().firstRowKey();
+        final long secondKey = ungrouped.getRowSet().get(1);
 
         assertEquals(io.deephaven.util.QueryConstants.NULL_BYTE, ungrouped.getColumnSource("BValue").getByte(firstKey));
         assertEquals((byte) 1, ungrouped.getColumnSource("BValue").getByte(secondKey));
@@ -2881,7 +2881,7 @@ public class QueryTableTest extends QueryTableTestBase {
             // noinspection unchecked
             final ColumnSource<String> symbol = t.getColumnSource("Symbol");
             // noinspection unchecked
-            final Map<String, TrackingMutableRowSet> gtr = (Map) t.getIndex().getGrouping(symbol);
+            final Map<String, TrackingMutableRowSet> gtr = (Map) t.getRowSet().getGrouping(symbol);
             ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
             final Table result =
                     t.whereIn(Table.GroupStrategy.CREATE_GROUPS, t.where("Truthiness=true"), "Symbol", "Timestamp");
@@ -2934,11 +2934,11 @@ public class QueryTableTest extends QueryTableTestBase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final TrackingMutableRowSet newRows = i(2, 4, 18, 20);
             addToTable(lTable, newRows, c("X", "e", "f", "g", "h"));
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = newRows;
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            update.shifted = IndexShiftData.EMPTY;
+            update.shifted = RowSetShiftData.EMPTY;
             lTable.notifyListeners(update);
 
             // now is safe to create the nj
@@ -2963,9 +2963,9 @@ public class QueryTableTest extends QueryTableTestBase {
             }
         });
 
-        Assert.assertEquals(lTable.getIndex().size(), ft.getValue().getIndex().sizePrev());
+        Assert.assertEquals(lTable.getRowSet().size(), ft.getValue().getRowSet().sizePrev());
         Assert.assertTrue(ft.getValue().isFlat());
-        Assert.assertEquals(ft.getValue().getIndex().size(), 8);
+        Assert.assertEquals(ft.getValue().getRowSet().size(), 8);
     }
 
     public void testNoCoalesceOnNotification() {
@@ -2999,13 +2999,13 @@ public class QueryTableTest extends QueryTableTestBase {
         table.setRefreshing(true);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
 
             update.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(parentRowSet.size());
             update.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             update.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            update.shifted = IndexShiftData.EMPTY;
+            update.shifted = RowSetShiftData.EMPTY;
 
             parentRowSet.insert(update.added);
             table.notifyListeners(update);
@@ -3016,13 +3016,13 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testNotifyListenersReleasesUpdateEmptyUpdate() {
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
         final QueryTable src = TstUtils.testRefreshingTable(rowSet);
-        final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+        final Listener.Update update = new Listener.Update();
         update.added = update.removed = update.modified = i();
-        update.shifted = IndexShiftData.EMPTY;
+        update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         // any listener will do for this empty update test
-        final ShiftAwareListener listener = new SimpleShiftAwareListener(src);
+        final Listener listener = new io.deephaven.engine.v2.SimpleListener(src);
         src.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -3035,10 +3035,10 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testNotifyListenersReleasesUpdateNoListeners() {
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
         final QueryTable src = TstUtils.testRefreshingTable(rowSet);
-        final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+        final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
-        update.shifted = IndexShiftData.EMPTY;
+        update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -3051,14 +3051,14 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testNotifyListenersReleasesUpdateDirectListener() {
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
         final QueryTable src = TstUtils.testRefreshingTable(rowSet);
-        final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+        final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
-        update.shifted = IndexShiftData.EMPTY;
+        update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         // we want to specifically test the direct listener path
-        final Listener listener = new SimpleListener(src);
+        final ShiftObliviousListener listener = new SimpleListener(src);
         src.listenForDirectUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -3071,14 +3071,14 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testNotifyListenersReleasesUpdateChildListener() {
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
         final QueryTable src = TstUtils.testRefreshingTable(rowSet);
-        final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+        final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
-        update.shifted = IndexShiftData.EMPTY;
+        update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         // we want to specifically test non-shift-aware-listener path
-        final Listener listener = new SimpleListener(src);
+        final ShiftObliviousListener listener = new SimpleListener(src);
         src.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -3091,14 +3091,14 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testNotifyListenersReleasesUpdateShiftAwareChildListener() {
         final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
         final QueryTable src = TstUtils.testRefreshingTable(rowSet);
-        final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+        final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
-        update.shifted = IndexShiftData.EMPTY;
+        update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         // we want to specifically test shift-aware-listener path
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(src);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(src);
         src.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

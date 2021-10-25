@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
@@ -74,12 +74,12 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public void propagateInitialState(@NotNull final QueryTable resultTable) {
-        copyStreamToResult(resultTable.getIndex());
+        copyStreamToResult(resultTable.getRowSet());
         redirections = null;
     }
 
     @Override
-    public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
+    public void propagateUpdates(@NotNull final Listener.Update downstream,
             @NotNull final RowSet newDestinations) {
         Assert.assertion(downstream.removed.isEmpty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");

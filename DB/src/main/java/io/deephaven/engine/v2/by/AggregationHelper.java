@@ -61,7 +61,7 @@ public class AggregationHelper {
             final Map<String, ColumnSource<?>> keyColumnSourceMap = new LinkedHashMap<>(keyColumns.length);
             final Map<String, ColumnSource<?>> fullColumnSourceMap = new LinkedHashMap<>(existingColumnSourceMap);
             Arrays.stream(keyColumns).forEachOrdered((final SelectColumn keyColumn) -> {
-                keyColumn.initInputs(inputTable.getIndex(), fullColumnSourceMap);
+                keyColumn.initInputs(inputTable.getRowSet(), fullColumnSourceMap);
 
                 // Accumulate our key column inputs
                 final Set<String> thisKeyColumnUpstreamInputColumnNames = new HashSet<>();
@@ -102,14 +102,14 @@ public class AggregationHelper {
     @NotNull
     private static QueryTable noKeyBy(@NotNull final QueryTable inputTable) {
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final ShiftAwareSwapListener swapListener =
-                inputTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+        final SwapListener swapListener =
+                inputTable.createSwapListenerIfRefreshing(SwapListener::new);
         inputTable.initializeWithSnapshot("by()-Snapshot", swapListener,
                 (final boolean usePrev, final long beforeClockValue) -> {
                     final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
-                            new SingleValueObjectColumnSource<>(inputTable.getIndex());
+                            new SingleValueObjectColumnSource<>(inputTable.getRowSet());
                     final boolean empty =
-                            usePrev ? inputTable.getIndex().firstRowKeyPrev() == TrackingMutableRowSet.NULL_ROW_KEY : inputTable.isEmpty();
+                            usePrev ? inputTable.getRowSet().firstRowKeyPrev() == TrackingMutableRowSet.NULL_ROW_KEY : inputTable.isEmpty();
                     final QueryTable resultTable = new QueryTable(
                             RowSetFactoryImpl.INSTANCE.getFlatRowSet(empty ? 0 : 1),
                             inputTable.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
@@ -127,12 +127,12 @@ public class AggregationHelper {
                                 inputTable.getDefinition().getColumnNamesArray(),
                                 resultTable.getDefinition().getColumnNames().stream()
                                         .map(resultTable::newModifiedColumnSet).toArray(ModifiedColumnSet[]::new));
-                        final ShiftAwareListener aggregationUpdateListener =
-                                new BaseTable.ShiftAwareListenerImpl("by()", inputTable, resultTable) {
+                        final Listener aggregationUpdateListener =
+                                new BaseTable.ListenerImpl("by()", inputTable, resultTable) {
                                     @Override
                                     public void onUpdate(@NotNull final Update upstream) {
-                                        final boolean wasEmpty = inputTable.getIndex().firstRowKeyPrev() == TrackingMutableRowSet.NULL_ROW_KEY;
-                                        final boolean isEmpty = inputTable.getIndex().isEmpty();
+                                        final boolean wasEmpty = inputTable.getRowSet().firstRowKeyPrev() == TrackingMutableRowSet.NULL_ROW_KEY;
+                                        final boolean isEmpty = inputTable.getRowSet().isEmpty();
                                         final TrackingMutableRowSet added;
                                         final TrackingMutableRowSet removed;
                                         final TrackingMutableRowSet modified;
@@ -143,13 +143,13 @@ public class AggregationHelper {
                                                 // notified
                                                 return;
                                             }
-                                            resultTable.getIndex().insert(0);
+                                            resultTable.getRowSet().insert(0);
                                             added = RowSetFactoryImpl.INSTANCE.getFlatRowSet(1);
                                             removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                         } else if (isEmpty) {
-                                            resultTable.getIndex().remove(0);
+                                            resultTable.getRowSet().remove(0);
                                             added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             removed = RowSetFactoryImpl.INSTANCE.getFlatRowSet(1);
                                             modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
@@ -170,7 +170,7 @@ public class AggregationHelper {
                                             return;
                                         }
                                         final Update downstream = new Update(added, removed, modified,
-                                                IndexShiftData.EMPTY, modifiedColumnSet);
+                                                RowSetShiftData.EMPTY, modifiedColumnSet);
                                         resultTable.notifyListeners(downstream);
                                     }
                                 };
@@ -273,8 +273,8 @@ public class AggregationHelper {
             @NotNull final ColumnSource<?>[] keyColumnSources,
             @NotNull final Set<String> keyColumnUpstreamInputColumnNames) {
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final ShiftAwareSwapListener swapListener =
-                inputTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+        final SwapListener swapListener =
+                inputTable.createSwapListenerIfRefreshing(SwapListener::new);
         assert swapListener != null;
         inputTable.initializeWithSnapshot("by(" + String.join(",", keyColumnNames) + "-Snapshot", swapListener,
                 (final boolean usePrev, final long beforeClockValue) -> {
@@ -343,7 +343,7 @@ public class AggregationHelper {
                                             .toArray(ModifiedColumnSet[]::new));
 
                     // Handle updates
-                    final ShiftAwareListener aggregationUpdateListener = new BaseTable.ShiftAwareListenerImpl(
+                    final Listener aggregationUpdateListener = new BaseTable.ListenerImpl(
                             "by(" + String.join(",", keyColumnNames) + ')', inputTable, resultTable) {
                         @Override
                         public void onUpdate(@NotNull final Update upstream) {
@@ -370,7 +370,7 @@ public class AggregationHelper {
                                 upstream.shifted
                                         .apply((final long beginRange, final long endRange, final long shiftDelta) -> {
                                             final TrackingMutableRowSet shiftedPreviousRowSet;
-                                            try (final TrackingMutableRowSet previousIndex = inputTable.getIndex().getPrevRowSet()) {
+                                            try (final TrackingMutableRowSet previousIndex = inputTable.getRowSet().getPrevRowSet()) {
                                                 shiftedPreviousRowSet =
                                                         previousIndex.subSetByKeyRange(beginRange, endRange);
                                             }
@@ -463,7 +463,7 @@ public class AggregationHelper {
                 maybeGetGroupingForAggregation(aggregationControl, inputTable, keyColumnSources);
         if (groupingForAggregation != null) {
             final LocalTableMap staticGroupedResult = new LocalTableMap(null, inputTable.getDefinition());
-            AbstractColumnSource.forEachResponsiveGroup(groupingForAggregation, inputTable.getIndex(),
+            AbstractColumnSource.forEachResponsiveGroup(groupingForAggregation, inputTable.getRowSet(),
                     (final Object key, final TrackingMutableRowSet rowSet) -> staticGroupedResult.put(key,
                             subTableSource.getSubTable(rowSet)));
             return staticGroupedResult;
@@ -557,8 +557,8 @@ public class AggregationHelper {
         }
         // noinspection unchecked
         final ColumnSource<Object> keyColumnSource = (ColumnSource<Object>) keyColumnSources[0];
-        if (inputTable.getIndex().hasGrouping(keyColumnSource)) {
-            return inputTable.getIndex().getGrouping(keyColumnSource);
+        if (inputTable.getRowSet().hasGrouping(keyColumnSource)) {
+            return inputTable.getRowSet().getGrouping(keyColumnSource);
         }
         return null;
     }

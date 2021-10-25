@@ -32,7 +32,7 @@ import java.io.IOException;
 public abstract class InstrumentedListenerBase extends LivenessArtifact
         implements ListenerBase, NotificationQueue.Dependency {
 
-    private static final Logger log = LoggerFactory.getLogger(InstrumentedListener.class);
+    private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
     private final UpdatePerformanceTracker.Entry entry;
     private final boolean terminalListener;
@@ -40,7 +40,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
     private boolean failed = false;
     private static volatile boolean verboseLogging = Configuration
             .getInstance()
-            .getBooleanWithDefault("InstrumentedListener.verboseLogging", false);
+            .getBooleanWithDefault("ShiftObliviousInstrumentedListener.verboseLogging", false);
 
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
@@ -73,7 +73,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("InstrumentedListener:(identity=").append(System.identityHashCode(this)).append(", ")
+        return logOutput.append("ShiftObliviousInstrumentedListener:(identity=").append(System.identityHashCode(this)).append(", ")
                 .append(entry).append(")");
     }
 
@@ -171,9 +171,9 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
     protected abstract class NotificationBase extends AbstractIndexUpdateNotification implements LogOutputAppendable {
 
-        final ShiftAwareListener.Update update;
+        final Listener.Update update;
 
-        NotificationBase(final ShiftAwareListener.Update update) {
+        NotificationBase(final Listener.Update update) {
             super(terminalListener);
             this.update = update.acquire();
             if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
@@ -248,7 +248,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
                 if (useVerboseLogging) {
                     // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
                     // clear what is actually going on in some cases of assertion failure related to the indices.
-                    log.error().append("Listener is: ").append(this.toString()).endl();
+                    log.error().append("ShiftObliviousListener is: ").append(this.toString()).endl();
                     log.error().append("Added: ").append(update.added.toString()).endl();
                     log.error().append("Modified: ").append(update.modified.toString()).endl();
                     log.error().append("Removed: ").append(update.removed.toString()).endl();

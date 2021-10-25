@@ -255,7 +255,7 @@ public class ParquetTableWriter {
                 ColumnSource columnSource = nameToSource.getValue();
                 try {
                     // noinspection unchecked
-                    writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource,
+                    writeColumnSource(t.getRowSet(), rowGroupWriter, name, columnSource,
                             definition.getColumn(name), writeInstructions);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException("Failed to write column " + name, e);
@@ -415,7 +415,7 @@ public class ParquetTableWriter {
             };
             stepsCount = valueChunkSize.size();
             Table array = t.ungroup("array");
-            rowSet = array.getIndex();
+            rowSet = array.getRowSet();
             columnSource = array.getColumnSource("array");
         } else {
             int finalTargetSize = targetSize;
@@ -977,7 +977,7 @@ public class ParquetTableWriter {
 
 
     private static Table groupingAsTable(Table tableToSave, String columnName) {
-        Map<?, TrackingMutableRowSet> grouping = tableToSave.getIndex().getGrouping(tableToSave.getColumnSource(columnName));
+        Map<?, TrackingMutableRowSet> grouping = tableToSave.getRowSet().getGrouping(tableToSave.getColumnSource(columnName));
         RangeCollector collector;
         QueryScope.getScope().putParam("__range_collector_" + columnName + "__", collector = new RangeCollector());
         Table firstOfTheKey =

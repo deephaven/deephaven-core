@@ -279,18 +279,18 @@ class RightIncrementalChunkedCrossJoinStateManager
         // This state manager assumes right side is ticking.
         Assert.eqTrue(rightTable.isLive(), "rightTable.isLive()");
         if (!leftTable.isEmpty()) {
-            try (final BuildContext bc = makeBuildContext(leftKeySources, leftTable.getIndex().size())) {
+            try (final BuildContext bc = makeBuildContext(leftKeySources, leftTable.getRowSet().size())) {
                 final boolean isLeft = true;
-                buildTable(bc, leftTable.getIndex(), leftKeySources, null, null,
+                buildTable(bc, leftTable.getRowSet(), leftKeySources, null, null,
                         (cookie, slot, index, prevIndex) -> addToIndex(isLeft, slot, index));
             }
         }
 
         if (!rightTable.isEmpty()) {
             if (isLeftTicking) {
-                try (final BuildContext bc = makeBuildContext(rightKeySources, rightTable.getIndex().size())) {
+                try (final BuildContext bc = makeBuildContext(rightKeySources, rightTable.getRowSet().size())) {
                     final boolean isLeft = false;
-                    buildTable(bc, rightTable.getIndex(), rightKeySources, null, null,
+                    buildTable(bc, rightTable.getRowSet(), rightKeySources, null, null,
                             (cookie, slot, index, prevIndex) -> addToIndex(isLeft, slot, index));
                 }
             } else {
@@ -298,7 +298,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                 try (final ProbeContext pc = makeProbeContext(rightKeySources, rightTable.size())) {
                     final boolean isLeft = false;
                     final boolean usePrev = false;
-                    decorationProbe(pc, rightTable.getIndex(), rightKeySources, usePrev, null,
+                    decorationProbe(pc, rightTable.getRowSet(), rightKeySources, usePrev, null,
                             (cookie, slot, index, prevIndex) -> addToIndex(isLeft, slot, index));
                 }
             }
@@ -309,7 +309,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         validateKeySpaceSize();
 
         final RowSetBuilderSequential resultIndex = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        leftTable.getIndex().forAllLongs(index -> {
+        leftTable.getRowSet().forAllLongs(index -> {
             final long regionStart = index << getNumShiftBits();
             final TrackingMutableRowSet rightRowSet = getRightIndexFromLeftIndex(index);
             if (rightRowSet.isNonempty()) {
@@ -339,11 +339,11 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    void shiftRightIndexToSlot(final RowSet filterIndex, final IndexShiftData shifted) {
+    void shiftRightIndexToSlot(final RowSet filterIndex, final RowSetShiftData shifted) {
         rightIndexToSlot.applyShift(filterIndex, shifted);
     }
 
-    void rightShift(final RowSet filterIndex, final IndexShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
+    void rightShift(final RowSet filterIndex, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
         shifted.forAllInIndex(filterIndex, (ii, delta) -> {
             final long slot = rightIndexToSlot.get(ii);
             if (slot == TrackingMutableRowSet.NULL_ROW_KEY) {
@@ -390,7 +390,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    void rightModified(final ShiftAwareListener.Update upstream, final boolean keyColumnsChanged, final CrossJoinModifiedSlotTracker tracker) {
+    void rightModified(final Listener.Update upstream, final boolean keyColumnsChanged, final CrossJoinModifiedSlotTracker tracker) {
         if (upstream.modified.isEmpty()) {
             return;
         }
@@ -488,7 +488,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         tracker.flushLeftAdds();
     }
 
-    void leftModified(final ShiftAwareListener.Update upstream, final boolean keyColumnsChanged, final CrossJoinModifiedSlotTracker tracker) {
+    void leftModified(final Listener.Update upstream, final boolean keyColumnsChanged, final CrossJoinModifiedSlotTracker tracker) {
         if (upstream.modified.isEmpty()) {
             tracker.flushLeftModifies();
             return;
@@ -548,7 +548,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         tracker.flushLeftModifies();
     }
 
-    void leftShift(final RowSet filterIndex, final IndexShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
+    void leftShift(final RowSet filterIndex, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
         shifted.forAllInIndex(filterIndex, (ii, delta) -> {
             final long slot = leftIndexToSlot.get(ii);
             if (slot == TrackingMutableRowSet.NULL_ROW_KEY) {
@@ -2116,14 +2116,14 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     void validateKeySpaceSize() {
-        final long leftLastKey = leftTable.getIndex().lastRowKey();
+        final long leftLastKey = leftTable.getRowSet().lastRowKey();
         final long rightLastKey = maxRightGroupSize - 1;
         final int minLeftBits = CrossJoinShiftState.getMinBits(leftLastKey);
         final int minRightBits = CrossJoinShiftState.getMinBits(rightLastKey);
         final int numShiftBits = getNumShiftBits();
         if (minLeftBits + numShiftBits > 63) {
             throw new OutOfKeySpaceException("join out of rowSet space (left reqBits + right reservedBits > 63): "
-                    + "(left table: {size: " + leftTable.getIndex().size() + " maxIndex: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
+                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxIndex: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
                     + "(right table: {maxIndexUsed: " + rightLastKey + " reqBits: " + minRightBits + " reservedBits: " + numShiftBits + "})"
                     + " exceeds Long.MAX_VALUE. Consider flattening left table or reserving fewer right bits if possible.");
         }

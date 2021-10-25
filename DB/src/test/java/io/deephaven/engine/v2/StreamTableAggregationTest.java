@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.util.SortedBy;
-import io.deephaven.engine.v2.ShiftAwareListener.Update;
+import io.deephaven.engine.v2.Listener.Update;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.engine.v2.utils.*;
@@ -105,9 +105,9 @@ public class StreamTableAggregationTest {
             try {
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (normalStepInserted.isNonempty()) {
-                        normal.getIndex().insert(normalStepInserted);
+                        normal.getRowSet().insert(normalStepInserted);
                         normal.notifyListeners(new Update(normalStepInserted, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
                 final TrackingMutableRowSet finalStreamLastInserted = streamLastInserted;
@@ -117,10 +117,10 @@ public class StreamTableAggregationTest {
                             streamInternalRowSet.clear();
                             streamInternalRowSet.insert(normalStepInserted);
                         }
-                        stream.getIndex().clear();
-                        stream.getIndex().insert(streamStepInserted);
+                        stream.getRowSet().clear();
+                        stream.getRowSet().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted,
-                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
             } finally {

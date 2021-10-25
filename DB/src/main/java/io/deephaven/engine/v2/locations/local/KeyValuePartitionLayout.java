@@ -162,7 +162,7 @@ public final class KeyValuePartitionLayout<TLK extends TableLocationKey> impleme
         final ColumnSource<? extends Comparable<?>>[] partitionValueSources =
                 partitioningColumnTable.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         final int numColumns = partitionValueSources.length;
-        partitioningColumnTable.getIndex().forAllLongs((final long indexKey) -> {
+        partitioningColumnTable.getRowSet().forAllLongs((final long indexKey) -> {
             for (int ci = 0; ci < numColumns; ++ci) {
                 partitions.put(partitionKeys[ci], partitionValueSources[ci].get(indexKey));
             }

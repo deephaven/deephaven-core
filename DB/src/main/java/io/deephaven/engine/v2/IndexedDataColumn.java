@@ -35,7 +35,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     public IndexedDataColumn(@NotNull final String name, @NotNull final Table table) {
         // noinspection unchecked
-        this(name, table, table.getIndex(), table.getColumnSource(name));
+        this(name, table, table.getRowSet(), table.getColumnSource(name));
     }
 
     public IndexedDataColumn(@NotNull final String name, @NotNull final TrackingMutableRowSet rowSet,

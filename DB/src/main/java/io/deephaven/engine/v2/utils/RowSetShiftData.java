@@ -4,6 +4,10 @@
 
 package io.deephaven.engine.v2.utils;
 
+import gnu.trove.list.TIntList;
+import gnu.trove.list.TLongList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -11,21 +15,17 @@ import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 
 /**
- * A set of sorted shifts. To apply shifts without losing data, use {@link IndexShiftData#apply(Callback)}. The callback
+ * A set of sorted shifts. To apply shifts without losing data, use {@link RowSetShiftData#apply(Callback)}. The callback
  * will be invoked with shifts in an order that will preserve data when applied immediately using memmove semantics.
- * Internally the shifts are ordered by rangeStart. The {@link IndexShiftData.Builder} will verify that no two ranges
- * overlap before or after shifting and assert that the constructed {@code IndexShiftData} will be valid.
+ * Internally the shifts are ordered by rangeStart. The {@link RowSetShiftData.Builder} will verify that no two ranges
+ * overlap before or after shifting and assert that the constructed {@code RowSetShiftData} will be valid.
  */
-public final class IndexShiftData implements Serializable, LogOutputAppendable {
+public final class RowSetShiftData implements Serializable, LogOutputAppendable {
 
     private static final int BEGIN_RANGE_ATTR = 0;
     private static final int END_RANGE_ATTR = 1;
@@ -44,7 +44,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
      */
     private final TIntList polaritySwapIndices;
 
-    private IndexShiftData() {
+    private RowSetShiftData() {
         this.payload = new TLongArrayList();
         this.polaritySwapIndices = new TIntArrayList();
     }
@@ -160,7 +160,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Queries whether this IndexShiftData is empty (i.e. has no shifts).
+     * Queries whether this RowSetShiftData is empty (i.e. has no shifts).
      * 
      * @return true if the size() of this is zero, false if the size is greater than zero
      */
@@ -169,7 +169,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Queries whether this IndexShiftData is non-empty (i.e. has at least one shift).
+     * Queries whether this RowSetShiftData is non-empty (i.e. has at least one shift).
      * 
      * @return true if the size() of this TrackingMutableRowSet greater than zero, false if the size is zero
      */
@@ -209,18 +209,18 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof IndexShiftData)) {
+        if (!(obj instanceof RowSetShiftData)) {
             return false;
         }
-        final IndexShiftData shiftData = (IndexShiftData) obj;
+        final RowSetShiftData shiftData = (RowSetShiftData) obj;
         // Note that comparing payload is sufficient. The polarity indices are precomputed from the payload.
         return shiftData.payload.equals(payload);
     }
 
     /**
-     * Immutable, re-usable {@link IndexShiftData} for an empty set of shifts.
+     * Immutable, re-usable {@link RowSetShiftData} for an empty set of shifts.
      */
-    public static final IndexShiftData EMPTY = new IndexShiftData();
+    public static final RowSetShiftData EMPTY = new RowSetShiftData();
 
     @FunctionalInterface
     public interface Callback {
@@ -286,7 +286,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
      * 
      * @param rowSet the rowSet to shift
      */
-    public void apply(final TrackingMutableRowSet rowSet) {
+    public void apply(final MutableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final RowSetBuilderSequential toInsert = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -300,14 +300,13 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 }
 
                 toRemove.appendRange(beginRange, endRange);
-                rsIt.getNextRowSequenceThrough(endRange).forAllLongRanges((s, e) -> {
-                    toInsert.appendRange(s + shiftDelta, e + shiftDelta);
-                });
+                rsIt.getNextRowSequenceThrough(endRange)
+                        .forAllLongRanges((s, e) -> toInsert.appendRange(s + shiftDelta, e + shiftDelta));
             }
         }
 
-        try (final TrackingMutableRowSet remove = toRemove.build();
-             final TrackingMutableRowSet insert = toInsert.build()) {
+        try (final MutableRowSet remove = toRemove.build();
+                final MutableRowSet insert = toInsert.build()) {
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
@@ -322,9 +321,9 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
      */
-    public static boolean applyShift(@NotNull final TrackingMutableRowSet rowSet, final long beginRange, final long endRange,
-                                     final long shiftDelta) {
-        try (final TrackingMutableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
+    public static boolean applyShift(@NotNull final MutableRowSet rowSet, final long beginRange, final long endRange,
+            final long shiftDelta) {
+        try (final MutableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
             if (toShift.isEmpty()) {
                 return false;
             }
@@ -340,7 +339,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
      * 
      * @param rowSet the rowSet to shift
      */
-    public void unapply(final TrackingMutableRowSet rowSet) {
+    public void unapply(final MutableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final RowSetBuilderSequential toInsert = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -354,14 +353,13 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 }
 
                 toRemove.appendRange(beginRange + shiftDelta, endRange + shiftDelta);
-                rsIt.getNextRowSequenceThrough(endRange + shiftDelta).forAllLongRanges((s, e) -> {
-                    toInsert.appendRange(s - shiftDelta, e - shiftDelta);
-                });
+                rsIt.getNextRowSequenceThrough(endRange + shiftDelta)
+                        .forAllLongRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
             }
         }
 
-        try (final TrackingMutableRowSet remove = toRemove.build();
-             final TrackingMutableRowSet insert = toInsert.build()) {
+        try (final MutableRowSet remove = toRemove.build();
+                final MutableRowSet insert = toInsert.build()) {
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
@@ -373,7 +371,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
      * @param rowSet the rowSet to shift
      * @param offset an additional offset to apply to all shifts (such as when applying to a wrapped table)
      */
-    public void unapply(final TrackingMutableRowSet rowSet, final long offset) {
+    public void unapply(final MutableRowSet rowSet, final long offset) {
         // NB: This is an unapply callback, and beginRange, endRange, and shiftDelta have been adjusted so that this is
         // a reversed shift,
         // hence we use the applyShift helper.
@@ -390,9 +388,9 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
      */
-    public static boolean unapplyShift(@NotNull final TrackingMutableRowSet rowSet, final long beginRange, final long endRange,
-                                       final long shiftDelta) {
-        try (final TrackingMutableRowSet toShift = rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta)) {
+    public static boolean unapplyShift(@NotNull final MutableRowSet rowSet, final long beginRange, final long endRange,
+            final long shiftDelta) {
+        try (final MutableRowSet toShift = rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta)) {
             if (toShift.isEmpty()) {
                 return false;
             }
@@ -573,12 +571,12 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Intersects this IndexShiftData against the provided TrackingMutableRowSet.
+     * Intersects this RowSetShiftData against the provided TrackingMutableRowSet.
      * 
      * @param rowSet the rowSet to test for intersections (pre-shift keyspace)
-     * @return an IndexShiftData containing only non-empty shifts
+     * @return an RowSetShiftData containing only non-empty shifts
      */
-    public IndexShiftData intersect(final TrackingMutableRowSet rowSet) {
+    public RowSetShiftData intersect(final TrackingMutableRowSet rowSet) {
         final Builder builder = new Builder();
 
         for (int idx = 0; idx < size(); ++idx) {
@@ -591,14 +589,14 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Helper utility to build instances of {@link IndexShiftData} with internally consistent data. No other ranges
+     * Helper utility to build instances of {@link RowSetShiftData} with internally consistent data. No other ranges
      * should be added to this builder after {@link Builder#build} is invoked.
      */
     public static class Builder {
-        private IndexShiftData shiftData;
+        private RowSetShiftData shiftData;
 
         public Builder() {
-            this.shiftData = new IndexShiftData();
+            this.shiftData = new RowSetShiftData();
         }
 
         /**
@@ -673,16 +671,16 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         }
 
         /**
-         * Make final modifications to the {@link IndexShiftData} and return it.
+         * Make final modifications to the {@link RowSetShiftData} and return it.
          * 
-         * @return the built IndexShiftData
+         * @return the built RowSetShiftData
          */
-        public IndexShiftData build() {
-            final IndexShiftData retVal = shiftData;
+        public RowSetShiftData build() {
+            final RowSetShiftData retVal = shiftData;
             shiftData = null;
 
             if (retVal.empty()) {
-                return IndexShiftData.EMPTY;
+                return RowSetShiftData.EMPTY;
             }
 
             // Complete the current run.
@@ -710,8 +708,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
          * @param currOffset the new offset where this sub-table begins (may be equal to prevOffset)
          * @param currCardinality the cardinality of the keyspace currently allocated to this table
          */
-        public void appendShiftData(final IndexShiftData innerShiftData, final long prevOffset,
-                final long prevCardinality, final long currOffset, final long currCardinality) {
+        public void appendShiftData(final RowSetShiftData innerShiftData, final long prevOffset,
+                                    final long prevCardinality, final long currOffset, final long currCardinality) {
             long watermarkKey = 0; // id space of source table
 
             // These bounds seem weird. We are going to insert a shift for the keyspace prior to the shift with
@@ -786,7 +784,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Helper utility to build instances of {@link IndexShiftData} with internally consistent data. No other ranges
+     * Helper utility to build instances of {@link RowSetShiftData} with internally consistent data. No other ranges
      * should be added to this builder after {@link Builder#build} is invoked.
      * <p>
      * Differs from {@link Builder} in that it coalesces ranges with the same delta if they have no intervening keys in
@@ -818,7 +816,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         /**
          * The resultant shift data.
          */
-        private IndexShiftData shiftData;
+        private RowSetShiftData shiftData;
 
         /**
          * The rowSet of the first range that needs to be reversed. -1 if there is no range to reverse at the moment.
@@ -858,7 +856,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
          */
         public SmartCoalescingBuilder(@NotNull final RowSet preShiftKeys) {
             this.preShiftKeys = preShiftKeys;
-            shiftData = new IndexShiftData();
+            shiftData = new RowSetShiftData();
         }
 
         /**
@@ -988,7 +986,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 return;
             }
 
-            // If previous shift has different sign than shiftDelta, we must add current rowSet to split run into chunks.
+            // If previous shift has different sign than shiftDelta, we must add current rowSet to split run into
+            // chunks.
             final boolean polaritySwap = (shiftData.getShiftDelta(currentRangeIndex) < 0 ? -1 : 1) * shiftDelta < 0;
             if (polaritySwap) {
                 shiftData.polaritySwapIndices.add(shiftData.size() - 1); // NB: The -1 excludes the new range.
@@ -1060,19 +1059,19 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         }
 
         /**
-         * Make final modifications to the {@link IndexShiftData} and return it. Invoke {@link #close()} to minimize the
+         * Make final modifications to the {@link RowSetShiftData} and return it. Invoke {@link #close()} to minimize the
          * lifetime of the pre-shift {@link RowSequence.Iterator}.
          *
-         * @return The built IndexShiftData
+         * @return The built RowSetShiftData
          */
-        public IndexShiftData build() {
+        public RowSetShiftData build() {
             maybeReverseLastRun();
 
-            final IndexShiftData result = shiftData;
+            final RowSetShiftData result = shiftData;
             close();
 
             if (result.empty()) {
-                return IndexShiftData.EMPTY;
+                return RowSetShiftData.EMPTY;
             }
 
             // Complete the current run.
@@ -1098,19 +1097,20 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * This method creates two parallel TrackingMutableRowSet structures that contain postShiftIndex keys affected by shifts. The two
-     * Indexes have the same size. An element at position k in the first rowSet is the pre-shift key for the same row
-     * whose post-shift key is at position k in the second rowSet.
+     * This method creates two parallel TrackingMutableRowSet structures that contain postShiftIndex keys affected by
+     * shifts. The two Indexes have the same size. An element at position k in the first rowSet is the pre-shift key for
+     * the same row whose post-shift key is at position k in the second rowSet.
      *
-     * @param postShiftIndex The rowSet of keys that were shifted in post-shift keyspace. It should not contain rows that
-     *        did not exist prior to the shift.
-     * @return A SafeCloseablePair of preShiftedKeys and postShiftedKeys that intersect this IndexShiftData with
+     * @param postShiftIndex The rowSet of keys that were shifted in post-shift keyspace. It should not contain rows
+     *        that did not exist prior to the shift.
+     * @return A SafeCloseablePair of preShiftedKeys and postShiftedKeys that intersect this RowSetShiftData with
      *         postShiftIndex.
      */
-    public SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> extractParallelShiftedRowsFromPostShiftIndex(
+    public SafeCloseablePair<MutableRowSet, MutableRowSet> extractParallelShiftedRowsFromPostShiftIndex(
             final RowSet postShiftIndex) {
         if (empty()) {
-            return SafeCloseablePair.of(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            return SafeCloseablePair.of(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
 
         final RowSetBuilderSequential preShiftBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
@@ -1133,7 +1133,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
             }
         }
 
-        final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> retVal =
+        final SafeCloseablePair<MutableRowSet, MutableRowSet> retVal =
                 SafeCloseablePair.of(preShiftBuilder.build(), postShiftBuilder.build());
         Assert.eq(retVal.first.size(), "retVal.first.size()", retVal.second.size(), "retVal.second.size()");
         return retVal;

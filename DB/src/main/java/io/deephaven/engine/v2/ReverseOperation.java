@@ -10,9 +10,9 @@ import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.ReversedColumnSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -53,8 +53,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     @Override
-    public ShiftAwareSwapListener newSwapListener(QueryTable queryTable) {
-        return new ShiftAwareSwapListener(queryTable) {
+    public SwapListener newSwapListener(QueryTable queryTable) {
+        return new SwapListener(queryTable) {
             @Override
             public synchronized boolean end(long clockCycle) {
                 final boolean success = super.end(clockCycle);
@@ -68,7 +68,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final TrackingMutableRowSet rowSetToReverse = usePrev ? parent.getIndex().getPrevRowSet() : parent.getIndex();
+        final TrackingMutableRowSet rowSetToReverse = usePrev ? parent.getRowSet().getPrevRowSet() : parent.getRowSet();
         prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
@@ -89,8 +89,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             return new Result<>(resultTable);
         }
 
-        final ShiftAwareListener listener =
-                new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
+        final Listener listener =
+                new BaseTable.ListenerImpl(getDescription(), parent, resultTable) {
                     @Override
                     public void onUpdate(final Update upstream) {
                         ReverseOperation.this.onUpdate(upstream);
@@ -100,9 +100,9 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         return new Result<>(resultTable, listener);
     }
 
-    private void onUpdate(final ShiftAwareListener.Update upstream) {
-        final TrackingMutableRowSet rowSet = resultTable.getIndex();
-        final TrackingMutableRowSet parentRowSet = parent.getIndex();
+    private void onUpdate(final Listener.Update upstream) {
+        final TrackingMutableRowSet rowSet = resultTable.getRowSet();
+        final TrackingMutableRowSet parentRowSet = parent.getRowSet();
         Assert.eq(resultSize, "resultSize", rowSet.size(), "rowSet.size()");
 
         if (parentRowSet.size() != (rowSet.size() + upstream.added.size() - upstream.removed.size())) {
@@ -117,7 +117,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             throw new IllegalStateException();
         }
 
-        final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+        final Listener.Update downstream = new Listener.Update();
 
         // removed is in pre-shift keyspace
         downstream.removed = transform(upstream.removed);
@@ -128,7 +128,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
                 (parentRowSet.lastRowKey() > pivotPoint) ? computePivot(parentRowSet.lastRowKey()) - pivotPoint : 0;
         if (upstream.shifted.nonempty() || newShift > 0) {
             long watermarkKey = 0;
-            final IndexShiftData.Builder oShiftedBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder oShiftedBuilder = new RowSetShiftData.Builder();
 
             // Bounds seem weird because we might need to shift all keys outside of shifts too.
             for (int idx = upstream.shifted.size(); idx >= 0; --idx) {
@@ -170,7 +170,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             prevPivot = pivotPoint;
             pivotPoint += newShift;
         } else {
-            downstream.shifted = IndexShiftData.EMPTY;
+            downstream.shifted = RowSetShiftData.EMPTY;
         }
 
         // added/modified are in post-shift keyspace

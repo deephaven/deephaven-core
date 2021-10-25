@@ -49,10 +49,10 @@ public class TickSuppressor {
         LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
 
         final QueryTable resultTable =
-                new QueryTable(input.getDefinition(), input.getIndex(), input.getColumnSourceMap());
+                new QueryTable(input.getDefinition(), input.getRowSet(), input.getColumnSourceMap());
         ((BaseTable) input).copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Filter);
 
-        final BaseTable.ShiftAwareListenerImpl listener = new BaseTable.ShiftAwareListenerImpl(
+        final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl(
                 "convertModificationsToAddsAndRemoves", (DynamicTable) input, resultTable) {
             @Override
             public void onUpdate(Update upstream) {
@@ -97,7 +97,7 @@ public class TickSuppressor {
         LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
 
         final QueryTable resultTable =
-                new QueryTable(input.getDefinition(), input.getIndex(), input.getColumnSourceMap());
+                new QueryTable(input.getDefinition(), input.getRowSet(), input.getColumnSourceMap());
         ((BaseTable) input).copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Filter);
 
         final String[] columnNames = input.getDefinition().getColumnNamesArray();
@@ -113,8 +113,8 @@ public class TickSuppressor {
         }
 
 
-        final BaseTable.ShiftAwareListenerImpl listener =
-                new BaseTable.ShiftAwareListenerImpl("removeSpuriousModifications", (DynamicTable) input, resultTable) {
+        final BaseTable.ListenerImpl listener =
+                new BaseTable.ListenerImpl("removeSpuriousModifications", (DynamicTable) input, resultTable) {
                     final ModifiedColumnSet.Transformer identityTransformer =
                             ((DynamicTable) input).newModifiedColumnSetIdentityTransformer(resultTable);
 

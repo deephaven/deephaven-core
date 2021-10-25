@@ -168,7 +168,7 @@ public class RegionedColumnSourceBenchmark {
         switch (mode) {
             case "Fill":
                 try (final ColumnSource.FillContext fillContext = inputSource.makeFillContext(chunkCapacity);
-                        final RowSequence.Iterator rsi = inputTable.getIndex().getRowSequenceIterator()) {
+                        final RowSequence.Iterator rsi = inputTable.getRowSet().getRowSequenceIterator()) {
                     while (rsi.hasMore()) {
                         final RowSequence rs = rsi.getNextRowSequenceWithLength(chunkCapacity);
                         inputSource.fillChunk(fillContext, destination, rs);
@@ -178,7 +178,7 @@ public class RegionedColumnSourceBenchmark {
                 break;
             case "Get":
                 try (final ColumnSource.GetContext getContext = inputSource.makeGetContext(chunkCapacity);
-                        final RowSequence.Iterator rsi = inputTable.getIndex().getRowSequenceIterator()) {
+                        final RowSequence.Iterator rsi = inputTable.getRowSet().getRowSequenceIterator()) {
                     while (rsi.hasMore()) {
                         final RowSequence rs = rsi.getNextRowSequenceWithLength(chunkCapacity);
                         bh.consume(inputSource.getChunk(getContext, rs));
@@ -187,7 +187,7 @@ public class RegionedColumnSourceBenchmark {
                 break;
             case "Default":
                 try (final ColumnSource.FillContext fillContext = inputSource.makeFillContext(chunkCapacity);
-                        final RowSequence.Iterator rsi = inputTable.getIndex().getRowSequenceIterator()) {
+                        final RowSequence.Iterator rsi = inputTable.getRowSet().getRowSequenceIterator()) {
                     while (rsi.hasMore()) {
                         final RowSequence rs = rsi.getNextRowSequenceWithLength(chunkCapacity);
                         inputSource.defaultFillChunk(fillContext, destination, rs);
@@ -196,7 +196,7 @@ public class RegionedColumnSourceBenchmark {
                 }
                 break;
             case "Legacy":
-                for (final TrackingMutableRowSet.Iterator ii = inputTable.getIndex().iterator(); ii.hasNext();) {
+                for (final TrackingMutableRowSet.Iterator ii = inputTable.getRowSet().iterator(); ii.hasNext();) {
                     destination.setSize(0);
                     ii.forEachLong(k -> {
                         copier.copy(inputSource, destination, k);

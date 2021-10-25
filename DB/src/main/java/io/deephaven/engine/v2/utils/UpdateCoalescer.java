@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -9,7 +9,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import java.util.function.BiConsumer;
 
 /**
- * Helper utility for coalescing multiple {@link ShiftAwareListener.Update updates}.
+ * Helper utility for coalescing multiple {@link Listener.Update updates}.
  */
 public class UpdateCoalescer {
 
@@ -17,14 +17,14 @@ public class UpdateCoalescer {
     public final TrackingMutableRowSet removed;
     public final TrackingMutableRowSet modified;
 
-    public IndexShiftData shifted;
+    public RowSetShiftData shifted;
     public ModifiedColumnSet modifiedColumnSet;
 
     // This is an rowSet that represents which keys still exist in prevSpace for the agg update. It is necessary to
     // keep to ensure we make the correct selections when shift destinations overlap.
     private final TrackingMutableRowSet rowSet;
 
-    public UpdateCoalescer(final TrackingMutableRowSet rowSet, final ShiftAwareListener.Update update) {
+    public UpdateCoalescer(final TrackingMutableRowSet rowSet, final Listener.Update update) {
         this.rowSet = rowSet.clone();
         this.rowSet.remove(update.removed);
 
@@ -41,11 +41,11 @@ public class UpdateCoalescer {
         }
     }
 
-    public ShiftAwareListener.Update coalesce() {
-        return new ShiftAwareListener.Update(added, removed, modified, shifted, modifiedColumnSet);
+    public Listener.Update coalesce() {
+        return new Listener.Update(added, removed, modified, shifted, modifiedColumnSet);
     }
 
-    public UpdateCoalescer update(final ShiftAwareListener.Update update) {
+    public UpdateCoalescer update(final Listener.Update update) {
         // Remove update.remove from our coalesced post-shift added/modified.
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             final TrackingMutableRowSet addedAndRemoved = closer.add(added.extract(update.removed));
@@ -94,14 +94,14 @@ public class UpdateCoalescer {
         }
     }
 
-    private void updateShifts(final IndexShiftData myShifts) {
+    private void updateShifts(final RowSetShiftData myShifts) {
         if (shifted.empty()) {
             shifted = myShifts;
             return;
         }
 
         final TrackingMutableRowSet.SearchIterator indexIter = rowSet.searchIterator();
-        final IndexShiftData.Builder newShifts = new IndexShiftData.Builder();
+        final RowSetShiftData.Builder newShifts = new RowSetShiftData.Builder();
 
         // Appends shifts to our builder from watermarkKey to supplied key adding extra delta if needed.
         final MutableInt outerIdx = new MutableInt(0);

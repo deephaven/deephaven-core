@@ -50,7 +50,7 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
         final IntegerSparseArraySource symbolMapper2 = new IntegerSparseArraySource();
         combiner.lookupSymbols(symbolTable, symbolMapper2, -2);
 
-        for (final TrackingMutableRowSet.Iterator it = symbolTable.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = symbolTable.getRowSet().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             final String symbol = symbolSource.get(key);
             final long id = idSource.getLong(key);
@@ -60,8 +60,8 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
             assertEquals(expected, uniqueId);
         }
 
-        final ShiftAwareListener symbolTableListener =
-                new InstrumentedShiftAwareListenerAdapter("SymbolTableCombiner Adapter", symbolTable, false) {
+        final Listener symbolTableListener =
+                new InstrumentedListenerAdapter("SymbolTableCombiner Adapter", symbolTable, false) {
                     @Override
                     public void onUpdate(final Update upstream) {
                         assertIndexEquals(i(), upstream.removed);
@@ -95,7 +95,7 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
 
     private static void checkAdditions(QueryTable symbolTable, ColumnSource<String> symbolSource,
             ColumnSource<Long> idSource, IntegerSparseArraySource symbolMapper, Map<String, Integer> uniqueIdMap) {
-        for (final TrackingMutableRowSet.Iterator it = symbolTable.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = symbolTable.getRowSet().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             final String symbol = symbolSource.get(key);
             final long id = idSource.getLong(key);

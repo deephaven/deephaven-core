@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 
 /**
  * Calculate the size of the chunks needed to process an update.
@@ -19,7 +19,7 @@ public class UpdateSizeCalculator {
      *
      * @return an appropriate maximum chunk size for this update
      */
-    public static int chunkSize(ShiftAwareListener.Update upstream, int chunkSize) {
+    public static int chunkSize(Listener.Update upstream, int chunkSize) {
         final long updateSize =
                 Math.max(Math.max(upstream.added.size(), upstream.removed.size()), upstream.modified.size());
         return chunkSize(updateSize, upstream.shifted, chunkSize);
@@ -34,7 +34,7 @@ public class UpdateSizeCalculator {
      *
      * @return an appropriate maximum chunk size for this update
      */
-    public static int chunkSize(long updateSize, IndexShiftData shifted, int chunkSize) {
+    public static int chunkSize(long updateSize, RowSetShiftData shifted, int chunkSize) {
         if (updateSize >= chunkSize) {
             return chunkSize;
         }

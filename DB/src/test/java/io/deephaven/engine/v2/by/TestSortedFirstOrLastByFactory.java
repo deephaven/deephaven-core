@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
@@ -115,7 +115,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // this part is the original bug, if we didn't change the actual value of the redirection rowSet; because the
         // shift modify combination left it at the same rowSet; we would not notice the mdoification
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             update.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 4);
@@ -126,7 +126,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             addToTable(source, RowSetFactoryImpl.INSTANCE.getFlatRowSet(6), intCol("SFB", 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A"));
 
-            final IndexShiftData.Builder sb = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
             sb.shiftRange(0, 4, 1);
             update.shifted = sb.build();
             source.notifyListeners(update);
@@ -140,7 +140,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // i'm concerned that if we really modify a row, but we don't detect it in the shift, so here we are just
         // shifting without modifications
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             update.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
@@ -151,7 +151,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             addToTable(source, RowSetFactoryImpl.INSTANCE.getFlatRowSet(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 7, 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A"));
 
-            final IndexShiftData.Builder sb = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
             sb.shiftRange(0, 5, 1);
             update.shifted = sb.build();
             source.notifyListeners(update);
@@ -166,7 +166,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             update.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByValues(3);
@@ -178,7 +178,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
                     intCol("Sentinel", 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A"));
 
-            final IndexShiftData.Builder sb = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
             sb.shiftRange(0, 6, 1);
             update.shifted = sb.build();
             source.notifyListeners(update);
@@ -193,7 +193,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
         // we are shifting, and claiming to modify SFB but not actually doing it
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             update.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByValues(4);
@@ -205,7 +205,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
                     intCol("Sentinel", 10, 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
-            final IndexShiftData.Builder sb = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
             sb.shiftRange(0, 7, 1);
             update.shifted = sb.build();
             source.notifyListeners(update);
@@ -220,7 +220,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
         // here we are shifting, and modifying SFB but not actually doing it
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             update.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByValues(4);
@@ -232,7 +232,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
                     intCol("Sentinel", 11, 10, 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
-            final IndexShiftData.Builder sb = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
             sb.shiftRange(0, 8, 1);
             update.shifted = sb.build();
             source.notifyListeners(update);
@@ -247,7 +247,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
         // claim to modify sfb, but don't really. Actually modify sentinel.
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             update.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByValues(5);
@@ -259,7 +259,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
                     intCol("Sentinel", 12, 11, 10, 8, 7, 13, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
-            final IndexShiftData.Builder sb = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
             sb.shiftRange(0, 9, 1);
             update.shifted = sb.build();
             source.notifyListeners(update);

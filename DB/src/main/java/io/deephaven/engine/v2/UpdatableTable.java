@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import gnu.trove.impl.Constants;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
@@ -89,7 +89,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
 
         @Override
         public void removeIndex(final long key) {
-            if (getIndex().find(key) >= 0) {
+            if (getRowSet().find(key) >= 0) {
                 removedSet.add(key);
             }
             // A removed key cannot be added or modified
@@ -123,13 +123,13 @@ public class UpdatableTable extends QueryTable implements LiveTable {
         final TrackingMutableRowSet added = setToIndex(addedSet);
         final TrackingMutableRowSet removed = setToIndex(removedSet);
         final TrackingMutableRowSet modified = setToIndex(modifiedSet);
-        getIndex().update(added, removed);
+        getRowSet().update(added, removed);
         if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = added;
             update.removed = removed;
             update.modified = modified;
-            update.shifted = IndexShiftData.EMPTY;
+            update.shifted = RowSetShiftData.EMPTY;
             if (modified.isNonempty()) {
                 update.modifiedColumnSet = ModifiedColumnSet.ALL;
             } else {
@@ -139,7 +139,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
         }
     }
 
-    protected void doNotifyListeners(ShiftAwareListener.Update update) {
+    protected void doNotifyListeners(Listener.Update update) {
         notifyListeners(update);
     }
 

@@ -29,7 +29,7 @@ public class SelectOverheadLimiter {
 
     private SelectOverheadLimiter() {}
 
-    private static class OverheadTracker implements IndexShiftData.SingleElementShiftCallback {
+    private static class OverheadTracker implements RowSetShiftData.SingleElementShiftCallback {
         TLongIntHashMap blockReferences = new TLongIntHashMap();
         long size;
 
@@ -94,14 +94,14 @@ public class SelectOverheadLimiter {
 
         // now we know we are refreshing, so should update our overhead structure
         final OverheadTracker overheadTracker = new OverheadTracker();
-        overheadTracker.addIndex(input.getIndex());
+        overheadTracker.addIndex(input.getRowSet());
         if (overheadTracker.overhead() > permittedOverhead) {
             return input.flatten();
         }
 
         // we are refreshing, and within the permitted overhead
 
-        final TrackingMutableRowSet rowSet = input.getIndex().clone();
+        final TrackingMutableRowSet rowSet = input.getRowSet().clone();
         final Map<String, SwitchColumnSource<?>> resultColumns = new LinkedHashMap<>();
         input.getColumnSourceMap().forEach((name, cs) -> resultColumns.put(name, new SwitchColumnSource<>(cs)));
         final QueryTable result = new QueryTable(rowSet, resultColumns);
@@ -130,18 +130,18 @@ public class SelectOverheadLimiter {
             @Override
             protected void process() {
                 if (flatResult != null) {
-                    final ShiftAwareListener.Update upstream = flatRecorder.getUpdate();
+                    final Listener.Update upstream = flatRecorder.getUpdate();
                     rowSet.remove(upstream.removed);
                     upstream.shifted.apply(rowSet);
                     rowSet.insert(upstream.added);
-                    final ShiftAwareListener.Update copy = upstream.copy();
+                    final Listener.Update copy = upstream.copy();
                     copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                     flatTransformer.clearAndTransform(upstream.modifiedColumnSet, copy.modifiedColumnSet);
                     result.notifyListeners(copy);
                     return;
                 }
 
-                final ShiftAwareListener.Update upstream = inputRecorder.getValue().getUpdate();
+                final Listener.Update upstream = inputRecorder.getValue().getUpdate();
                 overheadTracker.removeIndex(upstream.removed);
                 rowSet.remove(upstream.removed);
                 upstream.shifted.forAllInIndex(rowSet, overheadTracker);
@@ -150,7 +150,7 @@ public class SelectOverheadLimiter {
                 rowSet.insert(upstream.added);
 
                 if (overheadTracker.overhead() <= permittedOverhead) {
-                    final ShiftAwareListener.Update copy = upstream.copy();
+                    final Listener.Update copy = upstream.copy();
                     copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                     inputTransformer.clearAndTransform(upstream.modifiedColumnSet, copy.modifiedColumnSet);
                     result.notifyListeners(copy);
@@ -180,14 +180,14 @@ public class SelectOverheadLimiter {
                 resultColumns.forEach((name, scs) -> scs.setNewCurrent(flatResult.getColumnSource(name)));
 
                 rowSet.clear();
-                rowSet.insert(flatResult.getIndex());
+                rowSet.insert(flatResult.getRowSet());
 
-                final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+                final Listener.Update downstream = new Listener.Update();
                 downstream.removed = rowSet.getPrevRowSet();
                 downstream.added = rowSet.clone();
                 downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                downstream.shifted = IndexShiftData.EMPTY;
+                downstream.shifted = RowSetShiftData.EMPTY;
 
                 conversions.incrementAndGet();
 

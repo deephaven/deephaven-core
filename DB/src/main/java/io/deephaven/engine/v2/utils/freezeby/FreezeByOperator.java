@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.utils.freezeby;
 
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.*;
@@ -84,7 +84,7 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream,
+    public void propagateUpdates(@NotNull Listener.Update downstream,
             @NotNull RowSet newDestinations) {
         if (downstream.removed.isNonempty()) {
             helper.clearIndex(downstream.removed);

@@ -136,7 +136,7 @@ public class InitialSnapshotTable extends QueryTable {
         }
         populatedRows.insert(newlyPopulated);
 
-        getIndex().insert(snapshot.rowSet);
+        getRowSet().insert(snapshot.rowSet);
     }
 
     protected TrackingMutableRowSet getFreeRows(long size) {

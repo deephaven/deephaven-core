@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -40,7 +40,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, RowSet toClear, UpdateHelper helper) {
+    public void applyUpdate(Listener.Update upstream, RowSet toClear, UpdateHelper helper) {
         inner.applyUpdate(upstream, toClear, helper);
 
         // we need to remove the removed values from our redirection rowSet, and add them to our free rowSet; so that

@@ -17,6 +17,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssa.SsaTestHelpers;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.compact.ByteCompactKernel;
 import io.deephaven.test.types.ParallelTest;
@@ -120,7 +121,7 @@ public class TestByteSegmentedSortedMultiset extends LiveTableTestCase {
              final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(1024);
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(1024)
         ) {
-            valueSource.fillChunk(fillContext, chunk, john.getIndex());
+            valueSource.fillChunk(fillContext, chunk, john.getRowSet());
             ByteCompactKernel.compactAndCount(chunk, counts, true);
         }
     }
@@ -142,9 +143,9 @@ public class TestByteSegmentedSortedMultiset extends LiveTableTestCase {
         checkSsmInitial(asByte, ssm, valueSource, countNull, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asByteListener = new InstrumentedListenerAdapter((DynamicTable) asByte, false) {
+            final ShiftObliviousListener asByteListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asByte, false) {
                 @Override
-                public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+                public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
                     try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(maxSize);
                          final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(maxSize);
@@ -177,7 +178,7 @@ public class TestByteSegmentedSortedMultiset extends LiveTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asByte.intSize())) {
-                    checkSsm(ssm, valueSource.getChunk(getContext, asByte.getIndex()).asByteChunk(), countNull, desc);
+                    checkSsm(ssm, valueSource.getChunk(getContext, asByte.getRowSet()).asByteChunk(), countNull, desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -224,7 +225,7 @@ public class TestByteSegmentedSortedMultiset extends LiveTableTestCase {
 
             try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asByte.intSize());
                  final WritableByteChunk<Attributes.Values> valueChunk = WritableByteChunk.makeWritableChunk(asByte.intSize())) {
-                valueSource.fillChunk(fillContext, valueChunk, asByte.getIndex());
+                valueSource.fillChunk(fillContext, valueChunk, asByte.getRowSet());
                 valueChunk.sort();
                 final ByteChunk<? extends Values> loValues = valueChunk.slice(0, LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()));
                 final ByteChunk<? extends Values> hiValues = valueChunk.slice(LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()), LongSizedDataStructure.intSize("ssmHi", ssmHi.totalSize()));
@@ -263,14 +264,14 @@ public class TestByteSegmentedSortedMultiset extends LiveTableTestCase {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asByte.intSize());
              final WritableByteChunk<Attributes.Values> valueChunk = WritableByteChunk.makeWritableChunk(asByte.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asByte.intSize())) {
-            valueSource.fillChunk(fillContext, valueChunk, asByte.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asByte.getRowSet());
             valueChunk.sort();
 
             ByteCompactKernel.compactAndCount(valueChunk, counts, countNull);
 
             ssm.insert(valueChunk, counts);
 
-            valueSource.fillChunk(fillContext, valueChunk, asByte.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asByte.getRowSet());
             checkSsm(ssm, valueChunk, countNull, desc);
         }
     }
@@ -278,7 +279,7 @@ public class TestByteSegmentedSortedMultiset extends LiveTableTestCase {
     private void checkSsm(Table asByte, ByteSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asByte.intSize());
              final WritableByteChunk<Attributes.Values> valueChunk = WritableByteChunk.makeWritableChunk(asByte.intSize())) {
-            valueSource.fillChunk(fillContext, valueChunk, asByte.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asByte.getRowSet());
             checkSsm(ssm, valueChunk, countNull, desc);
         }
     }

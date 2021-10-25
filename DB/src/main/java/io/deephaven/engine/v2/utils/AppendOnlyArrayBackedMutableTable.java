@@ -92,7 +92,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     @Override
     protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder,
             Consumer<String> errorNotifier) {
-        try (final TrackingMutableRowSet addRowSet = table.getIndex().clone()) {
+        try (final TrackingMutableRowSet addRowSet = table.getRowSet().clone()) {
             final long firstRow = nextRow;
             final long lastRow = firstRow + addRowSet.intSize() - 1;
             try (final RowSequence destinations = RowSequenceUtil.forRange(firstRow, lastRow)) {

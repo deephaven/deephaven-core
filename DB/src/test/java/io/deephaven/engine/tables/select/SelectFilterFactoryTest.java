@@ -77,43 +77,43 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Opra in `opra1`, `opra2`, `opra3`,`opra4`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        TrackingMutableRowSet idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        TrackingMutableRowSet idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(3, idx.size());
 
         f = SelectFilterFactory.getExpression("Opra in `opra1`, `Opra4`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(2, idx.size());
 
         f = SelectFilterFactory.getExpression("Opra not in `opra2`, `opra4`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(7, idx.size());
 
         f = SelectFilterFactory.getExpression("Opra icase in `opra1`, `opra2`, `opra3`, `opra4`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(7, idx.size());
 
         f = SelectFilterFactory.getExpression("Opra icase not in `opra1`, `opra2`, `opra3`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(2, idx.size());
 
         f = SelectFilterFactory.getExpression("Opra icase not in `opra2`, `opra4`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(5, idx.size());
 
         f = SelectFilterFactory.getExpression("Opra icase in `opra1`, `opra2`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(4, idx.size());
 
         t = TstUtils.testRefreshingTable(
@@ -123,25 +123,25 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         f = SelectFilterFactory.getExpression("Food icase in `apple`, `orange`, `bacon`,`LAFFA`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(5, idx.size());
 
         f = SelectFilterFactory.getExpression("Food in `apple`, `orange`, `bacon`,`LAFFA`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
 
         f = SelectFilterFactory.getExpression("Food in `Apple`, `orange`, `bacon`,`LAFFA`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(3, idx.size());
 
         f = SelectFilterFactory.getExpression("Food icase not in `apple`, `orange`, `bacon`,`LAFFA`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(4, idx.size());
     }
 
@@ -164,14 +164,14 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Timestamp in '" + mon + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        TrackingMutableRowSet idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        TrackingMutableRowSet idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
         assertEquals(mon, t.getColumn(0).get(idx.firstRowKey()));
         // match one of two items
         f = SelectFilterFactory.getExpression("Timestamp in '" + tues + "', '" + wed + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
         assertEquals(tues, t.getColumn(0).get(idx.firstRowKey()));
 
@@ -179,7 +179,7 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         f = SelectFilterFactory.getExpression("Timestamp in '" + tues + "', '" + thurs + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(2, idx.size());
         assertEquals(tues, t.getColumn(0).get(idx.firstRowKey()));
         assertEquals(thurs, t.getColumn(0).get(idx.lastRowKey()));
@@ -188,7 +188,7 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         f = SelectFilterFactory.getExpression("Timestamp in '" + wed + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        idx = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(0, idx.size());
     }
 
@@ -342,51 +342,51 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Phrase icase includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        TrackingMutableRowSet result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        TrackingMutableRowSet result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(12, result.size());
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase includes all `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(4, result.size());
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(7, 9, 10, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 6, 7, 9, 10, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase includes all `T1`, `t2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(7, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase not includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 3, 4, 5, 6, 8, 12, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase not includes all `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 12), result);
 
         f = SelectFilterFactory.getExpression("Phrase not includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase not includes all `T1`, `t2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        result = f.filter(t.getIndex().clone(), t.getIndex(), t, false);
+        result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(1, 3, 5, 12), result);
     }
 }

@@ -79,15 +79,15 @@ public class EvenlyDividedTableMap {
         if (queryTable.isRefreshing()) {
             localTableMap.setRefreshing(true);
             final long fStart = start;
-            final ShiftAwareListener listener =
-                    new InstrumentedShiftAwareListenerAdapter("tablemap division", queryTable, false) {
+            final Listener listener =
+                    new InstrumentedListenerAdapter("tablemap division", queryTable, false) {
                         long currentEnd = fStart;
 
                         @Override
                         public void onUpdate(Update upstream) {
-                            if (queryTable.getIndex().size() > currentEnd) {
+                            if (queryTable.getRowSet().size() > currentEnd) {
                                 // we should slice the table again and make a new segment for our tablemap
-                                while (currentEnd < queryTable.getIndex().size()) {
+                                while (currentEnd < queryTable.getRowSet().size()) {
                                     localTableMap.put(new Division(currentEnd, currentEnd + divisionSize),
                                             queryTable.slice(currentEnd, currentEnd + divisionSize));
                                     currentEnd += divisionSize;

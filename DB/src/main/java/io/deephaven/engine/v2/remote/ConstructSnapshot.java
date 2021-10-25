@@ -10,8 +10,10 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.tables.ColumnDefinition;
@@ -27,13 +29,11 @@ import io.deephaven.engine.util.liveness.LivenessManager;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.InstrumentedListener;
 import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.internal.log.LoggerFactory;
@@ -62,7 +62,7 @@ public class ConstructSnapshot {
         }
     }
 
-    private static final io.deephaven.io.logger.Logger log = LoggerFactory.getLogger(InstrumentedListener.class);
+    private static final io.deephaven.io.logger.Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
     /**
      * The maximum number of allowed attempts to construct a snapshot concurrently with {@link LiveTableMonitor} refresh
@@ -497,11 +497,11 @@ public class ConstructSnapshot {
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final TrackingMutableRowSet prevIndex = table.getIndex().getPrevRowSet()) {
+                try (final TrackingMutableRowSet prevIndex = table.getRowSet().getPrevRowSet()) {
                     keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
-                keysToSnapshot = table.getIndex().subSetForPositions(positionsToSnapshot);
+                keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
             }
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
@@ -561,18 +561,18 @@ public class ConstructSnapshot {
 
         final BarrageMessage snapshot = new BarrageMessage();
         snapshot.isSnapshot = true;
-        snapshot.shifted = IndexShiftData.EMPTY;
+        snapshot.shifted = RowSetShiftData.EMPTY;
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
             final TrackingMutableRowSet keysToSnapshot;
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final TrackingMutableRowSet prevIndex = table.getIndex().getPrevRowSet()) {
+                try (final TrackingMutableRowSet prevIndex = table.getRowSet().getPrevRowSet()) {
                     keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
-                keysToSnapshot = table.getIndex().subSetForPositions(positionsToSnapshot);
+                keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
             }
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
@@ -1212,7 +1212,7 @@ public class ConstructSnapshot {
             Object logIdentityObject,
             BitSet columnsToSerialize,
             TrackingMutableRowSet keysToSnapshot) {
-        snapshot.rowSet = (usePrev ? table.getIndex().getPrevRowSet() : table.getIndex()).clone();
+        snapshot.rowSet = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).clone();
 
         if (keysToSnapshot != null) {
             snapshot.rowsIncluded = snapshot.rowSet.intersect(keysToSnapshot);
@@ -1280,7 +1280,7 @@ public class ConstructSnapshot {
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
             final TrackingMutableRowSet positionsToSnapshot) {
-        snapshot.rowsAdded = (usePrev ? table.getIndex().getPrevRowSet() : table.getIndex()).clone();
+        snapshot.rowsAdded = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).clone();
         snapshot.rowsRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 

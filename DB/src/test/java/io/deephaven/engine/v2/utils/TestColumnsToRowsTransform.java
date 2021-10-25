@@ -90,7 +90,7 @@ public class TestColumnsToRowsTransform extends LiveTableTestCase {
         try (final WritableIntChunk<Attributes.Values> destination = WritableIntChunk.makeWritableChunk(2);
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
                 final ChunkSource.FillContext f1 = valueSource.makeFillContext(2, sharedContext)) {
-            valueSource.fillChunk(f1, destination, filtered.getIndex());
+            valueSource.fillChunk(f1, destination, filtered.getRowSet());
             System.out.println(destination.get(0));
             System.out.println(destination.get(1));
             assertEquals(4, destination.get(0));

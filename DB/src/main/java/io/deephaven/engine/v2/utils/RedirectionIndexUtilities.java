@@ -4,9 +4,9 @@ public class RedirectionIndexUtilities {
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;
 
     static void applyRedirectionShift(final RedirectionIndex redirectionIndex, final RowSet filterIndex,
-            final IndexShiftData shiftData) {
+            final RowSetShiftData shiftData) {
 
-        final IndexShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {
+        final RowSetShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {
             final long oldKey = redirectionIndex.remove(key);
             if (oldKey != TrackingMutableRowSet.NULL_ROW_KEY) {
                 redirectionIndex.putVoid(key + delta, oldKey);

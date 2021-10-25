@@ -5,8 +5,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
 import java.io.IOException;
@@ -362,10 +362,10 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 final int jj = j;
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                     TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(ii * jj, (ii + 1) * jj - 1);
-                    upTable.getIndex().insert(added);
-                    ShiftAwareListener.Update update =
-                            new ShiftAwareListener.Update(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                    upTable.getRowSet().insert(added);
+                    Listener.Update update =
+                            new Listener.Update(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
                     upTable.notifyListeners(update);
                 });
 

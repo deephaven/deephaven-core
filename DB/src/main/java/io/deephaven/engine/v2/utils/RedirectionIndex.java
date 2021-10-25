@@ -147,12 +147,12 @@ public interface RedirectionIndex {
     }
 
     /**
-     * Update this RedirectionIndex according to the IndexShiftData.
+     * Update this RedirectionIndex according to the RowSetShiftData.
      *
      * @param tableIndex an TrackingMutableRowSet to filter which rows should be shifted
-     * @param shiftData the IndexShiftData for this update
+     * @param shiftData the RowSetShiftData for this update
      */
-    default void applyShift(final RowSet tableIndex, final IndexShiftData shiftData) {
+    default void applyShift(final RowSet tableIndex, final RowSetShiftData shiftData) {
         RedirectionIndexUtilities.applyRedirectionShift(this, tableIndex, shiftData);
     }
 

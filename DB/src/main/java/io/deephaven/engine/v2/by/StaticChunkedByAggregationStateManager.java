@@ -238,7 +238,7 @@ class StaticChunkedByAggregationStateManager
         }
         final MutableInt insertedHashSlotsLength = new MutableInt(0);
         try (final BuildContext bc = makeBuildContext(keySources, sourceTable.size())) {
-            buildTable(bc, sourceTable.getIndex(), keySources, insertedHashSlots, insertedHashSlotsLength);
+            buildTable(bc, sourceTable.getRowSet(), keySources, insertedHashSlots, insertedHashSlotsLength);
         }
         return insertedHashSlotsLength.intValue();
     }

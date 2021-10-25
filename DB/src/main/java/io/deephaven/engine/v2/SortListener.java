@@ -31,7 +31,7 @@ import shaded.parquet.it.unimi.dsi.fastutil.longs.LongIterators;
 import java.util.*;
 import java.util.function.LongUnaryOperator;
 
-public class SortListener extends BaseTable.ShiftAwareListenerImpl {
+public class SortListener extends BaseTable.ListenerImpl {
     // Do I get my own logger?
     private static final Logger log = LoggerFactory.getLogger(SortListener.class);
 
@@ -69,7 +69,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         this.result = result;
         this.reverseLookup = reverseLookup;
         this.columnsToSortBy = columnsToSortBy;
-        this.resultRowSet = result.getIndex();
+        this.resultRowSet = result.getRowSet();
         this.order = order;
         this.sortMapping = sortMapping;
         this.sortedColumnsToSortBy = sortedColumnsToSortBy;
@@ -203,7 +203,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
 
             // handle upstream shifts; note these never effect the sorted output keyspace
             final SortMappingAggregator mappingChanges = closer.add(new SortMappingAggregator());
-            try (final TrackingMutableRowSet prevRowSet = parent.getIndex().getPrevRowSet()) {
+            try (final TrackingMutableRowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
                 upstream.shifted.forAllInIndex(prevRowSet, (key, delta) -> {
                     final long dst = reverseLookup.remove(key);
                     if (dst != REVERSE_LOOKUP_NO_ENTRY_VALUE) {
@@ -291,7 +291,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             final QueueState fqs = new QueueState(1, addedOutputKeys, addedInputKeys,
                     addedStart, numAddedKeys);
 
-            final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             final RowSetBuilderSequential addedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
             performUpdatesInDirection(addedBuilder, shiftBuilder, medianOutputKey - 1, rqs, mappingChanges);
@@ -364,7 +364,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
      * @param start Start position
      * @param qs Queue state -- containing the view on the various keys arrays, directions, etc.
      */
-    private void performUpdatesInDirection(final RowSetBuilderSequential added, final IndexShiftData.Builder shifted,
+    private void performUpdatesInDirection(final RowSetBuilderSequential added, final RowSetShiftData.Builder shifted,
                                            final long start,
                                            final QueueState qs, final SortMappingAggregator mappingChanges) {
         final long numRequestedAdds = (qs.addedEnd - qs.addedCurrent) * qs.direction;
@@ -846,7 +846,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             allowedToCoalesce = false;
         }
 
-        private void appendToBuilder(final IndexShiftData.Builder builder) {
+        private void appendToBuilder(final RowSetShiftData.Builder builder) {
             int nr = firsts.size();
             if (direction < 0) {
                 for (int ii = nr - 1; ii >= 0; --ii) {

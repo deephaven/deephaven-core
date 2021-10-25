@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -254,9 +254,9 @@ class AggregationContext {
      * Allow all operators to reset any per-step internal state. Note that the arguments to this method should not be
      * mutated in any way.
      *
-     * @param upstream The upstream {@link ShiftAwareListener.Update}
+     * @param upstream The upstream {@link Listener.Update}
      */
-    void resetOperatorsForStep(@NotNull final ShiftAwareListener.Update upstream) {
+    void resetOperatorsForStep(@NotNull final Listener.Update upstream) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.resetForStep(upstream);
         }
@@ -267,11 +267,11 @@ class AggregationContext {
      * keys to &gt 0), removed (went from &gt 0 keys to 0), or modified (keys added or removed, or keys modified) by
      * this iteration. Note that the arguments to this method should not be mutated in any way.
      *
-     * @param downstream The downstream {@link ShiftAwareListener.Update} (which does <em>not</em> have its
+     * @param downstream The downstream {@link Listener.Update} (which does <em>not</em> have its
      *        {@link ModifiedColumnSet} finalized yet)
      * @param newDestinations New destinations added on this update
      */
-    void propagateChangesToOperators(@NotNull final ShiftAwareListener.Update downstream,
+    void propagateChangesToOperators(@NotNull final Listener.Update downstream,
             @NotNull final RowSet newDestinations) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.propagateUpdates(downstream, newDestinations);
@@ -361,7 +361,7 @@ class AggregationContext {
      * Initialize an array of singleton contexts based on an upstream update.
      */
     void initializeSingletonContexts(IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
-            ShiftAwareListener.Update upstream, boolean[] modifiedColumns) {
+                                     Listener.Update upstream, boolean[] modifiedColumns) {
         final long maxSize = UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
         if (upstream.removed.isNonempty() || upstream.added.isNonempty()) {
             initializeSingletonContexts(opContexts, maxSize);
@@ -372,8 +372,8 @@ class AggregationContext {
         initializeSingletonContexts(opContexts, maxSize, toInitialize);
     }
 
-    private boolean[] computeInitializationMaskFromUpdate(ShiftAwareListener.Update upstream,
-            boolean[] modifiedColumns) {
+    private boolean[] computeInitializationMaskFromUpdate(Listener.Update upstream,
+                                                          boolean[] modifiedColumns) {
         final boolean[] toInitialize = new boolean[size()];
         if (requiresIndices() && upstream.shifted.nonempty()) {
             for (int ii = 0; ii < size(); ++ii) {
@@ -411,7 +411,7 @@ class AggregationContext {
      * Initialize an array of singleton contexts based on an upstream update.
      */
     void initializeBucketedContexts(IterativeChunkedAggregationOperator.BucketedContext[] contexts,
-            ShiftAwareListener.Update upstream, boolean keysModified, boolean[] modifiedColumns) {
+                                    Listener.Update upstream, boolean keysModified, boolean[] modifiedColumns) {
         final long maxSize = UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
         if (upstream.added.isNonempty() || upstream.removed.isNonempty() || keysModified) {
             initializeBucketedContexts(contexts, maxSize);

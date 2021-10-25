@@ -12,7 +12,7 @@ import java.util.Map;
 
 /**
  * Data structure to represent a subset of columns, used for propagating modifications via
- * {@link ShiftAwareListener.Update} instances.
+ * {@link Listener.Update} instances.
  */
 public class ModifiedColumnSet {
 

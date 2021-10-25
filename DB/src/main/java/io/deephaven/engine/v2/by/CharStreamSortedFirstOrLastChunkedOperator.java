@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
@@ -54,7 +54,7 @@ public class CharStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     }
 
     @Override
-    public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
+    public void resetForStep(@NotNull final Listener.Update upstream) {
         super.resetForStep(upstream);
         if (isCombo) {
             changedDestinationsBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
@@ -136,12 +136,12 @@ public class CharStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
 
     @Override
     public void propagateInitialState(@NotNull final QueryTable resultTable) {
-        copyStreamToResult(resultTable.getIndex());
+        copyStreamToResult(resultTable.getRowSet());
         redirections = null;
     }
 
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
+    public void propagateUpdates(@NotNull Listener.Update downstream, @NotNull RowSet newDestinations) {
         Assert.assertion(downstream.removed.isEmpty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
         // In a combo-agg, we may get modifications from other other operators that we didn't record as modifications in

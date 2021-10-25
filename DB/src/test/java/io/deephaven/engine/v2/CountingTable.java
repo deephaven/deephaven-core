@@ -25,7 +25,7 @@ class CountingTable {
         Map<String, ColumnSource<?>> countingSources = new LinkedHashMap<>();
         nonCountingTable.getColumnSourceMap()
                 .forEach((key, value) -> countingSources.put(key, getCountingColumnSource(value)));
-        return new QueryTable(nonCountingTable.getIndex(), countingSources);
+        return new QueryTable(nonCountingTable.getRowSet(), countingSources);
     }
 
     private static <T> ColumnSource<T> getCountingColumnSource(final ColumnSource<T> inputColumnSource) {

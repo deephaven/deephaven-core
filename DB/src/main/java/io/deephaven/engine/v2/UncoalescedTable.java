@@ -9,6 +9,7 @@ import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.liveness.Liveness;
 import io.deephaven.engine.v2.by.AggregationStateFactory;
@@ -80,22 +81,27 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public void listenForUpdates(Listener listener) {
+    public void listenForUpdates(ShiftObliviousListener listener) {
         ((DynamicTable) coalesce()).listenForUpdates(listener);
     }
 
     @Override
-    public void listenForUpdates(Listener listener, boolean replayInitialImage) {
+    public void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage) {
         ((DynamicTable) coalesce()).listenForUpdates(listener, replayInitialImage);
     }
 
     @Override
-    public void listenForUpdates(ShiftAwareListener listener) {
+    public void listenForUpdates(Listener listener) {
         ((DynamicTable) coalesce()).listenForUpdates(listener);
     }
 
-    protected final void listenForUpdatesUncoalesced(@NotNull final ShiftAwareListener listener) {
+    protected final void listenForUpdatesUncoalesced(@NotNull final Listener listener) {
         super.listenForUpdates(listener);
+    }
+
+    @Override
+    public void removeUpdateListener(ShiftObliviousListener listener) {
+        ((DynamicTable) coalesce()).removeUpdateListener(listener);
     }
 
     @Override
@@ -103,28 +109,23 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
         ((DynamicTable) coalesce()).removeUpdateListener(listener);
     }
 
-    @Override
-    public void removeUpdateListener(ShiftAwareListener listener) {
-        ((DynamicTable) coalesce()).removeUpdateListener(listener);
-    }
-
-    protected final void removeUpdateListenerUncoalesced(@NotNull final ShiftAwareListener listener) {
+    protected final void removeUpdateListenerUncoalesced(@NotNull final Listener listener) {
         super.removeUpdateListener(listener);
     }
 
     @Override
-    public void listenForDirectUpdates(Listener listener) {
+    public void listenForDirectUpdates(ShiftObliviousListener listener) {
         ((DynamicTable) coalesce()).listenForDirectUpdates(listener);
     }
 
     @Override
-    public void removeDirectUpdateListener(Listener listener) {
+    public void removeDirectUpdateListener(ShiftObliviousListener listener) {
         ((DynamicTable) coalesce()).removeUpdateListener(listener);
     }
 
     @Override
-    public TrackingMutableRowSet getIndex() {
-        return coalesce().getIndex();
+    public TrackingRowSet getRowSet() {
+        return coalesce().getRowSet();
     }
 
     @Override

@@ -172,7 +172,7 @@ class StaticChunkedNaturalJoinStateManager
         }
         leftHashSlots.ensureCapacity(leftTable.size());
         try (final BuildContext bc = makeBuildContext(leftSources, leftTable.size())) {
-            buildTable(bc, leftTable.getIndex(), leftSources, leftHashSlots);
+            buildTable(bc, leftTable.getRowSet(), leftSources, leftHashSlots);
         }
     }
 
@@ -181,7 +181,7 @@ class StaticChunkedNaturalJoinStateManager
             return;
         }
         try (final BuildContext bc = makeBuildContext(rightSources, rightTable.size())) {
-            buildTable(bc, rightTable.getIndex(), rightSources, null);
+            buildTable(bc, rightTable.getRowSet(), rightSources, null);
         }
     }
     // endregion build wrappers
@@ -807,7 +807,7 @@ class StaticChunkedNaturalJoinStateManager
             return;
         }
         try (final ProbeContext pc = makeProbeContext(rightSources, rightTable.size(), false)) {
-            decorationProbe(pc, rightTable.getIndex(), rightSources, null);
+            decorationProbe(pc, rightTable.getRowSet(), rightSources, null);
         }
     }
 
@@ -815,7 +815,7 @@ class StaticChunkedNaturalJoinStateManager
         if (leftTable.isEmpty()) {
             return;
         }
-        decorateLeftSide(leftTable.getIndex(), leftSources, leftRedirections);
+        decorateLeftSide(leftTable.getRowSet(), leftSources, leftRedirections);
     }
 
     @Override

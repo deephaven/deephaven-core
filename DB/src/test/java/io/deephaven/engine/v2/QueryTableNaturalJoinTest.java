@@ -355,7 +355,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table leftFlat = leftTable.flatten();
         final ColumnSource flatGrouped = leftFlat.getColumnSource("I1");
-        final TrackingMutableRowSet flatRowSet = leftFlat.getIndex();
+        final TrackingMutableRowSet flatRowSet = leftFlat.getRowSet();
         final Map<Object, TrackingMutableRowSet> grouping = flatRowSet.getGrouping(flatGrouped);
         // noinspection unchecked
         ((AbstractColumnSource) flatGrouped).setGroupToRange(grouping);
@@ -1118,7 +1118,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     private void dumpComplete(QueryTable queryTable, String... columns) {
-        final TrackingMutableRowSet rowSet = queryTable.getIndex();
+        final TrackingMutableRowSet rowSet = queryTable.getRowSet();
 
         final ColumnSource[] columnSources = new ColumnSource[columns.length];
         for (int ii = 0; ii < columns.length; ++ii) {

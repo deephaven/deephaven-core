@@ -6,7 +6,7 @@ import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
@@ -119,14 +119,14 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public void propagateInitialState(@NotNull final QueryTable resultTable) {
-        copyStreamToResult(resultTable.getIndex());
+        copyStreamToResult(resultTable.getRowSet());
         redirections = null;
         Assert.eq(resultTable.size(), "resultTable.size()", nextDestination, "nextDestination");
         firstDestinationThisStep = nextDestination;
     }
 
     @Override
-    public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
+    public void propagateUpdates(@NotNull final Listener.Update downstream,
             @NotNull final RowSet newDestinations) {
         // NB: We cannot assert no modifies; other operators in the same aggregation might modify columns not in our
         // result set.

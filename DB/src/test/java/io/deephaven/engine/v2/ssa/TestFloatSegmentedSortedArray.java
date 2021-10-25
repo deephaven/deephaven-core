@@ -14,8 +14,9 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.FloatChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -89,11 +90,11 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asFloat, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftAwareListener asFloatListener = new InstrumentedShiftAwareListenerAdapter((DynamicTable) asFloat, false) {
+            final Listener asFloatListener = new InstrumentedListenerAdapter((DynamicTable) asFloat, false) {
                 @Override
                 public void onUpdate(Update upstream) {
-                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asFloat.getIndex().getPrevRowSet().intSize())) {
-                        final TrackingMutableRowSet relevantIndices = asFloat.getIndex().getPrevRowSet();
+                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asFloat.getRowSet().getPrevRowSet().intSize())) {
+                        final TrackingMutableRowSet relevantIndices = asFloat.getRowSet().getPrevRowSet();
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asFloatChunk(), relevantIndices.asRowKeyChunk(), desc);
                     }
 
@@ -109,16 +110,16 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
 
                         ssa.validate();
 
-                        try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asFloat.getIndex().getPrevRowSet().intSize())) {
-                            final TrackingMutableRowSet relevantIndices = asFloat.getIndex().getPrevRowSet().minus(takeout);
+                        try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asFloat.getRowSet().getPrevRowSet().intSize())) {
+                            final TrackingMutableRowSet relevantIndices = asFloat.getRowSet().getPrevRowSet().minus(takeout);
                             checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asFloatChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
                         if (upstream.shifted.nonempty()) {
-                            final IndexShiftData.Iterator sit = upstream.shifted.applyIterator();
+                            final RowSetShiftData.Iterator sit = upstream.shifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                final TrackingMutableRowSet rowSetToShift = table.getIndex().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
+                                final TrackingMutableRowSet rowSetToShift = table.getRowSet().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
                                 if (rowSetToShift.isEmpty()) {
                                     continue;
                                 }
@@ -138,7 +139,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
                         final TrackingMutableRowSet putin = upstream.added.union(upstream.modified);
 
                         try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asFloat.intSize())) {
-                            final TrackingMutableRowSet relevantIndices = asFloat.getIndex().minus(putin);
+                            final TrackingMutableRowSet relevantIndices = asFloat.getRowSet().minus(putin);
                             checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asFloatChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
@@ -159,7 +160,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asFloat.intSize())) {
-                    checkSsa(ssa, valueSource.getChunk(getContext, asFloat.getIndex()).asFloatChunk(), asFloat.getIndex().asRowKeyChunk(), desc);
+                    checkSsa(ssa, valueSource.getChunk(getContext, asFloat.getRowSet()).asFloatChunk(), asFloat.getRowSet().asRowKeyChunk(), desc);
                 }
             }
         }
@@ -181,9 +182,9 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asFloat, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asFloatListener = new InstrumentedListenerAdapter((DynamicTable) asFloat, false) {
+            final ShiftObliviousListener asFloatListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asFloat, false) {
                 @Override
-                public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+                public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
                         if (removed.isNonempty()) {
                             final FloatChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, removed).asFloatChunk();
@@ -205,7 +206,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asFloat.intSize())) {
-                    checkSsa(ssa, valueSource.getChunk(getContext, asFloat.getIndex()).asFloatChunk(), asFloat.getIndex().asRowKeyChunk(), desc);
+                    checkSsa(ssa, valueSource.getChunk(getContext, asFloat.getRowSet()).asFloatChunk(), asFloat.getRowSet().asRowKeyChunk(), desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -217,8 +218,8 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
 
     private void checkSsaInitial(Table asFloat, FloatSegmentedSortedArray ssa, ColumnSource<?> valueSource, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asFloat.intSize())) {
-            final FloatChunk<? extends Values> valueChunk = valueSource.getChunk(getContext, asFloat.getIndex()).asFloatChunk();
-            final LongChunk<Attributes.OrderedRowKeys> tableIndexChunk = asFloat.getIndex().asRowKeyChunk();
+            final FloatChunk<? extends Values> valueChunk = valueSource.getChunk(getContext, asFloat.getRowSet()).asFloatChunk();
+            final LongChunk<Attributes.OrderedRowKeys> tableIndexChunk = asFloat.getRowSet().asRowKeyChunk();
 
             ssa.insert(valueChunk, tableIndexChunk);
 

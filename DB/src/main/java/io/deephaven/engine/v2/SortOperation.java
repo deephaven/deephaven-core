@@ -78,8 +78,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     @Override
-    public ShiftAwareSwapListener newSwapListener(QueryTable queryTable) {
-        return new ShiftAwareSwapListener(queryTable) {
+    public SwapListener newSwapListener(QueryTable queryTable) {
+        return new SwapListener(queryTable) {
             @Override
             public synchronized boolean end(long clockCycle) {
                 final boolean success = super.end(clockCycle);
@@ -96,7 +96,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortedKeys.size() == 0) {
             return true;
         }
-        final RowSet.Iterator it = parent.getIndex().iterator();
+        final RowSet.Iterator it = parent.getRowSet().iterator();
         return sortedKeys.forEachLong(currentKey -> currentKey == it.nextLong());
     }
 
@@ -152,8 +152,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         resultTable.setFlat();
         setSorted(resultTable);
 
-        final ShiftAwareListener resultListener =
-                new BaseTable.ShiftAwareListenerImpl("Stream sort listener", parent, resultTable) {
+        final Listener resultListener =
+                new BaseTable.ListenerImpl("Stream sort listener", parent, resultTable) {
                     @Override
                     public void onUpdate(@NotNull final Update upstream) {
                         Assert.assertion(upstream.modified.isEmpty() && upstream.shifted.empty(),
@@ -184,7 +184,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             resultRowSet.removeRange(added.size(), removed.size() - 1);
                         }
                         resultTable.notifyListeners(new Update(added, removed, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                                RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 };
 
@@ -200,12 +200,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         if (!parent.isRefreshing()) {
             final SortHelpers.SortMapping sortedKeys =
-                    SortHelpers.getSortedKeys(sortOrder, sortColumns, parent.getIndex(), false);
+                    SortHelpers.getSortedKeys(sortOrder, sortColumns, parent.getRowSet(), false);
             return new Result<>(historicalSort(sortedKeys));
         }
         if (parent.isStream()) {
-            try (final RowSet prevIndex = usePrev ? parent.getIndex().getPrevRowSet() : null) {
-                final RowSet indexToUse = usePrev ? prevIndex : parent.getIndex();
+            try (final RowSet prevIndex = usePrev ? parent.getRowSet().getPrevRowSet() : null) {
+                final RowSet indexToUse = usePrev ? prevIndex : parent.getRowSet();
                 final SortHelpers.SortMapping sortedKeys =
                         SortHelpers.getSortedKeys(sortOrder, sortColumns, indexToUse, usePrev);
                 return streamSort(sortedKeys);
@@ -216,7 +216,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // reset the sort data structures that we share between invocations
             final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
 
-            final TrackingMutableRowSet rowSetToSort = usePrev ? closer.add(parent.getIndex().getPrevRowSet()) : parent.getIndex();
+            final TrackingMutableRowSet rowSetToSort = usePrev ? closer.add(parent.getRowSet().getPrevRowSet()) : parent.getRowSet();
 
             if (rowSetToSort.size() >= Integer.MAX_VALUE) {
                 throw new UnsupportedOperationException("Can not perform ticking sort for table larger than "

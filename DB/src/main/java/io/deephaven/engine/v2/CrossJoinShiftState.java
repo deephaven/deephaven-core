@@ -87,7 +87,7 @@ public class CrossJoinShiftState {
     }
 
     static int getMinBits(final QueryTable table) {
-        return getMinBits(table.getIndex().lastRowKey());
+        return getMinBits(table.getRowSet().lastRowKey());
     }
 
     static int getMinBits(final long lastKey) {

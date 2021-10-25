@@ -4,10 +4,10 @@
 
 package io.deephaven.engine.v2.remote;
 
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 
 import java.io.Serializable;
 
@@ -29,7 +29,7 @@ public class DeltaUpdates implements Serializable, Cloneable {
     public long lastStep;
     public TrackingMutableRowSet added;
     public TrackingMutableRowSet removed;
-    public IndexShiftData shifted;
+    public RowSetShiftData shifted;
     public TrackingMutableRowSet includedAdditions;
     public ColumnAdditions[] serializedAdditions;
     public ColumnModifications[] serializedModifications;
@@ -42,8 +42,8 @@ public class DeltaUpdates implements Serializable, Cloneable {
         }
     }
 
-    public ShiftAwareListener.Update asUpdate(TrackingMutableRowSet modified, ModifiedColumnSet mcs) {
-        return new ShiftAwareListener.Update(added, removed, modified, shifted, mcs);
+    public Listener.Update asUpdate(TrackingMutableRowSet modified, ModifiedColumnSet mcs) {
+        return new Listener.Update(added, removed, modified, shifted, mcs);
     }
 
     @Override

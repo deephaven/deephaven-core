@@ -192,7 +192,7 @@ public class ColumnsToRowsTransform {
             }
         }
 
-        final TrackingMutableRowSet resultRowSet = transformIndex(source.getIndex(), fanout, fanoutPow2);
+        final TrackingMutableRowSet resultRowSet = transformIndex(source.getRowSet(), fanout, fanoutPow2);
 
         final QueryTable result = new QueryTable(resultRowSet, resultMap);
 
@@ -234,7 +234,7 @@ public class ColumnsToRowsTransform {
 
             final ModifiedColumnSet.Transformer transformer =
                     dynamicSource.newModifiedColumnSetTransformer(sourceColumns, resultColumnSets);
-            dynamicSource.listenForUpdates(new BaseTable.ShiftAwareListenerImpl("columnsToRows(" + labelColumn + ", "
+            dynamicSource.listenForUpdates(new BaseTable.ListenerImpl("columnsToRows(" + labelColumn + ", "
                     + Arrays.toString(valueColumns) + ", " + Arrays.deepToString(transposeColumns) + ")", dynamicSource,
                     result) {
                 @Override
@@ -277,9 +277,9 @@ public class ColumnsToRowsTransform {
                     resultRowSet.remove(downstream.removed);
 
                     if (upstream.shifted.empty()) {
-                        downstream.shifted = IndexShiftData.EMPTY;
+                        downstream.shifted = RowSetShiftData.EMPTY;
                     } else {
-                        final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+                        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
                         final int shiftCount = upstream.shifted.size();
                         for (int ii = 0; ii < shiftCount; ++ii) {
                             final long beginRange = upstream.shifted.getBeginRange(ii) * fanoutPow2;

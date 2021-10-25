@@ -39,7 +39,7 @@ public class JoinControl {
     }
 
     boolean useGrouping(Table leftTable, ColumnSource<?>[] leftSources) {
-        return !leftTable.isLive() && leftSources.length == 1 && leftTable.getIndex().hasGrouping(leftSources[0]);
+        return !leftTable.isLive() && leftSources.length == 1 && leftTable.getRowSet().hasGrouping(leftSources[0]);
     }
 
     boolean buildLeft(QueryTable leftTable, Table rightTable) {
@@ -52,8 +52,8 @@ public class JoinControl {
         return !leftTable.isRefreshing() && !useLeftGrouping && leftSource.getType() == String.class
                 && !rightTable.isRefreshing() && !useRightGrouping && rightSource.getType() == String.class
                 && leftSource instanceof SymbolTableSource && rightSource instanceof SymbolTableSource
-                && ((SymbolTableSource<?>) leftSource).hasSymbolTable(leftTable.getIndex())
-                && ((SymbolTableSource<?>) rightSource).hasSymbolTable(rightTable.getIndex());
+                && ((SymbolTableSource<?>) leftSource).hasSymbolTable(leftTable.getRowSet())
+                && ((SymbolTableSource<?>) rightSource).hasSymbolTable(rightTable.getRowSet());
     }
 
     boolean useSymbolTableLookupCaching() {
@@ -78,8 +78,8 @@ public class JoinControl {
             } else {
                 return RedirectionType.Contiguous;
             }
-        } else if (leftTable.getIndex().getAverageRunLengthEstimate() >= Math.min(SparseConstants.BLOCK_SIZE / 4,
-                leftTable.getIndex().size() / 2)) {
+        } else if (leftTable.getRowSet().getAverageRunLengthEstimate() >= Math.min(SparseConstants.BLOCK_SIZE / 4,
+                leftTable.getRowSet().size() / 2)) {
             // If we are going to use at least a quarter of a sparse array block, then it is a better answer than a
             // hash table for redirection; because the hash table must store both the key and value, and then has a
             // load factor of ~50%. Additionally, the sparse array source will have much faster sets and lookups so is

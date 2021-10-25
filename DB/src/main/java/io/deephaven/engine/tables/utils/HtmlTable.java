@@ -28,7 +28,7 @@ public class HtmlTable {
         out.append("</tr>\n");
 
         final Collection<? extends ColumnSource> columnSources = source.getColumnSources();
-        for (final TrackingMutableRowSet.Iterator ii = source.getIndex().iterator(); ii.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator ii = source.getRowSet().iterator(); ii.hasNext();) {
             out.append("<tr>");
             final long key = ii.nextLong();
             for (ColumnSource columnSource : columnSources) {

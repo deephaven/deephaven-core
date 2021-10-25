@@ -139,10 +139,10 @@ public class TableToolsMergeHelper {
                 }
                 componentIndex++;
 
-                QueryTable viewedTable = new QueryTable(component.getIndex(), componentSources);
+                QueryTable viewedTable = new QueryTable(component.getRowSet(), componentSources);
                 if (component.isRefreshing()) {
                     component.listenForUpdates(
-                            new BaseTable.ShiftAwareListenerImpl("union view", component, viewedTable));
+                            new BaseTable.ListenerImpl("union view", component, viewedTable));
                 }
                 result.add(viewedTable);
             }

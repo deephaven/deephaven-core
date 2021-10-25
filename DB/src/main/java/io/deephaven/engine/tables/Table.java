@@ -32,7 +32,8 @@ import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -270,7 +271,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return this;
     }
 
-    TrackingMutableRowSet getIndex();
+    TrackingRowSet getRowSet();
 
     default long sizeForInstrumentation() {
         return size();
@@ -563,7 +564,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
     }
 
-    Table getSubTable(TrackingMutableRowSet rowSet);
+    Table getSubTable(RowSet rowSet);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Column Selection Operations

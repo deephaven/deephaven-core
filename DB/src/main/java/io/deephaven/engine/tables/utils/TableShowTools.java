@@ -33,7 +33,7 @@ class TableShowTools {
             final ColumnSource[] columnSources =
                     Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
-            final TrackingMutableRowSet rowSet = source.getIndex();
+            final TrackingMutableRowSet rowSet = source.getRowSet();
             int lineLen = 0;
             final Set<Integer> columnLimits = new HashSet<>();
             if (showIndex) {

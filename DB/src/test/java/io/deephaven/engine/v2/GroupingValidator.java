@@ -19,7 +19,7 @@ import java.util.*;
  * of columns are still valid. It is meant to be used as part of a unit test for incremental updates, to ensure that
  * stale groupings are not left between table updates.
  */
-public class GroupingValidator extends InstrumentedShiftAwareListenerAdapter {
+public class GroupingValidator extends InstrumentedListenerAdapter {
     private DynamicTable source;
     private Collection<String[]> groupingColumns;
     private String context;
@@ -43,8 +43,8 @@ public class GroupingValidator extends InstrumentedShiftAwareListenerAdapter {
         this.source = source;
         this.groupingColumns = groupingColumns;
 
-        validateGroupings(groupingColumns, source.getIndex());
-        validatePrevGroupings(groupingColumns, source.getIndex());
+        validateGroupings(groupingColumns, source.getRowSet());
+        validatePrevGroupings(groupingColumns, source.getRowSet());
 
         source.listenForUpdates(this);
     }
@@ -170,7 +170,7 @@ public class GroupingValidator extends InstrumentedShiftAwareListenerAdapter {
 
     @Override
     public void onUpdate(final Update upstream) {
-        validateGroupings(groupingColumns, source.getIndex());
+        validateGroupings(groupingColumns, source.getRowSet());
         validateGroupings(groupingColumns, upstream.added);
         validateGroupings(groupingColumns, upstream.modified);
         validationCount++;

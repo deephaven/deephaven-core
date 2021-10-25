@@ -4,7 +4,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
@@ -150,9 +150,9 @@ public abstract class SelectAndViewAnalyzer {
         private SafeCloseablePair<RowSet, RowSet> shiftedWithoutModifies;
 
         private final TrackingMutableRowSet parentRowSet;
-        private final ShiftAwareListener.Update upstream;
+        private final Listener.Update upstream;
 
-        public UpdateHelper(TrackingMutableRowSet parentRowSet, ShiftAwareListener.Update upstream) {
+        public UpdateHelper(TrackingMutableRowSet parentRowSet, Listener.Update upstream) {
             this.parentRowSet = parentRowSet;
             this.upstream = upstream;
         }
@@ -216,7 +216,7 @@ public abstract class SelectAndViewAnalyzer {
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
      */
-    public abstract void applyUpdate(ShiftAwareListener.Update upstream, RowSet toClear, UpdateHelper helper);
+    public abstract void applyUpdate(Listener.Update upstream, RowSet toClear, UpdateHelper helper);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do

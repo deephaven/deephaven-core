@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Map;
 
-public class SnapshotInternalListener extends BaseTable.ShiftAwareListenerImpl {
+public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final QueryTable triggerTable;
     private final boolean lazySnapshot;
     private final Table snapshotTable;
@@ -52,11 +52,11 @@ public class SnapshotInternalListener extends BaseTable.ShiftAwareListenerImpl {
         }
 
         // Populate stamp columns from the triggering table
-        if (!triggerTable.getIndex().isEmpty()) {
-            SnapshotUtils.copyStampColumns(triggerTable.getColumnSourceMap(), triggerTable.getIndex().lastRowKey(),
+        if (!triggerTable.getRowSet().isEmpty()) {
+            SnapshotUtils.copyStampColumns(triggerTable.getColumnSourceMap(), triggerTable.getRowSet().lastRowKey(),
                     resultLeftColumns, 0);
         }
-        final TrackingMutableRowSet currentRowSet = snapshotTable.getIndex();
+        final TrackingMutableRowSet currentRowSet = snapshotTable.getRowSet();
         final long snapshotSize;
         try (final TrackingMutableRowSet prevRowSet = usePrev ? currentRowSet.getPrevRowSet() : null) {
             final TrackingMutableRowSet snapshotRowSet = prevRowSet != null ? prevRowSet : currentRowSet;

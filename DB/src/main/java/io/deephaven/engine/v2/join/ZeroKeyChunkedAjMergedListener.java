@@ -103,7 +103,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
     @Override
     public void process() {
-        final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+        final Listener.Update downstream = new Listener.Update();
         downstream.modifiedColumnSet = resultModifiedColumnSet;
         downstream.modifiedColumnSet.clear();
 
@@ -162,10 +162,10 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 }
 
 
-                final IndexShiftData leftShifted = leftRecorder.getShifted();
+                final RowSetShiftData leftShifted = leftRecorder.getShifted();
                 if (leftShifted.nonempty()) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
-                    try (final TrackingMutableRowSet prevRowSet = leftTable.getIndex().getPrevRowSet()) {
+                    try (final TrackingMutableRowSet prevRowSet = leftTable.getRowSet().getPrevRowSet()) {
                         redirectionIndex.applyShift(prevRowSet, leftShifted);
                     }
                     ChunkedAjUtilities.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
@@ -174,7 +174,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
             } else {
                 downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                downstream.shifted = IndexShiftData.EMPTY;
+                downstream.shifted = RowSetShiftData.EMPTY;
             }
 
             if (rightTicked) {
@@ -215,9 +215,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                         }
                     }
 
-                    final IndexShiftData rightShifted = rightRecorder.getShifted();
+                    final RowSetShiftData rightShifted = rightRecorder.getShifted();
                     if (rightShifted.nonempty()) {
-                        try (final TrackingMutableRowSet fullPrevRowSet = rightTable.getIndex().getPrevRowSet();
+                        try (final TrackingMutableRowSet fullPrevRowSet = rightTable.getRowSet().getPrevRowSet();
                              final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
                              final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                                         new SizedSafeCloseable<>(rightStampSource::makeFillContext);
@@ -226,7 +226,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                                 sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
                              final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
                              final SizedLongChunk<Attributes.RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
-                            final IndexShiftData.Iterator sit = rightShifted.applyIterator();
+                            final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
                                 final TrackingMutableRowSet rowSetToShift =

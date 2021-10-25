@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.*;
 import org.jetbrains.annotations.NotNull;
@@ -88,7 +88,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
 
     @Override
     @OverridingMethodsMustInvokeSuper
-    public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
+    public void resetForStep(@NotNull final Listener.Update upstream) {
         if ((redirections = cachedRedirections.get()) == null) {
             cachedRedirections = new SoftReference<>(redirections = new LongArraySource());
         }

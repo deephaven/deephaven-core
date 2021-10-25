@@ -6,9 +6,9 @@ package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
+import io.deephaven.engine.v2.InstrumentedListener;
 import io.deephaven.engine.v2.NotificationStepReceiver;
-import io.deephaven.engine.v2.ShiftAwareSwapListener;
+import io.deephaven.engine.v2.SwapListener;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.session.SessionState;
@@ -130,7 +130,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             return;
         }
 
-        final ShiftAwareSwapListener swapListener = new ShiftAwareSwapListener(table);
+        final SwapListener swapListener = new SwapListener(table);
         swapListener.subscribeForUpdates();
         final ListenerImpl listener = new ListenerImpl(table, exportId, swapListener);
         listener.tryRetainReference();
@@ -139,7 +139,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         final MutableLong initSize = new MutableLong();
         table.initializeWithSnapshot(logPrefix, swapListener, (usePrev, beforeClockValue) -> {
             swapListener.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
-            final TrackingMutableRowSet rowSet = table.getIndex();
+            final TrackingMutableRowSet rowSet = table.getRowSet();
             initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
             return true;
         });
@@ -179,14 +179,14 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     /**
      * The table listener implementation that propagates updates to our internal queue.
      */
-    private class ListenerImpl extends InstrumentedShiftAwareListener {
+    private class ListenerImpl extends InstrumentedListener {
         final private BaseTable table;
         final private int exportId;
 
         @ReferentialIntegrity
-        final ShiftAwareSwapListener swapListener;
+        final SwapListener swapListener;
 
-        private ListenerImpl(final BaseTable table, final int exportId, final ShiftAwareSwapListener swapListener) {
+        private ListenerImpl(final BaseTable table, final int exportId, final SwapListener swapListener) {
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
             this.exportId = exportId;

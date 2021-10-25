@@ -20,7 +20,7 @@ import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.libs.primitives.LongNumericPrimitives;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -104,8 +104,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         // TODO restore this to support non-QueryTable types
         // if (wholeTable instanceof BaseTable) {
         // BaseTable baseTable = (BaseTable) wholeTable;
-        // final ShiftAwareSwapListener swapListener =
-        // baseTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+        // final SwapListener swapListener =
+        // baseTable.createSwapListenerIfRefreshing(SwapListener::new);
         //
         // final Mutable<QueryTable> result = new MutableObject<>();
         //
@@ -131,8 +131,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
     }
 
     private Table makeDownsampledQueryTable(final QueryTable wholeQueryTable, final DownsampleKey memoKey) {
-        final ShiftAwareSwapListener swapListener =
-                wholeQueryTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+        final SwapListener swapListener =
+                wholeQueryTable.createSwapListenerIfRefreshing(SwapListener::new);
 
         final Mutable<Table> result = new MutableObject<>();
 
@@ -214,7 +214,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 .orElse(minBins);
     }
 
-    private static class DownsamplerListener extends BaseTable.ShiftAwareListenerImpl {
+    private static class DownsamplerListener extends BaseTable.ListenerImpl {
 
         private enum IndexMode {
             PASSTHROUGH, DOWNSAMPLE
@@ -275,7 +275,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 final DownsampleKey key) {
             super("downsample listener", sourceTable, resultTable);
             this.sourceTable = sourceTable;
-            this.rowSet = resultTable.getIndex();
+            this.rowSet = resultTable.getRowSet();
             this.resultTable = resultTable;
             this.key = key;
 
@@ -344,9 +344,9 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                         tail.validate(false, context, allYColumnIndexes);
                     }
                     states.values().forEach(state -> state.validate(false, context, allYColumnIndexes));
-                    if (!rowSet.subsetOf(sourceTable.getIndex())) {
+                    if (!rowSet.subsetOf(sourceTable.getRowSet())) {
                         throw new IllegalStateException("rowSet.subsetOf(sourceTable.build()) is false, extra items= "
-                                + rowSet.minus(sourceTable.getIndex()));
+                                + rowSet.minus(sourceTable.getRowSet()));
                     }
                 }
 
@@ -366,12 +366,12 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
 
                 // act as if all items were just added fresh
                 rerange();
-                handleAdded(context, sourceTable.getIndex());
+                handleAdded(context, sourceTable.getRowSet());
 
                 Assert.assertion(this.rowSet.isEmpty(), "this.rowSet.empty()");
 
                 // notify downstream tables that the rowSet was swapped
-                notifyResultTable(upstream, sourceTable.getIndex());
+                notifyResultTable(upstream, sourceTable.getRowSet());
             } else if (indexMode == IndexMode.DOWNSAMPLE && sourceTable.size() < key.bins) {
                 log.info().append("Switching from DOWNSAMPLE to PASSTHROUGH ").append(sourceTable.size())
                         .append(key.toString()).endl();
@@ -381,7 +381,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
 
                 states.clear();
 
-                final TrackingMutableRowSet addToResultTable = sourceTable.getIndex().minus(rowSet);
+                final TrackingMutableRowSet addToResultTable = sourceTable.getRowSet().minus(rowSet);
                 final TrackingMutableRowSet removed = rowSet.union(upstream.removed);
                 final TrackingMutableRowSet modified = rowSet.union(upstream.modified);
                 rowSet.clear();
@@ -462,7 +462,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             rerange(usePrev);
             try (final DownsampleChunkContext context =
                     new DownsampleChunkContext(xColumnSource, valueColumnSources, CHUNK_SIZE)) {
-                handleAdded(context, usePrev, sourceTable.getIndex());
+                handleAdded(context, usePrev, sourceTable.getRowSet());
                 if (VALIDATE) {
                     Consumer<BucketState> validate = state -> {
                         // prebuild the rowSet so we can log details
@@ -516,7 +516,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 first = key.zoomRange[0];
                 last = key.zoomRange[1];
             } else {
-                final TrackingMutableRowSet rowSet = usePrev ? sourceTable.getIndex().getPrevRowSet() : sourceTable.getIndex();
+                final TrackingMutableRowSet rowSet = usePrev ? sourceTable.getRowSet().getPrevRowSet() : sourceTable.getRowSet();
                 first = xColumnSource.getLong(rowSet.firstRowKey());
                 last = xColumnSource.getLong(rowSet.lastRowKey());
             }
@@ -662,7 +662,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             return bucket;
         }
 
-        private void handleShifts(final IndexShiftData shiftData) {
+        private void handleShifts(final RowSetShiftData shiftData) {
             for (final BucketState bucketState : states.values()) {
                 bucketState.shift(shiftData);
             }

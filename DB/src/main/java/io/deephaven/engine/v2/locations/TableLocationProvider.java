@@ -19,7 +19,7 @@ public interface TableLocationProvider extends NamedImplementation {
     ImmutableTableKey getKey();
 
     /**
-     * Listener interface for anything that wants to know about new table location keys.
+     * ShiftObliviousListener interface for anything that wants to know about new table location keys.
      */
     interface Listener extends BasicTableDataListener {
 

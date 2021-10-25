@@ -3,7 +3,7 @@ package io.deephaven.engine.tables.verify;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.DynamicTable;
 
-public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.ShiftAwareListenerImpl {
+public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.ListenerImpl {
 
     private final String description;
 

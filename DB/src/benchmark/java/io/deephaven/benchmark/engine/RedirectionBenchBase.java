@@ -107,7 +107,7 @@ public abstract class RedirectionBenchBase {
     }
 
     private Table doFill(final Table t, final Blackhole bh) {
-        final TrackingMutableRowSet ix = t.getIndex();
+        final TrackingMutableRowSet ix = t.getRowSet();
         try (final RowSequence.Iterator it = ix.getRowSequenceIterator()) {
             while (it.hasMore()) {
                 if (sharedContext != null) {

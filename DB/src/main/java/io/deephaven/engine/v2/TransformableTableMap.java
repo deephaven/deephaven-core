@@ -46,7 +46,7 @@ public interface TransformableTableMap {
      * <p>
      * Supported operations include those which return a {@link io.deephaven.engine.tables.Table}, {@link Table#size()},
      * {@link Table#getDefinition()} and operations to retrieve attributes. Operations which retrieve data (such as
-     * {@link Table#getIndex()}} or {@link Table#getColumn(int)} require a coalesce operation. If allowCoalesce is not
+     * {@link Table#getRowSet()}} or {@link Table#getColumn(int)} require a coalesce operation. If allowCoalesce is not
      * set to true, then the coalescing operations will fail with an {@link IllegalArgumentException}.
      * </p>
      *

@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.DynamicTable;
-import io.deephaven.engine.v2.InstrumentedListener;
+import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.util.QueryConstants;
@@ -20,7 +20,7 @@ import java.util.function.LongUnaryOperator;
  * Timestamp.
  *
  * This is only designed to operate against a source table, if any rows are modified or removed from the table, then the
- * Listener throws an IllegalStateException. Each contiguous range of indices is assumed to be a partition. If you
+ * ShiftObliviousListener throws an IllegalStateException. Each contiguous range of indices is assumed to be a partition. If you
  * filter or otherwise alter the source table before calling TailInitializationFilter, this assumption will be violated
  * and the resulting table will not be filtered as desired.
  *
@@ -76,7 +76,7 @@ public class TailInitializationFilter {
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         // we are going to binary search each partition of this table, because the different partitions have
         // non-contiguous indices, but values within a partition are contiguous indices.
-        table.getIndex().forEachLongRange((s, e) -> {
+        table.getRowSet().forEachLongRange((s, e) -> {
             final long lastValue = getValue.applyAsLong(e);
             if (lastValue == QueryConstants.NULL_LONG) {
                 throw new IllegalArgumentException("Found null timestamp at rowSet " + e);
@@ -105,10 +105,10 @@ public class TailInitializationFilter {
         final QueryTable result = new QueryTable(table.getDefinition(), resultRowSet, table.getColumnSourceMap());
         if (table.isLive()) {
             // TODO: Assert AddOnly in T+, propagate AddOnly in Treasure
-            final InstrumentedListener listener =
-                    new BaseTable.ListenerImpl("TailInitializationFilter", (DynamicTable) table, result) {
+            final ShiftObliviousInstrumentedListener listener =
+                    new BaseTable.ShiftObliviousListenerImpl("TailInitializationFilter", (DynamicTable) table, result) {
                         @Override
-                        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+                        public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                             Assert.assertion(removed.isEmpty(), "removed.empty()");
                             Assert.assertion(modified.isEmpty(), "modified.empty()");
                             resultRowSet.insert(added);

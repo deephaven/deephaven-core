@@ -345,7 +345,7 @@ public class TestConditionFilter extends PythonTest {
         final Map<String, ? extends ColumnSource> sourcesMap =
                 testDataTable.updateView("actualI = i", "actualII = ii", "actualK = k").getColumnSourceMap();
 
-        for (final TrackingMutableRowSet.Iterator it = testDataTable.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = testDataTable.getRowSet().iterator(); it.hasNext();) {
             final long idx = it.nextLong();
             final Map<String, Object> rowMap = new HashMap<>(sourcesMap.size());
             for (Map.Entry<String, ? extends ColumnSource> entry : sourcesMap.entrySet()) {
@@ -431,7 +431,7 @@ public class TestConditionFilter extends PythonTest {
     private TrackingMutableRowSet initCheck(String expression, FormulaParserConfiguration parser) {
         final SelectFilter conditionFilter = ConditionFilter.createConditionFilter(expression, parser);
         conditionFilter.init(testDataTable.getDefinition());
-        return conditionFilter.filter(testDataTable.getIndex().clone(), testDataTable.getIndex(), testDataTable, false);
+        return conditionFilter.filter(testDataTable.getRowSet().clone(), testDataTable.getRowSet(), testDataTable, false);
     }
 
 }

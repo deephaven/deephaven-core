@@ -55,7 +55,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         this.result = result;
         this.listenerDescription = listenerDescription;
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(listenerDescription);
-        this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
+        this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged ShiftObliviousListener: ";
     }
 
     private void releaseFromRecorders() {

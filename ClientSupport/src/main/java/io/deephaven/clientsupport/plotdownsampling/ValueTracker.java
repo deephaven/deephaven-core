@@ -1,5 +1,6 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.BooleanArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -7,7 +8,6 @@ import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -207,7 +207,7 @@ public abstract class ValueTracker {
      */
     public abstract void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls);
 
-    public final void shiftMaxIndex(final int offset, final IndexShiftData shiftData) {
+    public final void shiftMaxIndex(final int offset, final RowSetShiftData shiftData) {
         final long maxIndex = maxIndex(offset);
         if (maxIndex == QueryConstants.NULL_LONG) {
             return;
@@ -232,7 +232,7 @@ public abstract class ValueTracker {
         }
     }
 
-    public final void shiftMinIndex(final int offset, final IndexShiftData shiftData) {
+    public final void shiftMinIndex(final int offset, final RowSetShiftData shiftData) {
         final long minIndex = minIndex(offset);
         if (minIndex == QueryConstants.NULL_LONG) {
             return;

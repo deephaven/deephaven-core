@@ -141,7 +141,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         private void doInitialFilter(final boolean usePrev) {
-            valuesRowSet = doValueFilter(usePrev, source.getIndex());
+            valuesRowSet = doValueFilter(usePrev, source.getRowSet());
 
             parentReferences = new HashMap<>(valuesRowSet.intSize("parentReferenceMap"));
             parentRowSet = computeParents(usePrev, valuesRowSet);
@@ -178,11 +178,11 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 throw new IllegalStateException();
             }
 
-            final TrackingMutableRowSet expectedRowSet = doValueFilter(usePrev, source.getIndex());
+            final TrackingMutableRowSet expectedRowSet = doValueFilter(usePrev, source.getRowSet());
 
             final Map<Object, TLongSet> expectedParents = new HashMap<>();
 
-            if (!expectedRowSet.subsetOf(source.getIndex())) {
+            if (!expectedRowSet.subsetOf(source.getRowSet())) {
                 throw new IllegalStateException("Bad refilter!");
             }
 
@@ -196,7 +196,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             TLongArrayList parentsToProcess = new TLongArrayList();
             expectedRowSet.forEach(parentsToProcess::add);
 
-            final TrackingMutableRowSet sourceRowSet = usePrev ? source.getIndex().getPrevRowSet() : source.getIndex();
+            final TrackingMutableRowSet sourceRowSet = usePrev ? source.getRowSet().getPrevRowSet() : source.getRowSet();
             do {
                 final TLongArrayList newParentKeys = new TLongArrayList();
                 for (final TLongIterator it = parentsToProcess.iterator(); it.hasNext();) {
@@ -212,8 +212,8 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                         continue;
                     }
                     if (sourceRowSet.find(parentRow) < 0) {
-                        throw new IllegalStateException("Reverse Lookup Listener points at row " + parentRow + " for "
-                                + parent + ", but the row is not in the rowSet=" + source.getIndex());
+                        throw new IllegalStateException("Reverse Lookup ShiftObliviousListener points at row " + parentRow + " for "
+                                + parent + ", but the row is not in the rowSet=" + source.getRowSet());
                     }
                     newParentKeys.add(parentRow);
                 }
@@ -292,7 +292,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
 
         private TrackingMutableRowSet doValueFilter(boolean usePrev, TrackingMutableRowSet rowsToFilter) {
             for (final SelectFilter filter : filters) {
-                rowsToFilter = filter.filter(rowsToFilter, source.getIndex(), source, usePrev);
+                rowsToFilter = filter.filter(rowsToFilter, source.getRowSet(), source, usePrev);
             }
 
             return rowsToFilter;
@@ -355,7 +355,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             return parents;
         }
 
-        private class TreeTableFilterListener extends BaseTable.ShiftAwareListenerImpl {
+        private class TreeTableFilterListener extends BaseTable.ListenerImpl {
             final ModifiedColumnSet inputColumns;
 
             TreeTableFilterListener(String description, DynamicTable parent, QueryTable dependent) {
@@ -484,7 +484,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
     }
 
-    private static final class SwapListenerWithRLL extends ShiftAwareSwapListener {
+    private static final class SwapListenerWithRLL extends SwapListener {
         private final ReverseLookupListener rll;
 
         private long rllLastNotificationStep;
@@ -562,7 +562,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
 
         @Override
         public synchronized boolean end(final long afterClockValue) {
-            if (SwapListener.DEBUG) {
+            if (ShiftObliviousSwapListener.DEBUG) {
                 log.info().append("SwapListenerWithRLL end() swap=").append(System.identityHashCode(this))
                         .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
                         .append(LogicalClock.getState(afterClockValue).toString())
@@ -574,10 +574,10 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         @Override
-        public synchronized void setListenerAndResult(@NotNull final ShiftAwareListener listener,
+        public synchronized void setListenerAndResult(@NotNull final Listener listener,
                 @NotNull final NotificationStepReceiver resultTable) {
             super.setListenerAndResult(listener, resultTable);
-            if (SwapListener.DEBUG) {
+            if (ShiftObliviousSwapListener.DEBUG) {
                 log.info().append("SwapListenerWithRLL swap=").append(System.identityHashCode(SwapListenerWithRLL.this))
                         .append(", result=").append(System.identityHashCode(resultTable)).endl();
             }

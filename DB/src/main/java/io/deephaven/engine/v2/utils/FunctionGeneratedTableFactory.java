@@ -66,7 +66,7 @@ public class FunctionGeneratedTableFactory {
         final FunctionBackedTable result = factory.getTable();
 
         for (DynamicTable source : sourceTables) {
-            source.listenForUpdates(new BaseTable.ShiftAwareListenerImpl("FunctionGeneratedTable", source, result) {
+            source.listenForUpdates(new BaseTable.ListenerImpl("FunctionGeneratedTable", source, result) {
                 @Override
                 public void onUpdate(final Update upstream) {
                     result.doRefresh();
@@ -114,7 +114,7 @@ public class FunctionGeneratedTableFactory {
     private void copyTable(Table source) {
         Map<String, ? extends ColumnSource<?>> sourceColumns = source.getColumnSourceMap();
 
-        TrackingMutableRowSet sourceRowSet = source.getIndex();
+        TrackingMutableRowSet sourceRowSet = source.getRowSet();
 
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : sourceColumns.entrySet()) {
             WritableSource<?> destColumn = writableSources.get(entry.getKey());

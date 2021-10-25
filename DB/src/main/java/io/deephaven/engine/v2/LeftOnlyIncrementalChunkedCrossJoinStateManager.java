@@ -256,7 +256,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
         if (!rightTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(rightKeys, rightTable.size())) {
-                buildTable(bc, rightTable.getIndex(), rightKeys, (slot, index) -> {
+                buildTable(bc, rightTable.getRowSet(), rightKeys, (slot, index) -> {
                     if (isOverflowLocation(slot)) {
                         addToIndex(overflowRightIndexSource, hashLocationToOverflowLocation(slot), index, ignoreMissing);
                     } else {
@@ -272,7 +272,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
         final RowSetBuilderRandom resultIndex = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         if (!leftTable.isEmpty()) {
-            addLeft(leftTable.getIndex(), (slot, index) -> {
+            addLeft(leftTable.getRowSet(), (slot, index) -> {
                 final long regionStart = index << getNumShiftBits();
                 final TrackingMutableRowSet rightRowSet = getRightIndex(slot);
                 resultIndex.addRange(regionStart, regionStart + rightRowSet.size() - 1);
@@ -315,11 +315,11 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    void applyLeftShift(final RowSet prevLeftIndex, final IndexShiftData shiftData) {
+    void applyLeftShift(final RowSet prevLeftIndex, final RowSetShiftData shiftData) {
         leftIndexToSlot.applyShift(prevLeftIndex, shiftData);
     }
 
-    void processLeftModifies(final ShiftAwareListener.Update upstream, final ShiftAwareListener.Update downstream, final TrackingMutableRowSet resultRowSet) {
+    void processLeftModifies(final Listener.Update upstream, final Listener.Update downstream, final TrackingMutableRowSet resultRowSet) {
         if (upstream.modified.isEmpty()) {
             downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             return;
@@ -1750,14 +1750,14 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     public void validateKeySpaceSize() {
-        final long leftLastKey = leftTable.getIndex().lastRowKey();
+        final long leftLastKey = leftTable.getRowSet().lastRowKey();
         final long rightLastKey = maxRightGroupSize - 1;
         final int minLeftBits = CrossJoinShiftState.getMinBits(leftLastKey);
         final int minRightBits = CrossJoinShiftState.getMinBits(rightLastKey);
         final int numShiftBits = getNumShiftBits();
         if (minLeftBits + numShiftBits > 63) {
             throw new OutOfKeySpaceException("join out of rowSet space (left reqBits + right reservedBits > 63): "
-                    + "(left table: {size: " + leftTable.getIndex().size() + " maxIndex: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
+                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxIndex: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
                     + "(right table: {maxIndexUsed: " + rightLastKey + " reqBits: " + minRightBits + " reservedBits: " + numShiftBits + "})"
                     + " exceeds Long.MAX_VALUE. Consider flattening left table or reserving fewer right bits if possible.");
         }

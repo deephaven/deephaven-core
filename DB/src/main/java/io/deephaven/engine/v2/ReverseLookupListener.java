@@ -43,7 +43,7 @@ public class ReverseLookupListener extends LivenessArtifact
     private final boolean ignoreNull;
     private final InternalListener listener;
 
-    private class InternalListener extends InstrumentedListenerAdapter
+    private class InternalListener extends ShiftObliviousInstrumentedListenerAdapter
             implements NotificationStepSource, NotificationStepReceiver {
         private final TObjectLongHashMap<Object> prevMap;
         private final Set<Object> modifiedThisCycle = new THashSet<>();
@@ -56,7 +56,7 @@ public class ReverseLookupListener extends LivenessArtifact
         }
 
         @Override
-        public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
+        public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
             synchronized (ReverseLookupListener.this) {
                 // Note that lastNotificationStep will change before we are technically satisfied, but it doesn't
                 // matter; we aren't fully updated yet, but we rely on synchronization on the enclosing RLL to prevent
@@ -166,9 +166,9 @@ public class ReverseLookupListener extends LivenessArtifact
     private Object reference;
 
     public static ReverseLookupListener makeReverseLookupListenerWithSnapshot(BaseTable source, String... columns) {
-        final SwapListener swapListener;
+        final ShiftObliviousSwapListener swapListener;
         if (source.isRefreshing()) {
-            swapListener = new SwapListener(source);
+            swapListener = new ShiftObliviousSwapListener(source);
             source.listenForUpdates(swapListener);
         } else {
             swapListener = null;
@@ -237,8 +237,8 @@ public class ReverseLookupListener extends LivenessArtifact
         this.columns = Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
         map = new TObjectLongHashMap<>(2 * source.intSize(), 0.75f, NO_ENTRY_VALUE);
-        try (final RowSet prevIndex = usePrev ? source.getIndex().getPrevRowSet() : null) {
-            addEntries(usePrev ? prevIndex : source.getIndex(), usePrev, () -> {
+        try (final RowSet prevIndex = usePrev ? source.getRowSet().getPrevRowSet() : null) {
+            addEntries(usePrev ? prevIndex : source.getRowSet(), usePrev, () -> {
                 if (source.isRefreshing()) {
                     ConstructSnapshot.failIfConcurrentAttemptInconsistent();
                 }

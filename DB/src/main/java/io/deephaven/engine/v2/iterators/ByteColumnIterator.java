@@ -23,7 +23,7 @@ public class ByteColumnIterator extends ColumnIterator<Byte> implements Primitiv
 
     public ByteColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
         //noinspection unchecked
-        this(table.getIndex(), table.getColumnSource(columnName));
+        this(table.getRowSet(), table.getColumnSource(columnName));
     }
 
     @SuppressWarnings("WeakerAccess")

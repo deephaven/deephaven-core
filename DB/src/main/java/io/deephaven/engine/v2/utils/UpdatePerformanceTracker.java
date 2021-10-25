@@ -34,7 +34,7 @@ import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.plus;
 
 /**
  * This tool is meant to track periodic update events that take place in a LiveTableMonitor. This generally includes (1)
- * LiveTable.refresh() invocations (2) DynamicTable Listener notifications (see InstrumentedListener)
+ * LiveTable.refresh() invocations (2) DynamicTable ShiftObliviousListener notifications (see ShiftObliviousInstrumentedListener)
  *
  * Note: Regarding thread safety, this class interacts with a singleton LiveTableMonitor and expects all calls to
  * getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live jobs
@@ -336,7 +336,7 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateStart(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified,
-                                        final IndexShiftData shifted) {
+                                        final RowSetShiftData shifted) {
             intervalAdded += added.size();
             intervalRemoved += removed.size();
             intervalModified += modified.size();

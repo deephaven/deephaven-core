@@ -3,7 +3,7 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.DynamicTable;
-import io.deephaven.engine.v2.InstrumentedShiftAwareListenerAdapter;
+import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
@@ -26,7 +26,7 @@ import java.util.function.LongFunction;
  * @param <K> the key type
  * @param <V> the value type
  */
-public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter implements Map<K, V> {
+public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements Map<K, V> {
     private static final long NO_ENTRY_VALUE = -2;
     private static final long DELETED_ENTRY_VALUE = -1;
 
@@ -79,7 +79,7 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter i
         this.valueProducer = valueProducer;
         this.prevValueProducer = prevValueProducer;
 
-        for (final TrackingMutableRowSet.Iterator it = source.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = source.getRowSet().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             baselineMap.put(keyProducer.apply(key), key);
         }

@@ -1513,7 +1513,7 @@ public class TableTools {
         final DataOutputStream osw = new DataOutputStream(new DigestOutputStream(new NullOutputStream(), md));
 
         for (final ColumnSource<?> col : source.getColumnSourceMap().values()) {
-            processColumnForFingerprint(source.getIndex(), col, osw);
+            processColumnForFingerprint(source.getRowSet(), col, osw);
         }
 
         // Now add in the Table definition

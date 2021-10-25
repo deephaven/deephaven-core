@@ -5,12 +5,12 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
@@ -275,12 +275,12 @@ public class ExportTableUpdateListenerTest {
 
         // export mid-tick
         liveTableMonitor.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added =
-                    RowSetFactoryImpl.INSTANCE.getRowSetByRange(src.getIndex().lastRowKey() + 1, src.getIndex().lastRowKey() + 42);
+                    RowSetFactoryImpl.INSTANCE.getRowSetByRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + 42);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            update.shifted = IndexShiftData.EMPTY;
+            update.shifted = RowSetShiftData.EMPTY;
             addToTable(src, update.added);
 
             // Must be off-thread to use concurrent instantiation
@@ -305,12 +305,12 @@ public class ExportTableUpdateListenerTest {
 
     private void addRowsToSource(final QueryTable src, final long nRows) {
         liveTableMonitor.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added =
-                    RowSetFactoryImpl.INSTANCE.getRowSetByRange(src.getIndex().lastRowKey() + 1, src.getIndex().lastRowKey() + nRows);
+                    RowSetFactoryImpl.INSTANCE.getRowSetByRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + nRows);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            update.shifted = IndexShiftData.EMPTY;
+            update.shifted = RowSetShiftData.EMPTY;
             addToTable(src, update.added);
             src.notifyListeners(update);
         });

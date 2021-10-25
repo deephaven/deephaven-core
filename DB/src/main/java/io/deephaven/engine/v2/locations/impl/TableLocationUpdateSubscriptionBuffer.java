@@ -79,7 +79,7 @@ public class TableLocationUpdateSubscriptionBuffer implements TableLocation.List
     }
 
     // ------------------------------------------------------------------------------------------------------------------
-    // TableLocation.Listener implementation
+    // TableLocation.ShiftObliviousListener implementation
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override

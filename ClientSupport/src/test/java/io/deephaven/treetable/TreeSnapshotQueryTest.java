@@ -745,7 +745,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                         .getLastNotificationStep() != LogicalClock.DEFAULT.currentStep();
 
         for (int rowNo = 0; rowNo < currentTable.size(); rowNo++) {
-            final long tableRow = usePrev ? currentTable.getIndex().getPrev(rowNo) : currentTable.getIndex().get(rowNo);
+            final long tableRow = usePrev ? currentTable.getRowSet().getPrev(rowNo) : currentTable.getRowSet().get(rowNo);
             final ColumnSource childSource = currentTable.getColumnSource(state.hierarchicalColumn);
             final Object childKey = usePrev ? childSource.getPrev(tableRow) : childSource.get(tableRow);
             final TableMap childMap = state.getTableMap(currentTable);

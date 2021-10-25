@@ -11,8 +11,8 @@ import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
@@ -96,17 +96,17 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
-        trackingRowSet = usePrev ? tableToValidate.getIndex().getPrevRowSet() : tableToValidate.getIndex().clone();
+        trackingRowSet = usePrev ? tableToValidate.getRowSet().getPrevRowSet() : tableToValidate.getRowSet().clone();
 
         resultTable = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), Collections.emptyMap());
         resultTable.setFlat();
 
-        final ShiftAwareListener listener;
+        final Listener listener;
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
                 final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
             updateValues(ModifiedColumnSet.ALL, trackingRowSet, usePrev);
 
-            listener = new BaseTable.ShiftAwareListenerImpl(getDescription(), tableToValidate, resultTable) {
+            listener = new BaseTable.ListenerImpl(getDescription(), tableToValidate, resultTable) {
                 @Override
                 public void onUpdate(final Update upstream) {
                     TableUpdateValidator.this.onUpdate(upstream);
@@ -122,7 +122,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
     }
 
     public void validate() {
-        Assert.equals(trackingRowSet, "trackingRowSet", tableToValidate.getIndex(), "tableToValidate.build()");
+        Assert.equals(trackingRowSet, "trackingRowSet", tableToValidate.getRowSet(), "tableToValidate.build()");
     }
 
     public void deepValidation() {
@@ -143,7 +143,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
     }
 
-    private void onUpdate(final ShiftAwareListener.Update upstream) {
+    private void onUpdate(final Listener.Update upstream) {
         if (resultTable.size() >= MAX_ISSUES) {
             return;
         }
@@ -165,7 +165,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
                         false);
             }
 
-            validateIndexesEqual("pre-update rowSet", trackingRowSet, tableToValidate.getIndex().getPrevRowSet());
+            validateIndexesEqual("pre-update rowSet", trackingRowSet, tableToValidate.getRowSet().getPrevRowSet());
             trackingRowSet.remove(upstream.removed);
             Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed));
 
@@ -186,7 +186,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
                         + trackingRowSet.intersect(upstream.added));
             }
             trackingRowSet.insert(upstream.added);
-            validateIndexesEqual("post-update rowSet", trackingRowSet, tableToValidate.getIndex());
+            validateIndexesEqual("post-update rowSet", trackingRowSet, tableToValidate.getRowSet());
             updateValues(ModifiedColumnSet.ALL, upstream.added, false);
 
             // modified
@@ -298,7 +298,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         columnInfos = ciBuilder.toArray(new ColumnInfo[0]);
     }
 
-    private class ColumnInfo implements IndexShiftData.Callback, SafeCloseable {
+    private class ColumnInfo implements RowSetShiftData.Callback, SafeCloseable {
         final String name;
         final boolean isPrimitive;
         final ModifiedColumnSet modifiedColumnSet;

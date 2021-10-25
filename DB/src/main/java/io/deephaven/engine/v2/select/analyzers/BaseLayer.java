@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
 
@@ -44,7 +44,7 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, RowSet toClear, UpdateHelper helper) {
+    public void applyUpdate(Listener.Update upstream, RowSet toClear, UpdateHelper helper) {
         // nothing to do at the base layer
     }
 

@@ -88,9 +88,9 @@ class BucketingContext implements SafeCloseable {
                     final SymbolTableSource leftSymbolTableSource = (SymbolTableSource) leftSources[ii];
                     final SymbolTableSource rightSymbolTableSource = (SymbolTableSource) rightSources[ii];
 
-                    final Table leftSymbolTable = leftSymbolTableSource.getStaticSymbolTable(leftTable.getIndex(),
+                    final Table leftSymbolTable = leftSymbolTableSource.getStaticSymbolTable(leftTable.getRowSet(),
                             control.useSymbolTableLookupCaching());
-                    final Table rightSymbolTable = rightSymbolTableSource.getStaticSymbolTable(rightTable.getIndex(),
+                    final Table rightSymbolTable = rightSymbolTableSource.getStaticSymbolTable(rightTable.getRowSet(),
                             control.useSymbolTableLookupCaching());
 
                     if (control.useSymbolTables(leftTable.size(), leftSymbolTable.size(), rightTable.size(),

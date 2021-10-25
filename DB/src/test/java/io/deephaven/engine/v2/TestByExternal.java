@@ -64,7 +64,7 @@ public class TestByExternal extends QueryTableTestBase {
             // get all the keys from the original table
             final HashSet<Object> keys = new HashSet<>();
 
-            for (final TrackingMutableRowSet.Iterator it = originalTable.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = originalTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 if (groupByColumnSources.length == 1) {
                     keys.add(groupByColumnSources[0].get(next));

@@ -85,7 +85,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
-        final TrackingMutableRowSet parentRowSet = parent.getIndex();
+        final TrackingMutableRowSet parentRowSet = parent.getRowSet();
         final TrackingMutableRowSet resultRowSet = computeSliceIndex(usePrev ? parentRowSet.getPrevRowSet() : parentRowSet);
 
         // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
@@ -94,9 +94,9 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
             resultTable.setFlat();
         }
 
-        ShiftAwareListener resultListener = null;
+        Listener resultListener = null;
         if (parent.isRefreshing()) {
-            resultListener = new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
+            resultListener = new BaseTable.ListenerImpl(getDescription(), parent, resultTable) {
                 @Override
                 public void onUpdate(Update upstream) {
                     SliceLikeOperation.this.onUpdate(upstream);
@@ -107,11 +107,11 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         return new Result(resultTable, resultListener);
     }
 
-    private void onUpdate(final ShiftAwareListener.Update upstream) {
-        final TrackingMutableRowSet rowSet = resultTable.getIndex();
-        final TrackingMutableRowSet sliceRowSet = computeSliceIndex(parent.getIndex());
+    private void onUpdate(final Listener.Update upstream) {
+        final TrackingMutableRowSet rowSet = resultTable.getRowSet();
+        final TrackingMutableRowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
 
-        final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+        final Listener.Update downstream = new Listener.Update();
         downstream.removed = upstream.removed.intersect(rowSet);
         rowSet.remove(downstream.removed);
 

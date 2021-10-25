@@ -27,7 +27,7 @@ import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.v2.DynamicNode;
-import io.deephaven.engine.v2.InstrumentedListener;
+import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.v2.utils.TerminalNotification;
@@ -262,7 +262,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
             public void submit(@NotNull Notification notification) {
                 if (notification instanceof LiveTableRefreshNotification) {
                     super.submit(notification);
-                } else if (notification instanceof InstrumentedListener.ErrorNotification) {
+                } else if (notification instanceof ShiftObliviousInstrumentedListener.ErrorNotification) {
                     // NB: The previous implementation of this concept was more rigorous about ensuring that errors
                     // would be next, but this is likely good enough.
                     submitAt(notification, 0);

@@ -22,7 +22,7 @@ public class LongColumnIterator extends ColumnIterator<Long> implements Primitiv
 
     public LongColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
         //noinspection unchecked
-        this(table.getIndex(), table.getColumnSource(columnName));
+        this(table.getRowSet(), table.getColumnSource(columnName));
     }
 
     @Override

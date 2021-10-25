@@ -10,7 +10,7 @@ package io.deephaven.engine.v2.by.ssmcountdistinct.unique;
 import io.deephaven.engine.v2.sources.BoxedColumnSource;
 import io.deephaven.engine.tables.utils.DBDateTime;
 
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctRollupContext;
@@ -504,7 +504,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
+    public void propagateUpdates(@NotNull Listener.Update downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();

@@ -96,7 +96,7 @@ public class TstRowSetUtil {
         }
     }
 
-    public static MutableRowSet rowSetFromString(String string, final TrackingMutableRowSet ix) {
+    public static MutableRowSet rowSetFromString(String string, final MutableRowSet ix) {
         return rowSetFromString(string, RowSetToBuilderRandomAdaptor.adapt(ix));
     }
 

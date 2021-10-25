@@ -142,7 +142,7 @@ public interface SelectFilter {
     }
 
     /**
-     * Set the Listener that should be notified if results based on this filter must be recomputed.
+     * Set the ShiftObliviousListener that should be notified if results based on this filter must be recomputed.
      *
      * @param result the listener to notify.
      */

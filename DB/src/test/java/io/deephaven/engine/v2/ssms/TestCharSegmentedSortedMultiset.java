@@ -14,6 +14,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssa.SsaTestHelpers;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.compact.CharCompactKernel;
 import io.deephaven.test.types.ParallelTest;
@@ -117,7 +118,7 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
              final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(1024);
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(1024)
         ) {
-            valueSource.fillChunk(fillContext, chunk, john.getIndex());
+            valueSource.fillChunk(fillContext, chunk, john.getRowSet());
             CharCompactKernel.compactAndCount(chunk, counts, true);
         }
     }
@@ -139,9 +140,9 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
         checkSsmInitial(asCharacter, ssm, valueSource, countNull, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asCharacterListener = new InstrumentedListenerAdapter((DynamicTable) asCharacter, false) {
+            final ShiftObliviousListener asCharacterListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asCharacter, false) {
                 @Override
-                public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+                public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
                     try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(maxSize);
                          final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(maxSize);
@@ -174,7 +175,7 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asCharacter.intSize())) {
-                    checkSsm(ssm, valueSource.getChunk(getContext, asCharacter.getIndex()).asCharChunk(), countNull, desc);
+                    checkSsm(ssm, valueSource.getChunk(getContext, asCharacter.getRowSet()).asCharChunk(), countNull, desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -221,7 +222,7 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
 
             try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asCharacter.intSize());
                  final WritableCharChunk<Attributes.Values> valueChunk = WritableCharChunk.makeWritableChunk(asCharacter.intSize())) {
-                valueSource.fillChunk(fillContext, valueChunk, asCharacter.getIndex());
+                valueSource.fillChunk(fillContext, valueChunk, asCharacter.getRowSet());
                 valueChunk.sort();
                 final CharChunk<? extends Values> loValues = valueChunk.slice(0, LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()));
                 final CharChunk<? extends Values> hiValues = valueChunk.slice(LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()), LongSizedDataStructure.intSize("ssmHi", ssmHi.totalSize()));
@@ -260,14 +261,14 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asCharacter.intSize());
              final WritableCharChunk<Attributes.Values> valueChunk = WritableCharChunk.makeWritableChunk(asCharacter.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asCharacter.intSize())) {
-            valueSource.fillChunk(fillContext, valueChunk, asCharacter.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asCharacter.getRowSet());
             valueChunk.sort();
 
             CharCompactKernel.compactAndCount(valueChunk, counts, countNull);
 
             ssm.insert(valueChunk, counts);
 
-            valueSource.fillChunk(fillContext, valueChunk, asCharacter.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asCharacter.getRowSet());
             checkSsm(ssm, valueChunk, countNull, desc);
         }
     }
@@ -275,7 +276,7 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
     private void checkSsm(Table asCharacter, CharSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asCharacter.intSize());
              final WritableCharChunk<Attributes.Values> valueChunk = WritableCharChunk.makeWritableChunk(asCharacter.intSize())) {
-            valueSource.fillChunk(fillContext, valueChunk, asCharacter.getIndex());
+            valueSource.fillChunk(fillContext, valueChunk, asCharacter.getRowSet());
             checkSsm(ssm, valueChunk, countNull, desc);
         }
     }

@@ -280,7 +280,7 @@ class IncrementalChunkedNaturalJoinStateManager
             return;
         }
         try (final BuildContext bc = makeBuildContext(rightSources, rightTable.size())) {
-            buildTable(bc, rightTable.getIndex(), rightSources, null, null);
+            buildTable(bc, rightTable.getRowSet(), rightSources, null, null);
         }
     }
 

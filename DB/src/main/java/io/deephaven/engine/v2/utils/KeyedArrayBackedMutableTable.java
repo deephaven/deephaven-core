@@ -133,7 +133,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         long rowToInsert = nextRow;
         final StringBuilder errorBuilder = new StringBuilder();
 
-        try (final TrackingMutableRowSet addRowSet = table.getIndex().clone();
+        try (final TrackingMutableRowSet addRowSet = table.getRowSet().clone();
                 final WritableLongChunk<Attributes.RowKeys> destinations =
                         WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
@@ -204,9 +204,9 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                 WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity);
-                    final Index tableIndex = table.getIndex().clone();) {
+                    final TrackingRowSet tableRowSet = table.getRowSet().clone();) {
 
-                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, tableIndex);
+                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, tableRowSet);
                 final ObjectChunk<?, ? extends Attributes.Values> boxed = boxer.box(keys);
                 destinations.setSize(0);
                 for (int ii = 0; ii < boxed.size(); ++ii) {

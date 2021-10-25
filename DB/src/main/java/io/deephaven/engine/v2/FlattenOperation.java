@@ -32,7 +32,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final TrackingMutableRowSet rowSet = parent.getIndex();
+        final TrackingMutableRowSet rowSet = parent.getRowSet();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
         final RedirectionIndex redirectionIndex = new WrappedIndexRedirectionIndexImpl(rowSet);
 
@@ -46,9 +46,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         resultTable.setFlat();
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Flatten);
 
-        ShiftAwareListener resultListener = null;
+        Listener resultListener = null;
         if (parent.isRefreshing()) {
-            resultListener = new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
+            resultListener = new BaseTable.ListenerImpl(getDescription(), parent, resultTable) {
                 @Override
                 public void onUpdate(Update upstream) {
                     FlattenOperation.this.onUpdate(upstream);
@@ -71,12 +71,12 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         this.parent = parent;
     }
 
-    private void onUpdate(final ShiftAwareListener.Update upstream) {
+    private void onUpdate(final Listener.Update upstream) {
         // Note: we can safely ignore shifted since shifts do not change data AND shifts are not allowed to reorder.
-        final TrackingMutableRowSet rowSet = parent.getIndex();
+        final TrackingMutableRowSet rowSet = parent.getRowSet();
         final long newSize = rowSet.size();
 
-        final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+        final Listener.Update downstream = new Listener.Update();
         downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
         mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
 
@@ -85,7 +85,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         if (upstream.added.isEmpty() && upstream.removed.isEmpty()) {
             downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-            downstream.shifted = IndexShiftData.EMPTY;
+            downstream.shifted = RowSetShiftData.EMPTY;
             resultTable.notifyListeners(downstream);
             return;
         }
@@ -94,7 +94,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         try (final TrackingMutableRowSet prevRowSet = rowSet.getPrevRowSet()) {
             downstream.removed = prevRowSet.invert(upstream.removed);
         }
-        final IndexShiftData.Builder outShifted = new IndexShiftData.Builder();
+        final RowSetShiftData.Builder outShifted = new RowSetShiftData.Builder();
 
         // Helper to ensure that we can prime iterators and still detect the end.
         final Consumer<MutableObject<TrackingMutableRowSet.RangeIterator>> updateIt = (it) -> {
@@ -159,9 +159,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         }
 
         if (newSize < prevSize) {
-            resultTable.getIndex().removeRange(newSize, prevSize - 1);
+            resultTable.getRowSet().removeRange(newSize, prevSize - 1);
         } else if (newSize > prevSize) {
-            resultTable.getIndex().insertRange(prevSize, newSize - 1);
+            resultTable.getRowSet().insertRange(prevSize, newSize - 1);
         }
 
         downstream.shifted = outShifted.build();

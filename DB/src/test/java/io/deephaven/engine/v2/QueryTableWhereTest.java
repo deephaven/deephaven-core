@@ -21,8 +21,8 @@ import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -69,7 +69,7 @@ public class QueryTableWhereTest {
         assertEquals("", diff(table.where(filter.apply("(y-'a') = 2")),
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
         final QueryTable whereResult = (QueryTable) table.where(filter.apply("x%2 == 1"));
-        final Listener whereResultListener = base.newListenerWithGlobals(whereResult);
+        final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", 'a', 'c')), 10));
@@ -153,7 +153,7 @@ public class QueryTableWhereTest {
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.whereOneOf(whereClause("x%2 == 1"));
-        final Listener whereResultListener = base.newListenerWithGlobals(whereResult);
+        final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", 'a', 'c')), 10));
@@ -219,7 +219,7 @@ public class QueryTableWhereTest {
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.whereOneOf(whereClause("x%2 == 1"), whereClause("y=='f'"));
-        final Listener whereResultListener = base.newListenerWithGlobals(whereResult);
+        final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 8), c("x", 1, 3, 4), c("y", 'a', 'c', 'f')), 10));
@@ -688,11 +688,11 @@ public class QueryTableWhereTest {
         final Table filtered = source.where();
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            Listener.Update update = new Listener.Update();
             update.added = update.removed = i();
-            update.modified = source.getIndex().clone();
+            update.modified = source.getRowSet().clone();
             update.modifiedColumnSet = source.newModifiedColumnSet("X");
-            update.shifted = IndexShiftData.EMPTY;
+            update.shifted = RowSetShiftData.EMPTY;
             source.notifyListeners(update);
         });
 
@@ -835,7 +835,7 @@ public class QueryTableWhereTest {
         QueryScope.addParam("slowCounter", slowCounter);
 
         final long start = System.currentTimeMillis();
-        final TrackingMutableRowSet result = ChunkFilter.applyChunkFilter(tableToFilter.getIndex(), tableToFilter.getColumnSource("X"),
+        final TrackingMutableRowSet result = ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
                 false, slowCounter);
         final long end = System.currentTimeMillis();
         System.out.println("Duration: " + (end - start));
@@ -849,7 +849,7 @@ public class QueryTableWhereTest {
         final Thread t = new Thread(() -> {
             final long start1 = System.currentTimeMillis();
             try {
-                ChunkFilter.applyChunkFilter(tableToFilter.getIndex(), tableToFilter.getColumnSource("X"), false,
+                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"), false,
                         slowCounter);
             } catch (Exception e) {
                 caught.setValue(e);

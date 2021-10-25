@@ -188,7 +188,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
         }
         leftHashSlots.ensureCapacity(leftTable.size());
         try (final BuildContext bc = makeBuildContext(leftSources, leftTable.size())) {
-            buildTable(bc, leftTable.getIndex(), leftSources, leftHashSlots);
+            buildTable(bc, leftTable.getRowSet(), leftSources, leftHashSlots);
         }
     }
 

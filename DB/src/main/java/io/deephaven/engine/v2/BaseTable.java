@@ -89,9 +89,9 @@ public abstract class BaseTable extends LivenessArtifact
     private transient boolean refreshing;
     private transient Condition liveTableMonitorCondition;
     private transient Collection<Object> parents;
-    private transient SimpleReferenceManager<Listener, WeakSimpleReference<Listener>> childListenerReferences;
-    private transient SimpleReferenceManager<Listener, WeakSimpleReference<Listener>> directChildListenerReferences;
-    private transient SimpleReferenceManager<ShiftAwareListener, WeakSimpleReference<ShiftAwareListener>> childShiftAwareListenerReferences;
+    private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> childListenerReferences;
+    private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> directChildListenerReferences;
+    private transient SimpleReferenceManager<Listener, WeakSimpleReference<Listener>> childShiftAwareListenerReferences;
     private transient volatile long lastNotificationStep;
     private transient volatile long lastSatisfiedStep;
     private transient boolean isFailed;
@@ -565,21 +565,21 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void listenForUpdates(final Listener listener, final boolean replayInitialImage) {
+    public void listenForUpdates(final ShiftObliviousListener listener, final boolean replayInitialImage) {
         if (isFailed) {
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
             childListenerReferences.add(listener);
         }
-        if (replayInitialImage && getIndex().isNonempty()) {
-            listener.setInitialImage(getIndex());
-            listener.onUpdate(getIndex(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+        if (replayInitialImage && getRowSet().isNonempty()) {
+            listener.setInitialImage(getRowSet());
+            listener.onUpdate(getRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
     }
 
     @Override
-    public void listenForUpdates(final ShiftAwareListener listener) {
+    public void listenForUpdates(final Listener listener) {
         if (isFailed) {
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
@@ -589,7 +589,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void listenForDirectUpdates(final Listener listener) {
+    public void listenForDirectUpdates(final ShiftObliviousListener listener) {
         if (isFailed) {
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
@@ -599,17 +599,17 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void removeUpdateListener(final Listener listenerToRemove) {
+    public void removeUpdateListener(final ShiftObliviousListener listenerToRemove) {
         childListenerReferences.remove(listenerToRemove);
     }
 
     @Override
-    public void removeUpdateListener(final ShiftAwareListener listenerToRemove) {
+    public void removeUpdateListener(final Listener listenerToRemove) {
         childShiftAwareListenerReferences.remove(listenerToRemove);
     }
 
     @Override
-    public void removeDirectUpdateListener(final Listener listenerToRemove) {
+    public void removeDirectUpdateListener(final ShiftObliviousListener listenerToRemove) {
         directChildListenerReferences.remove(listenerToRemove);
     }
 
@@ -656,7 +656,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public final void notifyListeners(final ShiftAwareListener.Update update) {
+    public final void notifyListeners(final Listener.Update update) {
         Assert.eqTrue(update.valid(), "update.valid()");
         if (update.empty()) {
             update.release();
@@ -680,7 +680,7 @@ public abstract class BaseTable extends LivenessArtifact
         Assert.neqNull(update.shifted, "shifted");
 
         if (isFlat()) {
-            Assert.assertion(getIndex().isFlat(), "build().isFlat()", getIndex(), "build()");
+            Assert.assertion(getRowSet().isFlat(), "build().isFlat()", getRowSet(), "build()");
         }
         if (isAddOnly()) {
             Assert.assertion(update.removed.isEmpty(), "update.removed.empty()");
@@ -702,16 +702,16 @@ public abstract class BaseTable extends LivenessArtifact
             validateUpdateOverlaps(update);
         }
 
-        // Expand if we are testing or have children listening using old Listener API.
+        // Expand if we are testing or have children listening using old ShiftObliviousListener API.
         final boolean childNeedsExpansion =
                 !directChildListenerReferences.isEmpty() || !childListenerReferences.isEmpty();
-        final IndexShiftDataExpander shiftExpander = childNeedsExpansion
-                ? new IndexShiftDataExpander(update, getIndex())
-                : IndexShiftDataExpander.EMPTY;
+        final RowSetShiftDataExpander shiftExpander = childNeedsExpansion
+                ? new RowSetShiftDataExpander(update, getRowSet())
+                : RowSetShiftDataExpander.EMPTY;
 
         if (childNeedsExpansion && VALIDATE_UPDATE_OVERLAPS) {
             // Check that expansion is valid w.r.t. historical expectations.
-            shiftExpander.validate(getIndex());
+            shiftExpander.validate(update, getRowSet());
         }
 
         // tables may only be updated once per cycle
@@ -750,16 +750,16 @@ public abstract class BaseTable extends LivenessArtifact
         update.release();
     }
 
-    private void validateUpdateOverlaps(final ShiftAwareListener.Update update) {
-        final boolean currentMissingAdds = !update.added.subsetOf(getIndex());
-        final boolean currentMissingModifications = !update.modified.subsetOf(getIndex());
+    private void validateUpdateOverlaps(final Listener.Update update) {
+        final boolean currentMissingAdds = !update.added.subsetOf(getRowSet());
+        final boolean currentMissingModifications = !update.modified.subsetOf(getRowSet());
         final boolean previousMissingRemovals;
-        try (final RowSet prevIndex = getIndex().getPrevRowSet()) {
+        try (final RowSet prevIndex = getRowSet().getPrevRowSet()) {
             previousMissingRemovals = !update.removed.subsetOf(prevIndex);
         }
         final boolean currentContainsRemovals;
         try (final RowSet removedMinusAdded = update.removed.minus(update.added)) {
-            currentContainsRemovals = removedMinusAdded.overlaps(getIndex());
+            currentContainsRemovals = removedMinusAdded.overlaps(getRowSet());
         }
 
         if (!previousMissingRemovals && !currentMissingAdds && !currentMissingModifications &&
@@ -791,8 +791,8 @@ public abstract class BaseTable extends LivenessArtifact
                     }
                 };
 
-                append.accept("build().getPrevRowSet=", getIndex().getPrevRowSet());
-                append.accept("build()=", getIndex().getPrevRowSet());
+                append.accept("build().getPrevRowSet=", getRowSet().getPrevRowSet());
+                append.accept("build()=", getRowSet().getPrevRowSet());
                 append.accept("added=", update.added);
                 append.accept("removed=", update.removed);
                 append.accept("modified=", update.modified);
@@ -804,16 +804,16 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
-        final TrackingMutableRowSet removalsMinusPrevious = update.removed.minus(getIndex().getPrevRowSet());
-        final TrackingMutableRowSet addedMinusCurrent = update.added.minus(getIndex());
-        final TrackingMutableRowSet removedIntersectCurrent = update.removed.intersect(getIndex());
-        final TrackingMutableRowSet modifiedMinusCurrent = update.modified.minus(getIndex());
+        final RowSet removalsMinusPrevious = update.removed.minus(getRowSet().getPrevRowSet());
+        final RowSet addedMinusCurrent = update.added.minus(getRowSet());
+        final RowSet removedIntersectCurrent = update.removed.intersect(getRowSet());
+        final RowSet modifiedMinusCurrent = update.modified.minus(getRowSet());
 
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final LogOutput logOutput = new LogOutputStringImpl()
                 .append("TrackingMutableRowSet update error detected: ")
-                .append(LogOutput::nl).append("\t          previousIndex=").append(getIndex().getPrevRowSet())
-                .append(LogOutput::nl).append("\t           currentIndex=").append(getIndex())
+                .append(LogOutput::nl).append("\t          previousIndex=").append(getRowSet().getPrevRowSet())
+                .append(LogOutput::nl).append("\t           currentIndex=").append(getRowSet())
                 .append(LogOutput::nl).append("\t                  added=").append(update.added)
                 .append(LogOutput::nl).append("\t                removed=").append(update.removed)
                 .append(LogOutput::nl).append("\t               modified=").append(update.modified)
@@ -871,19 +871,19 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     /**
-     * Simplest appropriate legacy InstrumentedListener implementation for BaseTable and descendants. It's expected that
+     * Simplest appropriate legacy ShiftObliviousInstrumentedListener implementation for BaseTable and descendants. It's expected that
      * most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet updates
      * through to the dependent's listeners.
      *
-     * It is preferred to use {@link ShiftAwareListenerImpl} over {@link ListenerImpl}
+     * It is preferred to use {@link ListenerImpl} over {@link ShiftObliviousListenerImpl}
      */
-    public static class ListenerImpl extends InstrumentedListener {
+    public static class ShiftObliviousListenerImpl extends ShiftObliviousInstrumentedListener {
 
         @ReferentialIntegrity
         private final DynamicTable parent;
         private final DynamicTable dependent;
 
-        public ListenerImpl(String description, DynamicTable parent, DynamicTable dependent) {
+        public ShiftObliviousListenerImpl(String description, DynamicTable parent, DynamicTable dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -894,9 +894,9 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         @Override
-        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
-            dependent.notifyListeners(new ShiftAwareListener.Update(added.clone(), removed.clone(), modified.clone(),
-                    IndexShiftData.EMPTY, ModifiedColumnSet.ALL));
+        public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
+            dependent.notifyListeners(new Listener.Update(added.clone(), removed.clone(), modified.clone(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         }
 
         @Override
@@ -922,14 +922,14 @@ public abstract class BaseTable extends LivenessArtifact
      * that most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet updates
      * through to the dependent's listeners.
      */
-    public static class ShiftAwareListenerImpl extends InstrumentedShiftAwareListener {
+    public static class ListenerImpl extends InstrumentedListener {
 
         @ReferentialIntegrity
         private final DynamicTable parent;
         private final DynamicTable dependent;
         private final boolean canReuseModifiedColumnSet;
 
-        public ShiftAwareListenerImpl(String description, DynamicTable parent, DynamicTable dependent) {
+        public ListenerImpl(String description, DynamicTable parent, DynamicTable dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -1312,14 +1312,14 @@ public abstract class BaseTable extends LivenessArtifact
         return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
             final Mutable<Table> result = new MutableObject<>();
 
-            final ShiftAwareSwapListener swapListener = createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+            final SwapListener swapListener = createSwapListenerIfRefreshing(SwapListener::new);
             initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
-                final QueryTable resultTable = (QueryTable) getSubTable(getIndex());
+                final QueryTable resultTable = (QueryTable) getSubTable(getRowSet());
                 propagateFlatness(resultTable);
                 copyAttributes(resultTable, a -> true);
 
                 if (swapListener != null) {
-                    final ShiftAwareListenerImpl listener = new ShiftAwareListenerImpl("copy()", this, resultTable);
+                    final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                     swapListener.setListenerAndResult(listener, resultTable);
                     resultTable.addParentReference(swapListener);
                 }

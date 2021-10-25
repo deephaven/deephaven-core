@@ -10,21 +10,21 @@ import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedChunk;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.SizedSafeCloseable;
 
 import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
 
 class ChunkedAjUtilities {
-    static void bothIncrementalLeftSsaShift(IndexShiftData shiftData, SegmentedSortedArray leftSsa,
+    static void bothIncrementalLeftSsaShift(RowSetShiftData shiftData, SegmentedSortedArray leftSsa,
                                             TrackingMutableRowSet restampRemovals, QueryTable table,
                                             int nodeSize, ColumnSource<?> stampSource) {
         final ChunkType stampChunkType = stampSource.getChunkType();
         final SortingOrder sortOrder = leftSsa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending;
 
-        try (final TrackingMutableRowSet fullPrevRowSet = table.getIndex().getPrevRowSet();
+        try (final TrackingMutableRowSet fullPrevRowSet = table.getRowSet().getPrevRowSet();
              final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
              final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
@@ -33,7 +33,7 @@ class ChunkedAjUtilities {
                                 size -> LongSortKernel.makeContext(stampChunkType, sortOrder, size, true));
              final SizedLongChunk<RowKeys> stampKeys = new SizedLongChunk<>();
              final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
-            final IndexShiftData.Iterator sit = shiftData.applyIterator();
+            final RowSetShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {
                 sit.next();
                 final TrackingMutableRowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
@@ -52,7 +52,7 @@ class ChunkedAjUtilities {
     static void applyOneShift(SegmentedSortedArray leftSsa, int nodeSize, ColumnSource<?> stampSource,
             SizedSafeCloseable<ChunkSource.FillContext> shiftFillContext,
             SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext,
-            SizedLongChunk<RowKeys> stampKeys, SizedChunk<Values> stampValues, IndexShiftData.Iterator sit,
+            SizedLongChunk<RowKeys> stampKeys, SizedChunk<Values> stampValues, RowSetShiftData.Iterator sit,
             TrackingMutableRowSet rowSetToShift) {
         if (sit.polarityReversed()) {
             final int shiftSize = rowSetToShift.intSize();

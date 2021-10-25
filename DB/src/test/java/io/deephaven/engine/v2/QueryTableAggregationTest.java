@@ -164,9 +164,9 @@ public class QueryTableAggregationTest {
     public void testStaticGroupedByWithChunks() {
         final Table input = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
         // noinspection unused
-        final Map<?, TrackingMutableRowSet> g1 = input.getIndex().getGrouping(input.getColumnSource("A"));
+        final Map<?, TrackingMutableRowSet> g1 = input.getRowSet().getGrouping(input.getColumnSource("A"));
         // noinspection unused
-        final Map<?, TrackingMutableRowSet> g2 = input.getIndex().getGrouping(input.getColumnSource("B"));
+        final Map<?, TrackingMutableRowSet> g2 = input.getRowSet().getGrouping(input.getColumnSource("B"));
 
         individualStaticByTest(input, null, "A");
         individualStaticByTest(input, null, "B");
@@ -258,7 +258,7 @@ public class QueryTableAggregationTest {
                     "IntCol = " + tableIndexName + " * 1_000_000 + i",
                     "TimeCol = ii % 100 == 0 ? null : plus(" + nowName + ", ii * 100)");
             // Hide part of the table's rowSet from downstream, initially.
-            result.getIndex().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
+            result.getRowSet().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             return result;
         }).toArray(QueryTable[]::new);
 
@@ -304,31 +304,31 @@ public class QueryTableAggregationTest {
         };
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[0].getIndex().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
+            inputs[0].getRowSet().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[0].notifyListeners(ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i(), i());
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[1].getIndex().removeRange(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1);
+            inputs[1].getRowSet().removeRange(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1);
             inputs[1].notifyListeners(i(), ir(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[2].getIndex().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
+            inputs[2].getRowSet().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[2].notifyListeners(ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i(), i());
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[0].getIndex().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
+            inputs[0].getRowSet().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[0].notifyListeners(i(), ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[0].getIndex().removeRange(0, mergeChunkMultiple - 1);
+            inputs[0].getRowSet().removeRange(0, mergeChunkMultiple - 1);
             inputs[0].notifyListeners(i(), ir(0, mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
@@ -336,24 +336,24 @@ public class QueryTableAggregationTest {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("StrCol");
-            inputs[4].notifyListeners(new ShiftAwareListener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
-                    IndexShiftData.EMPTY, inputs[4].modifiedColumnSet));
+            inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
+                    RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("IntCol");
-            inputs[4].notifyListeners(new ShiftAwareListener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
-                    IndexShiftData.EMPTY, inputs[4].modifiedColumnSet));
+            inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
+                    RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("TimeCol");
-            inputs[4].notifyListeners(new ShiftAwareListener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
-                    IndexShiftData.EMPTY, inputs[4].modifiedColumnSet));
+            inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
+                    RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
         });
         TstUtils.validate(ens);
     }
@@ -365,7 +365,7 @@ public class QueryTableAggregationTest {
         input1.setRefreshing(true);
         final QueryTable input2 =
                 (QueryTable) TableTools.emptyTable(100).update("StrCol=Long.toString(ii)", "IntCol=i");
-        input2.getIndex().remove(input2.getIndex());
+        input2.getRowSet().remove(input2.getRowSet());
         input2.setRefreshing(true);
 
         final EvalNugget[] ens = new EvalNugget[] {
@@ -380,44 +380,44 @@ public class QueryTableAggregationTest {
         };
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input1.getIndex().removeRange(50, 99);
+            input1.getRowSet().removeRange(50, 99);
             input1.notifyListeners(i(), ir(50, 99), i());
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input1.getIndex().removeRange(0, 49);
+            input1.getRowSet().removeRange(0, 49);
             input1.notifyListeners(i(), ir(0, 49), i());
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input2.getIndex().insertRange(0, 49);
+            input2.getRowSet().insertRange(0, 49);
             input2.notifyListeners(ir(0, 49), i(), i());
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input2.getIndex().insertRange(50, 99);
+            input2.getRowSet().insertRange(50, 99);
             input2.notifyListeners(ir(50, 99), i(), i());
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input2.notifyListeners(new ShiftAwareListener.Update(i(0, 1), i(0, 1), i(), IndexShiftData.EMPTY,
+            input2.notifyListeners(new Listener.Update(i(0, 1), i(0, 1), i(), RowSetShiftData.EMPTY,
                     ModifiedColumnSet.EMPTY));
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(
-                    new ShiftAwareListener.Update(i(), i(), i(2, 3), IndexShiftData.EMPTY, ModifiedColumnSet.ALL));
+                    new Listener.Update(i(), i(), i(2, 3), RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         });
         TstUtils.validate(ens);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(
-                    new ShiftAwareListener.Update(i(), i(), i(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                    new Listener.Update(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         TstUtils.validate(ens);
     }
@@ -2389,7 +2389,7 @@ public class QueryTableAggregationTest {
         };
         for (int step = 0; step < 50; step++) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final TrackingMutableRowSet keysToAdd = TstUtils.newIndex(random.nextInt(size / 2 + 1), queryTable.getIndex(), random);
+                final TrackingMutableRowSet keysToAdd = TstUtils.newIndex(random.nextInt(size / 2 + 1), queryTable.getRowSet(), random);
                 final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfo.length];
                 for (int column = 0; column < columnAdditions.length; column++) {
                     columnAdditions[column] = columnInfo[column].populateMapAndC(keysToAdd, random);
@@ -2626,8 +2626,8 @@ public class QueryTableAggregationTest {
                         final Table rc = forComparison(recomputed);
                         final Table ov = forComparison(originalValue);
 
-                        TestCase.assertEquals(rc.getIndex(), i(0));
-                        TestCase.assertEquals(ov.getIndex(), i(0));
+                        TestCase.assertEquals(rc.getRowSet(), i(0));
+                        TestCase.assertEquals(ov.getRowSet(), i(0));
 
                         for (final Map.Entry<String, ? extends ColumnSource> columnSourceEntry : rc.getColumnSourceMap()
                                 .entrySet()) {
@@ -2663,8 +2663,8 @@ public class QueryTableAggregationTest {
                         final Table rc = forComparison(recomputed);
                         final Table ov = forComparison(originalValue);
 
-                        TestCase.assertEquals(rc.getIndex(), i(0, 1, 2, 3));
-                        TestCase.assertEquals(ov.getIndex(), i(0, 1, 2, 3));
+                        TestCase.assertEquals(rc.getRowSet(), i(0, 1, 2, 3));
+                        TestCase.assertEquals(ov.getRowSet(), i(0, 1, 2, 3));
 
                         for (final Map.Entry<String, ? extends ColumnSource> columnSourceEntry : rc.getColumnSourceMap()
                                 .entrySet()) {
@@ -2702,7 +2702,7 @@ public class QueryTableAggregationTest {
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(size * (fstep + 1), size * (fstep + 2) - 1);
-                queryTable.getIndex().insert(added);
+                queryTable.getRowSet().insert(added);
 
                 // Modifies and Adds in post-shift keyspace.
                 final ColumnHolder[] columnHolders = new ColumnHolder[columnInfos.length];
@@ -2923,7 +2923,7 @@ public class QueryTableAggregationTest {
             this.columns = columns;
             this.originalValue = e();
 
-            ((QueryTable) originalValue).listenForUpdates(new InstrumentedShiftAwareListener("Failure Listener") {
+            ((QueryTable) originalValue).listenForUpdates(new InstrumentedListener("Failure ShiftObliviousListener") {
                 @Override
                 public void onUpdate(final Update update) {}
 
@@ -3151,8 +3151,8 @@ public class QueryTableAggregationTest {
         final Table reversedFlat = table.reverse().flatten().where("Sentinel != 2");
         final Table last = reversedFlat.lastBy();
 
-        final InstrumentedShiftAwareListenerAdapter adapter =
-                new InstrumentedShiftAwareListenerAdapter((DynamicTable) reversedFlat, false) {
+        final InstrumentedListenerAdapter adapter =
+                new InstrumentedListenerAdapter((DynamicTable) reversedFlat, false) {
                     @Override
                     public void onUpdate(Update upstream) {
                         System.out.println(upstream);
@@ -3236,14 +3236,14 @@ public class QueryTableAggregationTest {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             ((TreeMapSource) table.getColumnSourceMap().get("Sentinel")).shift(0, 4097, 4096);
             ((TreeMapSource) table.getColumnSourceMap().get("Bucket")).shift(0, 4097, 4096);
-            table.getIndex().removeRange(0, 4095);
-            table.getIndex().insertRange(4098, 8193);
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            table.getRowSet().removeRange(0, 4095);
+            table.getRowSet().insertRange(4098, 8193);
+            final Listener.Update update = new Listener.Update();
             update.removed = i();
             update.added = i();
             update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(0, 4097, 4096);
             update.shifted = builder.build();
             table.notifyListeners(update);
@@ -3464,12 +3464,12 @@ public class QueryTableAggregationTest {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(source, i(20), col("Key", "A"), col("Sentinel", 10));
             removeRows(source, i(10));
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = i();
             update.removed = i();
             update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(10, 10, 10);
             update.shifted = builder.build();
             source.notifyListeners(update);
@@ -3517,7 +3517,7 @@ public class QueryTableAggregationTest {
             for (final boolean substituteForThisIteration : new boolean[] {false, true}) {
                 ChunkedOperatorAggregationHelper.KEY_ONLY_SUBSTITUTION_ENABLED = substituteForThisIteration;
                 final DynamicTable source = (DynamicTable) emptyTable(100).updateView("A=i%10");
-                source.getIndex().removeRange(50, 100);
+                source.getRowSet().removeRange(50, 100);
                 source.setRefreshing(true);
 
                 resultSets[substituteForThisIteration ? 1 : 0] = new Table[] {
@@ -3530,8 +3530,8 @@ public class QueryTableAggregationTest {
                 };
 
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    source.getIndex().insertRange(50, 100);
-                    source.notifyListeners(new ShiftAwareListener.Update(ir(50, 100), i(), i(), IndexShiftData.EMPTY,
+                    source.getRowSet().insertRange(50, 100);
+                    source.notifyListeners(new Listener.Update(ir(50, 100), i(), i(), RowSetShiftData.EMPTY,
                             ModifiedColumnSet.EMPTY));
                 });
             }

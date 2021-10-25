@@ -6,7 +6,7 @@ import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
+import io.deephaven.engine.v2.InstrumentedListener;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -47,7 +47,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             final BarrageTable table = subscription.entireTable();
             final CountDownLatch countDownLatch = new CountDownLatch(1);
 
-            table.listenForUpdates(new InstrumentedShiftAwareListener("example-listener") {
+            table.listenForUpdates(new InstrumentedListener("example-listener") {
                 @Override
                 protected void onFailureInternal(final Throwable originalException,
                         final UpdatePerformanceTracker.Entry sourceEntry) {

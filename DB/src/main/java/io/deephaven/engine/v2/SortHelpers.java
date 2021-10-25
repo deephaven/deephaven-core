@@ -357,12 +357,12 @@ public class SortHelpers {
                 final WritableIntChunk<Values> mappedIndex = WritableIntChunk.makeWritableChunk(symbolEntries)) {
             final ColumnSource idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
             try (final ColumnSource.FillContext idContext = idSource.makeFillContext(symbolEntries)) {
-                idSource.fillChunk(idContext, originalSymbol, idMapping.getIndex());
+                idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());
             }
 
             final ColumnSource sortedIndexSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
             try (final ColumnSource.FillContext sortedIndexContext = sortedIndexSource.makeFillContext(symbolEntries)) {
-                sortedIndexSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getIndex());
+                sortedIndexSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());
             }
 
             mapping = SparseSymbolMapping.createMapping(originalSymbol, mappedIndex);

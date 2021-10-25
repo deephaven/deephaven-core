@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,12 +47,12 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
     boolean awaitUpdate(long timeout) throws InterruptedException;
 
     /**
-     * Subscribe for updates to this table. Listener will be invoked via the LiveTableMonitor notification queue
+     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the LiveTableMonitor notification queue
      * associated with this DynamicTable.
      *
      * @param listener listener for updates
      */
-    default void listenForUpdates(Listener listener) {
+    default void listenForUpdates(ShiftObliviousListener listener) {
         listenForUpdates(listener, false);
     }
 
@@ -64,15 +64,15 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
      * @param replayInitialImage true to process updates for all initial rows in the table plus all new row changes;
      *        false to only process new row changes
      */
-    void listenForUpdates(Listener listener, boolean replayInitialImage);
+    void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage);
 
     /**
-     * Subscribe for updates to this table. Listener will be invoked via the LiveTableMonitor notification queue
+     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the LiveTableMonitor notification queue
      * associated with this DynamicTable.
      *
      * @param listener listener for updates
      */
-    void listenForUpdates(ShiftAwareListener listener);
+    void listenForUpdates(Listener listener);
 
     /**
      * Subscribe for updates to this table. Direct listeners are invoked immediately when changes are published, rather
@@ -80,7 +80,14 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
      *
      * @param listener listener for updates
      */
-    void listenForDirectUpdates(Listener listener);
+    void listenForDirectUpdates(ShiftObliviousListener listener);
+
+    /**
+     * Unsubscribe the supplied listener.
+     *
+     * @param listener listener for updates
+     */
+    void removeUpdateListener(ShiftObliviousListener listener);
 
     /**
      * Unsubscribe the supplied listener.
@@ -94,14 +101,7 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
      *
      * @param listener listener for updates
      */
-    void removeUpdateListener(ShiftAwareListener listener);
-
-    /**
-     * Unsubscribe the supplied listener.
-     *
-     * @param listener listener for updates
-     */
-    void removeDirectUpdateListener(final Listener listener);
+    void removeDirectUpdateListener(final ShiftObliviousListener listener);
 
     /**
      * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
@@ -112,7 +112,7 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
      * @param modified rowSet values modified in the table.
      */
     default void notifyListeners(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
-        notifyListeners(new ShiftAwareListener.Update(added, removed, modified, IndexShiftData.EMPTY,
+        notifyListeners(new Listener.Update(added, removed, modified, RowSetShiftData.EMPTY,
                 modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
     }
 
@@ -124,7 +124,7 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
      *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
      *        callers should pass a {@code clone} for updates they intend to further use.
      */
-    void notifyListeners(ShiftAwareListener.Update update);
+    void notifyListeners(Listener.Update update);
 
     /**
      * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue

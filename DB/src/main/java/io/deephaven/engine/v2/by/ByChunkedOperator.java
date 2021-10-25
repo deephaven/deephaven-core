@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
@@ -263,7 +263,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     @Override
     public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull final QueryTable resultTable,
             @NotNull final LivenessReferent aggregationUpdateListener) {
-        initializeNewIndexPreviousValues(resultTable.getIndex());
+        initializeNewIndexPreviousValues(resultTable.getRowSet());
         return registeredWithHelper
                 ? new InputToResultModifiedColumnSetFactory(resultTable,
                         resultColumns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))
@@ -312,7 +312,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
+    public void resetForStep(@NotNull final Listener.Update upstream) {
         stepValuesModified = upstream.modified.isNonempty() && upstream.modifiedColumnSet.nonempty()
                 && upstream.modifiedColumnSet.containsAny(resultInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
@@ -320,7 +320,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
+    public void propagateUpdates(@NotNull final Listener.Update downstream,
             @NotNull final RowSet newDestinations) {
         initializeNewIndexPreviousValues(newDestinations);
     }

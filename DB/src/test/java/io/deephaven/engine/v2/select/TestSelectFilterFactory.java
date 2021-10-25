@@ -186,7 +186,7 @@ public class TestSelectFilterFactory extends TestCase {
         String expression = STRING_COLUMN + baseExpresion + wrapBackTicks(value);
         SelectFilter selectFilter = SelectFilterFactory.getExpression(expression);
         selectFilter.init(table.getDefinition());
-        TrackingMutableRowSet rowSet = selectFilter.filter(table.getIndex(), table.getIndex(), table, false);
+        TrackingMutableRowSet rowSet = selectFilter.filter(table.getRowSet(), table.getRowSet(), table, false);
         ColumnSource columnSource = table.getColumnSource(STRING_COLUMN);
         return columnSource.get(rowSet.firstRowKey()).toString();
     }
@@ -211,7 +211,7 @@ public class TestSelectFilterFactory extends TestCase {
         String expression = columnName + " in " + values;
         SelectFilter selectFilter = SelectFilterFactory.getExpression(expression);
         selectFilter.init(table.getDefinition());
-        TrackingMutableRowSet rowSet = selectFilter.filter(table.getIndex(), table.getIndex(), table, false);
+        TrackingMutableRowSet rowSet = selectFilter.filter(table.getRowSet(), table.getRowSet(), table, false);
         ColumnSource columnSource = table.getColumnSource(columnName);
         List<Object> result = new ArrayList<>(rowSet.intSize());
         for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {

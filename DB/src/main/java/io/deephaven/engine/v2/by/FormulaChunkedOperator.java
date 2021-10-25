@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.select.Utils;
 import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
@@ -254,7 +254,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             final String inputColumnName = inputColumnNames[ci];
             final FormulaColumn formulaColumn = formulaColumns[ci];
             final ColumnSource<?> inputColumnSource = byResultColumns.get(inputColumnName);
-            formulaColumn.initInputs(resultTable.getIndex(),
+            formulaColumn.initInputs(resultTable.getRowSet(),
                     Collections.singletonMap(inputColumnName, inputColumnSource));
             // noinspection unchecked
             formulaDataSources[ci] = formulaColumn.getDataView();
@@ -262,7 +262,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
         final boolean[] allColumnsMask = makeAllColumnsMask();
         try (final DataCopyContext dataCopyContext = new DataCopyContext(allColumnsMask, allColumnsMask)) {
-            dataCopyContext.copyData(resultTable.getIndex());
+            dataCopyContext.copyData(resultTable.getRowSet());
         }
     }
 
@@ -294,7 +294,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
+    public void resetForStep(@NotNull final Listener.Update upstream) {
         if (delegateToBy) {
             by.resetForStep(upstream);
         }
@@ -303,7 +303,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
+    public void propagateUpdates(@NotNull final Listener.Update downstream,
             @NotNull final RowSet newDestinations) {
         if (delegateToBy) {
             by.propagateUpdates(downstream, newDestinations);

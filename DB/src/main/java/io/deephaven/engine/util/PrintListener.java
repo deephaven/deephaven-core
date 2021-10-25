@@ -2,7 +2,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.DynamicTable;
-import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
+import io.deephaven.engine.v2.InstrumentedListener;
 import io.deephaven.util.annotations.ScriptApi;
 
 /**
@@ -22,7 +22,7 @@ import io.deephaven.util.annotations.ScriptApi;
  * </p>
  */
 @ScriptApi
-public class PrintListener extends InstrumentedShiftAwareListener {
+public class PrintListener extends InstrumentedListener {
     private final String description;
     private final DynamicTable table;
     private final int rowCount;

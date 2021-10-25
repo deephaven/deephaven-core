@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.SimpleShiftAwareListener;
+import io.deephaven.engine.v2.SimpleListener;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.*;
@@ -51,7 +51,7 @@ public class TestStreamToTableAdapter {
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(result);
+        final SimpleListener listener = new SimpleListener(result);
         result.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
@@ -88,7 +88,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         final Table expect1 = TableTools.newTable(col("S", "Bill", "Ted"), intCol("I", 2, 3), longCol("L", 4L, 5L),
@@ -103,7 +103,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         listener.reset();
@@ -159,7 +159,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         final Table expect2 = TableTools.newTable(col("S", "Ren", "Stimpy", "Jekyll", "Hyde"),
@@ -190,7 +190,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         final Table expect3 = TableTools.newTable(col("S", "Ben", "Jerry"), intCol("I", 19, 20), longCol("L", 21, 22),
@@ -204,7 +204,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         listener.reset();
@@ -226,7 +226,7 @@ public class TestStreamToTableAdapter {
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(result);
+        final SimpleListener listener = new SimpleListener(result);
         result.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
@@ -263,7 +263,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(3), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         final Table expect1 = TableTools.newTable(col("S", "Collins", "Armstrong", "Aldrin"),
@@ -278,7 +278,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(3), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
     }
 
@@ -295,7 +295,7 @@ public class TestStreamToTableAdapter {
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(result);
+        final SimpleListener listener = new SimpleListener(result);
         result.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
@@ -322,7 +322,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         final Table expect1 = TableTools.newTable(
@@ -338,7 +338,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
     }
 
@@ -355,7 +355,7 @@ public class TestStreamToTableAdapter {
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(result);
+        final SimpleListener listener = new SimpleListener(result);
         result.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
@@ -391,7 +391,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4048), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         final Table expect1 = TableTools.newTable(longCol("L", exVals));
@@ -405,7 +405,7 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4048), listener.getUpdate().removed);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
         TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
-        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
         listener.reset();
@@ -428,7 +428,7 @@ public class TestStreamToTableAdapter {
         final DynamicTable result = adapter.table();
 
         final MutableBoolean listenerFailed = new MutableBoolean();
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(result) {
+        final SimpleListener listener = new SimpleListener(result) {
             @Override
             public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
                 listenerFailed.setTrue();

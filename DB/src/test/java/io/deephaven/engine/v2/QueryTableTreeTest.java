@@ -648,28 +648,28 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             TstUtils.addToTable(source, i(0), c("Sentinel", 0), c("Filter", 1), c("Parent", 1));
             source.notifyListeners(i(), i(), i(0));
         });
-        Assert.assertEquals(i(0, 1), en[0].originalValue.getIndex());
+        Assert.assertEquals(i(0, 1), en[0].originalValue.getRowSet());
 
         // modify parent to have grandparent
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(1), c("Sentinel", 1), c("Filter", 0), c("Parent", 2));
             source.notifyListeners(i(), i(), i(1));
         });
-        Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getIndex());
+        Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
 
         // modify parent's id to orphan child
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(1), c("Sentinel", -1), c("Filter", 0), c("Parent", 2));
             source.notifyListeners(i(), i(), i(1));
         });
-        Assert.assertEquals(i(0), en[0].originalValue.getIndex());
+        Assert.assertEquals(i(0), en[0].originalValue.getRowSet());
 
         // revert parent's id and adopt child
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(1), c("Sentinel", 1), c("Filter", 0), c("Parent", 2));
             source.notifyListeners(i(), i(), i(1));
         });
-        Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getIndex());
+        Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
 
         // remove child, resurrect parent
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -677,7 +677,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             TstUtils.addToTable(source, i(3), c("Sentinel", 3), c("Filter", 1), c("Parent", 1));
             source.notifyListeners(i(), i(0), i(3));
         });
-        Assert.assertEquals(i(1, 2, 3), en[0].originalValue.getIndex());
+        Assert.assertEquals(i(1, 2, 3), en[0].originalValue.getRowSet());
     }
 
     @TableToolsShowControl(getWidth = 40)
@@ -977,7 +977,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     private static TrackingMutableRowSet indexOrPrev(Table table, boolean usePrev) {
-        return usePrev ? table.getIndex().getPrevRowSet() : table.getIndex();
+        return usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
     }
 
     private void testTreeTableIncremental(final int size, final long seed, final MutableInt numSteps) {
@@ -1424,8 +1424,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertTableEquals(table, treed);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final long key = table.getIndex().firstRowKey();
-            table.getIndex().remove(key);
+            final long key = table.getRowSet().firstRowKey();
+            table.getRowSet().remove(key);
             TstUtils.removeRows(table, i(key));
             table.notifyListeners(i(), i(key), i());
         });

@@ -97,7 +97,7 @@ from .Plot import figure_wrapper as figw
 def initialize():
     __initializer__(jpy.get_type("io.deephaven.configuration.Configuration"), Config)
     __initializer__(jpy.get_type("io.deephaven.engine.util.PickledResult"), PickledResult)
-    __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter"), PythonListenerAdapter)
+    __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter"), PythonListenerAdapter)
     __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonFunction"), PythonFunction)
 
     # ensure that all the symbols are called and reimport the broken symbols
@@ -176,11 +176,11 @@ def Config():
 
 def PythonListenerAdapter(dynamicTable, implementation, description=None, retain=True, replayInitialImage=False):
     """
-    Constructs the InstrumentedListenerAdapter, implemented in Python, and plugs it into the table's
+    Constructs the ShiftObliviousInstrumentedListenerAdapter, implemented in Python, and plugs it into the table's
     listenForUpdates method.
 
     :param dynamicTable: table to which to listen - NOTE: it will be cast to DynamicTable.
-    :param implementation: the body of the implementation for the InstrumentedListenerAdapter.onUpdate method, and
+    :param implementation: the body of the implementation for the ShiftObliviousInstrumentedListenerAdapter.onUpdate method, and
       must either be a class with onUpdate method or a callable.
     :param description: A description for the UpdatePerformanceTracker to append to its entry description.
     :param retain: Whether a hard reference to this listener should be maintained to prevent it from being collected.
@@ -189,24 +189,24 @@ def PythonListenerAdapter(dynamicTable, implementation, description=None, retain
     """
 
     dt = jpy.cast(dynamicTable, jpy.get_type('io.deephaven.engine.v2.DynamicTable'))
-    jtype = jpy.get_type('io.deephaven.integrations.python.PythonListenerAdapter')
+    jtype = jpy.get_type('io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter')
     ListenerInstance = jtype(description, dynamicTable, retain, implementation)
     dt.listenForUpdates(ListenerInstance, replayInitialImage)
 
 
 def PythonShiftAwareListenerAdapter(dynamicTable, implementation, description=None, retain=True):
     """
-    Constructs the InstrumentedShiftAwareListenerAdapter, implemented in Python, and plugs it into the table's
+    Constructs the InstrumentedListenerAdapter, implemented in Python, and plugs it into the table's
     listenForUpdates method.
 
     :param dynamicTable: table to which to listen - NOTE: it will be cast to DynamicTable.
-    :param implementation: the body of the implementation for the InstrumentedShiftAwareListenerAdapter.onUpdate method, and
+    :param implementation: the body of the implementation for the InstrumentedListenerAdapter.onUpdate method, and
       must either be a class with onUpdate method or a callable.
     :param description: A description for the UpdatePerformanceTracker to append to its entry description.
     :param retain: Whether a hard reference to this listener should be maintained to prevent it from being collected.
     """
 
-    jtype = jpy.get_type('io.deephaven.integrations.python.PythonShiftAwareListenerAdapter')
+    jtype = jpy.get_type('io.deephaven.integrations.python.PythonListenerAdapter')
     dt = jpy.cast(dynamicTable, jpy.get_type('io.deephaven.engine.v2.DynamicTable'))
     ListenerInstance = jtype(description, dt, retain, implementation)
     dt.listenForUpdates(ListenerInstance)
@@ -283,7 +283,7 @@ def _nargsListener(listener):
     elif hasattr(listener, 'onUpdate'):
         f = listener.onUpdate
     else:
-        raise ValueError("Listener is neither callable nor has an 'onUpdate' method")
+        raise ValueError("ShiftObliviousListener is neither callable nor has an 'onUpdate' method")
 
     if sys.version[0] == "2":
         import inspect
@@ -342,17 +342,17 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
         elif nargs == 3 or nargs == 4:
             ltype = "legacy"
         else:
-            raise ValueError("Unable to autodetect listener type.  Listener does not take an expected number of arguments.  args={}".format(nargs))
+            raise ValueError("Unable to autodetect listener type.  ShiftObliviousListener does not take an expected number of arguments.  args={}".format(nargs))
 
     if ltype == "legacy":
         if nargs == 3:
             if replay_initial:
-                raise ValueError("Listener does not support replay: ltype={} nargs={}".format(ltype, nargs))
+                raise ValueError("ShiftObliviousListener does not support replay: ltype={} nargs={}".format(ltype, nargs))
 
-            ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter")
+            ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter")
             listener_adapter = ListenerAdapter(description, dt, retain, listener)
         elif nargs == 4:
-            ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
+            ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayShiftObliviousListenerAdapter")
             listener_adapter = ListenerAdapter(description, dt, retain, listener)
         else:
             raise ValueError("Legacy listener must take 3 (added, removed, modified) or 4 (isReplay, added, removed, modified) arguments.")
@@ -360,12 +360,12 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
     elif ltype == "shift_aware":
         if nargs == 1:
             if replay_initial:
-                raise ValueError("Listener does not support replay: ltype={} nargs={}".format(ltype, nargs))
+                raise ValueError("ShiftObliviousListener does not support replay: ltype={} nargs={}".format(ltype, nargs))
 
-            ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonShiftAwareListenerAdapter")
+            ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter")
             listener_adapter = ListenerAdapter(description, dt, retain, listener)
         elif nargs == 2:
-            ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonShiftAwareReplayListenerAdapter")
+            ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
             listener_adapter = ListenerAdapter(description, dt, retain, listener)
         else:
             raise ValueError("Shift-aware listener must take 1 (update) or 2 (isReplay, update) arguments.")

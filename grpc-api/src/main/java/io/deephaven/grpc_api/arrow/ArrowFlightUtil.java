@@ -10,6 +10,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -25,7 +26,6 @@ import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.session.SessionState;
@@ -154,7 +154,7 @@ public class ArrowFlightUtil {
                 final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
                 msg.rowsRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                msg.shifted = IndexShiftData.EMPTY;
+                msg.shifted = RowSetShiftData.EMPTY;
 
                 // include all columns as add-columns
                 int numRowsAdded = LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());

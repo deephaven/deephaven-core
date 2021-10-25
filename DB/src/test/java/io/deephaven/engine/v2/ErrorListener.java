@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 
-class ErrorListener extends InstrumentedShiftAwareListenerAdapter {
+class ErrorListener extends InstrumentedListenerAdapter {
     Throwable originalException;
 
     ErrorListener(DynamicTable table) {

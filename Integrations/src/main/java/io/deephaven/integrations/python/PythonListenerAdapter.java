@@ -4,30 +4,29 @@
 
 package io.deephaven.integrations.python;
 
+import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 import io.deephaven.engine.v2.DynamicTable;
-import io.deephaven.engine.v2.InstrumentedListenerAdapter;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 
 /**
  * A Deephaven table listener which passes update events to a Python listener object.
  *
  * The Python listener object can be either (1) a callable or (2) an object which provides an "onUpdate" method. In
- * either case, the method must take three arguments (added, removed, modified).
+ * either case, the method must take one argument (updates).
  */
 @ScriptApi
 public class PythonListenerAdapter extends InstrumentedListenerAdapter {
-    private static final long serialVersionUID = -1781683980595832070L;
+    private static final long serialVersionUID = -1811392916918850289L;
     private final PyObject pyCallable;
 
     /**
-     * Create a Python listener.
+     * Creates a Python listener.
      *
      * No description for this listener will be provided. A hard reference to this listener will be maintained to
-     * prevent garbage collection. See {@link #PythonListenerAdapter(String, DynamicTable, boolean, PyObject)} if you do
-     * not want to prevent garbage collection of this listener.
+     * prevent garbage collection. See {@link #PythonListenerAdapter(String, DynamicTable, boolean, PyObject)}
+     * if you do not want to prevent garbage collection of this listener.
      *
      * @param source The source table to which this listener will subscribe.
      * @param pyObjectIn Python listener object.
@@ -40,8 +39,8 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
      * Create a Python listener.
      *
      * A hard reference to this listener will be maintained to prevent garbage collection. See
-     * {@link #PythonListenerAdapter(String, DynamicTable, boolean, PyObject)} if you do not want to prevent garbage
-     * collection of this listener.
+     * {@link #PythonListenerAdapter(String, DynamicTable, boolean, PyObject)} if you do not want to prevent
+     * garbage collection of this listener.
      *
      * @param description A description for the UpdatePerformanceTracker to append to its entry description.
      * @param source The source table to which this listener will subscribe.
@@ -59,13 +58,14 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
      * @param pyObjectIn Python listener object.
      */
-    public PythonListenerAdapter(String description, DynamicTable source, boolean retain, PyObject pyObjectIn) {
+    public PythonListenerAdapter(String description, DynamicTable source, boolean retain,
+                                 PyObject pyObjectIn) {
         super(description, source, retain);
         pyCallable = PythonUtilities.pyListenerFunc(pyObjectIn);
     }
 
     @Override
-    public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
-        pyCallable.call("__call__", added, removed, modified);
+    public void onUpdate(final Update update) {
+        pyCallable.call("__call__", update);
     }
 }

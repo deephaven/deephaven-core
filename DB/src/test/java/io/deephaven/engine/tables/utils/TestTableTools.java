@@ -929,12 +929,12 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(ONE_MILLION - 11), c("Sentinel", 1));
             removeRows(table, i(ONE_MILLION - 1));
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.added = i();
             update.removed = i();
             update.modified = i();
-            final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(ONE_MILLION - 4096, ONE_MILLION - 1, -10);
             update.shifted = builder.build();
             table.notifyListeners(update);
@@ -964,15 +964,15 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = 2 * PRIME * ii + 1;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final long currKey = table.getIndex().lastRowKey();
+                final long currKey = table.getRowSet().lastRowKey();
                 removeRows(table, i(currKey));
                 addToTable(table, i(fii), c("Sentinel", 1));
 
-                ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+                Listener.Update update = new Listener.Update();
                 update.added = i(fii);
                 update.removed = i(currKey);
                 update.modified = i();
-                update.shifted = IndexShiftData.EMPTY;
+                update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 table.notifyListeners(update);
             });
@@ -1000,10 +1000,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             removeRows(table1, i(65538));
             addToTable(table1, i(65537), c("Sentinel", 2));
 
-            final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(65538, 65539, +1);
 
-            ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            Listener.Update update = new Listener.Update();
             update.added = i();
             update.removed = i();
             update.modified = i();
@@ -1040,16 +1040,16 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = SHIFT_SIZE * ii + 1;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final long currKey = table.getIndex().lastRowKey();
+                final long currKey = table.getRowSet().lastRowKey();
                 // Manually apply shift.
                 removeRows(table, i(currKey));
                 addToTable(table, i(fii), c("Sentinel", 1));
 
-                ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+                Listener.Update update = new Listener.Update();
                 update.added = i();
                 update.removed = i();
                 update.modified = i();
-                final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+                final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
                 builder.shiftRange(0, currKey, SHIFT_SIZE);
                 update.shifted = builder.build();
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -1062,7 +1062,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     private void addRows(Random random, QueryTable table1) {
         int size;
         size = random.nextInt(10);
-        final TrackingMutableRowSet newRowSet = TstUtils.getRandomIndex(table1.getIndex().lastRowKey(), size, random);
+        final TrackingMutableRowSet newRowSet = TstUtils.getRandomIndex(table1.getRowSet().lastRowKey(), size, random);
         TstUtils.addToTable(table1, newRowSet, TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
@@ -1134,8 +1134,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Assert.assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
 
         final Consumer<Boolean> validate = (usePrev) -> {
-            final TrackingMutableRowSet origRowSet = usePrev ? table.getIndex().getPrevRowSet() : table.getIndex();
-            final TrackingMutableRowSet resRowSet = usePrev ? result.getIndex().getPrevRowSet() : result.getIndex();
+            final TrackingMutableRowSet origRowSet = usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
+            final TrackingMutableRowSet resRowSet = usePrev ? result.getRowSet().getPrevRowSet() : result.getRowSet();
             final int numElements = origRowSet.intSize();
 
             // noinspection unchecked
@@ -1162,10 +1162,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             }
         };
 
-        result.listenForUpdates(new InstrumentedShiftAwareListener("") {
+        result.listenForUpdates(new InstrumentedListener("") {
             @Override
             public void onUpdate(final Update upstream) {
-                Assert.assertTrue(table.getIndex().intSize() > table.getIndex().getPrevRowSet().intSize());
+                Assert.assertTrue(table.getRowSet().intSize() > table.getRowSet().getPrevRowSet().intSize());
                 validate.accept(false);
                 validate.accept(true);
             }

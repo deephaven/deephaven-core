@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.select.analyzers;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.select.DbArrayChunkAdapter;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
@@ -49,8 +49,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(final ShiftAwareListener.Update upstream, final RowSet toClear,
-            final UpdateHelper helper) {
+    public void applyUpdate(final Listener.Update upstream, final RowSet toClear,
+                            final UpdateHelper helper) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 

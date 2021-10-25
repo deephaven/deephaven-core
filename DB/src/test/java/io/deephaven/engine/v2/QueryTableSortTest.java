@@ -442,7 +442,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final QueryTable sorted = (QueryTable) (ascending ? queryTable.sort("intCol")
                 : queryTable.sortDescending("intCol"));
 
-        final SimpleShiftAwareListener simpleListener = new SimpleShiftAwareListener(sorted);
+        final io.deephaven.engine.v2.SimpleListener simpleListener = new io.deephaven.engine.v2.SimpleListener(sorted);
         sorted.listenForUpdates(simpleListener);
 
         long adds = 0, removes = 0, modifies = 0, shifts = 0, modifiedColumns = 0;
@@ -704,7 +704,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         setExpectError(false);
         assertEquals(10, table.size());
 
-        final TrackingMutableRowSet rowSet = table.getIndex().subSetByPositionRange(0, 4);
+        final TrackingMutableRowSet rowSet = table.getRowSet().subSetByPositionRange(0, 4);
         final QueryTable refreshing = new QueryTable(rowSet, table.getColumnSourceMap());
         refreshing.setRefreshing(true);
 
@@ -712,7 +712,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         TableTools.showWithIndex(symbolSorted);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet added = table.getIndex().subSetByPositionRange(4, 10);
+            final TrackingMutableRowSet added = table.getRowSet().subSetByPositionRange(4, 10);
             rowSet.insert(added);
             refreshing.notifyListeners(added, i(), i());
         });

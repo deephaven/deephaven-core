@@ -75,7 +75,7 @@ public class TestTableGeneration extends QueryTableTestBase {
         final Table resultTable = BenchmarkTools.applySparsity(bt.getTable(), 2000, 1, 0);
 
         assertEquals(2000, resultTable.size());
-        assertTrue(resultTable.getIndex().lastRowKey() > 100000);
+        assertTrue(resultTable.getRowSet().lastRowKey() > 100000);
         // Make sure we can generate more
         bt.cleanup();
     }

@@ -37,7 +37,7 @@ public class MergeSortedHelper {
         TableCursor(Table table, String keyColumn, int tableIndex) {
             this.tableIndex = tableIndex;
             keyColumnSource = table.getColumnSource(keyColumn);
-            iterator = table.getIndex().iterator();
+            iterator = table.getRowSet().iterator();
             advance();
         }
 

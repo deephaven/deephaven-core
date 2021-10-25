@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.ShiftAwareListener.Update;
+import io.deephaven.engine.v2.Listener.Update;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.sort.findruns.IntFindRunsKernel;
 import io.deephaven.engine.v2.sort.permute.LongPermuteKernel;
@@ -75,8 +75,8 @@ public class ChunkedOperatorAggregationHelper {
         }
 
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final ShiftAwareSwapListener swapListener =
-                withView.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+        final SwapListener swapListener =
+                withView.createSwapListenerIfRefreshing(SwapListener::new);
         withView.initializeWithSnapshot(
                 "by(" + aggregationContextFactoryToUse + ", " + Arrays.toString(groupByColumns) + ")", swapListener,
                 (usePrev, beforeClockValue) -> {
@@ -87,7 +87,7 @@ public class ChunkedOperatorAggregationHelper {
         return resultHolder.getValue();
     }
 
-    private static QueryTable aggregation(AggregationControl control, ShiftAwareSwapListener swapListener,
+    private static QueryTable aggregation(AggregationControl control, SwapListener swapListener,
             AggregationContextFactory aggregationContextFactory, QueryTable withView, SelectColumn[] groupByColumns,
             boolean usePrev) {
         if (groupByColumns.length == 0) {
@@ -108,7 +108,7 @@ public class ChunkedOperatorAggregationHelper {
         if (control.considerGrouping(withView, keySources)) {
             Assert.eq(keySources.length, "keySources.length", 1);
 
-            final boolean hasGrouping = withView.getIndex().hasGrouping(keySources[0]);
+            final boolean hasGrouping = withView.getRowSet().hasGrouping(keySources[0]);
             if (!withView.isRefreshing() && hasGrouping) {
                 return staticGroupedAggregation(withView, keyNames[0], keySources[0], ac);
             }
@@ -186,10 +186,10 @@ public class ChunkedOperatorAggregationHelper {
             incrementalStateManager.startTrackingPrevValues();
 
             final boolean isStream = withView.isStream();
-            final ShiftAwareListener listener =
-                    new BaseTable.ShiftAwareListenerImpl("by(" + aggregationContextFactory + ")", withView, result) {
+            final Listener listener =
+                    new BaseTable.ListenerImpl("by(" + aggregationContextFactory + ")", withView, result) {
                         @ReferentialIntegrity
-                        final ShiftAwareSwapListener swapListenerHardReference = swapListener;
+                        final SwapListener swapListenerHardReference = swapListener;
 
                         final ModifiedColumnSet keysUpstreamModifiedColumnSet = withView.newModifiedColumnSet(keyNames);
                         final ModifiedColumnSet[] operatorInputModifiedColumnSets =
@@ -208,11 +208,11 @@ public class ChunkedOperatorAggregationHelper {
                                     reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
                                     operatorInputModifiedColumnSets,
                                     upstreamToUse, outputPosition)) {
-                                downstream = kuc.computeDownstreamIndicesAndCopyKeys(withView.getIndex(), keyColumnsRaw,
+                                downstream = kuc.computeDownstreamIndicesAndCopyKeys(withView.getRowSet(), keyColumnsRaw,
                                         keyColumnsCopied,
                                         result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
                             }
-                            result.getIndex().update(downstream.added, downstream.removed);
+                            result.getRowSet().update(downstream.added, downstream.removed);
                             result.notifyListeners(downstream);
                         }
 
@@ -545,7 +545,7 @@ public class ChunkedOperatorAggregationHelper {
             }
 
             final Update downstream = new Update();
-            downstream.shifted = IndexShiftData.EMPTY;
+            downstream.shifted = RowSetShiftData.EMPTY;
 
             try (final RowSet newStates = makeNewStatesIndex(previousLastState, outputPosition.intValue() - 1)) {
                 downstream.added = reincarnatedStatesBuilder.build();
@@ -1167,7 +1167,7 @@ public class ChunkedOperatorAggregationHelper {
                                               // in the worst case
         int writePosition = resetWritePosition(lastPolarityReversed, preKeyIndices, postKeyIndices);
 
-        final IndexShiftData.Iterator shiftIt = upstream.shifted.applyIterator();
+        final RowSetShiftData.Iterator shiftIt = upstream.shifted.applyIterator();
         while (shiftIt.hasNext()) {
             shiftIt.next();
 
@@ -1369,7 +1369,7 @@ public class ChunkedOperatorAggregationHelper {
     private static QueryTable staticGroupedAggregation(QueryTable withView, String keyName, ColumnSource<?> keySource,
             AggregationContext ac) {
         final Pair<ArrayBackedColumnSource, ObjectArraySource<TrackingMutableRowSet>> groupKeyIndexTable;
-        final Map<Object, TrackingMutableRowSet> grouping = withView.getIndex().getGrouping(keySource);
+        final Map<Object, TrackingMutableRowSet> grouping = withView.getRowSet().getGrouping(keySource);
         // noinspection unchecked
         groupKeyIndexTable = AbstractColumnSource.groupingToFlatSources((ColumnSource) keySource, grouping);
         final int responsiveGroups = grouping.size();
@@ -1466,7 +1466,7 @@ public class ChunkedOperatorAggregationHelper {
             buildSources = reinterpretedKeySources;
         }
 
-        final TrackingMutableRowSet rowSet = usePrev ? withView.getIndex().getPrevRowSet() : withView.getIndex();
+        final TrackingMutableRowSet rowSet = usePrev ? withView.getRowSet().getPrevRowSet() : withView.getRowSet();
 
         if (rowSet.isEmpty()) {
             return;
@@ -1530,8 +1530,8 @@ public class ChunkedOperatorAggregationHelper {
             MutableInt outputPosition,
             boolean usePrev) {
         final Pair<ArrayBackedColumnSource, ObjectArraySource<TrackingMutableRowSet>> groupKeyIndexTable;
-        final Map<Object, TrackingMutableRowSet> grouping = usePrev ? withView.getIndex().getPrevGrouping(reinterpretedKeySources[0])
-                : withView.getIndex().getGrouping(reinterpretedKeySources[0]);
+        final Map<Object, TrackingMutableRowSet> grouping = usePrev ? withView.getRowSet().getPrevGrouping(reinterpretedKeySources[0])
+                : withView.getRowSet().getGrouping(reinterpretedKeySources[0]);
         // noinspection unchecked
         groupKeyIndexTable =
                 AbstractColumnSource.groupingToFlatSources((ColumnSource) reinterpretedKeySources[0], grouping);
@@ -1602,8 +1602,8 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static QueryTable noKeyAggregation(ShiftAwareSwapListener swapListener,
-            AggregationContextFactory aggregationContextFactory, QueryTable table, boolean usePrev) {
+    private static QueryTable noKeyAggregation(SwapListener swapListener,
+                                               AggregationContextFactory aggregationContextFactory, QueryTable table, boolean usePrev) {
 
         final AggregationContext ac = aggregationContextFactory.makeAggregationContext(table);
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
@@ -1619,7 +1619,7 @@ public class ChunkedOperatorAggregationHelper {
         // to use allColumns as the modified columns parameter
         final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
                 new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
-        final TrackingMutableRowSet rowSet = usePrev ? table.getIndex().getPrevRowSet() : table.getIndex();
+        final TrackingMutableRowSet rowSet = usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
         final int initialResultSize;
         try (final SafeCloseable ignored1 = new SafeCloseableArray<>(opContexts);
                 final SafeCloseable ignored2 = usePrev ? rowSet : null) {
@@ -1635,8 +1635,8 @@ public class ChunkedOperatorAggregationHelper {
             ac.startTrackingPrevValues();
 
             final boolean isStream = table.isStream();
-            final ShiftAwareListener listener =
-                    new BaseTable.ShiftAwareListenerImpl("by(" + aggregationContextFactory + ")", table, result) {
+            final Listener listener =
+                    new BaseTable.ListenerImpl("by(" + aggregationContextFactory + ")", table, result) {
 
                         final ModifiedColumnSet[] inputModifiedColumnSet = ac.getInputModifiedColumnSets(table);
                         final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories =
@@ -1739,17 +1739,17 @@ public class ChunkedOperatorAggregationHelper {
 
                                 final int newResultSize = (!isStream || lastSize == 0) && table.size() == 0 ? 0 : 1;
                                 final Update downstream = new Update();
-                                downstream.shifted = IndexShiftData.EMPTY;
+                                downstream.shifted = RowSetShiftData.EMPTY;
                                 if ((lastSize == 0 && newResultSize == 1)) {
                                     downstream.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
                                     downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                     downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                    result.getIndex().insert(0);
+                                    result.getRowSet().insert(0);
                                 } else if (lastSize == 1 && newResultSize == 0) {
                                     downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                     downstream.removed = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
                                     downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                    result.getIndex().remove(0);
+                                    result.getRowSet().remove(0);
                                 } else {
                                     if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
                                         return;
@@ -1932,7 +1932,7 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
         final ColumnSource.GetContext[] postGetContexts = new ColumnSource.GetContext[ac.size()];
 
-        try (final TrackingMutableRowSet useRowSet = source.getIndex().minus(upstream.added)) {
+        try (final TrackingMutableRowSet useRowSet = source.getRowSet().minus(upstream.added)) {
             if (useRowSet.isEmpty()) {
                 return;
             }

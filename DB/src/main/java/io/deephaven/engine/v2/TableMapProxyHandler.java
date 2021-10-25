@@ -62,7 +62,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                     (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy))
                             .getAttributes(true, (Collection<String>) args[0]));
 
-            COALESCING_METHODS.add(Table.class.getMethod("getIndex"));
+            COALESCING_METHODS.add(Table.class.getMethod("getRowSet"));
             COALESCING_METHODS.add(Table.class.getMethod("getColumnSource", String.class));
             COALESCING_METHODS.add(Table.class.getMethod("getColumnSourceMap"));
             COALESCING_METHODS.add(Table.class.getMethod("getColumn", int.class));
@@ -266,7 +266,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
             final Object tableKey, final String[] keyNames, final Table keyTable) {
         final JoinSanityListener listener =
                 new JoinSanityListener(description, joinKeyToTableKey, tableKey, keyNames, keyTable);
-        listener.checkSanity(keyTable.getIndex());
+        listener.checkSanity(keyTable.getRowSet());
 
         if (((DynamicTable) keyTable).isRefreshing()) {
             ((DynamicTable) keyTable).listenForUpdates(listener);
@@ -435,7 +435,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
         return expected;
     }
 
-    private static class JoinSanityListener extends InstrumentedShiftAwareListenerAdapter {
+    private static class JoinSanityListener extends InstrumentedListenerAdapter {
         private final ColumnSource[] keyColumns;
         private final Object tableKey;
         private final String description;

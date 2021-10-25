@@ -96,9 +96,9 @@ public class TstUtils {
             throw new IllegalStateException("Not all columns were populated, missing " + expected);
         }
 
-        table.getIndex().insert(rowSet);
+        table.getRowSet().insert(rowSet);
         if (table.isFlat()) {
-            Assert.assertion(table.getIndex().isFlat(), "table.build().isFlat()", table.getIndex(),
+            Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),
                     "table.build()", rowSet, "rowSet");
         }
     }
@@ -108,9 +108,9 @@ public class TstUtils {
         if (table instanceof DynamicTable) {
             Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
         }
-        table.getIndex().remove(rowSet);
+        table.getRowSet().remove(rowSet);
         if (table.isFlat()) {
-            Assert.assertion(table.getIndex().isFlat(), "table.build().isFlat()", table.getIndex(),
+            Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),
                     "table.build()", rowSet, "rowSet");
         }
         for (ColumnSource columnSource : table.getColumnSources()) {
@@ -553,7 +553,7 @@ public class TstUtils {
     }
 
     public static Table prevTableColumnSources(Table table) {
-        final TrackingMutableRowSet rowSet = table.getIndex().getPrevRowSet();
+        final TrackingMutableRowSet rowSet = table.getRowSet().getPrevRowSet();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
             columnSourceMap.put(k, new PrevColumnSource<>(cs));
@@ -562,7 +562,7 @@ public class TstUtils {
     }
 
     public static Table prevTable(Table table) {
-        final TrackingMutableRowSet rowSet = table.getIndex().getPrevRowSet();
+        final TrackingMutableRowSet rowSet = table.getRowSet().getPrevRowSet();
 
         final List<ColumnHolder<?>> cols = new ArrayList<>();
         for (Map.Entry<String, ? extends ColumnSource<?>> mapEntry : table.getColumnSourceMap().entrySet()) {

@@ -71,10 +71,10 @@ public class TestKeyedArrayBackedMutableTable {
         assertTableEquals(TableTools.merge(input, input3, input4, input5).lastBy("Name"), kabut);
 
         final long sizeBeforeDelete = kabut.size();
-        System.out.println("KABUT.rowSet before delete: " + kabut.getIndex());
+        System.out.println("KABUT.rowSet before delete: " + kabut.getRowSet());
         final Table delete1 = TableTools.newTable(stringCol("Name", "Earl"));
         handleDelayedRefresh(kabut, () -> mutableInputTable.delete(delete1));
-        System.out.println("KABUT.rowSet after delete: " + kabut.getIndex());
+        System.out.println("KABUT.rowSet after delete: " + kabut.getRowSet());
         final long sizeAfterDelete = kabut.size();
         TestCase.assertEquals(sizeBeforeDelete - 1, sizeAfterDelete);
 

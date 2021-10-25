@@ -108,7 +108,7 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
             columnSources[ii++] = (ColumnSource<String>) cs;
         }
 
-        for (final TrackingMutableRowSet.Iterator it = queryTable.getIndex().iterator(); it.hasNext();) {
+        for (final TrackingMutableRowSet.Iterator it = queryTable.getRowSet().iterator(); it.hasNext();) {
             final long idx = it.nextLong();
             final String[] values = new String[columnSources.length];
             for (ii = 0; ii < columnSources.length; ++ii) {

@@ -13,6 +13,7 @@ import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.configuration.Configuration;
@@ -21,14 +22,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.util.liveness.LivenessReferent;
-import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.DynamicNode;
-import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
-import io.deephaven.engine.v2.MemoizedOperationKey;
-import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.NotificationStepReceiver;
-import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -284,14 +278,14 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private static final class Delta implements SafeCloseable {
         private final long step;
         private final long deltaColumnOffset;
-        private final ShiftAwareListener.Update update;
+        private final Listener.Update update;
         private final TrackingMutableRowSet recordedAdds;
         private final TrackingMutableRowSet recordedMods;
         private final BitSet subscribedColumns;
         private final BitSet modifiedColumns;
 
         private Delta(final long step, final long deltaColumnOffset,
-                      final ShiftAwareListener.Update update,
+                      final Listener.Update update,
                       final TrackingMutableRowSet recordedAdds, final TrackingMutableRowSet recordedMods,
                       final BitSet subscribedColumns, final BitSet modifiedColumns) {
             this.step = step;
@@ -371,7 +365,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
     @VisibleForTesting
     public TrackingMutableRowSet getIndex() {
-        return parent.getIndex();
+        return parent.getRowSet();
     }
 
     @VisibleForTesting
@@ -562,7 +556,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         return new DeltaListener();
     }
 
-    private class DeltaListener extends InstrumentedShiftAwareListener {
+    private class DeltaListener extends InstrumentedListener {
 
         DeltaListener() {
             super("BarrageMessageProducer");
@@ -589,12 +583,12 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
                 lastIndexClockStep = LogicalClock.DEFAULT.currentStep();
                 if (DEBUG) {
-                    try (final TrackingMutableRowSet prevRowSet = parent.getIndex().getPrevRowSet()) {
+                    try (final TrackingMutableRowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
                         log.info().append(logPrefix)
                                 .append("lastIndexClockStep=").append(lastIndexClockStep)
                                 .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
                                 .append(shouldEnqueueDelta)
-                                .append(", rowSet=").append(parent.getIndex()).append(", prevRowSet=").append(prevRowSet)
+                                .append(", rowSet=").append(parent.getRowSet()).append(", prevRowSet=").append(prevRowSet)
                                 .endl();
                     }
                 }
@@ -643,12 +637,12 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
     }
 
-    private void enqueueUpdate(final ShiftAwareListener.Update upstream) {
+    private void enqueueUpdate(final Listener.Update upstream) {
         Assert.holdsLock(this, "enqueueUpdate must hold lock!");
 
         final TrackingMutableRowSet addsToRecord;
         final TrackingMutableRowSet modsToRecord;
-        final TrackingMutableRowSet rowSet = parent.getIndex();
+        final TrackingMutableRowSet rowSet = parent.getRowSet();
 
         if (numFullSubscriptions > 0) {
             addsToRecord = upstream.added.clone();

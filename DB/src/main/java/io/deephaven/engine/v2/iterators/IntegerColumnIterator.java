@@ -22,7 +22,7 @@ public class IntegerColumnIterator extends ColumnIterator<Integer> implements Pr
 
     public IntegerColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
         //noinspection unchecked
-        this(table.getIndex(), table.getColumnSource(columnName));
+        this(table.getRowSet(), table.getColumnSource(columnName));
     }
 
     @Override

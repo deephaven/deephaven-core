@@ -82,7 +82,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
             final Map<Object, Long> currentMap = new HashMap<>();
             final Map<Object, Long> prevMap = new HashMap<>();
 
-            for (final TrackingMutableRowSet.Iterator it = source.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = source.getRowSet().iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object expectedKey = TableTools.getKey(columnSources, row);
                 final long checkRow = listener.get(expectedKey);
@@ -92,7 +92,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
                 currentMap.put(expectedKey, row);
             }
 
-            for (final TrackingMutableRowSet.Iterator it = source.getIndex().getPrevRowSet().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = source.getRowSet().getPrevRowSet().iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object expectedKey = TableTools.getPrevKey(columnSources, row);
                 final long checkRow = listener.getPrev(expectedKey);
@@ -101,7 +101,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
             }
 
 
-            final TrackingMutableRowSet removedRows = source.getIndex().getPrevRowSet().minus(source.getIndex());
+            final TrackingMutableRowSet removedRows = source.getRowSet().getPrevRowSet().minus(source.getRowSet());
             for (final TrackingMutableRowSet.Iterator it = removedRows.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object expectedKey = TableTools.getPrevKey(columnSources, row);
@@ -114,7 +114,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
                     assertEquals(listener.getNoEntryValue(), checkRow);
                 }
             }
-            final TrackingMutableRowSet addedRows = source.getIndex().minus(source.getIndex().getPrevRowSet());
+            final TrackingMutableRowSet addedRows = source.getRowSet().minus(source.getRowSet().getPrevRowSet());
             for (final TrackingMutableRowSet.Iterator it = addedRows.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object expectedKey = TableTools.getKey(columnSources, row);

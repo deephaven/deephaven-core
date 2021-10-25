@@ -103,7 +103,7 @@ public class BucketState {
         }
     }
 
-    public void shift(final IndexShiftData shiftData) {
+    public void shift(final RowSetShiftData shiftData) {
         // update the bucket's rowSet
         shiftData.apply(rowSet);
 

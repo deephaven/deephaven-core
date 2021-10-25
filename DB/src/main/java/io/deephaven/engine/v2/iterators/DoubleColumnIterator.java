@@ -22,7 +22,7 @@ public class DoubleColumnIterator extends ColumnIterator<Double> implements Prim
 
     public DoubleColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
         //noinspection unchecked
-        this(table.getIndex(), table.getColumnSource(columnName));
+        this(table.getRowSet(), table.getColumnSource(columnName));
     }
 
     @Override

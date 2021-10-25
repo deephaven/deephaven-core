@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sort.timsort.LongLongTimsortKernel;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
@@ -43,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
  * <lI>All other changes as modifies if first key is unchanged, else paired removes and adds if first key changed</lI>
  * </ol>
  * </li>
- * <li>Sort the shift chunks by the previous keys, accumulate shifts into an {@link IndexShiftData.Builder}</li>
+ * <li>Sort the shift chunks by the previous keys, accumulate shifts into an {@link RowSetShiftData.Builder}</li>
  * </ol>
  *
  * <p>
@@ -411,9 +411,9 @@ class IncrementalByAggregationUpdateTracker {
      *
      * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
      * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
-     * @param beginRange See {@link IndexShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
-     * @param endRange See {@link IndexShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
-     * @param shiftDelta See {@link IndexShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
+     * @param beginRange See {@link RowSetShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
+     * @param endRange See {@link RowSetShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
+     * @param shiftDelta See {@link RowSetShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
      */
     final void applyShiftToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
             @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
@@ -426,7 +426,7 @@ class IncrementalByAggregationUpdateTracker {
             // Since the current pass is only states responsive to the current shift, we need not check the flags here.
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
 
-            IndexShiftData.applyShift(slotToIndex(indexSource, overflowIndexSource, slot), beginRange, endRange,
+            RowSetShiftData.applyShift(slotToIndex(indexSource, overflowIndexSource, slot), beginRange, endRange,
                     shiftDelta);
 
             updatedStateSlotAndFlags.set(trackerIndex, slotAndFlags ^ FLAG_STATE_IN_CURRENT_PASS);
@@ -468,7 +468,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Build an {@link ShiftAwareListener.Update} for this tracker's updated states, and update the result {@link TrackingMutableRowSet}
+     * Build an {@link Listener.Update} for this tracker's updated states, and update the result {@link TrackingMutableRowSet}
      * and {@link RedirectionIndex}.
      *
      * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
@@ -477,13 +477,13 @@ class IncrementalByAggregationUpdateTracker {
      * @param redirectionIndex The result {@link RedirectionIndex} (from state first keys to state slots) to update
      * @param modifiedColumnSetProducer The {@link ModifiedColumnSetProducer} to use for computing the downstream
      *        {@link ModifiedColumnSet}
-     * @return The result {@link ShiftAwareListener.Update}
+     * @return The result {@link Listener.Update}
      */
-    final ShiftAwareListener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
-            @NotNull final TrackingMutableRowSet rowSet,
-            @NotNull final RedirectionIndex redirectionIndex,
-            @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
+    final Listener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
+                                               @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
+                                               @NotNull final TrackingMutableRowSet rowSet,
+                                               @NotNull final RedirectionIndex redirectionIndex,
+                                               @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
         final RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         int numStatesWithShifts = 0;
@@ -521,7 +521,7 @@ class IncrementalByAggregationUpdateTracker {
         final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         boolean someKeyHasAddsOrRemoves = false;
         boolean someKeyHasModifies = false;
-        final IndexShiftData shiftData;
+        final RowSetShiftData shiftData;
         try (final WritableLongChunk<RowKeys> previousShiftedFirstKeys =
                 WritableLongChunk.makeWritableChunk(numStatesWithShifts);
                 final WritableLongChunk<Attributes.RowKeys> currentShiftedFirstKeys =
@@ -573,7 +573,7 @@ class IncrementalByAggregationUpdateTracker {
                         LongLongTimsortKernel.createContext(numStatesWithShifts)) {
                     LongLongTimsortKernel.sort(sortKernelContext, currentShiftedFirstKeys, previousShiftedFirstKeys);
                 }
-                final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+                final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
                 for (int si = 0; si < numStatesWithShifts; ++si) {
                     final long previousKey = previousShiftedFirstKeys.get(si);
                     final long currentKey = currentShiftedFirstKeys.get(si);
@@ -581,7 +581,7 @@ class IncrementalByAggregationUpdateTracker {
                 }
                 shiftData = shiftBuilder.build();
             } else {
-                shiftData = IndexShiftData.EMPTY;
+                shiftData = RowSetShiftData.EMPTY;
             }
         }
 
@@ -596,7 +596,7 @@ class IncrementalByAggregationUpdateTracker {
         rowSet.insert(added);
 
         // Build and return the update
-        return new ShiftAwareListener.Update(added, removed, modified, shiftData,
+        return new Listener.Update(added, removed, modified, shiftData,
                 modifiedColumnSetProducer.produce(someKeyHasAddsOrRemoves, someKeyHasModifies));
     }
 

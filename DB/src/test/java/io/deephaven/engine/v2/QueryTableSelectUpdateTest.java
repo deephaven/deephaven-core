@@ -55,7 +55,7 @@ public class QueryTableSelectUpdateTest {
         showWithIndex(table2);
 
         final Table table3 = table.update("q = i", "q = q + 1", "p = q+10");
-        final Listener table2Listener = base.newListenerWithGlobals(table2);
+        final ShiftObliviousListener table2Listener = base.newListenerWithGlobals(table2);
         table2.listenForUpdates(table2Listener);
         TestCase
                 .assertEquals(Arrays.asList(2, 4, 6), Arrays.asList(table2.getColumn("x").get(0, table2.size())));
@@ -140,7 +140,7 @@ public class QueryTableSelectUpdateTest {
 
         final QueryTable table6 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         table2 = (QueryTable) table6.update("z = x", "x = z + 1", "t = x - 3");
-        final Listener table2Listener2 = base.newListenerWithGlobals(table2);
+        final ShiftObliviousListener table2Listener2 = base.newListenerWithGlobals(table2);
         table2.listenForUpdates(table2Listener2);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -257,7 +257,7 @@ public class QueryTableSelectUpdateTest {
 
     private abstract static class PartialEvalNugget extends EvalNugget {
         // We listen to table updates, so we know what to compare.
-        static class UpdateListener extends InstrumentedListener {
+        static class UpdateListener extends ShiftObliviousInstrumentedListener {
             UpdateListener() {
                 super("Update RefreshProcedure");
             }
@@ -266,7 +266,7 @@ public class QueryTableSelectUpdateTest {
             Throwable exception = null;
 
             @Override
-            public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+            public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                 this.added = added.clone();
                 this.removed = removed.clone();
                 this.modified = modified.clone();
@@ -344,13 +344,13 @@ public class QueryTableSelectUpdateTest {
                             + resultSizeChange);
                 }
             } else {
-                TrackingMutableRowSet sourceAddedPositions = sourceTable.getIndex().invert(listener1.added);
-                TrackingMutableRowSet sourceRemovedPositions = sourceTable.getIndex().getPrevRowSet().invert(listener1.removed);
-                TrackingMutableRowSet sourceModifiedPositions = sourceTable.getIndex().invert(listener1.modified);
+                TrackingMutableRowSet sourceAddedPositions = sourceTable.getRowSet().invert(listener1.added);
+                TrackingMutableRowSet sourceRemovedPositions = sourceTable.getRowSet().getPrevRowSet().invert(listener1.removed);
+                TrackingMutableRowSet sourceModifiedPositions = sourceTable.getRowSet().invert(listener1.modified);
 
-                TrackingMutableRowSet resultAddedPositions = originalValue.getIndex().invert(listener2.added);
-                TrackingMutableRowSet resultRemovedPositions = originalValue.getIndex().getPrevRowSet().invert(listener2.removed);
-                TrackingMutableRowSet resultModifiedPositions = originalValue.getIndex().invert(listener2.modified);
+                TrackingMutableRowSet resultAddedPositions = originalValue.getRowSet().invert(listener2.added);
+                TrackingMutableRowSet resultRemovedPositions = originalValue.getRowSet().getPrevRowSet().invert(listener2.removed);
+                TrackingMutableRowSet resultModifiedPositions = originalValue.getRowSet().invert(listener2.modified);
 
                 if (!sourceAddedPositions.equals(resultAddedPositions)) {
                     issues.add("Source Positions Added, " + sourceAddedPositions
@@ -368,15 +368,15 @@ public class QueryTableSelectUpdateTest {
 
             TrackingMutableRowSet rowSetToCheck = listener1.added.clone();
             rowSetToCheck.insert(listener1.modified);
-            TrackingMutableRowSet checkInvert = sourceTable.getIndex().invert(rowSetToCheck);
+            TrackingMutableRowSet checkInvert = sourceTable.getRowSet().invert(rowSetToCheck);
 
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Positions to validate: " + checkInvert);
 
                 final RowSetBuilderSequential originalBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 final RowSetBuilderSequential recomputedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-                checkInvert.forEach(x -> originalBuilder.appendKey(originalValue.getIndex().get(x)));
-                checkInvert.forEach(x -> recomputedBuilder.appendKey(recomputedValue.getIndex().get(x)));
+                checkInvert.forEach(x -> originalBuilder.appendKey(originalValue.getRowSet().get(x)));
+                checkInvert.forEach(x -> recomputedBuilder.appendKey(recomputedValue.getRowSet().get(x)));
 
                 System.out.println("Original Sub Table: " + checkInvert);
                 TableTools.showWithIndex(originalValue.getSubTable(originalBuilder.build()));
@@ -394,8 +394,8 @@ public class QueryTableSelectUpdateTest {
 
                 for (TrackingMutableRowSet.Iterator iterator = checkInvert.iterator(); iterator.hasNext();) {
                     int position = (int) iterator.nextLong();
-                    long originalKey = originalValue.getIndex().get(position);
-                    long recomputedKey = recomputedValue.getIndex().get(position);
+                    long originalKey = originalValue.getRowSet().get(position);
+                    long recomputedKey = recomputedValue.getRowSet().get(position);
 
                     Object original = originalColumnSource.get(originalKey);
                     Object recomputed = recomputedColumn.get(recomputedKey);
@@ -778,26 +778,26 @@ public class QueryTableSelectUpdateTest {
         assertTableEquals(x, xs);
         // overhead would be greater than 10%, so we expect a flat table
         TestCase.assertTrue(xs.isFlat());
-        TestCase.assertEquals(x.size() - 1, xs.getIndex().lastRowKey());
+        TestCase.assertEquals(x.size() - 1, xs.getRowSet().lastRowKey());
 
         final Table x2 = source.where("A % 100 > 5");
         final Table x2s = x2.select();
         assertTableEquals(x2, x2s);
         TableTools.showWithIndex(x2s);
         // overhead is only 5%, so we expect a pass-through rowSet
-        TestCase.assertSame(x2s.getIndex(), x2.getIndex());
+        TestCase.assertSame(x2s.getRowSet(), x2.getRowSet());
 
         // simulation of two partitions, we want to keep the rowSet
         final Table x3 = source.where("A < 250000 || A > 750000");
         final Table x3s = x3.select();
         assertTableEquals(x3, x3s);
-        TestCase.assertSame(x3s.getIndex(), x3.getIndex());
+        TestCase.assertSame(x3s.getRowSet(), x3.getRowSet());
 
         // simulation of selecting 80% of the data, we need to flatten
         final Table x4 = source.where("((int)(A / 1000) % 5 != 2)");
         final Table x4s = x4.select();
         assertTableEquals(x4, x4s);
-        TestCase.assertEquals(x4s.getIndex().lastRowKey(), x4.size() - 1);
+        TestCase.assertEquals(x4s.getRowSet().lastRowKey(), x4.size() - 1);
         TestCase.assertTrue(x4s.isFlat());
     }
 

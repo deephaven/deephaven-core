@@ -3,6 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableDiff;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -168,7 +169,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     }
 
-    protected static class SimpleListener extends InstrumentedListenerAdapter {
+    protected static class SimpleListener extends ShiftObliviousInstrumentedListenerAdapter {
         protected SimpleListener(DynamicTable source) {
             super(source, false);
             reset();
@@ -190,9 +191,9 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
 
         @Override
-        public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+        public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
             freeResources();
-            // Need to clone to save IndexShiftDataExpander indices that are destroyed at the end of the LTM cycle.
+            // Need to clone to save RowSetShiftDataExpander indices that are destroyed at the end of the LTM cycle.
             this.added = added.clone();
             this.removed = removed.clone();
             this.modified = modified.clone();
@@ -232,7 +233,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         return result;
     }
 
-    protected static class CoalescingListener extends InstrumentedListenerAdapter {
+    protected static class CoalescingListener extends ShiftObliviousInstrumentedListenerAdapter {
         TrackingMutableRowSet lastAdded, lastModified, lastRemoved;
         ShiftObliviousUpdateCoalescer indexUpdateCoalescer = new ShiftObliviousUpdateCoalescer();
 
@@ -255,7 +256,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
 
         @Override
-        public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
+        public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
             if (lastAdded != null) {
                 lastAdded.close();
             }
@@ -277,8 +278,8 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         return new ListenerWithGlobals(source);
     }
 
-    protected class ListenerWithGlobals extends InstrumentedListenerAdapter {
-        private ListenerWithGlobals(DynamicTable source) {
+    protected class ListenerWithGlobals extends ShiftObliviousInstrumentedListenerAdapter {
+        protected ListenerWithGlobals(DynamicTable source) {
             super(source, false);
             reset();
         }
@@ -297,7 +298,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
 
         @Override
-        public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
+        public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
             QueryTableTestBase.this.added = added;
             QueryTableTestBase.this.removed = removed;
             QueryTableTestBase.this.modified = modified;

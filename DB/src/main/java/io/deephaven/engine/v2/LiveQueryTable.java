@@ -28,7 +28,7 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
             additionsBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         }
         final TrackingMutableRowSet added = builder.build();
-        getIndex().insert(added);
+        getRowSet().insert(added);
         if (added.size() > 0) {
             notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }

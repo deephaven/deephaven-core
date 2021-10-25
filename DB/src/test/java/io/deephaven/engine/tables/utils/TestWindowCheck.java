@@ -145,9 +145,9 @@ public class TestWindowCheck {
         private final long windowNanos;
         private Throwable exception;
 
-        class FailureListener extends InstrumentedShiftAwareListener {
+        class FailureListener extends InstrumentedListener {
             FailureListener() {
-                super("Failure Listener");
+                super("Failure ShiftObliviousListener");
             }
 
             @Override
@@ -162,8 +162,8 @@ public class TestWindowCheck {
             }
         }
 
-        ShiftAwareListener windowedFailureListener = new FailureListener();
-        ShiftAwareListener updateFailureListener = new FailureListener();
+        Listener windowedFailureListener = new FailureListener();
+        Listener updateFailureListener = new FailureListener();
 
         WindowEvalNugget(TestTimeProvider timeProvider, QueryTable table) {
             this.table = table;
@@ -181,7 +181,7 @@ public class TestWindowCheck {
         public void validate(String msg) {
             org.junit.Assert.assertNull(exception);
 
-            TestCase.assertEquals(table.getIndex(), windowed.first.getIndex());
+            TestCase.assertEquals(table.getRowSet(), windowed.first.getRowSet());
             final Map<String, ColumnSource<?>> map = table.getColumnSourceMap();
             final Map<String, ? extends ColumnSource<?>> map2 = windowed.first.getColumnSourceMap();
             TestCase.assertEquals(map.size(), map2.size() - 1);
@@ -197,7 +197,7 @@ public class TestWindowCheck {
 
             final long now = timeProvider.now;
 
-            for (final TrackingMutableRowSet.Iterator it = windowed.first.getIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = windowed.first.getRowSet().iterator(); it.hasNext();) {
                 final long key = it.nextLong();
                 final DBDateTime tableTime = timestamp.get(key);
 

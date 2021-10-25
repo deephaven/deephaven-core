@@ -46,7 +46,7 @@ public class BarrageMessage implements SafeCloseable {
     public TrackingMutableRowSet rowsAdded;
     public TrackingMutableRowSet rowsIncluded;
     public TrackingMutableRowSet rowsRemoved;
-    public IndexShiftData shifted;
+    public RowSetShiftData shifted;
 
     public AddColumnData[] addColumnData;
     public ModColumnData[] modColumnData;

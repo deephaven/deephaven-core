@@ -10,7 +10,6 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.util.liveness.Liveness;
 import io.deephaven.engine.v2.utils.AsyncErrorLogger;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -20,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 
 /**
- * This class is used for Listeners that represent "leaf" nodes in the update propagation tree.
+ * This class is used for ShiftAwareListeners that represent "leaf" nodes in the update propagation tree.
  *
  * It provides an optional retention cache, to prevent listeners from being garbage collected.
  *
@@ -47,27 +46,28 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
     }
 
     /**
-     * @param description A description for the UpdatePerformanceTracker to append to its entry description.
-     * @param source The source table this listener will subscribe to - needed for preserving referential integrity.
+     * @param description A description for the UpdatePerformanceTracker to append to its entry description
+     * @param source The source table this listener will subscribe to - needed for preserving referential integrity
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
      *        In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
     public InstrumentedListenerAdapter(@Nullable final String description, @NotNull final DynamicTable source,
-            final boolean retain) {
+                                       final boolean retain) {
         super(description);
         this.source = Require.neqNull(source, "source");
         if (this.retain = retain) {
             RETENTION_CACHE.retain(this);
             if (Liveness.DEBUG_MODE_ENABLED) {
-                Liveness.log.info().append("LivenessDebug: InstrumentedListenerAdapter ")
-                        .append(Utils.REFERENT_FORMATTER, this).append(" created with retention enabled").endl();
+                Liveness.log.info().append("LivenessDebug: ShiftObliviousInstrumentedListenerAdapter ")
+                        .append(Utils.REFERENT_FORMATTER, this)
+                        .append(" created with retention enabled").endl();
             }
         }
         manage(source);
     }
 
     @Override
-    public abstract void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified);
+    public abstract void onUpdate(Update upstream);
 
     /**
      * Called when the source table produces an error
@@ -93,7 +93,6 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
     @Override
     protected void destroy() {
         source.removeUpdateListener(this);
-        source.removeDirectUpdateListener(this);
         if (retain) {
             RETENTION_CACHE.forget(this);
         }

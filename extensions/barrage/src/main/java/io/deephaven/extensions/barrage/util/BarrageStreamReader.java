@@ -239,8 +239,8 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         return BitSet.valueOf(bb);
     }
 
-    private static IndexShiftData extractIndexShiftData(final ByteBuffer bb) throws IOException {
-        final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+    private static RowSetShiftData extractIndexShiftData(final ByteBuffer bb) throws IOException {
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
 
         final TrackingMutableRowSet sRowSet, eRowSet, dRowSet;
         // noinspection UnstableApiUsage
@@ -256,7 +256,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
              final TrackingMutableRowSet.Iterator dit = dRowSet.iterator()) {
             while (sit.hasNext()) {
                 if (!eit.hasNext() || !dit.hasNext()) {
-                    throw new IllegalStateException("IndexShiftData is inconsistent");
+                    throw new IllegalStateException("RowSetShiftData is inconsistent");
                 }
                 final long next = sit.nextLong();
                 builder.shiftRange(next, eit.nextLong(), dit.nextLong() - next);

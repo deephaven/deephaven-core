@@ -10,12 +10,8 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.v2.DynamicTable;
-import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ListenerRecorder;
-import io.deephaven.engine.v2.MergedListener;
-import io.deephaven.engine.v2.ShiftAwareListener;
+import io.deephaven.engine.v2.*;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
@@ -120,7 +116,7 @@ public class UnionSourceManager {
         Require.requirement(sources.size() == this.sources.length,
                 "sources.size() == this.sources.length", sources.size(),
                 "sources.size()", this.sources.length, "this.sources.length");
-        unionRedirection.appendTable(table.getIndex().lastRowKey());
+        unionRedirection.appendTable(table.getRowSet().lastRowKey());
 
         for (int i = 0; i < this.sources.length; i++) {
             final ColumnSource<?> sourceToAdd = sources.get(names[i]);
@@ -150,15 +146,15 @@ public class UnionSourceManager {
             dynTable.listenForUpdates(listener);
             if (onNewTableMapKey) {
                 // synthetically invoke onUpdate lest our MergedUnionListener#process never fires.
-                final ShiftAwareListener.Update update = new ShiftAwareListener.Update(
-                        table.getIndex().clone(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                        IndexShiftData.EMPTY, ModifiedColumnSet.ALL);
+                final Listener.Update update = new Listener.Update(
+                        table.getRowSet().clone(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
                 listener.onUpdate(update);
                 update.release();
             }
         }
 
-        try (final TrackingMutableRowSet shifted = getShiftedIndex(table.getIndex(), tableId)) {
+        try (final TrackingMutableRowSet shifted = getShiftedIndex(table.getRowSet(), tableId)) {
             rowSet.insert(shifted);
         }
     }
@@ -213,8 +209,8 @@ public class UnionSourceManager {
         @Override
         protected void process() {
             modifiedColumnSet.clear();
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            final IndexShiftData.Builder shiftedBuilder = new IndexShiftData.Builder();
+            final Listener.Update update = new Listener.Update();
+            final RowSetShiftData.Builder shiftedBuilder = new RowSetShiftData.Builder();
 
             final long currentStep = LogicalClock.DEFAULT.currentStep();
 
@@ -222,7 +218,7 @@ public class UnionSourceManager {
             int firstShiftingTable = tables.size();
             for (int tableId = 0; tableId < tables.size(); ++tableId) {
                 final long newShift =
-                        unionRedirection.computeShiftIfNeeded(tableId, tables.get(tableId).getIndex().lastRowKey());
+                        unionRedirection.computeShiftIfNeeded(tableId, tables.get(tableId).getRowSet().lastRowKey());
                 unionRedirection.prevStartOfIndicesAlt[tableId] =
                         unionRedirection.startOfIndices[tableId] += accumulatedShift;
                 accumulatedShift += newShift;
@@ -242,7 +238,7 @@ public class UnionSourceManager {
 
                 for (int tableId = firstShiftingTable; tableId <= maxTableId; ++tableId) {
                     final long startOfShift = unionRedirection.startOfIndices[tableId];
-                    builder.appendRowSequenceWithOffset(tables.get(tableId).getIndex(), startOfShift);
+                    builder.appendRowSequenceWithOffset(tables.get(tableId).getRowSet(), startOfShift);
                 }
 
                 rowSet.insert(builder.build());
@@ -280,7 +276,7 @@ public class UnionSourceManager {
                 modColumnTransformers.get(nextListenerId - 1).transform(listener.getModifiedColumnSet(),
                         modifiedColumnSet);
 
-                final IndexShiftData shiftData = listener.getShifted();
+                final RowSetShiftData shiftData = listener.getShifted();
 
                 updateAddedBuilder.appendRowSequenceWithOffset(listener.getAdded(), unionRedirection.startOfIndices[tableId]);
                 updateModifiedBuilder.appendRowSequenceWithOffset(listener.getModified(),

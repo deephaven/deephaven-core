@@ -10,17 +10,17 @@ import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableRegistrar;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.MultiException;
@@ -329,9 +329,9 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             rowSet.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(new ShiftAwareListener.Update(RowSetFactoryImpl.INSTANCE.getFlatRowSet(newSize),
+        table.notifyListeners(new Listener.Update(RowSetFactoryImpl.INSTANCE.getFlatRowSet(newSize),
                 RowSetFactoryImpl.INSTANCE.getFlatRowSet(oldSize), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }
 
     @SafeVarargs

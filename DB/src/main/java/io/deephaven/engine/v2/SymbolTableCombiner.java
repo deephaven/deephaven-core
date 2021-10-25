@@ -222,7 +222,7 @@ class SymbolTableCombiner
         if (symbolTable.isEmpty()) {
             return;
         }
-        addSymbols(symbolTable, symbolTable.getIndex(), symbolMapper);
+        addSymbols(symbolTable, symbolTable.getRowSet(), symbolMapper);
     }
 
     void addSymbols(final Table symbolTable, TrackingMutableRowSet rowSet, IntegerSparseArraySource symbolMapper) {
@@ -1216,11 +1216,11 @@ class SymbolTableCombiner
 
         final ColumnSource[] probeSources = {symbolSource};
         try (final ProbeContext pc = makeProbeContext(probeSources, symbolTable.size())){
-            decorationProbe(pc, symbolTable.getIndex(), probeSources, resultIdentifiers, irrelevantSymbolValue);
+            decorationProbe(pc, symbolTable.getRowSet(), probeSources, resultIdentifiers, irrelevantSymbolValue);
         }
 
         final MutableLong position = new MutableLong();
-        symbolTable.getIndex().forAllLongs((long ll) -> {
+        symbolTable.getRowSet().forAllLongs((long ll) -> {
             final int uniqueIdentifier = resultIdentifiers.getInt(position.longValue());
             position.increment();
             symbolMapper.set(idSource.getLong(ll), uniqueIdentifier);

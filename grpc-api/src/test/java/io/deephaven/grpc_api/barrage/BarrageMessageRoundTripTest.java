@@ -11,6 +11,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.BarrageSubscriptionImpl;
+import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -23,15 +24,7 @@ import io.deephaven.engine.tables.live.LiveTableRefreshCombiner;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.EvalNuggetInterface;
-import io.deephaven.engine.v2.GenerateTableUpdates;
-import io.deephaven.engine.v2.InstrumentedShiftAwareListener;
-import io.deephaven.engine.v2.LiveTableTestCase;
-import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
-import io.deephaven.engine.v2.TableUpdateValidator;
-import io.deephaven.engine.v2.TstUtils;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.engine.v2.utils.IndexShiftData;
@@ -123,11 +116,11 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    class FailureListener extends InstrumentedShiftAwareListener {
+    class FailureListener extends InstrumentedListener {
         final String tableName;
 
         FailureListener(String tableName) {
-            super("Failure Listener");
+            super("Failure ShiftObliviousListener");
             this.tableName = tableName;
         }
 
@@ -228,10 +221,10 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
             QueryTable toCheck = barrageTable;
             if (viewport != null) {
-                try (final TrackingMutableRowSet view = expected.getIndex().subSetForPositions(viewport)) {
+                try (final TrackingMutableRowSet view = expected.getRowSet().subSetForPositions(viewport)) {
                     expected = expected.getSubTable(view);
                 }
-                try (final TrackingMutableRowSet view = toCheck.getIndex().subSetForPositions(viewport)) {
+                try (final TrackingMutableRowSet view = toCheck.getRowSet().subSetForPositions(viewport)) {
                     toCheck = toCheck.getSubTable(view);
                 }
             }
@@ -250,7 +243,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             // consumer
             // (not the indexes between expected and consumer; as the consumer maintains the entire rowSet).
             Assert.equals(barrageMessageProducer.getIndex(), "barrageMessageProducer.build()",
-                    barrageTable.getIndex(), ".build()");
+                    barrageTable.getRowSet(), ".build()");
         }
 
         private void showResult(final String label, final Table table) {
@@ -261,10 +254,10 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         public void show(QueryTable expected) {
             QueryTable toCheck = barrageTable;
             if (viewport != null) {
-                try (final TrackingMutableRowSet view = expected.getIndex().subSetForPositions(viewport)) {
+                try (final TrackingMutableRowSet view = expected.getRowSet().subSetForPositions(viewport)) {
                     expected = expected.getSubTable(view);
                 }
-                try (final TrackingMutableRowSet view = toCheck.getIndex().subSetForPositions(viewport)) {
+                try (final TrackingMutableRowSet view = toCheck.getRowSet().subSetForPositions(viewport)) {
                     toCheck = toCheck.getSubTable(view);
                 }
             }
@@ -522,13 +515,13 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
-                        + (helper.sourceTable.getIndex().isNonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1);
-                final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+                        + (helper.sourceTable.getRowSet().isNonempty() ? helper.sourceTable.getRowSet().lastRowKey() : -1);
+                final Listener.Update update = new Listener.Update();
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(lastKey + 1,
                         lastKey + Math.max(1, helper.size / maxSteps));
                 update.removed = i();
                 update.modified = i();
-                update.shifted = IndexShiftData.EMPTY;
+                update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
@@ -552,15 +545,15 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey =
-                        helper.sourceTable.getIndex().isNonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1;
-                final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+                        helper.sourceTable.getRowSet().isNonempty() ? helper.sourceTable.getRowSet().lastRowKey() : -1;
+                final Listener.Update update = new Listener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, stepSize - 1);
                 update.removed = i();
                 update.modified = i();
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                final IndexShiftData.Builder shifted = new IndexShiftData.Builder();
+                final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
                 if (lastKey >= 0) {
                     shifted.shiftRange(0, lastKey, stepSize + (Math.abs(helper.random.nextLong()) % 16));
                 }
@@ -604,13 +597,13 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
-                        + (helper.sourceTable.getIndex().isNonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1);
-                final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+                        + (helper.sourceTable.getRowSet().isNonempty() ? helper.sourceTable.getRowSet().lastRowKey() : -1);
+                final Listener.Update update = new Listener.Update();
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(lastKey + 1,
                         lastKey + Math.max(1, helper.size / maxSteps));
                 update.removed = i();
                 update.modified = i();
-                update.shifted = IndexShiftData.EMPTY;
+                update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
@@ -634,15 +627,15 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey =
-                        helper.sourceTable.getIndex().isNonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1;
-                final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+                        helper.sourceTable.getRowSet().isNonempty() ? helper.sourceTable.getRowSet().lastRowKey() : -1;
+                final Listener.Update update = new Listener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, stepSize - 1);
                 update.removed = i();
                 update.modified = i();
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                final IndexShiftData.Builder shifted = new IndexShiftData.Builder();
+                final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
                 if (lastKey >= 0) {
                     shifted.shiftRange(0, lastKey, stepSize + (Math.abs(helper.random.nextLong()) % 16));
                 }
@@ -986,10 +979,10 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             TstUtils.removeRows(queryTable, i(10, 12));
             TstUtils.addToTable(queryTable, i(5, 7), c("intCol", 10, 12));
 
-            final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(0, 12, -5);
 
-            queryTable.notifyListeners(new ShiftAwareListener.Update(
+            queryTable.notifyListeners(new Listener.Update(
                     RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                     RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                     RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
@@ -1047,11 +1040,11 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(queryTable, i(12), c("intCol", 13));
 
-            queryTable.notifyListeners(new ShiftAwareListener.Update(
+            queryTable.notifyListeners(new Listener.Update(
                     RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                     RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                     RowSetFactoryImpl.INSTANCE.getRowSetByValues(12),
-                    IndexShiftData.EMPTY, ModifiedColumnSet.ALL));
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         });
 
         // Do not allow the two updates to coalesce; we must force the consumer to apply the modification. (An allowed
@@ -1062,11 +1055,11 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(queryTable, i(5));
 
-            queryTable.notifyListeners(new ShiftAwareListener.Update(
+            queryTable.notifyListeners(new Listener.Update(
                     RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                     RowSetFactoryImpl.INSTANCE.getRowSetByValues(5),
                     RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                    IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
 
         // Obtain snapshot of new viewport. (which will not include the modified row)
@@ -1119,8 +1112,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
-                        + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getIndex().lastRowKey());
-                final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+                        + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getRowSet().lastRowKey());
+                final Listener.Update update = new Listener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(lastKey + 1, lastKey + stepSize);
                 update.removed = i();
@@ -1128,9 +1121,9 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     update.modified = i();
                 } else {
                     update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByRange(Math.max(0, lastKey - stepSize), lastKey);
-                    update.modified.retain(helper.sourceTable.getIndex());
+                    update.modified.retain(helper.sourceTable.getRowSet());
                 }
-                update.shifted = IndexShiftData.EMPTY;
+                update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
@@ -1181,8 +1174,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
-                        + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getIndex().lastRowKey());
-                final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+                        + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getRowSet().lastRowKey());
+                final Listener.Update update = new Listener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(lastKey + 1, lastKey + stepSize);
                 update.removed = i();
@@ -1190,9 +1183,9 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     update.modified = i();
                 } else {
                     update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByRange(Math.max(0, lastKey - stepSize), lastKey);
-                    update.modified.retain(helper.sourceTable.getIndex());
+                    update.modified.retain(helper.sourceTable.getRowSet());
                 }
-                update.shifted = IndexShiftData.EMPTY;
+                update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,

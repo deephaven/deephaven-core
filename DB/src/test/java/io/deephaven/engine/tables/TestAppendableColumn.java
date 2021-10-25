@@ -35,11 +35,11 @@ public class TestAppendableColumn extends TestCase {
             Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());
             assertNotNull(tableR.getColumnSource("v").getGroupToRange());
-            assertEquals(320000, tableR.getIndex().size());
+            assertEquals(320000, tableR.getRowSet().size());
             assertEquals(80000, tableR.getColumnSource("v").getGroupToRange().size());
-            assertEquals(80000, tableR.getColumnSource("v").getValuesMapping(tableR.getIndex()).size());
+            assertEquals(80000, tableR.getColumnSource("v").getValuesMapping(tableR.getRowSet()).size());
             assertEquals(80000, tableR.getColumnSource("v")
-                    .getValuesMapping(tableR.getIndex().subSetByPositionRange(0, tableR.size())).size());
+                    .getValuesMapping(tableR.getRowSet().subSetByPositionRange(0, tableR.size())).size());
             final Map mapper = tableR.getColumnSource("v").getGroupToRange();
             for (int i = 0; i < data.length / 4; i++) {
                 assertEquals(mapper.get(i), RowSetFactoryImpl.INSTANCE.getRowSetByRange(i * 4, i * 4 + 3));

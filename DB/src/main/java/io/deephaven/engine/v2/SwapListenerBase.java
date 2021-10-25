@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
  * clock changes, we were not gotNotification, and no notifications were enqueued; then we have a successful snapshot
  * and can return true. We then set the currentListener, so that all future calls are forwarded to the listener.
  *
- * Use either {@link SwapListener} or {@link ShiftAwareSwapListener} depending on which Listener interface you are
+ * Use either {@link ShiftObliviousSwapListener} or {@link SwapListener} depending on which ShiftObliviousListener interface you are
  * using.
  */
 public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessArtifact implements ListenerBase {
@@ -80,7 +80,7 @@ public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessA
         final boolean updatedOnThisCycle = currentStep == lastNotificationStep;
         final boolean updating = LogicalClock.getState(clockCycle) == LogicalClock.State.Updating;
         if (DEBUG) {
-            log.info().append("Swap Listener source=")
+            log.info().append("Swap ShiftObliviousListener source=")
                     .append(System.identityHashCode(sourceTable))
                     .append(" swap=")
                     .append(System.identityHashCode(this))
@@ -108,7 +108,7 @@ public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessA
     protected synchronized boolean end(@SuppressWarnings("unused") final long clockCycle) {
         if (isInInitialNotificationWindow()) {
             if (eventualListener == null) {
-                throw new IllegalStateException("Listener has not been set on end!");
+                throw new IllegalStateException("ShiftObliviousListener has not been set on end!");
             }
             if (eventualResult == null) {
                 throw new IllegalStateException("Result has not been set on end!");
@@ -119,7 +119,7 @@ public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessA
         }
 
         if (DEBUG) {
-            log.info().append("Swap Listener ")
+            log.info().append("Swap ShiftObliviousListener ")
                     .append(System.identityHashCode(sourceTable))
                     .append(" swap=")
                     .append(System.identityHashCode(this))
@@ -178,7 +178,7 @@ public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessA
     }
 
     /**
-     * Invoke {@link QueryTable#listenForUpdates(Listener)} for the appropriate subclass of {@link SwapListenerBase}.
+     * Invoke {@link QueryTable#listenForUpdates(ShiftObliviousListener)} for the appropriate subclass of {@link SwapListenerBase}.
      */
     public abstract void subscribeForUpdates();
 
@@ -205,7 +205,7 @@ public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessA
 
             @Override
             public LogOutput append(final LogOutput logOutput) {
-                return logOutput.append("Wrapped(ShiftAwareSwapListener=")
+                return logOutput.append("Wrapped(SwapListener=")
                         .append(System.identityHashCode(sourceTable))
                         .append(" swap=")
                         .append(System.identityHashCode(SwapListenerBase.this))
@@ -216,14 +216,14 @@ public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessA
 
             @Override
             public void run() {
-                log.info().append("ShiftAwareSwapListener: Firing notification ")
+                log.info().append("SwapListener: Firing notification ")
                         .append(System.identityHashCode(sourceTable))
                         .append(" swap=")
                         .append(System.identityHashCode(SwapListenerBase.this))
                         .append(", clock=")
                         .append(LogicalClock.DEFAULT.currentStep()).endl();
                 notification.run();
-                log.info().append("ShiftAwareSwapListener: Complete notification ")
+                log.info().append("SwapListener: Complete notification ")
                         .append(System.identityHashCode(sourceTable))
                         .append(" swap=")
                         .append(System.identityHashCode(SwapListenerBase.this)).endl();

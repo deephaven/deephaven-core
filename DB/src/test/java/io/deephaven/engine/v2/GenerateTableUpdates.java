@@ -29,7 +29,7 @@ public class GenerateTableUpdates {
 
     public static void generateAppends(final int size, Random random, QueryTable table,
             TstUtils.ColumnInfo[] columnInfos) {
-        final long firstKey = table.getIndex().lastRowKey() + 1;
+        final long firstKey = table.getRowSet().lastRowKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
         final TrackingMutableRowSet keysToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, firstKey + randomSize - 1);
         final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfos.length];
@@ -60,15 +60,15 @@ public class GenerateTableUpdates {
     static public TrackingMutableRowSet[] computeTableUpdates(int size, Random random, QueryTable table,
                                                               TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
         final TrackingMutableRowSet keysToRemove;
-        if (remove && table.getIndex().size() > 0) {
-            keysToRemove = TstUtils.selectSubIndexSet(random.nextInt(table.getIndex().intSize() + 1), table.getIndex(),
+        if (remove && table.getRowSet().size() > 0) {
+            keysToRemove = TstUtils.selectSubIndexSet(random.nextInt(table.getRowSet().intSize() + 1), table.getRowSet(),
                     random);
         } else {
             keysToRemove = TstUtils.i();
         }
 
         final TrackingMutableRowSet keysToAdd =
-                add ? TstUtils.newIndex(random.nextInt(size / 2 + 1), table.getIndex(), random) : TstUtils.i();
+                add ? TstUtils.newIndex(random.nextInt(size / 2 + 1), table.getRowSet(), random) : TstUtils.i();
         TstUtils.removeRows(table, keysToRemove);
         for (final TrackingMutableRowSet.Iterator iterator = keysToRemove.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
@@ -78,9 +78,9 @@ public class GenerateTableUpdates {
         }
 
         final TrackingMutableRowSet keysToModify;
-        if (modify && table.getIndex().size() > 0) {
+        if (modify && table.getRowSet().size() > 0) {
             keysToModify =
-                    TstUtils.selectSubIndexSet(random.nextInt((int) table.getIndex().size()), table.getIndex(), random);
+                    TstUtils.selectSubIndexSet(random.nextInt((int) table.getRowSet().size()), table.getRowSet(), random);
         } else {
             keysToModify = TstUtils.i();
         }
@@ -144,12 +144,12 @@ public class GenerateTableUpdates {
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
 
-        try (final TrackingMutableRowSet rowSet = table.getIndex().clone()) {
+        try (final TrackingMutableRowSet rowSet = table.getRowSet().clone()) {
             final TstUtils.ColumnInfo<?, ?>[] mutableColumns =
                     Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(TstUtils.ColumnInfo[]::new);
             final boolean hasImmutableColumns = columnInfo.length > mutableColumns.length;
 
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
 
             // Removes in pre-shift keyspace.
             if (rowSet.size() > 0) {
@@ -161,7 +161,7 @@ public class GenerateTableUpdates {
             }
 
             // Generate Shifts.
-            final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             if (!hasImmutableColumns) {
                 MutableLong lastDest = new MutableLong();
 
@@ -270,10 +270,10 @@ public class GenerateTableUpdates {
         }
     }
 
-    static public void generateTableUpdates(final ShiftAwareListener.Update update,
+    static public void generateTableUpdates(final Listener.Update update,
             final Random random, final QueryTable table,
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
-        final TrackingMutableRowSet rowSet = table.getIndex();
+        final TrackingMutableRowSet rowSet = table.getRowSet();
 
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println();

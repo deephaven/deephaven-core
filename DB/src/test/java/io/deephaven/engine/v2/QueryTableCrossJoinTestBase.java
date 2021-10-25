@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -54,16 +54,16 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = i(1 << 16);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            update.shifted = IndexShiftData.EMPTY;
+            update.shifted = RowSetShiftData.EMPTY;
             rTable.notifyListeners(update);
         });
         TstUtils.validate(en);
@@ -88,16 +88,16 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(origIndex));
             addToTable(rTable, i(newIndex), longCol("Y", 2));
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(origIndex, origIndex, newIndex - origIndex);
             update.shifted = shiftBuilder.build();
             rTable.notifyListeners(update);
@@ -124,17 +124,17 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(128));
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+            final Listener.Update update = new Listener.Update();
             update.added = i(1 << 16);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(128, 128, 1);
             update.shifted = shiftBuilder.build();
             rTable.notifyListeners(update);
@@ -162,9 +162,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             // left table
             removeRows(lTable, i(0, 1, 2, 3));
             addToTable(lTable, i(2, 4, 5, 7), c("X", "a", "b", "c", "d"));
-            final ShiftAwareListener.Update lUpdate = new ShiftAwareListener.Update();
+            final Listener.Update lUpdate = new Listener.Update();
             lUpdate.added = lUpdate.removed = lUpdate.modified = i();
-            final IndexShiftData.Builder lShiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder lShiftBuilder = new RowSetShiftData.Builder();
             lShiftBuilder.shiftRange(0, 0, 2);
             lShiftBuilder.shiftRange(1, 2, 3);
             lShiftBuilder.shiftRange(3, 1024, 4);
@@ -175,11 +175,11 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             // right table
             removeRows(rTable, i(128));
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
-            final ShiftAwareListener.Update rUpdate = new ShiftAwareListener.Update();
+            final Listener.Update rUpdate = new Listener.Update();
             rUpdate.added = i(1 << 16);
             rUpdate.removed = rUpdate.modified = i();
             rUpdate.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            final IndexShiftData.Builder rShiftBuilder = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder rShiftBuilder = new RowSetShiftData.Builder();
             rShiftBuilder.shiftRange(128, 128, 1);
             rUpdate.shifted = rShiftBuilder.build();
             rTable.notifyListeners(rUpdate);
@@ -353,7 +353,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final MutableLong lastRightId = new MutableLong();
         final MutableObject<String> lastSharedKey = new MutableObject<>();
 
-        chunkedCrossJoin.getIndex().forAllLongs(ii -> {
+        chunkedCrossJoin.getRowSet().forAllLongs(ii -> {
             final String sharedKey = (String) keyColumn.get(ii);
 
             final long leftId = leftColumn.getLong(ii);
@@ -408,14 +408,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         assertTableEquals(z3, z);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            xqt.getIndex().insertRange(size, size * 2);
+            xqt.getRowSet().insertRange(size, size * 2);
             xqt.notifyListeners(RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            yqt.getIndex().insertRange(size, size * 2);
+            yqt.getRowSet().insertRange(size, size * 2);
             yqt.notifyListeners(RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, size * 2), i(), i());
         });
 
@@ -582,9 +582,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                         ResettableWritableIntChunk.makeResettableChunk()) {
 
             rdest.resetFromChunk(dest, 0, 4);
-            column.fillChunk(context, rdest, jt.getIndex().subSetByPositionRange(0, 4));
+            column.fillChunk(context, rdest, jt.getRowSet().subSetByPositionRange(0, 4));
             rdest.resetFromChunk(dest, 0, 2);
-            column.fillChunk(context, rdest, jt.getIndex().subSetByPositionRange(0, 2));
+            column.fillChunk(context, rdest, jt.getRowSet().subSetByPositionRange(0, 2));
         }
     }
 
@@ -630,8 +630,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
-                ShiftAwareListener.Update up = new ShiftAwareListener.Update();
-                up.shifted = IndexShiftData.EMPTY;
+                Listener.Update up = new Listener.Update();
+                up.shifted = RowSetShiftData.EMPTY;
                 up.added = i(numSteps.getValue());
                 up.removed = i();
                 up.modified = i();
@@ -646,8 +646,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
-                up = new ShiftAwareListener.Update();
-                final IndexShiftData.Builder shifted = new IndexShiftData.Builder();
+                up = new Listener.Update();
+                final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
                 shifted.shiftRange(0, numSteps.getValue() + rightOffset, 1);
                 up.shifted = shifted.build();
                 up.added = i(rightOffset + numSteps.getValue());

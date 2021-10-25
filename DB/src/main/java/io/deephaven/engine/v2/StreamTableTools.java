@@ -7,8 +7,8 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -35,8 +35,8 @@ public class StreamTableTools {
 
             final BaseTable baseStreamTable = (BaseTable) streamTable.coalesce();
 
-            final ShiftAwareSwapListener swapListener =
-                    baseStreamTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+            final SwapListener swapListener =
+                    baseStreamTable.createSwapListenerIfRefreshing(SwapListener::new);
             // stream tables must tick
             Assert.neqNull(swapListener, "swapListener");
 
@@ -68,13 +68,13 @@ public class StreamTableTools {
 
                         final TrackingMutableRowSet rowSet;
                         if (usePrev) {
-                            try (final TrackingMutableRowSet useRowSet = baseStreamTable.getIndex().getPrevRowSet()) {
+                            try (final TrackingMutableRowSet useRowSet = baseStreamTable.getRowSet().getPrevRowSet()) {
                                 rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(useRowSet.size());
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
-                            rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(baseStreamTable.getIndex().size());
-                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, rowSet, usePrev);
+                            rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(baseStreamTable.getRowSet().size());
+                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getRowSet(), destColumns, rowSet, usePrev);
                         }
 
                         final QueryTable result = new QueryTable(rowSet, columns);
@@ -84,7 +84,7 @@ public class StreamTableTools {
                         result.addParentReference(swapListener);
                         resultHolder.setValue(result);
 
-                        swapListener.setListenerAndResult(new BaseTable.ShiftAwareListenerImpl("streamToAppendOnly",
+                        swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
                                 (DynamicTable) streamTable, result) {
                             @Override
                             public void onUpdate(Update upstream) {
@@ -109,7 +109,7 @@ public class StreamTableTools {
                                 downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                 downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                                downstream.shifted = IndexShiftData.EMPTY;
+                                downstream.shifted = RowSetShiftData.EMPTY;
                                 result.notifyListeners(downstream);
                             }
                         }, result);

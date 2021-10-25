@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
@@ -34,7 +35,7 @@ public class KeyedTableListener {
     private final String[] keyColumnNames;
     private final String[] allColumnNames;
     private final Map<String, ColumnSource<?>> parentColumnSourceMap;
-    private final InstrumentedListenerAdapter tableListener;
+    private final ShiftObliviousInstrumentedListenerAdapter tableListener;
 
     private static final long NO_ENTRY = -1;
 
@@ -49,9 +50,9 @@ public class KeyedTableListener {
         this.indexToKeyHashMap = new TLongObjectHashMap<>(tableSize, 0.75f, NO_ENTRY);
         this.keyListenerHashMap = new HashMap<>();
         this.keyColumnNames = keyColumnNames;
-        this.tableListener = new InstrumentedListenerAdapter(null, table, false) {
+        this.tableListener = new ShiftObliviousInstrumentedListenerAdapter(null, table, false) {
             @Override
-            public void onUpdate(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
+            public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
                 handleUpdateFromTable(added, removed, modified);
             }
         };
@@ -163,13 +164,13 @@ public class KeyedTableListener {
     }
 
     public Object[] getRowAtIndex(long index, String... columnNames) {
-        long tableRow = table.getIndex().find(index);
+        long tableRow = table.getRowSet().find(index);
         return (index != -1) ? table.getRecord(tableRow, columnNames) : null;
     }
 
     public long getTableRow(SmartKey key) {
         long index = getIndex(key);
-        return (index == -1) ? -1 : table.getIndex().find(index);
+        return (index == -1) ? -1 : table.getRowSet().find(index);
     }
 
     public void subscribe(SmartKey key, KeyUpdateListener listener) {

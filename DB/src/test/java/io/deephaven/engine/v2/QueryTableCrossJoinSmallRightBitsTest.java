@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.OutOfKeySpaceException;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -112,28 +112,28 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(lTable, i(1, 2, 3), c("A", 1, 3, 4));
 
-            final ShiftAwareListener.Update lUpdate = new ShiftAwareListener.Update();
+            final Listener.Update lUpdate = new Listener.Update();
             lUpdate.modified = i(1, 2, 3);
             lUpdate.added = lUpdate.removed = i();
             lUpdate.modifiedColumnSet = ModifiedColumnSet.ALL;
-            lUpdate.shifted = IndexShiftData.EMPTY;
+            lUpdate.shifted = RowSetShiftData.EMPTY;
             lTable.notifyListeners(lUpdate);
 
             TstUtils.removeRows(rTable, i(1));
             TstUtils.addToTable(rTable, i(54), c("A", 5));
 
-            final ShiftAwareListener.Update rUpdate = new ShiftAwareListener.Update();
+            final Listener.Update rUpdate = new Listener.Update();
             rUpdate.added = i(54);
             rUpdate.removed = i(1);
             rUpdate.modified = i();
             rUpdate.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            rUpdate.shifted = IndexShiftData.EMPTY;
+            rUpdate.shifted = RowSetShiftData.EMPTY;
             rTable.notifyListeners(rUpdate);
         });
         TstUtils.validate(en);
@@ -167,28 +167,28 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(lTable, i(1, 2, 3), c("A", 1, 3, 4));
 
-            final ShiftAwareListener.Update lUpdate = new ShiftAwareListener.Update();
+            final Listener.Update lUpdate = new Listener.Update();
             lUpdate.modified = i(1, 2, 3);
             lUpdate.added = lUpdate.removed = i();
             lUpdate.modifiedColumnSet = ModifiedColumnSet.ALL;
-            lUpdate.shifted = IndexShiftData.EMPTY;
+            lUpdate.shifted = RowSetShiftData.EMPTY;
             lTable.notifyListeners(lUpdate);
 
             TstUtils.removeRows(rTable, i(1, 10));
             TstUtils.addToTable(rTable, i(21, 31, 41, 51, 54, 55), c("A", 1, 2, 3, 4, 5, 5));
 
-            final ShiftAwareListener.Update rUpdate = new ShiftAwareListener.Update();
+            final Listener.Update rUpdate = new Listener.Update();
             rUpdate.added = i(54, 55);
             rUpdate.removed = i(1, 10);
             rUpdate.modified = i(21, 31, 41, 51);
             rUpdate.modifiedColumnSet = rTable.newModifiedColumnSet("A");
-            rUpdate.shifted = IndexShiftData.EMPTY;
+            rUpdate.shifted = RowSetShiftData.EMPTY;
             rTable.notifyListeners(rUpdate);
         });
         TstUtils.validate(en);
@@ -219,18 +219,18 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(lTable, i(0));
             TstUtils.addToTable(lTable, i(1, 2, 3, 4, 5), c("A", 0, 1, 3, 4, 5));
 
-            final ShiftAwareListener.Update lUpdate = new ShiftAwareListener.Update();
+            final Listener.Update lUpdate = new Listener.Update();
             lUpdate.modified = i(2, 3, 4);
             lUpdate.added = lUpdate.removed = i();
             lUpdate.modifiedColumnSet = ModifiedColumnSet.ALL;
-            final IndexShiftData.Builder leftShifted = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder leftShifted = new RowSetShiftData.Builder();
             leftShifted.shiftRange(0, 4, 1);
             lUpdate.shifted = leftShifted.build();
             lTable.notifyListeners(lUpdate);
@@ -238,12 +238,12 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
             TstUtils.removeRows(rTable, i(1));
             TstUtils.addToTable(rTable, i(54), c("A", 5));
 
-            final ShiftAwareListener.Update rUpdate = new ShiftAwareListener.Update();
+            final Listener.Update rUpdate = new Listener.Update();
             rUpdate.added = i(54);
             rUpdate.removed = i(1);
             rUpdate.modified = i();
             rUpdate.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            rUpdate.shifted = IndexShiftData.EMPTY;
+            rUpdate.shifted = RowSetShiftData.EMPTY;
             rTable.notifyListeners(rUpdate);
         });
         TstUtils.validate(en);
@@ -277,18 +277,18 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(jt);
+        final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(lTable, i(0));
             TstUtils.addToTable(lTable, i(1, 2, 3, 4, 5), c("A", 0, 1, 3, 4, 5));
 
-            final ShiftAwareListener.Update lUpdate = new ShiftAwareListener.Update();
+            final Listener.Update lUpdate = new Listener.Update();
             lUpdate.modified = i(2, 3, 4);
             lUpdate.added = lUpdate.removed = i();
             lUpdate.modifiedColumnSet = ModifiedColumnSet.ALL;
-            final IndexShiftData.Builder leftShifted = new IndexShiftData.Builder();
+            final RowSetShiftData.Builder leftShifted = new RowSetShiftData.Builder();
             leftShifted.shiftRange(0, 4, 1);
             lUpdate.shifted = leftShifted.build();
             lTable.notifyListeners(lUpdate);
@@ -296,12 +296,12 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
             TstUtils.removeRows(rTable, i(1, 10));
             TstUtils.addToTable(rTable, i(21, 31, 41, 51, 54, 55), c("A", 1, 2, 3, 4, 5, 5));
 
-            final ShiftAwareListener.Update rUpdate = new ShiftAwareListener.Update();
+            final Listener.Update rUpdate = new Listener.Update();
             rUpdate.added = i(54, 55);
             rUpdate.removed = i(1, 10);
             rUpdate.modified = i(21, 31, 41, 51);
             rUpdate.modifiedColumnSet = rTable.newModifiedColumnSet("A");
-            rUpdate.shifted = IndexShiftData.EMPTY;
+            rUpdate.shifted = RowSetShiftData.EMPTY;
             rTable.notifyListeners(rUpdate);
         });
         TstUtils.validate(en);

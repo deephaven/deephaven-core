@@ -16,8 +16,8 @@ import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.LiveTableRegistrar;
 import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
@@ -213,7 +213,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                     modifiedColumnSet.setColumnWithIndex(ci);
                 }
             }
-            final ShiftAwareListener.Update up = new ShiftAwareListener.Update(
+            final Listener.Update up = new Listener.Update(
                     update.rowsAdded, update.rowsRemoved, mods, update.shifted, modifiedColumnSet);
 
             beginLog(LogLevel.INFO).append(": Processing delta updates ")
@@ -229,7 +229,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
         // make sure that these rowSet updates make some sense compared with each other, and our current view of the
         // table
-        final TrackingMutableRowSet currentRowSet = getIndex();
+        final TrackingMutableRowSet currentRowSet = getRowSet();
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
 
         try (final TrackingMutableRowSet currRowsFromPrev = currentRowSet.clone();
@@ -321,7 +321,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 return coalescer;
             }
 
-            final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update(
+            final Listener.Update downstream = new Listener.Update(
                     update.rowsAdded.clone(), update.rowsRemoved.clone(), totalMods, update.shifted, modifiedColumnSet);
             return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
@@ -406,10 +406,10 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             return;
         }
         if (unsubscribed) {
-            if (getIndex().isNonempty()) {
+            if (getRowSet().isNonempty()) {
                 // publish one last clear downstream; this data would be stale
-                final TrackingMutableRowSet allRows = getIndex().clone();
-                getIndex().remove(allRows);
+                final TrackingMutableRowSet allRows = getRowSet().clone();
+                getRowSet().remove(allRows);
                 notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), allRows, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
             }
             cleanup();
