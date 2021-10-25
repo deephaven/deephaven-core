@@ -156,7 +156,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 new BaseTable.ShiftAwareListenerImpl("Stream sort listener", parent, resultTable) {
                     @Override
                     public void onUpdate(@NotNull final Update upstream) {
-                        Assert.assertion(upstream.modified.empty() && upstream.shifted.empty(),
+                        Assert.assertion(upstream.modified.isEmpty() && upstream.shifted.empty(),
                                 "upstream.modified.empty() && upstream.shifted.empty()");
                         Assert.eq(resultRowSet.size(), "resultRowSet.size()", upstream.removed.size(),
                                 "upstream.removed.size()");

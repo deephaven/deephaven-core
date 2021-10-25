@@ -10,10 +10,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
-import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
+import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.ArrayList;
@@ -195,7 +192,7 @@ public class GenerateTableUpdates {
                 };
 
                 int shiftStrategy = random.nextInt(100);
-                if (shiftStrategy < profile.SHIFT_10_PERCENT_KEY_SPACE && rowSet.nonempty()) {
+                if (shiftStrategy < profile.SHIFT_10_PERCENT_KEY_SPACE && rowSet.isNonempty()) {
                     // 10% of keyspace
                     final long startKey = nextLong(random, rowSet.lastRowKey() + 1);
                     final long lastKey = Math.min(startKey + (long) (rowSet.lastRowKey() * 0.1), rowSet.lastRowKey());
@@ -203,7 +200,7 @@ public class GenerateTableUpdates {
                 }
                 shiftStrategy -= profile.SHIFT_10_PERCENT_KEY_SPACE;
 
-                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_10_PERCENT_POS_SPACE && rowSet.nonempty()) {
+                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_10_PERCENT_POS_SPACE && rowSet.isNonempty()) {
                     // 10% of keys
                     final long startIdx = nextLong(random, rowSet.size());
                     final long lastIdx = Math.min(rowSet.size() - 1, startIdx + (rowSet.size() / 10));
@@ -211,7 +208,7 @@ public class GenerateTableUpdates {
                 }
                 shiftStrategy -= profile.SHIFT_10_PERCENT_POS_SPACE;
 
-                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_AGGRESSIVELY && rowSet.nonempty()) {
+                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_AGGRESSIVELY && rowSet.isNonempty()) {
                     // aggressive shifting
                     long currIdx = 0;
                     while (currIdx < rowSet.size()) {
@@ -242,14 +239,14 @@ public class GenerateTableUpdates {
             update.shifted.apply(rowSet);
 
             // Modifies and Adds in post-shift keyspace.
-            if (rowSet.nonempty()) {
+            if (rowSet.isNonempty()) {
                 update.modified = TstUtils.selectSubIndexSet(
                         Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize * 2)), rowSet, random);
             } else {
                 update.modified = TstUtils.i();
             }
 
-            if (update.modified.empty()) {
+            if (update.modified.isEmpty()) {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else {
                 final ArrayList<String> modifiedColumns = new ArrayList<>();

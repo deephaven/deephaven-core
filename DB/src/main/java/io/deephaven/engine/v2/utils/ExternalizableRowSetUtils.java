@@ -12,7 +12,7 @@ import java.util.function.LongConsumer;
 /**
  * Utility methods used for writing/reading {@link TrackingMutableRowSet}es.
  */
-public class ExternalizableIndexUtils {
+public class ExternalizableRowSetUtils {
 
     private static final byte SHORT_VALUE = 1;
     private static final byte INT_VALUE = 2;

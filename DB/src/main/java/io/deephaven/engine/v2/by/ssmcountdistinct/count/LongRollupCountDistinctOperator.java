@@ -528,7 +528,7 @@ public class LongRollupCountDistinctOperator implements IterativeChunkedAggregat
     }
 
     private static void flushPrevious(LongRollupCountDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

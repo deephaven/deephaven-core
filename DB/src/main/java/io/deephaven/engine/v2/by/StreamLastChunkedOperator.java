@@ -81,7 +81,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
             @NotNull final RowSet newDestinations) {
-        Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
+        Assert.assertion(downstream.removed.isEmpty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
         try (final RowSequence changedDestinations = downstream.modified.union(downstream.added)) {
             copyStreamToResult(changedDestinations);

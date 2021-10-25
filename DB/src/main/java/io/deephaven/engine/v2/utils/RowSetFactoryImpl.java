@@ -64,12 +64,12 @@ public class RowSetFactoryImpl implements RowSetFactory {
         if (USE_PRIORITY_QUEUE_RANDOM_BUILDER) {
             return new AdaptiveRowSetBuilderRandom();
         } else {
-            return TrackingMutableRowSetImpl.makeCurrentRandomBuilder();
+            return new BasicRowSetBuilderRandom();
         }
     }
 
     @Override
     public RowSetBuilderSequential getSequentialBuilder() {
-        return TrackingMutableRowSetImpl.makeCurrentSequentialBuilder();
+        return new BasicRowSetBuilderSequential();
     }
 }

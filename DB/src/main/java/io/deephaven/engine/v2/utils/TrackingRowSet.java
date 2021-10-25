@@ -16,11 +16,11 @@ import java.util.Set;
  */
 public interface TrackingRowSet extends RowSet {
 
-    long getPrev(long pos);
-
     long sizePrev();
 
     MutableRowSet getPrevRowSet();
+
+    long getPrev(long pos);
 
     long firstRowKeyPrev();
 

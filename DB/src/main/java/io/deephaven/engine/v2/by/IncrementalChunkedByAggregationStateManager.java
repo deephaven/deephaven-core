@@ -1238,7 +1238,7 @@ class IncrementalChunkedByAggregationStateManager
 
     // region probe wrappers
     void processRemoves(@NotNull final ColumnSource<?>[] keySources, @NotNull final TrackingMutableRowSet removedRowSet, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
-        if (removedRowSet.empty()) {
+        if (removedRowSet.isEmpty()) {
             return;
         }
         try (final ProbeContext pc = makeProbeContext(keySources, removedRowSet.size())) {
@@ -1247,7 +1247,7 @@ class IncrementalChunkedByAggregationStateManager
     }
 
     void processShift(@NotNull final ColumnSource<?>[] keySources, @NotNull final TrackingMutableRowSet preShiftedRowSet, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
-        if (preShiftedRowSet.empty()) {
+        if (preShiftedRowSet.isEmpty()) {
             return;
         }
         try (final ProbeContext pc = makeProbeContext(keySources, preShiftedRowSet.size())) {
@@ -1256,7 +1256,7 @@ class IncrementalChunkedByAggregationStateManager
     }
 
     void processModifies(@NotNull final ColumnSource<?>[] keySources, @NotNull final TrackingMutableRowSet modifiedRowSet, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
-        if (modifiedRowSet.empty()) {
+        if (modifiedRowSet.isEmpty()) {
             return;
         }
         try (final ProbeContext pc = makeProbeContext(keySources, modifiedRowSet.size())) {

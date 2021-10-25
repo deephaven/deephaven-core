@@ -88,7 +88,7 @@ public class StreamTableTools {
                                 (DynamicTable) streamTable, result) {
                             @Override
                             public void onUpdate(Update upstream) {
-                                if (upstream.modified.nonempty() || upstream.shifted.nonempty()) {
+                                if (upstream.modified.isNonempty() || upstream.shifted.nonempty()) {
                                     throw new IllegalArgumentException("Stream tables should not modify or shift!");
                                 }
                                 final long newRows = upstream.added.size();

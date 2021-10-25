@@ -159,7 +159,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
-        someKeyHasAddsOrRemoves |= rowSet.nonempty();
+        someKeyHasAddsOrRemoves |= rowSet.isNonempty();
         addIndex(rowSet, destination);
         return true;
     }
@@ -313,7 +313,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
-        stepValuesModified = upstream.modified.nonempty() && upstream.modifiedColumnSet.nonempty()
+        stepValuesModified = upstream.modified.isNonempty() && upstream.modifiedColumnSet.nonempty()
                 && upstream.modifiedColumnSet.containsAny(resultInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
         someKeyHasModifies = false;

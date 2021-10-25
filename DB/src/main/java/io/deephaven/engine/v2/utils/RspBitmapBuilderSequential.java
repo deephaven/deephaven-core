@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.utils.rsp.container.Container;
 import static io.deephaven.engine.v2.utils.rsp.RspArray.*;
 import static io.deephaven.engine.v2.utils.rsp.RspBitmap.*;
 
-public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuilder {
+public class RspBitmapBuilderSequential implements BuilderSequential {
     protected final boolean disposable;
 
     protected long pendingStart = -1;
@@ -18,11 +18,11 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
     protected RspBitmap rb;
     protected long maxKeyHint = -1;
 
-    public RspBitmapSequentialBuilder() {
+    public RspBitmapBuilderSequential() {
         this(false);
     }
 
-    public RspBitmapSequentialBuilder(final boolean disposable) {
+    public RspBitmapBuilderSequential(final boolean disposable) {
         this.disposable = disposable;
     }
 

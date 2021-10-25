@@ -467,7 +467,7 @@ public abstract class RowSequenceTestBase {
 
     @Test
     public void testGetAverageRunLengthEstimate() {
-        final TrackingMutableRowSet ix = TrackingMutableRowSetImpl.makeEmptyRsp();
+        final TrackingMutableRowSet ix = TstRowSetUtil.makeEmptyRsp();
         final long k0 = 1 << 14;
         final long rlen = 16;
         final long nRanges = 256;
@@ -517,7 +517,7 @@ public abstract class RowSequenceTestBase {
             assertChunksEqual(expectedRanges, rowSequence.asRowKeyRangesChunk());
             // Check TrackingMutableRowSet
             final MutableInt idx = new MutableInt(0);
-            final TrackingMutableRowSet ix = rowSequence.asIndex();
+            final TrackingMutableRowSet ix = rowSequence.asRowSet();
             assertTrue(msg, ix.forEachLong((value) -> {
                 assertEquals(msg + " && value==" + value, expectedIndices.get(idx.intValue()), value);
                 idx.add(1);
@@ -575,7 +575,7 @@ public abstract class RowSequenceTestBase {
         final long[] r = ranges;
         final long[] indices = indicesFromRanges(r);
         try (final RowSequence rs = create(indices)) {
-            final TrackingMutableRowSet ix = rs.asIndex();
+            final TrackingMutableRowSet ix = rs.asRowSet();
             for (int ri = 0; ri < r.length / 2; ri += 2) {
                 final long si = r[ri];
                 final long ei = r[ri + 1];

@@ -180,7 +180,7 @@ public class TestLongSparseArraySource {
             }
 
             int ii = 0;
-            for (final TrackingMutableRowSet.Iterator indexIt = nextOk.asIndex().iterator(); indexIt.hasNext(); ii++) {
+            for (final TrackingMutableRowSet.Iterator indexIt = nextOk.asRowSet().iterator(); indexIt.hasNext(); ii++) {
                 final long next = indexIt.nextLong();
                 checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int)next], dest.get(ii));
             }

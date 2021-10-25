@@ -153,7 +153,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public TrackingMutableRowSet asIndex() {
+    public RowSet asRowSet() {
         final RspBitmap newArr = new RspBitmap(arr, startIdx, startOffset, endIdx, endOffset);
         return new TrackingMutableRowSetImpl(newArr);
     }

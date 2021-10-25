@@ -242,7 +242,7 @@ public class UnionSourceManager {
 
                 for (int tableId = firstShiftingTable; tableId <= maxTableId; ++tableId) {
                     final long startOfShift = unionRedirection.startOfIndices[tableId];
-                    builder.appendRowSetWithOffset(tables.get(tableId).getIndex(), startOfShift);
+                    builder.appendRowSequenceWithOffset(tables.get(tableId).getIndex(), startOfShift);
                 }
 
                 rowSet.insert(builder.build());
@@ -282,20 +282,20 @@ public class UnionSourceManager {
 
                 final IndexShiftData shiftData = listener.getShifted();
 
-                updateAddedBuilder.appendRowSetWithOffset(listener.getAdded(), unionRedirection.startOfIndices[tableId]);
-                updateModifiedBuilder.appendRowSetWithOffset(listener.getModified(),
+                updateAddedBuilder.appendRowSequenceWithOffset(listener.getAdded(), unionRedirection.startOfIndices[tableId]);
+                updateModifiedBuilder.appendRowSequenceWithOffset(listener.getModified(),
                         unionRedirection.startOfIndices[tableId]);
 
                 if (shiftDelta == 0) {
                     try (final TrackingMutableRowSet newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
-                        updateRemovedBuilder.appendRowSet(newRemoved);
+                        updateRemovedBuilder.appendRowSequence(newRemoved);
                         rowSet.remove(newRemoved);
                     }
                 } else {
                     // If the shiftDelta is non-zero we have already updated the rowSet above (because we used the new
                     // rowSet),
                     // otherwise we need to apply the removals (adjusted by the table's starting key)
-                    updateRemovedBuilder.appendRowSetWithOffset(listener.getRemoved(),
+                    updateRemovedBuilder.appendRowSequenceWithOffset(listener.getRemoved(),
                             unionRedirection.prevStartOfIndices[tableId]);
                 }
 

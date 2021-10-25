@@ -138,7 +138,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             nonexistentEntry.refresh();
             final RowSet locationIndex = nonexistentEntry.location.getIndex();
             if (locationIndex != null) {
-                if (locationIndex.empty()) {
+                if (locationIndex.isEmpty()) {
                     locationIndex.close();
                 } else {
                     nonexistentEntry.initialIndex = locationIndex;
@@ -273,7 +273,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
         private void processInitial(final RowSetBuilderSequential addedIndexBuilder, final RowSet initialIndex) {
             Assert.neqNull(initialIndex, "initialIndex");
-            Assert.eqTrue(initialIndex.nonempty(), "initialIndex.nonempty()");
+            Assert.eqTrue(initialIndex.isNonempty(), "initialIndex.isNonempty()");
             Assert.eqNull(indexAtLastUpdate, "indexAtLastUpdate");
             if (initialIndex.lastRowKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
                 throw new TableDataException(String.format(

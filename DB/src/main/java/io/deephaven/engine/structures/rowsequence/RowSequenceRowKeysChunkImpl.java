@@ -129,7 +129,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
     }
 
     @Override
-    public final TrackingMutableRowSet asIndex() {
+    public final RowSet asRowSet() {
         final int size = backingChunk.size();
         if (size == 0) {
             return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();

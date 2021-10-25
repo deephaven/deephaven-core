@@ -240,12 +240,12 @@ public class AsOfJoinHelper {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final long slot = slots.getLong(slotIndex);
                 TrackingMutableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
-                if (leftRowSet == null || leftRowSet.empty()) {
+                if (leftRowSet == null || leftRowSet.isEmpty()) {
                     continue;
                 }
 
                 final TrackingMutableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
-                if (rightRowSet == null || rightRowSet.empty()) {
+                if (rightRowSet == null || rightRowSet.isEmpty()) {
                     continue;
                 }
 
@@ -300,7 +300,7 @@ public class AsOfJoinHelper {
                     redirectionIndex.applyShift(prevLeftRowSet, upstream.shifted);
                 }
 
-                if (restampKeys.nonempty()) {
+                if (restampKeys.isNonempty()) {
                     final RowSetBuilderRandom foundBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
                     updatedSlots.ensureCapacity(restampKeys.size());
                     final int slotCount =
@@ -696,7 +696,7 @@ public class AsOfJoinHelper {
                 if (upstream.shifted.nonempty()) {
                     try (final TrackingMutableRowSet fullPrevRowSet = rightTable.getIndex().getPrevRowSet();
                          final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
-                        if (previousToShift.nonempty()) {
+                        if (previousToShift.isNonempty()) {
                             try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
                                     final ResettableWritableChunk<Values> leftValuesChunk =
@@ -706,7 +706,7 @@ public class AsOfJoinHelper {
                                     sit.next();
                                     final TrackingMutableRowSet rowSetToShift =
                                             previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
-                                    if (rowSetToShift.empty()) {
+                                    if (rowSetToShift.isEmpty()) {
                                         rowSetToShift.close();
                                         continue;
                                     }
@@ -836,7 +836,7 @@ public class AsOfJoinHelper {
                     // and then finally we handle the case where the keys and stamps were not modified, but we must
                     // identify
                     // the responsive modifications.
-                    if (!keysModified && !stampModified && upstream.modified.nonempty()) {
+                    if (!keysModified && !stampModified && upstream.modified.isNonempty()) {
                         // next we do the additions
                         final int modifiedSlotCount = asOfJoinStateManager.gatherModifications(upstream.modified,
                                 rightSources, slots, sequentialBuilders);
@@ -1281,7 +1281,7 @@ public class AsOfJoinHelper {
 
                             // if the stamp was not modified, then we need to figure out the responsive rows to mark as
                             // modified
-                            if (!stampModified && upstream.modified.nonempty()) {
+                            if (!stampModified && upstream.modified.isNonempty()) {
                                 try (final RowSequence.Iterator modit = upstream.modified.getRowSequenceIterator();
                                         final WritableLongChunk<RowKeys> rightStampIndices =
                                                 WritableLongChunk.makeWritableChunk(rightChunkSize);
@@ -1307,7 +1307,7 @@ public class AsOfJoinHelper {
                             }
                         }
 
-                        if (stampModified || upstream.added.nonempty() || upstream.removed.nonempty()) {
+                        if (stampModified || upstream.added.isNonempty() || upstream.removed.isNonempty()) {
                             // If we kept track of whether or not something actually changed, then we could skip
                             // painting all
                             // the right columns as modified. It is not clear whether it is worth the additional
@@ -1354,7 +1354,7 @@ public class AsOfJoinHelper {
             while (sit.hasNext()) {
                 sit.next();
                 try (final TrackingMutableRowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
-                    if (rowSetToShift.empty()) {
+                    if (rowSetToShift.isEmpty()) {
                         continue;
                     }
 
@@ -1466,7 +1466,7 @@ public class AsOfJoinHelper {
 
                                     upstream.removed.forAllLongs(redirectionIndex::removeVoid);
 
-                                    final boolean stampModified = upstream.modified.nonempty()
+                                    final boolean stampModified = upstream.modified.isNonempty()
                                             && upstream.modifiedColumnSet.containsAny(leftStampColumn);
 
                                     final TrackingMutableRowSet restampKeys;

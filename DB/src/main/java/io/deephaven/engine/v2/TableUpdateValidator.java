@@ -211,10 +211,10 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
         final TrackingMutableRowSet missing = expected.minus(actual);
         final TrackingMutableRowSet excess = actual.minus(expected);
-        if (missing.nonempty()) {
+        if (missing.isNonempty()) {
             noteIssue(() -> what + " expected.minus(actual)=" + missing);
         }
-        if (excess.nonempty()) {
+        if (excess.isNonempty()) {
             noteIssue(() -> what + " actual.minus(expected)=" + excess);
         }
     }

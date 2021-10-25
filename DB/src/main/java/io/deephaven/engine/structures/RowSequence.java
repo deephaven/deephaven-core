@@ -54,13 +54,13 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
     RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive);
 
     /**
-     * Get an {@link TrackingMutableRowSet} representation of this {@code RowSequence}.
+     * Get an {@link RowSet} representation of this {@code RowSequence}.
      *
-     * @return An {@link TrackingMutableRowSet} representation for the same row keys in the same order
+     * @return An {@link RowSet} representation for the same row keys in the same order
      * @apiNote If you use the result across clock ticks, you may observe inconsistencies.
      * @apiNote You must not mutate the result.
      */
-    TrackingMutableRowSet asIndex();
+    RowSet asRowSet();
 
     /**
      * Get a {@link LongChunk} representation of the individual row keys in this {@code RowSequence}.
@@ -346,7 +346,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
         }
 
         @Override
-        public TrackingMutableRowSet asIndex() {
+        public RowSet asRowSet() {
             return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
 

@@ -132,7 +132,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
         // propagate an empty MCS if modified is empty
         downstream.modifiedColumnSet = upstream.modifiedColumnSet;
-        if (downstream.modified.empty()) {
+        if (downstream.modified.isEmpty()) {
             downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
             downstream.modifiedColumnSet.clear();
         }

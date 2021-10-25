@@ -251,7 +251,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
                         if (lookupI) {
                             // Potentially repeated work w.r.t. "ii".
                             __typedContext.iChunk.setSize(0);
-                            __rowSet.invert(__rowSequence.asIndex()).forAllLongs(longVal -> {
+                            __rowSet.invert(__rowSequence.asRowSet()).forAllLongs(longVal -> {
                                 final int i = LongSizedDataStructure.intSize("FormulaNubbin i usage", longVal);
                                 __typedContext.iChunk.add(i);
                             });
@@ -267,7 +267,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
                     }
                     case "ii": {
                         if (lookupI) {
-                            __rowSet.invert(__rowSequence.asIndex()).fillRowKeyChunk(__typedContext.iiChunk);
+                            __rowSet.invert(__rowSequence.asRowSet()).fillRowKeyChunk(__typedContext.iiChunk);
                         } else {
                             // sequential ii
                             for (int pos = 0; pos < RowSequenceSize; ++pos) {

@@ -217,7 +217,7 @@ public class SingleRangeTest {
             // completely removed
             check = (final TrackingMutableRowSet t) -> {
                 assertTrue(((ImplementedByTreeIndexImpl) t).getImpl() == TreeIndexImpl.EMPTY);
-                assertTrue(t.empty());
+                assertTrue(t.isEmpty());
             };
         } else {
             // results in single range
@@ -411,7 +411,7 @@ public class SingleRangeTest {
     }
 
     private static void checkBinarySearch(final TrackingMutableRowSetImpl ix) {
-        assertFalse(ix.empty());
+        assertFalse(ix.isEmpty());
         final long start = ix.firstRowKey();
         final long end = ix.lastRowKey();
         assertEquals(end - start + 1, ix.size());

@@ -133,7 +133,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public TrackingMutableRowSet asIndex() {
+    public RowSet asRowSet() {
         if (size == sar.getCardinality()) {
             return new TrackingMutableRowSetImpl(sar.deepCopy());
         }

@@ -231,7 +231,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
-            return ExternalizableIndexUtils.readExternalCompressedDelta(is);
+            return ExternalizableRowSetUtils.readExternalCompressedDelta(is);
         }
     }
 
@@ -246,9 +246,9 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
-            sRowSet = ExternalizableIndexUtils.readExternalCompressedDelta(is);
-            eRowSet = ExternalizableIndexUtils.readExternalCompressedDelta(is);
-            dRowSet = ExternalizableIndexUtils.readExternalCompressedDelta(is);
+            sRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
+            eRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
+            dRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
         }
 
         try (final TrackingMutableRowSet.Iterator sit = sRowSet.iterator();

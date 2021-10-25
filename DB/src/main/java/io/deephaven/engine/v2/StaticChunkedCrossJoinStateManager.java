@@ -270,7 +270,7 @@ class StaticChunkedCrossJoinStateManager
                 decorationProbe(pc, leftTable.getIndex(), leftKeys, (slot, index) -> {
                     final long regionStart = index << getNumShiftBits();
                     final TrackingMutableRowSet rightRowSet = getRightIndex(slot);
-                    if (rightRowSet.nonempty()) {
+                    if (rightRowSet.isNonempty()) {
                         leftIndexToSlot.put(index, slot);
                         resultIndex.addRange(regionStart, regionStart + rightRowSet.size() - 1);
                     }
@@ -326,7 +326,7 @@ class StaticChunkedCrossJoinStateManager
         leftTable.getIndex().forAllLongs(ii -> {
             final long regionStart = ii << getNumShiftBits();
             final TrackingMutableRowSet rightRowSet = getRightIndexFromLeftIndex(ii);
-            if (rightRowSet.nonempty()) {
+            if (rightRowSet.isNonempty()) {
                 resultIndex.appendRange(regionStart, regionStart + rightRowSet.size() - 1);
             }
         });

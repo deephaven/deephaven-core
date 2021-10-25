@@ -240,7 +240,7 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
     }
 
     private static void flushPrevious(DoubleChunkedCountDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

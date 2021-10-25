@@ -158,7 +158,7 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
             @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         final FillContext context = (FillContext) _context;
-        final RowSequence reversedIndex = indexReverser.transform(rowSequence.asIndex());
+        final RowSequence reversedIndex = indexReverser.transform(rowSequence.asRowSet());
         innerSource.fillChunk(context.innerContext, destination, reversedIndex);
         context.reverseKernel.reverse(destination);
     }
@@ -169,7 +169,7 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
             @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         final FillContext context = (FillContext) _context;
-        final RowSequence reversedIndex = indexReverser.transformPrev(rowSequence.asIndex());
+        final RowSequence reversedIndex = indexReverser.transformPrev(rowSequence.asRowSet());
         innerSource.fillPrevChunk(context.innerContext, destination, reversedIndex);
         context.reverseKernel.reverse(destination);
     }

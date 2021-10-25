@@ -17,7 +17,7 @@ public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.Sh
 
     @Override
     public void onUpdate(final Update upstream) {
-        if (upstream.removed.nonempty() || upstream.modified.nonempty() || upstream.shifted.nonempty()) {
+        if (upstream.removed.isNonempty() || upstream.modified.isNonempty() || upstream.shifted.nonempty()) {
             if (description == null) {
                 throw new AppendOnlyAssertionFailure();
             } else {

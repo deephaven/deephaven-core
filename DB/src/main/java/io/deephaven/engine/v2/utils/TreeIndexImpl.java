@@ -195,7 +195,7 @@ public interface TreeIndexImpl {
             return SingleRange.make(first, last);
         }
 
-        final TreeIndexImplSequentialBuilder builder = new TreeIndexImplSequentialBuilder(disposable);
+        final TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential(disposable);
         builder.appendKey(first);
         for (int ki = offset + 1; ki < lastOffsetInclusive; ++ki) {
             builder.appendKey(keys.get(ki));
@@ -460,7 +460,7 @@ public interface TreeIndexImpl {
         }
     };
 
-    interface SequentialBuilder extends LongRangeConsumer {
+    interface BuilderSequential extends LongRangeConsumer {
         boolean check =
                 Configuration.getInstance().getBooleanForClassWithDefault(
                         TreeIndexImpl.class, "sequentialBuilderCheck", true);
@@ -488,7 +488,7 @@ public interface TreeIndexImpl {
         }
     }
 
-    interface RandomBuilder extends SequentialBuilder {
+    interface BuilderRandom extends BuilderSequential {
         void addKey(long key);
 
         void addRange(long firstKey, long lastKey);

@@ -223,14 +223,14 @@ public class WindowCheck {
                 final ShiftAwareListener.Update downstream = upstream.copy();
 
                 try (final TrackingMutableRowSet modifiedByTime = recomputeModified()) {
-                    if (modifiedByTime.nonempty()) {
+                    if (modifiedByTime.isNonempty()) {
                         downstream.modified.insert(modifiedByTime);
                     }
                 }
 
                 // everything that was added, removed, or modified stays added removed or modified
                 downstream.modifiedColumnSet = reusableModifiedColumnSet;
-                if (downstream.modified.nonempty()) {
+                if (downstream.modified.isNonempty()) {
                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
                     downstream.modifiedColumnSet.setAll(mcsNewColumns);
                 } else {
@@ -239,7 +239,7 @@ public class WindowCheck {
                 result.notifyListeners(downstream);
             } else {
                 final TrackingMutableRowSet modifiedByTime = recomputeModified();
-                if (modifiedByTime.nonempty()) {
+                if (modifiedByTime.isNonempty()) {
                     final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
                     downstream.modified = modifiedByTime;
                     downstream.added = EMPTY_ROW_SET;

@@ -522,7 +522,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
-                        + (helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1);
+                        + (helper.sourceTable.getIndex().isNonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1);
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(lastKey + 1,
                         lastKey + Math.max(1, helper.size / maxSteps));
@@ -552,7 +552,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey =
-                        helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1;
+                        helper.sourceTable.getIndex().isNonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1;
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, stepSize - 1);
@@ -604,7 +604,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
-                        + (helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1);
+                        + (helper.sourceTable.getIndex().isNonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1);
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(lastKey + 1,
                         lastKey + Math.max(1, helper.size / maxSteps));
@@ -634,7 +634,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
                 final long lastKey =
-                        helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1;
+                        helper.sourceTable.getIndex().isNonempty() ? helper.sourceTable.getIndex().lastRowKey() : -1;
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, stepSize - 1);

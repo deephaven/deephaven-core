@@ -117,7 +117,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     @Override
     public final void refresh() {
         final TrackingMutableRowSet added = updateAndGetAddedIndex();
-        if (added != null && !added.empty()) {
+        if (added != null && !added.isEmpty()) {
             resultTable.getIndex().insert(added);
             resultTable.notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }

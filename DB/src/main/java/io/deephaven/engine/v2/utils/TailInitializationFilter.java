@@ -109,8 +109,8 @@ public class TailInitializationFilter {
                     new BaseTable.ListenerImpl("TailInitializationFilter", (DynamicTable) table, result) {
                         @Override
                         public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
-                            Assert.assertion(removed.empty(), "removed.empty()");
-                            Assert.assertion(modified.empty(), "modified.empty()");
+                            Assert.assertion(removed.isEmpty(), "removed.empty()");
+                            Assert.assertion(modified.isEmpty(), "modified.empty()");
                             resultRowSet.insert(added);
                             result.notifyListeners(added.clone(), removed, modified);
                         }

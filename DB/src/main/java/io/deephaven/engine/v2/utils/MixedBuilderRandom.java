@@ -4,17 +4,17 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 
-public class MixedBuilder implements TreeIndexImpl.RandomBuilder {
+public class MixedBuilderRandom implements TreeIndexImpl.BuilderRandom {
     protected RangePriorityQueueBuilder pqb;
     private TreeIndexImpl accumIndex;
 
     private static final int pqSizeThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
-            MixedBuilder.class, "pqSizeThreshold", 2 * 1024 * 1024);
+            MixedBuilderRandom.class, "pqSizeThreshold", 2 * 1024 * 1024);
 
     private static final int addAsIndexThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
-            MixedBuilder.class, "addAsIndexThreshold", 64 * 1024);
+            MixedBuilderRandom.class, "addAsIndexThreshold", 64 * 1024);
 
-    public MixedBuilder(final int pqInitialCapacity) {
+    public MixedBuilderRandom(final int pqInitialCapacity) {
         accumIndex = null;
         pqb = new RangePriorityQueueBuilder(pqInitialCapacity);
     }

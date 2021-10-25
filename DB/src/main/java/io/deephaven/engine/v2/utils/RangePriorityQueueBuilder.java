@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.configuration.Configuration;
 
 /**
- * A RandomBuilder type that uses a priority queue of ranges.
+ * A BuilderRandom type that uses a priority queue of ranges.
  *
  * Each range entered into the TrackingMutableRowSet is stored in a priority queue, backed by two long arrays. One array contains the
  * start elements, the second array contains the end elements. The priority function is the start element.
@@ -17,10 +17,10 @@ import io.deephaven.configuration.Configuration;
  */
 public class RangePriorityQueueBuilder {
     private static final int doublingAllocThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
-            MixedBuilder.class, "doublingAllocThreshold", 128 * 1024);
+            MixedBuilderRandom.class, "doublingAllocThreshold", 128 * 1024);
     // Things are nicer (integer division will be bit shift) if this is a power of 2, but it is not mandatory.
     private static final int linearAllocStep = Configuration.getInstance().getIntegerForClassWithDefault(
-            MixedBuilder.class, "linearAllocStep", 128 * 1024);
+            MixedBuilderRandom.class, "linearAllocStep", 128 * 1024);
 
     /** The range start keys, slot 0 is unused. */
     private long[] start;
@@ -226,7 +226,7 @@ public class RangePriorityQueueBuilder {
         }
     }
 
-    private void populateSequentialBuilder(final TreeIndexImpl.SequentialBuilder sequentialBuilder) {
+    private void populateSequentialBuilder(final TreeIndexImpl.BuilderSequential sequentialBuilder) {
         long lastEnd = -1;
         while (!isEmpty()) {
             long firstKey = topStart();
@@ -247,7 +247,7 @@ public class RangePriorityQueueBuilder {
     }
 
     private TreeIndexImpl getTreeIndexImplInternal() {
-        final TreeIndexImpl.SequentialBuilder sequentialBuilder = new TreeIndexImplSequentialBuilder();
+        final TreeIndexImpl.BuilderSequential sequentialBuilder = new TreeIndexImplBuilderSequential();
         populateSequentialBuilder(sequentialBuilder);
         return sequentialBuilder.getTreeIndexImpl();
     }

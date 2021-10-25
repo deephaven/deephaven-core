@@ -5,10 +5,7 @@ import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftDataExpander;
-import io.deephaven.engine.v2.utils.UpdateCoalescer;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,7 +93,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     public static void copyRowsToResult(TrackingMutableRowSet rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
                                         Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
         final TrackingMutableRowSet qtRowSet = triggerTable.getIndex();
-        if (!qtRowSet.empty()) {
+        if (!qtRowSet.isEmpty()) {
             SnapshotUtils.copyStampColumns(leftColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);
         }
         SnapshotUtils.copyDataColumns(rightTable.getColumnSourceMap(), rowsToCopy, resultColumns, rowsToCopy, false);

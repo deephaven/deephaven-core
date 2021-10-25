@@ -4,10 +4,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
@@ -640,7 +637,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         }
 
         final TrackingMutableRowSet remainingToCopy = sequentialBuilder.build();
-        if (!remainingToCopy.empty()) {
+        if (!remainingToCopy.isEmpty()) {
             state.addToSnapshot(usePrev, curTable, current.getKey(), curTableMap, remainingToCopy);
         }
     }

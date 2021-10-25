@@ -529,7 +529,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     private static void flushPrevious(CharRollupUniqueOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

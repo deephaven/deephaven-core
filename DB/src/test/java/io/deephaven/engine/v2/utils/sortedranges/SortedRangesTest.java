@@ -1641,7 +1641,7 @@ public class SortedRangesTest {
     private static void checkInvert(
             final String prefixMsg, final SortedRanges sar, final TrackingMutableRowSet.RangeIterator ixrit, final TrackingMutableRowSet.Iterator ixit,
             final long maxPosition) {
-        final TreeIndexImplSequentialBuilder b = new TreeIndexImplSequentialBuilder();
+        final TreeIndexImplBuilderSequential b = new TreeIndexImplBuilderSequential();
         final boolean r = sar.invertOnNew(ixrit, b, maxPosition);
         final String m = "maxPosition==" + maxPosition;
         assertTrue(m, r);
@@ -2548,7 +2548,7 @@ public class SortedRangesTest {
 
     private void checkOkAgainstIndex(final String m, final RowSequence rs, final TrackingMutableRowSet ix) {
         assertEquals(m, ix.size(), rs.size());
-        final TrackingMutableRowSet rsIx = rs.asIndex();
+        final TrackingMutableRowSet rsIx = rs.asRowSet();
         assertEquals(m, ix.size(), rsIx.size());
         assertTrue(m, rsIx.subsetOf(ix));
         try (final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator()) {

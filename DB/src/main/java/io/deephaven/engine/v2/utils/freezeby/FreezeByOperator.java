@@ -86,7 +86,7 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
     @Override
     public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream,
             @NotNull RowSet newDestinations) {
-        if (downstream.removed.nonempty()) {
+        if (downstream.removed.isNonempty()) {
             helper.clearIndex(downstream.removed);
         }
     }

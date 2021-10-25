@@ -572,7 +572,7 @@ public abstract class BaseTable extends LivenessArtifact
         if (isRefreshing()) {
             childListenerReferences.add(listener);
         }
-        if (replayInitialImage && getIndex().nonempty()) {
+        if (replayInitialImage && getIndex().isNonempty()) {
             listener.setInitialImage(getIndex());
             listener.onUpdate(getIndex(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
@@ -683,8 +683,8 @@ public abstract class BaseTable extends LivenessArtifact
             Assert.assertion(getIndex().isFlat(), "build().isFlat()", getIndex(), "build()");
         }
         if (isAddOnly()) {
-            Assert.assertion(update.removed.empty(), "update.removed.empty()");
-            Assert.assertion(update.modified.empty(), "update.modified.empty()");
+            Assert.assertion(update.removed.isEmpty(), "update.removed.empty()");
+            Assert.assertion(update.modified.isEmpty(), "update.modified.empty()");
             Assert.assertion(update.shifted.empty(), "update.shifted.empty()");
         }
 
@@ -694,7 +694,7 @@ public abstract class BaseTable extends LivenessArtifact
             update.removed.validate();
             update.modified.validate();
             update.shifted.validate();
-            Assert.eq(update.modified.empty(), "update.modified.empty()", update.modifiedColumnSet.empty(),
+            Assert.eq(update.modified.isEmpty(), "update.modified.empty()", update.modifiedColumnSet.empty(),
                     "update.modifiedColumnSet.empty()");
         }
 

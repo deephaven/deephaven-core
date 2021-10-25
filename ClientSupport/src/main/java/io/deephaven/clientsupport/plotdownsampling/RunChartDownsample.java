@@ -368,7 +368,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 rerange();
                 handleAdded(context, sourceTable.getIndex());
 
-                Assert.assertion(this.rowSet.empty(), "this.rowSet.empty()");
+                Assert.assertion(this.rowSet.isEmpty(), "this.rowSet.empty()");
 
                 // notify downstream tables that the rowSet was swapped
                 notifyResultTable(upstream, sourceTable.getIndex());
@@ -398,7 +398,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             } else if (indexMode == IndexMode.PASSTHROUGH) {
                 log.info().append("PASSTHROUGH update ").append(upstream).endl();
                 // send the event along directly
-                Assert.assertion(this.rowSet.empty(), "this.rowSet.empty()");
+                Assert.assertion(this.rowSet.isEmpty(), "this.rowSet.empty()");
                 resultTable.notifyListeners(upstream);
             } else {
                 log.info().append("DOWNSAMPLE update ").append(upstream).endl();
@@ -479,7 +479,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 }
             }
 
-            Assert.assertion(rowSet.empty(), "this.rowSet.empty()");
+            Assert.assertion(rowSet.isEmpty(), "this.rowSet.empty()");
             final TrackingMutableRowSet initialRowSet = indexFromStates();
             // log.info().append("initial downsample rowSet.size()=").append(initialRowSet.size()).append(",
             // rowSet=").append(initialRowSet).endl();
@@ -488,7 +488,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         private int nextPosition() {
-            if (availableSlots.empty()) {
+            if (availableSlots.isEmpty()) {
                 int nextPosition = nextSlot++;
                 for (ValueTracker tracker : values) {
                     tracker.ensureCapacity(nextSlot);
@@ -528,7 +528,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
 
         private void handleAdded(final DownsampleChunkContext context, final boolean usePrev, final TrackingMutableRowSet addedRowSet) {
             final TrackingMutableRowSet rowSet = usePrev ? addedRowSet.getPrevRowSet() : addedRowSet;
-            if (rowSet.empty()) {
+            if (rowSet.isEmpty()) {
                 return;
             }
 
@@ -563,7 +563,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         private void handleRemoved(final DownsampleChunkContext context, final TrackingMutableRowSet removed) {
-            if (removed.empty()) {
+            if (removed.isEmpty()) {
                 return;
             }
 
@@ -591,7 +591,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         private void handleModified(final DownsampleChunkContext context, final TrackingMutableRowSet modified,
                 final ModifiedColumnSet modifiedColumnSet) {
             // TODO use MCS here
-            if (modified.empty()/* || !modifiedColumnSet.containsAny(interestedColumns) */) {
+            if (modified.isEmpty()/* || !modifiedColumnSet.containsAny(interestedColumns) */) {
                 return;
             }
 
@@ -672,7 +672,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             // check each group to see if any needs a rescan
             for (final Iterator<BucketState> iterator = states.values().iterator(); iterator.hasNext();) {
                 final BucketState bucket = iterator.next();
-                if (bucket.getIndex().empty()) {
+                if (bucket.getIndex().isEmpty()) {
                     // if it has no keys at all, remove it so we quit checking it
                     iterator.remove();
                     releasePosition(bucket.getOffset());
@@ -703,7 +703,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 this.rowSet.update(added, removed);
             } else {
                 // switching modes, need to populate the rowSet
-                Assert.assertion(this.rowSet.empty(), "this.rowSet.empty()");
+                Assert.assertion(this.rowSet.isEmpty(), "this.rowSet.empty()");
                 this.rowSet.insert(resultRowSet);
             }
             // log.info().append("After downsample update, rowSet.size=").append(rowSet.size()).append(",
@@ -718,7 +718,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             // TODO this couldnt be uglier if i tried
             if (rangeMode == RangeMode.ZOOM) {
                 return Stream.concat(
-                        Stream.of(head, tail).filter(s -> !s.getIndex().empty()), // note: we only filter these two,
+                        Stream.of(head, tail).filter(s -> !s.getIndex().isEmpty()), // note: we only filter these two,
                                                                                   // since states shouldn't contain
                                                                                   // empty indexes anyway
                         states.values().stream())

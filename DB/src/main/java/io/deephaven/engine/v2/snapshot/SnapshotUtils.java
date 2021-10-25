@@ -89,7 +89,7 @@ public class SnapshotUtils {
                                        @NotNull TrackingMutableRowSet destRowSet,
                                        boolean usePrev) {
         assert srcRowSet.size() == destRowSet.size();
-        if (srcRowSet.empty()) {
+        if (srcRowSet.isEmpty()) {
             return;
         }
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : srcColumns.entrySet()) {

@@ -532,7 +532,7 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
     }
 
     private static void flushPrevious(IntRollupUniqueOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

@@ -228,7 +228,7 @@ public class BarrageStreamGenerator implements
             this.subscribedColumns = subscribedColumns;
             this.hasModBatch = generator.doesSubViewHaveMods(this);
             // require an add batch if the mod batch is being skipped
-            this.hasAddBatch = !this.hasModBatch || generator.rowsIncluded.original.nonempty();
+            this.hasAddBatch = !this.hasModBatch || generator.rowsIncluded.original.isNonempty();
         }
 
         @Override
@@ -464,7 +464,7 @@ public class BarrageStreamGenerator implements
                     return true;
                 }
             } else {
-                if (mcd.rowsModified.original.nonempty()) {
+                if (mcd.rowsModified.original.isNonempty()) {
                     return true;
                 }
             }
@@ -566,7 +566,7 @@ public class BarrageStreamGenerator implements
             // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, rowSet);
+                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, rowSet);
                 oos.flush();
                 raw = baos.peekBuffer();
                 len = baos.size();
@@ -600,7 +600,7 @@ public class BarrageStreamGenerator implements
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos);
                     final TrackingMutableRowSet viewOfOriginal = original.intersect(viewport)) {
-                ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, viewOfOriginal);
+                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, viewOfOriginal);
                 oos.flush();
                 nraw = baos.peekBuffer();
                 nlen = baos.size();
@@ -663,9 +663,9 @@ public class BarrageStreamGenerator implements
                  final TrackingMutableRowSet dest = destBuilder.build();
                  final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                  final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, sRange);
-                ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, eRange);
-                ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, dest);
+                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, sRange);
+                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, eRange);
+                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, dest);
                 oos.flush();
                 raw = baos.peekBuffer();
                 len = baos.size();

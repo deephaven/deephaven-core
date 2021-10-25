@@ -1,10 +1,12 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
+import io.deephaven.engine.v2.utils.singlerange.SingleRange;
+import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import org.apache.commons.lang3.mutable.MutableObject;
 
-public class TstIndexUtil {
+public class TstRowSetUtil {
+
     public static boolean stringToRanges(final String str, final LongRangeAbortableConsumer lrac) {
         final String[] ranges = str.split(",");
         for (String range : ranges) {
@@ -25,6 +27,18 @@ public class TstIndexUtil {
         return true;
     }
 
+    public static MutableRowSet makeEmptyRsp() {
+        return new MutableRowSetImpl(RspBitmap.makeEmpty());
+    }
+
+    public static MutableRowSet makeEmptySr() {
+        return new MutableRowSetImpl(SortedRanges.makeEmpty());
+    }
+
+    public static MutableRowSet makeSingleRange(final long start, final long end) {
+        return new MutableRowSetImpl(SingleRange.make(start, end));
+    }
+
     public static class BuilderToRangeConsumer implements LongRangeAbortableConsumer {
         private RowSetBuilderRandom builder;
 
@@ -43,46 +57,47 @@ public class TstIndexUtil {
         }
     }
 
-    public static TrackingMutableRowSet indexFromString(final String str, final RowSetBuilderRandom builder) {
+    public static MutableRowSet rowSetFromString(final String str, final RowSetBuilderRandom builder) {
         final BuilderToRangeConsumer adaptor = BuilderToRangeConsumer.adapt(builder);
         stringToRanges(str, adaptor);
         return builder.build();
     }
 
-    public static TrackingMutableRowSet indexFromString(String string) {
+    public static MutableRowSet rowSetFromString(String string) {
         final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-        return indexFromString(string, builder);
+        return rowSetFromString(string, builder);
     }
 
     public static final class RowSetToBuilderRandomAdaptor implements RowSetBuilderRandom {
-        private final TrackingMutableRowSet ix;
 
-        public RowSetToBuilderRandomAdaptor(final TrackingMutableRowSet ix) {
-            this.ix = ix;
+        private final MutableRowSet rs;
+
+        public RowSetToBuilderRandomAdaptor(final MutableRowSet rs) {
+            this.rs = rs;
         }
 
         @Override
         public MutableRowSet build() {
-            return ix;
+            return rs;
         }
 
         @Override
         public void addKey(final long rowKey) {
-            ix.insert(rowKey);
+            rs.insert(rowKey);
         }
 
         @Override
         public void addRange(final long firstRowKey, final long lastRowKey) {
-            ix.insertRange(firstRowKey, lastRowKey);
+            rs.insertRange(firstRowKey, lastRowKey);
         }
 
-        public static RowSetToBuilderRandomAdaptor adapt(final TrackingMutableRowSet ix) {
-            return new RowSetToBuilderRandomAdaptor(ix);
+        public static RowSetToBuilderRandomAdaptor adapt(final MutableRowSet rs) {
+            return new RowSetToBuilderRandomAdaptor(rs);
         }
     }
 
-    public static TrackingMutableRowSet indexFromString(String string, final TrackingMutableRowSet ix) {
-        return indexFromString(string, RowSetToBuilderRandomAdaptor.adapt(ix));
+    public static MutableRowSet rowSetFromString(String string, final TrackingMutableRowSet ix) {
+        return rowSetFromString(string, RowSetToBuilderRandomAdaptor.adapt(ix));
     }
 
     public static SortedRanges sortedRangesFromString(final String str) {

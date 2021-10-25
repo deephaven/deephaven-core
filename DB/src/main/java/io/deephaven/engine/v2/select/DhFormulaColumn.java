@@ -542,7 +542,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         CodeGenerator.optional("maybeCreateIOrII",
                                 "try (final TrackingMutableRowSet prev = __usePrev ? __rowSet.getPrevRowSet() : null;",
                                 CodeGenerator.indent(
-                                        "final TrackingMutableRowSet inverted = ((prev != null) ? prev : __rowSet).invert(__RowSequence.asIndex()))"),
+                                        "final TrackingMutableRowSet inverted = ((prev != null) ? prev : __rowSet).invert(__RowSequence.asRowSet()))"),
                                 CodeGenerator.block(
                                         CodeGenerator.optional("maybeCreateI",
                                                 "__context.__iChunk.setSize(0);",

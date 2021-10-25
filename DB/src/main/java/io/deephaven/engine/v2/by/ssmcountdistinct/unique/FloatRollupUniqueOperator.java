@@ -531,7 +531,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
     }
 
     private static void flushPrevious(FloatRollupUniqueOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

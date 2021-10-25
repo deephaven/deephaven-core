@@ -132,7 +132,7 @@ public class AggregationHelper {
                                     @Override
                                     public void onUpdate(@NotNull final Update upstream) {
                                         final boolean wasEmpty = inputTable.getIndex().firstRowKeyPrev() == TrackingMutableRowSet.NULL_ROW_KEY;
-                                        final boolean isEmpty = inputTable.getIndex().empty();
+                                        final boolean isEmpty = inputTable.getIndex().isEmpty();
                                         final TrackingMutableRowSet added;
                                         final TrackingMutableRowSet removed;
                                         final TrackingMutableRowSet modified;
@@ -154,12 +154,12 @@ public class AggregationHelper {
                                             removed = RowSetFactoryImpl.INSTANCE.getFlatRowSet(1);
                                             modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                                        } else if (upstream.added.nonempty() || upstream.removed.nonempty()) {
+                                        } else if (upstream.added.isNonempty() || upstream.removed.isNonempty()) {
                                             added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             modified = RowSetFactoryImpl.INSTANCE.getFlatRowSet(1);
                                             modifiedColumnSet = ModifiedColumnSet.ALL;
-                                        } else if (upstream.modified.nonempty()) {
+                                        } else if (upstream.modified.isNonempty()) {
                                             added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             modified = RowSetFactoryImpl.INSTANCE.getFlatRowSet(1);

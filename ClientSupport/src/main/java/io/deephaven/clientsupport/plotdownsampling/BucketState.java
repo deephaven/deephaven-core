@@ -191,7 +191,7 @@ public class BucketState {
             return cachedRowSet;
         }
         final RowSetBuilderRandom build = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-        Assert.eqFalse(rowSet.empty(), "rowSet.empty()");
+        Assert.eqFalse(rowSet.isEmpty(), "rowSet.empty()");
         build.addKey(rowSet.firstRowKey());
         build.addKey(rowSet.lastRowKey());
         if (trackNulls) {
@@ -207,12 +207,12 @@ public class BucketState {
             }
 
             for (TrackingMutableRowSet nullsForCol : nulls) {
-                if (nullsForCol.empty()) {
+                if (nullsForCol.isEmpty()) {
                     continue;
                 }
                 RowSequence.Iterator keysIterator = rowSet.getRowSequenceIterator();
                 MutableLong position = new MutableLong(0);
-                IndexUtilities.forAllInvertedLongRanges(rowSet, nullsForCol, (first, last) -> {
+                RowSetUtilities.forAllInvertedLongRanges(rowSet, nullsForCol, (first, last) -> {
                     if (first > 0) {
                         // Advance to (first - 1)
                         keysIterator.getNextRowSequenceWithLength(first - 1 - position.longValue());

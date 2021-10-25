@@ -8,9 +8,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -26,7 +24,6 @@ import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.util.*;
@@ -90,7 +87,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
                 @Override
                 public void onUpdate(final Update upstream) {
-                    if (upstream.added.empty() && upstream.removed.empty()
+                    if (upstream.added.isEmpty() && upstream.removed.isEmpty()
                             && !upstream.modifiedColumnSet.containsAny(modTokenSet)) {
                         return;
                     }
@@ -113,14 +110,14 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
                     // Pretend every row of the original table was modified, this is essential so that the where clause
                     // can be re-evaluated based on the updated live set.
                     if (listener != null) {
-                        if (upstream.added.nonempty() || trueModification.booleanValue()) {
+                        if (upstream.added.isNonempty() || trueModification.booleanValue()) {
                             if (inclusion) {
                                 listener.requestRecomputeUnmatched();
                             } else {
                                 listener.requestRecomputeMatched();
                             }
                         }
-                        if (upstream.removed.nonempty() || trueModification.booleanValue()) {
+                        if (upstream.removed.isNonempty() || trueModification.booleanValue()) {
                             if (inclusion) {
                                 listener.requestRecomputeMatched();
                             } else {
@@ -263,7 +260,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     }
 
     private TrackingMutableRowSet filterLinearOne(TrackingMutableRowSet selection, ColumnSource keyColumn) {
-        if (selection.empty()) {
+        if (selection.isEmpty()) {
             return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
 

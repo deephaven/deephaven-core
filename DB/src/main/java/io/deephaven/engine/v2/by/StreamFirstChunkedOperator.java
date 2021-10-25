@@ -130,11 +130,11 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
             @NotNull final RowSet newDestinations) {
         // NB: We cannot assert no modifies; other operators in the same aggregation might modify columns not in our
         // result set.
-        Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
+        Assert.assertion(downstream.removed.isEmpty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
         copyStreamToResult(downstream.added);
         redirections = null;
-        if (downstream.added.nonempty()) {
+        if (downstream.added.isNonempty()) {
             Assert.eq(downstream.added.lastRowKey() + 1, "downstream.added.lastRowKey() + 1", nextDestination,
                     "nextDestination");
             firstDestinationThisStep = nextDestination;

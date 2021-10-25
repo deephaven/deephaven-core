@@ -110,10 +110,10 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         final boolean leftTicked = leftRecorder.recordedVariablesAreValid();
         final boolean rightTicked = rightRecorder.recordedVariablesAreValid();
 
-        final boolean leftStampModified = leftTicked && leftRecorder.getModified().nonempty()
+        final boolean leftStampModified = leftTicked && leftRecorder.getModified().isNonempty()
                 && leftRecorder.getModifiedColumnSet().containsAny(leftStampColumn);
         final boolean leftAdditionsOrRemovals = leftStampModified
-                || (leftTicked && (leftRecorder.getAdded().nonempty() || leftRecorder.getRemoved().nonempty()));
+                || (leftTicked && (leftRecorder.getAdded().isNonempty() || leftRecorder.getRemoved().isNonempty()));
 
         try (final ColumnSource.FillContext leftFillContext =
                 leftAdditionsOrRemovals ? leftStampSource.makeFillContext(leftChunkSize) : null;
@@ -137,7 +137,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     leftRestampRemovals = leftRemoved;
                 }
 
-                if (leftRestampRemovals.nonempty()) {
+                if (leftRestampRemovals.isNonempty()) {
                     leftRestampRemovals.forAllLongs(redirectionIndex::removeVoid);
 
                     try (final RowSequence.Iterator leftRsIt = leftRestampRemovals.getRowSequenceIterator()) {
@@ -231,7 +231,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                 sit.next();
                                 final TrackingMutableRowSet rowSetToShift =
                                         previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
-                                if (rowSetToShift.empty()) {
+                                if (rowSetToShift.isEmpty()) {
                                     rowSetToShift.close();
                                     continue;
                                 }
@@ -324,7 +324,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     }
 
                     // if the stamp was not modified, then we need to figure out the responsive rows to mark as modified
-                    if (!rightStampModified && rightModified.nonempty()) {
+                    if (!rightStampModified && rightModified.isNonempty()) {
                         try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
                             while (modit.hasMore()) {
                                 final RowSequence chunkOk = modit.getNextRowSequenceWithLength(rightChunkSize);
@@ -342,8 +342,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                         rightRestampRemovals.close();
                     }
 
-                    if (rightStampModified || rightRecorder.getAdded().nonempty()
-                            || rightRecorder.getRemoved().nonempty()) {
+                    if (rightStampModified || rightRecorder.getAdded().isNonempty()
+                            || rightRecorder.getRemoved().isNonempty()) {
                         downstream.modifiedColumnSet.setAll(allRightColumns);
                     } else {
                         rightTransformer.transform(rightRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet);

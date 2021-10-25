@@ -177,7 +177,7 @@ class CrossJoinModifiedSlotTracker {
                     rightShifted.apply(rightRowSet);
                 }
 
-                if (added.nonempty()) {
+                if (added.isNonempty()) {
                     rightRowSet.insert(added);
                     jsm.onRightGroupInsertion(rightRowSet, added, slotLocation);
                 }
@@ -269,7 +269,7 @@ class CrossJoinModifiedSlotTracker {
             rightRemoved = removedBuilder.build();
             rightModified = modifiedBuilder.build();
             innerShifted = shiftBuilder.build();
-            hasRightModifies |= rightModified.nonempty();
+            hasRightModifies |= rightModified.isNonempty();
 
             keyChunk.setSize(0);
             flagChunk.setSize(0);
@@ -581,6 +581,6 @@ class CrossJoinModifiedSlotTracker {
             leftRemoved.insert(toRemove);
         }
         leftModified = modBuilder.build();
-        hasLeftModifies = leftModified.nonempty();
+        hasLeftModifies = leftModified.isNonempty();
     }
 }

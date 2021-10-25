@@ -251,7 +251,7 @@ public class DoubleChunkedUniqueOperator implements IterativeChunkedAggregationO
     }
 
     private static void flushPrevious(DoubleChunkedUniqueOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

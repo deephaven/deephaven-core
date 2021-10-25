@@ -108,7 +108,7 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
                                  final RowSequence __rowSequence, LongChunk<? extends Attributes.Values> __chunk__col__II, IntChunk<? extends Attributes.Values> __chunk__col__I) {
         final WritableLongChunk<? super Attributes.Values> __typedDestination = __destination.asWritableLongChunk();
         try (final TrackingMutableRowSet prev = __usePrev ? __rowSet.getPrevRowSet() : null;
-             final TrackingMutableRowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asIndex())) {
+             final TrackingMutableRowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
             __context.__iChunk.setSize(0);
             inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
             inverted.fillRowKeyChunk(__context.__iiChunk);

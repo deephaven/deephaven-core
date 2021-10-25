@@ -699,7 +699,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         private static int searchPos(
                 final MutableLong outData,
                 final SortedRanges sar,
-                final IndexUtilities.Comparator comp, final int startPos) { // startPos points to the beginning of a
+                final RowSetUtilities.Comparator comp, final int startPos) { // startPos points to the beginning of a
                                                                             // range.
             final long endPosUnpackedData = sar.unpackedGet(sar.count - 1);
             final long endPosUnpackedValue = Math.abs(endPosUnpackedData);
@@ -765,7 +765,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     return -1;
                 }
-                currRangeStart = IndexUtilities.rangeSearch(currRangeStart, currRangeEnd,
+                currRangeStart = RowSetUtilities.rangeSearch(currRangeStart, currRangeEnd,
                         (final long v) -> comp.compareTargetTo(v, dir));
                 return currRangeStart;
             }
@@ -774,7 +774,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 close();
                 return currRangeEnd;
             }
-            final IndexUtilities.Comparator ixComp = (final long v) -> comp.compareTargetTo(v, dir);
+            final RowSetUtilities.Comparator ixComp = (final long v) -> comp.compareTargetTo(v, dir);
             final MutableLong outValue = new MutableLong();
             final int i = searchPos(outValue, sar, ixComp, nextRangeIdx);
             if (i < nextRangeIdx) {
@@ -798,7 +798,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final boolean nextNeg = nextData < 0;
             if (nextNeg) {
                 final long searchEndValue = -nextData - 1;
-                currRangeStart = IndexUtilities.rangeSearch(data, searchEndValue,
+                currRangeStart = RowSetUtilities.rangeSearch(data, searchEndValue,
                         (final long v) -> comp.compareTargetTo(v, dir));
                 currRangeEnd = -nextData;
                 nextRangeIdx = next + 1;
@@ -1355,7 +1355,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     private static TreeIndexImpl makeRspBitmapFromLongRangesArray(final long[] ranges, final int count) {
-        final RspBitmapSequentialBuilder builder = new RspBitmapSequentialBuilder();
+        final RspBitmapBuilderSequential builder = new RspBitmapBuilderSequential();
         forEachLongRangeFromLongRangesArray(ranges, count, (final long start, final long end) -> {
             builder.appendRange(start, end);
             return true;
@@ -2275,7 +2275,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // !isEmpty() && rit.hasNext() true on entry.
     public final boolean invertOnNew(
             final TrackingMutableRowSet.RangeIterator rit,
-            final TreeIndexImplSequentialBuilder builder,
+            final TreeIndexImplBuilderSequential builder,
             final long maxPosition) {
         rit.next();
         long start = rit.currentRangeStart();
@@ -4990,7 +4990,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
         } else {
             final TrackingMutableRowSet.RangeIterator rit = keys.ixRangeIterator();
-            final TreeIndexImplSequentialBuilder builder = new TreeIndexImplSequentialBuilder();
+            final TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential();
             if (invertOnNew(rit, builder, maxPosition)) {
                 return builder.getTreeIndexImpl();
             }

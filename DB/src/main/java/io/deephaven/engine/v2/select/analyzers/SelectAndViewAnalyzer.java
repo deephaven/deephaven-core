@@ -56,7 +56,7 @@ public abstract class SelectAndViewAnalyzer {
                 }
             }
 
-            final long targetSize = rowSet.empty() ? 0 : rowSet.lastRowKey() + 1;
+            final long targetSize = rowSet.isEmpty() ? 0 : rowSet.lastRowKey() + 1;
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
@@ -177,7 +177,7 @@ public abstract class SelectAndViewAnalyzer {
         }
 
         RowSet getPreShifted(boolean withModifies) {
-            if (!withModifies && upstream.modified.empty()) {
+            if (!withModifies && upstream.modified.isEmpty()) {
                 return getPreShifted(true);
             }
             ensure(withModifies);
@@ -185,7 +185,7 @@ public abstract class SelectAndViewAnalyzer {
         }
 
         RowSet getPostShifted(boolean withModifies) {
-            if (!withModifies && upstream.modified.empty()) {
+            if (!withModifies && upstream.modified.isEmpty()) {
                 return getPostShifted(true);
             }
             ensure(withModifies);

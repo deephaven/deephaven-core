@@ -4,7 +4,6 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -24,15 +23,41 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     void close();
 
-    @VisibleForTesting
-    int refCount();
+    MutableRowSet clone();
 
     /**
-     * Get the last row key in this RowSet.
+     * How many keys are in this RowSet.
      *
-     * @return The last row key, or {@link #NULL_ROW_KEY} if there is none.
+     * @return the number of keys in this RowSet.
      */
-    long lastRowKey();
+    @Override
+    long size();
+
+    /**
+     * Queries whether this RowSet is empty (i.e. has no keys).
+     *
+     * @return true if the size() of this RowSet is zero, false if the size is greater than zero
+     */
+    boolean isEmpty();
+
+    /**
+     * Queries whether this RowSet is non-empty (i.e. has at least one key).
+     *
+     * @return true if the size() of this RowSet greater than zero, false if the size is zero
+     */
+    default boolean isNonempty() {
+        return !isEmpty();
+    }
+
+    /**
+     * Returns whether or not this RowSet is flat. Unlike a table, this is a mutable property; which may change from step
+     * to step.
+     *
+     * @return true if the RowSet keys are contiguous and start at zero.
+     */
+    default boolean isFlat() {
+        return isEmpty() || (lastRowKey() == size() - 1);
+    }
 
     /**
      * Get the first row key in this RowSet.
@@ -41,7 +66,12 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      */
     long firstRowKey();
 
-    MutableRowSet clone();
+    /**
+     * Get the last row key in this RowSet.
+     *
+     * @return The last row key, or {@link #NULL_ROW_KEY} if there is none.
+     */
+    long lastRowKey();
 
     /**
      * <p>Returns a {@link MutableRowSet} with the row positions of <i>row keys</i> in this RowSet.
@@ -88,7 +118,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * Returns true if a RowSet has any overlap.
      */
     default boolean overlaps(@NotNull RowSet rowSet) {
-        return intersect(rowSet).nonempty();
+        return intersect(rowSet).isNonempty();
     }
 
     /**
@@ -457,49 +487,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     SearchIterator reverseIterator();
 
     RangeIterator rangeIterator();
-
-    /**
-     * How many keys are in this RowSet.
-     * 
-     * @return the number of keys in this RowSet.
-     */
-    @Override
-    long size();
-
-    /**
-     * Returns whether or not this RowSet is flat. Unlike a table, this is a mutable property; which may change from step
-     * to step.
-     * 
-     * @return true if the RowSet keys are contiguous and start at zero.
-     */
-    default boolean isFlat() {
-        return empty() || (lastRowKey() == size() - 1);
-    }
-
-    /**
-     * Queries whether this RowSet is empty (i.e. has no keys).
-     * 
-     * @return true if the size() of this RowSet is zero, false if the size is greater than zero
-     */
-    boolean empty();
-
-    /**
-     * Queries whether this RowSet is empty (i.e. has no keys).
-     * 
-     * @return true if the size() of this RowSet is zero, false if the size is greater than zero
-     */
-    default boolean isEmpty() {
-        return empty();
-    }
-
-    /**
-     * Queries whether this RowSet is non-empty (i.e. has at least one key).
-     * 
-     * @return true if the size() of this RowSet greater than zero, false if the size is zero
-     */
-    default boolean nonempty() {
-        return !empty();
-    }
 
     /**
      * Queries whether this RowSet contains every element in the range provided.

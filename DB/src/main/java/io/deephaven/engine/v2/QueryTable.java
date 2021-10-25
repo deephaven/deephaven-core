@@ -969,7 +969,7 @@ public class QueryTable extends BaseTable {
             }
             update.removed.insert(postShiftRemovals);
 
-            if (upstreamModified == null || upstreamModified.empty()) {
+            if (upstreamModified == null || upstreamModified.isEmpty()) {
                 update.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else {
                 update.modified = upstreamModified.intersect(newMapping);
@@ -1543,9 +1543,9 @@ public class QueryTable extends BaseTable {
                                     final Update downstream = upstream.copy();
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
                                             resultTable.modifiedColumnSet);
-                                    if (upstream.modified.empty() || resultTable.modifiedColumnSet.empty()) {
+                                    if (upstream.modified.isEmpty() || resultTable.modifiedColumnSet.empty()) {
                                         downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                                        if (downstream.modified.nonempty()) {
+                                        if (downstream.modified.isNonempty()) {
                                             downstream.modified.close();
                                             downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                         }
@@ -1618,7 +1618,7 @@ public class QueryTable extends BaseTable {
                             public void onUpdate(final Update upstream) {
                                 final Update downstream = upstream.copy();
                                 downstream.modifiedColumnSet = queryTable.modifiedColumnSet;
-                                if (upstream.modified.nonempty()) {
+                                if (upstream.modified.isNonempty()) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
                                             downstream.modifiedColumnSet);
                                 } else {
@@ -1874,7 +1874,7 @@ public class QueryTable extends BaseTable {
             @NotNull Map<String, ? extends ColumnSource<?>> rightColumns, @NotNull TrackingMutableRowSet rightRowSet,
             @NotNull Map<String, ? extends WritableSource<?>> dest, long destOffset) {
         assert leftColumns.size() + rightColumns.size() == dest.size();
-        if (leftRowSet.empty() || rightRowSet.empty()) {
+        if (leftRowSet.isEmpty() || rightRowSet.isEmpty()) {
             // Nothing to do.
             return destOffset;
         }
@@ -3169,7 +3169,7 @@ public class QueryTable extends BaseTable {
             update.removed.insert(modsToRemove);
 
             update.modifiedColumnSet = sourceModColumns;
-            if (update.modified.empty()) {
+            if (update.modified.isEmpty()) {
                 result.modifiedColumnSet.clear();
                 update.modifiedColumnSet = result.modifiedColumnSet;
             }

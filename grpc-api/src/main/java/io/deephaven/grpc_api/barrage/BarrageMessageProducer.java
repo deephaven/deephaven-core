@@ -668,7 +668,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
         // to shift. Let's compute which rows are being scoped into view. If current rowSet is empty, we have nothing to
         // store. If prev rowSet is empty, all rows are new and are already in addsToRecord.
-        if (activeViewport != null && (upstream.added.nonempty() || upstream.removed.nonempty()) && rowSet.nonempty()
+        if (activeViewport != null && (upstream.added.isNonempty() || upstream.removed.isNonempty()) && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
@@ -726,7 +726,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
         // Now append any data that we need to save for later.
         final BitSet modifiedColumns;
-        if (upstream.modified.empty()) {
+        if (upstream.modified.isEmpty()) {
             modifiedColumns = new BitSet();
         } else if (upstream.modifiedColumnSet == ModifiedColumnSet.ALL) {
             modifiedColumns = (BitSet) activeColumns.clone();
@@ -736,7 +736,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
 
         final long deltaColumnOffset = nextFreeDeltaKey;
-        if (addsToRecord.nonempty() || modsToRecord.nonempty()) {
+        if (addsToRecord.isNonempty() || modsToRecord.isNonempty()) {
             final FillDeltaContext[] fillDeltaContexts = new FillDeltaContext[activeColumns.cardinality()];
             try (final SharedContext sharedContext = SharedContext.makeSharedContext();
                     final SafeCloseableArray<?> ignored = new SafeCloseableArray<>(fillDeltaContexts)) {
@@ -747,7 +747,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 for (int columnIndex = activeColumns.nextSetBit(0), aci = 0; columnIndex >= 0; columnIndex =
                         activeColumns.nextSetBit(columnIndex + 1)) {
-                    if (addsToRecord.empty() && !modifiedColumns.get(columnIndex)) {
+                    if (addsToRecord.isEmpty() && !modifiedColumns.get(columnIndex)) {
                         continue;
                     }
                     deltaColumns[columnIndex].ensureCapacity(totalSize);
@@ -786,10 +786,10 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     }
                 };
 
-                if (addsToRecord.nonempty()) {
+                if (addsToRecord.isNonempty()) {
                     recordRows.accept(addsToRecord, activeColumns);
                 }
-                if (modsToRecord.nonempty()) {
+                if (modsToRecord.isNonempty()) {
                     recordRows.accept(modsToRecord, modifiedColumns);
                 }
             }
@@ -1205,7 +1205,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         if (singleDelta) {
             // We can use this update directly with minimal effort.
             final TrackingMutableRowSet localAdded;
-            if (firstDelta.recordedAdds.empty()) {
+            if (firstDelta.recordedAdds.isEmpty()) {
                 localAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else {
                 localAdded = RowSetFactoryImpl.INSTANCE.getRowSetByRange(
@@ -1213,7 +1213,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         firstDelta.deltaColumnOffset + firstDelta.recordedAdds.size() - 1);
             }
             final TrackingMutableRowSet localModified;
-            if (firstDelta.recordedMods.empty()) {
+            if (firstDelta.recordedMods.isEmpty()) {
                 localModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else {
                 localModified = RowSetFactoryImpl.INSTANCE.getRowSetByRange(
@@ -1222,7 +1222,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                                 - 1);
             }
 
-            addColumnSet = firstDelta.recordedAdds.empty() ? new BitSet() : firstDelta.subscribedColumns;
+            addColumnSet = firstDelta.recordedAdds.isEmpty() ? new BitSet() : firstDelta.subscribedColumns;
             modColumnSet = firstDelta.modifiedColumns;
 
             downstream.rowsAdded = firstDelta.update.added.clone();
@@ -1295,11 +1295,11 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 delta.update.shifted.apply(localAdded);
 
                 // reset the add column set if we do not have any adds from previous updates
-                if (localAdded.empty()) {
+                if (localAdded.isEmpty()) {
                     addColumnSet.clear();
                 }
 
-                if (delta.recordedAdds.nonempty()) {
+                if (delta.recordedAdds.isNonempty()) {
                     if (addColumnSet.isEmpty()) {
                         addColumnSet.or(delta.subscribedColumns);
                     } else {
@@ -1310,7 +1310,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     localAdded.insert(delta.recordedAdds);
                 }
 
-                if (delta.recordedMods.nonempty()) {
+                if (delta.recordedMods.isNonempty()) {
                     modColumnSet.or(delta.modifiedColumns);
                 }
             }
@@ -1363,15 +1363,15 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 Arrays.fill(retval.addedMapping, TrackingMutableRowSet.NULL_ROW_KEY);
                 Arrays.fill(retval.modifiedMapping, TrackingMutableRowSet.NULL_ROW_KEY);
 
-                final TrackingMutableRowSet unfilledAdds = localAdded.empty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                final TrackingMutableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                         : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, retval.addedMapping.length - 1);
-                final TrackingMutableRowSet unfilledMods = retval.recordedMods.empty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                final TrackingMutableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                         : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, retval.modifiedMapping.length - 1);
 
                 final TrackingMutableRowSet addedRemaining = localAdded.clone();
                 final TrackingMutableRowSet modifiedRemaining = retval.recordedMods.clone();
                 for (int i = endDelta - 1; i >= startDelta; --i) {
-                    if (addedRemaining.empty() && modifiedRemaining.empty()) {
+                    if (addedRemaining.isEmpty() && modifiedRemaining.isEmpty()) {
                         break;
                     }
 

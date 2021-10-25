@@ -98,7 +98,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
             }
         }
 
-        if (upstream.added.nonempty()) {
+        if (upstream.added.isNonempty()) {
             // added is non-empty, so can always remove at least one value from the rowSet (which must be >= 0);
             // if there is no freeValue, this is safe because we'll just remove something from an empty rowSet
             // if there is a freeValue, we'll remove up to that

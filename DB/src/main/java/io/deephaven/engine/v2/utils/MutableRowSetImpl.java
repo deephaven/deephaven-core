@@ -1,29 +1,30 @@
 package io.deephaven.engine.v2.utils;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.tuples.TupleSource;
-import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.engine.v2.utils.rsp.RspBitmap;
+import io.deephaven.engine.v2.utils.singlerange.SingleRange;
+import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Map;
 import java.util.PrimitiveIterator;
-import java.util.Set;
 import java.util.function.LongConsumer;
 
-public class MutableRowSetImpl extends RowSequenceAsChunkImpl
-        implements ImplementedByTreeIndexImpl, MutableRowSet, Externalizable {
+public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements MutableRowSet, Externalizable {
 
     private static final long serialVersionUID = 1L;
 
@@ -38,9 +39,14 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl
         this.impl = impl;
     }
 
-    @Override
-    final public TreeIndexImpl getImpl() {
+    protected final TreeIndexImpl getImpl() {
         return impl;
+    }
+
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    @Override
+    public final MutableRowSetImpl clone() {
+        return new MutableRowSetImpl(impl.ixCowRef());
     }
 
     @Override
@@ -50,6 +56,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl
         return new TrackingMutableRowSetImpl(impl);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     public void close() {
         impl.ixRelease();
@@ -57,270 +64,14 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl
         closeRowSequenceAsChunkImpl();
     }
 
-    @Override
-    public int refCount() {
+    @VisibleForTesting
+    final int refCount() {
         return impl.ixRefCount();
     }
 
-    @Override
-    public void insert(final long key) {
-        assign(impl.ixInsert(key));
-    }
+    protected void preMutationHook() {}
 
-    @Override
-    public void insertRange(final long startKey, final long endKey) {
-        assign(impl.ixInsertRange(startKey, endKey));
-    }
-
-    @Override
-    public void insert(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
-        Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
-        assign(impl.ixInsert(keys, offset, length));
-    }
-
-    @Override
-    public void insert(final RowSet added) {
-        assign(impl.ixInsert(getImpl(added)));
-    }
-
-    @Override
-    public void remove(final long key) {
-        assign(impl.ixRemove(key));
-    }
-
-    @Override
-    public void removeRange(final long start, final long end) {
-        assign(impl.ixRemoveRange(start, end));
-    }
-
-    @Override
-    public void remove(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
-        Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
-        assign(impl.ixRemove(keys, offset, length));
-    }
-
-    @Override
-    public void remove(final RowSet removed) {
-        assign(impl.ixRemove(getImpl(removed)));
-    }
-
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
-    @Override
-    public MutableRowSetImpl clone() {
-        return new MutableRowSetImpl(impl.ixCowRef());
-    }
-
-    @Override
-    public void retain(final RowSet rowSetToIntersect) {
-        assign(impl.ixRetain(getImpl(rowSetToIntersect)));
-    }
-
-    @Override
-    public void retainRange(final long startRowKey, final long endRowKey) {
-        assign(impl.ixRetainRange(startRowKey, endRowKey));
-    }
-
-    @Override
-    public void update(final RowSet added, final RowSet removed) {
-        assign(impl.ixUpdate(getImpl(added), getImpl(removed)));
-    }
-
-    @Override
-    public long lastRowKey() {
-        return impl.ixLastKey();
-    }
-
-    @Override
-    public long rangesCountUpperBound() {
-        return impl.ixRangesCountUpperBound();
-    }
-
-    @Override
-    public RowSequence.Iterator getRowSequenceIterator() {
-        return impl.ixGetRowSequenceIterator();
-    }
-
-    @Override
-    public RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
-        return impl.ixGetRowSequenceByPosition(startPositionInclusive, length);
-    }
-
-    @Override
-    public RowSequence getRowSequenceByKeyRange(final long startRowKeyInclusive, final long endRowKeyInclusive) {
-        return impl.ixGetRowSequenceByKeyRange(startRowKeyInclusive, endRowKeyInclusive);
-    }
-
-    @Override
-    public TrackingMutableRowSet asIndex() {
-        return new TrackingMutableRowSetImpl(impl);
-    }
-
-
-    @Override
-    public long firstRowKey() {
-        return impl.ixFirstKey();
-    }
-
-    @Override
-    public MutableRowSet invert(final RowSet keys) {
-        return invert(keys, Long.MAX_VALUE);
-
-    }
-
-    @Override
-    public MutableRowSet invert(final RowSet keys, final long maximumPosition) {
-        return new MutableRowSetImpl(impl.ixInvertOnNew(getImpl(keys), maximumPosition));
-    }
-
-    @Override
-    public TLongArrayList[] findMissing(final RowSet keys) {
-        return IndexUtilities.findMissing(this, keys);
-    }
-
-    @NotNull
-    @Override
-    public MutableRowSet intersect(@NotNull final RowSet range) {
-        return new MutableRowSetImpl(impl.ixIntersectOnNew(getImpl(range)));
-    }
-
-    @Override
-    public boolean overlapsRange(final long start, final long end) {
-        return impl.ixOverlapsRange(start, end);
-    }
-
-    @Override
-    public boolean subsetOf(@NotNull final RowSet other) {
-        return impl.ixSubsetOf(getImpl(other));
-    }
-
-    @Override
-    public MutableRowSet minus(final RowSet indexToRemove) {
-        return new MutableRowSetImpl(impl.ixMinusOnNew(getImpl(indexToRemove)));
-    }
-
-    @Override
-    public MutableRowSet union(final RowSet indexToAdd) {
-        return new MutableRowSetImpl(impl.ixUnionOnNew(getImpl(indexToAdd)));
-    }
-
-    @Override
-    public void clear() {
-        assign(TreeIndexImpl.EMPTY);
-    }
-
-    @Override
-    public MutableRowSet shift(final long shiftAmount) {
-        return new MutableRowSetImpl(impl.ixShiftOnNew(shiftAmount));
-    }
-
-    @Override
-    public void shiftInPlace(final long shiftAmount) {
-        assign(impl.ixShiftInPlace(shiftAmount));
-    }
-
-    @Override
-    public void insertWithShift(final long shiftAmount, final RowSet other) {
-        assign(impl.ixInsertWithShift(shiftAmount, getImpl(other)));
-    }
-
-    @Override
-    public void compact() {
-        assign(impl.ixCompact());
-    }
-
-    @Override
-    public void validate(final String failMsg) {
-        impl.ixValidate(failMsg);
-    }
-
-    @Override
-    public boolean forEachLong(final LongAbortableConsumer lc) {
-        return impl.ixForEachLong(lc);
-    }
-
-    @Override
-    public boolean forEachLongRange(final LongRangeAbortableConsumer larc) {
-        return impl.ixForEachLongRange(larc);
-    }
-
-    @Override
-    public MutableRowSet subSetByPositionRange(final long startPos, final long endPos) {
-        return new MutableRowSetImpl(impl.ixSubindexByPosOnNew(startPos, endPos));
-    }
-
-    @Override
-    public MutableRowSet subSetByKeyRange(final long startKey, final long endKey) {
-        return new MutableRowSetImpl(impl.ixSubindexByKeyOnNew(startKey, endKey));
-    }
-
-    @Override
-    public long get(final long pos) {
-        return impl.ixGet(pos);
-    }
-
-    @Override
-    public void getKeysForPositions(PrimitiveIterator.OfLong positions, LongConsumer outputKeys) {
-        impl.ixGetKeysForPositions(positions, outputKeys);
-    }
-
-    @Override
-    public long find(final long key) {
-        return impl.ixFind(key);
-    }
-
-    @NotNull
-    @Override
-    public TrackingMutableRowSet.Iterator iterator() {
-        return impl.ixIterator();
-    }
-
-    @Override
-    public SearchIterator searchIterator() {
-        return impl.ixSearchIterator();
-    }
-
-    @Override
-    public SearchIterator reverseIterator() {
-        return impl.ixReverseIterator();
-    }
-
-    @Override
-    public RangeIterator rangeIterator() {
-        return impl.ixRangeIterator();
-    }
-
-    @Override
-    public long size() {
-        return impl.ixCardinality();
-    }
-
-    @Override
-    public long getAverageRunLengthEstimate() {
-        return impl.ixGetAverageRunLengthEstimate();
-    }
-
-    @Override
-    public boolean empty() {
-        return impl.ixIsEmpty();
-    }
-
-    @Override
-    public boolean containsRange(final long start, final long end) {
-        return impl.ixContainsRange(start, end);
-    }
-
-    @Override
-    public LogOutput append(LogOutput logOutput) {
-        return IndexUtilities.append(logOutput, rangeIterator());
-    }
-
-    // Through this the contract for RowSet could be bypassed; it is not the intention.
-    private static TreeIndexImpl getImpl(final RowSet index) {
-        if (index instanceof ImplementedByTreeIndexImpl) {
-            return ((ImplementedByTreeIndexImpl) index).getImpl();
-        }
-        throw new UnsupportedOperationException();
-    }
+    protected void postMutationHook() {}
 
     private void assign(final TreeIndexImpl maybeNewImpl) {
         invalidateRowSequenceAsChunkImpl();
@@ -332,34 +83,368 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl
     }
 
     @Override
-    public void fillRowKeyChunk(final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
-        IndexUtilities.fillKeyIndicesChunk(this, chunkToFill);
+    public final void insert(final long key) {
+        preMutationHook();
+        assign(impl.ixInsert(key));
+        postMutationHook();
     }
 
     @Override
-    public void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
-        IndexUtilities.fillKeyRangesChunk(this, chunkToFill);
+    public final void insertRange(final long startKey, final long endKey) {
+        preMutationHook();
+        assign(impl.ixInsertRange(startKey, endKey));
+        postMutationHook();
+    }
+
+    @Override
+    public final void insert(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
+        Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
+        preMutationHook();
+        assign(impl.ixInsert(keys, offset, length));
+        postMutationHook();
+    }
+
+    @Override
+    public final void insert(final RowSet added) {
+        preMutationHook();
+        assign(impl.ixInsert(getImpl(added)));
+        postMutationHook();
+    }
+
+    @Override
+    public final void remove(final long key) {
+        preMutationHook();
+        assign(impl.ixRemove(key));
+        postMutationHook();
+    }
+
+    @Override
+    public final void removeRange(final long start, final long end) {
+        preMutationHook();
+        assign(impl.ixRemoveRange(start, end));
+        postMutationHook();
+    }
+
+    @Override
+    public final void remove(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
+        Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
+        preMutationHook();
+        assign(impl.ixRemove(keys, offset, length));
+        postMutationHook();
+    }
+
+    @Override
+    public final void remove(final RowSet removed) {
+        preMutationHook();
+        assign(impl.ixRemove(getImpl(removed)));
+        postMutationHook();
+    }
+
+    @Override
+    public final void update(final RowSet added, final RowSet removed) {
+        preMutationHook();
+        assign(impl.ixUpdate(getImpl(added), getImpl(removed)));
+        postMutationHook();
+    }
+
+    @Override
+    public final void retain(final RowSet rowSetToIntersect) {
+        preMutationHook();
+        assign(impl.ixRetain(getImpl(rowSetToIntersect)));
+        postMutationHook();
+    }
+
+    @Override
+    public final void retainRange(final long startRowKey, final long endRowKey) {
+        preMutationHook();
+        assign(impl.ixRetainRange(startRowKey, endRowKey));
+        postMutationHook();
+    }
+
+    @Override
+    public final void clear() {
+        preMutationHook();
+        assign(TreeIndexImpl.EMPTY);
+        postMutationHook();
+    }
+
+    @Override
+    public final void shiftInPlace(final long shiftAmount) {
+        preMutationHook();
+        assign(impl.ixShiftInPlace(shiftAmount));
+        postMutationHook();
+    }
+
+    @Override
+    public final void insertWithShift(final long shiftAmount, final RowSet other) {
+        preMutationHook();
+        assign(impl.ixInsertWithShift(shiftAmount, getImpl(other)));
+        postMutationHook();
+    }
+
+    @Override
+    public final void compact() {
+        // Compact does not change the row keys represented by this RowSet, and thus does not require a call to
+        // preMutationHook() or postMutationHook().
+        assign(impl.ixCompact());
+    }
+
+    @Override
+    public final long size() {
+        return impl.ixCardinality();
+    }
+
+    @Override
+    public final boolean isEmpty() {
+        return impl.ixIsEmpty();
+    }
+
+    @Override
+    public final long firstRowKey() {
+        return impl.ixFirstKey();
+    }
+
+    @Override
+    public final long lastRowKey() {
+        return impl.ixLastKey();
+    }
+
+    @Override
+    public final long rangesCountUpperBound() {
+        return impl.ixRangesCountUpperBound();
+    }
+
+    @Override
+    public final RowSequence.Iterator getRowSequenceIterator() {
+        return impl.ixGetRowSequenceIterator();
+    }
+
+    @Override
+    public final RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
+        return impl.ixGetRowSequenceByPosition(startPositionInclusive, length);
+    }
+
+    @Override
+    public final RowSequence getRowSequenceByKeyRange(final long startRowKeyInclusive, final long endRowKeyInclusive) {
+        return impl.ixGetRowSequenceByKeyRange(startRowKeyInclusive, endRowKeyInclusive);
+    }
+
+    @Override
+    public final RowSet asRowSet() {
+        return this;
+    }
+
+    @Override
+    public final MutableRowSet invert(final RowSet keys, final long maximumPosition) {
+        return new MutableRowSetImpl(impl.ixInvertOnNew(getImpl(keys), maximumPosition));
+    }
+
+    @Override
+    public final TLongArrayList[] findMissing(final RowSet keys) {
+        return RowSetUtilities.findMissing(this, keys);
+    }
+
+    @NotNull
+    @Override
+    public final MutableRowSet intersect(@NotNull final RowSet range) {
+        return new MutableRowSetImpl(impl.ixIntersectOnNew(getImpl(range)));
+    }
+
+    @Override
+    public final boolean overlaps(@NotNull final RowSet range) {
+        return impl.ixOverlaps(getImpl(range));
+    }
+
+    @Override
+    public final boolean overlapsRange(final long start, final long end) {
+        return impl.ixOverlapsRange(start, end);
+    }
+
+    @Override
+    public final boolean subsetOf(@NotNull final RowSet other) {
+        return impl.ixSubsetOf(getImpl(other));
+    }
+
+    @Override
+    public final MutableRowSet minus(final RowSet indexToRemove) {
+        if (indexToRemove == this) {
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        }
+        return new MutableRowSetImpl(impl.ixMinusOnNew(getImpl(indexToRemove)));
+    }
+
+    @Override
+    public final MutableRowSet union(final RowSet indexToAdd) {
+        if (indexToAdd == this) {
+            return clone();
+        }
+        return new MutableRowSetImpl(impl.ixUnionOnNew(getImpl(indexToAdd)));
+    }
+
+    @Override
+    public final MutableRowSet shift(final long shiftAmount) {
+        return new MutableRowSetImpl(impl.ixShiftOnNew(shiftAmount));
+    }
+
+    @Override
+    public final void validate(final String failMsg) {
+        impl.ixValidate(failMsg);
+        long totalSize = 0;
+        final RangeIterator it = rangeIterator();
+        long lastEnd = Long.MIN_VALUE;
+        final String m = failMsg == null ? "" : failMsg + " ";
+        while (it.hasNext()) {
+            it.next();
+            final long start = it.currentRangeStart();
+            final long end = it.currentRangeEnd();
+            Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
+            Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
+            Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
+                    "rowSet");
+            Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd", this,
+                    "rowSet");
+            lastEnd = end;
+
+            totalSize += ((end - start) + 1);
+        }
+
+        Assert.eq(totalSize, m + "totalSize", size(), "size()");
+    }
+
+    @Override
+    public final boolean forEachLong(final LongAbortableConsumer lc) {
+        return impl.ixForEachLong(lc);
+    }
+
+    @Override
+    public final boolean forEachLongRange(final LongRangeAbortableConsumer larc) {
+        return impl.ixForEachLongRange(larc);
+    }
+
+    @Override
+    public final MutableRowSet subSetByPositionRange(final long startPos, final long endPos) {
+        return new MutableRowSetImpl(impl.ixSubindexByPosOnNew(startPos, endPos));
+    }
+
+    @Override
+    public final MutableRowSet subSetByKeyRange(final long startKey, final long endKey) {
+        return new MutableRowSetImpl(impl.ixSubindexByKeyOnNew(startKey, endKey));
+    }
+
+    @Override
+    public final long get(final long pos) {
+        return impl.ixGet(pos);
+    }
+
+    @Override
+    public final void getKeysForPositions(PrimitiveIterator.OfLong positions, LongConsumer outputKeys) {
+        impl.ixGetKeysForPositions(positions, outputKeys);
+    }
+
+    @Override
+    public final long find(final long key) {
+        return impl.ixFind(key);
+    }
+
+    @NotNull
+    @Override
+    public final TrackingMutableRowSet.Iterator iterator() {
+        return impl.ixIterator();
+    }
+
+    @Override
+    public final SearchIterator searchIterator() {
+        return impl.ixSearchIterator();
+    }
+
+    @Override
+    public final SearchIterator reverseIterator() {
+        return impl.ixReverseIterator();
+    }
+
+    @Override
+    public final RangeIterator rangeIterator() {
+        return impl.ixRangeIterator();
+    }
+
+    @Override
+    public final long getAverageRunLengthEstimate() {
+        return impl.ixGetAverageRunLengthEstimate();
+    }
+
+    @Override
+    public final boolean containsRange(final long start, final long end) {
+        return impl.ixContainsRange(start, end);
+    }
+
+    @Override
+    public final void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
+        RowSetUtilities.fillKeyIndicesChunk(this, chunkToFill);
+    }
+
+    @Override
+    public final void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
+        RowSetUtilities.fillKeyRangesChunk(this, chunkToFill);
+    }
+
+    @Override
+    public LogOutput append(LogOutput logOutput) {
+        return RowSetUtilities.append(logOutput, rangeIterator());
     }
 
     @Override
     public String toString() {
-        return IndexUtilities.toString(this, 200);
+        return RowSetUtilities.toString(this, 200);
+    }
+
+    public String toString(final int maxRanges) {
+        return RowSetUtilities.toString(this, maxRanges);
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-    public boolean equals(final Object obj) {
-        return IndexUtilities.equals(this, obj);
+    public final boolean equals(final Object obj) {
+        return RowSetUtilities.equals(this, obj);
     }
 
     @Override
     public final void writeExternal(@NotNull final ObjectOutput out) throws IOException {
-        ExternalizableIndexUtils.writeExternalCompressedDeltas(out, this);
+        ExternalizableRowSetUtils.writeExternalCompressedDeltas(out, this);
     }
 
     @Override
-    public final void readExternal(@NotNull final ObjectInput in) throws IOException {
-        try (final MutableRowSet readRowSet = ExternalizableIndexUtils.readExternalCompressedDelta(in)) {
-            insert(readRowSet);
+    public void readExternal(@NotNull final ObjectInput in) throws IOException {
+        try (final MutableRowSet readRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(in)) {
+            assign(getImpl(readRowSet).ixCowRef());
         }
+    }
+
+    /**
+     * Debugging tool to serialize the inner set implementation.
+     *
+     * @param out The destination
+     */
+    @SuppressWarnings("unused")
+    public void writeImpl(ObjectOutput out) throws IOException {
+        out.writeObject(impl);
+    }
+
+    public static void addToBuilderFromImpl(final TreeIndexImpl.BuilderRandom builder, final MutableRowSetImpl rowSet) {
+        if (rowSet.impl instanceof SingleRange) {
+            builder.add((SingleRange) rowSet.impl);
+            return;
+        }
+        if (rowSet.impl instanceof SortedRanges) {
+            builder.add((SortedRanges) rowSet.impl, true);
+            return;
+        }
+        final RspBitmap idxImpl = (RspBitmap) rowSet.impl;
+        builder.add(idxImpl, true);
+    }
+
+    protected static TreeIndexImpl getImpl(final RowSet rowSet) {
+        if (rowSet instanceof MutableRowSetImpl) {
+            return ((MutableRowSetImpl) rowSet).getImpl();
+        }
+        throw new UnsupportedOperationException("Unexpected RowSet type " + rowSet.getClass());
     }
 }

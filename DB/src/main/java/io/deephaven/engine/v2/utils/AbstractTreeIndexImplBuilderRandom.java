@@ -7,14 +7,15 @@ import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
-public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImpl.RandomBuilder {
+abstract class AbstractTreeIndexImplBuilderRandom implements TreeIndexImpl.BuilderRandom {
+
     protected static final IndexCounts indexCounts = new IndexCounts("randomIndexBuilder");
 
     protected SortedRanges pendingSr = null;
     private long pendingRangeStart = -1;
     private long pendingRangeEnd = -1;
 
-    protected abstract TreeIndexImpl.RandomBuilder innerBuilder();
+    protected abstract TreeIndexImpl.BuilderRandom innerBuilder();
 
     protected abstract void setupInnerBuilderForRange(final long start, final long end);
 
@@ -152,8 +153,8 @@ public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImp
 
     public void addRowSet(final RowSet rowSet) {
         flushPendingRange();
-        if (rowSet instanceof TrackingMutableRowSetImpl) {
-            TrackingMutableRowSetImpl.add(this, (TrackingMutableRowSetImpl) rowSet);
+        if (rowSet instanceof MutableRowSetImpl) {
+            MutableRowSetImpl.addToBuilderFromImpl(this, (MutableRowSetImpl) rowSet);
             return;
         }
         rowSet.forEachLongRange((final long start, final long end) -> {

@@ -124,13 +124,13 @@ public class UpdatableTable extends QueryTable implements LiveTable {
         final TrackingMutableRowSet removed = setToIndex(removedSet);
         final TrackingMutableRowSet modified = setToIndex(modifiedSet);
         getIndex().update(added, removed);
-        if (added.nonempty() || removed.nonempty() || modified.nonempty()) {
+        if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.added = added;
             update.removed = removed;
             update.modified = modified;
             update.shifted = IndexShiftData.EMPTY;
-            if (modified.nonempty()) {
+            if (modified.isNonempty()) {
                 update.modifiedColumnSet = ModifiedColumnSet.ALL;
             } else {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;

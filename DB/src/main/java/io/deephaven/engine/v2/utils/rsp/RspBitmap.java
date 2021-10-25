@@ -1427,7 +1427,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             return SingleRange.make(pos, Math.min(pos + keys.ixCardinality() - 1, maximumPosition));
         }
         try (final TrackingMutableRowSet.RangeIterator rit = keys.ixRangeIterator()) {
-            final TreeIndexImpl.SequentialBuilder builder = new TreeIndexImplSequentialBuilder();
+            final BuilderSequential builder = new TreeIndexImplBuilderSequential();
             invert(builder, rit, maximumPosition);
             return builder.getTreeIndexImpl();
         }
@@ -1950,7 +1950,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
                 curr = next = it.start();
                 currRangeEnd = it.end();
             }
-            final IndexUtilities.Comparator comp = (long k) -> tc.compareTargetTo(k, dir);
+            final RowSetUtilities.Comparator comp = (long k) -> tc.compareTargetTo(k, dir);
             int c = comp.directionToTargetFrom(curr);
             if (c < 0) {
                 return -1;
@@ -2131,16 +2131,16 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return valuesToString();
     }
 
-    public static class RandomBuilder implements TreeIndexImpl.RandomBuilder {
+    public static class BuilderRandom implements TreeIndexImpl.BuilderRandom {
         public RspBitmap rb;
         public IndexCounts indexCounts;
 
-        public RandomBuilder(final IndexCounts indexCounts, final long start, final long end) {
+        public BuilderRandom(final IndexCounts indexCounts, final long start, final long end) {
             rb = new RspBitmap(start, end);
             this.indexCounts = indexCounts;
         }
 
-        public RandomBuilder(final IndexCounts indexCounts) {
+        public BuilderRandom(final IndexCounts indexCounts) {
             rb = new RspBitmap();
             this.indexCounts = indexCounts;
         }

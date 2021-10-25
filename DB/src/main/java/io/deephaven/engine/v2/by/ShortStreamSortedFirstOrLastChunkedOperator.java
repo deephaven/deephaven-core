@@ -145,7 +145,7 @@ public class ShortStreamSortedFirstOrLastChunkedOperator extends CopyingPermuted
 
     @Override
     public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull RowSet newDestinations) {
-        Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
+        Assert.assertion(downstream.removed.isEmpty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
         // In a combo-agg, we may get modifications from other other operators that we didn't record as modifications in
         // our redirections, so we separately track updated destinations.

@@ -3,12 +3,12 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 
-public class AdaptiveBuilder extends AbstractTreeIndexImplRandomBuilder {
+class AdaptiveTreeIndexImplBuilderRandom extends AbstractTreeIndexImplBuilderRandom {
 
-    private MixedBuilder builder = null;
+    private MixedBuilderRandom builder = null;
 
     @Override
-    protected TreeIndexImpl.RandomBuilder innerBuilder() {
+    protected TreeIndexImpl.BuilderRandom innerBuilder() {
         return builder;
     }
 
@@ -20,7 +20,7 @@ public class AdaptiveBuilder extends AbstractTreeIndexImplRandomBuilder {
 
     @Override
     protected void setupInnerBuilderEmpty() {
-        builder = new MixedBuilder(2 * SortedRanges.MAX_CAPACITY);
+        builder = new MixedBuilderRandom(2 * SortedRanges.MAX_CAPACITY);
     }
 
     @Override

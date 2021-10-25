@@ -259,7 +259,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     }
 
     private static void flushPrevious(LongChunkedUniqueOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

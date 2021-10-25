@@ -101,7 +101,7 @@ public interface ShiftAwareListener extends ListenerBase {
          * @return true if no changes occurred in this update
          */
         public boolean empty() {
-            return added.empty() && removed.empty() && modified.empty() && shifted.empty();
+            return added.isEmpty() && removed.isEmpty() && modified.isEmpty() && shifted.empty();
         }
 
         /**

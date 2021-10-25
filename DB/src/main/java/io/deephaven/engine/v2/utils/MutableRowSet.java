@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,11 +38,11 @@ public interface MutableRowSet extends RowSet {
     /**
      * Add all of the (ordered) keys in a slice of {@code keys} to this RowSet if they are not already present.
      *
-     * @param keys The {@link LongChunk} of {@link Attributes.OrderedRowKeys} to insert
+     * @param keys The {@link LongChunk} of {@link OrderedRowKeys} to insert
      * @param offset The offset in {@code keys} to begin inserting keys from
      * @param length The number of keys to insert
      */
-    void insert(LongChunk<Attributes.OrderedRowKeys> keys, int offset, int length);
+    void insert(LongChunk<OrderedRowKeys> keys, int offset, int length);
 
     /**
      * Add all of the keys in {@code added} to this RowSet if they are not already present.
@@ -69,11 +69,11 @@ public interface MutableRowSet extends RowSet {
     /**
      * Remove all of the (ordered) keys in a slice of {@code keys} from this RowSet if they are present.
      *
-     * @param keys The {@link LongChunk} of {@link Attributes.OrderedRowKeys} to remove
+     * @param keys The {@link LongChunk} of {@link OrderedRowKeys} to remove
      * @param offset The offset in {@code keys} to begin removing keys from
      * @param length The number of keys to remove
      */
-    void remove(LongChunk<Attributes.OrderedRowKeys> keys, int offset, int length);
+    void remove(LongChunk<OrderedRowKeys> keys, int offset, int length);
 
     /**
      * Remove all of the keys in {@code removed} that are present in this RowSet.

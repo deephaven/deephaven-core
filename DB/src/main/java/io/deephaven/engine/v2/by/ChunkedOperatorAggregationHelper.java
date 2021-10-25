@@ -239,10 +239,10 @@ public class ChunkedOperatorAggregationHelper {
 
     private static Update adjustForStreaming(@NotNull final Update upstream) {
         // Streaming aggregations never have modifies or shifts from their parent:
-        Assert.assertion(upstream.modified.empty() && upstream.shifted.empty(),
+        Assert.assertion(upstream.modified.isEmpty() && upstream.shifted.empty(),
                 "upstream.modified.empty() && upstream.shifted.empty()");
         // Streaming aggregations ignore removes:
-        if (upstream.removed.empty()) {
+        if (upstream.removed.isEmpty()) {
             return upstream;
         }
         return new Update(upstream.added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), upstream.modified, upstream.shifted,
@@ -360,7 +360,7 @@ public class ChunkedOperatorAggregationHelper {
             keysModified = updateUpstreamModifiedColumnSet.containsAny(keysUpstreamModifiedColumnSet);
             shifted = upstream.shifted.nonempty();
             processShifts = ac.requiresIndices() && shifted;
-            od = new OperatorDivision(ac, upstream.modified.nonempty(), updateUpstreamModifiedColumnSet,
+            od = new OperatorDivision(ac, upstream.modified.isNonempty(), updateUpstreamModifiedColumnSet,
                     operatorInputUpstreamModifiedColumnSets);
 
             final long buildSize = Math.max(upstream.added.size(), keysModified ? upstream.modified.size() : 0);
@@ -435,7 +435,7 @@ public class ChunkedOperatorAggregationHelper {
             } else {
                 pc = null;
             }
-            if (upstream.removed.nonempty() || keysModified) {
+            if (upstream.removed.isNonempty() || keysModified) {
                 emptiedSlots = toClose.add(WritableIntChunk.makeWritableChunk(probeChunkSize));
             } else {
                 emptiedSlots = null;
@@ -456,10 +456,10 @@ public class ChunkedOperatorAggregationHelper {
             final int previousLastState = outputPosition.intValue();
             ac.resetOperatorsForStep(upstream);
 
-            if (upstream.removed.nonempty()) {
+            if (upstream.removed.isNonempty()) {
                 doRemoves(upstream.removed);
             }
-            if (upstream.modified.nonempty() && (od.anyOperatorHasModifiedInputColumns
+            if (upstream.modified.isNonempty() && (od.anyOperatorHasModifiedInputColumns
                     || od.anyOperatorWithoutModifiedInputColumnsRequiresIndices || keysModified)) {
                 try (final ModifySplitResult split =
                         keysModified ? splitKeyModificationsAndDoKeyChangeRemoves() : null) {
@@ -540,7 +540,7 @@ public class ChunkedOperatorAggregationHelper {
                     doShifts(postShiftRowSet);
                 }
             }
-            if (upstream.added.nonempty()) {
+            if (upstream.added.isNonempty()) {
                 doInserts(upstream.added, true);
             }
 
@@ -555,7 +555,7 @@ public class ChunkedOperatorAggregationHelper {
                     downstream.added.remove(addedBack);
                     downstream.removed.remove(addedBack);
 
-                    if (newStates.nonempty()) {
+                    if (newStates.isNonempty()) {
                         downstream.added.insert(newStates);
                         copyKeyColumns(keyColumnsRaw, keyColumnsCopied, newStates);
                     }
@@ -1087,7 +1087,7 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final boolean[] modifiedOperators,
             @NotNull final ModifiedColumnSet updateUpstreamModifiedColumnSet,
             @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
-        if (downstream.modified.nonempty()) {
+        if (downstream.modified.isNonempty()) {
             downstream.modifiedColumnSet = resultModifiedColumnSet;
             downstream.modifiedColumnSet.clear();
             for (int oi = 0; oi < modifiedOperators.length; ++oi) {
@@ -1099,7 +1099,7 @@ public class ChunkedOperatorAggregationHelper {
         } else {
             downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
         }
-        if (downstream.modifiedColumnSet.empty() && downstream.modified.nonempty()) {
+        if (downstream.modifiedColumnSet.empty() && downstream.modified.isNonempty()) {
             downstream.modified.close();
             downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
@@ -1663,20 +1663,20 @@ public class ChunkedOperatorAggregationHelper {
                             final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
                                     new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
                             try (final SafeCloseable ignored = new SafeCloseableArray<>(opContexts)) {
-                                final OperatorDivision od = new OperatorDivision(ac, upstream.modified.nonempty(),
+                                final OperatorDivision od = new OperatorDivision(ac, upstream.modified.isNonempty(),
                                         upstreamModifiedColumnSet, inputModifiedColumnSet);
                                 ac.initializeSingletonContexts(opContexts, upstream,
                                         od.operatorsWithModifiedInputColumns);
 
                                 final boolean[] modifiedOperators = new boolean[ac.size()];
                                 // remove all the removals
-                                if (upstream.removed.nonempty()) {
+                                if (upstream.removed.isNonempty()) {
                                     doNoKeyRemoval(upstream.removed, ac, opContexts, allColumns, modifiedOperators);
                                 }
 
                                 final boolean processShifts = upstream.shifted.nonempty() && ac.requiresIndices();
 
-                                if (upstream.modified.nonempty() && (od.anyOperatorHasModifiedInputColumns
+                                if (upstream.modified.isNonempty() && (od.anyOperatorHasModifiedInputColumns
                                         || od.anyOperatorWithoutModifiedInputColumnsRequiresIndices)) {
                                     if (processShifts) {
                                         // Also handles shifted modifications for modified-input operators that require
@@ -1732,7 +1732,7 @@ public class ChunkedOperatorAggregationHelper {
                                             modifiedOperators);
                                 }
 
-                                if (upstream.added.nonempty()) {
+                                if (upstream.added.isNonempty()) {
                                     doNoKeyAddition(upstream.added, ac, opContexts, allColumns, false,
                                             modifiedOperators);
                                 }
@@ -1933,7 +1933,7 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource.GetContext[] postGetContexts = new ColumnSource.GetContext[ac.size()];
 
         try (final TrackingMutableRowSet useRowSet = source.getIndex().minus(upstream.added)) {
-            if (useRowSet.empty()) {
+            if (useRowSet.isEmpty()) {
                 return;
             }
             final int chunkSize = chunkSize(useRowSet.size());

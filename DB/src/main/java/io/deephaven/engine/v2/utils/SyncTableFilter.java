@@ -208,7 +208,7 @@ public class SyncTableFilter {
                 final ListenerRecorder recorder = recorders.get(rr);
                 if (recorder.getNotificationStep() == currentStep) {
                     // we are valid
-                    if (recorder.getRemoved().nonempty()) {
+                    if (recorder.getRemoved().isNonempty()) {
                         throw new IllegalStateException("Can not process removed rows in SyncTableFilter!");
                     }
                     if (recorder.getShifted().nonempty()) {
@@ -264,7 +264,7 @@ public class SyncTableFilter {
                     modified = addedAndRemoved;
                 }
 
-                if (added.nonempty() || removed.nonempty() || modified.nonempty()) {
+                if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
                     results[tt].notifyListeners(added, removed, modified);
                 }
             }

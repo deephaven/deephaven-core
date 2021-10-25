@@ -1343,7 +1343,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
                     final long rightSide = getStateValue(leftHashSlots, ii);
                     final TrackingMutableRowSet leftRowSet = indexSource.get(ii);
                     assert leftRowSet != null;
-                    if (leftRowSet.nonempty()) {
+                    if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
                         leftRowSet.forAllLongs(li -> {
                             innerIndex[(int)li] = rightSide;
@@ -1359,7 +1359,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
                     final long rightSide = getStateValue(leftHashSlots, ii);
                     final TrackingMutableRowSet leftRowSet = indexSource.get(ii);
                     assert leftRowSet != null;
-                    if (leftRowSet.nonempty()) {
+                    if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
                         if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                             leftRowSet.forAllLongs(li -> {
@@ -1377,7 +1377,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
                     final long rightSide = getStateValue(leftHashSlots, ii);
                     final TrackingMutableRowSet leftRowSet = indexSource.get(ii);
                     assert leftRowSet != null;
-                    if (leftRowSet.nonempty()) {
+                    if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
                         if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                             leftRowSet.forAllLongs(li -> {

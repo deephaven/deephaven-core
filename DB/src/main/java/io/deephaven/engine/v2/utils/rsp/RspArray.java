@@ -22,7 +22,7 @@ import java.util.PrimitiveIterator;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongConsumer;
 
-import static io.deephaven.engine.v2.utils.IndexUtilities.Comparator;
+import static io.deephaven.engine.v2.utils.RowSetUtilities.Comparator;
 
 /**
  *

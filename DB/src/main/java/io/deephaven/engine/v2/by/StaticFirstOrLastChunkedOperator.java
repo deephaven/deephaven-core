@@ -59,7 +59,7 @@ public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChun
 
     @Override
     public boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
-        if (rowSet.empty()) {
+        if (rowSet.isEmpty()) {
             return false;
         }
 

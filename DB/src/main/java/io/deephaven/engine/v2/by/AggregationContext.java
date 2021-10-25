@@ -363,7 +363,7 @@ class AggregationContext {
     void initializeSingletonContexts(IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
             ShiftAwareListener.Update upstream, boolean[] modifiedColumns) {
         final long maxSize = UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
-        if (upstream.removed.nonempty() || upstream.added.nonempty()) {
+        if (upstream.removed.isNonempty() || upstream.added.isNonempty()) {
             initializeSingletonContexts(opContexts, maxSize);
             return;
         }
@@ -383,7 +383,7 @@ class AggregationContext {
             }
         }
 
-        if (upstream.modified.nonempty()) {
+        if (upstream.modified.isNonempty()) {
             for (int ii = 0; ii < size(); ++ii) {
                 if (operators[ii].requiresIndices()) {
                     toInitialize[ii] = true;
@@ -413,7 +413,7 @@ class AggregationContext {
     void initializeBucketedContexts(IterativeChunkedAggregationOperator.BucketedContext[] contexts,
             ShiftAwareListener.Update upstream, boolean keysModified, boolean[] modifiedColumns) {
         final long maxSize = UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
-        if (upstream.added.nonempty() || upstream.removed.nonempty() || keysModified) {
+        if (upstream.added.isNonempty() || upstream.removed.isNonempty() || keysModified) {
             initializeBucketedContexts(contexts, maxSize);
             return;
         }

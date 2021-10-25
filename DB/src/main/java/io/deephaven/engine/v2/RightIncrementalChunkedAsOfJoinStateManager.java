@@ -1478,7 +1478,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
 
         resetCookie();
 
-        if (restampAdditions.nonempty()) {
+        if (restampAdditions.isNonempty()) {
             try (final ProbeContext pc = makeProbeContext(rightSources, restampAdditions.size())) {
                 decorationProbe(pc, restampAdditions, rightSources, usePrev, slotCount, slots, sequentialBuilders);
             }

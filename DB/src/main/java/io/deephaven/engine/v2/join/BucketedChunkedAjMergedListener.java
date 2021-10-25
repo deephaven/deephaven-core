@@ -137,12 +137,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         final boolean leftTicked = leftRecorder.recordedVariablesAreValid();
         final boolean rightTicked = rightRecorder.recordedVariablesAreValid();
 
-        final boolean leftStampModified = leftTicked && leftRecorder.getModified().nonempty()
+        final boolean leftStampModified = leftTicked && leftRecorder.getModified().isNonempty()
                 && leftRecorder.getModifiedColumnSet().containsAny(leftStampColumn);
-        final boolean leftKeysModified = leftTicked && leftRecorder.getModified().nonempty()
+        final boolean leftKeysModified = leftTicked && leftRecorder.getModified().isNonempty()
                 && leftRecorder.getModifiedColumnSet().containsAny(leftKeyColumns);
         final boolean leftAdditionsOrRemovals = leftKeysModified || leftStampModified
-                || (leftTicked && (leftRecorder.getAdded().nonempty() || leftRecorder.getRemoved().nonempty()));
+                || (leftTicked && (leftRecorder.getAdded().isNonempty() || leftRecorder.getRemoved().isNonempty()));
 
         final ColumnSource.FillContext leftFillContext =
                 leftAdditionsOrRemovals ? leftStampSource.makeFillContext(leftChunkSize) : null;
@@ -169,7 +169,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             sequentialBuilders.ensureCapacity(leftRestampRemovals.size());
             slots.ensureCapacity(leftRestampRemovals.size());
 
-            if (leftRestampRemovals.nonempty()) {
+            if (leftRestampRemovals.isNonempty()) {
                 leftRestampRemovals.forAllLongs(redirectionIndex::removeVoid);
 
                 // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
@@ -224,7 +224,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
                     redirectionIndex.applyShift(previousToShift, leftShifted);
 
-                    if (relevantShift.nonempty()) {
+                    if (relevantShift.isNonempty()) {
                         try (final SizedSafeCloseable<ColumnSource.FillContext> leftShiftFillContext =
                                 new SizedSafeCloseable<>(leftStampSource::makeFillContext);
                                 final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
@@ -353,7 +353,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                      final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
                      final TrackingMutableRowSet relevantShift = getRelevantShifts(rightShifted, previousToShift)) {
 
-                    if (relevantShift.nonempty()) {
+                    if (relevantShift.isNonempty()) {
                         try (final SizedSafeCloseable<ColumnSource.FillContext> rightShiftFillContext =
                                 new SizedSafeCloseable<>(rightStampSource::makeFillContext);
                                 final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
@@ -558,7 +558,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             }
 
             // if the stamp was not modified, then we need to figure out the responsive rows to mark as modified
-            if (!rightStampModified && !rightKeysModified && rightRecorder.getModified().nonempty()) {
+            if (!rightStampModified && !rightKeysModified && rightRecorder.getModified().isNonempty()) {
                 slots.ensureCapacity(rightRecorder.getModified().size());
                 sequentialBuilders.ensureCapacity(rightRecorder.getModified().size());
 
@@ -602,8 +602,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 rightRestampRemovals.close();
             }
 
-            if (rightStampModified || rightKeysModified || rightRecorder.getAdded().nonempty()
-                    || rightRecorder.getRemoved().nonempty()) {
+            if (rightStampModified || rightKeysModified || rightRecorder.getAdded().isNonempty()
+                    || rightRecorder.getRemoved().isNonempty()) {
                 downstream.modifiedColumnSet.setAll(allRightColumns);
             } else {
                 rightTransformer.transform(rightRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet);
@@ -744,7 +744,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         while (sit.hasNext()) {
             sit.next();
             final TrackingMutableRowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
-            if (!rowSetToShift.empty()) {
+            if (!rowSetToShift.isEmpty()) {
                 relevantShiftKeys.addRowSet(rowSetToShift);
             }
             rowSetToShift.close();

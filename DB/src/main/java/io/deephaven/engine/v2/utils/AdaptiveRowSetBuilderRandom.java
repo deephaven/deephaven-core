@@ -3,9 +3,9 @@ package io.deephaven.engine.v2.utils;
 /**
  * {@link RowSetBuilderRandom} implementation that uses an adaptive pattern based on workload.
  */
-public class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
+class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
 
-    private final AdaptiveBuilder builder = new AdaptiveBuilder();
+    private final AdaptiveTreeIndexImplBuilderRandom builder = new AdaptiveTreeIndexImplBuilderRandom();
 
     @Override
     public MutableRowSet build() {

@@ -52,7 +52,7 @@ public class SnapshotInternalListener extends BaseTable.ShiftAwareListenerImpl {
         }
 
         // Populate stamp columns from the triggering table
-        if (!triggerTable.getIndex().empty()) {
+        if (!triggerTable.getIndex().isEmpty()) {
             SnapshotUtils.copyStampColumns(triggerTable.getColumnSourceMap(), triggerTable.getIndex().lastRowKey(),
                     resultLeftColumns, 0);
         }
@@ -61,7 +61,7 @@ public class SnapshotInternalListener extends BaseTable.ShiftAwareListenerImpl {
         try (final TrackingMutableRowSet prevRowSet = usePrev ? currentRowSet.getPrevRowSet() : null) {
             final TrackingMutableRowSet snapshotRowSet = prevRowSet != null ? prevRowSet : currentRowSet;
             snapshotSize = snapshotRowSet.size();
-            if (!snapshotRowSet.empty()) {
+            if (!snapshotRowSet.isEmpty()) {
                 try (final TrackingMutableRowSet destRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, snapshotRowSet.size() - 1)) {
                     SnapshotUtils.copyDataColumns(snapshotTable.getColumnSourceMap(),
                             snapshotRowSet, resultRightColumns, destRowSet, usePrev);

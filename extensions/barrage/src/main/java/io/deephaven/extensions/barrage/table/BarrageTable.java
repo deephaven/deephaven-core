@@ -208,7 +208,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             final TrackingMutableRowSet mods = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             for (int ci = 0; ci < update.modColumnData.length; ++ci) {
                 final TrackingMutableRowSet rowsModified = update.modColumnData[ci].rowsModified;
-                if (rowsModified.nonempty()) {
+                if (rowsModified.isNonempty()) {
                     mods.insert(rowsModified);
                     modifiedColumnSet.setColumnWithIndex(ci);
                 }
@@ -230,7 +230,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         // make sure that these rowSet updates make some sense compared with each other, and our current view of the
         // table
         final TrackingMutableRowSet currentRowSet = getIndex();
-        final boolean mightBeInitialSnapshot = currentRowSet.empty() && update.isSnapshot;
+        final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
 
         try (final TrackingMutableRowSet currRowsFromPrev = currentRowSet.clone();
              final TrackingMutableRowSet populatedRows =
@@ -258,7 +258,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 totalMods.insert(column.rowsModified);
             }
 
-            if (update.rowsIncluded.nonempty()) {
+            if (update.rowsIncluded.isNonempty()) {
                 try (final WritableChunkSink.FillFromContext redirContext =
                         redirectionIndex.makeFillFromContext(update.rowsIncluded.intSize());
                         final TrackingMutableRowSet destinationRowSet = getFreeRows(update.rowsIncluded.size())) {
@@ -284,7 +284,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             modifiedColumnSet.clear();
             for (int ii = 0; ii < update.modColumnData.length; ++ii) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[ii];
-                if (column.rowsModified.empty()) {
+                if (column.rowsModified.isEmpty()) {
                     continue;
                 }
 
@@ -365,7 +365,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     }
 
     private void freeRows(final TrackingMutableRowSet rowsToFree) {
-        if (rowsToFree.empty()) {
+        if (rowsToFree.isEmpty()) {
             return;
         }
 
@@ -406,7 +406,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             return;
         }
         if (unsubscribed) {
-            if (getIndex().nonempty()) {
+            if (getIndex().isNonempty()) {
                 // publish one last clear downstream; this data would be stale
                 final TrackingMutableRowSet allRows = getIndex().clone();
                 getIndex().remove(allRows);

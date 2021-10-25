@@ -325,7 +325,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     public static boolean applyShift(@NotNull final TrackingMutableRowSet rowSet, final long beginRange, final long endRange,
                                      final long shiftDelta) {
         try (final TrackingMutableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
-            if (toShift.empty()) {
+            if (toShift.isEmpty()) {
                 return false;
             }
             rowSet.removeRange(beginRange, endRange);
@@ -393,7 +393,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     public static boolean unapplyShift(@NotNull final TrackingMutableRowSet rowSet, final long beginRange, final long endRange,
                                        final long shiftDelta) {
         try (final TrackingMutableRowSet toShift = rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta)) {
-            if (toShift.empty()) {
+            if (toShift.isEmpty()) {
                 return false;
             }
             rowSet.removeRange(beginRange + shiftDelta, endRange + shiftDelta);

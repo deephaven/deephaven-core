@@ -43,8 +43,8 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
     @Override
     public void onUpdate(final Update upstream) {
         final boolean modifiedRows =
-                upstream.modified.nonempty() && upstream.modifiedColumnSet.containsAny(parentColumnSet);
-        if (upstream.added.nonempty() || modifiedRows) {
+                upstream.modified.isNonempty() && upstream.modifiedColumnSet.containsAny(parentColumnSet);
+        if (upstream.added.isNonempty() || modifiedRows) {
             final TrackingMutableRowSet rowsOfInterest = modifiedRows ? upstream.added.union(upstream.modified) : upstream.added;
             try (final TrackingMutableRowSet ignored = modifiedRows ? rowsOfInterest : null;
                  final TrackingMutableRowSet toProcess = makeAdjacentIndex(rowsOfInterest)) {

@@ -50,7 +50,7 @@ public class UpdateCoalescer {
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             final TrackingMutableRowSet addedAndRemoved = closer.add(added.extract(update.removed));
 
-            if (update.removed.nonempty()) {
+            if (update.removed.isNonempty()) {
                 modified.remove(update.removed);
             }
 
@@ -82,7 +82,7 @@ public class UpdateCoalescer {
     }
 
     private void updateModified(final ModifiedColumnSet myMCS, final TrackingMutableRowSet myModified) {
-        if (myModified.empty()) {
+        if (myModified.isEmpty()) {
             return;
         }
 

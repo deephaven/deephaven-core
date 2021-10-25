@@ -244,7 +244,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
     }
 
     private static void flushPrevious(FloatChunkedDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

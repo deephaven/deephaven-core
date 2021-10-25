@@ -497,7 +497,7 @@ class IncrementalByAggregationUpdateTracker {
                 // Nothing to remove
                 continue;
             }
-            if (current.empty()) {
+            if (current.isEmpty()) {
                 // We must have removed everything
                 redirectionIndex.removeVoid(previousFirstKey);
                 removedBuilder.addKey(previousFirstKey);
@@ -532,7 +532,7 @@ class IncrementalByAggregationUpdateTracker {
                 final byte flags = (byte) (slotAndFlags & FLAG_MASK);
                 final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
                 final TrackingMutableRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
-                if (current.empty()) {
+                if (current.isEmpty()) {
                     // Removes are already handled
                     continue;
                 }

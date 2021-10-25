@@ -240,7 +240,7 @@ public class ShortChunkedCountDistinctOperator implements IterativeChunkedAggreg
     }
 
     private static void flushPrevious(ShortChunkedCountDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

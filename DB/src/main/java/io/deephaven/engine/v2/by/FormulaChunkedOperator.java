@@ -299,7 +299,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             by.resetForStep(upstream);
         }
         updateUpstreamModifiedColumnSet =
-                upstream.modified.empty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet;
+                upstream.modified.isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet;
     }
 
     @Override
@@ -312,9 +312,9 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                 inputToResultModifiedColumnSetFactory.apply(updateUpstreamModifiedColumnSet);
         updateUpstreamModifiedColumnSet = null;
 
-        final boolean addsToProcess = downstream.added.nonempty();
-        final boolean modifiesToProcess = downstream.modified.nonempty() && resultModifiedColumnSet.nonempty();
-        final boolean removesToProcess = downstream.removed.nonempty();
+        final boolean addsToProcess = downstream.added.isNonempty();
+        final boolean modifiesToProcess = downstream.modified.isNonempty() && resultModifiedColumnSet.nonempty();
+        final boolean removesToProcess = downstream.removed.isNonempty();
 
         if (!addsToProcess && !modifiesToProcess && !removesToProcess) {
             return;

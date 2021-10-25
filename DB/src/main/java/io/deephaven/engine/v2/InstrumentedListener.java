@@ -42,8 +42,8 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
         @Override
         public void run() {
             doRun(() -> {
-                if (initialImage != null && (initialImage != update.added || update.removed.nonempty()
-                        || update.modified.nonempty())) {
+                if (initialImage != null && (initialImage != update.added || update.removed.isNonempty()
+                        || update.modified.isNonempty())) {
                     onUpdate(update.added.minus(initialImageClone), update.removed, update.modified);
                 } else {
                     onUpdate(update.added, update.removed, update.modified);

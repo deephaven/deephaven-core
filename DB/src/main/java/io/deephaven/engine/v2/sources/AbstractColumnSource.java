@@ -281,7 +281,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex,
             @NotNull final BiConsumer<TYPE, TrackingMutableRowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
-                .filter(kie -> kie.getValue().nonempty())
+                .filter(kie -> kie.getValue().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstRowKey()))
                 .forEachOrdered(kie -> groupConsumer.accept(kie.getKey(), kie.getValue()));
     }
@@ -327,7 +327,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
             @NotNull final BiConsumer<TYPE, TrackingMutableRowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .map(kie -> new Pair<>(kie.getKey(), kie.getValue().intersect(intersect)))
-                .filter(kip -> kip.getSecond().nonempty())
+                .filter(kip -> kip.getSecond().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kip -> kip.getSecond().firstRowKey()))
                 .forEachOrdered(kip -> groupConsumer.accept(kip.getFirst(), kip.getSecond()));
     }

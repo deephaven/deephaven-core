@@ -209,7 +209,7 @@ public class TickSuppressor {
                         downstream.modified = builder.build();
 
                         downstream.modifiedColumnSet.clear();
-                        if (downstream.modified.nonempty()) {
+                        if (downstream.modified.isNonempty()) {
                             for (int cc = 0; cc < changedColumns.length; ++cc) {
                                 if (changedColumns[cc]) {
                                     downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[cc]);

@@ -100,7 +100,7 @@ public class TestCharSegmentedSortedArray extends LiveTableTestCase {
                         ssa.validate();
 
                         final TrackingMutableRowSet takeout = upstream.removed.union(upstream.getModifiedPreShift());
-                        if (takeout.nonempty()) {
+                        if (takeout.isNonempty()) {
                             final CharChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, takeout).asCharChunk();
                             ssa.remove(valuesToRemove, takeout.asRowKeyChunk());
                         }
@@ -117,7 +117,7 @@ public class TestCharSegmentedSortedArray extends LiveTableTestCase {
                             while (sit.hasNext()) {
                                 sit.next();
                                 final TrackingMutableRowSet rowSetToShift = table.getIndex().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
-                                if (rowSetToShift.empty()) {
+                                if (rowSetToShift.isEmpty()) {
                                     continue;
                                 }
 
@@ -140,7 +140,7 @@ public class TestCharSegmentedSortedArray extends LiveTableTestCase {
                             checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asCharChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
-                        if (putin.nonempty()) {
+                        if (putin.isNonempty()) {
                             final CharChunk<? extends Values> valuesToInsert = valueSource.getChunk(getContext, putin).asCharChunk();
                             ssa.insert(valuesToInsert, putin.asRowKeyChunk());
                         }
@@ -183,11 +183,11 @@ public class TestCharSegmentedSortedArray extends LiveTableTestCase {
                 @Override
                 public void onUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
-                        if (removed.nonempty()) {
+                        if (removed.isNonempty()) {
                             final CharChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, removed).asCharChunk();
                             ssa.remove(valuesToRemove, removed.asRowKeyChunk());
                         }
-                        if (added.nonempty()) {
+                        if (added.isNonempty()) {
                             ssa.insert(valueSource.getChunk(getContext, added).asCharChunk(), added.asRowKeyChunk());
                         }
                     }
@@ -198,7 +198,7 @@ public class TestCharSegmentedSortedArray extends LiveTableTestCase {
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                     final TrackingMutableRowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
-                    assertTrue(notify[2].empty());
+                    assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);
                 });
 

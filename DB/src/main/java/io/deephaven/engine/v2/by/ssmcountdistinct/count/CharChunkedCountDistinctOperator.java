@@ -237,7 +237,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
     }
 
     private static void flushPrevious(CharChunkedCountDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

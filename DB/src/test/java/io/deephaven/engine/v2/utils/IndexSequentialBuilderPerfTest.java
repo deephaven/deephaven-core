@@ -33,7 +33,7 @@ public class IndexSequentialBuilderPerfTest {
     private static long doRspRun() {
         long bh = 0;
         for (int j = 0; j < sz; ++j) {
-            sbs[j] = TrackingMutableRowSetImpl.makeSequentialBuilder();
+            sbs[j] = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         }
         for (int j = 0; j < sz; ++j) {
             sbs[j].appendKey(j);

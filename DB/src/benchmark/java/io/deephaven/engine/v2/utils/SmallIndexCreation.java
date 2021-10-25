@@ -70,7 +70,7 @@ public class SmallIndexCreation {
 
     @Benchmark
     public void createTreeIndexImplViaBuilder(Blackhole bh) {
-        TreeIndexImplSequentialBuilder builder = new TreeIndexImplSequentialBuilder();
+        TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential();
         for (long v : values) {
             builder.appendKey(v);
         }
@@ -79,7 +79,7 @@ public class SmallIndexCreation {
 
     @Benchmark
     public void createRspViaRspBuilder(Blackhole bh) {
-        RspBitmapSequentialBuilder builder = new RspBitmapSequentialBuilder();
+        RspBitmapBuilderSequential builder = new RspBitmapBuilderSequential();
         for (long v : values) {
             builder.appendKey(v);
         }

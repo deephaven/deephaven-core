@@ -82,7 +82,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
         // Check to see if we can simply invert and pass-down.
         downstream.modified = rowSet.invert(upstream.modified);
-        if (upstream.added.empty() && upstream.removed.empty()) {
+        if (upstream.added.isEmpty() && upstream.removed.isEmpty()) {
             downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             downstream.shifted = IndexShiftData.EMPTY;

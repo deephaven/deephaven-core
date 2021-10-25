@@ -532,7 +532,7 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
     }
 
     private static void flushPrevious(ShortRollupUniqueOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

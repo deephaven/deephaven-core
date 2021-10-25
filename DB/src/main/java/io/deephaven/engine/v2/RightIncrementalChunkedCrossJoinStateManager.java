@@ -312,7 +312,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         leftTable.getIndex().forAllLongs(index -> {
             final long regionStart = index << getNumShiftBits();
             final TrackingMutableRowSet rightRowSet = getRightIndexFromLeftIndex(index);
-            if (rightRowSet.nonempty()) {
+            if (rightRowSet.isNonempty()) {
                 resultIndex.appendRange(regionStart, regionStart + rightRowSet.size() - 1);
             }
         });
@@ -451,7 +451,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     void leftRemoved(final RowSet removed, final CrossJoinModifiedSlotTracker tracker) {
-        if (removed.nonempty()) {
+        if (removed.isNonempty()) {
             try (final ProbeContext pc = makeProbeContext(leftKeySources, removed.size())) {
                 final boolean usePrev = true;
                 decorationProbe(pc, removed, leftKeySources, usePrev, null, (cookie, slot, index, prevIndex) -> {
@@ -471,7 +471,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
 
     void leftAdded(final RowSet added, final CrossJoinModifiedSlotTracker tracker) {
-        if (added.nonempty()) {
+        if (added.isNonempty()) {
             try (final BuildContext pc = makeBuildContext(leftKeySources, added.size())) {
                 buildTable(pc, added, leftKeySources, tracker, null, (cookie, slot, index, prevIndex) -> {
                     ensureSlotExists(slot);

@@ -149,14 +149,14 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
                     ) {
                         final SegmentedSortedMultiSet.RemoveContext removeContext = SegmentedSortedMultiSet.makeRemoveContext(desc.nodeSize());
 
-                        if (removed.nonempty()) {
+                        if (removed.isNonempty()) {
                             valueSource.fillPrevChunk(fillContext, chunk, removed);
                             CharCompactKernel.compactAndCount(chunk, counts, countNull);
                             ssm.remove(removeContext, chunk, counts);
                         }
 
 
-                        if (added.nonempty()) {
+                        if (added.isNonempty()) {
                             valueSource.fillChunk(fillContext, chunk, added);
                             CharCompactKernel.compactAndCount(chunk, counts, countNull);
                             ssm.insert(chunk, counts);
@@ -169,7 +169,7 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                     final TrackingMutableRowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
-                    assertTrue(notify[2].empty());
+                    assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);
                 });
 

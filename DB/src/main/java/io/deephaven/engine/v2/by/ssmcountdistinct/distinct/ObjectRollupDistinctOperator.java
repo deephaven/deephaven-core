@@ -506,7 +506,7 @@ public class ObjectRollupDistinctOperator implements IterativeChunkedAggregation
     }
 
     private static void flushPrevious(ObjectRollupDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

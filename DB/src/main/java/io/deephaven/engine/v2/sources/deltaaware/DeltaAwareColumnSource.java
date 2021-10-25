@@ -237,7 +237,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         // Do the volatile read once
         final TrackingMutableRowSet dRows = deltaRows;
         // Optimization if we're not tracking prev or if there are no deltas.
-        if (dRows == null || dRows.empty()) {
+        if (dRows == null || dRows.isEmpty()) {
             return getOrFillSimple(baseline, context.baseline, optionalDest, rowSequence);
         }
 
@@ -250,13 +250,13 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         final TrackingMutableRowSet deltaKeysBS = splitResult[0];
 
         // If one or the other is empty, shortcut here
-        if (deltaKeysBS.empty()) {
+        if (deltaKeysBS.isEmpty()) {
             // By the way, baselineKeysBS equals rowSequence, so you could pick either one
             return getOrFillSimple(baseline, context.baseline, optionalDest, baselineKeysBS);
         }
 
         final TrackingMutableRowSet deltaKeysDS = dRows.invert(deltaKeysBS);
-        if (baselineKeysBS.empty()) {
+        if (baselineKeysBS.isEmpty()) {
             return getOrFillSimple(delta, context.delta, optionalDest, deltaKeysDS);
         }
 
@@ -617,7 +617,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      *        will be set to (lhs minus rhs).
      */
     private static void splitKeys(RowSequence lhs, TrackingMutableRowSet rhs, TrackingMutableRowSet[] results) {
-        final TrackingMutableRowSet lhsRowSet = lhs.asIndex();
+        final TrackingMutableRowSet lhsRowSet = lhs.asRowSet();
         results[0] = lhsRowSet.intersect(rhs);
         results[1] = lhsRowSet.minus(rhs);
     }

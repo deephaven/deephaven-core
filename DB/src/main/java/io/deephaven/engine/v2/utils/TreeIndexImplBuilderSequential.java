@@ -5,16 +5,16 @@ import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.util.annotations.TestUseOnly;
 
-public class TreeIndexImplSequentialBuilder extends RspBitmapSequentialBuilder {
+public class TreeIndexImplBuilderSequential extends RspBitmapBuilderSequential {
     private SortedRanges pendingSr;
 
     private static final IndexCounts indexCounts = new IndexCounts("sequentialBuilder");
 
-    public TreeIndexImplSequentialBuilder() {
+    public TreeIndexImplBuilderSequential() {
         this(false);
     }
 
-    public TreeIndexImplSequentialBuilder(final boolean disposable) {
+    public TreeIndexImplBuilderSequential(final boolean disposable) {
         super(disposable);
     }
 

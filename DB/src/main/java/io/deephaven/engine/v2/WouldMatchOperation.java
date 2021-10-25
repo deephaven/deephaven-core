@@ -294,7 +294,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         public void fillChunk(@NotNull FillContext context,
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final TrackingMutableRowSet keysToCheck = closer.add(rowSequence.asIndex());
+                final TrackingMutableRowSet keysToCheck = closer.add(rowSequence.asRowSet());
                 final TrackingMutableRowSet intersection = closer.add(keysToCheck.intersect(source));
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
@@ -304,7 +304,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         public void fillPrevChunk(@NotNull FillContext context,
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final TrackingMutableRowSet keysToCheck = closer.add(rowSequence.asIndex());
+                final TrackingMutableRowSet keysToCheck = closer.add(rowSequence.asRowSet());
                 final TrackingMutableRowSet intersection = closer.add(keysToCheck.getPrevRowSet().intersect(source.getPrevRowSet()));
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
@@ -323,7 +323,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             final WritableObjectChunk<Boolean, ? super Attributes.Values> writeable =
                     destination.asWritableObjectChunk();
             writeable.setSize(RowSequenceSize);
-            if (intersection.empty()) {
+            if (intersection.isEmpty()) {
                 writeable.fillWithValue(0, RowSequenceSize, false);
                 return;
             } else if (intersection.size() == RowSequenceSize) {

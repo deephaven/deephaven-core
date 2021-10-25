@@ -240,7 +240,7 @@ public class LongChunkedCountDistinctOperator implements IterativeChunkedAggrega
     }
 
     private static void flushPrevious(LongChunkedCountDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

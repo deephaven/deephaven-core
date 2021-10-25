@@ -198,7 +198,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
     @Override
     public boolean hasSymbolTable(@NotNull final RowSet sourceIndex) {
-        if (sourceIndex.empty()) {
+        if (sourceIndex.isEmpty()) {
             // Trivially true
             return true;
         }
@@ -219,7 +219,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 new AsDictionary();
 
         final TrackingMutableRowSet symbolTableRowSet;
-        if (sourceIndex.empty()) {
+        if (sourceIndex.isEmpty()) {
             symbolTableRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         } else {
             final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
@@ -289,12 +289,12 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             // TODO-RWC: Update and use
             // io.deephaven.engine.tables.verify.TableAssertions.assertAppendOnly(java.lang.String,
             // io.deephaven.engine.tables.Table) ?
-            if (upstream.removed.nonempty() || upstream.modified.nonempty() || upstream.shifted.nonempty()) {
+            if (upstream.removed.isNonempty() || upstream.modified.isNonempty() || upstream.shifted.nonempty()) {
                 throw new IllegalStateException("Source table for a regioned symbol table should be add-only, instead "
                         + "removed=" + upstream.removed + ", modified=" + upstream.modified + ", shifted="
                         + upstream.shifted);
             }
-            if (upstream.added.empty()) {
+            if (upstream.added.isEmpty()) {
                 return;
             }
 
@@ -314,7 +314,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             }
 
             final TrackingMutableRowSet symbolTableAdded = symbolTableAddedBuilder.build();
-            if (symbolTableAdded.nonempty()) {
+            if (symbolTableAdded.isNonempty()) {
                 symbolTable.getIndex().insert(symbolTableAdded);
                 symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                         RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, emptyModifiedColumns));

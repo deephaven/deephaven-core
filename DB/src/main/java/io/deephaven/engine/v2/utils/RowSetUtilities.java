@@ -9,8 +9,8 @@ import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 
-public class IndexUtilities {
-    static String toString(RowSet rowSet, int maxNodes) {
+public class RowSetUtilities {
+    static String toString(RowSet rowSet, int maxRanges) {
         int count = 0;
         final StringBuilder result = new StringBuilder("{");
         boolean isFirst = true;
@@ -20,7 +20,7 @@ public class IndexUtilities {
                 result.append(isFirst ? "" : ",").append(it.currentRangeStart())
                         .append(it.currentRangeEnd() != it.currentRangeStart() ? "-" + it.currentRangeEnd() : "");
                 isFirst = false;
-                if (count++ > maxNodes) {
+                if (count++ > maxRanges) {
                     result.append("...");
                     break;
                 }
@@ -117,11 +117,11 @@ public class IndexUtilities {
     }
 
     static boolean equals(final RowSet index, final Object other) {
-        if (!(other instanceof TrackingMutableRowSet)) {
+        if (!(other instanceof RowSet)) {
             return false;
         }
-        final TrackingMutableRowSet otherRowSet = (TrackingMutableRowSet) other;
-        return index.size() == otherRowSet.size() && IndexUtilities.equalsDeepImpl(index, otherRowSet);
+        final RowSet otherRowSet = (RowSet) other;
+        return index.size() == otherRowSet.size() && RowSetUtilities.equalsDeepImpl(index, otherRowSet);
     }
 
     public interface Comparator {

@@ -251,7 +251,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     }
 
     private static void flushPrevious(ByteChunkedUniqueOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

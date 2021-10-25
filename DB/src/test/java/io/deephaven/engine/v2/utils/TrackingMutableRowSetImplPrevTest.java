@@ -23,8 +23,8 @@ public class TrackingMutableRowSetImplPrevTest {
     @Test
     public void testPrevWithEmptyConstruction() {
         final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        assertTrue(ix.empty());
-        assertTrue(ix.getPrevRowSet().empty());
+        assertTrue(ix.isEmpty());
+        assertTrue(ix.getPrevRowSet().isEmpty());
     }
 
     @Test
@@ -139,11 +139,11 @@ public class TrackingMutableRowSetImplPrevTest {
         assertEquals(2L, ix.getPrevRowSet().size());
         assertEquals(3L, ix.getPrevRowSet().lastRowKey());
         LogicalClock.DEFAULT.startUpdateCycle();
-        assertTrue(ix.getPrevRowSet().empty());
+        assertTrue(ix.getPrevRowSet().isEmpty());
         ix.insert(1L);
-        assertTrue(ix.getPrevRowSet().empty());
+        assertTrue(ix.getPrevRowSet().isEmpty());
         LogicalClock.DEFAULT.completeUpdateCycle();
-        assertTrue(ix.getPrevRowSet().empty());
+        assertTrue(ix.getPrevRowSet().isEmpty());
         LogicalClock.DEFAULT.startUpdateCycle();
         assertEquals(1L, ix.getPrevRowSet().size());
         assertEquals(1L, ix.getPrevRowSet().lastRowKey());

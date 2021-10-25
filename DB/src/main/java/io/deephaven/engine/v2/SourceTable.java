@@ -173,7 +173,7 @@ public abstract class SourceTable extends RedefinableTable {
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
                         rowSet = refreshLocationSizes();
-                        setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, rowSet.empty());
+                        setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, rowSet.isEmpty());
                         if (!isRefreshing()) {
                             return;
                         }
@@ -214,7 +214,7 @@ public abstract class SourceTable extends RedefinableTable {
                     // We don't want to start polling size changes until the initial TrackingMutableRowSet has been computed.
                     return;
                 }
-                final boolean wasEmpty = rowSet.empty();
+                final boolean wasEmpty = rowSet.isEmpty();
                 final TrackingMutableRowSet added = refreshLocationSizes();
                 if (added.size() == 0) {
                     return;

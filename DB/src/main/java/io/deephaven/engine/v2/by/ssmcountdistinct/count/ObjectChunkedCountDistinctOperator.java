@@ -241,7 +241,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
     }
 
     private static void flushPrevious(ObjectChunkedCountDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.empty()) {
+        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 

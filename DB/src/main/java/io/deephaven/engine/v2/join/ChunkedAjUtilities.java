@@ -37,7 +37,7 @@ class ChunkedAjUtilities {
             while (sit.hasNext()) {
                 sit.next();
                 final TrackingMutableRowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
-                if (rowSetToShift.empty()) {
+                if (rowSetToShift.isEmpty()) {
                     rowSetToShift.close();
                     continue;
                 }

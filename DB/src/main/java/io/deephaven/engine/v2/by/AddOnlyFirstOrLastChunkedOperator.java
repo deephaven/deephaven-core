@@ -45,7 +45,7 @@ public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChu
 
     @Override
     public boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
-        if (rowSet.empty()) {
+        if (rowSet.isEmpty()) {
             return false;
         }
         final long candidate = isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey();

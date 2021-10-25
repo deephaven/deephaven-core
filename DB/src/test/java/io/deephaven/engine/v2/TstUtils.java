@@ -1911,7 +1911,7 @@ public class TstUtils {
         @Override
         public TreeMap<Long, T> populateMap(TreeMap<Long, T> values, TrackingMutableRowSet toAdd, Random random) {
             final TreeMap<Long, T> result = new TreeMap<>();
-            if (toAdd.empty()) {
+            if (toAdd.isEmpty()) {
                 return result;
             }
 

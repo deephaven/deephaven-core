@@ -284,7 +284,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
 
                                 final boolean modifiedInputColumns =
                                         upstream.modifiedColumnSet.containsAny(inputColumns);
-                                if (upstream.added.empty() && upstream.removed.empty() && upstream.shifted.empty()
+                                if (upstream.added.isEmpty() && upstream.removed.isEmpty() && upstream.shifted.empty()
                                         && !modifiedInputColumns) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
                                             downstream.modifiedColumnSet);
@@ -380,7 +380,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 downstream.modified.insert(builder.build());
                                 downstream.modified.remove(upstream.added);
 
-                                if (downstream.modified.nonempty()) {
+                                if (downstream.modified.isNonempty()) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
                                             downstream.modifiedColumnSet);
                                     if (!modifiedKeys.isEmpty()) {

@@ -306,7 +306,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                     final long index = pc.keyIndices.get(ii);
                     final long slot = pc.mappedSlots.get(ii);
                     final TrackingMutableRowSet rightRowSet = getRightIndex(slot);
-                    if (rightRowSet.nonempty()) {
+                    if (rightRowSet.isNonempty()) {
                         leftIndexToSlot.putVoid(index, slot);
                         trackingCallback.invoke(slot, index);
                     }
@@ -341,7 +341,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                     final long currSlot = pc.mappedSlots.get(ii);
                     final long regionStart = currKey << getNumShiftBits();
                     final TrackingMutableRowSet currRowSet = getRightIndex(currSlot);
-                    if (prevSlot == currSlot && currRowSet.nonempty()) {
+                    if (prevSlot == currSlot && currRowSet.isNonempty()) {
                         modBuilder.appendRange(regionStart, regionStart + currRowSet.size() - 1);
                     } else if (prevSlot != currSlot) {
                         final TrackingMutableRowSet prevRowSet = getRightIndex(prevSlot);
@@ -352,12 +352,12 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                             leftIndexToSlot.putVoid(currKey, currSlot);
                         }
 
-                        if (prevRowSet.nonempty()) {
+                        if (prevRowSet.isNonempty()) {
                             // note: removes are in old key space, but we have already shifted our resultRowSet after processing upstream removals
                             rmBuilder.appendRange(prevRegionStart, prevRegionStart + prevRowSet.size() - 1);
                             rmResultBuilder.appendRange(regionStart, regionStart + prevRowSet.size() - 1);
                         }
-                        if (currRowSet.nonempty()) {
+                        if (currRowSet.isNonempty()) {
                             addBuilder.appendRange(regionStart, regionStart + currRowSet.size() - 1);
                         }
                     }

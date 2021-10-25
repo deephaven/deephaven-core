@@ -114,7 +114,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         TrackingMutableRowSet ix;
         for (long startOffset : startOffsets) {
             rs = rb.getRowSequenceByPosition(startOffset, len);
-            ix = rs.asIndex();
+            ix = rs.asRowSet();
             ix.validate();
             final String m = "startOffset==" + startOffset;
             assertEquals(m, len, ix.size());
@@ -126,7 +126,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
         for (long startOffset : startOffsets) {
             rs = rb.getRowSequenceByPosition(startOffset, len);
-            ix = rs.asIndex();
+            ix = rs.asRowSet();
             ix.validate();
             final String m = "startOffset==" + startOffset;
             assertEquals(m, len, ix.size());
@@ -134,7 +134,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
             assertEquals(m, sk + startOffset + len - 1, ix.lastRowKey());
             rs.close();
             rs = rb.getRowSequenceByPosition(startOffset, BLOCK_SIZE - (startOffset - 1));
-            ix = rs.asIndex();
+            ix = rs.asRowSet();
             ix.validate(m);
             assertEquals(m, BLOCK_SIZE - (startOffset - 1), ix.size());
             assertEquals(m, sk + startOffset, ix.firstRowKey());
@@ -151,33 +151,33 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         rb = rb.addRange(sk + 4 * BLOCK_SIZE + 4, sk + 4 * BLOCK_SIZE + 40);
         rb = rb.addRange(sk + 10 * BLOCK_SIZE, sk + 10 * BLOCK_SIZE + BLOCK_LAST);
         RowSequence rs = rb.getRowSequenceByPosition(BLOCK_SIZE / 2, BLOCK_SIZE);
-        TrackingMutableRowSet ix = rs.asIndex();
+        TrackingMutableRowSet ix = rs.asRowSet();
         ix.validate();
         assertEquals(BLOCK_SIZE, ix.size());
 
         rb = rb.addRange(sk + BLOCK_SIZE, sk + BLOCK_SIZE + BLOCK_LAST);
         rs = rb.getRowSequenceByPosition(BLOCK_SIZE / 2, 2 * BLOCK_SIZE);
-        ix = rs.asIndex();
+        ix = rs.asRowSet();
         ix.validate();
         assertEquals(2 * BLOCK_SIZE, ix.size());
         rs.close();
 
         rb = rb.addRange(sk + 9 * BLOCK_SIZE, sk + 9 * BLOCK_SIZE + BLOCK_LAST);
         rs = rb.getRowSequenceByPosition(BLOCK_SIZE / 2, 3 * BLOCK_SIZE);
-        ix = rs.asIndex();
+        ix = rs.asRowSet();
         ix.validate();
         assertEquals(3 * BLOCK_SIZE, ix.size());
         rs.close();
 
         rb = rb.addRange(sk + 6 * BLOCK_SIZE, sk + 6 * BLOCK_SIZE + 2);
         rs = rb.getRowSequenceByPosition(BLOCK_SIZE / 2, 3 * BLOCK_SIZE);
-        ix = rs.asIndex();
+        ix = rs.asRowSet();
         ix.validate();
         assertEquals(3 * BLOCK_SIZE, ix.size());
         rs.close();
 
         rs = rb.getRowSequenceByPosition(rb.find(sk + 6 * BLOCK_SIZE + 2), 1 + 2 * BLOCK_SIZE);
-        ix = rs.asIndex();
+        ix = rs.asRowSet();
         ix.validate();
         assertEquals(1 + 2 * BLOCK_SIZE, ix.size());
         rs.close();
@@ -190,7 +190,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         rb.addRange(sk, sk + 5 * BLOCK_SIZE - 1);
         assertEquals(5 * BLOCK_SIZE, rb.getCardinality());
         final RowSequence rs = rb.getRowSequenceByPosition(1, 5 * BLOCK_SIZE - 2);
-        final TrackingMutableRowSet ix = rs.asIndex();
+        final TrackingMutableRowSet ix = rs.asRowSet();
         ix.validate();
         assertEquals(5 * BLOCK_SIZE - 2, ix.size());
         rs.close();
@@ -202,7 +202,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         final long sk = 5 * BLOCK_SIZE;
         rb.addRange(sk + 5, 6 * BLOCK_SIZE + 4);
         final RowSequence rs = rb.getRowSequenceByKeyRange(sk + 60000, 6 * BLOCK_SIZE + 4);
-        final TrackingMutableRowSet ix = rs.asIndex();
+        final TrackingMutableRowSet ix = rs.asRowSet();
         ix.validate();
         assertEquals(sk + 60000, ix.firstRowKey());
         assertEquals(6 * BLOCK_SIZE + 4, ix.lastRowKey());
@@ -218,7 +218,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         final long first = 16 * BLOCK_SIZE + 1;
         final long last = 17 * BLOCK_SIZE - 1;
         final RowSequence rs = rb.getRowSequenceByKeyRange(first, last);
-        final TrackingMutableRowSet ix = rs.asIndex();
+        final TrackingMutableRowSet ix = rs.asRowSet();
         ix.validate();
         assertEquals(first, ix.firstRowKey());
         assertEquals(last, ix.lastRowKey());
@@ -234,7 +234,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         final long first = sk + BLOCK_SIZE;
         final long last = sk + 4 * BLOCK_SIZE - 1;
         final RowSequence rs = rb.getRowSequenceByKeyRange(first, last);
-        final TrackingMutableRowSet ix = rs.asIndex();
+        final TrackingMutableRowSet ix = rs.asRowSet();
         ix.validate();
         assertEquals(first, ix.firstRowKey());
         assertEquals(last, ix.lastRowKey());
@@ -250,7 +250,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         final long first = sk + BLOCK_SIZE;
         final long last = sk + 4 * BLOCK_SIZE;
         final RowSequence rs = rb.getRowSequenceByKeyRange(first, last);
-        final TrackingMutableRowSet ix = rs.asIndex();
+        final TrackingMutableRowSet ix = rs.asRowSet();
         ix.validate();
         assertEquals(first, ix.firstRowKey());
         assertEquals(last, ix.lastRowKey());
@@ -266,7 +266,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         final long startKey = sk + 22;
         final long endKey = sk + 3 * BLOCK_SIZE + 1;
         final RowSequence rs = rb.getRowSequenceByKeyRange(startKey, endKey);
-        final TrackingMutableRowSet ix = rs.asIndex();
+        final TrackingMutableRowSet ix = rs.asRowSet();
         ix.validate();
         final RspBitmap rb2 = (RspBitmap) rb.ixSubindexByKeyOnNew(startKey, endKey);
         rb2.andEquals(rb);
@@ -493,7 +493,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAdvaceBugRsp() {
-        advanceBug(TrackingMutableRowSetImpl.makeEmptyRsp());
+        advanceBug(TstRowSetUtil.makeEmptyRsp());
     }
 
     @Test
@@ -514,7 +514,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAsKeyRangesChunkRegression0() {
-        TrackingMutableRowSet rowSet = TrackingMutableRowSetImpl.makeSingleRange(130972, 131071);
+        TrackingMutableRowSet rowSet = TstRowSetUtil.makeSingleRange(130972, 131071);
         rowSet.insert(262144);
 
         final long CHUNK_SIZE = 4096;
@@ -554,7 +554,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAsKeyRangesChunkRegression0Rsp() {
-        TrackingMutableRowSet rowSet = TrackingMutableRowSetImpl.makeSingleRange(130972, 131071);
+        TrackingMutableRowSet rowSet = TstRowSetUtil.makeSingleRange(130972, 131071);
         rowSet.insert(262144);
 
         final long CHUNK_SIZE = 4096;

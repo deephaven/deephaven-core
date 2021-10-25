@@ -7,7 +7,7 @@ import java.util.Random;
 public class MixedBuilderTest extends TestCase {
     public void testMixedBuilder() {
         final Random r = new Random();
-        final MixedBuilder mb = new MixedBuilder(16);
+        final MixedBuilderRandom mb = new MixedBuilderRandom(16);
         final RangePriorityQueueBuilder pqb = new RangePriorityQueueBuilder(16);
         final int sz = 1024 * 1024;
         for (int i = 0; i < sz; ++i) {

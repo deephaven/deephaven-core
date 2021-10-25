@@ -329,7 +329,7 @@ public abstract class SingleRange implements TreeIndexImpl {
             } else if (tc.compareTargetTo(curr, dir) < 0) {
                 return -1;
             }
-            return curr = IndexUtilities.rangeSearch(curr, last,
+            return curr = RowSetUtilities.rangeSearch(curr, last,
                     (long k) -> tc.compareTargetTo(k, dir));
         }
     }
@@ -726,7 +726,7 @@ public abstract class SingleRange implements TreeIndexImpl {
 
     @Override
     public final TreeIndexImpl ixInvertOnNew(final TreeIndexImpl keys, final long maximumPosition) {
-        final TreeIndexImpl.SequentialBuilder b = new TreeIndexImplSequentialBuilder();
+        final BuilderSequential b = new TreeIndexImplBuilderSequential();
         final TrackingMutableRowSetImpl.RangeIterator it = keys.ixRangeIterator();
         final String exStr = "invert for non-existing key:";
         while (it.hasNext()) {

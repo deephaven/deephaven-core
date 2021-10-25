@@ -186,7 +186,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
         downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
         downstream.modifiedColumnSet.clear();
-        if (downstream.modified.nonempty()) {
+        if (downstream.modified.isNonempty()) {
             mcsTransformer.transform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
         }
 

@@ -196,7 +196,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
-        final TreeIndexImplSequentialBuilder chunkDestinationBuilder = new TreeIndexImplSequentialBuilder(true);
+        final TreeIndexImplBuilderSequential chunkDestinationBuilder = new TreeIndexImplBuilderSequential(true);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -391,7 +391,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         Arrays.stream(keyColumnNames).map(resultTable::getColumnSource).toArray(ColumnSource[]::new));
 
         final RowSet initialDestinations = resultTable.getIndex();
-        if (initialDestinations.nonempty()) {
+        if (initialDestinations.isNonempty()) {
             // At this point, we cannot have had any tables pre-populated because the table map has not been exposed
             // externally.
             // The table map is still managed by its creating scope, and so does not need extra steps to ensure
@@ -479,7 +479,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     @Override
     public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
         stepShiftedDestinations = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        final boolean upstreamModified = upstream.modified.nonempty() && upstream.modifiedColumnSet.nonempty();
+        final boolean upstreamModified = upstream.modified.isNonempty() && upstream.modifiedColumnSet.nonempty();
         if (upstreamModified) {
             // We re-use this for all sub-tables that have modifies.
             upstreamToResultTransformer.clearAndTransform(upstream.modifiedColumnSet, resultModifiedColumnSet);
@@ -497,7 +497,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
             stepShiftedDestinations = null;
             return;
         }
-        if (downstream.added.nonempty()) {
+        if (downstream.added.isNonempty()) {
             try (final RowSequence resurrectedDestinations = downstream.added.minus(newDestinations)) {
                 propagateResurrectedDestinations(resurrectedDestinations);
                 propagateNewDestinations(newDestinations);
@@ -866,15 +866,15 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                     downstream.shifted =
                             extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
                     downstream.modifiedColumnSet =
-                            downstream.modified.empty() ? ModifiedColumnSet.EMPTY : resultModifiedColumnSet;
+                            downstream.modified.isEmpty() ? ModifiedColumnSet.EMPTY : resultModifiedColumnSet;
 
-                    if (downstream.removed.nonempty()) {
+                    if (downstream.removed.isNonempty()) {
                         modifiedTable.getIndex().remove(downstream.removed);
                     }
                     if (downstream.shifted.nonempty()) {
                         downstream.shifted.apply(modifiedTable.getIndex());
                     }
-                    if (downstream.added.nonempty()) {
+                    if (downstream.added.isNonempty()) {
                         modifiedTable.getIndex().insert(downstream.added);
                     }
 

@@ -100,7 +100,7 @@ public class StreamTableOperationsTest {
             try {
                 final TrackingMutableRowSet finalNormalLastInserted = normalLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
-                    if (normalStepInserted.nonempty() || finalNormalLastInserted.nonempty()) {
+                    if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
                         normal.getIndex().update(normalStepInserted, finalNormalLastInserted);
                         normal.notifyListeners(new Update(normalStepInserted, finalNormalLastInserted,
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
@@ -108,7 +108,7 @@ public class StreamTableOperationsTest {
                 });
                 final TrackingMutableRowSet finalStreamLastInserted = streamLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
-                    if (streamStepInserted.nonempty() || finalStreamLastInserted.nonempty()) {
+                    if (streamStepInserted.isNonempty() || finalStreamLastInserted.isNonempty()) {
                         if (streamInternalRowSet != null) {
                             streamInternalRowSet.clear();
                             streamInternalRowSet.insert(normalStepInserted);

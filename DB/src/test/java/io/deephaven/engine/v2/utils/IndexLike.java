@@ -100,7 +100,7 @@ public interface IndexLike {
 
                 @Override
                 public String name() {
-                    return MixedBuilder.class.getSimpleName();
+                    return MixedBuilderRandom.class.getSimpleName();
                 }
 
                 @Override
@@ -112,7 +112,7 @@ public interface IndexLike {
 
         @Override
         public String name() {
-            return MixedBuilder.class.getSimpleName();
+            return MixedBuilderRandom.class.getSimpleName();
         }
     };
 

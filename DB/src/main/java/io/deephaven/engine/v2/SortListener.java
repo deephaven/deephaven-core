@@ -173,7 +173,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             final Update downstream = new Update();
             final boolean modifiedNeedsSorting =
-                    upstream.modifiedColumnSet.containsAny(sortColumnSet) && upstream.modified.nonempty();
+                    upstream.modifiedColumnSet.containsAny(sortColumnSet) && upstream.modified.isNonempty();
             final long REVERSE_LOOKUP_NO_ENTRY_VALUE = reverseLookup.getNoEntryValue();
 
             // We use these in enough places that we might as well just grab them (and check their sizes) here.
@@ -214,7 +214,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             }
 
             final long indexKeyForLeftmostInsert =
-                    resultRowSet.empty() ? REBALANCE_MIDPOINT : resultRowSet.firstRowKey() - 1;
+                    resultRowSet.isEmpty() ? REBALANCE_MIDPOINT : resultRowSet.firstRowKey() - 1;
             if (indexKeyForLeftmostInsert <= 0) {
                 // Actually we "could", but we "don't" (yet).
                 throw new IllegalStateException("Table has filled to key rowSet 0; need to rebalance but cannot.");
@@ -275,7 +275,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             downstream.removed = sortedArrayToIndex(removedOutputKeys, 0, numRemovedKeys);
 
             final long medianOutputKey =
-                    resultRowSet.empty() ? REBALANCE_MIDPOINT : resultRowSet.get(resultRowSet.size() / 2);
+                    resultRowSet.isEmpty() ? REBALANCE_MIDPOINT : resultRowSet.get(resultRowSet.size() / 2);
 
             int addedStart = findKeyStart(addedOutputKeys, medianOutputKey, numAddedKeys);
 
@@ -301,7 +301,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             mappingChanges.flush();
 
             // Compute modified set in post-shift space.
-            if (modifiedNeedsSorting && numPropagatedModdedKeys == 0 || upstream.modified.empty()
+            if (modifiedNeedsSorting && numPropagatedModdedKeys == 0 || upstream.modified.isEmpty()
                     || upstream.modifiedColumnSet.empty()) {
                 downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else if (modifiedNeedsSorting) {
@@ -338,7 +338,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             }
 
             // Calculate downstream MCS.
-            if (downstream.modified.empty()) {
+            if (downstream.modified.isEmpty()) {
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else {
                 downstream.modifiedColumnSet = result.modifiedColumnSet;

@@ -244,7 +244,7 @@ public class ColumnsToRowsTransform {
                     downstream.added = transformIndex(upstream.added, fanout, fanoutPow2);
                     downstream.removed = transformIndex(upstream.removed, fanout, fanoutPow2);
 
-                    if (upstream.modified.nonempty()) {
+                    if (upstream.modified.isNonempty()) {
                         final boolean expandModified = upstream.modifiedColumnSet.containsAny(modifyAll);
                         if (expandModified) {
                             // all rows are modified, because there is an expanded column modified

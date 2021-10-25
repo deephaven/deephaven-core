@@ -104,7 +104,7 @@ public class StreamTableAggregationTest {
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             try {
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
-                    if (normalStepInserted.nonempty()) {
+                    if (normalStepInserted.isNonempty()) {
                         normal.getIndex().insert(normalStepInserted);
                         normal.notifyListeners(new Update(normalStepInserted, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
@@ -112,7 +112,7 @@ public class StreamTableAggregationTest {
                 });
                 final TrackingMutableRowSet finalStreamLastInserted = streamLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
-                    if (streamStepInserted.nonempty() || finalStreamLastInserted.nonempty()) {
+                    if (streamStepInserted.isNonempty() || finalStreamLastInserted.isNonempty()) {
                         if (streamInternalRowSet != null) {
                             streamInternalRowSet.clear();
                             streamInternalRowSet.insert(normalStepInserted);

@@ -238,7 +238,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
             try (final SafeCloseable ignored = guard) {
                 if (isStream) {
-                    Assert.assertion(upstream.modified.empty(), "upstream.modified.empty()");
+                    Assert.assertion(upstream.modified.isEmpty(), "upstream.modified.empty()");
                     // We always ignore removes on streams, and expect no modifies or shifts
                     publishMessages(upstream.added, false, true, guard);
                     return;

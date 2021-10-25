@@ -105,7 +105,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
         DO_LOCKED_FUNCTION.accept((usePrev) -> {
             final TrackingMutableRowSet rowSet = dataManagerTable.getIndex();
 
-            if (rowSet.empty()) {
+            if (rowSet.isEmpty()) {
                 log.warn().append(ModelFarmOnDemand.class.getSimpleName() + ": ")
                         .append("Table is empty. Nothing to price.").endl();
                 callback.run();

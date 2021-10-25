@@ -201,7 +201,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public boolean addIndex(SingletonContext context, TrackingMutableRowSet addRowSet, long destination) {
-        if (addRowSet.empty()) {
+        if (addRowSet.isEmpty()) {
             return false;
         }
 

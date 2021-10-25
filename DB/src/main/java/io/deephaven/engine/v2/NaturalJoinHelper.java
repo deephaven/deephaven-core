@@ -632,7 +632,7 @@ class NaturalJoinHelper {
                     jsm.removeRight(pc, modifiedPreShift, rightSources, modifiedSlotTracker);
                     jsm.addRightSide(pc, upstream.modified, rightSources, modifiedSlotTracker);
                 } else {
-                    if (upstream.modified.nonempty() && addedRightColumnsChanged) {
+                    if (upstream.modified.isNonempty() && addedRightColumnsChanged) {
                         jsm.modifyByRight(pc, upstream.modified, rightSources, modifiedSlotTracker);
                     }
                 }
@@ -653,7 +653,7 @@ class NaturalJoinHelper {
 
             result.notifyListeners(new Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                     modifiedLeft, IndexShiftData.EMPTY,
-                    modifiedLeft.nonempty() ? result.modifiedColumnSet : ModifiedColumnSet.EMPTY));
+                    modifiedLeft.isNonempty() ? result.modifiedColumnSet : ModifiedColumnSet.EMPTY));
         }
     }
 
@@ -678,7 +678,7 @@ class NaturalJoinHelper {
         @Override
         public void accept(long updatedSlot, long originalRightValue, byte flag) {
             final TrackingMutableRowSet leftIndices = jsm.getLeftIndex(updatedSlot);
-            if (leftIndices == null || leftIndices.empty()) {
+            if (leftIndices == null || leftIndices.isEmpty()) {
                 return;
             }
 
@@ -783,7 +783,7 @@ class NaturalJoinHelper {
                 final TrackingMutableRowSet rightModified = rightRecorder.getModified();
                 final ModifiedColumnSet rightModifiedColumns = rightRecorder.getModifiedColumnSet();
                 final boolean rightKeysModified =
-                        rightModified.nonempty() && rightModifiedColumns.containsAny(rightKeyColumns);
+                        rightModified.isNonempty() && rightModifiedColumns.containsAny(rightKeyColumns);
 
                 final long probeSize =
                         UpdateSizeCalculator.chunkSize(Math.max(rightRemoved.size(), rightModified.size()),
@@ -805,7 +805,7 @@ class NaturalJoinHelper {
                         modifiedPreShift = null;
                     }
 
-                    if (rightRemoved.nonempty()) {
+                    if (rightRemoved.isNonempty()) {
                         jsm.removeRight(pc, rightRemoved, rightSources, modifiedSlotTracker);
                     }
 
@@ -839,11 +839,11 @@ class NaturalJoinHelper {
 
                     if (rightKeysModified) {
                         jsm.addRightSide(bc, rightModified, rightSources, modifiedSlotTracker);
-                    } else if (rightModified.nonempty() && addedRightColumnsChanged) {
+                    } else if (rightModified.isNonempty() && addedRightColumnsChanged) {
                         jsm.modifyByRight(pc, rightModified, rightSources, modifiedSlotTracker);
                     }
 
-                    if (rightAdded.nonempty()) {
+                    if (rightAdded.isNonempty()) {
                         jsm.addRightSide(bc, rightAdded, rightSources, modifiedSlotTracker);
                     }
                 }
@@ -858,9 +858,9 @@ class NaturalJoinHelper {
             if (leftRecorder.recordedVariablesAreValid()) {
                 final TrackingMutableRowSet leftModified = leftRecorder.getModified();
                 final ModifiedColumnSet leftModifiedColumns = leftRecorder.getModifiedColumnSet();
-                final boolean leftAdditions = leftAdded.nonempty();
+                final boolean leftAdditions = leftAdded.isNonempty();
                 final boolean leftKeyModifications =
-                        leftModified.nonempty() && leftModifiedColumns.containsAny(leftKeyColumns);
+                        leftModified.isNonempty() && leftModifiedColumns.containsAny(leftKeyColumns);
                 final boolean newLeftRedirections = leftAdditions || leftKeyModifications;
                 final long buildSize = Math.max(leftAdded.size(), leftKeyModifications ? leftModified.size() : 0);
                 final long probeSize = UpdateSizeCalculator.chunkSize(

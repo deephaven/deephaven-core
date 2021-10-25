@@ -432,7 +432,7 @@ class IncrementalChunkedNaturalJoinStateManager
         final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
         final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
         rowSetToUpdate.remove(keyToRemove);
-        if (rowSetToUpdate.empty()) {
+        if (rowSetToUpdate.isEmpty()) {
             throw Assert.statementNeverExecuted();
         } else if (rowSetToUpdate.size() == 1) {
             indexSource.set(location, rowSetToUpdate.firstRowKey());
