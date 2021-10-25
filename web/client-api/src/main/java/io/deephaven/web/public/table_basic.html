@@ -18,12 +18,16 @@
 <table id="simpleTable"></table>
 
 <script>
+var table;
+var connection;
+var ide;
+
 (async () => {
     // Open a connection to the server
-    var connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+    connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
 
     // Start a python session
-    var ide = await connection.startSession("python");
+    ide = await connection.startSession("python");
 
     // Run code that will create a static table with 10 rows and three columns, I, J, K
     await ide.runCode(`
@@ -32,7 +36,7 @@ remoteTable = emptyTable(10).updateView('I=i', 'J=I*I', 'K=i%2==0?"Hello":"World
     `)
 
     // Retrieve the JS Table object
-    var table = await ide.getTable('remoteTable');
+    table = await ide.getTable('remoteTable');
 
     // Create a table header element with the table columns
     var header = document.createElement('thead');
